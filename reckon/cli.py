@@ -2172,6 +2172,27 @@ def crew_dispatch(
                 pretty,
             )
             raise click.exceptions.Exit(2)
+        admission = resolution.admission or {}
+        if admission.get("state") == "refused":
+            _emit(
+                _with_resolved_overrides(
+                    {
+                        "dry_run": True,
+                        **resolution.as_dict(),
+                        "ok": False,
+                        "error": "scope-conflict",
+                        "detail": admission["detail"],
+                        "run_id": None,
+                        "conflicting_run_id": admission["conflicting_run_id"],
+                        "conflicting_node_id": admission["conflicting_node_id"],
+                        "candidate_path": admission["candidate_path"],
+                        "claimed_path": admission["claimed_path"],
+                    },
+                    override_resolution,
+                ),
+                pretty,
+            )
+            raise click.exceptions.Exit(7)
         lane_gate = resolution.lane_gate or {}
         if lane_gate.get("state") in {"paused", "unreadable"}:
             # The dry run is the same decision as the launch, so a gate that

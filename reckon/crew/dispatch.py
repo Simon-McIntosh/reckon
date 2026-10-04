@@ -2696,6 +2696,17 @@ def _raise_repository_scope_conflict(
     )
     shared = _shared_landing_paths(node, project=project, authority=authority)
     shared_files = _shared_write_paths(project, repo)
+    landing_fragments = _landing_fragment_paths(node, authority=authority)
+    claims = tuple(claims)
+    accepted_directories = {
+        (claim.run_id, claim.absolute_path)
+        for repository, _candidate, absolute, _declared, _derived_from in candidates
+        for claim in claims
+        if accept_directory_claim
+        and repository == claim.repository
+        and _scopes_overlap(absolute.as_posix(), claim.absolute_path.as_posix())
+        and _directory_claim_overlaps(absolute, claim.absolute_path)
+    }
     for _repository, candidate, absolute, _declared, _derived_from in candidates:
         for claim in claims:
             if claim.absolute_path.resolve() in shared:
@@ -2755,6 +2766,14 @@ def _raise_repository_scope_conflict(
                         f"within {RACING_WINNER_WAIT_SECONDS:g}s and its claim on "
                         "the paths still stands"
                     )
+            if (
+                accept_directory_claim
+                and absolute.resolve() in landing_fragments
+                and (claim.run_id, claim.absolute_path) in accepted_directories
+            ):
+                if accepted is not None:
+                    accepted.append(_directory_claim_row(claim, candidate))
+                continue
             if _directory_claim_overlaps(absolute, claim.absolute_path):
                 # A directory claim is coarser than the exact file a reader sees
                 # held by a peer, so it is refused with the exact alternative
@@ -3313,6 +3332,7 @@ class DispatchPlan:
     competence: dict[str, Any] | None = None
     authority: dict[str, Any] | None = None
     live_conflicts: list[dict[str, Any]] | None = None
+    admission: dict[str, Any] | None = None
     directory_claim_acceptances: list[dict[str, Any]] | None = None
     sandbox_write_roots: tuple[Path, ...] | None = None
     requested_backend: str | None = None
@@ -3387,6 +3407,13 @@ class DispatchPlan:
             payload["authority"] = dict(self.authority)
         if self.live_conflicts is not None:
             payload["live_conflicts"] = [dict(item) for item in self.live_conflicts]
+        if self.admission is not None:
+            payload["admission"] = dict(self.admission)
+            payload["record_assignment"] = {
+                "state": "unevaluated",
+                "fields": "all",
+                "wave": "unevaluated",
+            }
         if self.directory_claim_acceptances is not None:
             payload["directory_claim_acceptances"] = [
                 dict(item) for item in self.directory_claim_acceptances
@@ -5431,6 +5458,28 @@ def plan_dispatch(
                             },
                         ],
                     )
+            try:
+                _raise_repository_scope_conflict(
+                    node,
+                    project=project,
+                    repo=repo_root,
+                    authority=resolved_authority,
+                    claims=claims,
+                    disregarded=resolution.warnings,
+                    **_directory_claim_acceptance_kwargs(accept_directory_claim, []),
+                )
+            except ScopeConflict as exc:
+                resolution.admission = {
+                    "state": "refused",
+                    "error": "scope-conflict",
+                    "detail": str(exc),
+                    "conflicting_run_id": exc.run_id,
+                    "conflicting_node_id": exc.node_id,
+                    "candidate_path": exc.candidate_path,
+                    "claimed_path": exc.claimed_path,
+                }
+            else:
+                resolution.admission = {"state": "admitted"}
     resolution.sandbox_write_roots = sandbox_write_roots
     # A dry run must reach the verdict a real dispatch reaches, so the watcher
     # gate is evaluated here too when the caller asks for it. It reads the
