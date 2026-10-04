@@ -22,12 +22,15 @@ fire on a substitute root so the witness is shown to speak.
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
+from reckon import crew, ledger
 from reckon.cli import main as cli_main
+from reckon.crew.dispatch import _repository_scope_claims
 from reckon.crew.runs import _write_json, crew_home, pointer_path
 
 BLOCKED_RUN_ID = "r-20260921T000000000000-widen-blocked"
@@ -180,6 +183,82 @@ def test_widening_a_blocked_run_adds_the_named_path(
     payload = json.loads(result.output)
     assert payload["added"] == [GRANTED]
     assert _read(BLOCKED_RUN_ID)["node"]["write_paths"] == [DECLARED, GRANTED]
+    crew_home_watch.assert_untouched()
+
+
+def test_a_free_path_reaches_the_promoted_ledger(
+    blocked_run: dict, tmp_path: Path, crew_home_watch: CrewHomeWatch
+) -> None:
+    repo = tmp_path / "repo"
+    (repo / "docs" / "state" / "sample").mkdir(parents=True)
+    (repo / "docs" / "state" / "sample" / "index.json").write_text(
+        json.dumps({"project": "sample", "data": {"_version": 0}}) + "\n"
+    )
+    ledger.write("sample", {"members": [], "runs": [], "holds": []}, 0, root=repo)
+    for args in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "test@example.invalid"],
+        ["config", "user.name", "Test"],
+        ["add", "docs"],
+        ["commit", "-q", "-m", "test: seed repository"],
+    ):
+        subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
+    base = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    pointer = _read(BLOCKED_RUN_ID)
+    pointer["base_sha"] = base
+    _write_json(pointer_path(BLOCKED_RUN_ID), pointer)
+
+    result = _widen(BLOCKED_RUN_ID, GRANTED)
+    assert result.exit_code == 0, result.output
+    pointer = _read(BLOCKED_RUN_ID)
+    pointer["phase"] = "complete"
+    _write_json(pointer_path(BLOCKED_RUN_ID), pointer)
+    Path(pointer["manifest_path"]).write_text("node: widen\nstatus: complete\n")
+    completed = crew.complete(
+        BLOCKED_RUN_ID,
+        gate="not-run",
+        outcome="the scope grant reached its durable run record",
+        no_commit="this fixture changes only run scope",
+        root=repo,
+    )
+    assert completed["pointer_removed"] is True
+    promoted = ledger.runs("sample", repo)[0]
+    assert promoted["node_definition"]["write_paths"] == [DECLARED, GRANTED]
+    stored = subprocess.run(
+        ["git", "show", f"HEAD:docs/state/sample/runs/{BLOCKED_RUN_ID}.json"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert json.loads(stored)["node_definition"]["write_paths"] == [DECLARED, GRANTED]
+    crew_home_watch.assert_untouched()
+
+
+def test_a_peer_held_path_refuses_without_changing_pointer_bytes(
+    blocked_run: dict, tmp_path: Path, crew_home_watch: CrewHomeWatch
+) -> None:
+    holder_id = "r-20260921T000000000000-holder"
+    holder = _blocked_pointer(tmp_path, holder_id, phase="working")
+    holder["node"]["write_paths"] = [GRANTED]
+    _write_json(pointer_path(holder_id), holder)
+    assert any(
+        claim.run_id == holder_id and claim.binding and claim.path == GRANTED
+        for claim in _repository_scope_claims()
+    )
+    before = pointer_path(BLOCKED_RUN_ID).read_bytes()
+
+    result = _widen(BLOCKED_RUN_ID, GRANTED)
+
+    assert result.exit_code != 0, result.output
+    assert holder_id in result.output
+    assert pointer_path(BLOCKED_RUN_ID).read_bytes() == before
     crew_home_watch.assert_untouched()
 
 

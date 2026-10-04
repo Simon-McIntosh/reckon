@@ -5571,6 +5571,13 @@ def crew_widen(run_id, write_paths, pretty):
             if path not in declared:
                 declared.append(path)
                 added.append(path)
+        if added:
+            from reckon.crew.dispatch import refuse_widen_scope_conflicts
+
+            try:
+                refuse_widen_scope_conflicts(pointer, added)
+            except crew_module.CrewError as exc:
+                raise click.ClickException(str(exc)) from exc
         node["write_paths"] = declared
         pointer["node"] = node
         return pointer
