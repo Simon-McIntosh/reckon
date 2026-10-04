@@ -1,5 +1,5 @@
 <article class="landed-report" data-run-id="r-20261004T004533986813-an-exclusion-is-not-a-fit-input">
-  <h3>an-exclusion-is-not-a-fit-input &mdash; an exclusion clause charges nothing, a declaration still charges</h3>
+  <h3>an-exclusion-is-not-a-fit-input &mdash; an exclusion charges only the paths its own verb names</h3>
   <p>
     A brief that keeps a worker off a large file by naming it in an exclusion
     (<code>Exclude package/large.py from declared inputs</code>) carries the same
@@ -10,42 +10,55 @@
     the node would never open. Reproduced at base <code>626dcd594</code> with the
     census probe's own fixture (<code>package/large.py</code> 200,007 bytes,
     <code>package/target.py</code> 10 bytes):
-    <code>plain-exclusion: tokens=3 named_count=0</code>,
-    <code>declared-input-exclusion: tokens=57148 named_count=1
-    named_counted=[True]</code>,
-    <code>positive-input: tokens=57148 named_count=1 named_counted=[True]</code>.
+    <code>declared-input-exclusion: tokens=57148 named_counted=[True]</code>
+    against <code>plain-exclusion: tokens=3</code> and
+    <code>positive-input: tokens=57148</code>.
   </p>
   <p>
-    <code>reckon/crew/routing.py::_declared_input_files</code> now treats a clause
-    carrying an exclusion cue (<code>_EXCLUSION_CUE</code>: exclude, omit, avoid,
-    ignore, unread, not/never read) as a non-declaration, so an excluded path is
-    never charged; a clause that declares the read still is. After the change the
-    first two probes read <code>tokens=3 named_count=0</code> and the declaration
-    probe is unchanged. Committed at <code>b20f7f065</code>.
+    <strong>A clause-level cue under-charged a declared input, and the review
+    caught it before landing.</strong> The first repair withheld every path in a
+    clause that carried an exclusion cue, so
+    <code>Declare package/a.py as an input and avoid package/b.py</code> read as
+    <code>[]</code> in both orders: the declared input stopped being charged, and
+    the fit guard could admit a node larger than its window &mdash; the opposite of
+    what the estimate is for. <code>reckon/crew/routing.py</code> now reads the
+    exclusion per path: <code>_GOVERNING_VERB</code> marks each declaration or
+    exclusion verb, <code>_paths_a_clause_charges</code> gives every named path the
+    verb that precedes it (a path with none is charged, because the clause reached
+    this point by declaring an input), and only the paths an exclusion verb governs
+    are withheld. Fixed at <code>b990e88b0</code>, replacing the clause-level cue at
+    <code>b20f7f065</code>.
   </p>
   <p>
-    <strong>Measure.</strong> Gate over <code>tests/test_context_estimate_excludes_granted_paths.py</code>
-    and <code>tests/test_context_estimate_reads_declared_files.py</code>. Base arm
-    (scratch extraction of <code>626dcd594</code>): 6 passed, <code>EXIT=0</code>.
-    Head arm (<code>b20f7f065</code>): 9 passed, <code>EXIT=0</code> &mdash; the
-    three added cases pin both exclusion phrasings at zero tokens for the named
-    large file and the declaration form of the same clause at 57,148 (57,145 for
-    <code>package/large.py</code> plus 3 for <code>package/target.py</code>). A
-    wider sweep over the estimator-touching files (crew routes, routing surface,
-    effective-window slot, picker bound, execution fit, context budget): 52 passed,
-    <code>EXIT=0</code>.
+    <strong>Measure.</strong> Gate over
+    <code>tests/test_context_estimate_excludes_granted_paths.py</code> and
+    <code>tests/test_context_estimate_reads_declared_files.py</code>. Base arm
+    (scratch extraction of <code>626dcd594</code> with the head test file copied in,
+    so both arms run identical test bytes): 4 failed, 8 passed, <code>EXIT=1</code>
+    &mdash; the four exclusion cases, and the base-arm reproduction. Head arm
+    (<code>b990e88b0</code>): 12 passed, <code>EXIT=0</code>. The added cases cover
+    both exclusion phrasings (zero tokens for the named large file), the declaration
+    form of the same clause (57,148 = 57,145 + 3), the mixed clause in both orders
+    (declared path charged, excluded path withheld), and one exclusion verb
+    governing two listed paths. Which arm the new cases fail in, measured with the
+    head test bytes in a pre-fix tree: both mixed-clause cases fail at
+    <code>068b3dbbe</code> (the clause-level cue dropped the declared path), and the
+    two-excluded case passes there but fails at <code>626dcd594</code>, where every
+    named path is charged.
   </p>
   <p>
     <strong>Negative control.</strong> The declared mutation &mdash; change only the
     exclusion wording into an input wording &mdash; makes the estimate charge the
-    file again: in a scratch extraction of <code>b20f7f065</code> the probe sentence
+    file again: in a scratch extraction of <code>b990e88b0</code> the probe sentence
     becomes <code>Treat package/large.py as a declared input</code> and the run is
-    1 failed / 8 passed, <code>EXIT=1</code>, failing
-    <code>test_an_excluded_path_is_not_charged_when_the_clause_says_declared_inputs</code>
-    with the record printing <code>package/large.py</code> at 57,145 tokens. A
-    source-side control (the exclusion-cue guard removed from
-    <code>_declared_input_files</code>) reddens the same single case. Logs under the
-    run directory: <code>logs/negative-control-wording.log</code>,
-    <code>logs/negative-control-cue-removed.log</code>.
+    1 failed / 11 passed, <code>EXIT=1</code>, failing
+    <code>test_an_excluded_path_is_not_charged_when_the_clause_says_declared_inputs</code>.
+    A source-side control (the per-path exclusion scoping removed) reddens all four
+    exclusion cases while the declaration case stays green: 4 failed / 8 passed,
+    <code>EXIT=1</code>. Logs under the run directory:
+    <code>logs/negative-control-wording.log</code>,
+    <code>logs/negative-control-cue-removed.log</code>, and the base/head probe
+    transcripts <code>logs/repro-exclusion-base.log</code> and
+    <code>logs/repro-exclusion-fixed.log</code>.
   </p>
 </article>
