@@ -61,6 +61,13 @@ from reckon import _plan_html
 from reckon._store import write_json_atomically
 from reckon.crew import review as _review_store
 
+# Reviewer-text parsing is owned by reckon.crew.review, so the code-review and
+# plan-report grammars share one line reader rather than each defining their
+# own. This module keeps only the store-side logic; the parser and the rubric
+# names are re-exported under the names their callers already use.
+PLAN_REVIEW_RUBRICS = _review_store.PLAN_REVIEW_RUBRICS
+parse_review_report = _review_store.parse_plan_review_report
+
 # ── The fingerprint exclusion set ───────────────────────────────────────────
 # These are the server-managed metadata scalars: written by the store or the web
 # surface, never authored as plan content. A change to any of them neither
@@ -105,8 +112,8 @@ PLAN_DERIVED_SCALARS: tuple[str, ...] = (
 
 # A review is taken under one of two rubrics: the section 2 rubber duck of a
 # plan's authored content, and the section 3 prior-art-and-depth review the
-# first implementation dispatch of a plan additionally requires.
-PLAN_REVIEW_RUBRICS: tuple[str, ...] = ("plan_review", "plan_design_review")
+# first implementation dispatch of a plan additionally requires. Their names
+# and item sets are owned by reckon.crew.review, re-exported above.
 
 # ── The promotion-comment exclusion ─────────────────────────────────────────
 # A promotion appends one comment per promoted run to the section the run
@@ -678,134 +685,12 @@ def declined_recurrence(
 # two. Storing is keyed to the run that produced the report and is idempotent,
 # so the gate can store a delivered report the coordinator never stored itself.
 
-# The rubric name selects the checklist items a report is judged against. Both
-# item sets are owned by reckon.crew.review and mirrored into the two prompt
-# files under prompts/, so they are read from there rather than copied. The
-# dispatch flag spells the two rubrics ``content`` and ``design``; both aliases
-# are accepted so a sidecar written from either reaches the same item set.
-_REPORT_RUBRIC_ITEMS: dict[str, tuple[str, ...]] = {
-    "plan_review": _review_store.PLAN_REVIEW_ITEMS,
-    "plan_design_review": _review_store.PLAN_DESIGN_REVIEW_ITEMS,
-}
-_REPORT_RUBRIC_ALIASES: dict[str, str] = {
-    "content": "plan_review",
-    "design": "plan_design_review",
-}
-
 _REVIEW_REPORT_NAME = "report.md"
 _REVIEW_SIDECAR_NAME = "plan-review.json"
 
-# The emitted form the two prompts ask for is one line per element:
-#     RUBRIC <item>: <pass, or the finding it produced — one sentence>
-#     FINDING <item> <file>:<line> — <what is wrong and why> — WOULD_CHANGE_THE_PLAN: <yes|no> — REASON: <one line>
-# The anchor is a ``<file>:<line>`` or a ``<plan>#<node>`` reference. The
-# would-change verdict and its reason are the record: a finding without the
-# verdict cannot be scored, so a finding line that carries no parseable verdict
-# is still returned the id, type, anchor and text with ``would_change`` left
-# ``None`` rather than defaulted. Lines in any other shape are ignored, so the
-# reviewer may surround the emitted lines with prose without breaking the parse.
-_RUBRIC_LINE_RE = re.compile(
-    r"^RUBRIC\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
-)
-_FINDING_LINE_RE = re.compile(r"^FINDING\s+(\S+)\s+(.+)$", re.IGNORECASE)
-_FINDING_TAIL_RE = re.compile(
-    r"^(?P<anchor>.*?)\s+(?:—|--)\s+(?P<text>.*?)\s+(?:—|--)\s+"
-    r"WOULD_CHANGE_THE_PLAN\s*:\s*(?P<would_change>yes|no)\b"
-    r"(?:\s+(?:—|--)\s+REASON\s*:\s*(?P<reason>.*))?$",
-    re.IGNORECASE,
-)
-
-
-def _report_rubric_items(rubric: str) -> tuple[str, ...]:
-    """Return the checklist items a report under ``rubric`` is judged against."""
-    name = _REPORT_RUBRIC_ALIASES.get(str(rubric or "").strip().lower(), "")
-    name = name or str(rubric or "").strip().lower()
-    items = _REPORT_RUBRIC_ITEMS.get(name)
-    if items is None:
-        raise ValueError(
-            f"unknown review rubric {rubric!r}; known rubrics are "
-            f"{', '.join(PLAN_REVIEW_RUBRICS)}"
-        )
-    return items
-
-
-def _parse_finding(item: str, remainder: str) -> dict[str, Any]:
-    """Parse one FINDING line's tail into a finding, per the prompt grammar.
-
-    The structured form carries the anchor, the text, the would-change verdict
-    and its reason. A line that does not carry the verdict is accepted with
-    ``would_change`` left ``None`` — an unstated verdict is a recorded absence,
-    not a defaulted judgement — and the anchor is read as the leading token.
-    """
-    match = _FINDING_TAIL_RE.match(remainder)
-    if match:
-        return {
-            "anchor": match.group("anchor").strip(),
-            "text": match.group("text").strip(),
-            "would_change": match.group("would_change").lower() == "yes",
-            "reason": (match.group("reason") or "").strip(),
-        }
-    anchor, separator, text = remainder.partition(" ")
-    if not separator:
-        anchor, text = remainder, ""
-    return {
-        "anchor": anchor.strip(),
-        "text": text.strip(),
-        "would_change": None,
-        "reason": "",
-    }
-
-
-def parse_review_report(text: str, *, rubric: str) -> dict[str, Any]:
-    """Parse a delivered review report into the store's record shape.
-
-    The rubric selects the checklist items the report is judged against, and
-    both item sets come from reckon.crew.review. Returns:
-
-    - ``rubric`` — the rubric the report was parsed under.
-    - ``rubric_items`` — item to the verdict sentence its ``RUBRIC`` line
-      carried, for the items that were emitted with text.
-    - ``absent_items`` — checklist items with no ``RUBRIC`` line, or with one
-      carrying no text: a line that says nothing is not a verdict, so the item
-      is reported absent rather than silently taken as checked.
-    - ``findings`` — a list of ``{"id", "type", "anchor", "text",
-      "would_change", "reason"}``, one per ``FINDING`` line whose item belongs
-      to the rubric and which is a mapping. The id is ``<item>-<n>`` with ``n``
-      counting the report's findings of that item in the order they appear, so
-      an id is stable across a re-read of the same report and two findings of
-      one type never share an id.
-    """
-    items = _report_rubric_items(rubric)
-    rubric_items: dict[str, str] = {}
-    findings: list[dict[str, Any]] = []
-    counters: dict[str, int] = {}
-    for raw in text.splitlines():
-        line = raw.strip()
-        match = _RUBRIC_LINE_RE.match(line)
-        if match:
-            item = match.group(1).lower()
-            verdict = match.group(2).strip()
-            if item in items and verdict:
-                rubric_items[item] = verdict
-            continue
-        match = _FINDING_LINE_RE.match(line)
-        if match:
-            item = match.group(1).lower()
-            if item not in items:
-                continue
-            parsed = _parse_finding(item, match.group(2).strip())
-            counters[item] = counters.get(item, 0) + 1
-            parsed["id"] = f"{item}-{counters[item]}"
-            parsed["type"] = item
-            findings.append(parsed)
-            continue
-    absent_items = [item for item in items if item not in rubric_items]
-    return {
-        "rubric": rubric,
-        "rubric_items": rubric_items,
-        "absent_items": absent_items,
-        "findings": findings,
-    }
+# The report grammar (RUBRIC and FINDING lines) is parsed by
+# reckon.crew.review.parse_plan_review_report, re-exported above, so the
+# code-review and plan-report grammars read reviewer text through one reader.
 
 
 def review_report_directory(project: str, plan_slug: str, run_id: str) -> Path:

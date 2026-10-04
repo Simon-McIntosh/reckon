@@ -510,3 +510,19 @@ def test_sidecar_hashes_exact_plan_bytes_and_keeps_snapshot_metadata(
     assert sidecar["plan_fingerprint"] == plan_review.plan_fingerprint(
         document.decode()
     )
+
+
+def test_the_report_grammar_parses_through_the_shared_review_reader():
+    parsed = plan_review.parse_review_report(
+        "RUBRIC reuse_search: pass — the module already owns it.\n"
+        "FINDING duplicate_owner reckon/crew/review.py:409 — the grammar has two "
+        "owners — WOULD_CHANGE_THE_PLAN: yes — REASON: one module must parse "
+        "reviewer text.\n",
+        rubric="plan_design_review",
+    )
+    assert parsed["rubric_items"] == {
+        "reuse_search": "pass — the module already owns it."
+    }
+    assert parsed["absent_items"] == ["deep_module", "thin_wrapper", "duplicate_owner"]
+    assert parsed["findings"][0]["id"] == "duplicate_owner-1"
+    assert parsed["findings"][0]["would_change"] is True
