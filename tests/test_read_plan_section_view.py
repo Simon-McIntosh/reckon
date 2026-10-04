@@ -178,7 +178,14 @@ def test_section_view_uses_adjacent_typed_record_without_leaking_it(mounted_docs
         "status": "implementable",
         "links": ["inputs#ready"],
     }
-    _write_plan(docs_dir, project, "recorded", sections=[record])
+    path = _write_plan(docs_dir, project, "recorded", sections=[record])
+    path.write_text(
+        path.read_text().replace(
+            ' data-status="implementable"',
+            ' data-attempts="2" data-status="implementable"',
+            1,
+        )
+    )
 
     result = mcp_module._read_plan(
         project=project,
@@ -187,7 +194,8 @@ def test_section_view_uses_adjacent_typed_record_without_leaking_it(mounted_docs
         section="s3",
     )
 
-    assert result["section"]["record"] == record
+    # The authored count is legacy metadata; no run history exists here.
+    assert result["section"]["record"] == {**record, "attempts": 0}
     assert 'data-reckon="section"' not in result["section"]["html"]
     assert "copper-orchid phrase" in result["section"]["text"]
     assert (
