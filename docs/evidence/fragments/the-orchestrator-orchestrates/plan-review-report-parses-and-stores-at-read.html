@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="the-orchestrator-orchestrates">
+  <meta name="plan-evidence-for" content="the-orchestrator-orchestrates">
+  <title>Landing: a delivered plan-review report is parsed, stored and read by the gate | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: a delivered plan-review report is parsed, stored and read by the gate</h1>
+      <p class="lead">A plan review runs as its own dispatch and leaves a report plus a sidecar on a durable path. The build gate stores that report at read, so the coordinator never runs a store step.</p>
+    </header>
+
+    <section id="plan-review-report-parses-and-stores-at-read-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li><code>reckon/crew/plan_review.py</code> &mdash; <code>parse_review_report</code> reads the <code>RUBRIC</code>/<code>FINDING</code> grammar the two prompt files specify into the store's record shape (stable ids, type, anchor, would-change verdict and reason, absent items); <code>review_report_directory</code>, <code>write_review_sidecar</code>, <code>delivered_reports</code> and <code>store_delivered_report</code> join the report to its sidecar and write through <code>store_plan_review</code>, keyed by content fingerprint.</li>
+        <li><code>reckon/crew/routing.py</code> &mdash; <code>require_plan_reviewed</code> stores at read: when no stored review matches the plan's fingerprint it stores the newest delivered report whose sidecar carries that fingerprint and judges the result. Refusal wording and the report/enforce modes are unchanged.</li>
+        <li><code>tests/test_plan_review_dispatch.py</code> &mdash; four cases: two findings parse with ids, types and verdicts; a missing <code>RUBRIC</code> line is named absent; the store keys a record the reader finds by fingerprint; enforce mode stores a delivered report, refuses by the unanswered finding's name and admits the build once both are answered.</li>
+      </ul>
+    </section>
+
+    <section id="plan-review-report-parses-and-stores-at-read-measure">
+      <h2>Measure</h2>
+      <ul>
+        <li>Gate, revision <code>aba2f8d3c</code>: <code>46 passed</code>, <code>EXIT=0</code> across the six suites (dispatch, gate, store, prompt, routing-visibility, brief-dispatch). Log: <code>gate.log</code> in the run directory.</li>
+        <li>Negative control: the store-at-read branch removed from <code>require_plan_reviewed</code> turns the enforce-mode case red &mdash; <code>1 failed</code>, <code>EXIT=1</code>, failing id <code>tests/test_plan_review_dispatch.py::test_enforce_mode_stores_a_delivered_report_then_refuses_by_the_finding</code>, which the head arm passes. Log: <code>negative_control.log</code>.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
