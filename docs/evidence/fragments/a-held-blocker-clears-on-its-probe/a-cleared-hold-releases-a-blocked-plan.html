@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-held-blocker-clears-on-its-probe">
+  <meta name="plan-title" content="A cleared hold releases a blocked plan">
+  <meta name="plan-summary" content="Roadmap readiness reads a cleared held blocker as a release of the plan it was recorded against, so a plan persisted as blocked reads ready once its probe clears its hold, while a persisted blocked status with no blocker resource keeps reading blocked.">
+  <meta name="plan-evidence-for" content="a-held-blocker-clears-on-its-probe">
+  <meta name="plan-verifies" content="a-held-blocker-clears-on-its-probe#s2">
+  <meta name="plan-verdict" content="pass">
+  <title>A cleared hold releases a blocked plan &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <h1 id="a-cleared-hold-releases-a-blocked-plan-title">A cleared hold releases a blocked plan</h1>
+  <p id="a-cleared-hold-releases-a-blocked-plan-defect">At base <code>39ed4f2d8</code> the defect reproduces: composition drops a cleared blocker from the sprint item that named it, so a plan persisted as <code>blocked</code> whose only blocker was a held blocker cleared by its probe carried no visible blocker, readiness re-synthesized the unrecorded persisted blocker over it, and the plan stayed blocked. <code>reckon/roadmap.py</code> now reads the release from the raw sprint records, the one place the hold and its clear stay attached to the plan, so a released plan is authorised and reads ready; the synthesis remains for a persisted blocked status with no blocker resource.</p>
+
+  <section id="a-cleared-hold-releases-a-blocked-plan-cases">
+    <h2>Both cases on the roadmap</h2>
+    <ul>
+      <li id="a-cleared-hold-releases-a-blocked-plan-case-released">Plan <code>probed</code>, persisted <code>blocked</code>, held by probe <code>path-exists</code> on <code>research/outcome.html</code>: before arrival it reads blocked with the held blocker named; after the probe clears it, it reads <code>ready</code> in <code>ready_now</code>, with no explicit or held blockers and <code>effective_status: active</code>.</li>
+      <li id="a-cleared-hold-releases-a-blocked-plan-case-orphan">Plan <code>orphan</code>, persisted <code>blocked</code> with no blocker resource: it keeps reading <code>blocked</code> with the synthesized <code>{"kind": "persisted", "id": "unrecorded"}</code> blocker, including after another plan's held blocker clears in the same project.</li>
+    </ul>
+  </section>
+
+  <section id="a-cleared-hold-releases-a-blocked-plan-measure">
+    <h2>Measure</h2>
+    <p id="a-cleared-hold-releases-a-blocked-plan-measure-arms">The new test file ran at both arms: at base <code>39ed4f2d8</code> (scratch tree) 1 failed and 1 passed, exit 1, failing <code>test_cleared_held_blocker_releases_a_plan_stored_blocked</code> on the release case reading blocked; at head <code>5ed4492d3</code> 2 passed, exit 0. The importer population (44 pre-existing test files importing <code>reckon.roadmap</code> or <code>reckon.project_state</code>) ran at both arms: 402 passed at base and 402 passed at head, zero added failures, exit 0 both sides. Logs, commands and module paths are in the run manifest.</p>
+  </section>
+</main>
+</body>
+</html>
