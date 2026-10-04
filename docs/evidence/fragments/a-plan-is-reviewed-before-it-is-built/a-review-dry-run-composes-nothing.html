@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-title" content="A review dry run composes nothing">
+  <meta name="plan-summary" content="The plan-review composer returns the report directory, brief, snapshot and sidecar it would write without creating any of them, so repeated previews leave the plan's report root unchanged while a real dispatch still writes all four files.">
+  <meta name="plan-evidence-for" content="reckon:a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-verifies" content="reckon:a-plan-is-reviewed-before-it-is-built#s6">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,plan-review,dry-run,composer">
+  <title>A review dry run composes nothing — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-review-dry-run-composes-nothing" data-reckon="landed" data-when="2026-10-04">
+  <h2 id="a-review-dry-run-composes-nothing-landed">A review dry run composes nothing</h2>
+  <p id="a-review-dry-run-composes-nothing-mechanism">A plan review composes four artifacts under the plan's report root: a run directory, <code>brief.md</code>, the <code>plan.html</code> snapshot, and the <code>plan-review.json</code> sidecar that names the report the reviewing worker will write. The composer now takes <code>write</code> and returns those paths and the composed brief text either way. The preview path passes <code>write=False</code>, so it returns the fields the dispatch would carry — the brief, the write path, the sidecar path — and <code>brief_text</code> carrying the prompt itself, while creating no directory and taking no lock; the delivered-report store has nothing to consume and nothing accumulates for it. A real dispatch still creates the directory, writes all four files and takes the plan lock.</p>
+  <p id="a-review-dry-run-composes-nothing-staging">The dispatch resolver reads the brief from disk to digest it, and that read is what the preview cannot skip without changing what it validates. The preview therefore stages the composed text into a scratch directory for that one read and removes it with the call, so the resolution — repository, sandbox, gate and population checks — is reached on the preview exactly as on the launch while the report root stays untouched. Accepting a resolution with no repository would have reached a weaker verdict; the resolver's own signature does not yet accept a precomputed digest, which is the follow-on that would let the staging go.</p>
+  <p id="a-review-dry-run-composes-nothing-measure">The measure is a listing of the plan's report root before and after a dry run against a committed plan, in <code>tests/test_review_plan_command.py</code>: two consecutive previews leave the listing empty and the returned brief path nonexistent, and a real dispatch against a stubbed launcher writes exactly one run directory holding the brief, the snapshot equal to the plan's committed bytes, and the sidecar. Against the base revision the same listing test fails on a written <code>brief.md</code> — the defect it exists to catch.</p>
+  <p id="a-review-dry-run-composes-nothing-negative-control">The declared negative control — restoring the early write in the composer at head — reddens that test (<code>EXIT=1</code>, <code>1 failed</code>, one failing id the head arm does not fail). Restored, the worktree is identical to the commit.</p>
+  <p id="a-review-dry-run-composes-nothing-population">Head: 1621 passed, 4 failed over the 166 test files importing <code>reckon.crew.recovery</code>; base: 1619 passed, 6 failed over the same population. Every head failure is a base failure — the change adds none, and the base-only failures are outside its reach.</p>
+</article>
+</body>
+</html>
