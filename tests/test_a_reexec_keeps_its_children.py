@@ -49,6 +49,10 @@ from reckon.crew.dispatch import (
     _export_launched_workers_for_reexec,
     _spawn,
 )
+from tests.test_resume_reaps_its_child import (
+    _no_defunct_launched_child,
+    _pid_defunct_within,
+)
 
 # A worker that writes a marker to its event stream, sleeps past the handover,
 # and exits cleanly, as a finished sweep resumption would.
@@ -102,47 +106,6 @@ def _pid_gone(pid: int, within: float = 6.0) -> bool:
             return True
         time.sleep(0.05)
     return False
-
-
-def _pid_defunct_within(pid: int, within: float = 5.0) -> bool:
-    """Whether the pid has exited and is still sitting unreaped in the table.
-
-    ``/proc`` keeps a zombie's entry until somebody waits on it, so an entry
-    whose state is ``Z`` is exactly the unreaped corpse a launcher that
-    survived its worker used to leave behind; a reaped pid has no entry at all.
-    """
-    deadline = time.monotonic() + within
-    while time.monotonic() < deadline:
-        try:
-            stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
-        except FileNotFoundError:
-            return False
-        # The comm field can itself hold spaces and parentheses, so the state
-        # is the first token after the final ')'.
-        if stat.rsplit(")", 1)[-1].split()[0] == "Z":
-            return True
-        time.sleep(0.05)
-    return False
-
-
-def _no_defunct_launched_child(pids: list[int]) -> bool:
-    """Whether none of the pids this case launched is left unreaped.
-
-    Only the given pids are asked about. A defunct child answers a
-    non-blocking wait with its own pid — the state every caller here treats as
-    a failure — a running child answers (0, 0), and a reaped one is no longer
-    a child at all (ECHILD). A corpse another case on the same xdist worker
-    left behind is neither reaped here, which would steal its owner's exit
-    status, nor reported, which made this file red on test order alone.
-    """
-    for pid in pids:
-        try:
-            waited, _status = os.waitpid(pid, os.WNOHANG)
-        except ChildProcessError:
-            continue
-        if waited == pid:
-            return False
-    return True
 
 
 def _wait_reaped(*pids: int) -> None:
