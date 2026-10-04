@@ -618,3 +618,286 @@ def declined_recurrence(
             "surfaced": len(plans) >= threshold,
         }
     return recurrence
+
+
+# ── Delivered review reports ────────────────────────────────────────────────
+# A plan review is dispatched as a run that emits its RUBRIC and FINDING lines
+# into a report file, with a sidecar beside it naming the plan content it
+# composed for. The report is the reviewer's raw output and the sidecar is what
+# joins it to the plan; the record the dispatch gate reads is built from the
+# two. Storing is keyed to the run that produced the report and is idempotent,
+# so the gate can store a delivered report the coordinator never stored itself.
+
+# The rubric name selects the checklist items a report is judged against. Both
+# item sets are owned by reckon.crew.review and mirrored into the two prompt
+# files under prompts/, so they are read from there rather than copied. The
+# dispatch flag spells the two rubrics ``content`` and ``design``; both aliases
+# are accepted so a sidecar written from either reaches the same item set.
+_REPORT_RUBRIC_ITEMS: dict[str, tuple[str, ...]] = {
+    "plan_review": _review_store.PLAN_REVIEW_ITEMS,
+    "plan_design_review": _review_store.PLAN_DESIGN_REVIEW_ITEMS,
+}
+_REPORT_RUBRIC_ALIASES: dict[str, str] = {
+    "content": "plan_review",
+    "design": "plan_design_review",
+}
+
+_REVIEW_REPORT_NAME = "report.md"
+_REVIEW_SIDECAR_NAME = "plan-review.json"
+
+# The emitted form the two prompts ask for is one line per element:
+#     RUBRIC <item>: <pass, or the finding it produced — one sentence>
+#     FINDING <item> <file>:<line> — <what is wrong and why> — WOULD_CHANGE_THE_PLAN: <yes|no> — REASON: <one line>
+# The anchor is a ``<file>:<line>`` or a ``<plan>#<node>`` reference. The
+# would-change verdict and its reason are the record: a finding without the
+# verdict cannot be scored, so a finding line that carries no parseable verdict
+# is still returned the id, type, anchor and text with ``would_change`` left
+# ``None`` rather than defaulted. Lines in any other shape are ignored, so the
+# reviewer may surround the emitted lines with prose without breaking the parse.
+_RUBRIC_LINE_RE = re.compile(
+    r"^RUBRIC\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
+)
+_FINDING_LINE_RE = re.compile(r"^FINDING\s+(\S+)\s+(.+)$", re.IGNORECASE)
+_FINDING_TAIL_RE = re.compile(
+    r"^(?P<anchor>.*?)\s+(?:—|--)\s+(?P<text>.*?)\s+(?:—|--)\s+"
+    r"WOULD_CHANGE_THE_PLAN\s*:\s*(?P<would_change>yes|no)\b"
+    r"(?:\s+(?:—|--)\s+REASON\s*:\s*(?P<reason>.*))?$",
+    re.IGNORECASE,
+)
+
+
+def _report_rubric_items(rubric: str) -> tuple[str, ...]:
+    """Return the checklist items a report under ``rubric`` is judged against."""
+    name = _REPORT_RUBRIC_ALIASES.get(str(rubric or "").strip().lower(), "")
+    name = name or str(rubric or "").strip().lower()
+    items = _REPORT_RUBRIC_ITEMS.get(name)
+    if items is None:
+        raise ValueError(
+            f"unknown review rubric {rubric!r}; known rubrics are "
+            f"{', '.join(PLAN_REVIEW_RUBRICS)}"
+        )
+    return items
+
+
+def _parse_finding(item: str, remainder: str) -> dict[str, Any]:
+    """Parse one FINDING line's tail into a finding, per the prompt grammar.
+
+    The structured form carries the anchor, the text, the would-change verdict
+    and its reason. A line that does not carry the verdict is accepted with
+    ``would_change`` left ``None`` — an unstated verdict is a recorded absence,
+    not a defaulted judgement — and the anchor is read as the leading token.
+    """
+    match = _FINDING_TAIL_RE.match(remainder)
+    if match:
+        return {
+            "anchor": match.group("anchor").strip(),
+            "text": match.group("text").strip(),
+            "would_change": match.group("would_change").lower() == "yes",
+            "reason": (match.group("reason") or "").strip(),
+        }
+    anchor, separator, text = remainder.partition(" ")
+    if not separator:
+        anchor, text = remainder, ""
+    return {
+        "anchor": anchor.strip(),
+        "text": text.strip(),
+        "would_change": None,
+        "reason": "",
+    }
+
+
+def parse_review_report(text: str, *, rubric: str) -> dict[str, Any]:
+    """Parse a delivered review report into the store's record shape.
+
+    The rubric selects the checklist items the report is judged against, and
+    both item sets come from reckon.crew.review. Returns:
+
+    - ``rubric`` — the rubric the report was parsed under.
+    - ``rubric_items`` — item to the verdict sentence its ``RUBRIC`` line
+      carried, for the items that were emitted with text.
+    - ``absent_items`` — checklist items with no ``RUBRIC`` line, or with one
+      carrying no text: a line that says nothing is not a verdict, so the item
+      is reported absent rather than silently taken as checked.
+    - ``findings`` — a list of ``{"id", "type", "anchor", "text",
+      "would_change", "reason"}``, one per ``FINDING`` line whose item belongs
+      to the rubric and which is a mapping. The id is ``<item>-<n>`` with ``n``
+      counting the report's findings of that item in the order they appear, so
+      an id is stable across a re-read of the same report and two findings of
+      one type never share an id.
+    """
+    items = _report_rubric_items(rubric)
+    rubric_items: dict[str, str] = {}
+    findings: list[dict[str, Any]] = []
+    counters: dict[str, int] = {}
+    for raw in text.splitlines():
+        line = raw.strip()
+        match = _RUBRIC_LINE_RE.match(line)
+        if match:
+            item = match.group(1).lower()
+            verdict = match.group(2).strip()
+            if item in items and verdict:
+                rubric_items[item] = verdict
+            continue
+        match = _FINDING_LINE_RE.match(line)
+        if match:
+            item = match.group(1).lower()
+            if item not in items:
+                continue
+            parsed = _parse_finding(item, match.group(2).strip())
+            counters[item] = counters.get(item, 0) + 1
+            parsed["id"] = f"{item}-{counters[item]}"
+            parsed["type"] = item
+            findings.append(parsed)
+            continue
+    absent_items = [item for item in items if item not in rubric_items]
+    return {
+        "rubric": rubric,
+        "rubric_items": rubric_items,
+        "absent_items": absent_items,
+        "findings": findings,
+    }
+
+
+def review_report_directory(project: str, plan_slug: str, run_id: str) -> Path:
+    """Return the directory a review run writes its report and sidecar into."""
+    from reckon.crew.runs import reports_dir
+
+    return reports_dir() / project / "plan-review" / plan_slug / run_id
+
+
+def write_review_sidecar(
+    directory: Path,
+    *,
+    project: str,
+    plan_slug: str,
+    plan_version: int,
+    reviewed_blob_sha: str,
+    plan_fingerprint: str,
+    rubric: str,
+    report_path: Path,
+) -> Path:
+    """Write the sidecar that joins a report to the plan content it read.
+
+    The sidecar names what the review composed for — the plan slug, version,
+    reviewed blob sha and content fingerprint, and the rubric — so the record is
+    keyed to what the reviewer read rather than to what the plan says later. It
+    is written beside the report through the shared atomic writer, so a reader
+    never meets a half-written sidecar.
+    """
+    directory = Path(directory)
+    payload = {
+        "project": str(project),
+        "plan_slug": str(plan_slug),
+        "plan_version": int(plan_version),
+        "reviewed_blob_sha": str(reviewed_blob_sha),
+        "plan_fingerprint": str(plan_fingerprint),
+        "rubric": str(rubric),
+        "report_path": str(Path(report_path)),
+    }
+    path = directory / _REVIEW_SIDECAR_NAME
+    write_json_atomically(path, payload, indent=2, sort_keys=True, mode=None)
+    return path
+
+
+def _stored_review_run_ids(project: str) -> set[str]:
+    """Return the review-run ids the stored records for ``project`` carry."""
+    ids: set[str] = set()
+    for record in list_plan_reviews(project=project):
+        run_id = str(record.get("review_run_id") or "").strip()
+        if run_id:
+            ids.add(run_id)
+    return ids
+
+
+def delivered_reports(
+    project: str,
+    plan_slug: str,
+    *,
+    plan_fingerprint: str | None = None,
+) -> list[dict[str, Any]]:
+    """Return the delivered review reports under a plan, newest first.
+
+    A delivered report is a run directory carrying both ``report.md`` and its
+    ``plan-review.json`` sidecar. Each returned dict is the sidecar plus
+    ``report_path`` (the report file's path), ``review_run_id`` (the run
+    directory's name), and ``stored`` — whether a stored record already carries
+    that run id, so a composed report is not re-stored. A named
+    ``plan_fingerprint`` keeps only the reports whose sidecar carries it, which
+    is how the gate finds the report for the content about to be built.
+    """
+    from reckon.crew.runs import reports_dir
+
+    root = reports_dir() / project / "plan-review" / plan_slug
+    if not root.is_dir():
+        return []
+    stored = _stored_review_run_ids(project)
+    found: list[dict[str, Any]] = []
+    for directory in root.iterdir():
+        if not directory.is_dir():
+            continue
+        sidecar_path = directory / _REVIEW_SIDECAR_NAME
+        report_path = directory / _REVIEW_REPORT_NAME
+        if not (sidecar_path.is_file() and report_path.is_file()):
+            continue
+        sidecar = _load(sidecar_path)
+        if sidecar is None:
+            continue
+        if plan_fingerprint is not None and (
+            str(sidecar.get("plan_fingerprint") or "") != str(plan_fingerprint)
+        ):
+            continue
+        entry = dict(sidecar)
+        entry["report_path"] = str(report_path)
+        entry["review_run_id"] = str(
+            sidecar.get("review_run_id") or directory.name
+        ).strip()
+        entry["stored"] = entry["review_run_id"] in stored
+        entry["_mtime_ns"] = report_path.stat().st_mtime_ns
+        found.append(entry)
+    found.sort(key=lambda item: item["_mtime_ns"], reverse=True)
+    for entry in found:
+        entry.pop("_mtime_ns", None)
+    return found
+
+
+def store_delivered_report(
+    sidecar: Mapping[str, Any],
+    *,
+    base_dir: str | Path | None = None,
+) -> Path:
+    """Parse the report a sidecar names and store its record, returning the path.
+
+    The sidecar supplies the plan identity, the reviewed blob sha and the
+    content fingerprint; the report named by ``report_path`` supplies the
+    rubric's verdicts and findings. The record carries an empty ``responses``,
+    so its findings arrive unanswered and the gate refuses until each is
+    answered. ``review_run_id`` is the report directory's name, which is what
+    makes a re-read of the same delivered report idempotent. The write goes
+    through :func:`store_plan_review`, so it is atomic and keyed the same way
+    every stored review is.
+    """
+    report_path = Path(str(sidecar.get("report_path") or ""))
+    if not report_path.is_file():
+        raise ValueError(f"delivered review report {report_path} does not exist")
+    plan_version = sidecar.get("plan_version")
+    if plan_version is None:
+        raise ValueError("delivered review sidecar is missing plan_version")
+    rubric = str(sidecar.get("rubric") or "").strip()
+    parsed = parse_review_report(
+        report_path.read_text(encoding="utf-8", errors="replace"), rubric=rubric
+    )
+    record = {
+        "project": str(sidecar.get("project") or "").strip(),
+        "plan_slug": str(sidecar.get("plan_slug") or "").strip(),
+        "plan_version": int(plan_version),
+        "rubric": rubric,
+        "reviewed_blob_sha": str(sidecar.get("reviewed_blob_sha") or ""),
+        "plan_fingerprint": str(sidecar.get("plan_fingerprint") or ""),
+        "findings": parsed["findings"],
+        "responses": {},
+        "status": DEFAULT_STATUS,
+        "review_run_id": report_path.parent.name,
+        "rubric_items": parsed["rubric_items"],
+        "absent_items": parsed["absent_items"],
+    }
+    return store_plan_review(record, base_dir=base_dir)

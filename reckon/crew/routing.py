@@ -2489,6 +2489,39 @@ def _plan_review_verdict(enforce: bool, detail: str) -> str | None:
     return f"plan-review gate in report-only mode — {detail}"
 
 
+def _store_delivered_plan_review(
+    project: str, plan_slug: str, fingerprint: str
+) -> dict[str, Any] | None:
+    """Store the delivered report matching a fingerprint and return its record.
+
+    A plan review is dispatched as a run that leaves its report and sidecar on a
+    durable path, so the coordinator never runs a store step. When the gate finds
+    no stored review for the content about to be built, it takes the newest
+    delivered report whose sidecar carries that fingerprint, stores it, and
+    reads the record back. A report already stored is passed over, and a report
+    the store refuses is passed over rather than raised, because a report the
+    gate cannot use is one the caller's own refusal already names. ``None``
+    means no delivered report answered the fingerprint.
+    """
+    from reckon.crew import plan_review
+
+    for sidecar in plan_review.delivered_reports(
+        project, plan_slug, plan_fingerprint=fingerprint
+    ):
+        if sidecar.get("stored"):
+            continue
+        try:
+            plan_review.store_delivered_report(sidecar)
+        except (OSError, ValueError):
+            continue
+        record = plan_review.read_plan_review(
+            project, plan_slug, plan_fingerprint=fingerprint
+        )
+        if record is not None:
+            return record
+    return None
+
+
 def require_plan_reviewed(
     *,
     node: TaskNode,
@@ -2548,6 +2581,8 @@ def require_plan_reviewed(
     record = plan_review.read_plan_review(
         project, node.plan, plan_fingerprint=fingerprint
     )
+    if record is None:
+        record = _store_delivered_plan_review(project, node.plan, fingerprint)
     if record is None:
         return _plan_review_verdict(
             enforce,
