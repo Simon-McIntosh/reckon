@@ -1139,8 +1139,11 @@ def test_a_discarded_run_is_not_recreated(host: dict[str, Any], tmp_path: Path) 
         assert output.get("run_id"), "the dispatch process returned no run id"
         run_directory = run.run_directory()
         pointer = run.pointer_path()
-        supervisor_pid = int(run.pointer.get("pid") or 0)
-        assert supervisor_pid, "the pointer names no supervisor to wait for"
+        # Read from the record dispatch returned, not from the live pointer:
+        # the supervisor's own phase publishes are a concurrent writer of that
+        # pointer and can carry back the pid-less record they read.
+        supervisor_pid = int(output.get("pid") or 0)
+        assert supervisor_pid, "the dispatch process named no supervisor to wait for"
 
         worker_record = _wait_for(
             lambda: _load_json(run_directory / "worker.json"), timeout=SPAWN_BOUND
@@ -1356,14 +1359,23 @@ def test_dispatch_returns_when_its_supervisor_finished_the_launch(
         )
         run.pointer = run.read_pointer()
         assert run.pointer, "the dispatch process published no pointer"
-        assert run.pointer.get("pid"), (
+        # The supervisor's pid is taken from the record dispatch returned rather
+        # than from the live pointer: the supervisor publishes its own phase by
+        # read-modify-write of that same pointer, so a read taken after the
+        # launch can carry back the pid-less record it read before dispatch's
+        # write landed.
+        assert output.get("pid"), (
             "the dispatch process named no supervisor for a launch that completed"
         )
         # The supervisor's own receipt: its completion exit record names the
-        # worker it spawned, which is the record dispatch read as a launch.
+        # worker it spawned, which is the record dispatch read as a launch. A
+        # launch that outran dispatch's survival window on a loaded host is
+        # still being written when dispatch returns, so the wait is bounded by
+        # a multiple of the launch dispatch itself measured.
+        launch_seconds = float(output.get("dispatch_seconds") or 0.0)
         exit_record = _wait_for(
             lambda: _load_json(run.run_directory() / "exit.json"),
-            timeout=EXIT_RECORD_BOUND,
+            timeout=max(EXIT_RECORD_BOUND, launch_seconds * DRIVER_EXIT_SLACK),
         )
         outcome["exit_record"] = exit_record
         assert exit_record is not None and exit_record.get("worker_pid") is not None, (
