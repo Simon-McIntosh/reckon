@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import _plan_html
+from reckon import _plan_html, crew, ledger
 from reckon import _store as store_module
 from reckon import mcp as mcp_module
 from reckon.cli import main
@@ -121,6 +121,30 @@ def _edit(checkout: Path, path: Path, op: dict) -> dict:
         doc_type="plan",
         mode="state",
         ops=[op],
+    )
+
+
+def test_edit_plan_does_not_read_run_history(plan, monkeypatch) -> None:
+    checkout, path = plan
+
+    def refuse(*_args, **_kwargs):
+        raise AssertionError("a plan write read run history")
+
+    monkeypatch.setattr(ledger, "load", refuse)
+    monkeypatch.setattr(crew, "list_live", refuse)
+    with pytest.raises(AssertionError, match="read run history"):
+        ledger.load("sample", checkout)
+    with pytest.raises(AssertionError, match="read run history"):
+        crew.list_live()
+
+    result = _edit(
+        checkout,
+        path,
+        {"op": "set", "path": "section_declarations.s2", "value": "done"},
+    )
+    assert result["ok"] is True, result
+    assert (
+        _plan_html.read_state(path.read_text())["section_declarations"]["s2"] == "done"
     )
 
 

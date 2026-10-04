@@ -1,12 +1,8 @@
-"""A live dispatch resolves the lane its plan section's record earns.
+"""A dispatch resolves the lane its section and run history earn.
 
-The plan section's typed record is the authority for both the capability the
-work declares and the attempts it has cost, so the production dispatch path
-must read it: a section attempted at or above the threshold resolves on the
-raised class's lane and the dispatch summary names the count that caused it,
-one below the threshold resolves exactly as role routing resolved it, and one
-section reference has one identity -- the dotted, hyphenated and printed
-spellings all address the record whose attempts decide the lane.
+The typed record declares capability, and distinct executable runs supply the
+attempt count. The threshold, below-threshold and equivalent section spellings
+all route through that derived count.
 """
 
 from __future__ import annotations
@@ -61,9 +57,9 @@ CONFIG = {
 
 AUTHORED = (
     '<h2 id="s5">§5 — A section at or above the raise threshold</h2>\n'
-    "<p>The record under test carries three attempts.</p>\n"
+    "<p>Three prior runs target this section.</p>\n"
     '<h2 id="s6">§6 — A section below the raise threshold</h2>\n'
-    "<p>This record carries two.</p>\n"
+    "<p>Two prior runs target this section.</p>\n"
     '<h2 id="s5-1">§5.1 — A subsection authored under its anchor</h2>\n'
     "<p>Addressed as s5.1 and §5.1, this is the s5-1 record.</p>\n"
 )
@@ -106,7 +102,7 @@ def _capability(
 
 
 def _write_plan(tmp_path: Path) -> Path:
-    """Write a plan whose section records carry the attempts under test."""
+    """Write section capabilities without an authored attempt count."""
     bare = (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
         f'<meta name="docs-project" content="{PROJECT}">'
@@ -128,7 +124,7 @@ def _write_plan(tmp_path: Path) -> Path:
                 "id": "s5",
                 "effort_hours": 1.0,
                 "capability": _capability(),
-                "attempts": 3,
+                "attempts": 0,
                 "status": "implementable",
                 "links": [],
             },
@@ -136,7 +132,7 @@ def _write_plan(tmp_path: Path) -> Path:
                 "id": "s6",
                 "effort_hours": 1.0,
                 "capability": _capability(),
-                "attempts": 2,
+                "attempts": 0,
                 "status": "implementable",
                 "links": [],
             },
@@ -144,7 +140,7 @@ def _write_plan(tmp_path: Path) -> Path:
                 "id": "s5-1",
                 "effort_hours": 1.0,
                 "capability": _capability(risk="elevated"),
-                "attempts": 3,
+                "attempts": 0,
                 "status": "implementable",
                 "links": [],
             },
@@ -157,7 +153,7 @@ def _write_plan(tmp_path: Path) -> Path:
 
 @pytest.fixture()
 def repository(tmp_path: Path, home: Path) -> Path:
-    """A mounted project whose committed plan carries the records under test."""
+    """A mounted project with distinct prior runs for each routed section."""
     repo = tmp_path / "sample-repository"
     (repo / "docs" / "plans").mkdir(parents=True)
     delivery = repo / "delivery" / "result.txt"
@@ -168,6 +164,22 @@ def repository(tmp_path: Path, home: Path) -> Path:
     (home / "mounts.json").write_text(
         json.dumps({PROJECT: str(repo / "docs")}), encoding="utf-8"
     )
+    live = home / "crew" / "live"
+    live.mkdir(parents=True)
+    for section, count in (("s5", 3), ("s6", 2), ("s5-1", 3)):
+        for index in range(count):
+            run_id = f"{section}-attempt-{index}"
+            (live / f"{run_id}.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": run_id,
+                        "project": PROJECT,
+                        "role": "implement",
+                        "node": {"plan": SLUG, "section": section},
+                    }
+                ),
+                encoding="utf-8",
+            )
     return repo
 
 

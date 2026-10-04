@@ -1272,7 +1272,13 @@ def _write_state(
         _plan_write_target(project, slug, root, artifact_type), "plans"
     ):
         return _write_state_locked(
-            project, slug, data, expected_version, root, artifact_type, retire_preimages
+            project,
+            slug,
+            data,
+            expected_version,
+            root,
+            artifact_type,
+            retire_preimages,
         )
 
 
@@ -1373,6 +1379,23 @@ def _write_state_locked(
         data = {**dict(data), "comments": merged_comments}
 
     new_data = dict(data)
+    # A read may carry the derived count and outcomes. Preserve only the
+    # source attribute through a state write; no caller authors the count.
+    if isinstance(new_data.get("sections"), list):
+        source_attempts = {
+            str(row["id"]): row["attempts"] for row in cur_state.get("sections", [])
+        }
+        new_data["sections"] = [
+            {
+                **{
+                    key: value
+                    for key, value in row.items()
+                    if key != "attempt_outcomes"
+                },
+                "attempts": source_attempts.get(str(row.get("id") or ""), 0),
+            }
+            for row in new_data["sections"]
+        ]
     state_type = canonical_type(new_data.get("type"))
     if selected_resource_type and state_type != selected_resource_type:
         raise ValueError(

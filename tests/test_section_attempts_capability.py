@@ -1,17 +1,16 @@
-"""A section's attempt count raises the capability a node resolves at.
+"""Run-derived section attempts raise the capability a node resolves at.
 
-The plan's typed section record owns both the capability the work declares and
-the attempts it has cost, so the record alone decides which lane serves the
-node. This checks that a record at or above the shipped threshold resolves on
-the raised class's lane and says which count caused it, that one below the
-threshold resolves unchanged and names nothing, and that resolution leaves the
-workstation's own config home alone.
+The typed record declares capability while distinct executable runs establish
+its attempt count. The threshold and below-threshold cases verify routing and
+that resolution leaves the isolated config home alone.
 """
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
+import pytest
 import yaml
 
 from reckon import flight
@@ -41,6 +40,11 @@ roles:
 """
 
 
+@pytest.fixture(autouse=True)
+def isolated_run_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+
+
 def _resolve_temporary_layers(tmp_path: Path):
     """Resolve shipped defaults plus a temporary host layer.
 
@@ -62,7 +66,7 @@ def _plan(
     reasoning: str = "standard",
     verification: str = "standard",
 ) -> Path:
-    """Write a plan whose section record carries a seeded attempt count."""
+    """Write a plan and seed distinct executable runs for its section."""
     slug = "section-attempts"
     authored = (
         '<h2 id="s5">§5 — Capability raises with section attempts</h2>\n'
@@ -95,7 +99,7 @@ def _plan(
                         "risk": "low",
                     },
                 },
-                "attempts": attempts,
+                "attempts": 0,
                 "status": "implementable",
                 "links": [],
             }
@@ -103,6 +107,20 @@ def _plan(
     }
     path = tmp_path / f"{slug}.html"
     path.write_text(write_state(bare, state), encoding="utf-8")
+    live = tmp_path / "home" / "crew" / "live"
+    live.mkdir(parents=True, exist_ok=True)
+    for index in range(attempts):
+        (live / f"attempt-{index}.json").write_text(
+            json.dumps(
+                {
+                    "run_id": f"attempt-{index}",
+                    "project": "sample",
+                    "role": "implement",
+                    "node": {"plan": slug, "section": "§5"},
+                }
+            ),
+            encoding="utf-8",
+        )
     return path
 
 
@@ -110,7 +128,7 @@ def _node() -> TaskNode:
     return TaskNode(
         id="raise-check",
         goal="resolve at the raised class once the section has been tried",
-        plan="section-contract-and-computed-impl",
+        plan="section-attempts",
         section="§5",
     )
 

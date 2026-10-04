@@ -5,8 +5,10 @@ from __future__ import annotations
 import base64
 import json
 import re
+import sqlite3
 import threading
 from collections.abc import Callable, Iterable, Mapping
+from contextlib import closing
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -1111,7 +1113,12 @@ def ready_set_view(roadmap: dict[str, Any]) -> dict[str, Any]:
             continue
         row = dict(summary)
         readiness = readiness_by_slug.get(str(row.get("slug")), {})
-        for key in ("section_readiness", "ready_sections", "blocked_sections"):
+        for key in (
+            "section_readiness",
+            "ready_sections",
+            "blocked_sections",
+            "section_attempts",
+        ):
             if key in readiness:
                 row[key] = readiness[key]
         ready.append(row)
@@ -1462,6 +1469,214 @@ def _run_target_plan(pointer: Mapping[str, Any]) -> str:
     node = pointer.get("node")
     node = node if isinstance(node, dict) else {}
     return str(node.get("plan") or "").strip()
+
+
+def section_attempts_by_plan(
+    project: str,
+    root: str | Path | None = None,
+    pointers: list[dict[str, Any]] | None = None,
+    *,
+    only_plan: str | None = None,
+    only_section: str | None = None,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Derive section attempts from distinct executable run ids.
+
+    Committed rows settle an outcome; a live pointer for the same run id adds
+    nothing. The legacy ``data-attempts`` attribute is not an input.
+    """
+    from reckon.crew import runs
+
+    history, _version = ledger.load(project, root)
+    if pointers is None:
+        pointers = runs._list_live_records(project=project)
+    return _group_section_attempts(
+        project,
+        history.get("runs", []),
+        pointers,
+        only_plan=only_plan,
+        only_section=only_section,
+    )
+
+
+def _group_section_attempts(
+    project: str,
+    history_rows: Iterable[Mapping[str, Any]],
+    pointers: list[dict[str, Any]],
+    *,
+    only_plan: str | None = None,
+    only_section: str | None = None,
+    settled_run_ids: set[str] | None = None,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Apply one run-id and outcome rule to full or selected history rows."""
+    from reckon.crew.routing import section_record_id
+
+    wanted_section = section_record_id(only_section) if only_section else None
+    observed: dict[str, tuple[str, str, dict[str, Any]]] = {}
+    settled_ids = set(settled_run_ids or ())
+    for row in history_rows:
+        if not isinstance(row, Mapping) or row.get("role") not in {"implement", "test"}:
+            continue
+        run_id = str(row.get("run_id") or "")
+        plan = str(row.get("plan") or "")
+        section = section_record_id(row.get("section"))
+        if run_id:
+            settled_ids.add(run_id)
+        if (only_plan is not None and plan != only_plan) or (
+            wanted_section is not None and section != wanted_section
+        ):
+            continue
+        if not run_id or not plan or not section:
+            continue
+        gate = str(row.get("gate") or "")
+        status = (
+            "promoted"
+            if gate == "passed"
+            else "failed"
+            if gate == "failed"
+            else "superseded"
+        )
+        observed[run_id] = (
+            plan,
+            section,
+            {
+                "run_id": run_id,
+                "status": status,
+                **(
+                    {"failure_classification": row.get("failure_classification")}
+                    if status == "failed"
+                    else {}
+                ),
+            },
+        )
+    for pointer in pointers:
+        if (
+            not isinstance(pointer, Mapping)
+            or pointer.get("project") != project
+            or pointer.get("role") not in {"implement", "test"}
+        ):
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        node = pointer.get("node") or {}
+        plan = str(node.get("plan") or "") if isinstance(node, Mapping) else ""
+        section = (
+            section_record_id(node.get("section")) if isinstance(node, Mapping) else ""
+        )
+        if (
+            run_id
+            and (
+                (only_plan is None and wanted_section is None)
+                or run_id not in settled_ids
+            )
+            and run_id not in observed
+            and plan
+            and section
+            and (only_plan is None or plan == only_plan)
+            and (wanted_section is None or section == wanted_section)
+        ):
+            observed[run_id] = (
+                plan,
+                section,
+                {"run_id": run_id, "status": "in_flight"},
+            )
+    grouped: dict[str, dict[str, dict[str, Any]]] = {}
+    for plan, section, outcome in (observed[key] for key in sorted(observed)):
+        record = grouped.setdefault(plan, {}).setdefault(
+            section, {"attempts": 0, "attempt_outcomes": []}
+        )
+        record["attempts"] += 1
+        record["attempt_outcomes"].append(outcome)
+    return grouped
+
+
+def section_attempt_count(
+    project: str,
+    plan: str,
+    section: str,
+    root: str | Path | None = None,
+) -> int:
+    """Count one section from indexed run payloads and raw live pointers.
+
+    Refreshing headers checks the ledger sources and yields all settled run ids.
+    The indexed query decodes only rows for this plan; section spelling is then
+    normalized in Python, as it is for full plan views.
+    """
+    from reckon.crew import runs
+    from reckon.crew.routing import section_record_id
+
+    wanted = section_record_id(section)
+    if not project or not plan or not wanted:
+        return 0
+    headers, _version = ledger.indexed_headers(project, root)
+    header_rows = headers.get("runs", [])
+    settled = {
+        str(row.get("run_id"))
+        for row in header_rows
+        if isinstance(row, Mapping) and row.get("run_id")
+    }
+    query = (
+        "SELECT payload FROM aggregate_rows "
+        "WHERE json_extract(payload, '$.plan') = ? "
+        "AND json_extract(payload, '$.role') IN ('implement', 'test') "
+        "UNION ALL SELECT payload FROM records "
+        "WHERE name NOT IN (SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) "
+        "AND json_extract(payload, '$.plan') = ? "
+        "AND json_extract(payload, '$.role') IN ('implement', 'test')"
+    )
+    if any(isinstance(row, Mapping) and set(row) - {"run_id"} for row in header_rows):
+        # An unreadable index makes indexed_headers return authoritative full rows.
+        rows = [
+            row
+            for row in header_rows
+            if isinstance(row, Mapping)
+            and row.get("plan") == plan
+            and row.get("role") in {"implement", "test"}
+        ]
+    else:
+        try:
+            index_uri = ledger._run_index_path(project, root).as_uri() + "?mode=ro"
+            with closing(sqlite3.connect(index_uri, uri=True)) as connection:
+                rows = [
+                    json.loads(payload)
+                    for (payload,) in connection.execute(query, (plan, plan))
+                ]
+        except (OSError, sqlite3.Error):
+            return (
+                section_attempts_by_plan(
+                    project, root, only_plan=plan, only_section=section
+                )
+                .get(plan, {})
+                .get(wanted, {})
+                .get("attempts", 0)
+            )
+    grouped = _group_section_attempts(
+        project,
+        rows,
+        runs._list_live_records(project=project),
+        only_plan=plan,
+        only_section=section,
+        settled_run_ids=settled,
+    )
+    return grouped.get(plan, {}).get(wanted, {}).get("attempts", 0)
+
+
+def with_section_attempts(
+    project: str,
+    slug: str,
+    sections: list[dict[str, Any]],
+    root: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """Add run-derived attempts to section records for a delivered plan view."""
+    from reckon.crew.routing import section_record_id
+
+    by_section = section_attempts_by_plan(project, root).get(slug, {})
+    enriched = []
+    for record in sections:
+        details = by_section.get(section_record_id(record["id"]))
+        item = {**record, "attempts": details["attempts"] if details else 0}
+        if details:
+            item["attempt_outcomes"] = details["attempt_outcomes"]
+        enriched.append(item)
+    return enriched
 
 
 def _recorded_live_run_classifications(project: str) -> dict[str, dict[str, Any]]:
@@ -2346,6 +2561,7 @@ def _summary(
     }
     if selector.type == "plan":
         result["section_blocking"] = _section_blocking(deps)
+        result["sections"] = list(data.get("sections") or [])
     return result
 
 
@@ -2651,6 +2867,20 @@ def resource_view(
     """Transform one canonical resource into the requested response view."""
 
     selected = normalize_view(view)
+    if (
+        selector.type == "plan"
+        and selected in {"summary", "detail", "section", "raw"}
+        and data.get("sections")
+    ):
+        data = {
+            **data,
+            "sections": with_section_attempts(
+                selector.project,
+                selector.id,
+                data["sections"],
+                provenance.get("checkout"),
+            ),
+        }
     if selector.type == "review" and selected in {"summary", "detail"}:
         checkout = provenance.get("checkout")
         if checkout:

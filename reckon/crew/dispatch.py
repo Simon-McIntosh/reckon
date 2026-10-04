@@ -395,11 +395,9 @@ def _dispatch_section_routing(
 ) -> dict[str, Any] | None:
     """Resolve a node's routing from its plan section's own typed record.
 
-    The record is what says how much the section has already cost and at which
-    capability it declares itself, so a section attempted at or above the raise
-    threshold resolves on the raised class's lane through the same config that
-    routes every other node, and the payload's summary names the count that
-    caused it.
+    The record declares capability and executable run history supplies the
+    attempt count. A section at the threshold resolves on the raised class's
+    lane, and the payload's summary names the count that caused it.
 
     A node whose plan or section cannot be read here resolves through role
     routing alone: the visibility gates downstream remain the authority for
@@ -431,6 +429,7 @@ def _dispatch_section_routing(
         return resolve_section_routing(config, node=node, plan_path=resource.path)
     except (
         CrewError,
+        ledger.LedgerError,
         PlanVisibilityError,
         ResourceCollision,
         OSError,

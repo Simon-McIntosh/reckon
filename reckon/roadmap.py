@@ -49,7 +49,12 @@ from reckon.lifecycle import (
     effective_status,
     unpassed_gate_blockers,
 )
-from reckon.mcp_views import compose_review, load_composed_review, partition_live_runs
+from reckon.mcp_views import (
+    compose_review,
+    load_composed_review,
+    partition_live_runs,
+    section_attempts_by_plan,
+)
 from reckon.project_state import focus_sprint_id, live_sprint_ids
 from reckon.resources import (
     read_plan_record,
@@ -1483,7 +1488,7 @@ def sprint_summary_rows(
     every sprint closed within ``recent_days``. Rows are ordered live first,
     then open, then recently closed.
 
-    Liveness is §2's: the same derived read the fleet pane uses, never a stored
+    Liveness is shared with the fleet pane: the same derived read, never a stored
     marker. ``liveness`` and ``resolved_items`` may be passed in when the caller
     has already derived them — the roadmap does — so one read serves every
     surface; when they are omitted the function derives them itself from
@@ -2200,7 +2205,17 @@ def _build_roadmap(
     schedule_boundary = schedule_ready_sprints[-1] if schedule_ready_sprints else None
     selected_slugs = _scope_slugs(all_plans, membership, sprint_id)
     plans = {slug: all_plans[slug] for slug in selected_slugs}
-    live_runs, interrupted_runs = partition_live_runs(project)
+    from reckon import crew
+    from reckon.crew import runs
+    from reckon.crew.routing import section_record_id
+
+    pointers = crew.list_live()
+    live_runs, interrupted_runs = partition_live_runs(project, pointers)
+    attempts_by_plan = section_attempts_by_plan(
+        project,
+        root=resolved_docs.parent if resolved_docs is not None else None,
+        pointers=runs._list_live_records(project=project),
+    )
     findings: list[dict[str, Any]] = []
     dependency_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     after_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -2856,6 +2871,14 @@ def _build_roadmap(
             "implementable_sections": implementable_sections(
                 _plan_declarations(plan, docs_dir, project, slug)
             ),
+            "section_attempts": {
+                section: attempts_by_plan.get(slug, {})
+                .get(section_record_id(section), {})
+                .get("attempts", 0)
+                for section in implementable_sections(
+                    _plan_declarations(plan, docs_dir, project, slug)
+                )
+            },
             "dependency_ready": is_ready,
             "dependency_readiness": readiness,
             "schedule_ready": not is_schedule_deferred,
@@ -3065,6 +3088,7 @@ def _build_roadmap(
             "slug": row["slug"],
             "sprint": row["sprint"],
             "progress_pct": row["progress_pct"],
+            "section_attempts": row["section_attempts"],
             "unlocks": row["unlocks"],
             "dependency_ready": row["dependency_ready"],
             "dependency_readiness": row["dependency_readiness"],

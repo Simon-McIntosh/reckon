@@ -376,7 +376,11 @@ def _document_carries_records(html_text: str) -> bool:
 
 
 def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]:
-    """Validate explicitly opted-in metadata without changing legacy declarations."""
+    """Validate stored metadata; data-attempts is legacy, not the live count.
+
+    The read API derives attempts from distinct crew run ids. An existing
+    attribute is parsed and preserved, but its value never drives the count.
+    """
     records = []
     for element in _section_record_elements(soup):
         if element.name == "h2":
@@ -414,6 +418,9 @@ def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]
         }
         for field, convert in (("effort_hours", float), ("attempts", int)):
             value = attrs.get(f"data-{field.replace('_', '-')}")
+            if field == "attempts" and value is None:
+                record[field] = 0
+                continue
             try:
                 record[field] = convert(value)
             except (TypeError, ValueError):
@@ -797,22 +804,35 @@ def read_state_and_text_file(path: Path) -> tuple[dict, str]:
 # ── Render ───────────────────────────────────────────────────────────────--
 
 
-def _section_record_attributes(record: dict) -> str:
+def _section_record_attributes(record: dict, attempts_markup: str = "") -> str:
+    """Render metadata while preserving an existing legacy attempts attribute."""
     return (
         f' data-effort-hours="{_esc(record["effort_hours"])}"'
         + _capability_attributes(record["capability"])
-        + f' data-attempts="{record["attempts"]}"'
+        + attempts_markup
         + f' data-status="{_esc(record["status"])}"'
         + f' data-links="{_esc(",".join(record["links"]))}"'
     )
 
 
-def _render_section_record(record: dict) -> str:
+def _render_section_record(record: dict, attempts_markup: str = "") -> str:
     return (
         f'<section data-reckon="section" data-id="{_esc(record["id"])}"'
-        + _section_record_attributes(record)
+        + _section_record_attributes(record, attempts_markup)
         + "></section>"
     )
+
+
+_LEGACY_ATTEMPTS_ATTRIBUTE_RE = re.compile(
+    r"\s+data-attempts\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+)",
+    re.IGNORECASE,
+)
+
+
+def _legacy_attempts_markup(opening: str) -> str:
+    """Return the source attribute unchanged, never a value from plan state."""
+    match = _LEGACY_ATTEMPTS_ATTRIBUTE_RE.search(opening.split(">", 1)[0])
+    return match.group(0) if match else ""
 
 
 _SECTION_RECORD_ATTRIBUTE_RE = re.compile(
@@ -846,18 +866,23 @@ def _splice_section_records(html_text: str, records: list[dict]) -> str:
             )
         end = spans[start]
         record = pending.pop(identity, None)
+        attempts_markup = _legacy_attempts_markup(html_text[start:end])
         if element.name == "h2":
             opening = _SECTION_RECORD_ATTRIBUTE_RE.sub("", html_text[start:end])
             rendered = (
                 opening[:-1]
                 + ' data-reckon="section"'
-                + _section_record_attributes(record)
+                + _section_record_attributes(record, attempts_markup)
                 + ">"
                 if record is not None
                 else opening
             )
         else:
-            rendered = _render_section_record(record) if record is not None else ""
+            rendered = (
+                _render_section_record(record, attempts_markup)
+                if record is not None
+                else ""
+            )
             if not rendered and html_text[end : end + 1] == "\n":
                 end += 1
         replacements.append((start, end, rendered))

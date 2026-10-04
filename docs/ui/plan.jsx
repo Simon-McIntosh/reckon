@@ -768,6 +768,20 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
     });
   }, [planHtml]); // comments intentionally NOT in deps; marks managed by effect below
 
+  useLayoutEffect(() => {
+    if (!htmlRef.current || !planHtml) return;
+    const headings = Array.from(htmlRef.current.querySelectorAll("h2[id]"));
+    (fullState?.sections || []).forEach(section => {
+      const heading = headings.find(element => element.id === section.id);
+      if (!heading || heading.querySelector("[data-section-attempts]")) return;
+      const badge = document.createElement("span");
+      badge.dataset.sectionAttempts = String(section.attempts);
+      badge.style.cssText = "font-size: .68em; color: var(--muted); margin-left: .6em";
+      badge.textContent = `· ${section.attempts} ${section.attempts === 1 ? "attempt" : "attempts"}`;
+      heading.appendChild(badge);
+    });
+  }, [planHtml, fullState?.sections]);
+
   // Re-inject marks when comments change (new save, delete, reload).
   useLayoutEffect(() => {
     if (!htmlRef.current || !planHtml) return;
@@ -1141,7 +1155,7 @@ function GenericBody({ PG, decs, onUpdateDec, comments }) {
       <p style={{ color: "var(--muted)", fontSize: 14 }}>{PG.summary}</p>
       {(PG.sections || []).map(s => (
         <React.Fragment key={s.id}>
-          <h2 id={s.id}><span className="sec">{s.sec}</span>{s.h}</h2>
+          <h2 id={s.id}><span className="sec">{s.sec}</span>{s.h}{Number.isInteger(s.attempts) && <span data-section-attempts={s.attempts}> · {s.attempts} {s.attempts === 1 ? "attempt" : "attempts"}</span>}</h2>
           <p>{s.body}</p>
           <window.reckon.SectionComments comments={comments[s.id]} />
         </React.Fragment>
