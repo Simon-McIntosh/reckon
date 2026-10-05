@@ -94,6 +94,118 @@ def definitions(tree):
     return list(visit(tree))
 
 
+def _heading_walks(definition_nodes, tree=None):
+    """Locate heading recognition in definitions, including indirect patterns.
+
+    Follow pattern aliases and heading collections through their uses. Rendered
+    HTML is output, not a locator; literal tag searches, soup selectors and
+    tag-name comparisons are recognition sites. The census itself consumes AST
+    nodes rather than document tags and is not a document-recognition site.
+    """
+    import re
+
+    heading = re.compile(
+        r"(?:</?h[1-6]\b|(?<![\w-])h[1-6](?![\w-])|h\[[^]]*[1-6][^]]*\])"
+    )
+    global_aliases = {"_H2_OPEN_RE", "_STRUCTURAL_SECTION_CHILDREN"}
+    functions = [
+        (node, name)
+        for node, name, _public, _nested in definition_nodes
+        if isinstance(node, FUNCTIONS) and name != "_heading_walks"
+    ]
+
+    def owns(function):
+        pending = list(function.body)
+        while pending:
+            item = pending.pop()
+            if isinstance(item, DEFINITIONS):
+                continue
+            if isinstance(item, ast.Expr) and isinstance(item.value, ast.Constant):
+                continue
+            yield item
+            pending.extend(ast.iter_child_nodes(item))
+
+    def names_heading(node, aliases):
+        return any(
+            (
+                isinstance(item, ast.Constant)
+                and isinstance(item.value, str)
+                and heading.search(item.value)
+            )
+            or (isinstance(item, ast.Name) and item.id in aliases)
+            for item in ast.walk(node)
+        )
+
+    def bindings(nodes, initial):
+        aliases = set(initial)
+        assignments = [
+            node for node in nodes if isinstance(node, (ast.Assign, ast.AnnAssign))
+        ]
+        while True:
+            before = set(aliases)
+            for node in assignments:
+                value = node.value
+                if value is None:
+                    continue
+                literal = isinstance(
+                    value, (ast.Constant, ast.Name, ast.Set, ast.List, ast.Tuple)
+                )
+                constructor = isinstance(value, ast.Call) and call_name(value.func) in {
+                    "re.compile",
+                    "set",
+                    "frozenset",
+                }
+                if (literal or constructor) and names_heading(value, aliases):
+                    targets = (
+                        node.targets if isinstance(node, ast.Assign) else [node.target]
+                    )
+                    aliases.update(
+                        target.id for target in targets if isinstance(target, ast.Name)
+                    )
+            if aliases == before:
+                return aliases
+
+    if tree is not None:
+        global_aliases = bindings(tree.body, global_aliases)
+    found = set()
+    locators = {
+        "find",
+        "find_all",
+        "select",
+        "select_one",
+        "find_next",
+        "find_all_next",
+        "find_previous",
+        "find_all_previous",
+        "find_next_sibling",
+        "find_next_siblings",
+        "find_previous_sibling",
+        "find_previous_siblings",
+        "find_parent",
+        "find_parents",
+        "compile",
+        "search",
+        "match",
+        "fullmatch",
+        "finditer",
+        "findall",
+    }
+    for function, name in functions:
+        nodes = list(owns(function))
+        aliases = bindings(nodes, global_aliases)
+        for node in nodes:
+            if isinstance(node, ast.Compare) and names_heading(node, aliases):
+                found.add((name, node.lineno))
+            elif isinstance(node, ast.Call):
+                if call_name(node.func).rsplit(".", 1)[
+                    -1
+                ] in locators and names_heading(node, aliases):
+                    found.add((name, node.lineno))
+            elif isinstance(node, ast.Name) and node.id == "_H2_OPEN_RE":
+                found.add((name, node.lineno))
+    return sorted(found)
+
+
 def _staged_writes(definition_nodes):
     """Find locally staged rename sources, including one level of delegation.
 

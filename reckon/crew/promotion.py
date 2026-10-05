@@ -23,6 +23,7 @@ from reckon import (
     ledger,
     review_tiers,
 )
+from reckon._plan_html import section_anchor, section_record_id
 from reckon._schema import is_implementable_section
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import review as review_module
@@ -73,8 +74,6 @@ from reckon.crew.routing import (
     _signal_process_group,
     mounted_repository_projects,
     run_directory_of,
-    section_anchor,
-    section_record_id,
 )
 from reckon.crew.runs import (
     _drain_row,

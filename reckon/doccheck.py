@@ -111,11 +111,6 @@ _VOID_ELEMENTS = frozenset(
         "wbr",
     }
 )
-# The class that marks a section collapsed to its landed summary card. The
-# collapse-on-landing template puts a <header> as the section's direct child, so
-# a header under one of these is presentation, not a spliced document header.
-_LANDED_SECTION_CLASS = "section-landed"
-
 # ── Section contract ───────────────────────────────────────────────────────
 #
 # A section is the unit that carries a stated effort, a capability and a place
@@ -665,7 +660,7 @@ class _StructureScanner(HTMLParser):
         if not self.open_elements:
             return False
         tag, classes = self.open_elements[-1]
-        return tag == "section" and _LANDED_SECTION_CLASS in classes.split()
+        return tag == "section" and _plan_html.LANDED_SECTION_CLASS in classes.split()
 
 
 def _structure_findings(html_text: str) -> list[Finding]:
@@ -849,7 +844,9 @@ def _unwired_plan_findings(
     """Flag an implementable plan that declares no wire and no standalone reason."""
 
     status = str(state.get("status") or "").strip().lower()
-    gate_count = len(soup.select('section[data-reckon="gates"] .r-gate[data-id]'))
+    gate_count = len(
+        soup.select(f'section[{_plan_html.RECKON_ATTRIBUTE}="gates"] .r-gate[data-id]')
+    )
     finding = unwired_plan_finding(
         doc_type=str(declared_type or "").strip().lower(),
         status=status,
@@ -982,7 +979,11 @@ def _section_ref_findings(
         TERMINAL_STATUSES
     ):
         return []
-    heading_ids = [str(h.get("id") or "") for h in soup.find_all("h2", id=True)]
+    heading_ids = [
+        str(h.own_id or "")
+        for h in _plan_html.plan_headings(html_text)
+        if h.level == 2 and h.own_id is not None
+    ]
     implementable = _implementable_section_ids(state, heading_ids)
     if not implementable:
         return []
@@ -1039,6 +1040,7 @@ def _section_contract_findings(
     doc_type: str,
     state: Mapping[str, Any],
     soup: BeautifulSoup,
+    html_text: str,
 ) -> list[Finding]:
     """Report an implementable section that carries no typed section record.
 
@@ -1052,7 +1054,11 @@ def _section_contract_findings(
 
     if doc_type != "plan":
         return []
-    heading_ids = [str(h.get("id") or "") for h in soup.find_all("h2", id=True)]
+    heading_ids = [
+        str(h.own_id or "")
+        for h in _plan_html.plan_headings(html_text)
+        if h.level == 2 and h.own_id is not None
+    ]
     recorded = {
         str(record.get("id") or "")
         for record in state.get("sections") or []
@@ -1211,7 +1217,7 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
 
     # Section contract — the unit that carries effort, capability and a route.
     declared_type = ((rt.get("content") if rt else "") or "").strip().lower()
-    out.extend(_section_contract_findings(declared_type, state, soup))
+    out.extend(_section_contract_findings(declared_type, state, soup, html_text))
     out.extend(_followup_section_findings(declared_type, state))
 
     # A plan-level ref that one of the plan's own sections already declares is
@@ -1319,8 +1325,8 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
                 f"stub/placeholder prose detected: '{m.group().strip()[:40]}'",
             )
         )
-    for sec in soup.select("section[data-reckon]"):
-        sid = sec.get("data-reckon", "?")
+    for sec in soup.select(f"section[{_plan_html.RECKON_ATTRIBUTE}]"):
+        sid = _plan_html.machinery_kind(sec.attrs)
         # A section's typed record is an empty element by construction: it
         # carries the section's effort, capability and status as attributes, and
         # holds no items, so it is not an empty widget.

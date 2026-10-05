@@ -2262,8 +2262,8 @@ def _build_roadmap(
     selected_slugs = _scope_slugs(all_plans, membership, sprint_id)
     plans = {slug: all_plans[slug] for slug in selected_slugs}
     from reckon import crew
+    from reckon._plan_html import section_record_id
     from reckon.crew import runs
-    from reckon.crew.routing import section_record_id
 
     pointers = crew.list_live()
     live_runs, interrupted_runs = partition_live_runs(project, pointers)

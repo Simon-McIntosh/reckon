@@ -28,49 +28,50 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping
 
 from reckon import _backends, _store, capability, flight, ledger
+from reckon._plan_html import plan_headings, section_id_candidates
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import bar as bar_module
 from reckon.crew import lane_document as _lane_document
 from reckon.crew import prescription as prescription_module
 from reckon.crew import summary
 from reckon.crew.node import (
+    _SAFE_ID,
+    _TERMINAL_RUN_PHASES,
+    DEFAULT_MEMBER_IDLE_WINDOW,
+    NEEDS_HELP_MARKER,
     BudgetHold,
     CompetenceLimit,
     CrewError,
-    DEFAULT_MEMBER_IDLE_WINDOW,
-    claim_disposition,
-    claim_repository,
-    repository_identity,
-    NEEDS_HELP_MARKER,
     NodeValidation,
     PlanVisibilityError,
     ScopeConflict,
     TaskNode,
     UnreconciledRuns,
     WatcherRequired,
-    _SAFE_ID,
-    _TERMINAL_RUN_PHASES,
-    normalize_section,
+    claim_disposition,
+    claim_repository,
     done_when_warnings,
-    negative_control_finding,
     gate_population_finding,
+    member_in_flight_verdict,
+    negative_control_finding,
+    normalize_section,
     parse_duration,
     placement_query_undeclared,
     placement_requirement_node_local,
     placement_requirement_unmet,
-    member_in_flight_verdict,
     refuse_member_in_flight,
+    repository_identity,
     role_may_write_repository_paths,
     validate_node,
 )
 from reckon.crew.prompts import compose_prompt, time_fence_statement
-from reckon.crew.refusals import format_refusal
 from reckon.crew.recovery import (
     REVIEW_NODE_PREFIX,
     _resolve_commit,
     resume_window_refusal,
     stream_paths_newest_first,
 )
+from reckon.crew.refusals import format_refusal
 from reckon.crew.reserve import admit as reserve_admit
 from reckon.crew.review import review_store_root
 from reckon.crew.routing import (
@@ -92,18 +93,18 @@ from reckon.crew.routing import (
     resolve_budget_fallback,
     resolve_dispatch_authority,
     resolve_dispatch_ledger_root,
-    resolve_scope_repository,
     resolve_role,
     resolve_role_override,
+    resolve_scope_repository,
     resolve_section_routing,
     resolved_time_budget,
     resolved_time_ceiling,
-    section_id_candidates,
     shadow_worktree_session,
     shared_verdict_inputs,
     signal_worker,
 )
 from reckon.crew.runs import (
+    WATCH_LOG_ENV,
     _expanded_scope_paths,
     _manifest_freshness,
     _manifest_mtime_ns,
@@ -124,9 +125,10 @@ from reckon.crew.runs import (
     delivery_roots,
     list_live,
     new_run_id,
+    placement_job_alive,
     pointer_path,
     process_alive,
-    placement_job_alive,
+    project_watch_visibility,
     read_pointer,
     record_process_alive,
     reports_dir,
@@ -134,8 +136,6 @@ from reckon.crew.runs import (
     scheduler_job_reason,
     scheduler_job_state,
     scheduler_kill_class,
-    project_watch_visibility,
-    WATCH_LOG_ENV,
     watch_lock_path,
     watch_log_path,
     watch_state,
@@ -295,11 +295,11 @@ def _normalised_words(text: str) -> tuple[list[str], list[str]]:
     return [word.casefold() for word in displayed], displayed
 
 
-def _section_heading_matches(heading: Any, requested: str, ids: set[str]) -> bool:
+def _section_heading_matches(heading, requested: str, ids: set[str]) -> bool:
     """Return whether one heading identifies the requested authored section."""
-    if str(heading.get("id") or "").casefold() in ids:
+    if heading.identity in ids or str(heading.raw_id or "").casefold() in ids:
         return True
-    text = re.sub(r"\s+", " ", heading.get_text(" ", strip=True)).casefold()
+    text = re.sub(r"\s+", " ", heading.text).casefold()
     return text == requested or bool(
         re.match(rf"^{re.escape(requested)}(?:\s|[-—:])", text)
     )
@@ -313,7 +313,7 @@ def _plan_section_text(html_text: str, section: str) -> str | None:
     if not requested:
         return None
     ids = section_id_candidates(requested)
-
+    headings = plan_headings(html_text)
     soup = BeautifulSoup(html_text, "html.parser")
     identified = next(
         (
@@ -323,39 +323,26 @@ def _plan_section_text(html_text: str, section: str) -> str | None:
         ),
         None,
     )
-    if identified is not None and not re.fullmatch(r"h[1-6]", identified.name or ""):
-        return identified.get_text(" ", strip=True)
-
-    heading = identified
-    if heading is None:
+    if identified is not None:
+        heading = next(
+            (item for item in headings if item.raw_id == identified.get("id")), None
+        )
+        if heading is None:
+            return identified.get_text(" ", strip=True)
+    else:
         heading = next(
             (
-                candidate
-                for candidate in soup.find_all(re.compile(r"^h[1-6]$"))
-                if _section_heading_matches(candidate, requested, ids)
+                item
+                for item in headings
+                if _section_heading_matches(item, requested, ids)
             ),
             None,
         )
     if heading is None:
         return None
-
-    level = int(str(heading.name)[1])
-    pieces = [heading.get_text(" ", strip=True)]
-    for sibling in heading.next_siblings:
-        sibling_name = getattr(sibling, "name", None)
-        if (
-            isinstance(sibling_name, str)
-            and re.fullmatch(r"h[1-6]", sibling_name)
-            and int(sibling_name[1]) <= level
-        ):
-            break
-        if hasattr(sibling, "get_text"):
-            text = sibling.get_text(" ", strip=True)
-        else:
-            text = str(sibling).strip()
-        if text:
-            pieces.append(text)
-    return " ".join(pieces)
+    return BeautifulSoup(html_text[slice(*heading.span)], "html.parser").get_text(
+        " ", strip=True
+    )
 
 
 def _resolved_plan_section_text(

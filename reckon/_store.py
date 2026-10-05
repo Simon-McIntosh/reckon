@@ -59,21 +59,21 @@ mutators, serve.py, single-checkout agents) are completely unaffected.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
-from contextvars import ContextVar
+import fcntl
+import hashlib
 import json
 import os
 import re
 import secrets
-import fcntl
-import hashlib
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import ExitStack, contextmanager, suppress
+from contextvars import ContextVar
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import IO, Any, TextIO
 
+from reckon._schema import is_section_identity
 from reckon.lifecycle import TERMINAL_STATUSES
-
 
 PLAN_SUMMARY_MAX_LENGTH = 160
 
@@ -806,6 +806,8 @@ def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
 
     from bs4 import BeautifulSoup
 
+    from reckon import _plan_html
+
     section_id = request["id"]
     title = request["title"]
     body = request["body"]
@@ -814,197 +816,39 @@ def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
         raise OpError(f"section id {section_id!r} already exists")
 
     body_soup = BeautifulSoup(body, "html.parser")
-    if body_soup.find("h2") is not None:
+    if _plan_html.plan_headings(body):
         raise OpError("insert_section body must not contain another h2")
-    if body_soup.select_one("section[data-reckon]") is not None:
+    if body_soup.select_one(f"section[{_plan_html.RECKON_ATTRIBUTE}]") is not None:
         raise OpError("insert_section body must not contain structured plan state")
     if body_soup.select_one('meta[name^="plan-"]') is not None:
         raise OpError("insert_section body must not contain plan metadata")
 
     boundary = None
-    for candidate in re.finditer(r"<section\b[^>]*>", html_text, re.IGNORECASE):
-        element = BeautifulSoup(candidate.group(), "html.parser").find("section")
-        if element is not None and element.get("data-reckon") not in {None, "section"}:
-            boundary = candidate
+    for start, end in _plan_html.structured_section_spans(html_text):
+        element = BeautifulSoup(html_text[start:end], "html.parser").find(True)
+        if element is not None and _plan_html.machinery_kind(element.attrs) not in {
+            None,
+            "section",
+        }:
+            boundary = start
             break
     if boundary is None:
-        boundary = re.search(r"</main\s*>", html_text, re.IGNORECASE)
+        closing = re.search(r"</main\s*>", html_text, re.IGNORECASE)
+        boundary = closing.start() if closing else None
     if boundary is None:
         raise OpError(
             "insert_section requires a structured-state region or main element"
         )
 
-    line_start = html_text.rfind("\n", 0, boundary.start()) + 1
-    indentation = html_text[line_start : boundary.start()]
+    line_start = html_text.rfind("\n", 0, boundary) + 1
+    indentation = html_text[line_start:boundary]
     if indentation.strip():
         indentation = ""
     fragment = f'<h2 id="{escape(section_id, quote=True)}">{escape(title)}</h2>\n'
     if body.strip():
         fragment += body.strip() + "\n"
     fragment += "\n" + indentation
-    return html_text[: boundary.start()] + fragment + html_text[boundary.start() :]
-
-
-_H2_OPEN_RE = re.compile(r"<h2\b[^>]*>", re.IGNORECASE)
-_SECTION_OPEN_RE = re.compile(r"<section\b[^>]*>", re.IGNORECASE)
-_SECTION_CLOSE_RE = re.compile(r"</section\s*>", re.IGNORECASE)
-
-
-def _attr(open_tag: str, name: str) -> str | None:
-    """The value an opening tag declares for one attribute, or None."""
-    pattern = re.compile(
-        rf"""\b{re.escape(name)}\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))""",
-        re.IGNORECASE,
-    )
-    match = pattern.search(open_tag)
-    if match is None:
-        return None
-    return next(group for group in match.groups() if group is not None)
-
-
-def _class_list(open_tag: str) -> list[str]:
-    """The class tokens an opening tag declares."""
-    return (_attr(open_tag, "class") or "").split()
-
-
-def _element_id(open_tag: str) -> str | None:
-    """The id an opening tag declares, whatever quote style wraps it."""
-    return _attr(open_tag, "id")
-
-
-def _is_structural_boundary(open_tag: str) -> bool:
-    """Whether a section open tag ends the preceding section's authored body.
-
-    A landed card and a structured-state region (``data-reckon`` other than the
-    section's own record span) both do; the section's record span does not.
-    """
-    if "section-landed" in _class_list(open_tag):
-        return True
-    return _attr(open_tag, "data-reckon") not in (None, "section")
-
-
-def _heading_open_tag_with_id(open_tag: str, section_id: str) -> str:
-    """A heading open tag that carries the section identity.
-
-    A section addressed by an id on its wrapping element keeps that identity
-    when a collapse consumes the wrapper, so the heading the card keeps gains
-    the id when it does not already carry one.
-    """
-    if _element_id(open_tag) is not None:
-        return open_tag
-    from html import escape
-
-    close = open_tag.rfind(">")
-    return f'{open_tag[:close]} id="{escape(section_id, quote=True)}"{open_tag[close:]}'
-
-
-def _wrapper_section_heading(
-    html_text: str, section_id: str
-) -> tuple[str, str, int, int, tuple[int, int]] | None:
-    """The authored h2 inside a ``<section id=...>`` wrapper, or None.
-
-    Returns the h2's ``(open_tag, inner_html, open_start, inner_end)`` plus the
-    wrapper's ``(open_start, close_end)``, which is the extent a collapse
-    replaces. Only a wrapper whose ``data-reckon`` is absent or ``section``
-    qualifies, so a structured-state region can never be addressed this way.
-    """
-    for candidate in _SECTION_OPEN_RE.finditer(html_text):
-        if _element_id(candidate.group()) != section_id:
-            continue
-        if _attr(candidate.group(), "data-reckon") not in (None, "section"):
-            continue
-        close_end = _matching_section_close(html_text, candidate.end())
-        if close_end is None:
-            raise OpError(
-                f"collapse_section: the section carrying id {section_id!r} "
-                "has no closing </section>"
-            )
-        heading = _H2_OPEN_RE.search(html_text, candidate.end(), close_end)
-        if heading is None:
-            continue
-        inner_end = html_text.find("</h2>", heading.end(), close_end)
-        if inner_end == -1:
-            raise OpError(
-                f"collapse_section: heading id {section_id!r} has no closing </h2>"
-            )
-        return (
-            _heading_open_tag_with_id(heading.group(), section_id),
-            html_text[heading.end() : inner_end],
-            heading.start(),
-            inner_end + len("</h2>"),
-            (candidate.start(), close_end),
-        )
-    return None
-
-
-def _section_heading(
-    html_text: str, section_id: str
-) -> tuple[str, str, int, int, tuple[int, int] | None]:
-    """The authored heading for one id and the extent the section occupies.
-
-    Returns ``(open_tag, inner_html, open_start, inner_end, wrapper_span)``.
-    ``inner_end`` is the offset just past the closing ``</h2>``, where the
-    section's body begins. ``wrapper_span`` is the enclosing section element's
-    ``(open_start, close_end)`` when the id sits on a wrapping ``<section>``
-    element rather than on the h2, and None when the h2 carries the id and
-    defines the extent itself.
-    """
-    for candidate in _H2_OPEN_RE.finditer(html_text):
-        if _element_id(candidate.group()) != section_id:
-            continue
-        inner_end = html_text.find("</h2>", candidate.end())
-        if inner_end == -1:
-            raise OpError(
-                f"collapse_section: heading id {section_id!r} has no closing </h2>"
-            )
-        return (
-            candidate.group(),
-            html_text[candidate.end() : inner_end],
-            candidate.start(),
-            inner_end + len("</h2>"),
-            None,
-        )
-    wrapped = _wrapper_section_heading(html_text, section_id)
-    if wrapped is not None:
-        return wrapped
-    raise OpError(f"collapse_section: no section with id {section_id!r} in the plan")
-
-
-def _section_body_end(html_text: str, start: int) -> int:
-    """Where an authored body under one h2 ends: the next heading, landed card
-    or structured-state region, or the closing main element, whichever comes
-    first, so no neighbouring markup is consumed."""
-    ends: list[int] = []
-    heading = _H2_OPEN_RE.search(html_text, start)
-    if heading is not None:
-        ends.append(heading.start())
-    for candidate in _SECTION_OPEN_RE.finditer(html_text, start):
-        if _is_structural_boundary(candidate.group()):
-            ends.append(candidate.start())
-            break
-    closing = re.search(r"</main\s*>", html_text[start:], re.IGNORECASE)
-    if closing is not None:
-        ends.append(start + closing.start())
-    return min(ends) if ends else len(html_text)
-
-
-def _matching_section_close(html_text: str, start: int) -> int | None:
-    """Offset past the ``</section>`` that balances an already-open section."""
-    depth = 1
-    pos = start
-    while True:
-        nxt_open = _SECTION_OPEN_RE.search(html_text, pos)
-        nxt_close = _SECTION_CLOSE_RE.search(html_text, pos)
-        if nxt_close is None:
-            return None
-        if nxt_open is not None and nxt_open.start() < nxt_close.start():
-            depth += 1
-            pos = nxt_open.end()
-            continue
-        depth -= 1
-        pos = nxt_close.end()
-        if depth == 0:
-            return pos
+    return html_text[:boundary] + fragment + html_text[boundary:]
 
 
 def _landed_card_html(open_tag: str, inner_html: str, request: dict[str, str]) -> str:
@@ -1018,9 +862,11 @@ def _landed_card_html(open_tag: str, inner_html: str, request: dict[str, str]) -
     """
     from html import escape
 
+    from reckon import _plan_html
+
     anchor = escape(request["evidence_anchor"], quote=True)
     return (
-        '<section class="section-landed">\n'
+        f'<section class="{_plan_html.LANDED_SECTION_CLASS}">\n'
         f'  <header><span class="badge badge-shipped">&#10003; landed '
         f"{datetime.now(UTC).date().isoformat()}</span>\n"
         f"    {open_tag}{inner_html}</h2></header>\n"
@@ -1028,79 +874,6 @@ def _landed_card_html(open_tag: str, inner_html: str, request: dict[str, str]) -
         f'<a href="{anchor}">full record</a></p>\n'
         "</section>"
     )
-
-
-def _landed_card_span(
-    html_text: str, h2_start: int, section_id: str
-) -> tuple[int, int] | None:
-    """The span of a landed card that wraps this heading, or None if authored.
-
-    The span runs from the card's opening ``<section class="section-landed">``
-    to its matching close, so collapsing a section that already carries a card
-    replaces that card in place. A card whose close cannot be found, or whose
-    span would reach across a second heading or a structured-state region, is
-    refused rather than replaced, so a repeat collapse can consume no
-    neighbouring markup and never writes a partial result.
-    """
-    opens = list(_SECTION_OPEN_RE.finditer(html_text, 0, h2_start))
-    if not opens:
-        return None
-    wrapper = opens[-1]
-    if _SECTION_CLOSE_RE.search(html_text, wrapper.end(), h2_start) is not None:
-        return None
-    if "section-landed" not in _class_list(wrapper.group()):
-        return None
-    close_end = _matching_section_close(html_text, wrapper.end())
-    if close_end is None:
-        raise OpError(
-            f"collapse_section: the landed card for {section_id!r} has no closing tag"
-        )
-    span = html_text[wrapper.start() : close_end]
-    if len(_H2_OPEN_RE.findall(span)) != 1:
-        raise OpError(
-            f"collapse_section: cannot determine the extent of {section_id!r} "
-            "unambiguously"
-        )
-    for candidate in _SECTION_OPEN_RE.finditer(span):
-        if candidate.start() == 0:
-            continue
-        if _is_structural_boundary(candidate.group()):
-            raise OpError(
-                f"collapse_section: cannot determine the extent of {section_id!r} "
-                "unambiguously"
-            )
-    return wrapper.start(), close_end
-
-
-def landed_section_ids(html_text: str) -> frozenset[str]:
-    """Ids of the sections whose rendered extent is a landed card.
-
-    A collapse replaces a section's authored body with a card wrapped in
-    ``<section class="section-landed">``. Downstream readers that must treat a
-    landing record as machinery rather than authored content — the plan-review
-    fingerprint is the first — need to name those sections without re-spelling
-    the card's markup, so the recogniser lives here beside the writer that
-    creates it (:func:`_landed_card_span`, :func:`_is_structural_boundary`).
-
-    A heading is landed when the nearest ``<section>`` opening before it is a
-    landed card whose close has not yet passed: exactly the span
-    :func:`_landed_card_span` replaces on a repeat collapse. An ambiguous card
-    (a close that cannot be found, or a span reaching a second heading or a
-    structured-state region) is not reported, so the predicate fails safe — an
-    unreadable card counts as authored content, which a review still covers.
-    """
-    ids: set[str] = set()
-    for heading in _H2_OPEN_RE.finditer(html_text):
-        section_id = _element_id(heading.group())
-        if not section_id:
-            continue
-        try:
-            span = _landed_card_span(html_text, heading.start(), section_id)
-        except OpError:
-            continue
-        if span is not None:
-            ids.add(section_id)
-    return frozenset(ids)
 
 
 def _collapse_authored_section(html_text: str, request: dict[str, str]) -> str:
@@ -1115,20 +888,26 @@ def _collapse_authored_section(html_text: str, request: dict[str, str]) -> str:
     in place: the heading and its id are kept and there is exactly one card and
     one closing tag.
     """
-    open_tag, inner_html, open_start, body_start, wrapper_span = _section_heading(
-        html_text, request["section"]
+    from reckon._plan_html import plan_headings, section_record_id
+
+    wanted = section_record_id(request["section"])
+    heading = next(
+        (
+            item
+            for item in plan_headings(html_text)
+            if item.level == 2 and item.identity == wanted and not item.machinery
+        ),
+        None,
     )
-    if wrapper_span is not None:
-        extent_start, extent_end = wrapper_span
-    else:
-        card_span = _landed_card_span(html_text, open_start, request["section"])
-        if card_span is None:
-            extent_start, extent_end = (
-                open_start,
-                _section_body_end(html_text, body_start),
-            )
-        else:
-            extent_start, extent_end = card_span
+    if heading is None:
+        raise OpError(
+            f"collapse_section: no section with id {request['section']!r} in the plan"
+        )
+    if heading.error:
+        raise OpError(f"collapse_section: {heading.error}")
+    open_tag = heading.opening_html
+    inner_html = html_text[slice(*heading.inner_span)]
+    extent_start, extent_end = heading.span
     replaced = html_text[extent_start:extent_end]
     trailing = re.search(r"\s*\Z", replaced)
     card = _landed_card_html(open_tag, inner_html, request)
@@ -1171,11 +950,13 @@ def _evidence_section_html(request: dict[str, str]) -> str:
 
     from bs4 import BeautifulSoup
 
+    from reckon import _plan_html
+
     body = request["body"]
     body_soup = BeautifulSoup(body, "html.parser")
-    if body_soup.find("h2") is not None:
+    if _plan_html.plan_headings(body):
         raise OpError("append_evidence body must not contain another h2")
-    if body_soup.select_one("section[data-reckon]") is not None:
+    if body_soup.select_one(f"section[{_plan_html.RECKON_ATTRIBUTE}]") is not None:
         raise OpError("append_evidence body must not contain structured state")
     if body_soup.select_one('meta[name^="plan-"]') is not None:
         raise OpError("append_evidence body must not contain plan metadata")
@@ -1782,13 +1563,14 @@ def _require_heading_for_section_records(html_text: str, sections: Any) -> None:
     refusal names the id, because the writer's next move — authoring the
     heading and prose — is a different call from the one it attempted.
     """
-    from bs4 import BeautifulSoup
+    from reckon import _plan_html
 
     if not isinstance(sections, list):
         return
     heading_ids = {
-        str(heading.get("id"))
-        for heading in BeautifulSoup(html_text, "html.parser").find_all("h2", id=True)
+        heading.own_id
+        for heading in _plan_html.plan_headings(html_text)
+        if heading.level == 2 and heading.own_id is not None
     }
     missing = sorted(
         str(record.get("id"))
@@ -1808,17 +1590,19 @@ def _require_heading_for_section_records(html_text: str, sections: Any) -> None:
 
 def _require_new_section_contracts(before_html: str, after_html: str) -> None:
     """Require records for newly introduced numbered plan headings only."""
-    from bs4 import BeautifulSoup
-
     from reckon import _plan_html
 
-    before = BeautifulSoup(before_html, "html.parser")
-    after = BeautifulSoup(after_html, "html.parser")
-    old_ids = {heading.get("id") for heading in before.find_all("h2", id=True)}
+    old_ids = {
+        heading.own_id
+        for heading in _plan_html.plan_headings(before_html)
+        if heading.level == 2 and heading.own_id is not None
+    }
     added = {
-        heading["id"]
-        for heading in after.find_all("h2", id=re.compile(r"^s[0-9]+$"))
-        if heading["id"] not in old_ids
+        heading.own_id
+        for heading in _plan_html.plan_headings(after_html)
+        if heading.level == 2
+        and re.fullmatch(r"s[0-9]+", heading.own_id or "")
+        and heading.own_id not in old_ids
     }
     if not added:
         return
@@ -2531,10 +2315,10 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         from reckon._schema import SECTION_DECLARATION_ENUM
 
         section_id = parts[1]
-        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", section_id):
+        if not is_section_identity(section_id):
             raise OpError(
                 "section declaration id must match "
-                f"[A-Za-z0-9][A-Za-z0-9._-]*; got {section_id!r}"
+                f"a safe section identity; got {section_id!r}"
             )
         if value not in SECTION_DECLARATION_ENUM:
             raise OpError(
@@ -3131,12 +2915,8 @@ def _require_authored_section_fields(section: dict) -> None:
     section_id = section.get("id")
     title = section.get("title")
     body = section.get("body")
-    if not isinstance(section_id, str) or not re.fullmatch(
-        r"[A-Za-z0-9][A-Za-z0-9._-]*", section_id
-    ):
-        raise OpError(
-            "insert_section op requires an 'id' matching [A-Za-z0-9][A-Za-z0-9._-]*"
-        )
+    if not isinstance(section_id, str) or not is_section_identity(section_id):
+        raise OpError("insert_section op requires a safe section identity in 'id'")
     if not isinstance(title, str) or not title.strip():
         raise OpError("insert_section op requires a non-empty string 'title'")
     if not isinstance(body, str):
@@ -3187,12 +2967,10 @@ def _apply_collapse_section(
     if is_index or str(working.get("type", "plan") or "plan") != "plan":
         raise OpError("collapse_section op is plan-only")
     section_id = op.get("section")
-    if not isinstance(section_id, str) or not re.fullmatch(
-        r"[A-Za-z0-9][A-Za-z0-9._-]*", section_id
-    ):
+    if not isinstance(section_id, str) or not is_section_identity(section_id):
         raise OpError(
             "collapse_section op requires a 'section' id matching "
-            "[A-Za-z0-9][A-Za-z0-9._-]*"
+            "a safe section identity"
         )
     summary = op.get("summary")
     if not isinstance(summary, str) or not summary.strip():
