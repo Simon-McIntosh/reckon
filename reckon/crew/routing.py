@@ -1876,8 +1876,13 @@ def garbage_collect_orphan_scratch(
     if os.environ.get("RECKON_HOME") and not os.environ.get(
         "RECKON_WORKER_SCRATCH_ROOT"
     ):
-        return {"root": str(root), "entries": [], "removed": [],
-                "bytes_freed": 0, "withheld": "state and scratch roots differ"}
+        return {
+            "root": str(root),
+            "entries": [],
+            "removed": [],
+            "bytes_freed": 0,
+            "withheld": "state and scratch roots differ",
+        }
     if root.is_symlink() or root.resolve() != root.absolute():
         raise CrewError(f"scratch sweep refuses noncanonical root {root}")
     if not root.exists():
@@ -1892,8 +1897,14 @@ def garbage_collect_orphan_scratch(
     bytes_freed = 0
     for child in sorted(root.iterdir()):
         if child.is_symlink() or not child.is_dir():
-            entries.append({"path": str(child), "bytes": 0, "removed": False,
-                            "withheld": "not a real directory"})
+            entries.append(
+                {
+                    "path": str(child),
+                    "bytes": 0,
+                    "removed": False,
+                    "withheld": "not a real directory",
+                }
+            )
             continue
         size = tree_size_bytes(child)
         age = max(0.0, stamp - _scratch_ctime(child))
@@ -1905,8 +1916,11 @@ def garbage_collect_orphan_scratch(
         elif holders.get(child.name):
             reason = f"held by process {holders[child.name]}"
         entry: dict[str, Any] = {
-            "path": str(child), "bytes": size, "ctime_age_seconds": age,
-            "removed": False, "withheld": reason,
+            "path": str(child),
+            "bytes": size,
+            "ctime_age_seconds": age,
+            "removed": False,
+            "withheld": reason,
         }
         entries.append(entry)
     if apply:
@@ -1930,10 +1944,13 @@ def garbage_collect_orphan_scratch(
                 entry["removed"] = True
                 removed.append(str(child))
                 bytes_freed += entry["bytes"]
-    return {"root": str(root), "entries": entries, "removed": removed,
-            "bytes_freed": bytes_freed, "would_free_bytes": sum(
-                row["bytes"] for row in entries if not row["withheld"]
-            )}
+    return {
+        "root": str(root),
+        "entries": entries,
+        "removed": removed,
+        "bytes_freed": bytes_freed,
+        "would_free_bytes": sum(row["bytes"] for row in entries if not row["withheld"]),
+    }
 
 
 def _scratch_disposition(
@@ -2594,7 +2611,7 @@ def _plan_review_verdict(enforce: bool, detail: str) -> str | None:
 
 
 def _store_delivered_plan_review(
-    project: str, plan_slug: str, fingerprint: str
+    project: str, plan_slug: str, fingerprint: str | Iterable[str]
 ) -> dict[str, Any] | None:
     """Store the delivered report matching a fingerprint and return its record.
 
@@ -2682,11 +2699,19 @@ def require_plan_reviewed(
         return None
 
     fingerprint = plan_review.plan_fingerprint(resource.path)
+    # A change to the fingerprint's definition must not orphan a review that is
+    # still of the plan's current content: a stored review equal to the legacy
+    # digest counts as current, so no plan is re-reviewed solely because the
+    # definition moved.
+    fingerprints = {
+        fingerprint,
+        plan_review.plan_fingerprint(resource.path, legacy=True),
+    }
     record = plan_review.read_plan_review(
-        project, node.plan, plan_fingerprint=fingerprint
+        project, node.plan, plan_fingerprint=fingerprints
     )
     if record is None:
-        record = _store_delivered_plan_review(project, node.plan, fingerprint)
+        record = _store_delivered_plan_review(project, node.plan, fingerprints)
     if record is None:
         return _plan_review_verdict(
             enforce,
