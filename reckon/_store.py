@@ -174,17 +174,15 @@ def cache_root(kind: str, override: str | Path | None = None) -> Path:
     if configured:
         root = Path(configured).expanduser()
         return root.resolve() if home_order is None else root
-    reckon_home = (
-        _config_home() if home_order and os.environ.get("RECKON_HOME") else None
-    )
-    if home_order == "before" and reckon_home is not None:
-        return reckon_home / "cache" / leaf
+    has_reckon_home = home_order is not None and bool(os.environ.get("RECKON_HOME"))
+    if home_order == "before" and has_reckon_home:
+        return _config_home() / "cache" / leaf
     cache_home = os.environ.get("XDG_CACHE_HOME")
     # An explicitly empty client cache home denotes the current directory.
     if cache_home or (home_order is None and cache_home is not None):
         return Path(cache_home) / "reckon" / leaf
-    if reckon_home is not None:
-        return reckon_home / "cache" / leaf
+    if has_reckon_home:
+        return _config_home() / "cache" / leaf
     return Path.home() / ".cache" / "reckon" / leaf
 
 

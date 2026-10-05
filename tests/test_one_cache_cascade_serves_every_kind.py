@@ -230,3 +230,18 @@ def test_velocity_import_does_not_pull_in_crew():
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize("kind", ["velocity", "clones", "client"])
+def test_xdg_choice_never_resolves_a_lower_priority_config_home(
+    cache_environment, monkeypatch, kind
+):
+    root = cache_environment
+    monkeypatch.setenv("RECKON_HOME", str(root / "unneeded"))
+    monkeypatch.setenv("XDG_CACHE_HOME", str(root / "chosen"))
+
+    def refuse_home_resolution():
+        raise AssertionError("a lower-priority home must not be resolved")
+
+    monkeypatch.setattr(_store, "_config_home", refuse_home_resolution)
+    assert _store.cache_root(kind) == root / "chosen" / "reckon" / kind
