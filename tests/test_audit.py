@@ -24,7 +24,7 @@ def _write_plan(docs_dir: Path, slug: str, state: dict) -> Path:
         '<!doctype html><html lang="en"><head>'
         '<meta charset="utf-8">'
         '<meta name="docs-project" content="proj">'
-        f'<title>{slug}</title></head>'
+        f"<title>{slug}</title></head>"
         '<body><main class="plan-doc"></main></body></html>'
     )
     path = docs_dir / f"{slug}.html"
@@ -58,7 +58,12 @@ def test_audit_flags_stale_missing_impl_and_stale_rca(tmp_path, monkeypatch):
     stale_rca = _write_plan(
         docs_dir,
         "stale-rca",
-        {"slug": "stale-rca", "title": "Stale RCA", "type": "research", "status": "active"},
+        {
+            "slug": "stale-rca",
+            "title": "Stale RCA",
+            "type": "research",
+            "status": "active",
+        },
     )
     clean = _write_plan(
         docs_dir,
@@ -233,6 +238,19 @@ def test_audit_silent_for_followup_to_live_foreign_plan(tmp_path, monkeypatch):
     assert followup_findings == []
     result = CliRunner().invoke(main, ["audit"])
     assert "FOLLOWUP_FOREIGN" not in result.output
+
+
+def test_prose_ratios_and_times_are_not_foreign_refs():
+    from reckon.doccheck import _external_followup_refs
+
+    followup = {
+        "status": "open",
+        "recommends_skill": "/reckon-build holder",
+        "prompt": "Encode a 1:1 mapping, rerun at 10:30 with --signal=B:USR1, "
+        "then see nova:cut-cell#s3 for the gate",
+    }
+
+    assert _external_followup_refs(followup) == ["nova:cut-cell#s3"]
 
 
 def test_audit_reports_unmounted_foreign_target_distinctly(tmp_path, monkeypatch):

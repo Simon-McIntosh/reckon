@@ -226,7 +226,7 @@ def modified_age_days(
 def derived_plan_age(
     last_modified: str | None,
     *,
-    created_at: int | float | str | None = None,
+    created_at: float | str | None = None,
     fallback_path: Path | None = None,
     today: date | None = None,
 ) -> tuple[int | None, str]:
@@ -367,9 +367,14 @@ FOLLOWUP_FOREIGN_MISSING = "FOLLOWUP_FOREIGN_MISSING"
 # A project-qualified plan ref ``project:slug[#stage]`` — the only ref form
 # that can point outside the owning project. Segments mirror the grammar in
 # ``_schema.parse_plan_ref``, which confirms each match.
+# A project key and a plan slug both begin with a letter, so a ratio or a
+# clock time in a prose prompt ("1:1 mapping", "10:30") is not read as a ref;
+# a value joined to an option or a path ("--signal=B:USR1", "http://host")
+# is not one either.
 _FOREIGN_REF_RE = re.compile(
-    r"(?P<project>[A-Za-z0-9][A-Za-z0-9_-]*):"
-    r"(?P<slug>[A-Za-z0-9][A-Za-z0-9._-]*)"
+    r"(?<![A-Za-z0-9._=/-])"
+    r"(?P<project>[A-Za-z][A-Za-z0-9_-]*):"
+    r"(?P<slug>[A-Za-z][A-Za-z0-9._-]*)"
     r"(?:#(?P<stage>[A-Za-z0-9][A-Za-z0-9._-]*))?"
 )
 
