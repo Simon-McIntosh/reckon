@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-worker-reuses-before-it-writes">
+  <meta name="plan-verifies" content="reckon:a-worker-reuses-before-it-writes#s12">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-05">
+  <meta name="evidence-commit" content="24e780675">
+  <title>The clone detector reads revisions through velocity's one sources reader | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="clone-detector-reads-revisions-through-velocity">
+  <h2>The clone detector reads revisions through velocity's one sources reader</h2>
+  <p>The detector's <code>_git</code> runner, its archive-based <code>revised_python</code>
+  reader and its <code>_cache_root</code> resolver are retired. <code>reckon/clones.py</code>
+  now imports <code>run_git</code> and <code>read_sources</code> from
+  <code>reckon/velocity.py</code> and its cache from <code>_store.cache_root</code>.
+  <code>_plan_documents</code> became a call of the generalised tree lister
+  <code>_tree_paths(repo, revision, prefix, suffix)</code>; the new public
+  <code>read_sources(repo, revision, prefix=)</code> composes that lister with
+  <code>read_blobs</code>; the counter's <code>read_trees</code> parses
+  <code>read_sources</code> output. The detector takes no prefix (every tracked
+  <code>.py</code>), the counter passes <code>reckon</code>. Both consumers keep the
+  scope they measured before. Figure: <code>/reckon/figures/a-worker-reuses-before-it-writes/clone-detector-reads-revisions-through-velocity/owning_readers.png</code>.</p>
+
+  <h3>Retirement greps (done-when)</h3>
+  <pre><code>grep -n "def _git\|def _cache_root\|def revised_python\|git archive\|tarfile" reckon/clones.py   # (none)
+grep -n "ls-tree" reckon/interface_counts.py                                                       # (none)
+grep -rn "revised_python" reckon/ tests/                                                            # (none)</code></pre>
+  <p><code>grep -rn '"archive"' reckon/</code> returns only directory-name and
+  ledger-verb-allowlist uses (<code>serve.py</code>, <code>_store.py</code>,
+  <code>evidence.py</code>, …); no hit is a revision-source read, which is the
+  done-when's condition.</p>
+
+  <h3>One reader serves both consumers</h3>
+  <p><code>tests/test_one_sources_reader_serves_the_detector_and_the_counter.py</code>
+  reads one synthesised revision through both consumers and asserts
+  <code>interface_counts.read_sources is velocity.read_sources</code> and
+  <code>clones.read_sources is velocity.read_sources</code>. A spy on
+  <code>read_sources</code> records the prefixes each passes: the counter under
+  <code>reckon</code>, the detector with <code>''</code>. It asserts the detector's
+  unprefixed set carries <code>scripts/tool.py</code>, a tracked <code>.py</code>
+  outside <code>reckon/</code> and <code>tests/</code>, that the counter's
+  <code>reckon</code> set excludes it, and that no non-<code>.py</code> path is
+  read at either prefix.</p>
+
+  <h3>Negative control</h3>
+  <p>Declared mutation: restore a private <code>git-archive</code> reader in
+  <code>reckon/clones.py</code> and route revision sources through it. With the
+  mutation applied the one-reader test fails —
+  <code>FAILED tests/test_one_sources_reader_serves_the_detector_and_the_counter.py::test_counter_and_detector_read_one_revision_through_one_reader</code>,
+  <code>AssertionError: assert '' in {'reckon': {'reckon/pkg/module.py'}}</code> — because
+  the detector's read no longer reaches the one reader. Log:
+  <code>negative_control_one_sources_reader.log</code> under the run directory,
+  ending <code>EXIT=1</code>. Mutated working tree reverted to the gate revision
+  (<code>git diff --quiet reckon/clones.py</code> clean).</p>
+
+  <h3>Interface accounting</h3>
+  <p><code>reckon.interface_counts.count_revision</code> over <code>reckon</code> at
+  the base and head revisions:
+  <strong>public_definitions 1477 at base, 1477 at head</strong> — the public sources
+  reader adds one and the retired public <code>revised_python</code> removes one, a
+  net of zero and no rise. Measurement:
+  <code>public_definitions_measurement.txt</code> under the run directory.</p>
+
+  <h3>Gate</h3>
+  <p><strong>144 passed</strong>, <code>EXIT=0</code> at revision
+  <code>24e780675657</code>, the clone-detector, interface-counter, velocity and
+  staged-write-inventory tests plus the one-reader and blob-reader tests. Log:
+  <code>gate.log</code> under the run directory, ending in a bare
+  <code>EXIT=0</code> line.</p>
+</section>
+</main>
+</body>
+</html>

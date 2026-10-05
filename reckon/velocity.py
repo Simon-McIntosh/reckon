@@ -64,6 +64,7 @@ __all__ = [
     "promotion_receipts",
     "ratio",
     "read_blobs",
+    "read_sources",
     "recover_ledger_clocks",
     "replay",
     "report",
@@ -319,12 +320,28 @@ def parse_hunks(raw):
     return [f for f in files if f["hunks"] or f["path"] != f["old_path"]]
 
 
+def _tree_paths(repo, revision, prefix="", suffix=""):
+    """Every tracked path at ``revision`` under ``prefix`` ending in ``suffix``.
+
+    One ``ls-tree -r --name-only`` lists the tree at the revision; the prefix
+    and suffix are filters applied to the listing. An empty prefix names the
+    repository root, so the whole tracked tree is listed, and an empty suffix
+    keeps every path. A non-empty prefix is passed to git as a pathspec so a
+    subtree listing stays cheap on a large tree.
+    """
+    arguments = ["ls-tree", "-r", "--name-only", revision]
+    if prefix:
+        arguments += ["--", prefix]
+    result = run_git(repo, *arguments)
+    result.check_returncode()
+    return [
+        path for path in result.stdout.decode().splitlines() if path.endswith(suffix)
+    ]
+
+
 def _plan_documents(repo, head, prefix=PLAN_DIRECTORY):
     """Every plan document reachable at ``head`` under the plans directory."""
-    result = run_git(repo, "ls-tree", "-r", "--name-only", head, "--", prefix)
-    result.check_returncode()
-    listing = result.stdout.decode()
-    return [path for path in listing.splitlines() if path.endswith(PLAN_SUFFIX)]
+    return _tree_paths(repo, head, prefix, PLAN_SUFFIX)
 
 
 def _plan_history(repo, head, prefix=PLAN_DIRECTORY):
@@ -402,6 +419,21 @@ def read_blobs(repo, specs):
         blobs[spec] = data[position : position + size]
         position += size + 1
     return blobs
+
+
+def read_sources(repo, revision, *, prefix=""):
+    """Every tracked ``.py`` file at ``revision``, keyed by path, as bytes.
+
+    The tree lister supplies the revision's Python module set and one batched
+    object read supplies the bytes, so a revision that is not the working tree
+    is measured as that revision held it. An empty ``prefix`` lists every
+    tracked Python file in the repository; a non-empty ``prefix`` scopes the
+    listing to a subtree, so a caller interested only in ``reckon`` reads that
+    prefix rather than the whole tree.
+    """
+    paths = _tree_paths(repo, revision, prefix, ".py")
+    blobs = read_blobs(repo, [(revision, path) for path in paths])
+    return {path: blob for (_revision, path), blob in blobs.items()}
 
 
 def _plan_metas(repo, specs):

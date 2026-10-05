@@ -23,7 +23,6 @@ import hashlib
 import io
 import json
 import subprocess
-import tarfile
 import time
 import tokenize
 from collections.abc import Iterable, Mapping
@@ -32,6 +31,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from reckon import _store
+from reckon.velocity import read_sources, run_git
 
 WINDOW_LINES = 6
 FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef)
@@ -399,7 +399,7 @@ def _repository_key(repo: str | Path) -> str:
     """
     tree = Path(repo)
     identity = tree
-    common = _git(tree, "rev-parse", "--git-common-dir")
+    common = run_git(tree, "rev-parse", "--git-common-dir")
     if common.returncode == 0:
         text = common.stdout.decode(errors="replace").strip()
         if text:
@@ -618,41 +618,19 @@ def clone_matches(
     return matches
 
 
-def _git(tree: Path, *arguments: str) -> subprocess.CompletedProcess[bytes]:
-    return subprocess.run(
-        ["git", "-C", str(tree), *arguments],
-        capture_output=True,
-        check=False,
-    )
-
-
-def revised_python(tree: Path, revision: str) -> dict[str, str]:
-    """Every tracked ``.py`` file at ``revision``, keyed by repository path.
-
-    The tree is read from git's object store rather than the working tree, so
-    the measurement is anchored to the revision the caller named and cannot see
-    an edit made in the meantime.
-    """
-    archive = _git(tree, "archive", "--format=tar", revision)
-    if archive.returncode:
-        return {}
-    sources: dict[str, str] = {}
-    with tarfile.open(fileobj=io.BytesIO(archive.stdout)) as tar:
-        for member in tar.getmembers():
-            if not member.isfile() or not member.name.endswith(".py"):
-                continue
-            handle = tar.extractfile(member)
-            if handle is None:
-                continue
-            sources[member.name] = handle.read().decode("utf-8-sig", errors="replace")
-    return sources
+def _sources_text(sources: Mapping[str, bytes]) -> dict[str, str]:
+    """Decode the detector's revision sources from the reader's bytes."""
+    return {
+        path: text.decode("utf-8-sig", errors="replace")
+        for path, text in sources.items()
+    }
 
 
 def changed_paths(tree: Path, base_sha: str, tip: str) -> list[str]:
     """The paths ``tip`` changes against ``base_sha``, or empty when unreadable."""
     if not base_sha or not tip:
         return []
-    result = _git(tree, "diff", "--name-only", base_sha, tip)
+    result = run_git(tree, "diff", "--name-only", base_sha, tip)
     if result.returncode:
         return []
     return [line for line in result.stdout.decode().splitlines() if line.strip()]
@@ -671,8 +649,14 @@ def promotion_clone_matches(
     """
     if not base_sha or not tip:
         return None
-    base = revised_python(tree, base_sha)
-    head = revised_python(tree, tip)
+    try:
+        # Both revisions are read through velocity's one sources reader, with no
+        # prefix, so the detector measures every tracked .py at the revision —
+        # not only the reckon/ and tests/ corpus its matches are scoped to.
+        base = _sources_text(read_sources(tree, base_sha))
+        head = _sources_text(read_sources(tree, tip))
+    except (OSError, subprocess.SubprocessError):
+        return None
     if not head or not base:
         return None
     changed = [

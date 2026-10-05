@@ -1,10 +1,11 @@
-"""One batched blob reader serves both the plan census and the interface counter.
+"""One batched blob reader serves the plan census and the interface counter.
 
-The counter no longer carries its own ``cat-file --batch`` loop; it imports the
-reader from ``reckon.velocity``. This test proves the two consumers reach the
-same bytes through that one function: it pins the identity of the reader the
-counter holds, and records what each consumer passes and receives, so a private
-loop reintroduced on either side is caught.
+The counter no longer carries its own ``cat-file --batch`` loop; its ``read_trees``
+reads through velocity's ``read_sources``, which lists the tree and reads the
+bytes through ``read_blobs``. This test proves both consumers reach the same
+bytes through that one batched reader: it pins the sources reader the counter
+holds, and records what each consumer passes and receives, so a private loop
+reintroduced on either side is caught.
 """
 
 from __future__ import annotations
@@ -126,8 +127,9 @@ def test_counter_and_plan_metas_read_the_same_bytes_through_one_reader(
 ):
     repo, revision = _build_repository(tmp_path)
 
-    # One reader: the counter holds the very function velocity defines.
-    assert interface_counts.read_blobs is velocity.read_blobs
+    # One reader: the counter holds the very sources reader velocity defines,
+    # and that reader batches its object reads through the one read_blobs.
+    assert interface_counts.read_sources is velocity.read_sources
 
     seen = []
     real = velocity.read_blobs
@@ -138,7 +140,6 @@ def test_counter_and_plan_metas_read_the_same_bytes_through_one_reader(
         return blobs
 
     monkeypatch.setattr(velocity, "read_blobs", spy)
-    monkeypatch.setattr(interface_counts, "read_blobs", spy)
 
     metas = velocity._plan_metas(repo, [(revision, PLAN_PATH)])
     trees = interface_counts.read_trees(repo, revision)
