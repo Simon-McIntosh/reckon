@@ -5155,7 +5155,7 @@ def _review_outcome_summary(stored: Mapping[str, Any]) -> str:
     """Summarise a stored review as the outcome a promotion records.
 
     The two figures are the ones a review run's own deliverable carries — the
-    total the five dimensions sum to and the count of findings — so the summary
+    total all dimensions sum to and the count of findings — so the summary
     is derived from the record rather than restated by hand. A review whose
     score is withheld (an unparsed or dimension-incomplete record) has no total
     to name, and a summary that invented one would read as a measured score.
@@ -8316,7 +8316,7 @@ def _complete_locked(
         else ledger.stated_correction_count(manifest_text)
     )
     # An attached review is copied onto the committed row at promotion, so its
-    # five dimension scores and their total survive the loss of the crew
+    # dimension scores and their total survive the loss of the crew
     # configuration home. The store keeps the verbatim text and findings; the
     # row keeps the compact block that joins to the run which earned it.
     # The cited gate log is copied into the row's own run directory before the

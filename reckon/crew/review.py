@@ -27,7 +27,7 @@ none, by the same rule: an item with no verdict is reported as absent and the
 item count is withheld rather than taken over the items that happen to be
 present. The item verdicts are recorded and their absence named, but they do
 not enter the completeness predicate a promotion reads (see
-:func:`reckon.crew.recovery._review_is_complete`), which stays the five
+:func:`reckon.crew.recovery._review_is_complete`), which checks all schema
 dimensions: reviews stored before this line existed carry no item verdicts,
 and folding them into that predicate would mark every one of them incomplete.
 
@@ -434,7 +434,7 @@ def _review_text_lines(text: str) -> Iterator[str]:
 def parse_review(
     text: str, *, record: Mapping[str, Any] | None = None
 ) -> dict[str, Any]:
-    """Parse emitted review text into the five-dimension schema.
+    """Parse emitted review text into the complete dimension schema.
 
     Returns a record shaped like the stored one, without the run metadata a
     call site adds before persisting:
