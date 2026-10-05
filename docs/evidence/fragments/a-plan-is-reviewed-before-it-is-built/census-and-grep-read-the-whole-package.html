@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-title" content="The census script and the ownership grep read the whole package">
+  <meta name="plan-summary" content="Four review follow-ons: the census reads the store through the reader's own pattern beside a broad cross-check, resolves a plan-section anchor against the document its path names, scopes repair confirmation to the reviewed plan and records the confirming section id, and builds its blob-keyed sibling path through the shared review helper; the ownership grep walks reckon/crew recursively.">
+  <meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-recorded-at" content="2026-10-05">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The census script and the ownership grep read the whole package | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The census script and the ownership grep read the whole package</h1>
+
+    <section id="census-and-grep-read-the-whole-package-anchor">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/plan_review.py</code> names the store's filename
+          grammar once as <code>PLAN_REVIEW_FILE_GLOB</code>, read by
+          <code>list_plan_reviews</code>; the dead <code>PLAN_REVIEW_RUBRICS</code>
+          re-export is removed; <code>plan_review_path</code> builds its
+          <code>.at-&lt;blob8&gt;</code> sibling through the shared helper.</li>
+        <li><code>reckon/crew/review.py</code> factors <code>_blob_suffix</code>,
+          which validates the revision and builds the <code>.at-&lt;sha&gt;</code>
+          suffix parameterised by digest length — the full digest for
+          <code>review_path</code>, eight characters for
+          <code>plan_review_path</code>. No stored record moves.</li>
+        <li><code>docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py</code>
+          imports the reader's pattern and reports it beside a broad
+          <code>plan-*.json</code> count; resolves a plan-section anchor against
+          the bytes of the document its own path names at the review's commit;
+          and confirms a repair only within the reviewed plan, recording the id
+          of the section that carries it.</li>
+        <li><code>tests/test_plan_review_prefix_is_one_constant.py</code> walks
+          <code>reckon/crew</code> recursively, so a bare literal under the
+          <code>picker</code> subpackage reddens it.</li>
+      </ul>
+
+      <h2>Measure</h2>
+      <p>Gate: <code>pytest tests/test_plan_review_prefix_is_one_constant.py
+        tests/test_plan_review_dispatch.py tests/test_review_plan_command.py
+        tests/test_plan_review_store.py tests/test_review_scoring.py
+        tests/test_plan_review_gate.py</code> → 0 failed, EXIT=0.</p>
+      <p>Negative control: a bare <code>plan-review-of-</code> literal planted
+        under <code>reckon/crew/picker/</code> in a scratch copy reddens the
+        recursive grep case (1 failed, EXIT=1).</p>
+      <p>Census run twice, <code>diff</code> empty. The store is live and has
+        grown since §11 was read (this plan's v45/v46 reviews, and a review of
+        <code>a-dispatch-returns-without-its-worker</code> at v157), so the two
+        shares now read <strong>12 of 12</strong> reviews carrying a
+        <code>reuse_search</code>, <code>duplicate_owner</code> or
+        <code>thin_wrapper</code> finding and <strong>30 of 31</strong> such
+        findings with a resolving anchor (the one unresolved anchor is that new
+        review's, unrelated to this node). The confirmed-by-repair column
+        narrowed under the plan-scoped rule, and this plan's v23 findings still
+        confirm at <code>a-plan-is-reviewed-before-it-is-built.html#s9</code>
+        and <code>#s10</code>. The §11 evidence block in the landed record is
+        updated in place to this reading.</p>
+    </section>
+  </main>
+</body>
+</html>

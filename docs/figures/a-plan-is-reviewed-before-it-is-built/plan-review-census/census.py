@@ -3,20 +3,23 @@
 Read-only. One row per stored plan review, enumerated only through
 ``reckon.crew.plan_review.list_plan_reviews`` so the population, each record's
 ``project``, and each record's ``review_path`` come from the one reader that
-already walks every project and excludes code reviews. The one directory walk
-here is a count of ``plan-*.json`` files per project, reported beside the
-reader's count so a record the reader skips is visible as a difference rather
-than silently dropped.
+already walks every project and excludes code reviews. Beside the reader's own
+count the module walks each project directory for a broad ``plan-*.json`` count,
+so a stored file the reader does not enumerate is visible as a difference rather
+than silently dropped; the reader's pattern is imported from
+``reckon.crew.plan_review`` and is not restated here.
 
 An anchor resolves as follows. A plan anchor (``<path>.html#<section>``) resolves
-when the section id is present in the plan's reviewed bytes, read from the
-record's ``reviewed_blob_sha`` (the git blob of the reviewed plan). A code anchor
-(``<path>:<line>``) resolves when the path exists in the repository's ``main`` as
-of the review's timestamp — ``git rev-list -1 --before=<timestamp> main`` — and
-the line number lies within that revision's file. A finding is marked confirmed
-when a distinctive identifier it names (>= 12 characters, containing an
-underscore) appears in the current ``docs/plans`` corpus but was absent from the
-reviewed plan blob, i.e. the mechanism was cited after the review.
+when the section id is present in the bytes of the document the anchor's own path
+names, at the review's commit; an anchor naming no path falls back to the
+reviewed plan's ``reviewed_blob_sha`` blob. A code anchor (``<path>:<line>``)
+resolves when the path exists in the repository's ``main`` as of the review's
+timestamp — ``git rev-list -1 --before=<timestamp> main`` — and the line number
+lies within that revision's file. A finding is marked confirmed when a
+distinctive identifier it names (>= 12 characters, containing an underscore)
+appears in the current reviewed plan but was absent from the reviewed plan blob,
+i.e. the mechanism was cited after the review; the id of the section or comment
+that carries it is recorded so the cell can be checked.
 
 The script asserts its own negative control on every run: three anchors known not
 to resolve must be reported unresolved, so an all-resolved column is shown to be
@@ -93,11 +96,17 @@ def resolve_anchor(
     anchor = anchor.strip()
     if "#" in anchor:
         path, frag = anchor.split("#", 1)
-        if path.endswith(".html"):
-            text = blob_text(root, reviewed_blob)
+        if not path or path.endswith(".html"):
+            if path:
+                target = _normalise_path(path, roots)
+                text = blob_text(root, f"{commit}:{target}")
+                note = f"{path.split('/')[-1]}#{frag}"
+            else:
+                text = blob_text(root, reviewed_blob)
+                note = f"#{frag}"
             if not text:
-                return False, f"plan blob {reviewed_blob[:8]} unreadable"
-            return (f'id="{frag}"' in text), f"{path.split('/')[-1]}#{frag}"
+                return False, f"plan {note} unreadable"
+            return (f'id="{frag}"' in text), note
     if ":" in anchor:
         path, _, line = anchor.rpartition(":")
         if not line.isdigit():
@@ -119,11 +128,36 @@ def distinctive_identifiers(finding: dict) -> list[str]:
     return sorted({tok for tok in IDENTIFIER_RE.findall(text) if "_" in tok})
 
 
-def confirmed_by_repair(corpus: str, reviewed_blob_text: str, finding: dict) -> bool:
-    return any(
-        tok in corpus and tok not in reviewed_blob_text
-        for tok in distinctive_identifiers(finding)
-    )
+_ID_ATTR_RE = re.compile(r'(?:data-)?id="([^"]+)"')
+
+
+def confirming_location(plan_html: str, identifier: str) -> str | None:
+    """Return the id of the section or comment that first carries ``identifier``."""
+    index = plan_html.find(identifier)
+    if index < 0:
+        return None
+    location: str | None = None
+    for match in _ID_ATTR_RE.finditer(plan_html, 0, index):
+        location = match.group(1)
+    return location
+
+
+def confirmed_by_repair(
+    plan_html: str, reviewed_blob_text: str, finding: dict
+) -> tuple[bool, str]:
+    """Confirm a finding within the reviewed plan, naming the confirming id.
+
+    Scoped to the reviewed plan rather than the whole ``docs/plans`` corpus, so
+    an identifier that also appears in an unrelated plan cannot mark the cut. A
+    distinctive identifier the finding names, present in the current plan but
+    absent from the reviewed bytes, shows the repair was recorded after the
+    review; the id of the section or comment carrying it is returned beside the
+    flag, empty when no enclosing id is found.
+    """
+    for token in distinctive_identifiers(finding):
+        if token in plan_html and token not in reviewed_blob_text:
+            return True, (confirming_location(plan_html, token) or "")
+    return False, ""
 
 
 def _self_check(root: Path, commit: str, reviewed_blob: str, roots: list[Path]) -> int:
@@ -154,14 +188,26 @@ def _self_check(root: Path, commit: str, reviewed_blob: str, roots: list[Path]) 
     return len(controls) + 1
 
 
-def directory_counts(root: Path) -> dict[str, int]:
+def directory_counts(root: Path) -> tuple[dict[str, int], dict[str, int]]:
+    """Count store files per project under the broad and the reader's patterns.
+
+    The broad pattern is every ``plan-*.json`` a project directory holds; the
+    reader's pattern is the store's own :data:`PLAN_REVIEW_FILE_GLOB`, imported
+    from the module that owns the filename grammar. Reporting both makes a
+    stored file the reader does not enumerate — a skipped or non-versioned one —
+    visible as a difference between the two counts rather than silently dropped.
+    """
     store = plan_review._review_store.review_store_root(None)
-    counts: dict[str, int] = {}
+    broad: dict[str, int] = {}
+    reader: dict[str, int] = {}
     if Path(store).is_dir():
         for entry in sorted(Path(store).iterdir()):
             if entry.is_dir():
-                counts[entry.name] = sum(1 for p in entry.glob("plan-*.json"))
-    return counts
+                broad[entry.name] = sum(1 for _ in entry.glob("plan-*.json"))
+                reader[entry.name] = sum(
+                    1 for _ in entry.glob(plan_review.PLAN_REVIEW_FILE_GLOB)
+                )
+    return broad, reader
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -181,11 +227,6 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     as_of = args.as_of or max(str(r.get("timestamp") or "") for r in records)
 
-    corpus = "\n".join(
-        p.read_text(encoding="utf-8")
-        for p in sorted((root / "docs" / "plans").glob("*.html"))
-    )
-
     rows: list[str] = []
     predictive_reviews = 0
     predictive_findings = 0
@@ -196,6 +237,9 @@ def main(argv: list[str] | None = None) -> int:
         commit = commit_before(root, str(record.get("timestamp") or ""))
         blob = str(record.get("reviewed_blob_sha") or "")
         blob_txt = blob_text(root, blob) if blob else ""
+        slug = str(record.get("plan_slug") or "")
+        plan_file = root / "docs" / "plans" / f"{slug}.html"
+        plan_html = plan_file.read_text(encoding="utf-8") if plan_file.is_file() else ""
         findings = [f for f in record.get("findings") or [] if isinstance(f, dict)]
 
         types: dict[str, int] = {}
@@ -210,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
             resolved, note = resolve_anchor(
                 root, commit, blob, str(finding.get("anchor") or ""), roots
             )
-            confirmed = confirmed_by_repair(corpus, blob_txt, finding)
+            confirmed, confirm_loc = confirmed_by_repair(plan_html, blob_txt, finding)
             if resolved:
                 resolved_here += 1
             else:
@@ -225,7 +269,13 @@ def main(argv: list[str] | None = None) -> int:
                 predictive_findings += 1
                 predictive_resolved += int(resolved)
             mark_r = "resolve" if resolved else "UNRESOLVED"
-            mark_c = "confirmed" if confirmed else "open"
+            if confirmed:
+                where = (
+                    f"{plan_file.name}#{confirm_loc}" if confirm_loc else plan_file.name
+                )
+                mark_c = f"confirmed at {where}"
+            else:
+                mark_c = "open"
             detail.append(
                 f"{finding.get('id')} ({ftype}) — {note} — {mark_r}, {mark_c}"
             )
@@ -248,9 +298,15 @@ def main(argv: list[str] | None = None) -> int:
             "</tr>"
         )
 
-    counts = directory_counts(root)
-    dir_total = sum(counts.values())
-    per_project = ", ".join(f"{name} {n}" for name, n in sorted(counts.items()))
+    counts_broad, counts_reader = directory_counts(root)
+    broad_total = sum(counts_broad.values())
+    reader_pattern_total = sum(counts_reader.values())
+    per_project_broad = ", ".join(
+        f"{name} {n}" for name, n in sorted(counts_broad.items())
+    )
+    per_project_reader = ", ".join(
+        f"{name} {n}" for name, n in sorted(counts_reader.items())
+    )
     reader_total = len(records)
 
     # Negative control, asserts rather than reports.
@@ -261,6 +317,18 @@ def main(argv: list[str] | None = None) -> int:
         roots,
     )
 
+    if broad_total == reader_total:
+        crosscheck = (
+            f"Broad <b>{broad_total}</b> equals the reader's <b>{reader_total}</b> "
+            "rows, so no stored record was skipped."
+        )
+    else:
+        crosscheck = (
+            f"Broad <b>{broad_total}</b> differs from the reader's "
+            f"<b>{reader_total}</b> rows by <b>{broad_total - reader_total}</b>: a "
+            "stored plan file the reader does not enumerate."
+        )
+
     out: list[str] = []
     out.append(f"<!-- census as of {as_of} -->")
     out.append(
@@ -270,9 +338,11 @@ def main(argv: list[str] | None = None) -> int:
         "<p><strong>Reading as of "
         f"{as_of}.</strong> Enumerated through "
         "<code>reckon.crew.plan_review.list_plan_reviews()</code>: "
-        f"<b>{reader_total}</b> stored plan reviews. Directory listing of "
-        f"<code>plan-*.json</code> under the crew review store: <b>{dir_total}</b> "
-        f"({per_project}) — equal to the reader's count, so no record was skipped.</p>"
+        f"<b>{reader_total}</b> stored plan reviews. Directory cross-check under "
+        f"the crew review store: broad <code>plan-*.json</code> listing "
+        f"<b>{broad_total}</b> ({per_project_broad}); the reader's own pattern "
+        f"<code>{plan_review.PLAN_REVIEW_FILE_GLOB}</code> listing "
+        f"<b>{reader_pattern_total}</b> ({per_project_reader}). {crosscheck}</p>"
     )
     out.append("  <table>")
     out.append(

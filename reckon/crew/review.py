@@ -1212,6 +1212,25 @@ def review_store_root(base_dir: str | Path | None = None) -> Path:
     return _store._config_home() / "crew" / "reviews"
 
 
+def _blob_suffix(value: str, *, length: int | None = None) -> str:
+    """Validate a revision and return its ``.at-<sha>`` sibling suffix.
+
+    ``length`` truncates the digest to that many characters; omitted, the whole
+    digest is kept. A value that is not a hex revision of at least seven
+    characters is refused rather than silently normalised into a path. Callers
+    that key a stored record by a content blob — a code review by the reviewed
+    head, a plan review by the reviewed plan blob — build the suffix through
+    here, so the store's keying rule is spelled once.
+    """
+    sha = str(value).strip()
+    if not re.fullmatch(r"[0-9A-Fa-f]{7,64}", sha):
+        raise ValueError(f"invalid reviewed_head_sha {value!r}")
+    sha = sha.lower()
+    if length is not None:
+        sha = sha[:length]
+    return f".at-{sha}"
+
+
 def review_path(
     project: str,
     reviewed_run_id: str,
@@ -1220,12 +1239,7 @@ def review_path(
     reviewed_head_sha: str | None = None,
 ) -> Path:
     """Return the legacy path or a path keyed by the reviewed head revision."""
-    suffix = ""
-    if reviewed_head_sha is not None:
-        head_sha = reviewed_head_sha.strip()
-        if not re.fullmatch(r"[0-9A-Fa-f]{7,64}", head_sha):
-            raise ValueError(f"invalid reviewed_head_sha {reviewed_head_sha!r}")
-        suffix = f".at-{head_sha.lower()}"
+    suffix = "" if reviewed_head_sha is None else _blob_suffix(reviewed_head_sha)
     return review_store_root(base_dir) / project / f"{reviewed_run_id}{suffix}.json"
 
 

@@ -166,6 +166,22 @@ def test_re_reviewing_one_version_keeps_both_files(tmp_path: Path) -> None:
     assert again == first
 
 
+def test_blob_keyed_path_is_byte_identical_through_the_shared_helper(
+    tmp_path: Path,
+) -> None:
+    """The store's keying rule is unchanged by the shared ``.at-<sha>`` helper.
+
+    ``plan_review_path`` now builds its sibling through the same helper as
+    ``review.review_path``, parameterised by digest length. The plan-review
+    path keeps the blob truncated to eight characters, so a record stored
+    before that refactor still resolves to the identical path.
+    """
+    path = module.plan_review_path(
+        PROJECT, "demo", 1, base_dir=tmp_path, reviewed_blob_sha=BLOB_B
+    )
+    assert path == tmp_path / PROJECT / "plan-demo.v1.at-bbbbbbbb.json"
+
+
 def test_a_response_without_a_reason_is_refused(tmp_path: Path) -> None:
     path = module.store_plan_review(
         _record(findings=[_finding("f1")]), base_dir=tmp_path
