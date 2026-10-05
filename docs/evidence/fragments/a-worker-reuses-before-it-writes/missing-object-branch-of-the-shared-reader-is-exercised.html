@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="missing-object-branch-of-the-shared-reader-is-exercised">
+<meta name="plan-title" content="The missing-object branch of the shared reader is exercised">
+<meta name="plan-summary" content="A two-commit test asks one read_blobs call for the same path at the commit before and the commit after it appears, asserting None beside the present bytes; the counter's dead None filter is deleted.">
+<meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
+<meta name="plan-recorded-at" content="2026-10-05">
+<meta name="plan-verdict" content="passed">
+<meta name="plan-commits" content="ed4ed1ecfc9dcb8069d8ef29fb07e1e856148c2e">
+<title>The missing-object branch of the shared reader is exercised | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="missing-object-branch-of-the-shared-reader-is-exercised"><h2>The missing-object branch of the shared reader is exercised</h2>
+<p><code>velocity.read_blobs</code> answers a <code>(revision, path)</code> pair git reports missing
+with <code>None</code>, but no test built a spec for a path absent at its revision, so that branch was
+covered by inspection only. The new test builds a two-commit repository where one path appears only at
+the second commit, and makes a single <code>read_blobs</code> call carrying the same path at both
+revisions, asserting <code>None</code> for the missing pair and the on-disk bytes for the present one.
+The counter's <code>if text is not None</code> filter is dead — <code>read_trees</code> builds its specs
+from <code>ls-tree</code> at the very revision it then reads, so every listed path yields bytes — and is
+deleted with a one-line comment stating why the listing guarantees presence.</p>
+<table><thead><tr><th>Measure</th><th>Result</th></tr></thead><tbody>
+<tr><th>Changed paths</th><td><code>reckon/interface_counts.py</code>, <code>tests/test_one_blob_reader_serves_velocity_and_the_counter.py</code></td></tr>
+<tr><th>Missing-object assertion</th><td><code>blobs[(first, LATER_PATH)] is None</code> from one call that also answers the present spec's bytes</td></tr>
+<tr><th>Dead-filter grep</th><td><code>grep -n 'is not None' reckon/interface_counts.py</code> → nothing in <code>read_trees</code> (remaining hits are other functions)</td></tr>
+<tr><th>Final gate</th><td>9 passed in 39.18s; EXIT=0</td></tr>
+<tr><th>Negative control</th><td>missing-object branch replaced with a raise: 1 failed in 1.63s; EXIT=1; mutation applied to a scratch copy only</td></tr>
+<tr><th>Gate revision</th><td>ed4ed1ecfc9dcb8069d8ef29fb07e1e856148c2e</td></tr>
+</tbody></table>
+<table><thead><tr><th>Artifact</th><th>Durable path</th></tr></thead><tbody>
+<tr><td><code>gate.log</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T145007874475-missing-object-branch-of-the-shared-reader-is-exercised/gate.log</code></td></tr>
+<tr><td><code>negative-control.log</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T145007874475-missing-object-branch-of-the-shared-reader-is-exercised/negative-control.log</code></td></tr>
+</tbody></table>
+</section>
+</main></body></html>
