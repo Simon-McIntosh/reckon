@@ -164,6 +164,34 @@ def decide(payload: dict[str, Any]) -> tuple[bool, str | None]:
     return False, _refusal_message(project=projects[0])
 
 
+def hook_output(allowed: bool, message: str | None) -> dict[str, Any] | None:
+    """Compose the harness pre-tool-use JSON for one decision.
+
+    The harness parses this JSON only from stdout on exit 0. A refusal is a
+    ``deny`` permission decision whose reason the calling session reads as the
+    tool result. A note on an allowed spawn is addressed to that session, which
+    must act on it, so it travels as ``additionalContext``, and also as
+    ``systemMessage`` so the operator sees the waiver in effect.
+    """
+    if not allowed:
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": message,
+            }
+        }
+    if not message:
+        return None
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "additionalContext": message,
+        },
+        "systemMessage": message,
+    }
+
+
 def main() -> int:
     raw = sys.stdin.read()
     try:
@@ -173,21 +201,10 @@ def main() -> int:
     if not isinstance(payload, dict):
         payload = {}
 
-    allowed, message = decide(payload)
-    if allowed:
-        if message:
-            sys.stdout.write(json.dumps({"systemMessage": message}))
-        return 0
-
-    sys.stderr.write(
-        json.dumps(
-            {
-                "hookSpecificOutput": {"permissionDecision": "deny"},
-                "systemMessage": message,
-            }
-        )
-    )
-    return 2
+    output = hook_output(*decide(payload))
+    if output is not None:
+        sys.stdout.write(json.dumps(output))
+    return 0
 
 
 if __name__ == "__main__":

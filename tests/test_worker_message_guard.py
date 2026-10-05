@@ -217,10 +217,10 @@ def test_the_environment_override_allows_the_send(tmp_path: Path, monkeypatch) -
     assert guard.OVERRIDE_ENV in message
 
 
-# ── main() contract: refuse on stderr with exit 2, pass silently ────────────
+# ── main() contract: refuse with a stdout decision, pass silently ──────────
 
 
-def test_main_exits_2_and_denies_on_stderr_for_a_refusal(
+def test_main_denies_with_a_stdout_decision_the_harness_parses(
     tmp_path: Path, monkeypatch, capsys
 ) -> None:
     repo = _crew_managed_repo(tmp_path)
@@ -235,11 +235,12 @@ def test_main_exits_2_and_denies_on_stderr_for_a_refusal(
     exit_code = guard.main()
 
     captured = capsys.readouterr()
-    assert exit_code == 2
-    assert captured.out == ""
-    payload = json.loads(captured.err)
-    assert payload["hookSpecificOutput"]["permissionDecision"] == "deny"
-    assert "r-live-6" in payload["systemMessage"]
+    assert exit_code == 0
+    assert captured.err == ""
+    decision = json.loads(captured.out)["hookSpecificOutput"]
+    assert decision["hookEventName"] == "PreToolUse"
+    assert decision["permissionDecision"] == "deny"
+    assert "r-live-6" in decision["permissionDecisionReason"]
 
 
 def test_main_exits_0_on_a_send_to_a_non_live_recipient(

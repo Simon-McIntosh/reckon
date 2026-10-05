@@ -527,13 +527,14 @@ def test_the_guard_denies_a_cross_checkout_commit_when_run_isolated(
         check=False,
     )
 
-    assert completed.returncode == 2, completed.stderr
-    emitted = json.loads(completed.stderr)
-    assert emitted["hookSpecificOutput"]["permissionDecision"] == "deny"
-    assert RUN_ID in emitted["systemMessage"]
+    assert completed.returncode == 0, completed.stderr
+    decision = json.loads(completed.stdout)["hookSpecificOutput"]
+    assert decision["hookEventName"] == "PreToolUse"
+    assert decision["permissionDecision"] == "deny"
+    assert RUN_ID in decision["permissionDecisionReason"]
 
 
-# ── The hook entry point refuses through its exit code ─────────────────────
+# ── The hook entry point refuses through a stdout permission decision ──────
 
 
 def test_main_denies_a_cross_checkout_command_with_a_deny_payload(
@@ -548,7 +549,9 @@ def test_main_denies_a_cross_checkout_command_with_a_deny_payload(
     exit_code = guard.main()
 
     captured = capsys.readouterr()
-    assert exit_code == 2
-    emitted = json.loads(captured.err)
-    assert emitted["hookSpecificOutput"]["permissionDecision"] == "deny"
-    assert RUN_ID in emitted["systemMessage"]
+    assert exit_code == 0
+    assert captured.err == ""
+    decision = json.loads(captured.out)["hookSpecificOutput"]
+    assert decision["hookEventName"] == "PreToolUse"
+    assert decision["permissionDecision"] == "deny"
+    assert RUN_ID in decision["permissionDecisionReason"]

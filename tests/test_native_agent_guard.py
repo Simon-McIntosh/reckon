@@ -182,7 +182,7 @@ def test_the_refusal_names_the_override_that_teaches_the_escape(
     assert f"{guard.OVERRIDE_ENV}=1" in message
 
 
-def test_main_exits_2_and_denies_on_stderr_for_a_refusal(
+def test_main_denies_with_a_stdout_decision_the_harness_parses(
     tmp_path: Path, monkeypatch, capsys
 ) -> None:
     repo = _crew_managed_repo(tmp_path)
@@ -192,20 +192,56 @@ def test_main_exits_2_and_denies_on_stderr_for_a_refusal(
     exit_code = guard.main()
 
     captured = capsys.readouterr()
-    assert exit_code == 2
-    assert captured.out == ""
-    payload = json.loads(captured.err)
-    assert payload["hookSpecificOutput"]["permissionDecision"] == "deny"
-    assert "reckon crew dispatch" in payload["systemMessage"]
+    assert exit_code == 0
+    assert captured.err == ""
+    decision = json.loads(captured.out)["hookSpecificOutput"]
+    assert decision["hookEventName"] == "PreToolUse"
+    assert decision["permissionDecision"] == "deny"
+    assert "reckon crew dispatch" in decision["permissionDecisionReason"]
 
 
-def test_main_exits_0_on_a_non_crew_repository(tmp_path: Path, monkeypatch) -> None:
+def test_main_hands_the_waiver_note_to_the_calling_session(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    repo = _crew_managed_repo(tmp_path)
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    attach_command = "reckon crew attach --run r-native-9 --task <task-id>"
+    _write_pointer(
+        home,
+        "r-native-9",
+        {
+            "run_id": "r-native-9",
+            "repo": str(repo.resolve()),
+            "launch": "in-harness",
+            "task": None,
+            "directive": {"attach_with": attach_command},
+        },
+    )
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(_payload(repo))))
+
+    exit_code = guard.main()
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    emitted = json.loads(captured.out)
+    assert "permissionDecision" not in emitted["hookSpecificOutput"]
+    assert attach_command in emitted["hookSpecificOutput"]["additionalContext"]
+    assert attach_command in emitted["systemMessage"]
+
+
+def test_main_exits_0_silently_on_a_non_crew_repository(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
     repo = _plain_repo(tmp_path)
     monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(_payload(repo))))
 
     exit_code = guard.main()
 
+    captured = capsys.readouterr()
     assert exit_code == 0
+    assert captured.out == ""
+    assert captured.err == ""
 
 
 # ── Scope test isolation: repository-local only, mounts file irrelevant ────
