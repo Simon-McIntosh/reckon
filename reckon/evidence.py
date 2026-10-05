@@ -51,24 +51,23 @@ def _section_key(value: object) -> str:
     section = str(value or "").strip()
     match = re.fullmatch(r"(?:§\s*|#?s(?:ection)?\s*)?(\d+(?:\.\d+)*)", section, re.I)
     if match:
-        return "s" + match.group(1).replace(".", "-")
+        return _plan_html.section_anchor(section)
     if not section:
-        return "_top"
+        return _plan_html.section_anchor(section)
     key = re.sub(r"[^a-z0-9]+", "-", section.lower()).strip("-")
-    return key or "_top"
+    return key or _plan_html.section_anchor(None)
 
 
 def _section_labels(source: str) -> tuple[dict[str, str], list[str]]:
-    soup = BeautifulSoup(source, "html.parser")
     labels: dict[str, str] = {}
     order: list[str] = []
-    for heading in soup.find_all(re.compile(r"^h[1-6]$")):
-        section_id = str(heading.get("id") or "").strip()
+    for heading in _plan_html.plan_headings(source):
+        section_id = str(heading.raw_id or "").strip()
         if not section_id:
             continue
         key = _section_key(section_id)
         if key not in labels:
-            labels[key] = heading.get_text(" ", strip=True) or section_id
+            labels[key] = heading.text or section_id
             order.append(key)
     return labels, order
 
@@ -293,13 +292,13 @@ def _overall_verdict(records: Sequence[Mapping[str, Any]]) -> str:
 
     The population and the section identity are the ones a section attempt
     count already derives: implement- and test-role runs, addressed by
-    :func:`reckon.crew.routing.section_record_id`. Within a section the latest
+    :func:`reckon._plan_html.section_record_id`. Within a section the latest
     run decides — ordered by completion, then run id, as the record's own run
     tables are — so a failure a later run repaired no longer holds the
     section. A not-run gate qualifies the section rather than failing it,
     because the gate's evidence was not produced rather than produced and red.
     """
-    from reckon.crew.routing import section_record_id
+    from reckon._plan_html import section_record_id
 
     latest: dict[str, tuple[tuple[str, str], str]] = {}
     for record in records:

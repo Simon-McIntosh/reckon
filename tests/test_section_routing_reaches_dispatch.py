@@ -273,7 +273,7 @@ def test_one_derivation_serves_every_spelling_across_the_callers(
 
     # Imported where it is exercised: a revision that carries no single
     # derivation fails inside the case that needs one, not at collection.
-    from reckon.crew.routing import section_anchor, section_record_id
+    from reckon._plan_html import section_anchor, section_record_id
 
     # One derivation: every spelling of the reference addresses one identity.
     assert {section_record_id(spelling) for spelling in SPELLINGS} == {"s5-1"}

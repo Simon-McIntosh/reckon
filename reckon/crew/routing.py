@@ -26,6 +26,7 @@ from reckon import (
     ledger,
     velocity,
 )
+from reckon._plan_html import plan_headings, section_id_candidates, section_record_id
 from reckon._timestamps import parse_utc
 from reckon.calibration import calibration_configuration_key
 from reckon.capability import (
@@ -34,14 +35,13 @@ from reckon.capability import (
     _effective_request,
     _rank,
 )
-
 from reckon.crew.node import (
-    CrewError,
+    _TERMINAL_RUN_PHASES,
     DEFAULT_MEMBER_IDLE_WINDOW,
+    CrewError,
     PlanReviewMissingError,
     PlanVisibilityError,
     TaskNode,
-    _TERMINAL_RUN_PHASES,
     parse_duration,
 )
 from reckon.crew.refusals import format_refusal
@@ -53,8 +53,10 @@ from reckon.crew.runs import (
     pointer_path,
     read_pointer,
     record_process_alive,
-    run_dir as _run_dir,
     runs_dir,
+)
+from reckon.crew.runs import (
+    run_dir as _run_dir,
 )
 
 if TYPE_CHECKING:
@@ -215,48 +217,6 @@ def resolve_role_override(
     )
     return str(backend_name), effective
 
-
-_SECTION_IDENTITY = re.compile(
-    r"^(?:§|#)?\s*(?:s(?:ection)?[\s.-]*)?(\d+(?:[.-]\d+)*)$", re.IGNORECASE
-)
-
-
-def section_record_id(section: Any) -> str:
-    """Return the one identity every spelling of a plan section addresses.
-
-    A section may use a hyphenated anchor, a section-sign display, or prose
-    numbering. Its typed record, element ids, and comment anchors preserve the
-    same identity, so callers resolve every spelling through this derivation.
-    """
-    text = re.sub(r"\s+", " ", str(section or "").strip())
-    numbered = _SECTION_IDENTITY.fullmatch(text)
-    if numbered:
-        return "s" + numbered.group(1).replace(".", "-")
-    return text.removeprefix("#").casefold()
-
-
-def section_anchor(section: Any) -> str:
-    """Return the anchor a section reference's comments and records hang from."""
-    return section_record_id(section) or "_top"
-
-
-def section_id_candidates(section: Any) -> set[str]:
-    """Return every authored id spelling one section reference may address.
-
-    A section's identity is one, but a plan is authored under whichever
-    spelling its author wrote: the hyphenated id a typed record carries
-    (``s5-1``) or the dotted one an author may have used (``s5.1``). The raw
-    reference stays a candidate of its own, because for a slug section it is
-    the whole id. Both authored-HTML lookups build their candidate set here,
-    so the two cannot drift apart.
-    """
-    text = re.sub(r"\s+", " ", str(section or "").strip())
-    identity = section_record_id(text)
-    candidates = {text.casefold().removeprefix("#"), identity}
-    numbered = re.fullmatch(r"s(\d+(?:-\d+)*)", identity)
-    if numbered:
-        candidates.add(f"s{numbered.group(1).replace('-', '.')}")
-    return {candidate for candidate in candidates if candidate}
 
 
 def _section_record(
@@ -2486,8 +2446,8 @@ def _contains_plan_section(html_text: str, section: str) -> bool:
         str(tag.get("id") or "").casefold() in ids for tag in soup.find_all(id=True)
     ):
         return True
-    for heading in soup.find_all(re.compile(r"^h[1-6]$")):
-        text = re.sub(r"\s+", " ", heading.get_text(" ", strip=True)).casefold()
+    for heading in plan_headings(html_text):
+        text = re.sub(r"\s+", " ", heading.text).casefold()
         if text == requested_folded or re.match(
             rf"^{re.escape(requested_folded)}(?:\s|[-—:])", text
         ):

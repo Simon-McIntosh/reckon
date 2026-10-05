@@ -27,6 +27,8 @@ import html as _htmlmod
 import json
 import re
 from collections import Counter
+from collections.abc import Mapping
+from dataclasses import dataclass
 from html.parser import HTMLParser
 from itertools import pairwise
 from pathlib import Path
@@ -40,67 +42,349 @@ from reckon.capability import (
 )
 from reckon.tags import normalise_tag
 
+RECKON_ATTRIBUTE = "data-reckon"
+LANDED_SECTION_CLASS = "section-landed"
+_SECTION_OPEN_RE = re.compile(r"<section\b[^>]*>", re.IGNORECASE)
+
+
+def machinery_kind(attributes) -> str | None:
+    """The owned marker's value; absence alone denotes an unmarked element."""
+    values = dict(attributes)
+    return (values.get(RECKON_ATTRIBUTE) or "") if RECKON_ATTRIBUTE in values else None
+
+
+def _section_identity_value(attributes, enclosing=None):
+    """Read the identity attribute once, with authored wrapper fallback."""
+    value = attributes.get("id") if "id" in attributes else attributes.get("data-id")
+    if value is None and enclosing and machinery_kind(enclosing) in (None, "section"):
+        value = enclosing.get("id")
+    return value
+
+
+_SECTION_IDENTITY = re.compile(
+    r"^(?:§|#)?\s*(?:s(?:ection)?[\s.-]*)?(\d+(?:[.-]\d+)*)$", re.IGNORECASE
+)
+
+
+def section_record_id(section: object, enclosing=None) -> str:
+    """Return the one identity every spelling of a plan section addresses.
+
+    A section may use a hyphenated anchor, a section-sign display, or prose
+    numbering. Its typed record, element ids, and comment anchors preserve the
+    same identity, so callers resolve every spelling through this derivation.
+    """
+    if isinstance(section, Mapping):
+        section = _section_identity_value(section, enclosing)
+    text = re.sub(r"\s+", " ", str(section or "").strip())
+    numbered = _SECTION_IDENTITY.fullmatch(text)
+    if numbered:
+        return "s" + numbered.group(1).replace(".", "-")
+    return text.removeprefix("#").casefold()
+
+
+def section_anchor(section: object) -> str:
+    """Return the anchor a section reference's comments and records hang from."""
+    return section_record_id(section) or "_top"
+
+
+def section_id_candidates(section: object) -> set[str]:
+    """Return every authored id spelling one section reference may address.
+
+    A section's identity is one, but a plan is authored under whichever
+    spelling its author wrote: the hyphenated id a typed record carries
+    (``s5-1``) or the dotted one an author may have used (``s5.1``). The raw
+    reference stays a candidate of its own, because for a slug section it is
+    the whole id. Both authored-HTML lookups build their candidate set here,
+    so the two cannot drift apart.
+    """
+    text = re.sub(r"\s+", " ", str(section or "").strip())
+    identity = section_record_id(text)
+    candidates = {text.casefold().removeprefix("#"), identity}
+    numbered = re.fullmatch(r"s(\d+(?:-\d+)*)", identity)
+    if numbered:
+        candidates.add(f"s{numbered.group(1).replace('-', '.')}")
+    return {candidate for candidate in candidates if candidate}
+
+
+def _is_landed(attributes) -> bool:
+    classes = dict(attributes).get("class") or ()
+    return LANDED_SECTION_CLASS in (
+        classes.split() if isinstance(classes, str) else classes
+    )
+
+
+@dataclass
+class _PlanHeadingRecord:
+    identity: str
+    raw_id: str | None
+    level: int
+    text: str
+    span: tuple[int, int]
+    is_card: bool
+    identity_span: tuple[int, int]
+    heading_span: tuple[int, int]
+    opening_span: tuple[int, int]
+    inner_span: tuple[int, int]
+    own_id: str | None
+    machinery: bool = False
+    error: str = ""
+    body_span: tuple[int, int] = (0, 0)
+    opening_html: str = ""
+
+
+@dataclass
+class _StructuralSpan:
+    tag: str
+    attributes: dict
+    start: int
+    open_end: int
+    close_start: int
+    end: int
+    closed: bool = False
+    protected: bool = False
+    heading: _PlanHeadingRecord | None = None
+    parents: tuple = ()
+
+    @property
+    def span(self):
+        return self.start, self.end
+
+    @property
+    def kind(self):
+        return machinery_kind(self.attributes)
+
 
 class _StructuredSectionSpanParser(HTMLParser):
-    """Locate owned section spans and section-heading attribute spans."""
+    """Locate structural spans, headings and their extents in one raw read."""
 
     def __init__(self, source: str) -> None:
         super().__init__(convert_charrefs=False)
         self.source = source
-        self.line_offsets = [0]
-        self.line_offsets.extend(match.end() for match in re.finditer(r"\n", source))
-        self.section_stack: list[tuple[bool, int]] = []
-        self.spans: list[tuple[int, int]] = []
-        self.headings: list[tuple[str, int, int, int]] = []
-        self.heading_start: tuple[str, int, int] | None = None
+        self.line_offsets = [0, *(match.end() for match in re.finditer(r"\n", source))]
+        self.records: list[_StructuralSpan] = []
+        self.stack: list[_StructuralSpan] = []
 
     def _offset(self) -> int:
         line, column = self.getpos()
         return self.line_offsets[line - 1] + column
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag == "h2":
-            start = self._offset()
-            end = start + len(self.get_starttag_text())
-            values = dict(attrs)
-            self.heading_start = (values.get("id") or "", start, end)
-            if values.get("data-reckon") == "section":
-                self.spans.append((start, end))
-        if tag == "section":
-            protected = any(name == "data-reckon" for name, _value in attrs)
-            self.section_stack.append((protected, self._offset()))
-
-    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag != "section" or not any(name == "data-reckon" for name, _value in attrs):
+        level = int(tag[1]) if re.fullmatch(r"h[1-6]", tag) else None
+        if level is None and tag not in {"section", "main", "body"}:
             return
         start = self._offset()
-        self.spans.append((start, start + len(self.get_starttag_text())))
+        end = start + len(self.get_starttag_text())
+        values = {name: value if value is not None else "" for name, value in attrs}
+        record = _StructuralSpan(
+            tag,
+            values,
+            start,
+            end,
+            len(self.source),
+            len(self.source),
+            parents=tuple(self.stack),
+        )
+        kind = machinery_kind(values)
+        record.protected = (tag == "section" and kind is not None) or (
+            level == 2 and kind == "section"
+        )
+        if level is not None:
+            wrapper = next(
+                (parent for parent in reversed(self.stack) if parent.tag == "section"),
+                None,
+            )
+            enclosing = wrapper.attributes if wrapper else None
+            heading_values = {"id": None, **values}
+            raw = _section_identity_value(heading_values, enclosing)
+            own = _section_identity_value(heading_values)
+            record.heading = _PlanHeadingRecord(
+                section_record_id(heading_values, enclosing),
+                raw,
+                level,
+                "",
+                (start, len(self.source)),
+                False,
+                (start, end),
+                (start, end),
+                (start, end),
+                (end, end),
+                own,
+                any(parent.kind not in (None, "section") for parent in self.stack),
+            )
+        self.records.append(record)
+        self.stack.append(record)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+        if self.stack and self.stack[-1].start == self._offset():
+            record = self.stack.pop()
+            record.close_start = record.end = record.open_end
+            record.closed = True
 
     def handle_endtag(self, tag: str) -> None:
-        if tag == "h2" and self.heading_start is not None:
-            end = self.source.find(">", self._offset()) + 1
-            self.headings.append((*self.heading_start, end))
-            self.heading_start = None
-        if tag != "section" or not self.section_stack:
+        record = next(
+            (entry for entry in reversed(self.stack) if entry.tag == tag), None
+        )
+        if record is None:
             return
-        protected, start = self.section_stack.pop()
-        if not protected:
-            return
-        close_start = self._offset()
-        close_end = self.source.find(">", close_start)
-        self.spans.append((start, len(self.source) if close_end < 0 else close_end + 1))
+        start = self._offset()
+        end = self.source.find(">", start)
+        record.close_start = start
+        record.end = len(self.source) if end < 0 else end + 1
+        record.closed = True
+        self.stack.remove(record)
+
+    def close(self) -> None:
+        super().close()
+        headings = [record for record in self.records if record.heading is not None]
+        sections = [record for record in self.records if record.tag == "section"]
+        for record in headings:
+            heading = record.heading
+            heading.heading_span = record.span
+            heading.inner_span = record.open_end, record.close_start
+            heading.text = BeautifulSoup(
+                self.source[record.open_end : record.close_start], "html.parser"
+            ).get_text(" ", strip=True)
+            wrapper = next(
+                (
+                    parent
+                    for parent in reversed(record.parents)
+                    if parent.tag == "section"
+                ),
+                None,
+            )
+            identity_element = (
+                wrapper
+                if heading.own_id is None and heading.raw_id is not None
+                else record
+            )
+            heading.identity_span = identity_element.span
+            heading.opening_html = self.source[record.start : record.open_end]
+            if heading.own_id is None and heading.raw_id is not None:
+                heading.opening_html = (
+                    heading.opening_html[:-1]
+                    + f' id="{_htmlmod.escape(heading.raw_id, quote=True)}">'
+                )
+        for record in headings:
+            heading = record.heading
+            wrapper = next(
+                (
+                    parent
+                    for parent in reversed(record.parents)
+                    if parent.tag == "section"
+                ),
+                None,
+            )
+            identity_element = (
+                wrapper if heading.identity_span != heading.heading_span else record
+            )
+            ends = [len(self.source)]
+            ends.extend(
+                (
+                    other.heading.identity_span[0]
+                    if other.heading.identity_span[0] > record.start
+                    else other.start
+                )
+                for other in headings
+                if other.start > record.start and other.heading.level <= heading.level
+            )
+            ends.extend(
+                other.start
+                for other in sections
+                if other.start > record.start
+                and (
+                    other.kind not in (None, "section") or _is_landed(other.attributes)
+                )
+            )
+            ends.extend(
+                parent.close_start
+                for parent in record.parents
+                if parent.close_start >= record.end
+            )
+            heading.span = record.start, min(ends)
+            if not record.closed:
+                heading.error = f"heading id {heading.raw_id!r} has no closing tag"
+            if identity_element is not record:
+                heading.span = identity_element.span
+                if not identity_element.closed:
+                    heading.error = (
+                        f"the section carrying id {heading.raw_id!r} has no closing tag"
+                    )
+            if (
+                heading.level == 2
+                and wrapper is not None
+                and _is_landed(wrapper.attributes)
+            ):
+                if not wrapper.closed:
+                    heading.error = (
+                        f"the landed card for {heading.raw_id!r} has no closing tag"
+                    )
+                elif sum(
+                    other.heading.level == 2
+                    for other in headings
+                    if wrapper.start < other.start < wrapper.end
+                ) != 1 or any(
+                    other.start > wrapper.start
+                    and other.start < wrapper.end
+                    and (
+                        other.kind not in (None, "section")
+                        or _is_landed(other.attributes)
+                    )
+                    for other in sections
+                ):
+                    heading.error = f"cannot determine the extent of {heading.raw_id!r} unambiguously"
+                else:
+                    heading.is_card = True
+                    heading.span = wrapper.span
+            body_end = (
+                identity_element.close_start
+                if identity_element is not record
+                else wrapper.close_start
+                if heading.is_card
+                else heading.span[1]
+            )
+            heading.body_span = record.end, body_end
+
+
+def _structural_spans(html_text: str):
+    parser = _StructuredSectionSpanParser(html_text)
+    parser.feed(html_text)
+    parser.close()
+    return parser.records
+
+
+def plan_headings(html_text: str):
+    """Headings with canonical and raw identity, text, level and source spans.
+
+    ``span`` is the section extent; ``heading_span`` and ``identity_span``
+    identify the heading and the element carrying its identity independently.
+    An invalid replacement extent carries ``error`` and never earns a card flag.
+    """
+    return tuple(
+        record.heading
+        for record in _structural_spans(html_text)
+        if record.heading is not None
+    )
 
 
 def structured_section_spans(html_text: str) -> tuple[tuple[int, int], ...]:
     """Return source ranges that authored-text operations must not overlap."""
+    return tuple(
+        sorted(
+            (record.start, record.open_end if record.heading else record.end)
+            for record in _structural_spans(html_text)
+            if record.protected
+        )
+    )
 
-    parser = _StructuredSectionSpanParser(html_text)
-    parser.feed(html_text)
-    parser.close()
-    for protected, start in parser.section_stack:
-        if protected:
-            parser.spans.append((start, len(html_text)))
-    return tuple(sorted(parser.spans))
+
+def landed_section_ids(html_text: str) -> frozenset[str]:
+    """Identities whose rendered section extent is an unambiguous landed card."""
+    return frozenset(
+        heading.identity
+        for heading in plan_headings(html_text)
+        if heading.identity and heading.is_card and not heading.error
+    )
 
 
 # ── Scalar fields carried in <meta name="plan-*"> ──────────────────────────
@@ -306,7 +590,9 @@ _SECTION_RECORD_ATTRIBUTES = (
     "data-status",
     "data-links",
 )
-_RECORD_MARKER_RE = re.compile(r"""data-reckon\s*=\s*["']section["']""", re.IGNORECASE)
+_RECORD_MARKER_RE = re.compile(
+    rf"""{RECKON_ATTRIBUTE}\s*=\s*["']section["']""", re.IGNORECASE
+)
 
 
 def _record_field(record, name):
@@ -384,14 +670,14 @@ def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]
     records = []
     for element in _section_record_elements(soup):
         if element.name == "h2":
-            identity = element.get("id", "")
+            identity = section_record_id({"id": None, **element.attrs})
         elif element.name == "section":
-            identity = element.get("data-id", "")
+            identity = section_record_id(element.attrs)
             neighbors = [element.find_previous_sibling(), element.find_next_sibling()]
             if not any(
                 neighbor is not None
                 and neighbor.name == "h2"
-                and neighbor.get("id") == identity
+                and section_record_id(neighbor.attrs) == identity
                 for neighbor in neighbors
             ):
                 raise ValueError(
@@ -473,7 +759,9 @@ def _comment_elements(soup) -> list:
 
 def _in_comments_section(element) -> bool:
     """Whether this comment element sits inside the comments section itself."""
-    return element.find_parent("section", attrs={"data-reckon": "comments"}) is not None
+    return (
+        element.find_parent("section", attrs={RECKON_ATTRIBUTE: "comments"}) is not None
+    )
 
 
 def _body_resident_comment_counts(html_text: str) -> Counter:
@@ -845,20 +1133,22 @@ _SECTION_RECORD_ATTRIBUTE_RE = re.compile(
 
 def _splice_section_records(html_text: str, records: list[dict]) -> str:
     """Regenerate only record spans, preserving heading text and authored prose."""
-    if not records and not re.search(
-        r"""data-reckon\s*=\s*["']section["']""", html_text
-    ):
+    if not records and not _RECORD_MARKER_RE.search(html_text):
         return html_text
     parser = _StructuredSectionSpanParser(html_text)
     parser.feed(html_text)
     parser.close()
     soup = BeautifulSoup(html_text, "html.parser")
     _read_section_records(soup, {})
-    spans = dict(parser.spans)
+    spans = {
+        record.start: record.open_end if record.heading else record.end
+        for record in parser.records
+        if record.protected
+    }
     pending = {record["id"]: record for record in records}
     replacements = []
     for element in _section_record_elements(soup):
-        identity = element.get("id") if element.name == "h2" else element.get("data-id")
+        identity = section_record_id(element.attrs)
         start = parser.line_offsets[element.sourceline - 1] + element.sourcepos
         if start not in spans:
             raise ValueError(
@@ -887,12 +1177,18 @@ def _splice_section_records(html_text: str, records: list[dict]) -> str:
                 end += 1
         replacements.append((start, end, rendered))
     for identity, record in pending.items():
-        headings = [heading for heading in parser.headings if heading[0] == identity]
+        headings = [
+            record.heading
+            for record in parser.records
+            if record.heading
+            and record.heading.level == 2
+            and record.heading.identity == identity
+        ]
         if len(headings) != 1:
             raise ValueError(
                 f"sections[{identity!r}].id: expected exactly one matching h2"
             )
-        end = headings[0][3]
+        end = headings[0].heading_span[1]
         replacements.append((end, end, "\n" + _render_section_record(record)))
     for start, end, rendered in sorted(replacements, reverse=True):
         html_text = html_text[:start] + rendered + html_text[end:]

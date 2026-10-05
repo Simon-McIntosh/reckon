@@ -19,6 +19,12 @@ from bs4 import BeautifulSoup, Tag
 
 from reckon import _backends, ledger
 from reckon import budget as budget_module
+from reckon._plan_html import (
+    RECKON_ATTRIBUTE,
+    machinery_kind,
+    plan_headings,
+    section_record_id,
+)
 from reckon._timestamps import parse_utc
 from reckon.crew import lane_document as lane_document_module
 from reckon.crew import rollout as rollout_module
@@ -1597,7 +1603,7 @@ def _group_section_attempts(
     settled_run_ids: set[str] | None = None,
 ) -> dict[str, dict[str, dict[str, Any]]]:
     """Apply one run-id and outcome rule to full or selected history rows."""
-    from reckon.crew.routing import section_record_id
+    from reckon._plan_html import section_record_id
 
     wanted_section = section_record_id(only_section) if only_section else None
     observed: dict[str, tuple[str, str, dict[str, Any]]] = {}
@@ -1692,7 +1698,7 @@ def section_attempt_count(
     The indexed query decodes only rows for this plan; section spelling is then
     normalized in Python, as it is for full plan views.
     """
-    from reckon.crew.routing import section_record_id
+    from reckon._plan_html import section_record_id
 
     wanted = section_record_id(section)
     if not project or not plan or not wanted:
@@ -1775,7 +1781,7 @@ def with_section_attempts(
     root: str | Path | None = None,
 ) -> list[dict[str, Any]]:
     """Add run-derived attempts to section records for a delivered plan view."""
-    from reckon.crew.routing import section_record_id
+    from reckon._plan_html import section_record_id
 
     by_section = section_attempts_by_plan(project, root).get(slug, {})
     enriched = []
@@ -2058,10 +2064,10 @@ def authored_plan_text(html_text: str) -> str:
     soup = BeautifulSoup(html_text or "", "html.parser")
     scope = soup.body or soup
     for element in scope.select(
-        "script, style, section[data-reckon]:not([data-reckon='section'])"
+        f"script, style, section[{RECKON_ATTRIBUTE}]:not([{RECKON_ATTRIBUTE}='section'])"
     ):
         element.decompose()
-    for element in scope.select("section[data-reckon='section']"):
+    for element in scope.select(f"section[{RECKON_ATTRIBUTE}='section']"):
         element.decompose()
     return " ".join(scope.stripped_strings)
 
@@ -2072,41 +2078,28 @@ def _inside_structured_region(element: Tag) -> bool:
     return any(
         isinstance(parent, Tag)
         and parent.name == "section"
-        and parent.get("data-reckon") not in (None, "section")
+        and machinery_kind(parent.attrs) not in (None, "section")
         for parent in element.parents
     )
 
 
-def _authored_section_headings(soup: BeautifulSoup) -> list[tuple[str, Tag]]:
-    """Authored plan sections as ``(identity, heading)``, in document order.
-
-    A section's identity sits on its h2, or — for a plan that wraps each
-    section in a ``<section id=...>`` element — on that wrapper, and then it
-    resolves to the wrapper's heading. A wrapper is only admitted when it is
-    not one of Reckon's structured collections and its heading carries no
-    identity of its own, so each section is listed exactly once.
-    """
-
-    sections: list[tuple[str, Tag]] = []
-    claimed: set[str] = set()
-    for element in soup.select("h2[id], section[id]"):
-        identity = element.get("id")
-        if not identity or identity in claimed:
+def _authored_section_headings(html_text: str, soup: BeautifulSoup) -> list:
+    """Locate each authored section's identity element from the shared spans."""
+    sections = []
+    claimed = set()
+    for heading in plan_headings(html_text):
+        if (
+            heading.level != 2
+            or not heading.raw_id
+            or heading.identity in claimed
+            or heading.machinery
+        ):
             continue
-        if element.name == "h2":
-            if _inside_structured_region(element):
-                continue
-            heading = element
-        else:
-            if element.get("data-reckon") not in (None, "section"):
-                continue
-            heading = element.find("h2")
-            if heading is None or heading.get("id"):
-                continue
-            if _inside_structured_region(heading):
-                continue
-        claimed.add(identity)
-        sections.append((identity, heading))
+        element = soup.find(id=heading.raw_id)
+        if element is None or _inside_structured_region(element):
+            continue
+        claimed.add(heading.identity)
+        sections.append((heading.identity, heading, element))
     return sections
 
 
@@ -2153,13 +2146,13 @@ def _record_text_response(
 def _authored_heading_html(heading: Tag) -> str:
     """Render a heading without opt-in typed-record attributes."""
 
-    rendered = BeautifulSoup(str(heading), "html.parser").find("h2")
+    rendered = BeautifulSoup(str(heading), "html.parser").find(True)
     if rendered is None:
         return str(heading)
-    if rendered.get("data-reckon") == "section":
+    if machinery_kind(rendered.attrs) == "section":
         for attribute in tuple(rendered.attrs):
             if (
-                attribute == "data-reckon"
+                attribute == RECKON_ATTRIBUTE
                 or attribute
                 in {
                     "data-effort-hours",
@@ -2206,13 +2199,18 @@ def _section_response(
             "invalid_section",
             "section must be one safe heading identity.",
         )
+    identity = section_record_id(identity)
     soup = BeautifulSoup(html_text or "", "html.parser")
-    authored = _authored_section_headings(soup)
+    authored = _authored_section_headings(html_text or "", soup)
     selected = next(
-        (heading for section_id, heading in authored if section_id == identity),
+        (
+            heading
+            for section_id, heading, _element in authored
+            if section_id == identity
+        ),
         None,
     )
-    available = [section_id for section_id, _ in authored]
+    available = [section_id for section_id, _heading, _element in authored]
     if selected is None:
         available_text = ", ".join(available) or "none"
         raise ViewRequestError(
@@ -2224,19 +2222,18 @@ def _section_response(
             "Choose one of the available section identities.",
         )
 
-    fragments = [_authored_heading_html(selected)]
-    for sibling in selected.next_siblings:
-        if isinstance(sibling, Tag) and sibling.name == "h2":
-            break
-        if isinstance(sibling, Tag) and sibling.name == "section":
-            reckoned = sibling.get("data-reckon")
-            if reckoned == "section":
-                continue
-            if reckoned:
-                break
-        rendered = str(sibling).strip()
-        if rendered:
-            fragments.append(rendered)
+    source = html_text or ""
+    opening, closing = selected.heading_span
+    rendered_heading = BeautifulSoup(source[opening:closing], "html.parser").find(True)
+    fragments = [_authored_heading_html(rendered_heading)]
+    body_source = source[slice(*selected.body_span)]
+    body = BeautifulSoup(body_source, "html.parser")
+    for element in body.select(f"section[{RECKON_ATTRIBUTE}]"):
+        if machinery_kind(element.attrs) is not None:
+            element.decompose()
+    fragments.extend(
+        str(element).strip() for element in body.contents if str(element).strip()
+    )
     section_html = "\n".join(fragments)
     section_text = " ".join(BeautifulSoup(section_html, "html.parser").stripped_strings)
     record = next(
@@ -2253,7 +2250,7 @@ def _section_response(
         "view": "section",
         "section": {
             "id": identity,
-            "heading": selected.get_text(" ", strip=True),
+            "heading": selected.text,
             "text": section_text,
             "html": section_html,
             "declaration": (data.get("section_declarations") or {}).get(identity),

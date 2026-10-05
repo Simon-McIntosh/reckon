@@ -57,7 +57,8 @@ from pathlib import Path
 from typing import Any
 
 from reckon import _plan_html
-from reckon._store import landed_section_ids, write_json_atomically
+from reckon._plan_html import LANDED_SECTION_CLASS, landed_section_ids, machinery_kind
+from reckon._store import write_json_atomically
 from reckon.crew import review as _review_store
 
 # Reviewer-text parsing is owned by reckon.crew.review, so the code-review and
@@ -193,6 +194,7 @@ class _AuthoredProseParser(HTMLParser):
         self._skip_landed_cards = skip_landed_cards
         self._card_depth = 0
         self._heading_depth = 0
+        self._heading_tag = ""
         # A landed card wraps the section's own ``data-reckon="section"`` record,
         # which is itself a ``<section>``. A bare depth counter would let that
         # inner record's closing tag close the card, so each open section
@@ -207,15 +209,16 @@ class _AuthoredProseParser(HTMLParser):
             return
         if tag == "body":
             self._in_body = True
-        carries_reckon = any(name == "data-reckon" for name, _value in attrs)
+        carries_reckon = machinery_kind(attrs) is not None
         if self._skip_landed_cards:
             if tag == "section":
                 classes = (_attr_value(attrs, "class") or "").split()
-                is_card = "section-landed" in classes
+                is_card = LANDED_SECTION_CLASS in classes
                 self._section_is_card.append(is_card)
                 if is_card:
                     self._card_depth += 1
             elif tag == "h2":
+                self._heading_tag = tag
                 self._heading_depth += 1
         self._stack.append(
             self._protected() or carries_reckon or tag in _PROSE_SKIP_TAGS
@@ -225,7 +228,7 @@ class _AuthoredProseParser(HTMLParser):
         if tag in _VOID_TAGS:
             return
         if self._skip_landed_cards:
-            if tag == "h2" and self._heading_depth:
+            if tag == self._heading_tag and self._heading_depth:
                 self._heading_depth -= 1
             elif tag == "section" and self._section_is_card:
                 if self._section_is_card.pop() and self._card_depth:
@@ -386,7 +389,7 @@ def plan_fingerprint(
 
     A landing collapse is a machinery write, not an authored one: it replaces a
     section's body with a landed card (recognised by
-    :func:`reckon._store.landed_section_ids`) and sets the section's declaration
+    :func:`reckon._plan_html.landed_section_ids`) and sets the section's declaration
     to ``done``. Neither is authored design, so neither may move the digest — the
     card's interiors are dropped while the heading it carries is kept, and the
     section declarations are normalised out. A section that is declared ``done``

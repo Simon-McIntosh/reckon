@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="one-raw-text-section-reader">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s17">
+<meta name="plan-title" content="Raw-text section reader verification">
+<meta name="plan-recorded-at" content="2026-10-06">
+<meta name="plan-verdict" content="passed">
+<meta name="plan-commits" content="5777c14023cd50ce0648291347f0455d5141af30,d085d29fbf6cc193b311601f83fe1ca851972a23">
+<title>Raw-text section reader verification | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="one-raw-text-section-reader-verification">
+<h1>Raw-text section reader verification</h1>
+<table><thead><tr><th>Measure</th><th>Result</th><th>Receipt / meaning</th></tr></thead><tbody>
+<tr><td>Implementation revision</td><td>d085d29fbf6cc193b311601f83fe1ca851972a23</td><td>Shared parser, all consumers, identity imports, regression tests</td></tr>
+<tr><td>Base affected tests</td><td>350 passed in 127.10s (0:02:07); EXIT=0</td><td>baseline-frozen-complete.log</td></tr>
+<tr><td>Head affected tests</td><td>382 passed in 146.75s (0:02:26); EXIT=0</td><td>final.log</td></tr>
+<tr><td>Declared negative control</td><td>1 failed in 3.66s; EXIT=1</td><td>tests/test_one_raw_text_section_reader.py::test_heading_rule_reports_only_the_parser_and_shape_exemptions</td></tr>
+<tr><td>Mutation</td><td>restore one soup.find_all(&quot;h2&quot;, id=True) walk in reckon/doccheck.py</td><td>Original bytes restored before the head gate</td></tr>
+<tr><td>Heading recognition sites</td><td>33 → 6</td><td>One parser, four shape checks, one permitted prose-parser handler</td></tr>
+<tr><td>Protected-span parity</td><td>726 spans; 154 plans; zero differences</td><td>Compared with the original parser loaded from the base git blob</td></tr>
+<tr><td>Raw heading-id parity</td><td>1037 ids; 154 plans; zero differences</td><td>Ordered level-two own IDs compared with the existing soup walk</td></tr>
+<tr><td>Collapse extent</td><td>2 shapes pass</td><td>Heading ID and wrapper ID replace exactly the reader span; neighbouring bytes preserved</td></tr>
+<tr><td>Raw attribute edge cases</td><td>2 regressions pass</td><td>Valueless id remains empty; data-id does not become an authored heading id</td></tr>
+<tr><td>Typed record reads retained</td><td>comments, gates, followups, questions, research</td><td>These data-id values identify collection records, not authored sections</td></tr>
+<tr><td>Retired store recognizers</td><td>0</td><td>All thirteen named helpers and regexes absent from reckon/_store.py</td></tr>
+<tr><td>Upward parser imports</td><td>0</td><td>No import from reckon._store in reckon/_plan_html.py</td></tr>
+<tr><td>Store section-open regexes</td><td>0</td><td>No raw section-open expression remains in the store</td></tr>
+<tr><td>Store segment-grammar lines</td><td>4</td><td>Only plan slug and evidence anchor validations and their messages remain</td></tr>
+<tr><td>Machinery marker owner</td><td>reckon/_plan_html.py:45</td><td>One literal constant; readers use the shared marker function or constant</td></tr>
+<tr><td>Landed class owner</td><td>reckon/_plan_html.py:46</td><td>One literal constant; the deleted private class constant has zero matches</td></tr>
+<tr><td>Shared identity owner</td><td>reckon/_plan_html.py</td><td>section_record_id, section_id_candidates, section_anchor, landed_section_ids; importer ownership test passes</td></tr>
+<tr><td>Lint delta</td><td>68 baseline; 65 head; zero added findings</td><td>Scoped changes only; naming scans retain schema vocabulary and runtime data</td></tr>
+<tr><td>Frozen baseline provenance</td><td>/tmp/raw-section-base-mq03x1q3/reckon/_plan_html.py</td><td>Imported from the complete base archive; cwd /tmp/raw-section-base-mq03x1q3</td></tr>
+<tr><td>Baseline setup retry</td><td>Incomplete extraction: 8 failed, 327 passed, 15 errors</td><td>baseline-frozen.log retains the omitted skills and docs failures; the complete base extraction passes all 350 cases.</td></tr>
+<tr><td>Run environment</td><td>Allocation 1277272; in-place execution</td><td>Shared root environment, repository code through PYTHONPATH, isolated temporary test repositories</td></tr>
+<tr><td>Gate scope</td><td>This node only</td><td>Merged-head verification belongs to the coordinator’s separately dispatched test node</td></tr>
+</tbody></table>
+<h2>Interface counts</h2>
+<table><thead><tr><th>Family</th><th>Base</th><th>Head</th><th>Change</th></tr></thead><tbody>
+<tr><td>public_definitions</td><td>1478</td><td>1480</td><td>2</td></tr>
+<tr><td>cli_options</td><td>317</td><td>317</td><td>0</td></tr>
+<tr><td>mcp_views</td><td>33</td><td>33</td><td>0</td></tr>
+<tr><td>refusal_families</td><td>23</td><td>23</td><td>0</td></tr>
+</tbody></table>
+<h2>Base heading-recognition listing</h2>
+<table><thead><tr><th>Revision</th><th>Source</th><th>Definition</th><th>Line</th></tr></thead><tbody>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_plan_html.py</td><td>_StructuredSectionSpanParser.handle_endtag</td><td>80</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_plan_html.py</td><td>_StructuredSectionSpanParser.handle_starttag</td><td>62</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_plan_html.py</td><td>_authored_child_count</td><td>1296</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_plan_html.py</td><td>_read_section_records</td><td>386</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_plan_html.py</td><td>_read_section_records</td><td>393</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_plan_html.py</td><td>_splice_section_records</td><td>861</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_plan_html.py</td><td>_splice_section_records</td><td>870</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_store.py</td><td>_evidence_section_html</td><td>1176</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_store.py</td><td>_insert_authored_section</td><td>817</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_store.py</td><td>_landed_card_span</td><td>1059</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_store.py</td><td>_require_heading_for_section_records</td><td>1791</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_store.py</td><td>_require_new_section_contracts</td><td>1817</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_store.py</td><td>_require_new_section_contracts</td><td>1820</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_store.py</td><td>_section_body_end</td><td>978</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_store.py</td><td>_section_heading</td><td>952</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_store.py</td><td>_section_heading</td><td>955</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_store.py</td><td>_wrapper_section_heading</td><td>922</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_store.py</td><td>_wrapper_section_heading</td><td>925</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/_store.py</td><td>landed_section_ids</td><td>1093</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/crew/dispatch.py</td><td>_plan_section_text</td><td>326</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/crew/dispatch.py</td><td>_plan_section_text</td><td>334</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/crew/dispatch.py</td><td>_plan_section_text</td><td>348</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/crew/plan_review.py</td><td>_AuthoredProseParser.handle_endtag</td><td>228</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/crew/plan_review.py</td><td>_AuthoredProseParser.handle_starttag</td><td>218</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/crew/routing.py</td><td>_contains_plan_section</td><td>2489</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/doccheck.py</td><td>_section_contract_findings</td><td>1055</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/doccheck.py</td><td>_section_ref_findings</td><td>985</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/evidence.py</td><td>_section_labels</td><td>65</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/mcp_views.py</td><td>_authored_heading_html</td><td>2156</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/mcp_views.py</td><td>_authored_section_headings</td><td>2092</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/mcp_views.py</td><td>_authored_section_headings</td><td>2096</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/mcp_views.py</td><td>_authored_section_headings</td><td>2103</td></tr>
+<tr><td>b8e5f58882ce01eec2d066a63c653392b6dcc809</td><td>reckon/mcp_views.py</td><td>_section_response</td><td>2229</td></tr>
+</tbody></table>
+<h2>Head heading-recognition listing</h2>
+<table><thead><tr><th>Revision</th><th>Source</th><th>Definition</th><th>Line</th></tr></thead><tbody>
+<tr><td>d085d29fbf6cc193b311601f83fe1ca851972a23</td><td>reckon/_plan_html.py</td><td>_StructuredSectionSpanParser.handle_starttag</td><td>172</td></tr>
+<tr><td>d085d29fbf6cc193b311601f83fe1ca851972a23</td><td>reckon/_plan_html.py</td><td>_authored_child_count</td><td>1592</td></tr>
+<tr><td>d085d29fbf6cc193b311601f83fe1ca851972a23</td><td>reckon/_plan_html.py</td><td>_read_section_records</td><td>672</td></tr>
+<tr><td>d085d29fbf6cc193b311601f83fe1ca851972a23</td><td>reckon/_plan_html.py</td><td>_read_section_records</td><td>679</td></tr>
+<tr><td>d085d29fbf6cc193b311601f83fe1ca851972a23</td><td>reckon/_plan_html.py</td><td>_splice_section_records</td><td>1160</td></tr>
+<tr><td>d085d29fbf6cc193b311601f83fe1ca851972a23</td><td>reckon/crew/plan_review.py</td><td>_AuthoredProseParser.handle_starttag</td><td>220</td></tr>
+</tbody></table>
+<h2>Recorded test commands</h2>
+<table><thead><tr><th>Arm</th><th>Command</th></tr></thead><tbody>
+<tr><td>Base</td><td>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --timeout=120 --basetemp=/tmp/raw-section-base-mq03x1q3/test-temp /tmp/raw-section-base-mq03x1q3/tests/test_edit_plan.py /tmp/raw-section-base-mq03x1q3/tests/test_impl_is_computed.py /tmp/raw-section-base-mq03x1q3/tests/test_section_record_round_trips.py /tmp/raw-section-base-mq03x1q3/tests/test_section_routing_reaches_dispatch.py /tmp/raw-section-base-mq03x1q3/tests/test_edit_plan_collapse_section.py /tmp/raw-section-base-mq03x1q3/tests/test_section_id_on_its_wrapper_resolves.py /tmp/raw-section-base-mq03x1q3/tests/test_edit_plan_append_evidence.py /tmp/raw-section-base-mq03x1q3/tests/test_edit_plan_section_writes.py /tmp/raw-section-base-mq03x1q3/tests/test_read_plan_section_view.py /tmp/raw-section-base-mq03x1q3/tests/test_doccheck.py /tmp/raw-section-base-mq03x1q3/tests/test_doccheck_structure.py /tmp/raw-section-base-mq03x1q3/tests/test_doccheck_landed_header.py /tmp/raw-section-base-mq03x1q3/tests/test_doccheck_section_ref_warning.py /tmp/raw-section-base-mq03x1q3/tests/test_audit_doc_section_contract.py /tmp/raw-section-base-mq03x1q3/tests/test_crew_routing_visibility.py /tmp/raw-section-base-mq03x1q3/tests/test_evidence_synthesis.py /tmp/raw-section-base-mq03x1q3/tests/test_evidence_record_composition.py /tmp/raw-section-base-mq03x1q3/tests/test_plan_review_store.py /tmp/raw-section-base-mq03x1q3/tests/test_plan_review_gate.py /tmp/raw-section-base-mq03x1q3/tests/test_a_run_comment_earns_no_plan_review.py /tmp/raw-section-base-mq03x1q3/tests/test_section_contract_is_refused.py /tmp/raw-section-base-mq03x1q3/tests/test_plan_write_preserves_unparsed.py /tmp/raw-section-base-mq03x1q3/tests/test_velocity_interface_counts.py</td></tr>
+<tr><td>Head</td><td>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --timeout=120 --basetemp=/tmp/raw-section-final /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_edit_plan.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_impl_is_computed.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_section_record_round_trips.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_section_routing_reaches_dispatch.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_edit_plan_collapse_section.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_section_id_on_its_wrapper_resolves.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_edit_plan_append_evidence.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_edit_plan_section_writes.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_read_plan_section_view.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_doccheck.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_doccheck_structure.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_doccheck_landed_header.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_doccheck_section_ref_warning.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_audit_doc_section_contract.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_crew_routing_visibility.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_evidence_synthesis.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_evidence_record_composition.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_plan_review_store.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_plan_review_gate.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_a_run_comment_earns_no_plan_review.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_section_contract_is_refused.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_plan_write_preserves_unparsed.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_velocity_interface_counts.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_one_raw_text_section_reader.py</td></tr>
+<tr><td>Negative control</td><td>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --timeout=60 --basetemp=/tmp/raw-section-negative /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/too-coord-1005/one-raw-text-section-reader/tests/test_one_raw_text_section_reader.py::test_heading_rule_reports_only_the_parser_and_shape_exemptions</td></tr>
+</tbody></table>
+<h2>Durable receipts</h2>
+<table><thead><tr><th>Artifact</th><th>Path</th></tr></thead><tbody>
+<tr><td>manifest.md</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T220708879636-one-raw-text-section-reader/manifest.md</td></tr>
+<tr><td>measurements.json</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T220708879636-one-raw-text-section-reader/measurements.json</td></tr>
+<tr><td>ownership-checks.json</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T220708879636-one-raw-text-section-reader/ownership-checks.json</td></tr>
+<tr><td>lint-delta.json</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T220708879636-one-raw-text-section-reader/lint-delta.json</td></tr>
+<tr><td>naming-check.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T220708879636-one-raw-text-section-reader/naming-check.log</td></tr>
+<tr><td>baseline-frozen-complete.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T220708879636-one-raw-text-section-reader/baseline-frozen-complete.log</td></tr>
+<tr><td>final.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T220708879636-one-raw-text-section-reader/final.log</td></tr>
+<tr><td>negative-control.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T220708879636-one-raw-text-section-reader/negative-control.log</td></tr>
+<tr><td>raw-attribute-reproduction.json</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T220708879636-one-raw-text-section-reader/raw-attribute-reproduction.json</td></tr>
+</tbody></table>
+</section>
+</main></body></html>
