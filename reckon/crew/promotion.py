@@ -48,6 +48,7 @@ from reckon.crew.node import (
     parse_duration,
     role_may_write_repository_paths,
 )
+from reckon.crew.recovery import _resolve_commit
 from reckon.crew.reports import (
     _NONE_VALUES as _MANIFEST_NOTHING,
 )
@@ -120,21 +121,7 @@ def scoped_diff_stat(
     if not base:
         return {"available": False, "reason": "missing_base"}
     for revision in (base, head):
-        resolved = subprocess.run(
-            [
-                "git",
-                "rev-parse",
-                "--verify",
-                "--quiet",
-                "--end-of-options",
-                f"{revision}^{{commit}}",
-            ],
-            cwd=str(cwd),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if resolved.returncode:
+        if not _resolve_commit(Path(cwd), revision):
             return {"available": False, "reason": "unresolvable_revision"}
     argv = ["git", "diff", "--numstat", f"{base}..{head}"]
     if paths:
@@ -454,24 +441,7 @@ def _commit_canonical_id(root: Path, revision: str) -> str | None:
     """
     if not root.is_dir():
         return None
-    probe = subprocess.run(
-        [
-            "git",
-            "rev-parse",
-            "--verify",
-            "--quiet",
-            "--end-of-options",
-            f"{revision}^{{commit}}",
-        ],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    canonical = probe.stdout.strip()
-    if probe.returncode or not canonical:
-        return None
-    return canonical
+    return _resolve_commit(root, revision) or None
 
 
 def _commit_resolves_in(root: Path, revision: str) -> bool:
@@ -2644,22 +2614,8 @@ def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> lis
     """Resolve every recorded revision to its canonical commit object id."""
     commits = []
     for revision in revisions:
-        resolved = subprocess.run(
-            [
-                "git",
-                "rev-parse",
-                "--verify",
-                "--quiet",
-                "--end-of-options",
-                f"{revision}^{{commit}}",
-            ],
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        commit = resolved.stdout.strip()
-        if resolved.returncode or not commit:
+        commit = _resolve_commit(cwd, revision)
+        if not commit:
             # A commit that resolves somewhere else is not a bad sha, it is a
             # node whose write target was not its run repository — dispatched
             # without --repo and pointed at a foreign checkout by prose. Naming
@@ -3306,20 +3262,7 @@ def _write_shadow_patch(record: Mapping[str, Any]) -> Path:
         raise CrewError(
             f"shadow run {run_id!r} has no readable worktree; its patch cannot be preserved"
         )
-    resolved = subprocess.run(
-        [
-            "git",
-            "rev-parse",
-            "--verify",
-            "--quiet",
-            "--end-of-options",
-            f"{base}^{{commit}}",
-        ],
-        cwd=worktree,
-        capture_output=True,
-        check=False,
-    )
-    if not base or resolved.returncode:
+    if not _resolve_commit(worktree, base):
         raise CrewError(
             f"shadow run {run_id!r} base {base!r} is not reachable in its worktree"
         )
@@ -3464,6 +3407,9 @@ def _primary_read_targets(
     commit = commits[-1] if commits else ""
     if not commit or tree is None:
         return "", ()
+    canonical = _resolve_commit(tree, commit)
+    if not canonical:
+        return commit, ()
     result = subprocess.run(
         [
             "git",
@@ -3472,7 +3418,7 @@ def _primary_read_targets(
             "--no-commit-id",
             "--name-only",
             "-r",
-            f"{commit}^{{commit}}",
+            canonical,
         ],
         cwd=str(tree),
         capture_output=True,

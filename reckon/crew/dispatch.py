@@ -67,6 +67,7 @@ from reckon.crew.prompts import compose_prompt, time_fence_statement
 from reckon.crew.refusals import format_refusal
 from reckon.crew.recovery import (
     REVIEW_NODE_PREFIX,
+    _resolve_commit,
     resume_window_refusal,
     stream_paths_newest_first,
 )
@@ -12111,20 +12112,14 @@ def _inherited_worktree_reading(record: Mapping[str, Any]) -> str:
         [f"Head commit: {head}", f"Recorded base: {recorded_base or 'not recorded'}"]
     )
     if recorded_base:
-        base_result, base_error = _worktree_git_read(
-            worktree,
-            "rev-parse",
-            "--verify",
-            "--end-of-options",
-            f"{recorded_base}^{{commit}}",
-        )
-        if base_error or base_result is None:
+        resolved_base = _resolve_commit(worktree, recorded_base)
+        if not resolved_base:
             lines.append(
                 "Head differs from recorded base: unknown; the recorded base could "
-                f"not be resolved ({' '.join(str(base_error).splitlines())})."
+                f"not be resolved ({recorded_base!r} is not a commit)."
             )
         else:
-            differs = "yes" if head != base_result.stdout.strip() else "no"
+            differs = "yes" if head != resolved_base else "no"
             lines.append(f"Head differs from recorded base: {differs}.")
     else:
         lines.append("Head differs from recorded base: unknown; no base was recorded.")
