@@ -447,11 +447,11 @@ def read_trees(repo, revision, *, prefix=DEFAULT_PREFIX):
     """
     listing = git(repo, "ls-tree", "-r", "--name-only", revision, "--", prefix).decode()
     paths = [path for path in listing.splitlines() if path.endswith(".py")]
+    # Every path comes from ls-tree at this same revision, so each yields bytes.
     blobs = read_blobs(repo, [(revision, path) for path in paths])
     return {
         path: ast.parse(text.decode("utf-8-sig"), filename=path)
         for (_revision, path), text in blobs.items()
-        if text is not None
     }
 
 
