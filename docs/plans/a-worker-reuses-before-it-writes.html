@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="a-review-is-sized-to-its-risk,a-refusal-is-about-the-work,a-landing-record-never-conflicts,the-fleet-reports-its-velocity">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
   <title>A Worker Reuses Before It Writes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="109">
+<meta name="plan-impl" content="0.98">
+<meta name="plan-version" content="110">
 <meta name="plan-modified" content="2026-10-05">
 </head>
 <body>
@@ -104,6 +104,10 @@
 <section data-reckon="section" data-id="s9" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="a-worker-reuses-before-it-writes#s8"></section></header>
   <p class="landed-summary">Landed: every sibling-temporary write-then-replace site outside reckon/_store.py renders through <code>write_atomically</code> (ledger, run store, both hooks, picker, obligation snapshot, archive, evidence, recovery, promotion and all four serve.py publishers; byte payloads in binary mode); a module-private AST inventory on reckon/interface_counts.py reports 17 staged-write functions at the base and 3 at the head (the owner and the two named exceptions), with a parity assertion against the census. Gate 465 passed; negative control reddens the inventory. Merged at 6f4230cdb. <a href="s9">full record</a></p>
 </section>
+
+    <h2 id="s10">§10 — The parity assertion compares a non-empty set</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="a-worker-reuses-before-it-writes#s9"></section>
+<p>§9's parity assertion requires every function the census labels an atomic JSON replacement to be in the runtime inventory, read over the trees at the head. The review of that landing noted the left set is empty at the head, because §8 and §9 migrated every such function, so the subset check holds vacuously and the synthetic control beside it is the only thing proving the census predicate is live. The guard is meant for the future fork that reintroduces a JSON write-then-replace, and a guard whose only real exercise is vacuous has never been seen to fail for the reason it exists.</p><p>The repair exercises the assertion on trees where the left set is non-empty: the test reads the trees at the §9 base revision through <code>read_trees</code>, where the census labels several functions and the runtime inventory reports seventeen, and asserts the subset relation there as well as at the head, so the comparison has been observed to hold on a populated set. No new definition is added; the test file is the only path.</p><p><strong>Done when</strong>: the parity test asserts the subset relation at the head and at a pinned base revision whose census set is non-empty, and prints both set sizes into its assertion message; the negative control removes one name from the runtime inventory result at the base and reddens the test; <code>tests/test_staged_write_inventory.py</code> is the only changed path; the gate runs that file with the tests line giving the pytest command followed by its result as N passed, EXIT=0, and the gate log ending in a bare EXIT=0 line.</p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
