@@ -23,9 +23,9 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-10-05">
-<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -134,9 +134,12 @@
   <p class="landed-summary">Landed: census read 2026-10-04T23:25Z over every stored plan review through <code>list_plan_reviews</code> — 9 of 9 reviews carry a <code>reuse_search</code>, <code>duplicate_owner</code> or <code>thin_wrapper</code> finding, 23 of 23 such findings anchor to a file or section that exists, 0 unresolved; two findings are confirmed by this plan's own §9 and §10 repairs. The script at <code>docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py</code> reproduces the table (two runs, empty diff, 9 rows = 9 files). Review 97/100; three follow-ons on the script's heuristics (glob pattern, anchor path, confirmation scope). Commit <code>9fa1d1782</code>, merged <code>f1f42cd15</code>. <a href="s11">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-05</span>
     <h2 id="s12">§12 — The census script and the ownership grep read the whole package</h2>
-<section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p>Four follow-ons from the reviews of §9, §10 and §11, folded here rather than left as prose. <strong>Deliverable.</strong> (a) <code>docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py</code>: the directory count uses the reader's own <code>plan-*.v*.json</code> pattern; a plan-section anchor is resolved against the blob of the document its own path names; the confirmed-by-repair column searches only the reviewed plan and records the confirming location. (b) <code>tests/test_plan_review_prefix_is_one_constant.py</code>: the ownership grep walks <code>reckon/crew/</code> recursively, so a bare literal in the picker subpackage reddens it. (c) <code>reckon/crew/plan_review.py</code>: the dead <code>PLAN_REVIEW_RUBRICS</code> re-export is removed or given a reader.</p><p><strong>Done when</strong> the census re-run yields the same two shares as §11 with the confirming location shown per confirmed cell; the recursive grep test passes and its control (a bare literal placed under <code>reckon/crew/picker/</code> in a scratch copy) reddens it; <code>grep -rn PLAN_REVIEW_RUBRICS reckon tests</code> shows one definition and at least one reader or none at all; and the gate named in the node's brief reports 0 failed with its log ending EXIT=0.</p>
+<section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed: <code>review.py</code> owns the blob-keyed sibling suffix for both stores through one length-parameterised helper (no stored record moved; asserted on a fixture path); <code>plan_review.py</code> names the store's file glob once and the census imports it beside a broad count, so a skipped record shows as a difference; plan anchors resolve against the document they name; repair confirmation is scoped to the reviewed plan and records its location; the ownership grep walks the package recursively; the dead re-export is gone. Gate 81 passed, control red on a planted literal. Review 92/100, three follow-ons. Commit <code>06d117c66</code>, merged <code>fc22dd40f</code>. <a href="s12">full record</a></p>
+</section>
 
     <h2 id="s13">§13 — The design review reads the interface budget</h2>
 <section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -318,7 +321,7 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
     <div class="r-comment-body"><p>review stored parsed at total 91 (goal_fidelity 20, evidence 18, scope_discipline 20, durability 15, fit 18) with one follow-on finding that the ownership grep does not cover the reckon/crew/picker subpackage</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20261005T0205-s12-amended-by-review" data-who="too-coord-1005" data-when="2026-10-05T02:05:00Z">
-    <div class="r-comment-body">Amended by the design review of version 43 (findings duplicate_owner-1 and duplicate_owner-2), both acted on. (a) is narrowed: the census imports the store's plan-file pattern from reckon/crew/plan_review.py, the module that owns the store's filename grammar, and spells no glob of its own. (d) is added: plan_review.plan_review_path extends reckon/crew/review.py:review_path's blob-keyed sibling rule (the .at-<sha> suffix and its validation) instead of carrying its own regex and suffix spelling, so the store's keying rule lives once; a record stored before the change must still be found at the same path.</div>
+    <div class="r-comment-body">Amended by the design review of version 43 (findings duplicate_owner-1 and duplicate_owner-2), both acted on. (a) is narrowed: the census imports the store's plan-file pattern from reckon/crew/plan_review.py, the module that owns the store's filename grammar, and spells no glob of its own. (d) is added: plan_review.plan_review_path extends reckon/crew/review.py:review_path's blob-keyed sibling rule (the .at-<sha> suffix and its validation) instead of carrying its own regex and suffix spelling, so the store's keying rule lives once; a record stored before the change must still be found at the same path.</sha></div>
 </div>
 </section>
 </main>

@@ -1300,6 +1300,11 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
     <p>Acting on finding duplicate_owner-2 of the v23 design review and duplicate_owner-1 of the v36 review. Run r-20261004T231735782122 on codex-astra (the write set includes dispatch.py, beyond the local window), 36 minutes including one resume: the worker stopped at the concurrent-node fence on dispatch.py, a shared-write path by design, and was authorised to make the minimal delegation edit. Diff 45 insertions, 7 deletions. Gates: named 58 passed, ledger 97 passed, baseline 150, control 1 failed exit 1. Review r-20261004T235017462606: 91/100 (goal 20, evidence 18, scope 20, durability 15, fit 18). Commit <code>b8125e2b8</code>, merged <code>879edd095</code>.</p>
   </section>
 
+  <section id="s12">
+    <h2>§12 — the census script and the ownership grep read the whole package</h2>
+    <p>Run r-20261005T000929038505 on the local lane, 18 minutes, briefed with the findings of the version 43 and 46 design reviews. The census now reports the broad <code>plan-*.json</code> count beside the reader's own pattern imported from <code>plan_review.PLAN_REVIEW_FILE_GLOB</code>; a plan-section anchor is resolved against the blob of the document it names; confirmation is scoped to the reviewed plan and records the confirming section (the two v23 findings still confirm at §9 and §10). <code>review._blob_suffix</code> builds the sibling suffix for both stores with the plan store keeping its eight-character key, and a fixture path is asserted unchanged. Gate 81 passed exit 0; control: a bare prefix literal planted under the picker subpackage in a scratch copy reddens the recursive grep, 1 failed exit 1. Review r-20261005T002850875878: 92/100 (goal 19, evidence 18, scope 20, durability 17, fit 18); follow-ons: the confirmation column has no negative control of its own, the grep control ran a replica of the assertion rather than the shipped test, and the §11 table is a live-store snapshot whose byte reproduction holds only while the store is stable. Commit <code>06d117c66</code>, merged <code>fc22dd40f</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
