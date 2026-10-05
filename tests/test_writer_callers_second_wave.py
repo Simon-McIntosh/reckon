@@ -18,14 +18,12 @@ Patching a name a module does not carry is an AttributeError, so these also
 state the landing itself -- a caller that still owns its own temporary-and-rename
 cannot pass them.
 
-Two callers are retained exceptions, asserted here so a later "cleanup" that
-moves them cannot pass silently:
-
-* ``follow_checkpoint._replace_atomically`` writes the pane's history, a log of
-  JSON *lines* rewritten as a whole file. The shared writer emits exactly one
-  JSON value plus a newline, so it cannot express that file.
-* ``follow_checkpoint.append_history`` appends one line per row and only
-  rewrites through that helper once the log has outgrown its cap.
+One caller stays a plain-text writer rather than a JSON one, but only at the
+serialisation layer: ``follow_checkpoint.append_history`` rewrites the pane's
+history, a log of JSON *lines* written as a whole file, which the
+document-oriented adapter cannot express. It renders that text through the same
+render-callback primitive the adapter wraps, so it no longer keeps a private
+temporary-and-rename of its own.
 """
 
 from __future__ import annotations
@@ -211,20 +209,7 @@ def test_checkpoint_write_fsyncs_the_directory(tmp_path, monkeypatch, recording_
     assert stat.S_IFDIR in kinds
 
 
-def test_replace_atomically_retained_output_unchanged(tmp_path, recording_umask):
-    from reckon.crew import follow_checkpoint
-
-    target = tmp_path / "raw.json"
-    follow_checkpoint._replace_atomically(target, '{"a": 1}')
-
-    written, mode = _written(target)
-    assert written == b'{"a": 1}'
-    assert mode == 0o644
-
-
-def test_append_history_retained_rewrite_unchanged(
-    tmp_path, monkeypatch, recording_umask
-):
+def test_append_history_rewrite_unchanged(tmp_path, monkeypatch, recording_umask):
     from reckon.crew import follow_checkpoint
 
     history = tmp_path / "hist.json"
@@ -246,6 +231,37 @@ def test_append_history_retained_rewrite_unchanged(
         b'{"at": 1003.0, "kind": "row", "run_id": "", "state": "", "text": "row3"}\n'
     )
     assert mode == 0o644
+
+
+def test_append_history_rewrite_delegates(tmp_path, monkeypatch):
+    from reckon.crew import follow_checkpoint
+
+    history = tmp_path / "hist.json"
+    monkeypatch.setattr(follow_checkpoint, "history_path", lambda p, s: history)
+    # A recorder stands in for the primitive; the caller must reach it rather
+    # than writing its own sibling temporary.
+    calls: list[dict] = []
+
+    def record(path, render, **kwargs):
+        calls.append({"path": Path(path), "kwargs": kwargs})
+
+    monkeypatch.setattr(follow_checkpoint, "write_atomically", record)
+    for index in range(4):
+        follow_checkpoint.append_history(
+            "proj",
+            "sess",
+            text=f"row{index}",
+            at=1000.0 + index,
+            max_rows=1,
+            max_seconds=10_000,
+            now=1000.0 + index,
+        )
+
+    assert calls, "the capped rewrite never reached the shared primitive"
+    for call in calls:
+        assert call["path"] == history
+        assert call["kwargs"]["fsync"] is True
+        assert call["kwargs"]["fsync_directory"] is True
 
 
 def test_review_record_output_unchanged(tmp_path, monkeypatch, recording_umask):
