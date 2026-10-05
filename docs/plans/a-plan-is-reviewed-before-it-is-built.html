@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-plan-is-reviewed-before-it-is-built">
   <meta name="plan-title" content="A plan is reviewed before it is built">
   <meta name="plan-summary" content="Every plan create and edit gets an advisory rubber-duck review via the reckon surface; before a build, a prior-art and depth review favours deep modules.">
-  <meta name="plan-status" content="shipped">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-impl" content="0.6">
@@ -23,9 +23,9 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="58">
+<meta name="plan-version" content="59">
 <meta name="plan-modified" content="2026-10-05">
-<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -161,6 +161,10 @@
 <section data-reckon="section" data-id="s15" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
   <p class="landed-summary">Landed: the store readers derive a plan's current and legacy digests through one private helper and take the plan's content directly; the gate, the sweep eligibility and the composer pass the plan and compute no digest, so a review stored under the legacy definition is current everywhere. Public definitions unchanged (13 before and after). Gate 65 passed plus the ledger population 97 passed; control: the sweep reading the current digest alone reddens the legacy cases. Review 92/100, one follow-on (no evidence fragment of its own). Commit <code>0f6c5f929</code>, merged <code>c539e40a2</code>. <a href="s15">full record</a></p>
 </section>
+
+    <h2 id="s16">§16 — A section reviewed as authored stays reviewed after it lands</h2>
+<section data-reckon="section" data-id="s16" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="a-plan-is-reviewed-before-it-is-built#s14"></section>
+<p>§14 made a landing collapse earn no review, and it holds when the collapsed section was already a landed card at review time. It does not hold for the common case: a section reviewed as authored text and collapsed at its landing. Measured 2026-10-05 on <code>a-worker-reuses-before-it-writes</code>: the stored review of version 96 carries fingerprint <code>e23d15f6…</code>; collapsing §7 and §8 at their landings produced version 98 with fingerprint <code>69197f8a…</code> and neither current form matched, so the gate refused the dispatch of §9, a section whose authored text had not changed since the review, and a fifteenth design review was composed to re-read content the fourteenth had already passed. Every landing beat therefore costs one review cycle before the next dispatch, and a plan with several sections landing in sequence pays it each time.</p><p>The fingerprint is whole-document, and a whole-document digest cannot be stable across a change it is designed to see. The repair makes the unit of review the authored section: the stored record carries one digest per authored section at review time, and the gate asks whether every section that is not yet landed has a digest some stored review covers. A section that landed since the review drops out of the question; a section whose text moved is uncovered and earns a review; a section whose text is unchanged stays covered whatever happened around it. <code>plan_fingerprint</code> stays as the record's identity; the coverage check is what the gate and the sweep read.</p><p><strong>Done when</strong>: a review stored for a plan with sections A and B as authored still satisfies the gate for a dispatch of B after A is collapsed, and a test asserts it on a synthetic plan; a change to B's authored text alone leaves A covered and B uncovered, and the refusal names B; the sweep composes a review only for an uncovered section set, never for a landing; the negative control restores the whole-document comparison and reddens the collapse test; the predict census of §11 still resolves every anchor.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -367,7 +371,7 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
     <div class="r-comment-body"><p>Store readers derive current and legacy fingerprints through one private helper; sweep and gate pass plan content, sidecars retain the current digest, and public definitions remain 13 to 13. Named gate 65 passed plus ledger gate 97 passed, both EXIT=0; current-only sweep mutation 2 failed and 2 passed, EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261005T023329625364-review-of-sweep-and-gate-read-one-fingerprint-set" data-who="reckon-build" data-when="2026-10-05T02:38:57.599Z">
-    <div class="r-comment-body"><p>Two identical parsed records stored, one at the legacy path and one keyed by the reviewed head 0f6c5f92; scores goal_fidelity 19, evidence 19, scope_discipline 18, durability 19, fit 17 (total 92), reviewed pair base 3ab626d4 / head 0f6c5f92, added_failure_count 0 with no added ids derived from the reviewed run&#x27;s baseline-regression.log and gate.log.</p></div>
+    <div class="r-comment-body"><p>Two identical parsed records stored, one at the legacy path and one keyed by the reviewed head 0f6c5f92; scores goal_fidelity 19, evidence 19, scope_discipline 18, durability 19, fit 17 (total 92), reviewed pair base 3ab626d4 / head 0f6c5f92, added_failure_count 0 with no added ids derived from the reviewed run's baseline-regression.log and gate.log.</p></div>
 </div>
 </section>
 </main>
