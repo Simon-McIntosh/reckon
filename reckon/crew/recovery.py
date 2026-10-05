@@ -7429,23 +7429,16 @@ def _write_classification_memo(
         return
     payload = dict(memo)
     payload["version"] = CLASSIFICATION_MEMO_VERSION
-    written: str | None = None
+    from reckon._store import write_atomically
+
     try:
-        with tempfile.NamedTemporaryFile(
-            "w",
-            encoding="utf-8",
-            dir=str(path.parent),
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            written = handle.name
-            json.dump(payload, handle, sort_keys=True)
-        os.replace(written, path)
+        write_atomically(
+            path,
+            lambda handle: json.dump(payload, handle, sort_keys=True),
+            fsync=False,
+            mode=0o600,
+        )
     except (OSError, TypeError, ValueError):
-        if written is not None:
-            with contextlib.suppress(OSError):
-                os.unlink(written)
         return
 
 

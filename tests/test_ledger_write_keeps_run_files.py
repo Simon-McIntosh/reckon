@@ -235,36 +235,36 @@ def test_a_file_edited_outside_the_writer_is_still_refused(repo) -> None:
 def test_an_unwritable_run_file_leaves_the_project_readable(
     repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A per-run file that refuses its write must not advance the aggregate.
+    """A refused publication preserves both complete copies and removes staging.
 
-    This is the failure the store cannot prevent and the writer must survive:
-    one per-run file cannot be rewritten -- a read-only tree, a full disk --
-    at the moment an edit needs it. If the aggregate envelope moved first, the
-    file would keep the revision it held while the row moved past it, and the
-    next read would refuse the whole project -- the state this node exists to
-    prevent, reached by a write reporting no success at all. Writing the files
-    first, and putting back any already changed, means the refusal leaves both
-    copies at the revision the reader already had, so the write raises and the
-    project stays readable.
+    Run files publish before the aggregate envelope. If a rename fails, the
+    shared writer leaves the prior target intact and removes its temporary;
+    the ledger refuses the update without advancing its aggregate row.
     """
-
     _seed(repo)
-    runs_dir = ledger.run_path(PROJECT, RUN_ID, repo).parent
-    real_write_text = Path.write_text
+    run_file = ledger.run_path(PROJECT, RUN_ID, repo)
+    previous = run_file.read_bytes()
+    real_replace = os.replace
+    attempts = []
 
-    def refuse_run_file(self, *args, **kwargs):
-        if self.parent == runs_dir:
+    def refuse_run_file(source, destination, *args, **kwargs):
+        if Path(destination) == run_file:
+            attempts.append((Path(source).read_bytes(), run_file.read_bytes()))
             raise OSError(errno.ENOSPC, "No space left on device")
-        return real_write_text(self, *args, **kwargs)
+        return real_replace(source, destination, *args, **kwargs)
 
     data, version = ledger.load(PROJECT, repo)
     data["runs"][0].pop("time_budget")
+    expected = ledger.serialize_run(data["runs"][0]).encode("utf-8")
 
-    monkeypatch.setattr(Path, "write_text", refuse_run_file)
-    with pytest.raises(ledger.LedgerError):
-        ledger.write(PROJECT, data, version, repo)
-    monkeypatch.undo()
+    with monkeypatch.context() as patch:
+        patch.setattr(os, "replace", refuse_run_file)
+        with pytest.raises(ledger.LedgerError, match="No space left on device"):
+            ledger.write(PROJECT, data, version, repo)
 
+    assert attempts == [(expected, previous)]
+    assert run_file.read_bytes() == previous
+    assert not list(run_file.parent.glob(f".{run_file.name}.*.tmp"))
     reread, _ = ledger.load(PROJECT, repo)
     assert reread["runs"][0]["time_budget"] == "12m"
     assert _file_text(repo) == ledger.serialize_run(reread["runs"][0])

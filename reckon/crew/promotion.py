@@ -7,7 +7,6 @@ import re
 import shlex
 import shutil
 import subprocess
-import tempfile
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -6666,24 +6665,11 @@ def _update_run_record(
     if not isinstance(record, dict) or record.get("run_id") != run_id:
         raise ledger.LedgerError(f"run {run_id!r} does not match {path}")
     updated = {**record, **changes}
-    temporary: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=path.parent,
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as stream:
-            temporary = Path(stream.name)
-            stream.write(ledger.serialize_run(updated))
-            stream.flush()
-            os.fsync(stream.fileno())
-        temporary.replace(path)
-    finally:
-        if temporary is not None:
-            temporary.unlink(missing_ok=True)
+    from reckon._store import write_atomically
+
+    write_atomically(
+        path, lambda stream: stream.write(ledger.serialize_run(updated)), mode=0o600
+    )
     return updated
 
 

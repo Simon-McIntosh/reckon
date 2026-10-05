@@ -359,9 +359,11 @@ def _write_terminal_record(
             out.append(named)
     try:
         manifest.parent.mkdir(parents=True, exist_ok=True)
-        tmp = manifest.parent / f".{manifest.name}.tmp"
-        tmp.write_text("\n".join(out) + "\n")
-        os.replace(tmp, manifest)
+        from reckon._store import write_atomically
+
+        write_atomically(
+            manifest, lambda handle: handle.write("\n".join(out) + "\n"), fsync=False
+        )
     except OSError:
         pass
 

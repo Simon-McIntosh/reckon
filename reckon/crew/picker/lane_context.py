@@ -22,7 +22,6 @@ would let the router weigh a lane it never heard from.
 
 from __future__ import annotations
 
-import contextlib
 import json
 import os
 from collections.abc import Mapping, Sequence
@@ -346,22 +345,20 @@ def _write_persisted_profile(
     Only the profile summary is written, never the rows it was derived from.
     """
 
-    temporary: Path | None = None
+    from reckon._store import write_atomically
+
     try:
         path = _profile_cache_path(project)
         path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.parent / f".{path.name}.{os.getpid()}.tmp"
-        temporary.write_text(
-            json.dumps(
-                {"schema": _PROFILE_FILE_SCHEMA, "key": key, "profile": profile}
+        write_atomically(
+            path,
+            lambda handle: json.dump(
+                {"schema": _PROFILE_FILE_SCHEMA, "key": key, "profile": profile}, handle
             ),
-            encoding="utf-8",
+            fsync=False,
         )
-        os.replace(temporary, path)
     except (OSError, ValueError):
-        if temporary is not None:
-            with contextlib.suppress(OSError):
-                temporary.unlink()
+        pass
 
 
 def _cached_run_time_profile(project: str, *, now: datetime) -> Mapping[str, Any]:

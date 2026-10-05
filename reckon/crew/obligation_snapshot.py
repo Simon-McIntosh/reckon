@@ -36,9 +36,8 @@ import json
 import os
 import re
 import sys
-import time
 import traceback
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -599,29 +598,14 @@ def write_snapshot(
     project: str,
     session: str,
     document: Mapping[str, Any],
-    *,
-    replace: Callable[[str, str], None] = os.replace,
 ) -> Path:
-    """Write one snapshot so a reader never observes a partial file.
+    """Publish one complete snapshot, removing the temporary on any failure."""
+    from reckon._store import write_atomically
 
-    The whole document lands in a unique sibling temporary which is fsynced and
-    then renamed over the destination, so the destination is only ever the
-    previous snapshot or the whole new one. A writer killed between the two
-    leaves the previous snapshot intact and readable, and leaves a temporary
-    beside it that nothing reads.
-
-    ``replace`` is the rename, exposed so a test can stop a writer exactly
-    between the temporary write and the rename.
-    """
     path = snapshot_path(project, session)
     path.parent.mkdir(parents=True, exist_ok=True)
-    staging = path.with_name(f".{path.name}.{os.getpid()}.{time.time_ns()}.tmp")
     payload = (json.dumps(document, indent=2, sort_keys=True) + "\n").encode()
-    with staging.open("wb") as handle:
-        handle.write(payload)
-        handle.flush()
-        os.fsync(handle.fileno())
-    replace(str(staging), str(path))
+    write_atomically(path, lambda handle: handle.write(payload), binary=True)
     return path
 
 

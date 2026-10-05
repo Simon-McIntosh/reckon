@@ -1151,27 +1151,6 @@ def _run_store_location() -> str:
     return str(run_store.store_path())
 
 
-def _replace_run_file(target: Path, text: str) -> None:
-    """Replace a per-run file's contents in one atomic step.
-
-    Writing in place truncates the file before the new bytes land, so a write
-    that fails part-way would leave the file holding a prefix of its own
-    content — a third state agreeing with neither the aggregate row nor the
-    revision it replaced, and one the restore below could no longer put back.
-    A sibling temporary beside the target instead keeps the revision the file
-    already holds intact when the replacement cannot be made, and the
-    temporary is removed so the run store carries no residue.
-    """
-    temporary = target.parent / f".{target.name}.{os.getpid()}.tmp"
-    try:
-        temporary.write_text(text, encoding="utf-8")
-        os.replace(temporary, target)
-    except OSError:
-        with contextlib.suppress(OSError):
-            temporary.unlink()
-        raise
-
-
 def _restore_run_files(snapshots: Sequence[tuple[Path, str]]) -> None:
     """Put each captured revision back, undoing a partly applied rewrite.
 
@@ -1183,7 +1162,9 @@ def _restore_run_files(snapshots: Sequence[tuple[Path, str]]) -> None:
     """
     for target, text in snapshots:
         with contextlib.suppress(OSError):
-            _replace_run_file(target, text)
+            _store.write_atomically(
+                target, lambda handle, text=text: handle.write(text), fsync=False
+            )
 
 
 def _keep_run_files_identical(
@@ -1228,7 +1209,11 @@ def _keep_run_files_identical(
             prior = target.read_text(encoding="utf-8")
             if prior == encoded:
                 continue
-            _replace_run_file(target, encoded)
+            _store.write_atomically(
+                target,
+                lambda handle, encoded=encoded: handle.write(encoded),
+                fsync=False,
+            )
         except OSError as exc:
             _restore_run_files(snapshots)
             raise LedgerError(

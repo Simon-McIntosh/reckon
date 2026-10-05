@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import budget, capabilities, ledger
+from reckon import _store, budget, capabilities, ledger
 from reckon.crew.node import TaskNode
 from reckon.crew.picker import lane_context, prompts, snapshot
 
@@ -735,7 +735,27 @@ def test_atomic_run_edit_invalidates_profile_before_index_refresh(
     path = _write(directory, _row("first"))
     ledger.load("sample", root)
     first = lane_context._ledger_stamp("sample")
-    ledger._replace_run_file(path, json.dumps(_row("first", wall=90)))
+    before = path.read_bytes()
+    replacement = json.dumps(_row("first", wall=90))
+    rename = os.replace
+    attempts = []
+
+    def refuse(source, destination):
+        attempts.append((Path(source).read_text(), Path(destination).read_bytes()))
+        raise OSError("publication interrupted")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(os, "replace", refuse)
+        with pytest.raises(OSError, match="publication interrupted"):
+            _store.write_atomically(
+                path, lambda handle: handle.write(replacement), fsync=False
+            )
+    assert attempts == [(replacement, before)]
+    assert path.read_bytes() == before
+    assert not list(path.parent.glob(f".{path.name}.*.tmp"))
+    assert os.replace is rename
+    _store.write_atomically(path, lambda handle: handle.write(replacement), fsync=False)
+    assert path.read_text() == replacement
     assert lane_context._ledger_stamp("sample") != first
 
 
