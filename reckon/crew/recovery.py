@@ -490,17 +490,12 @@ def plan_review_subject(
 def _plan_review_pending(record: Mapping[str, Any]) -> bool:
     """Whether this content still needs a report, stored or delivered."""
     project, slug = record["project"], record["plan_slug"]
-    fingerprint = plan_review.plan_fingerprint(Path(record["plan_path"]))
-    if (
-        plan_review.read_plan_review(project, slug, plan_fingerprint=fingerprint)
-        is not None
-    ):
+    plan = Path(record["plan_path"])
+    if plan_review.read_plan_review(project, slug, plan=plan) is not None:
         return False
     return not any(
         not report["stored"]
-        for report in plan_review.delivered_reports(
-            project, slug, plan_fingerprint=fingerprint
-        )
+        for report in plan_review.delivered_reports(project, slug, plan=plan)
     )
 
 
