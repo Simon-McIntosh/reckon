@@ -174,7 +174,7 @@ class _StructuredSectionSpanParser(HTMLParser):
             return
         start = self._offset()
         end = start + len(self.get_starttag_text())
-        values = dict(attrs)
+        values = {name: value if value is not None else "" for name, value in attrs}
         record = _StructuralSpan(
             tag,
             values,
@@ -194,10 +194,11 @@ class _StructuredSectionSpanParser(HTMLParser):
                 None,
             )
             enclosing = wrapper.attributes if wrapper else None
-            raw = _section_identity_value(values, enclosing)
-            own = _section_identity_value(values)
+            heading_values = {"id": None, **values}
+            raw = _section_identity_value(heading_values, enclosing)
+            own = _section_identity_value(heading_values)
             record.heading = _PlanHeadingRecord(
-                section_record_id(values, enclosing),
+                section_record_id(heading_values, enclosing),
                 raw,
                 level,
                 "",
@@ -669,7 +670,7 @@ def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]
     records = []
     for element in _section_record_elements(soup):
         if element.name == "h2":
-            identity = section_record_id(element.attrs)
+            identity = section_record_id({"id": None, **element.attrs})
         elif element.name == "section":
             identity = section_record_id(element.attrs)
             neighbors = [element.find_previous_sibling(), element.find_next_sibling()]

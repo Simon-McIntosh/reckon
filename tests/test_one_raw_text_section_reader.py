@@ -356,3 +356,26 @@ def test_typed_section_identity_round_trips_through_the_same_derivation():
     assert '<h2 id="s5.1">Work</h2>' in updated
     assert updated.count('data-id="s5-1"') == 1
     assert _plan_html.read_state(updated)["sections"][0]["effort_hours"] == 2
+
+
+def test_raw_heading_id_presence_is_not_a_typed_record_attribute():
+    source = (
+        '<h2 id>Present but empty</h2><h2 data-id="record-only">No authored id</h2>'
+    )
+    expected = [
+        str(tag.get("id") or "")
+        for tag in BeautifulSoup(source, "html.parser").find_all("h2", id=True)
+    ]
+    headings = _plan_html.plan_headings(source)
+    assert (
+        [heading.own_id for heading in headings if heading.own_id is not None]
+        == expected
+        == [""]
+    )
+    assert headings[1].identity == ""
+
+
+def test_a_heading_record_requires_its_own_authored_id():
+    source = '<h2 data-reckon="section" data-id="record-only" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable">Work</h2>'
+    with pytest.raises(ValueError, match="id"):
+        _plan_html.read_state(source)
