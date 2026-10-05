@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="148">
+<meta name="plan-version" content="149">
 <meta name="plan-modified" content="2026-10-05">
 </head>
 <body>
@@ -425,7 +425,10 @@
     <div class="r-comment-body">Recorded behaviour change from the landing's review (116/120): the byte runner captures git's standard error, so velocity.git over it now holds a git warning on the success path that subprocess.check_output used to leave on the operator's terminal, while on the failure path the raised error now carries the captured text where it carried none. The new runner test asserts the capture deliberately. Nothing in the repository reads git warnings from the terminal, and the captured text is available on the returned process, so this stands as recorded rather than reverted.</div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261005T175216549428-clone-detector-reads-revisions-through-velocity" data-who="reckon-build" data-when="2026-10-05T18:08:18.054Z">
-    <div class="r-comment-body"><p>§12 landed — the detector retires _git/revised_python/_cache_root and reads revisions through velocity&#x27;s one public read_sources (composing the generalised _tree_paths lister with read_blobs), taking no prefix while the counter parses read_sources under its reckon prefix; public_definitions 1477 base → 1477 head; one-reader test plus archive-reader negative control (EXIT=1); gate 144 passed EXIT=0 at 24e780675.</p></div>
+    <div class="r-comment-body"><p>§12 landed — the detector retires _git/revised_python/_cache_root and reads revisions through velocity's one public read_sources (composing the generalised _tree_paths lister with read_blobs), taking no prefix while the counter parses read_sources under its reckon prefix; public_definitions 1477 base → 1477 head; one-reader test plus archive-reader negative control (EXIT=1); gate 144 passed EXIT=0 at 24e780675.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261005T180908985821-review-of-clone-detector-reads-revisions-through-velocity" data-who="reckon-build" data-when="2026-10-05T18:15:42.388Z">
+    <div class="r-comment-body"><p>review of r-20261005T175216549428-clone-detector-reads-revisions-through-velocity stored at both granted paths: 6 dimensions scored (goal_fidelity 20, reuse 20, scope_discipline 20, durability 19, evidence 19, fit 19; total 117), reviewed_base_sha 6205025347f8ac1b92fb51f784ed3be057b5be73, reviewed_head_sha 77e0ae4f7e6a6fdcdeb19ec7b96c952acde2e2d7, added_failure_count null with added_failure_ids []; zero blocking findings, one follow-on (read_sources does not filter read_blobs&#x27; None-for-missing values).</p></div>
 </div>
 </section>
 </main>
