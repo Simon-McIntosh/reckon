@@ -23,6 +23,7 @@ from reckon import (
     ledger,
     review_tiers,
 )
+from reckon._schema import is_implementable_section
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import review as review_module
 from reckon.crew import rollout
@@ -47,6 +48,7 @@ from reckon.crew.node import (
     parse_duration,
     role_may_write_repository_paths,
 )
+from reckon.crew.plan_review import RUN_COMMENT_PREFIX, _is_run_comment
 from reckon.crew.recovery import _resolve_commit
 from reckon.crew.reports import (
     _NONE_VALUES as _MANIFEST_NOTHING,
@@ -3577,7 +3579,7 @@ def _record_landing_comment(
     body_text = landing or narrative
     if not body_text or not plan:
         return {"recorded": False, "reason": "empty_narrative"}
-    comment_id = f"c-run-{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
+    comment_id = f"{RUN_COMMENT_PREFIX}{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
     anchor = section_anchor(section)
     desired_body = f"<p>{html.escape(body_text)}</p>"
     worker_recorded = bool(
@@ -7206,16 +7208,14 @@ def _plan_state_for_run(
     return state if isinstance(state, Mapping) else {}
 
 
-_LANDING_COMMENT_PREFIX = "c-run-"
-
-
 def _landed_sections(state: Mapping[str, Any]) -> set[str]:
     """Return the sections a landing comment already records.
 
     A promoted run appends one section comment under a run-derived id, so the
     presence of that id is the plan's own record that work landed against the
     section. A comment written for any other reason carries another id and
-    says nothing about a landing.
+    says nothing about a landing. This records run outcomes, not document-card
+    shape or section closure.
     """
     comments = state.get("comments")
     if not isinstance(comments, Mapping):
@@ -7225,9 +7225,7 @@ def _landed_sections(state: Mapping[str, Any]) -> set[str]:
         if not isinstance(entries, (list, tuple)):
             continue
         for entry in entries:
-            if isinstance(entry, Mapping) and str(entry.get("id") or "").startswith(
-                _LANDING_COMMENT_PREFIX
-            ):
+            if isinstance(entry, Mapping) and _is_run_comment(entry.get("id")):
                 landed.add(str(raw_section).strip())
                 break
     return landed
@@ -7238,8 +7236,9 @@ def _plan_remaining_sections(state: Mapping[str, Any]) -> list[str]:
 
     A landing already recorded on a section is subtracted, so the refusal
     names work a reader can still pick up rather than a section that has been
-    delivered. Beyond that, a declared ``implementable`` section is
-    outstanding until it is reclassified, and a plan that has not persisted a
+    delivered. The schema predicate first selects declared work, which remains
+    outstanding until reclassification regardless of landings; subtraction
+    applies only to this pickup list. A plan that has not persisted a
     classification falls back to the section identities its gates and comment
     anchors name.
     """
@@ -7249,7 +7248,7 @@ def _plan_remaining_sections(state: Mapping[str, Any]) -> list[str]:
         return sorted(
             section
             for section, classification in declarations.items()
-            if str(classification).strip() == "implementable"
+            if is_implementable_section(classification)
             and str(section).strip() not in landed
         )
     from reckon._schema import plan_section_anchors

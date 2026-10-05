@@ -26,6 +26,7 @@ from reckon._schema import (
     decision_sections,
     declared_section_identities,
     is_graph_handle,
+    is_implementable_section,
     is_section_identity,
     parse_plan_ref,
     pending_transition_gates,
@@ -106,8 +107,9 @@ def _progress(plan: dict[str, Any]) -> float:
 def implementable_sections(declarations: Mapping[str, Any] | None) -> list[str]:
     """Return the section ids a classification still declares implementable.
 
-    Only an explicit ``done`` reclassification removes declared work, so the
-    answer is drawn from the persisted classification rather than from the
+    Landing evidence records an outcome without closing the section. The schema
+    predicate selects declared work until reclassification, so the answer comes
+    from persisted declarations rather than from the
     section anchors a gate or a comment happens to reference. A plan with no
     persisted classification declares no section work, so the answer is empty
     rather than unknown: a plan row reports presence.
@@ -119,7 +121,7 @@ def implementable_sections(declarations: Mapping[str, Any] | None) -> list[str]:
         section
         for raw_section, raw_classification in declarations.items()
         if (section := str(raw_section or "").strip())
-        and str(raw_classification or "").strip() == "implementable"
+        and is_implementable_section(raw_classification)
     )
 
 

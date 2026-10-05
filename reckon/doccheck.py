@@ -48,6 +48,7 @@ from bs4 import BeautifulSoup
 
 from reckon import _plan_html
 from reckon._schema import (
+    is_implementable_section,
     parse_plan_ref,
     section_depends_on,
     standalone_reason,
@@ -1016,9 +1017,10 @@ def _implementable_section_ids(
 ) -> list[str]:
     """Sections the plan states are still work, in document order.
 
-    The declarations map is the plan's own statement of what is implementable;
-    a plan that declares nothing at all states nothing, so its numbered
-    headings stand in for it. A section id declared implementable but carrying
+    The schema predicate selects declared work regardless of landing comments
+    or cards: an outcome does not reclassify a section. A plan that declares
+    nothing at all states nothing, so its numbered headings stand in for it.
+    A section id declared implementable but carrying
     no heading is a different defect — this check reports records, and would
     otherwise report a section the reader cannot open.
     """
@@ -1028,7 +1030,7 @@ def _implementable_section_ids(
         return [
             sid
             for sid in heading_ids
-            if str(declarations.get(sid) or "").strip() == "implementable"
+            if is_implementable_section(declarations.get(sid))
         ]
     return [sid for sid in heading_ids if _NUMBERED_SECTION_ID.fullmatch(sid)]
 

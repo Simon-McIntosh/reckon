@@ -122,6 +122,12 @@ PLAN_DERIVED_SCALARS: tuple[str, ...] = (
 # fingerprint and buys the plan another review of content nobody changed.
 RUN_COMMENT_PREFIX = "c-run-"
 
+
+def _is_run_comment(comment_id: Any) -> bool:
+    """Recognise the run-derived identity promotion uses for landing comments."""
+    return str(comment_id or "")[: len(RUN_COMMENT_PREFIX)] == RUN_COMMENT_PREFIX
+
+
 # The states the surface renders beside the version a review read. ``ready`` is
 # what a freshly stored review carries; ``acted`` and ``declined`` are reached
 # once every finding is answered; ``pending`` is the surface's state for a
@@ -324,10 +330,7 @@ def _without_run_comments(state: Mapping[str, Any]) -> Mapping[str, Any]:
             kept_entries = [
                 entry
                 for entry in entries
-                if not (
-                    isinstance(entry, Mapping)
-                    and str(entry.get("id") or "").startswith(RUN_COMMENT_PREFIX)
-                )
+                if not (isinstance(entry, Mapping) and _is_run_comment(entry.get("id")))
             ]
         if kept_entries:
             kept[str(section)] = kept_entries
