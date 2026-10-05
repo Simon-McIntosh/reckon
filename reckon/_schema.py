@@ -785,8 +785,18 @@ def plan_section_anchors(plan: Mapping[str, Any]) -> frozenset[str]:
 EXECUTABLE_REMAINDER_UNKNOWN = None
 
 
+def is_implementable_section(classification: Any) -> bool:
+    """Whether a declaration still admits work, irrespective of landing evidence.
+
+    A landing records a node outcome; only reclassification retires declared
+    work. Consumers select with this rule before applying their own ordering,
+    validity checks or landing subtraction.
+    """
+    return str(classification or "").strip() == "implementable"
+
+
 def plan_executable_remainder(plan: Mapping[str, Any]) -> int | None:
-    """Return declared sections that remain implementable.
+    """Count sections still admitted by the schema classification predicate.
 
     ``None`` is the deliberate unknown sentinel for plans that have not
     persisted a classification. An empty declaration is therefore known zero,
@@ -809,7 +819,7 @@ def plan_executable_remainder(plan: Mapping[str, Any]) -> int | None:
             or classification not in SECTION_DECLARATION_ENUM
         ):
             return EXECUTABLE_REMAINDER_UNKNOWN
-        if classification == "implementable":
+        if is_implementable_section(classification):
             implementable.add(section)
 
     return len(implementable)

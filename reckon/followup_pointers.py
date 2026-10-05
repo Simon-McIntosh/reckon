@@ -26,7 +26,7 @@ from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from reckon._schema import parse_plan_ref
+from reckon._schema import is_implementable_section, parse_plan_ref
 from reckon.lifecycle import COMPLETED_STATUSES
 
 #: Reason words this module may return for an open followup that hides work.
@@ -116,7 +116,9 @@ def classify_followup(
     to the plan row's own ``project``); ``declarations`` is the plan's
     ``section_declarations`` mapping when the caller already resolved it,
     otherwise the row's own. ``sprint_ids`` are the project's sprint identities,
-    bare or qualified, so a qualifier naming a sprint reads as one.
+    bare or qualified, so a qualifier naming a sprint reads as one. The schema
+    predicate admits a same-plan section until reclassification; landing
+    evidence alone does not retire the work a followup names.
     """
 
     host_slug = str(plan.get("slug") or "").strip()
@@ -147,6 +149,6 @@ def classify_followup(
     declared = (
         declarations if declarations is not None else plan.get("section_declarations")
     ) or {}
-    if str(declared.get(invocation.section) or "").strip() == "implementable":
+    if is_implementable_section(declared.get(invocation.section)):
         return FollowupVerdict(True, "implementable-section")
     return FollowupVerdict(False, "section-not-implementable")
