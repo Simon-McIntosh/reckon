@@ -32,7 +32,6 @@ import concurrent.futures
 import datetime as dt
 import hashlib
 import json
-import os
 import re
 import shlex
 import sqlite3
@@ -42,6 +41,7 @@ import sys
 import time
 from pathlib import Path
 
+from reckon import _store
 from reckon._timestamps import parse_utc
 from reckon.path_classes import file_class, path_class
 
@@ -67,6 +67,7 @@ __all__ = [
     "recover_ledger_clocks",
     "replay",
     "report",
+    "run_git",
     "session_continuity",
     "session_usage",
     "transcript_index",
@@ -144,8 +145,23 @@ def _epoch(value):
     return stamp(value) if isinstance(value, str) else value
 
 
+def run_git(
+    repo, *args, input: bytes | None = None
+) -> subprocess.CompletedProcess[bytes]:
+    """Run git once in byte mode, returning even a failed command's process."""
+    return subprocess.run(
+        ["git", "-C", str(repo), *args],
+        input=input,
+        capture_output=True,
+        check=False,
+        timeout=180,
+    )
+
+
 def git(repo, *args):
-    return subprocess.check_output(["git", "-C", str(repo), *args], timeout=180)
+    result = run_git(repo, *args)
+    result.check_returncode()
+    return result.stdout
 
 
 def dump(value):
@@ -305,7 +321,9 @@ def parse_hunks(raw):
 
 def _plan_documents(repo, head, prefix=PLAN_DIRECTORY):
     """Every plan document reachable at ``head`` under the plans directory."""
-    listing = git(repo, "ls-tree", "-r", "--name-only", head, "--", prefix).decode()
+    result = run_git(repo, "ls-tree", "-r", "--name-only", head, "--", prefix)
+    result.check_returncode()
+    listing = result.stdout.decode()
     return [path for path in listing.splitlines() if path.endswith(PLAN_SUFFIX)]
 
 
@@ -370,17 +388,8 @@ def read_blobs(repo, specs):
     if not specs:
         return {}
     payload = "".join(f"{revision}:{path}\n" for revision, path in specs).encode()
-    result = subprocess.run(
-        ["git", "-C", str(repo), "cat-file", "--batch"],
-        input=payload,
-        capture_output=True,
-        check=False,
-        timeout=180,
-    )
-    if result.returncode != 0:
-        raise subprocess.CalledProcessError(
-            result.returncode, result.args, result.stdout, result.stderr
-        )
+    result = run_git(repo, "cat-file", "--batch", input=payload)
+    result.check_returncode()
     data, position, blobs = result.stdout, 0, {}
     for spec in specs:
         newline = data.index(b"\n", position)
@@ -540,24 +549,8 @@ CACHE_VERSION = 1
 
 
 def velocity_cache_root():
-    """The directory the captured-history cache lives under.
-
-    Outside every repository, so a cache write never dirties a checkout. The
-    location resolves from ``RECKON_VELOCITY_CACHE`` when a caller names one,
-    else the user's cache directory (``XDG_CACHE_HOME`` or ``~/.cache``). When
-    neither is set but ``RECKON_HOME`` is, the cache stays under that home so a
-    caller that isolated its configuration also isolated its cache.
-    """
-    configured = os.environ.get("RECKON_VELOCITY_CACHE")
-    if configured:
-        return Path(configured).expanduser()
-    cache_home = os.environ.get("XDG_CACHE_HOME")
-    if cache_home:
-        return Path(cache_home) / "reckon" / "velocity"
-    reckon_home = os.environ.get("RECKON_HOME")
-    if reckon_home:
-        return Path(reckon_home) / "cache" / "velocity"
-    return Path.home() / ".cache" / "reckon" / "velocity"
+    """The directory the captured-history cache lives under."""
+    return _store.cache_root("velocity")
 
 
 def _velocity_cache_path(repo, cache_root=None):
@@ -653,19 +646,13 @@ def _first_parent_head(repo, branch, end):
 def _is_ancestor(repo, ancestor, descendant):
     if not ancestor or not descendant or ancestor == descendant:
         return ancestor == descendant
-    result = subprocess.run(
-        ["git", "-C", str(repo), "merge-base", "--is-ancestor", ancestor, descendant],
-        capture_output=True,
-    )
+    result = run_git(repo, "merge-base", "--is-ancestor", ancestor, descendant)
     return result.returncode == 0
 
 
 def _blob_sha(repo, head, path):
     """The blob a path names at ``head``, or None when it is absent there."""
-    raw = subprocess.run(
-        ["git", "-C", str(repo), "ls-tree", head, "--", path],
-        capture_output=True,
-    ).stdout.decode()
+    raw = run_git(repo, "ls-tree", head, "--", path).stdout.decode()
     line = raw.strip()
     return line.split()[2] if line else None
 

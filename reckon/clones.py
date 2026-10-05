@@ -22,7 +22,6 @@ import contextlib
 import hashlib
 import io
 import json
-import os
 import subprocess
 import tarfile
 import time
@@ -31,6 +30,8 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
+
+from reckon import _store
 
 WINDOW_LINES = 6
 FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef)
@@ -386,30 +387,6 @@ def _cached_functions(
     return functions
 
 
-def _cache_root(cache_root: str | Path | None = None) -> Path:
-    """The base directory the corpus fingerprint caches live under.
-
-    Outside every repository, so a cache write never dirties a checkout. A
-    caller that isolated its configuration through ``RECKON_HOME`` also isolated
-    its cache. ``RECKON_CLONE_CACHE`` names the location outright when set. Each
-    repository's cache is a subdirectory of this base (see
-    ``_corpus_directory``), so two repositories promoting on one host do not
-    share a cache or an ordinal.
-    """
-    if cache_root is not None:
-        return Path(cache_root)
-    configured = os.environ.get("RECKON_CLONE_CACHE")
-    if configured:
-        return Path(configured).expanduser()
-    cache_home = os.environ.get("XDG_CACHE_HOME")
-    if cache_home:
-        return Path(cache_home) / "reckon" / "clones"
-    reckon_home = os.environ.get("RECKON_HOME")
-    if reckon_home:
-        return Path(reckon_home) / "cache" / "clones"
-    return Path.home() / ".cache" / "reckon" / "clones"
-
-
 def _repository_key(repo: str | Path) -> str:
     """A stable identity for the repository ``repo`` belongs to.
 
@@ -556,7 +533,7 @@ def clone_matches(
     prefixes = tuple(corpus_prefixes)
     base_sources = dict(base_sources or {})
     changed = frozenset(changed_paths)
-    directory = _corpus_directory(_cache_root(cache_root), repo)
+    directory = _corpus_directory(_store.cache_root("clones", override=cache_root), repo)
     cache = _shared_cache(directory)
     now = time.time()
     scan = _current_scan(cache)

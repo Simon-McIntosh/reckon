@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import locale
 import math
 import os
 import re
@@ -16,7 +17,15 @@ from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
-from reckon import _backends, _plan_html, agent_context, capabilities, flight, ledger
+from reckon import (
+    _backends,
+    _plan_html,
+    agent_context,
+    capabilities,
+    flight,
+    ledger,
+    velocity,
+)
 from reckon._timestamps import parse_utc
 from reckon.calibration import calibration_configuration_key
 from reckon.capability import (
@@ -471,12 +480,11 @@ def resolved_time_ceiling(config: Mapping[str, Any]) -> str:
 
 
 def _git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess:
-    result = subprocess.run(
-        ["git", *args],
-        cwd=repo,
-        capture_output=True,
-        text=True,
-        check=False,
+    result = velocity.run_git(repo, *args)
+    encoding = locale.getpreferredencoding(False)
+    result.stdout, result.stderr = (
+        value.decode(encoding).replace("\r\n", "\n").replace("\r", "\n")
+        for value in (result.stdout, result.stderr)
     )
     if check and result.returncode:
         detail = result.stderr.strip() or result.stdout.strip()

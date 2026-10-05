@@ -784,11 +784,9 @@ def input_stamp(project: str, root: str | Path | None = None) -> str | None:
 
 
 def _run_index_path(project: str, root: str | Path | None) -> Path:
-    from reckon.capabilities import pick_input_cache_root
-
     source = str(ledger_path(project, root).resolve())
     identity = hashlib.sha256(source.encode()).hexdigest()
-    return pick_input_cache_root() / f"ledger-{identity}.sqlite"
+    return _store.cache_root("pick-input") / f"ledger-{identity}.sqlite"
 
 
 def index_stamp(project: str, root: str | Path | None = None) -> list[Any]:

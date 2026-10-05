@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import os
 import posixpath
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
@@ -13,7 +12,7 @@ from pathlib import Path
 from statistics import fmean, median
 from typing import Any
 
-from reckon import _plan_html, ledger
+from reckon import _plan_html, _store, ledger
 from reckon._store import _config_home, _mounts_path, write_json_atomically
 from reckon.calibration import calibration_configuration_key
 
@@ -1140,34 +1139,10 @@ def load_capabilities(path: str | Path | None = None) -> dict[str, Any]:
 PICK_INPUT_CACHE_VERSION = 2
 
 
-def pick_input_cache_root() -> Path:
-    """The directory the picker input cache lives under.
-
-    Outside every repository, so a cache write never dirties a checkout. An
-    explicit ``RECKON_PICK_CACHE`` wins, so a test points it at a temp dir. Then
-    ``RECKON_HOME`` (the repository's own home), then ``XDG_CACHE_HOME``, then
-    the user's cache directory. The repository home precedes the XDG directory
-    because a test isolates ``RECKON_HOME`` but not ``XDG_CACHE_HOME``; reading
-    XDG first would let a test write into — and on a second run read back from —
-    the real user cache.
-    """
-
-    configured = os.environ.get("RECKON_PICK_CACHE")
-    if configured:
-        return Path(configured).expanduser()
-    reckon_home = os.environ.get("RECKON_HOME")
-    if reckon_home:
-        return Path(reckon_home) / "cache"
-    cache_home = os.environ.get("XDG_CACHE_HOME")
-    if cache_home:
-        return Path(cache_home) / "reckon"
-    return Path.home() / ".cache" / "reckon"
-
-
 def pick_input_cache_path(name: str, *, root: str | Path | None = None) -> Path:
     """One cache file per named picker input."""
 
-    base = Path(root) if root is not None else pick_input_cache_root()
+    base = _store.cache_root("pick-input", override=root)
     return base / f"picker-{name}.json"
 
 
