@@ -159,6 +159,7 @@ PLAN_DESIGN_REVIEW_ITEMS: tuple[str, ...] = (
     "deep_module",
     "thin_wrapper",
     "duplicate_owner",
+    "interface_budget",
 )
 
 # The two rubrics a plan report is emitted under. Declared here beside the item

@@ -570,6 +570,17 @@ def _review_dispatch_fields(
             "Write RUBRIC and FINDING lines to the report path. Review the snapshot "
             "so the report describes the content named by its sidecar.\n"
         )
+        if rubric == "design":
+            from reckon.velocity import current_week_interface_counts
+
+            interface_week = current_week_interface_counts(record["repo"], write=write)
+            figures = ", ".join(
+                f"{name} {count}" for name, count in interface_week["counts"].items()
+            )
+            brief_text += (
+                f"\nInterface budget this week: {figures} "
+                f"(read {interface_week['week_end']})\n"
+            )
         # The sidecar's name belongs to the store that reads it back, so the
         # composed path and the written path are one spelling rather than two.
         sidecar = directory / plan_review._REVIEW_SIDECAR_NAME

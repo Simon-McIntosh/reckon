@@ -54,6 +54,7 @@ __all__ = [
     "capture_project",
     "compact_summary",
     "coordinator_cost",
+    "current_week_interface_counts",
     "distribution",
     "file_class",
     "measure",
@@ -2501,7 +2502,18 @@ def velocity(
     return compact_summary(result, weekly_cells)
 
 
-def _interface_week_rows(repo, branch, start, end, *, cache_root=None):
+def current_week_interface_counts(repo_root, *, write=True):
+    """Return the current UTC week's interface row as the velocity view reads it.
+
+    Resolve the checkout's HEAD through the view's first-parent week boundary,
+    returning its revision, four counts and week clocks together. ``write=False``
+    measures without populating the count cache, for previews that write nothing.
+    """
+    now = iso(time.time())
+    return _interface_week_rows(repo_root, "HEAD", now, now, write=write)[0]
+
+
+def _interface_week_rows(repo, branch, start, end, *, cache_root=None, write=True):
     """The reckon package's interface level and weekly change over a window.
 
     One row per ISO week the window touches: the first-parent revision at the
@@ -2513,6 +2525,8 @@ def _interface_week_rows(repo, branch, start, end, *, cache_root=None):
     from reckon import interface_counts
 
     def level(repo_path, revision):
+        if not write:
+            return interface_counts.count_revision(repo_path, revision)
         return interface_counts.count_revision_cached(
             repo_path, revision, cache_root=cache_root
         )
