@@ -25,8 +25,8 @@
   <title>A Worker Reuses Before It Writes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.93">
-<meta name="plan-version" content="98">
+<meta name="plan-impl" content="0.96">
+<meta name="plan-version" content="100">
 <meta name="plan-modified" content="2026-10-05">
 </head>
 <body>
@@ -345,6 +345,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261005T090059297925-review-of-reuse-is-a-review-dimension" data-who="reckon-build" data-when="2026-10-05T09:11:18.282Z">
     <div class="r-comment-body"><p>Incremental review of r-20261005T075546675949-reuse-is-a-review-dimension stored as a parsed five-dimension record (total 91: goal_fidelity 19, evidence 17, scope_discipline 20, durability 16, fit 19) naming base a34b2c15 and head 0506e9257, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own population_base.log/population_head.log (neither carries a FAILED/ERROR id) and a positive control proving the derivation instrument reports failures present in its input.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261005T111452852162-surviving-atomic-writer-forks-join-the-owner" data-who="reckon-build" data-when="2026-10-05T11:32:48.851Z">
+    <div class="r-comment-body"><p>Promoted the private sibling-temporary writer to public write_atomically with a binary keyword and routed every former fork in reckon/_store.py, reckon/project_state.py and reckon/crew/follow_checkpoint.py through it; the def-grep returns exactly one line (reckon/_store.py), the replace-grep returns one hit inside write_atomically, interface_counts public_definitions moved 1474 -&gt; 1475 (+1), and the focused gate is 177 passed EXIT=0.</p></div>
 </div>
 </section>
 </main>
