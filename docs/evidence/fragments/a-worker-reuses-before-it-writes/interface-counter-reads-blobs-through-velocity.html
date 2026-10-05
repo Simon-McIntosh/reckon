@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="interface-counter-reads-blobs-through-velocity">
+<meta name="plan-title" content="The interface counter reads blobs through velocity's public reader">
+<meta name="plan-summary" content="One public read_blobs and one public cache root on reckon/velocity.py; the counter imports both and retires its private loop, cache-root reach and git copy; public definitions +1 net.">
+<meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
+<meta name="plan-recorded-at" content="2026-10-05">
+<meta name="plan-verdict" content="passed">
+<meta name="plan-commits" content="b6866f54e9012fe297b212ce071046e5a5eb0d98">
+<title>The interface counter reads blobs through velocity's public reader | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="interface-counter-reads-blobs-through-velocity"><h2>The interface counter reads blobs through velocity's public reader</h2>
+<p>The batched <code>git cat-file --batch</code> blob reader had two homes: the loop inside
+<code>velocity._plan_metas</code> and the counter's private <code>interface_counts._read_blobs</code>,
+which the counter reached alongside velocity's underscore-private cache root. The repair promotes
+the mechanism on its owner's interface: <code>reckon/velocity.py</code> gains the public
+<code>read_blobs</code>, whose interface is the ordered sequence of <code>(revision, path)</code> pairs
+that loop already consumed, answered in one process, and the public <code>velocity_cache_root</code>.
+<code>_plan_metas</code> keeps its own parsing on top of the shared reader; the counter maps its one
+revision across its module paths through the same reader and imports velocity's already-public
+<code>git</code> wrapper. The counter's copied loop, cache-root reach and <code>git</code> wrapper are
+deleted. The census-parity assertion retired with the premise it rested on; the census detector's
+positive control stays.</p>
+<table><thead><tr><th>Measure</th><th>Result</th></tr></thead><tbody>
+<tr><th>Base revision</th><td>e4afabb7cfd5bcbcf4813257b65a72b08a73fbf2</td></tr>
+<tr><th>Measured source head</th><td>b6866f54e9012fe297b212ce071046e5a5eb0d98</td></tr>
+<tr><th>Public reader</th><td><code>reckon/velocity.py:read_blobs</code> — an ordered sequence of <code>(revision, path)</code> pairs answered in one <code>cat-file --batch</code> process; <code>_plan_metas</code> parses its result, the counter maps one revision across its paths</td></tr>
+<tr><th>Public cache root</th><td><code>reckon/velocity.py:velocity_cache_root</code> — the counter imports it in place of reaching for the underscore-private name</td></tr>
+<tr><th>Retired copies</th><td>counter's <code>_read_blobs</code>, <code>_cache_root</code> and public <code>git</code> wrapper deleted; counter imports velocity's <code>git</code></td></tr>
+<tr><th>public_definitions</th><td>1475 at base → 1476 at head (+1)</td></tr>
+<tr><th>Single-invocation grep</th><td><code>grep -rn '&quot;--batch&quot;' reckon/</code> → one hit, <code>reckon/velocity.py</code> in <code>read_blobs</code></td></tr>
+<tr><th>git-definition grep</th><td><code>grep -rn '^def git(' reckon/</code> → one line, <code>reckon/velocity.py</code></td></tr>
+<tr><th>Private-name grep</th><td><code>grep -n 'def _read_blobs\|def _cache_root\|_velocity_cache_root' reckon/interface_counts.py</code> → nothing</td></tr>
+<tr><th>Census parity</th><td>Parity assertion removed from <code>tests/test_staged_write_inventory.py</code>; the detector's positive control kept</td></tr>
+<tr><th>Final gate</th><td>103 passed in 182.42s (0:03:02); EXIT=0</td></tr>
+<tr><th>Negative control</th><td>Private <code>cat-file --batch</code> loop restored to the counter: 2 failed in 4.60s; EXIT=1; mutation removed</td></tr>
+<tr><th>Gate revision</th><td>b6866f54e9012fe297b212ce071046e5a5eb0d98</td></tr>
+</tbody></table>
+<table><thead><tr><th>Consumer</th><th>Before</th><th>After</th></tr></thead><tbody>
+<tr><td><code>reckon/velocity.py:_plan_metas</code></td><td>own <code>cat-file --batch</code> loop</td><td>calls public <code>read_blobs</code>, parses its bytes</td></tr>
+<tr><td><code>reckon/interface_counts.py:read_trees</code></td><td>own <code>_read_blobs</code> loop</td><td>calls public <code>read_blobs</code></td></tr>
+<tr><td><code>reckon/interface_counts.py:_cache_path</code></td><td>late import of <code>velocity._velocity_cache_root</code></td><td><code>velocity_cache_root()</code></td></tr>
+<tr><td><code>reckon/interface_counts.py:read_trees</code> listing</td><td>own <code>git</code> wrapper</td><td>velocity's public <code>git</code></td></tr>
+</tbody></table>
+<table><thead><tr><th>Test</th><th>Guards</th></tr></thead><tbody>
+<tr><td><code>tests/test_one_blob_reader_serves_velocity_and_the_counter.py::test_counter_and_plan_metas_read_the_same_bytes_through_one_reader</code></td><td>counter holds velocity's reader; both consumers reach it for one revision; the reader answers the plan's on-disk bytes; <code>_plan_metas</code> parses them</td></tr>
+<tr><td><code>tests/test_one_blob_reader_serves_velocity_and_the_counter.py::test_the_batched_read_happens_in_one_function</code></td><td>a source inventory asserting the <code>--batch</code> invocation occurs in exactly one function</td></tr>
+</tbody></table>
+<table><thead><tr><th>Artifact</th><th>Durable path</th></tr></thead><tbody>
+<tr><td><code>gate.log</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T140433943974-interface-counter-reads-blobs-through-velocity/gate.log</code></td></tr>
+<tr><td><code>negative_control.log</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T140433943974-interface-counter-reads-blobs-through-velocity/negative_control.log</code></td></tr>
+</tbody></table>
+</section>
+</main></body></html>
