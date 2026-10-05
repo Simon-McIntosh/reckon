@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="every-write-then-replace-reaches-the-owner">
+<meta name="plan-title" content="Staged-write inventory and migration">
+<meta name="plan-summary" content="Inventory 17 to 3; public definitions remain 1475; negative control fires; one superseded test awaits a scope extension.">
+<meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
+<meta name="plan-recorded-at" content="2026-10-05">
+<meta name="plan-verdict" content="failed">
+<meta name="plan-commits" content="64a22695fcd300d27851f0388d1cfa7a7ce4bb5c,02ba4732daac72c8bee49a7b8a68dc7876e7c8bc,c329943499b8727611d48ba788694758a9e6fa49">
+<title>Staged-write inventory and migration | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="every-write-then-replace-reaches-the-owner"><h2>Staged-write inventory and migration</h2>
+<table><thead><tr><th>Measure</th><th>Result</th></tr></thead><tbody>
+<tr><th>Base revision</th><td>ab294aed019a912e9767e24e39644056e49d3839</td></tr>
+<tr><th>Measured source head</th><td>c329943499b8727611d48ba788694758a9e6fa49</td></tr>
+<tr><th>Staged-write functions</th><td>17 at base → 3 at head; 14 migrated</td></tr>
+<tr><th>public_definitions</th><td>1475 at base → 1475 at head</td></tr>
+<tr><th>Claim move-aside</th><td>Excluded; failed exclusive creation does not bind an owned staged file</td></tr>
+<tr><th>Historical census parity</th><td>Every atomic JSON replacement is included; positive control identifies the historical label</td></tr>
+<tr><th>Baseline module gate</th><td>410 passed, 1 skipped in 711.27s (0:11:51); EXIT=0</td></tr>
+<tr><th>Head module gate</th><td>1 failed, 462 passed, 1 skipped in 172.76s (0:02:52); EXIT=1</td></tr>
+<tr><th>Final inventory and publisher gate</th><td>49 passed in 11.59s; EXIT=0</td></tr>
+<tr><th>Negative control</th><td>Private ledger helper reintroduced: 1 failed, 48 passed in 11.16s; EXIT=1; mutation removed</td></tr>
+<tr><th>Remaining gate failure</th><td>tests/test_ledger_write_keeps_run_files.py::test_an_unwritable_run_file_leaves_the_project_readable: Path.write_text injection no longer reaches the writer; scope extension requested</td></tr>
+<tr><th>Prepared repair</th><td>ledger-test-repair.patch moves the same disk-full injection to os.open; repository test unchanged</td></tr>
+<tr><th>Owner annotation</th><td>Callable[[IO[Any]], Any] describes text/binary handles and ignored callback results; owner behavior unchanged</td></tr>
+</tbody></table>
+<table><thead><tr><th>Base module</th><th>Base function</th><th>Head disposition</th></tr></thead><tbody>
+<tr><td><code>reckon/_store.py</code></td><td><code>write_atomically</code></td><td>Shared owner</td></tr>
+<tr><td><code>reckon/archive.py</code></td><td><code>apply_archive_candidates</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/crew/obligation_snapshot.py</code></td><td><code>write_snapshot</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/crew/picker/lane_context.py</code></td><td><code>_write_persisted_profile</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/crew/promotion.py</code></td><td><code>_update_run_record</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/crew/recovery.py</code></td><td><code>_write_classification_memo</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/crew/runs.py</code></td><td><code>repair_manifest_status</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/evidence.py</code></td><td><code>synthesize_landed_record</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/hooks/coordinator_obligations.py</code></td><td><code>_store_digest</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/hooks/worker_stop.py</code></td><td><code>_write_terminal_record</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/ledger.py</code></td><td><code>_indexed_data</code></td><td>Retained exception: SQLite owns and writes the temporary database</td></tr>
+<tr><td><code>reckon/ledger.py</code></td><td><code>_replace_run_file</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/resources.py</code></td><td><code>migrate_typed_layout</code></td><td>Retained exception: coordinated publication from a staged directory tree</td></tr>
+<tr><td><code>reckon/serve.py</code></td><td><code>Handler._handle_plan_write</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/serve.py</code></td><td><code>_client_asset</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/serve.py</code></td><td><code>_thumbnail_bytes</code></td><td>Migrated to write_atomically</td></tr>
+<tr><td><code>reckon/serve.py</code></td><td><code>compile_jsx</code></td><td>Migrated to write_atomically</td></tr>
+</tbody></table>
+<table><thead><tr><th>Artifact</th><th>Durable path</th></tr></thead><tbody>
+<tr><td><code>inventory-base-final.log</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T120942518103-every-write-then-replace-reaches-the-owner/inventory-base-final.log</code></td></tr>
+<tr><td><code>baseline.log</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T120942518103-every-write-then-replace-reaches-the-owner/baseline.log</code></td></tr>
+<tr><td><code>gate.log</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T120942518103-every-write-then-replace-reaches-the-owner/gate.log</code></td></tr>
+<tr><td><code>inventory-final.log</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T120942518103-every-write-then-replace-reaches-the-owner/inventory-final.log</code></td></tr>
+<tr><td><code>negative-control.log</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T120942518103-every-write-then-replace-reaches-the-owner/negative-control.log</code></td></tr>
+<tr><td><code>interface-head.json</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T120942518103-every-write-then-replace-reaches-the-owner/interface-head.json</code></td></tr>
+<tr><td><code>ledger-test-repair.patch</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T120942518103-every-write-then-replace-reaches-the-owner/ledger-test-repair.patch</code></td></tr>
+</tbody></table>
+</section></main></body></html>
