@@ -595,6 +595,15 @@ def _wanted_fingerprints(value: str | Iterable[str] | None) -> frozenset[str] | 
     return frozenset(str(item) for item in value)
 
 
+def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> frozenset[str]:
+    """The current and legacy digests of one snapshot of plan content."""
+    document = _as_document(plan)
+    content = document if document is not None else plan
+    return frozenset(
+        {plan_fingerprint(content), plan_fingerprint(content, legacy=True)}
+    )
+
+
 def _load(path: Path) -> dict[str, Any] | None:
     """Return a stored record, or ``None`` when the file is missing or unreadable."""
     if not path.is_file():
@@ -613,6 +622,7 @@ def read_plan_review(
     *,
     base_dir: str | Path | None = None,
     plan_fingerprint: str | Iterable[str] | None = None,
+    plan: Mapping[str, Any] | str | Path | None = None,
     reviewed_blob_sha: str | None = None,
 ) -> dict[str, Any] | None:
     """Return the newest stored plan review matching the given filters.
@@ -624,9 +634,15 @@ def read_plan_review(
     impl bump. A ``reviewed_blob_sha`` filter selects a named content revision.
     Among the records that pass the filters the newest by file mtime is
     returned; ``None`` means no stored review matches.
+    ``plan`` accepts a path, document or state and selects both current and
+    legacy fingerprints, taking precedence over ``plan_fingerprint``.
     """
     records: list[tuple[Path, dict[str, Any]]] = []
-    wanted = _wanted_fingerprints(plan_fingerprint)
+    wanted = (
+        _fingerprint_forms(plan)
+        if plan is not None
+        else _wanted_fingerprints(plan_fingerprint)
+    )
     for path in _candidate_paths(project, plan_slug, plan_version, base_dir):
         record = _load(path)
         if record is None:
@@ -878,6 +894,7 @@ def delivered_reports(
     plan_slug: str,
     *,
     plan_fingerprint: str | Iterable[str] | None = None,
+    plan: Mapping[str, Any] | str | Path | None = None,
 ) -> list[dict[str, Any]]:
     """Return the delivered review reports under a plan, newest first.
 
@@ -890,6 +907,8 @@ def delivered_reports(
     under the legacy definition is still found — keeps only the reports whose
     sidecar carries one of them, which is how the gate finds the report for the
     content about to be built.
+    ``plan`` accepts a path, document or state and selects both current and
+    legacy fingerprints, taking precedence over ``plan_fingerprint``.
     """
     from reckon.crew.runs import reports_dir
 
@@ -897,7 +916,11 @@ def delivered_reports(
     if not root.is_dir():
         return []
     stored = _stored_review_run_ids(project)
-    wanted = _wanted_fingerprints(plan_fingerprint)
+    wanted = (
+        _fingerprint_forms(plan)
+        if plan is not None
+        else _wanted_fingerprints(plan_fingerprint)
+    )
     found: list[dict[str, Any]] = []
     for directory in root.iterdir():
         if not directory.is_dir():

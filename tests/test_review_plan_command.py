@@ -15,7 +15,8 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli, flight, mcp
-from reckon.crew import plan_review, recovery, review, runs
+from reckon.crew import plan_review, recovery, review, routing, runs
+from reckon.crew.node import PlanReviewMissingError, TaskNode
 
 CONFIG = {
     "default_backend": "worker",
@@ -211,6 +212,62 @@ def test_sweep_waits_for_settle_window(project, monkeypatch):
         session="coordinator",
     )
     assert report["dispatched"] == [] and calls == []
+
+
+@pytest.mark.parametrize("legacy", [False, True], ids=["current", "legacy"])
+@pytest.mark.parametrize("stored", [True, False], ids=["stored", "delivered"])
+def test_sweep_and_gate_accept_the_same_review(project, monkeypatch, legacy, stored):
+    _, repo, path = project
+    path.write_text(
+        path.read_text().replace(
+            "</head>",
+            '<meta name="plan-section-declarations" '
+            'content=\'{"delivery":"implementable"}\'></head>',
+        )
+    )
+    _quiet(path)
+    current = plan_review.plan_fingerprint(path)
+    previous = plan_review.plan_fingerprint(path, legacy=True)
+    assert current != previous
+    fields = recovery._review_dispatch_fields(_subject())
+    sidecar_path = Path(fields["sidecar"])
+    sidecar = json.loads(sidecar_path.read_text())
+    assert sidecar["plan_fingerprint"] == current
+    gate = {
+        "node": TaskNode(
+            id="delivery", goal="Build the fixture", plan="fixture", role="implement"
+        ),
+        "project": "sample",
+        "repo": repo,
+        "authority": {"plan": {"docs": str(repo / "docs"), "source": "repository"}},
+        "enforce": True,
+    }
+    with pytest.raises(PlanReviewMissingError, match="no stored review"):
+        routing.require_plan_reviewed(**gate)
+    calls = []
+    monkeypatch.setattr(
+        recovery, "dispatch_review_for_run", lambda *a, **k: calls.append(a) or {}
+    )
+    recovery.dispatch_awaiting_reviews(
+        project="sample", config=CONFIG, session="coordinator"
+    )
+    assert len(calls) == 1
+    calls.clear()
+    sidecar["plan_fingerprint"] = previous if legacy else current
+    if stored:
+        plan_review.store_plan_review({**sidecar, "findings": [], "responses": {}})
+    else:
+        sidecar_path.write_text(json.dumps(sidecar))
+        Path(sidecar["report_path"]).write_text("RUBRIC reuse_search: pass\n")
+    report = recovery.dispatch_awaiting_reviews(
+        project="sample", config=CONFIG, session="coordinator"
+    )
+    assert report["dispatched"] == [] and calls == []
+    assert routing.require_plan_reviewed(**gate) is None
+    path.write_text(path.read_text().replace("existing mechanism", "changed design"))
+    assert recovery._plan_review_pending(_subject())
+    with pytest.raises(PlanReviewMissingError, match="no stored review"):
+        routing.require_plan_reviewed(**gate)
 
 
 def test_sweep_skips_delivered_unstored_report(project, monkeypatch):

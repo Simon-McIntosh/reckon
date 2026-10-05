@@ -2611,33 +2611,29 @@ def _plan_review_verdict(enforce: bool, detail: str) -> str | None:
 
 
 def _store_delivered_plan_review(
-    project: str, plan_slug: str, fingerprint: str | Iterable[str]
+    project: str, plan_slug: str, plan: Path
 ) -> dict[str, Any] | None:
-    """Store the delivered report matching a fingerprint and return its record.
+    """Store the delivered report matching plan content and return its record.
 
     A plan review is dispatched as a run that leaves its report and sidecar on a
     durable path, so the coordinator never runs a store step. When the gate finds
     no stored review for the content about to be built, it takes the newest
-    delivered report whose sidecar carries that fingerprint, stores it, and
+    delivered report whose sidecar matches that content, stores it, and
     reads the record back. A report already stored is passed over, and a report
     the store refuses is passed over rather than raised, because a report the
     gate cannot use is one the caller's own refusal already names. ``None``
-    means no delivered report answered the fingerprint.
+    means no delivered report answered the plan content.
     """
     from reckon.crew import plan_review
 
-    for sidecar in plan_review.delivered_reports(
-        project, plan_slug, plan_fingerprint=fingerprint
-    ):
+    for sidecar in plan_review.delivered_reports(project, plan_slug, plan=plan):
         if sidecar.get("stored"):
             continue
         try:
             plan_review.store_delivered_report(sidecar)
         except (OSError, ValueError):
             continue
-        record = plan_review.read_plan_review(
-            project, plan_slug, plan_fingerprint=fingerprint
-        )
+        record = plan_review.read_plan_review(project, plan_slug, plan=plan)
         if record is not None:
             return record
     return None
@@ -2698,25 +2694,14 @@ def require_plan_reviewed(
         # an unresolved resource here has nothing to review.
         return None
 
-    fingerprint = plan_review.plan_fingerprint(resource.path)
-    # A change to the fingerprint's definition must not orphan a review that is
-    # still of the plan's current content: a stored review equal to the legacy
-    # digest counts as current, so no plan is re-reviewed solely because the
-    # definition moved.
-    fingerprints = {
-        fingerprint,
-        plan_review.plan_fingerprint(resource.path, legacy=True),
-    }
-    record = plan_review.read_plan_review(
-        project, node.plan, plan_fingerprint=fingerprints
-    )
+    record = plan_review.read_plan_review(project, node.plan, plan=resource.path)
     if record is None:
-        record = _store_delivered_plan_review(project, node.plan, fingerprints)
+        record = _store_delivered_plan_review(project, node.plan, resource.path)
     if record is None:
         return _plan_review_verdict(
             enforce,
             f"plan {node.plan!r} in project {project!r} carries no stored review "
-            f"of the content about to be built (fingerprint {fingerprint[:12]}); "
+            "of the content about to be built; "
             "a plan is reviewed before it is built",
         )
     unanswered = plan_review.unanswered_findings(record)
