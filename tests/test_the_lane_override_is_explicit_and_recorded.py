@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import os
 from copy import deepcopy
 from pathlib import Path
@@ -18,10 +19,17 @@ pytest_plugins = (
     "tests.test_dispatch_names_its_backend",
     "tests.test_ledger",
 )
+dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 
 def _cli_dispatch(
-    repo: Path, monkeypatch: pytest.MonkeyPatch, *, node: str, extra=(), dry_run=True
+    repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    node: str,
+    extra=(),
+    dry_run=True,
+    backend="clive",
 ):
     config = deepcopy(backend_tests.CONFIG)
     config["backends"]["clive"]["serves_orchestrators"] = True
@@ -34,7 +42,7 @@ def _cli_dispatch(
         [
             *backend_tests._arguments(repo, node=node, dry_run=dry_run),
             "--backend",
-            "clive",
+            backend,
             *extra,
         ],
     )
@@ -91,6 +99,60 @@ def test_empty_reason_is_refused(
     assert result.exit_code == 1
     assert payload["error"] == "dispatch-refused"
     assert "non-empty reason" in payload["detail"]
+
+
+def test_reason_on_a_lane_without_the_orchestrator_role_is_refused(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload, result = _cli_dispatch(
+        dispatch_repo,
+        monkeypatch,
+        node="unneeded-override",
+        backend="beta",
+        extra=("--allow-orchestrator-lane", "recover a blocked review"),
+    )
+    assert result.exit_code == 1
+    assert payload["error"] == "dispatch-refused"
+    assert "'beta'" in payload["detail"]
+    assert "override does not apply" in payload["detail"]
+
+
+def test_reason_is_refused_when_budget_fallback_resolves_to_another_lane(
+    home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = deepcopy(ledger_tests.CONFIG)
+    config["backends"]["alpha"]["serves_orchestrators"] = True
+    config["backends"]["alpha"]["fallback"] = "beta"
+    config["backends"]["beta"] = {
+        key: value
+        for key, value in config["backends"]["alpha"].items()
+        if key not in {"serves_orchestrators", "fallback"}
+    }
+    monkeypatch.setattr(
+        dispatch_module,
+        "_budget_verdict",
+        lambda **kwargs: {
+            "held": kwargs["backend_name"] == "alpha",
+            "backend": kwargs["backend_name"],
+            "state": {},
+            "warnings": [],
+            "reason": "declared hold",
+        },
+    )
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.dispatch(
+            node=ledger_tests._node(id="lane-fallback-override"),
+            project=ledger_tests.PROJECT,
+            repo=repo,
+            config=config,
+            session="lane-fallback-override",
+            launcher=lambda plan, *, log_path, stderr_path, prompt_path: os.getpid(),
+            orchestrator_lane_reason="recover a blocked review",
+        )
+    assert "resolved lane 'beta'" in str(refusal.value)
+    assert "override does not apply" in str(refusal.value)
+    assert crew.list_live() == []
 
 
 def test_reason_reaches_the_promoted_ledger_row(home: Path, repo: Path) -> None:

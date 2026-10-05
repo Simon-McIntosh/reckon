@@ -5656,6 +5656,12 @@ def plan_dispatch(
     )
     if reason == "":
         raise CrewError("--allow-orchestrator-lane requires a non-empty reason")
+    if reason and orchestrator_lane_stop["state"] != "declared":
+        raise CrewError(
+            f"resolved lane {backend_name!r} does not declare "
+            f"{ORCHESTRATOR_LANE_DECLARATION_KEY}; --allow-orchestrator-lane "
+            "override does not apply"
+        )
     orchestrator_lane_override = None
     if reason and orchestrator_lane_stop["state"] == "declared":
         orchestrator_lane_override = {"lane": backend_name, "reason": reason}
