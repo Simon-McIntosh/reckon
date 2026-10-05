@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="349">
+<meta name="plan-version" content="350">
 <meta name="plan-modified" content="2026-10-05">
 </head>
 <body>
@@ -2371,6 +2371,12 @@
 </div>
 <div class="r-comment" data-section="s21" data-id="c-20261005-s21-owner" data-who="s22-coord" data-when="2026-10-05T00:45:00Z">
     <div class="r-comment-body"><p><strong>Owner named by the plan review of 2026-10-05 (reuse_search).</strong> Whatever this section decides, its report for an unresolvable declared sha extends the resolver <code>audit_manifest</code> already uses, <code>reckon/crew/reports.py</code> <code>_commit_resolves_in</code> (about line 1526). It does not add a branch in promotion. Whether that resolver itself becomes one owner is §63.</p></div>
+</div>
+<div class="r-comment" data-section="s63" data-id="c-20261005-s63-scope" data-who="s22-coord" data-when="2026-10-05T01:18:00Z">
+    <div class="r-comment-body"><p><strong>Scope widened by the plan review of 2026-10-05 (duplicate_owner).</strong> Two more sites answer the same question with weaker checks: <code>recovery._resolve_abbreviated_commit</code> (<code>reckon/crew/recovery.py</code>, about line 1478) and <code>routing._base_commit</code> (<code>reckon/crew/routing.py</code>, about line 2432). The done-when covers every site, not three. A test walks <code>reckon/</code> for <code>rev-parse</code> calls used to resolve a revision and asserts each goes through the one function, so a new copy fails the suite rather than waiting for a review.</p></div>
+</div>
+<div class="r-comment" data-section="s62" data-id="c-20261005-s62-scope" data-who="s22-coord" data-when="2026-10-05T01:18:30Z">
+    <div class="r-comment-body"><p><strong>Scope settled by the plan review of 2026-10-05 (duplicate_owner).</strong> <code>fleet_supervisor.config_directory</code> (<code>reckon/crew/fleet_supervisor.py</code>, about line 415) resolves the same <code>XDG_CONFIG_HOME</code>-or-<code>~/.config</code> base. The moved function is therefore the XDG config base, living in a module that imports nothing from <code>reckon.crew</code>. <code>systemd_user_dir</code> appends <code>systemd/user</code> to it and <code>config_directory</code> appends <code>fleet</code>, so one resolution serves both consumers while each keeps its own subdirectory. An earlier review declined folding the fleet directory in, as a different consumer; the consumers do stay distinct, and only the base resolution is shared.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
