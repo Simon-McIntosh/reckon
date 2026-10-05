@@ -18,8 +18,10 @@ def _crew_managed_repo(tmp_path: Path, *, project: str = "proj") -> Path:
 
 
 def _plain_repo(tmp_path: Path) -> Path:
+    # The .git marker bounds the guard's upward walk at this repository, so the
+    # verdict cannot depend on whatever directory holds the test's tmp_path.
     repo = tmp_path / "plain-repo"
-    repo.mkdir()
+    (repo / ".git").mkdir(parents=True)
     return repo
 
 
@@ -54,6 +56,77 @@ def test_a_tool_other_than_agent_is_never_evaluated(tmp_path: Path) -> None:
 
     assert allowed is True
     assert message is None
+
+
+# ── The scope is the repository, wherever in it the session stands ────────
+
+
+def test_a_session_in_a_subdirectory_is_governed_by_the_repository(
+    tmp_path: Path, monkeypatch
+) -> None:
+    repo = _crew_managed_repo(tmp_path)
+    nested = repo / "src" / "pkg"
+    nested.mkdir(parents=True)
+    monkeypatch.delenv(guard.OVERRIDE_ENV, raising=False)
+
+    allowed, message = guard.decide(_payload(nested))
+
+    assert allowed is False
+    assert "reckon crew dispatch --project proj" in message
+
+
+def test_a_repository_nested_inside_a_crew_managed_one_is_judged_by_its_own_state(
+    tmp_path: Path,
+) -> None:
+    repo = _crew_managed_repo(tmp_path)
+    inner = repo / "vendor" / "inner"
+    (inner / ".git").mkdir(parents=True)
+    below_inner = inner / "lib"
+    below_inner.mkdir()
+
+    for cwd in (inner, below_inner):
+        allowed, message = guard.decide(_payload(cwd))
+        assert allowed is True, cwd
+        assert message is None
+
+
+def test_a_worktree_git_file_bounds_the_walk_like_a_git_directory(
+    tmp_path: Path,
+) -> None:
+    repo = _crew_managed_repo(tmp_path)
+    inner = repo / "checkouts" / "linked"
+    inner.mkdir(parents=True)
+    (inner / ".git").write_text("gitdir: /elsewhere/.git/worktrees/linked\n")
+
+    allowed, _message = guard.decide(_payload(inner))
+
+    assert allowed is True
+
+
+def test_the_in_harness_waiver_matches_from_a_subdirectory(
+    tmp_path: Path, monkeypatch
+) -> None:
+    repo = _crew_managed_repo(tmp_path)
+    nested = repo / "docs"
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    attach_command = "reckon crew attach --run r-native-4 --task <task-id>"
+    _write_pointer(
+        home,
+        "r-native-4",
+        {
+            "run_id": "r-native-4",
+            "repo": str(repo.resolve()),
+            "launch": "in-harness",
+            "task": None,
+            "directive": {"attach_with": attach_command},
+        },
+    )
+
+    allowed, message = guard.decide(_payload(nested))
+
+    assert allowed is True
+    assert attach_command in message
 
 
 # ── Branch 2: crew-prepared in-harness run awaiting attachment ─────────────
@@ -180,6 +253,35 @@ def test_the_refusal_names_the_override_that_teaches_the_escape(
 
     assert allowed is False
     assert f"{guard.OVERRIDE_ENV}=1" in message
+
+
+def test_the_coordinator_refusal_names_the_inline_path_for_a_lookup(
+    tmp_path: Path, monkeypatch
+) -> None:
+    repo = _crew_managed_repo(tmp_path)
+    monkeypatch.delenv(guard.OVERRIDE_ENV, raising=False)
+
+    allowed, message = guard.decide(_payload(repo))
+
+    assert allowed is False
+    assert "inline" in message
+    assert "reckon crew dispatch" in message
+
+
+def test_a_crew_worker_is_told_to_read_inline_rather_than_dispatch(
+    tmp_path: Path, monkeypatch
+) -> None:
+    repo = _crew_managed_repo(tmp_path)
+    monkeypatch.delenv(guard.OVERRIDE_ENV, raising=False)
+    monkeypatch.setenv(guard.RUN_ID_ENV, "r-worker-7")
+
+    allowed, message = guard.decide(_payload(repo))
+
+    assert allowed is False
+    assert "r-worker-7" in message
+    assert "inline" in message
+    assert "reckon crew dispatch" not in message
+    assert "reckon crew watch" not in message
 
 
 def test_main_denies_with_a_stdout_decision_the_harness_parses(

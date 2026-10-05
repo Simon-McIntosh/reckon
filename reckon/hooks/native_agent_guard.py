@@ -10,14 +10,19 @@ only state local to the repository the spawn is happening in.
 
 Behavior, in order:
 
-1. Scope test — a repository with no crew or flight state under
-   ``docs/state/`` is untouched; the spawn is allowed silently.
+1. Scope test — the repository is found by walking up from the session's
+   working directory, so a session in any subdirectory is governed by it. A
+   repository with no crew or flight state under ``docs/state/`` is untouched;
+   the spawn is allowed silently.
 2. Waiver — a live run pointer for this repository with an in-harness launch
    still awaiting attachment allows the spawn and names the bind command.
 3. Waiver — an explicit environment override allows the spawn.
-4. Otherwise the spawn is refused, and the refusal composes the crew-dispatch
-   invocation shape and the watcher arming line so the caller can re-route in
-   one step rather than diagnose the ban from a bare "no".
+4. Otherwise the spawn is refused, and the refusal teaches the re-route so the
+   caller can act in one step rather than diagnose the ban from a bare "no". A
+   coordinator is told to do a lookup inline with its own tools and given the
+   crew-dispatch invocation shape and watcher arming line for fan-out. A crew
+   worker, identified by the run id dispatch exports into its environment, is
+   told to do the reading inline within its own run.
 """
 
 from __future__ import annotations
@@ -38,6 +43,11 @@ GUARDED_TOOL = "Agent"
 # anticipate. Named in every refusal so the escape is one visible, deliberate
 # step rather than a default.
 OVERRIDE_ENV = "RECKON_ALLOW_NATIVE_AGENT"
+
+# The run id crew dispatch exports into every worker it launches. Its presence
+# marks the spawning session as a worker inside a ledgered run rather than a
+# coordinator, which changes the re-route the refusal teaches.
+RUN_ID_ENV = "RECKON_RUN_ID"
 
 # The shape of the re-route a refusal teaches. Angle-bracket placeholders mark
 # what only the plan and the caller's own work list can fill in; the guard
@@ -84,6 +94,21 @@ def crew_managed_projects(repo_root: Path) -> list[str]:
     return projects
 
 
+def repository_root(cwd: Path) -> Path:
+    """The directory whose crew state governs a spawn made from ``cwd``.
+
+    Walks up from ``cwd`` to the nearest directory carrying crew or flight
+    state, so a session working in a subdirectory is governed by its
+    repository. The walk stops at the first repository boundary, a directory
+    holding ``.git`` (a file in a linked worktree), so a repository nested
+    inside a crew-managed one is judged by its own state alone.
+    """
+    for candidate in (cwd, *cwd.parents):
+        if crew_managed_projects(candidate) or (candidate / ".git").exists():
+            return candidate
+    return cwd
+
+
 def _watch_arming_line(project: str) -> str:
     """The exact command that arms a watcher for a project's crew runs."""
     return f"reckon crew watch --project {shlex.quote(project)}"
@@ -118,12 +143,23 @@ def _refusal_message(*, project: str) -> str:
     return (
         "harness-native background agents are refused in this crew-managed "
         "repository: a native spawn bypasses the run ledger, the manifest "
-        "contract, and calibration entirely. Route investigation or review "
-        f"fan-out through crew dispatch instead:\n  {dispatch}\n"
+        "contract, and calibration entirely. A lookup needs no agent: do it "
+        "inline with your own Read, Grep, Bash or WebFetch. Route "
+        "investigation or review fan-out through crew dispatch instead:\n"
+        f"  {dispatch}\n"
         "Arm a watcher so the run's completion reaches this session:\n"
         f"  {watch}\n"
         "To waive this for a spawn pattern the guard did not anticipate, set "
         f"{OVERRIDE_ENV}=1 for this session."
+    )
+
+
+def _worker_refusal_message(*, run_id: str) -> str:
+    return (
+        "harness-native background agents are refused inside crew run "
+        f"{run_id}: a nested agent gets no run record or manifest of its own. "
+        "Do this reading inline with your own Read, Grep, Bash or WebFetch, "
+        "within the run that is accountable for it."
     )
 
 
@@ -138,7 +174,7 @@ def decide(payload: dict[str, Any]) -> tuple[bool, str | None]:
         return True, None
 
     cwd = str(payload.get("cwd") or os.getcwd())
-    repo_root = Path(cwd).resolve()
+    repo_root = repository_root(Path(cwd).resolve())
     projects = crew_managed_projects(repo_root)
     if not projects:
         return True, None
@@ -161,6 +197,9 @@ def decide(payload: dict[str, Any]) -> tuple[bool, str | None]:
             "by explicit override"
         )
 
+    run_id = os.environ.get(RUN_ID_ENV)
+    if run_id:
+        return False, _worker_refusal_message(run_id=run_id)
     return False, _refusal_message(project=projects[0])
 
 
