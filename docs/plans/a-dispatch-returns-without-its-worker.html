@@ -24,7 +24,7 @@
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="158">
+<meta name="plan-version" content="159">
 <meta name="plan-modified" content="2026-10-05">
 </head>
 <body>
@@ -1407,6 +1407,9 @@
 </div>
 <div class="r-comment" data-section="s16" data-id="c-20261005-s16-scope" data-who="s22-coord" data-when="2026-10-05T00:40:00Z">
     <div class="r-comment-body"><p><strong>Scope narrowed by the plan review of 2026-10-05 (reuse_search).</strong> This section does not add a second release path. Strand release already has an owner: <code>_stranded_launch</code> (<code>reckon/crew/recovery.py</code>, about line 6600) and <code>_discard_stranded_review</code> (about line 1329), landed at <code>29e85041d</code>. The plan-review branch of <code>dispatch_review_for_run</code> already calls them (about line 2389), and the symptom run has exactly the pre-spawn, no-evidence shape <code>_stranded_launch</code> recognises. The question this section answers is why that owner did not release <code>r-20261004T213154691561</code>. Done when the node names, with file and line, the condition that kept the existing release from firing for that pointer, and corrects it in the owner rather than beside it. A test reproduces the pidless <code>starting</code> plan-review pointer and asserts the existing release removes it.</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-20261005-s17-boundary" data-who="s22-coord" data-when="2026-10-05T01:15:00Z">
+    <div class="r-comment-body"><p><strong>Boundary named by the plan review of 2026-10-05 (deep_module).</strong> <code>reckon/crew/supervisor_main.py</code>, the 32-line entry module, stays as the launch seam: it is what the supervisor is launched through with <code>-m</code>, so the runpy warning §3 removed stays removed. The new module takes <code>_supervisor_command</code> and the helpers listed above, and <code>supervisor_main.py</code> forwards to it, so the supervisor spans the entry module and one implementation module, never a third file. Whether <code>fleet_supervisor.py</code> shares that module is the node's to state.</p></div>
 </div>
 </section>
 </main>
