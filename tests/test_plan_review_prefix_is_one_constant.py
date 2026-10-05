@@ -11,7 +11,7 @@ from reckon.crew.dispatch import _is_review_run
 def test_plan_review_prefix_has_one_definition():
     matches = [
         (path.name, line.strip())
-        for path in Path(recovery.__file__).parent.glob("*.py")
+        for path in Path(recovery.__file__).parent.rglob("*.py")
         for line in path.read_text().splitlines()
         if "plan-review-of-" in line
     ]

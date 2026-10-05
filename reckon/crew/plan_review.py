@@ -50,7 +50,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from html.parser import HTMLParser
@@ -63,9 +62,8 @@ from reckon.crew import review as _review_store
 
 # Reviewer-text parsing is owned by reckon.crew.review, so the code-review and
 # plan-report grammars share one line reader rather than each defining their
-# own. This module keeps only the store-side logic; the parser and the rubric
-# names are re-exported under the names their callers already use.
-PLAN_REVIEW_RUBRICS = _review_store.PLAN_REVIEW_RUBRICS
+# own. This module keeps only the store-side logic; the parser is re-exported
+# under the name its callers already use.
 parse_review_report = _review_store.parse_plan_review_report
 
 # ── The fingerprint exclusion set ───────────────────────────────────────────
@@ -137,8 +135,6 @@ RESPONSE_ACTIONS: tuple[str, ...] = ("acted", "declined")
 
 # A finding type declined across this many distinct plans surfaces to the lead.
 RECURRENCE_THRESHOLD = 3
-
-_BLOB_RE = re.compile(r"[0-9A-Fa-f]{7,64}")
 
 # Tags whose content is never authored prose, and the void elements that carry
 # no text and would otherwise leave an unbalanced protected-stack behind.
@@ -326,6 +322,14 @@ def plan_fingerprint(plan: Mapping[str, Any] | str | Path) -> str:
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
+# The store's plan-file grammar: a plan review is stored at
+# ``plan-<slug>.v<N>.json`` (with a ``.at-<blob8>`` sibling when one version is
+# reviewed twice). The walk that enumerates the store and any count that
+# cross-checks it must name the same pattern, so it is spelled here once and
+# read by the reader and its callers rather than restated as a literal.
+PLAN_REVIEW_FILE_GLOB = "plan-*.v*.json"
+
+
 def plan_review_path(
     project: str,
     plan_slug: str,
@@ -341,12 +345,11 @@ def plan_review_path(
     of one version lands on, so a re-review never overwrites its predecessor. An
     invalid blob naming is refused rather than silently normalised into a path.
     """
-    suffix = ""
-    if reviewed_blob_sha is not None:
-        blob = str(reviewed_blob_sha).strip()
-        if not _BLOB_RE.fullmatch(blob):
-            raise ValueError(f"invalid reviewed_blob_sha {reviewed_blob_sha!r}")
-        suffix = f".at-{blob.lower()[:8]}"
+    suffix = (
+        ""
+        if reviewed_blob_sha is None
+        else _review_store._blob_suffix(str(reviewed_blob_sha), length=8)
+    )
     version = int(plan_version)
     return (
         _review_store.review_store_root(base_dir)
@@ -545,7 +548,7 @@ def list_plan_reviews(
     for directory in directories:
         if not directory.is_dir():
             continue
-        for path in sorted(directory.glob("plan-*.v*.json")):
+        for path in sorted(directory.glob(PLAN_REVIEW_FILE_GLOB)):
             record = _load(path)
             if record is None:
                 continue
