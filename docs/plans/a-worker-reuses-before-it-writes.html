@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="a-review-is-sized-to-its-risk,a-refusal-is-about-the-work,a-landing-record-never-conflicts,the-fleet-reports-its-velocity">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Worker Reuses Before It Writes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="76">
 <meta name="plan-impl" content="0.95">
+<meta name="plan-version" content="77">
+<meta name="plan-modified" content="2026-10-05">
 </head>
 <body>
   <main class="plan-doc">
@@ -76,6 +76,10 @@
     <h2 id="s5">§5 — The interface has a budget</h2></header>
   <p class="landed-summary">Landed: velocity publishes weekly counts in four interface families (<code>reckon/interface_counts.py</code>, <code>tests/test_velocity_interface_counts.py</code>). The plan-review rubric now cites them, and a section adding surface must name what it retires or merges (<code>a-plan-is-reviewed-before-it-is-built</code> §3, commit <code>11e895c11</code>). <a href="s5-the-interface-has-a-budget">full record</a></p>
 </section>
+
+    <h2 id="s6">§6 — A parallel path scores its own review dimension</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>The landed-node review judges reuse only as a clause inside <code>fit</code> (<code>the-orchestrator-orchestrates</code> §4): a change that adds a definition whose capability the repository already owns is meant to drag <code>fit</code> below 10 and emit a finding naming the owner. Across the 179 code reviews stored since 4 October <code>fit</code> has a median of 19 and a minimum of 9, so the clause has bitten once, but a forked owner hides inside a score that also carries idiom and naming, and the promotion floors in <code>gates.dimension_floors</code> key per dimension, so no floor can hold a promotion on reuse alone. The lead's direction of 5 October: a parallel path is strongly discouraged, so it scores its own dimension. <strong>Deliverable.</strong> A sixth code-review dimension, <code>reuse</code>, scored 0 to 20 beside the five: 20 when every added definition extends the owner of its capability or no owner exists and the review says it searched; at most 5 when an added definition re-implements a capability the repository already owns without extending the owner, with a <code>FINDING</code> naming the owning file. The dimension joins <code>REVIEW_DIMENSIONS</code> in <code>reckon/crew/review.py</code>, the prompt's dimension list and example emission, the shipped <code>gates.dimension_floors</code> with a floor of 10 so promotion holds a sub-floor reuse score as a finding needing a disposition, and the LinkML flight schema if it enumerates the floors; the <code>fit</code> clause added by §4 of the sibling plan moves to the new dimension so one rule has one home. Every test that pins the dimension set derives it from the constant rather than spelling five.</p><p><strong>Done when</strong> <code>REVIEW_DIMENSIONS</code> carries <code>reuse</code> and the prompt states its scoring rule and example line; a fixture review emitting six <code>SCORE</code> lines parses with <code>absent</code> empty and one missing <code>reuse</code> line parses with <code>absent</code> naming it; the shipped defaults carry <code>reuse: 10</code> under <code>gates.dimension_floors</code> and the flight layer validates; the prompt-contract, scoring, parity, ledger and promotion suites that touch dimensions report 0 failed at the merged head; and the negative control removes <code>reuse</code> from the constant and reddens the six-line parse case.</p>
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
