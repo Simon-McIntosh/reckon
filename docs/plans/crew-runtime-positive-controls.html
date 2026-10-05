@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="351">
+<meta name="plan-version" content="352">
 <meta name="plan-modified" content="2026-10-05">
 </head>
 <body>
@@ -2377,6 +2377,9 @@
 </div>
 <div class="r-comment" data-section="s63" data-id="c-run-r-20261005T011335798014-one-function-resolves-a-citation" data-who="reckon-build" data-when="2026-10-05T02:05:47Z">
     <div class="r-comment-body"><p>All 13 commit-peeling sites now use one hardened resolver; repository walk has one owner, base and head each fail the same four IDs (zero added), ledger 97 passed, negative control added one walk-test failure with EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s63" data-id="c-run-r-20261005T021926107723-review-of-one-function-resolves-a-citation" data-who="reckon-build" data-when="2026-10-05T02:28:21.593Z">
+    <div class="r-comment-body"><p>Two identical parsed records stored, one keyed by the reviewed head 513d1cc and one at the legacy path; scores goal_fidelity 19, evidence 19, scope_discipline 18, durability 19, fit 17 (total 92), reviewed pair base 89eb214 / head 513d1cc, added_failure_count 0 with no added ids.</p></div>
 </div>
 <div class="r-comment" data-section="s62" data-id="c-20261005-s62-scope" data-who="s22-coord" data-when="2026-10-05T01:18:30Z">
     <div class="r-comment-body"><p><strong>Scope settled by the plan review of 2026-10-05 (duplicate_owner).</strong> <code>fleet_supervisor.config_directory</code> (<code>reckon/crew/fleet_supervisor.py</code>, about line 415) resolves the same <code>XDG_CONFIG_HOME</code>-or-<code>~/.config</code> base. The moved function is therefore the XDG config base, living in a module that imports nothing from <code>reckon.crew</code>. <code>systemd_user_dir</code> appends <code>systemd/user</code> to it and <code>config_directory</code> appends <code>fleet</code>, so one resolution serves both consumers while each keeps its own subdirectory. An earlier review declined folding the fleet directory in, as a different consumer; the consumers do stay distinct, and only the base resolution is shared.</p></div>
