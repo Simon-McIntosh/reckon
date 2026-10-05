@@ -61,8 +61,10 @@ def _section_identity_value(attributes, enclosing=None):
     return value
 
 
+SECTION_NUMBER_PATTERN = r"\d+(?:[.-]\d+)*"
+SECTION_NUMBER_CONTINUATION = SECTION_NUMBER_PATTERN[len(r"\d+") :]
 _SECTION_IDENTITY = re.compile(
-    r"^(?:§|#)?\s*(?:s(?:ection)?[\s.-]*)?(\d+(?:[.-]\d+)*)$", re.IGNORECASE
+    rf"^(?:§|#)?\s*(?:s(?:ection)?[\s.-]*)?({SECTION_NUMBER_PATTERN})$", re.IGNORECASE
 )
 
 
@@ -100,7 +102,7 @@ def section_id_candidates(section: object) -> set[str]:
     text = re.sub(r"\s+", " ", str(section or "").strip())
     identity = section_record_id(text)
     candidates = {text.casefold().removeprefix("#"), identity}
-    numbered = re.fullmatch(r"s(\d+(?:-\d+)*)", identity)
+    numbered = _SECTION_IDENTITY.fullmatch(identity)
     if numbered:
         candidates.add(f"s{numbered.group(1).replace('-', '.')}")
     return {candidate for candidate in candidates if candidate}

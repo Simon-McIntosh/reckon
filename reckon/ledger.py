@@ -55,6 +55,7 @@ from typing import Any, Iterable, Mapping, Sequence
 # rebinds the store's classes in place, and a captured exception class would
 # then no longer match the one its own function raises.
 from reckon import _store
+from reckon._plan_html import SECTION_NUMBER_PATTERN
 from reckon._timestamps import parse_utc
 
 # The slug the ledger occupies in a project's state directory. It sits beside
@@ -203,7 +204,9 @@ class SuiteDeltaError(LedgerError):
 def normalize_section(value: Any) -> str:
     """Return the canonical spelling for a numbered plan section."""
     section = re.sub(r"\s+", " ", str(value or "").strip())
-    match = re.fullmatch(r"(?:§\s*|#?s(?:ection)?\s*)?(\d+(?:\.\d+)*)", section, re.I)
+    match = re.fullmatch(
+        rf"(?:§\s*|#?s(?:ection)?\s*)?({SECTION_NUMBER_PATTERN})", section, re.IGNORECASE
+    )
     return f"§{match.group(1)}" if match else section
 
 

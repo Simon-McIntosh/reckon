@@ -49,9 +49,13 @@ class _RunReport:
 
 def _section_key(value: object) -> str:
     section = str(value or "").strip()
-    match = re.fullmatch(r"(?:§\s*|#?s(?:ection)?\s*)?(\d+(?:\.\d+)*)", section, re.I)
+    match = re.fullmatch(
+        rf"(?:§\s*|#?s(?:ection)?\s*)?({_plan_html.SECTION_NUMBER_PATTERN})",
+        section,
+        re.IGNORECASE,
+    )
     if match:
-        return _plan_html.section_anchor(section)
+        return _plan_html.section_record_id(section)
     if not section:
         return _plan_html.section_anchor(section)
     key = re.sub(r"[^a-z0-9]+", "-", section.lower()).strip("-")

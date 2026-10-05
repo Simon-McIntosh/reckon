@@ -16,7 +16,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from reckon._plan_html import read_state, read_state_file
+from reckon._plan_html import SECTION_NUMBER_PATTERN, read_state, read_state_file
 from reckon._timestamps import parse_utc
 from reckon._schema import (
     GATE_TRANSITIONS,
@@ -170,7 +170,9 @@ def _plan_declarations(
 
 
 _SECTION_WORD_RE = re.compile(
-    r"\b(?:section|sections)\s+(\d+(?:\s*(?:,|and)\s*\d+)*)", re.IGNORECASE
+    rf"\b(?:section|sections)\s+({SECTION_NUMBER_PATTERN}"
+    rf"(?:\s*(?:,|and)\s*{SECTION_NUMBER_PATTERN})*)",
+    re.IGNORECASE,
 )
 _REF_TOKEN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]*")
 _CONTEXT_WINDOW = 8
@@ -262,8 +264,11 @@ def _gate_section_refs(
                 if named.slug == slug or named.slug in all_plans:
                     context = named.slug
                     break
-            for number in re.findall(r"\d+", match.group(1)):
-                bind(context, f"s{int(number)}", "gate-text")
+            for number in re.split(
+                r"\s*(?:,|and)\s*", match.group(1), flags=re.IGNORECASE
+            ):
+                stage = f"s{int(number)}" if number.isdecimal() else f"s{number}"
+                bind(context, stage, "gate-text")
     return found
 
 

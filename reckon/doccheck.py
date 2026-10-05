@@ -128,7 +128,9 @@ _PLAN_REF_COULD_BE_SECTION_REF = "plan-ref-could-be-section-ref"
 
 # Section identities are numbered from one: s0 states why the plan exists and
 # carries no work.
-_NUMBERED_SECTION_ID = re.compile(r"s[1-9][0-9]*")
+_NUMBERED_SECTION_ID = re.compile(
+    rf"s[1-9][0-9]*{_plan_html.SECTION_NUMBER_CONTINUATION}"
+)
 
 # A separately-stated deliverable in a followup body — the corpus's own
 # convention for a multipart remainder ("(1) … (2) …").
