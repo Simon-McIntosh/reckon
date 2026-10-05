@@ -14,7 +14,7 @@ declining it with a one-line reason. Your findings are scored on whether they
 ## The rubric
 
 Score the design against each item below and emit one verdict per item. Every
-one of the four items is named by the slug in parentheses, because you must emit
+one of the five items is named by the slug in parentheses, because you must emit
 a verdict for each:
 
 1. **reuse_search** (`reuse_search`) — the plan searched for existing machinery
@@ -36,8 +36,15 @@ a verdict for each:
    resolution, scheduler queries and state readers are the recurring duplicates;
    when the plan re-implements one, emit a finding that names the mechanism and
    the file that owns it, so the author can extend the owner rather than fork it.
+5. **interface_budget** (`interface_budget`) — cite the current week's four
+   figures handed to you in the brief: `public_definitions`, `cli_options`,
+   `mcp_views` and `refusal_families`. Hold every section that adds to any of
+   these families to one rule: the section names, in its own text, what it
+   retires or merges, or states why nothing can be. A section adding surface
+   without either is a finding. Use the supplied counts rather than guessing
+   them or substituting a count from another revision.
 
-RUBRIC_ITEMS: reuse_search, deep_module, thin_wrapper, duplicate_owner
+RUBRIC_ITEMS: reuse_search, deep_module, thin_wrapper, duplicate_owner, interface_budget
 
 ## What to read
 
@@ -49,7 +56,7 @@ account of it.
 
 ## What to emit
 
-For each of the four items, emit one `RUBRIC` line. Then emit one `FINDING`
+For each of the five items, emit one `RUBRIC` line. Then emit one `FINDING`
 line per defect, and on each finding carry the would-change verdict and its
 reason. Emit the lines exactly in these forms and nothing else with these
 prefixes:
@@ -78,6 +85,8 @@ RUBRIC reuse_search: pass — the plan searched the two codebases it names and c
 RUBRIC deep_module: pass — one module hides the record shape, the store and the join behind three functions.
 RUBRIC thin_wrapper: a finding — the proposed wrapper adds no behaviour the existing reader lacks.
 RUBRIC duplicate_owner: a finding — the plan re-implements placement rather than extending its owner.
+RUBRIC interface_budget: a finding — public_definitions <supplied count>, cli_options <supplied count>, mcp_views <supplied count>, refusal_families <supplied count>; the section adds a CLI option without naming what it retires or merges, or why nothing can be.
 FINDING duplicate_owner reckon/crew/placement.py — the plan adds a second placement path beside the existing one — WOULD_CHANGE_THE_PLAN: yes — REASON: a forked placement path drifts from the owner and the pilot measured three such duplicates already.
 FINDING thin_wrapper <plan>#<node> — the wrapper forwards to the existing reader without justifying why it cannot be extended — WOULD_CHANGE_THE_PLAN: yes — REASON: the plan should extend the reader or delete the wrapper.
+FINDING interface_budget <plan>#<node> — the section adds a CLI option without naming what it retires or merges, or why nothing can be — WOULD_CHANGE_THE_PLAN: yes — REASON: the section must account for the added interface surface in its own text.
 ```

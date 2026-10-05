@@ -193,6 +193,26 @@ def test_the_report_grammar_has_one_owner() -> None:
     assert plan_review.parse_review_report is review_module.parse_plan_review_report
 
 
+def test_interface_budget_finding_parses_as_a_design_item() -> None:
+    parsed = plan_review.parse_review_report(
+        "RUBRIC interface_budget: a finding — public_definitions 2, cli_options 1, "
+        "mcp_views 2, refusal_families 1; the section adds an option without "
+        "retiring or merging anything or saying why nothing can be.\n"
+        f"FINDING interface_budget {PLAN_ANCHOR} — the section adds an option "
+        "without accounting for its interface cost — WOULD_CHANGE_THE_PLAN: yes "
+        "— REASON: name what it retires or merges, or why nothing can be.\n",
+        rubric="plan_design_review",
+    )
+    assert "interface_budget" in parsed["rubric_items"]
+    assert "interface_budget" not in parsed["absent_items"]
+    assert len(parsed["findings"]) == 1
+    finding = parsed["findings"][0]
+    assert finding["type"] == "interface_budget"
+    assert finding["id"] == "interface_budget-1"
+    assert finding["anchor"] == PLAN_ANCHOR
+    assert finding["would_change"] is True
+
+
 def test_store_delivered_report_writes_a_record_the_store_finds_by_fingerprint(
     reviewed_project: tuple[Path, Path, Path],
 ) -> None:

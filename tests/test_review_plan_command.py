@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -38,6 +39,7 @@ def project(tmp_path, monkeypatch):
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_VELOCITY_CACHE", str(home / "cache" / "velocity"))
     repo = tmp_path / "repo"
     plans = repo / "docs" / "plans"
     plans.mkdir(parents=True)
@@ -129,6 +131,41 @@ def test_composer_carries_rubric_snapshot_and_sidecar(project, rubric, items):
     assert argv[argv.index("--spec-level") + 1] == "exact"
     assert argv[argv.index("--brief") + 1] == fields["brief"]
     assert "--plan" not in argv
+
+
+@pytest.mark.parametrize("write", [True, False])
+def test_composed_brief_carries_the_weekly_interface_counts(project, write):
+    home, repo, _ = project
+    package = repo / "reckon"
+    package.mkdir()
+    (package / "mcp_views.py").write_text(
+        'import click\nVIEW_NAMES = ("summary", "detail")\n'
+        '@click.command()\n@click.option("--name")\n'
+        "def command(name):\n    return name\n"
+        'def refuse():\n    return format_refusal("missing-input")\n'
+    )
+    for args in (
+        ["add", "reckon/mcp_views.py"],
+        ["commit", "-q", "-m", "feat: expose fixture interfaces"],
+    ):
+        subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
+    subject = _subject()
+    before = sorted(home.rglob("*"))
+
+    fields = recovery._review_dispatch_fields(subject, write=write)
+
+    match = re.search(
+        r"Interface budget this week: public_definitions (\d+), cli_options (\d+), "
+        r"mcp_views (\d+), refusal_families (\d+) \(read ([^)]+)\)",
+        fields["brief_text"],
+    )
+    assert match is not None, "the composed brief must carry measured interface counts"
+    assert tuple(map(int, match.groups()[:4])) == (2, 1, 2, 1)
+    assert match.group(5).endswith("Z")
+    if write:
+        assert Path(fields["brief"]).read_text() == fields["brief_text"]
+    else:
+        assert sorted(home.rglob("*")) == before
 
 
 def test_sweep_dispatches_only_quiet_unreviewed_content(project, monkeypatch):
@@ -523,6 +560,11 @@ def test_the_report_grammar_parses_through_the_shared_review_reader():
     assert parsed["rubric_items"] == {
         "reuse_search": "pass — the module already owns it."
     }
-    assert parsed["absent_items"] == ["deep_module", "thin_wrapper", "duplicate_owner"]
+    assert parsed["absent_items"] == [
+        "deep_module",
+        "thin_wrapper",
+        "duplicate_owner",
+        "interface_budget",
+    ]
     assert parsed["findings"][0]["id"] == "duplicate_owner-1"
     assert parsed["findings"][0]["would_change"] is True

@@ -209,6 +209,25 @@ def test_the_week_after_a_change_reports_its_delta(tmp_path: Path, cache_root: P
     }
 
 
+@pytest.mark.parametrize("day", [3, 9])
+def test_current_week_counts_equal_the_views_own_figures(
+    tmp_path: Path, cache_root: Path, monkeypatch, day: int
+):
+    repo, first, second = _build_repository(tmp_path / "code")
+    monkeypatch.setattr(velocity.time, "time", lambda: BASE + day * DAY)
+
+    current = velocity.current_week_interface_counts(repo, write=False)
+
+    assert not cache_root.exists()
+    view = velocity.report(
+        {PROJECT: str(repo)}, start=WINDOW_START, end=_iso(day), run_store_db=None
+    )
+    assert current == view["interfaces"]["weeks"][-1]
+    assert current["revision"] == (first if day == 3 else second)
+    assert current["counts"]["public_definitions"] == (2 if day == 3 else 3)
+    assert velocity.current_week_interface_counts(repo) == current
+
+
 def test_counts_match_the_census_at_this_repository_head(
     tmp_path: Path, cache_root: Path
 ):
