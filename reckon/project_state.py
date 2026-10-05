@@ -21,7 +21,6 @@ import fcntl
 import hashlib
 import html
 import json
-import os
 import re
 import shutil
 import tempfile
@@ -44,7 +43,7 @@ from reckon._schema import (
     parse_plan_ref,
     resolve_plan_ref,
 )
-from reckon._store import write_json_atomically
+from reckon._store import _fsync_directory, write_atomically, write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
 from reckon.sprint_liveness import sprint_liveness
@@ -145,28 +144,6 @@ class ProjectStateConflict(ProjectStateError):
         self.current = current
         self.current_data = current_data
         super().__init__(f"version conflict: expected {expected}, got {current}")
-
-
-def _fsync_file(path: Path) -> None:
-    """Flush a completed file before it becomes authoritative."""
-    with path.open("rb") as handle:
-        os.fsync(handle.fileno())
-
-
-def _fsync_directory(path: Path) -> None:
-    """Flush directory metadata after a create, replace, or unlink."""
-    fd = os.open(path, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-    try:
-        os.fsync(fd)
-    finally:
-        os.close(fd)
-
-
-def _durable_replace(source: Path, destination: Path) -> None:
-    """Replace one file and durably publish its directory entry."""
-    _fsync_file(source)
-    os.replace(source, destination)
-    _fsync_directory(destination.parent)
 
 
 def _durable_unlink(path: Path) -> None:
@@ -1099,22 +1076,19 @@ def _write_resource_unlocked(
             fsync_directory=True,
         )
     else:
-        # The typed resources are rendered HTML, not JSON: the shared JSON
-        # writer cannot express them, so this branch keeps the temporary and
-        # durable-replace path it has always used.
-        fd, tmp_name = tempfile.mkstemp(
-            prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+        # The typed resources are rendered HTML, not JSON. The document-oriented
+        # JSON adapter cannot express them, but the render-callback primitive
+        # underneath it publishes any text a caller produces, so this branch
+        # renders through that one owner rather than staging its own temporary.
+        write_atomically(
+            path,
+            lambda handle: handle.write(
+                _render_resource(project, resource_type, resource_id, payload)
+            ),
+            fsync=True,
+            mode=0o600,
+            fsync_directory=True,
         )
-        os.close(fd)
-        tmp = Path(tmp_name)
-        tmp.write_text(
-            _render_resource(project, resource_type, resource_id, payload),
-            encoding="utf-8",
-        )
-        try:
-            _durable_replace(tmp, path)
-        finally:
-            tmp.unlink(missing_ok=True)
     return current_version + 1
 
 
@@ -1811,9 +1785,7 @@ def create_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
                     # The staged project resource is a JSON envelope. It is
                     # published through the shared atomic writer, so the durable
                     # write of a JSON document is one call rather than a staged
-                    # temporary renamed into place. The other resource is
-                    # rendered HTML, which the JSON writer cannot express, so it
-                    # keeps the staged install.
+                    # temporary renamed into place.
                     write_json_atomically(
                         destination,
                         json.loads(source.read_text(encoding="utf-8")),
@@ -1824,7 +1796,18 @@ def create_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
                         fsync_directory=True,
                     )
                 else:
-                    _durable_replace(source, destination)
+                    # The other resource is rendered HTML, which the JSON
+                    # adapter cannot express; it renders through the primitive
+                    # that adapter wraps, so the publish is still one owner.
+                    write_atomically(
+                        destination,
+                        lambda handle, staged=source: handle.write(
+                            staged.read_text(encoding="utf-8")
+                        ),
+                        mode=None,
+                        fsync=True,
+                        fsync_directory=True,
+                    )
                 installed.append(destination)
 
             rows = [
@@ -2023,18 +2006,14 @@ def recover_project_state_transactions(docs_dir: Path, project: str) -> list[Pat
                     (target_path, target_bytes),
                 ):
                     path.parent.mkdir(parents=True, exist_ok=True)
-                    fd, tmp_name = tempfile.mkstemp(
-                        prefix=f".{path.name}.",
-                        suffix=".recover",
-                        dir=path.parent,
+                    write_atomically(
+                        path,
+                        lambda handle, data=content: handle.write(data),
+                        mode=0o600,
+                        fsync=True,
+                        fsync_directory=True,
+                        binary=True,
                     )
-                    os.close(fd)
-                    tmp = Path(tmp_name)
-                    try:
-                        tmp.write_bytes(content)
-                        _durable_replace(tmp, path)
-                    finally:
-                        tmp.unlink(missing_ok=True)
                 _durable_unlink(journal)
                 recovered.append(journal)
     return recovered
@@ -2123,16 +2102,14 @@ def move_sprint_item(
                 (source_path, source_bytes),
                 (target_path, target_bytes),
             ):
-                fd, tmp_name = tempfile.mkstemp(
-                    prefix=f".{path.name}.", suffix=".recover", dir=path.parent
+                write_atomically(
+                    path,
+                    lambda handle, data=content: handle.write(data),
+                    mode=0o600,
+                    fsync=True,
+                    fsync_directory=True,
+                    binary=True,
                 )
-                os.close(fd)
-                tmp = Path(tmp_name)
-                try:
-                    tmp.write_bytes(content)
-                    _durable_replace(tmp, path)
-                finally:
-                    tmp.unlink(missing_ok=True)
             _durable_unlink(journal)
             raise
         _mark_move_journal_committed(journal)
@@ -2332,18 +2309,14 @@ def _close_sprint_with_carry_forward(
                 (closing_path, closing_bytes),
                 (advancing_path, advancing_bytes),
             ):
-                fd, tmp_name = tempfile.mkstemp(
-                    prefix=f".{path.name}.",
-                    suffix=".recover",
-                    dir=path.parent,
+                write_atomically(
+                    path,
+                    lambda handle, data=content: handle.write(data),
+                    mode=0o600,
+                    fsync=True,
+                    fsync_directory=True,
+                    binary=True,
                 )
-                os.close(fd)
-                tmp = Path(tmp_name)
-                try:
-                    tmp.write_bytes(content)
-                    _durable_replace(tmp, path)
-                finally:
-                    tmp.unlink(missing_ok=True)
             _durable_unlink(journal)
             raise
         _mark_move_journal_committed(journal)

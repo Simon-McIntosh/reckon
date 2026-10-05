@@ -40,7 +40,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from reckon._store import write_json_atomically
+from reckon._store import write_atomically, write_json_atomically
 
 # The record's own schema version, so a later shape change is recognised rather
 # than misread as the current one.
@@ -237,34 +237,6 @@ def write(
         fsync_directory=True,
         create_parents=True,
     )
-
-
-def _replace_atomically(target: Path, payload: str) -> None:
-    """Write a raw text payload so a reader sees old or new, never half.
-
-    Retained rather than moved onto the shared JSON writer: the pane's history
-    is a log of JSON *lines* rewritten as a whole file, which one commit of the
-    document-oriented ``write_json_atomically`` cannot express — that writer
-    emits exactly one JSON value plus a newline. The checkpoint record itself
-    goes through the shared writer; this helper now serves only the history
-    rewrite in :func:`append_history`.
-
-    A sibling temporary file carries the bytes and is renamed over the target,
-    which is atomic within one directory. The file is flushed and fsynced first
-    and the directory fsynced after, so the rename itself survives a crash
-    rather than leaving the name pointing at nothing.
-    """
-    temporary = target.with_name(f".{target.name}.{os.getpid()}.tmp")
-    with temporary.open("w", encoding="utf-8") as handle:
-        handle.write(payload)
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.replace(temporary, target)
-    directory = os.open(target.parent, os.O_RDONLY)
-    try:
-        os.fsync(directory)
-    finally:
-        os.close(directory)
 
 
 def history_path(project: str, session: str | None) -> Path:
@@ -467,6 +439,11 @@ def append_history(
     capped = cap_history(rows, now=moment, max_rows=max_rows, max_seconds=max_seconds)
     payload = "".join(json.dumps(entry, sort_keys=True) + "\n" for entry in capped)
     try:
-        _replace_atomically(target, payload)
+        write_atomically(
+            target,
+            lambda handle: handle.write(payload),
+            fsync=True,
+            fsync_directory=True,
+        )
     except OSError:
         return

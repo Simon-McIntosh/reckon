@@ -70,7 +70,7 @@ import hashlib
 from contextlib import ExitStack, contextmanager, suppress
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any, TextIO
+from typing import IO, Any, TextIO
 
 from reckon.lifecycle import TERMINAL_STATUSES
 
@@ -360,7 +360,7 @@ def _write_json_envelope(
             json.dump(envelope, handle, indent=2)
             handle.write("\n")
 
-        _write_through_sibling_temporary(path, render, mode=0o600)
+        write_atomically(path, render, mode=0o600)
         return new_data["_version"]
 
 
@@ -374,8 +374,8 @@ def _fsync_directory(directory: Path) -> None:
 
 
 def _open_sibling_temporary(
-    path: Path, create_mode: int, exact_mode: int | None
-) -> tuple[TextIO, Path]:
+    path: Path, create_mode: int, exact_mode: int | None, *, binary: bool = False
+) -> tuple[IO[Any], Path]:
     """Open a fresh, uniquely named sibling of ``path`` at ``create_mode``.
 
     The creation mode is handed to the open rather than applied afterwards, so a
@@ -392,6 +392,9 @@ def _open_sibling_temporary(
     to be ``0o600`` would otherwise land ``0o400`` under a umask such as
     ``0o277``; the chmod restores exactly the requested bits without ever
     widening the file past them at any instant.
+
+    ``binary`` opens the handle in binary mode so a caller whose payload is
+    bytes rather than text writes them without a decode or encode round trip.
     """
     for _ in range(64):
         candidate = (
@@ -406,7 +409,11 @@ def _open_sibling_temporary(
         try:
             if exact_mode is not None:
                 os.chmod(candidate, exact_mode)
-            handle = os.fdopen(descriptor, "w", encoding="utf-8")
+            handle = (
+                os.fdopen(descriptor, "wb")
+                if binary
+                else os.fdopen(descriptor, "w", encoding="utf-8")
+            )
         except BaseException:
             with suppress(OSError):
                 os.close(descriptor)
@@ -416,13 +423,14 @@ def _open_sibling_temporary(
     raise FileExistsError(f"could not create a temporary sibling for ``{path}``")
 
 
-def _write_through_sibling_temporary(
+def write_atomically(
     path: Path,
     render: Callable[[TextIO], None],
     *,
     fsync: bool = True,
     mode: int | None = None,
     fsync_directory: bool = False,
+    binary: bool = False,
 ) -> None:
     """Write through a unique sibling temporary and rename it into place.
 
@@ -440,12 +448,18 @@ def _write_through_sibling_temporary(
     takes the process's default creation mode instead, umask and all, which is
     what an ordinary whole-file write would have left. ``fsync_directory``
     flushes the parent directory entry after the rename, which is what makes the
-    rename itself durable across a crash.
+    rename itself durable across a crash. ``binary`` opens the temporary in
+    binary mode and hands the render callback a binary handle, so a caller whose
+    payload is bytes writes them without a decode or encode round trip.
+
+    This is the one place a file is published through a sibling temporary: every
+    writer that needs that guarantee renders through this callback rather than
+    keeping a private temporary-and-rename beside it.
     """
     temporary: Path | None = None
     try:
         handle, temporary = _open_sibling_temporary(
-            path, 0o666 if mode is None else mode, mode
+            path, 0o666 if mode is None else mode, mode, binary=binary
         )
         with handle:
             render(handle)
@@ -508,7 +522,7 @@ def write_json_atomically(
         )
         handle.write("\n")
 
-    _write_through_sibling_temporary(
+    write_atomically(
         target,
         render,
         fsync=fsync,
@@ -1194,9 +1208,7 @@ def _apply_evidence_appends(
             planned.append((path, current))
         for path, new_text in planned:
             path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = path.with_suffix(".html.tmp")
-            tmp.write_text(new_text, encoding="utf-8")
-            tmp.replace(path)
+            write_atomically(path, lambda handle, text=new_text: handle.write(text))
             written.append(path)
     return written
 
@@ -1499,9 +1511,7 @@ def _write_state_locked(
     ):
         return cur_version
 
-    tmp = html_file.with_suffix(".html.tmp")
-    tmp.write_text(new_text, encoding="utf-8")
-    tmp.replace(html_file)
+    write_atomically(html_file, lambda handle: handle.write(new_text))
     return new_data["version"]
 
 
@@ -1962,9 +1972,7 @@ def _replace_plan_text(
         stamped_state["modified"] = date.today().isoformat()
         stamped_state["version"] = current_version + 1
         rendered = _plan_html.write_state(replaced, stamped_state)
-        tmp = html_file.with_suffix(".html.tmp")
-        tmp.write_text(rendered, encoding="utf-8")
-        tmp.replace(html_file)
+        write_atomically(html_file, lambda handle: handle.write(rendered))
         return current_version + 1, html_file
 
 
