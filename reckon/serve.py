@@ -68,6 +68,7 @@ from urllib.request import urlopen
 from reckon import (
     _backends,
     _plan_html,
+    _store,
     capabilities,
     compliance,
     crew,
@@ -464,11 +465,7 @@ class ClientAssetError(RuntimeError):
 
 
 def _client_cache_root() -> Path:
-    configured = os.environ.get("RECKON_CLIENT_CACHE")
-    if configured:
-        return Path(configured).expanduser().resolve()
-    cache_home = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
-    return cache_home / "reckon" / "client"
+    return _store.cache_root("client")
 
 
 def _client_asset(name: str) -> Path:

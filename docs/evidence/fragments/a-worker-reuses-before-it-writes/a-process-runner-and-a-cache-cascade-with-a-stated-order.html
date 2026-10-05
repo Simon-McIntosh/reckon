@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="a-process-runner-and-a-cache-cascade-with-a-stated-order">
+<meta name="plan-title" content="Shared git execution and cache precedence">
+<meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
+<meta name="plan-recorded-at" content="2026-10-05">
+<meta name="plan-verdict" content="passed">
+<title>Shared git execution and cache precedence | reckon</title>
+</head><body><main>
+<section id="a-process-runner-and-a-cache-cascade-with-a-stated-order">
+<h2>Shared git execution and cache precedence</h2>
+<table><thead><tr><th>Measure</th><th>Result</th></tr></thead><tbody>
+<tr><th>Base revision</th><td>1fb3df688f4b80d8f1003006ec081714ee54d9b8</td></tr>
+<tr><th>Implementation revision</th><td>6eb6819018193da35c382cdba8d213c3af0e6456</td></tr>
+<tr><th>Velocity subprocess invocation functions</th><td>4 → 1 (run_git)</td></tr>
+<tr><th>Cache cascade functions</th><td>5 → 1 (reckon/_store.py:cache_root)</td></tr>
+<tr><th>public_definitions</th><td>1476 → 1477</td></tr>
+<tr><th>CLI options / MCP views / refusal families</th><td>317 / 33 / 23; unchanged</td></tr>
+<tr><th>Base gate</th><td>475 passed in 366.25s (0:06:06); EXIT=0</td></tr>
+<tr><th>Head gate</th><td>519 passed in 365.43s (0:06:05); EXIT=0</td></tr>
+<tr><th>Negative control</th><td>7 failed, 37 passed in 4.68s; EXIT=1</td></tr>
+<tr><th>Mutation</th><td>Private five-step cache cascade restored in reckon/capabilities.py; pick_input_cache_path routed through it</td></tr>
+<tr><th>Directory parity</th><td>25/25 base-recorded cells; five kinds across default, isolated home, XDG, both, and configured environments</td></tr>
+<tr><th>Explicit overrides / unknown kind</th><td>Override wins; unknown kind raises ValueError with either home environment and with an override</td></tr>
+<tr><th>Routing contract</th><td>Byte runner, 180-second timeout, byte input; checked wrapper raises CrewError and returns text output</td></tr>
+<tr><th>Layering</th><td>Fresh import of reckon.velocity loads no reckon.crew module</td></tr>
+<tr><th>Detector git runner / archive reader</th><td>Unchanged</td></tr>
+<tr><th>Existing granted tests</th><td>All four files unchanged</td></tr>
+</tbody></table>
+<table><thead><tr><th>Kind</th><th>Isolated home and explicit XDG both set</th></tr></thead><tbody>
+<tr><th>velocity</th><td><code>FIXTURE/xdg/reckon/velocity</code></td></tr>
+<tr><th>clones</th><td><code>FIXTURE/xdg/reckon/clones</code></td></tr>
+<tr><th>pick-input</th><td><code>FIXTURE/isolated/cache</code></td></tr>
+<tr><th>run-time-profile</th><td><code>FIXTURE/isolated/cache/run-time-profile</code></td></tr>
+<tr><th>client</th><td><code>FIXTURE/xdg/reckon/client</code></td></tr>
+</tbody></table>
+<table><thead><tr><th>Artifact</th><th>Durable path</th></tr></thead><tbody>
+<tr><th>base-gate.log</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T171036562500-a-process-runner-and-a-cache-cascade-with-a-stated-order/base-gate.log</code></td></tr>
+<tr><th>final-gate.log</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T171036562500-a-process-runner-and-a-cache-cascade-with-a-stated-order/final-gate.log</code></td></tr>
+<tr><th>negative-gate.log</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T171036562500-a-process-runner-and-a-cache-cascade-with-a-stated-order/negative-gate.log</code></td></tr>
+<tr><th>negative-control.patch</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T171036562500-a-process-runner-and-a-cache-cascade-with-a-stated-order/negative-control.patch</code></td></tr>
+<tr><th>negative-restoration.json</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T171036562500-a-process-runner-and-a-cache-cascade-with-a-stated-order/negative-restoration.json</code></td></tr>
+<tr><th>base-measurements.json</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T171036562500-a-process-runner-and-a-cache-cascade-with-a-stated-order/base-measurements.json</code></td></tr>
+<tr><th>head-measurements.json</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T171036562500-a-process-runner-and-a-cache-cascade-with-a-stated-order/head-measurements.json</code></td></tr>
+</tbody></table>
+</section></main></body></html>

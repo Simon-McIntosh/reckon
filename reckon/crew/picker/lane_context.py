@@ -23,7 +23,6 @@ would let the router weigh a lane it never heard from.
 from __future__ import annotations
 
 import json
-import os
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -31,7 +30,7 @@ from statistics import median
 from types import SimpleNamespace
 from typing import Any
 
-from reckon import budget, ledger
+from reckon import _store, budget, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import lane_document
 from reckon.crew.dispatch import _dispatch_lane_gate
@@ -259,34 +258,8 @@ def _ledger_stamp(project: str) -> list[Any] | None:
 
 
 def _profile_cache_root() -> Path:
-    """The directory the persisted run-time profiles live under.
-
-    Outside every repository, so a cache write never dirties a checkout. The
-    resolution order is fixed so every caller on a host lands on one directory:
-
-    1. ``RECKON_RUN_TIME_PROFILE_CACHE``, when a caller names one;
-    2. ``RECKON_HOME``, as ``<RECKON_HOME>/cache/run-time-profile`` -- a home
-       that isolated the configuration has isolated the cache with it, which is
-       how the test suite keeps these writes inside its temporary tree;
-    3. ``XDG_CACHE_HOME``, as ``<XDG_CACHE_HOME>/reckon/run-time-profile``;
-    4. ``~/.cache/reckon/run-time-profile``.
-
-    ``RECKON_HOME`` outranks ``XDG_CACHE_HOME`` deliberately: the home is the
-    isolation hook a test or a sandbox sets, while a host commonly has
-    ``XDG_CACHE_HOME`` pointed at the real user cache, so the reverse order would
-    let an isolated run write into the live cache.
-    """
-
-    configured = os.environ.get("RECKON_RUN_TIME_PROFILE_CACHE")
-    if configured:
-        return Path(configured).expanduser()
-    reckon_home = os.environ.get("RECKON_HOME")
-    if reckon_home:
-        return Path(reckon_home) / "cache" / "run-time-profile"
-    cache_home = os.environ.get("XDG_CACHE_HOME")
-    if cache_home:
-        return Path(cache_home) / "reckon" / "run-time-profile"
-    return Path.home() / ".cache" / "reckon" / "run-time-profile"
+    """The directory the persisted run-time profiles live under."""
+    return _store.cache_root("run-time-profile")
 
 
 def _profile_cache_path(project: str) -> Path:

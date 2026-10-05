@@ -145,6 +145,47 @@ def _config_home() -> Path:
     return Path.home() / "docs-server"
 
 
+def cache_root(kind: str, override: str | Path | None = None) -> Path:
+    """Resolve a cache kind's directory without creating it.
+
+    A caller override wins over the kind's environment variable. The table
+    keeps each kind's leaf and home precedence together; only an explicitly
+    configured reckon home participates, read through the config-home owner.
+    """
+    kinds = {
+        "velocity": ("RECKON_VELOCITY_CACHE", "velocity", "after"),
+        "clones": ("RECKON_CLONE_CACHE", "clones", "after"),
+        # An isolated configuration must not read or write the live user cache.
+        "pick-input": ("RECKON_PICK_CACHE", "", "before"),
+        "run-time-profile": (
+            "RECKON_RUN_TIME_PROFILE_CACHE",
+            "run-time-profile",
+            "before",
+        ),
+        # Client assets are shared independently of the configuration home.
+        "client": ("RECKON_CLIENT_CACHE", "client", None),
+    }
+    if kind not in kinds:
+        raise ValueError(f"unknown cache kind: {kind!r}")
+    variable, leaf, home_order = kinds[kind]
+    if override is not None:
+        return Path(override)
+    configured = os.environ.get(variable)
+    if configured:
+        root = Path(configured).expanduser()
+        return root.resolve() if home_order is None else root
+    has_reckon_home = home_order is not None and bool(os.environ.get("RECKON_HOME"))
+    if home_order == "before" and has_reckon_home:
+        return _config_home() / "cache" / leaf
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    # An explicitly empty client cache home denotes the current directory.
+    if cache_home or (home_order is None and cache_home is not None):
+        return Path(cache_home) / "reckon" / leaf
+    if has_reckon_home:
+        return _config_home() / "cache" / leaf
+    return Path.home() / ".cache" / "reckon" / leaf
+
+
 def _state_root() -> Path:
     """Resolve the state root directory for JSON-backed slugs (index/project).
 
