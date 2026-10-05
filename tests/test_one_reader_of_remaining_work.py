@@ -100,6 +100,46 @@ def test_reader_fallbacks_keep_their_distinct_questions():
     assert promotion._plan_remaining_sections(plan) == ["s2"]
 
 
+def test_undeclared_plan_combines_heading_and_anchor_fallbacks():
+    plan = {
+        "slug": "undeclared",
+        "status": "active",
+        "gates": [{"section": "s7", "gated_sections": ["s8"]}],
+        "comments": {
+            "s9": [{"id": plan_review.RUN_COMMENT_PREFIX + "landed"}],
+            "s4": [{"id": "authored", "body": "A question."}],
+            "_top": [{"id": "document-note"}],
+        },
+    }
+    headings = ["s9", "decisions", "s4"]
+    assert "section_declarations" not in plan
+    assert _schema.plan_section_anchors(plan) == {"s4", "s7", "s8", "s9"}
+    assert promotion._landed_sections(plan) == {"s9"}
+    assert _implementable_section_ids(plan, headings) == ["s9", "s4"]
+    assert promotion._plan_remaining_sections(plan) == ["s4", "s7", "s8"]
+    assert implementable_sections(plan.get("section_declarations")) == []
+    assert _schema.plan_executable_remainder(plan) is None
+    for section in ("s4", "s7", "s8", "s9"):
+        verdict = classify_followup(
+            plan, {"prompt": f"/reckon-build undeclared §{section[1:]}"}
+        )
+        assert verdict.reason == "section-not-implementable"
+        assert verdict.pointer is False
+
+    plan["comments"]["s4"].append(
+        {"id": plan_review.RUN_COMMENT_PREFIX + "another-landing"}
+    )
+    assert promotion._landed_sections(plan) == {"s4", "s9"}
+    assert promotion._plan_remaining_sections(plan) == ["s7", "s8"]
+    assert _implementable_section_ids(plan, headings) == ["s9", "s4"]
+    assert implementable_sections(plan.get("section_declarations")) == []
+    assert _schema.plan_executable_remainder(plan) is None
+    assert (
+        classify_followup(plan, {"prompt": "/reckon-build undeclared §4"}).reason
+        == "section-not-implementable"
+    )
+
+
 @pytest.mark.parametrize(
     ("comment_id", "expected"),
     [
