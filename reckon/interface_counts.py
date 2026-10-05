@@ -32,7 +32,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from reckon.velocity import git, read_blobs, velocity_cache_root
+from reckon.velocity import read_sources, velocity_cache_root
 
 FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef)
 DEFINITIONS = (*FUNCTIONS, ast.ClassDef)
@@ -441,17 +441,15 @@ def counts(trees):
 def read_trees(repo, revision, *, prefix=DEFAULT_PREFIX):
     """Parse a revision's Python modules under ``prefix``, read through git.
 
-    No checkout is made: the module list comes from ``ls-tree`` and the bytes
-    from one batched object read, so a revision that is not the working tree is
-    measured as that revision held it.
+    No checkout is made: the module list and the bytes both come from the one
+    sources reader on ``reckon.velocity``, which lists the revision's tree and
+    reads it in one batched object read, so a revision that is not the working
+    tree is measured as that revision held it.
     """
-    listing = git(repo, "ls-tree", "-r", "--name-only", revision, "--", prefix).decode()
-    paths = [path for path in listing.splitlines() if path.endswith(".py")]
-    # Every path comes from ls-tree at this same revision, so each yields bytes.
-    blobs = read_blobs(repo, [(revision, path) for path in paths])
+    sources = read_sources(repo, revision, prefix=prefix)
     return {
         path: ast.parse(text.decode("utf-8-sig"), filename=path)
-        for (_revision, path), text in blobs.items()
+        for path, text in sources.items()
     }
 
 
