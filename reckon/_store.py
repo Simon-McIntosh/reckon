@@ -1017,6 +1017,37 @@ def _landed_card_span(
     return wrapper.start(), close_end
 
 
+def landed_section_ids(html_text: str) -> frozenset[str]:
+    """Ids of the sections whose rendered extent is a landed card.
+
+    A collapse replaces a section's authored body with a card wrapped in
+    ``<section class="section-landed">``. Downstream readers that must treat a
+    landing record as machinery rather than authored content — the plan-review
+    fingerprint is the first — need to name those sections without re-spelling
+    the card's markup, so the recogniser lives here beside the writer that
+    creates it (:func:`_landed_card_span`, :func:`_is_structural_boundary`).
+
+    A heading is landed when the nearest ``<section>`` opening before it is a
+    landed card whose close has not yet passed: exactly the span
+    :func:`_landed_card_span` replaces on a repeat collapse. An ambiguous card
+    (a close that cannot be found, or a span reaching a second heading or a
+    structured-state region) is not reported, so the predicate fails safe — an
+    unreadable card counts as authored content, which a review still covers.
+    """
+    ids: set[str] = set()
+    for heading in _H2_OPEN_RE.finditer(html_text):
+        section_id = _element_id(heading.group())
+        if not section_id:
+            continue
+        try:
+            span = _landed_card_span(html_text, heading.start(), section_id)
+        except OpError:
+            continue
+        if span is not None:
+            ids.add(section_id)
+    return frozenset(ids)
+
+
 def _collapse_authored_section(html_text: str, request: dict[str, str]) -> str:
     """Replace one section's rendered extent with its landed card.
 

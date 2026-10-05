@@ -1,0 +1,42 @@
+<section data-reckon="evidence" data-node="landing-collapse-earns-no-plan-review">
+  <h3>A landing collapse leaves the plan fingerprint equal</h3>
+  <p>A landing beat both replaces a section's authored body with its landed
+  card and sets the section's declaration to <code>done</code>. Both are
+  machinery writes, but <code>plan_fingerprint</code>
+  (<code>reckon/crew/plan_review.py</code>) digested the card as authored
+  content, so the next build dispatch was refused for lack of a review of
+  content nobody had changed.</p>
+  <p>The digest now drops a landed card's interior while keeping the heading it
+  carries, drops the per-section lifecycle declaration (the section is digested
+  by its identity and structural record instead), and normalises the element
+  boundary the collapse moves. The one definition of a landed section is
+  exported from <code>reckon/_store.py</code> as
+  <code>landed_section_ids</code>, built on the existing
+  <code>_is_structural_boundary</code> and <code>_landed_card_span</code>
+  helpers, and <code>plan_fingerprint</code> calls it. A section declared
+  <code>done</code> without a collapse keeps its authored prose, so an edit to
+  a live section still moves the digest — the edit a review exists to catch.</p>
+  <p>A stored review under the previous definition still counts as current:
+  <code>plan_fingerprint</code> gains a <code>legacy=True</code> form that keeps
+  card interiors and declarations, the dispatch gate computes both digests, and
+  <code>read_plan_review</code> accepts a set of fingerprints. The sweep
+  therefore composes no review solely because the definition moved; the equality
+  is exercised by the store case and no stored record is orphaned by the change
+  against the same revision.</p>
+  <p><code>tests/test_plan_review_store.py</code> holds the collapse through the
+  production path the MCP plan-editing tool calls: the fingerprint is unchanged
+  across the collapse, an authored edit to another live section moves it, and a
+  record stored under the legacy digest is still returned. The gate
+  (<code>tests/test_plan_review_store.py</code>,
+  <code>tests/test_plan_review_gate.py</code>,
+  <code>tests/test_plan_review_dispatch.py</code>,
+  <code>tests/test_edit_plan_collapse_section.py</code>) runs 45 passed,
+  <code>EXIT=0</code>. Under the fold-back mutant — collapsed sections digesting
+  their landed card again — the collapse-equality case reddens,
+  <code>EXIT=1</code>. Change at <code>3080646c9</code>.</p>
+  <p>Store census: 17 stored plan reviews; every plan document resolves, and
+  none of the 17 equals the current document's digest under either the new or
+  the legacy definition, because each was stored at an earlier plan revision
+  than the file on disk. No record is left unreviewable by the definition change
+  itself.</p>
+</section>

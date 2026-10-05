@@ -349,3 +349,154 @@ def test_a_metadata_edit_leaves_a_derived_impl_and_the_fingerprint_unchanged() -
     assert edited_state.get("impl") != float(written)
     # `impl` is a metadata scalar, so the edit cannot demand a fresh review.
     assert module.plan_fingerprint(edited) == base_fingerprint
+
+
+# ── The landing collapse, held through the production path ──────────────────
+# A landing collapse replaces a section's authored body with a landed card and
+# sets its declaration to done. Neither is authored design, so neither may move
+# the fingerprint, or every landing beat would demand a fresh review of content
+# nobody changed. The collapse path is driven through the MCP plan-editing tool
+# the surface calls, against a synthesised checkout, so the case reads no live
+# plan.
+
+_COLLAPSE_PROJECT = "sample"
+_COLLAPSE_PLAN = "collapse-demo"
+_COLLAPSE_DECLARATIONS = {
+    "s-landed": "implementable",
+    "s-live": "implementable",
+}
+_COLLAPSE_CAPABILITY = {
+    "version": "1.0",
+    "class": "general",
+    "requirements": {
+        "reasoning": "standard",
+        "verification": "strict",
+        "risk": "low",
+    },
+}
+# s-landed carries no authored body (its heading is followed straight by the
+# next heading), so the collapse under test changes only the card and the
+# declaration; s-live keeps an authored body the review must still catch.
+_COLLAPSE_AUTHORED = (
+    '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+    f'<meta name="docs-project" content="{_COLLAPSE_PROJECT}">'
+    '<meta name="reckon-type" content="plan">'
+    "<title>Collapse plan</title></head><body>"
+    '<main class="plan-doc">'
+    '<h2 id="s-landed">&sect;1 &mdash; Landed section</h2>'
+    '<h2 id="s-live">&sect;2 &mdash; Live section</h2>'
+    "<p>The authored prose a review exists to catch.</p>"
+    "</main></body></html>"
+)
+
+
+def _collapse_checkout(tmp_path: Path) -> tuple[Path, Path]:
+    checkout = tmp_path / "repo"
+    path = checkout / "docs" / "plans" / f"{_COLLAPSE_PLAN}.html"
+    path.parent.mkdir(parents=True)
+    state = {
+        "project": _COLLAPSE_PROJECT,
+        "type": "plan",
+        "slug": _COLLAPSE_PLAN,
+        "title": "Collapse plan",
+        "status": "active",
+        "modified": "2026-10-05",
+        "version": 0,
+        "section_declarations": dict(_COLLAPSE_DECLARATIONS),
+        "sections": [
+            {
+                "id": section_id,
+                "effort_hours": 1.0,
+                "capability": dict(_COLLAPSE_CAPABILITY),
+                "attempts": 0,
+                "status": status,
+                "links": [],
+            }
+            for section_id, status in _COLLAPSE_DECLARATIONS.items()
+        ],
+    }
+    path.write_text(_plan_html.write_state(_COLLAPSE_AUTHORED, state), encoding="utf-8")
+    return checkout, path
+
+
+def _collapse_through_the_op(checkout: Path, section: str, summary: str) -> dict:
+    """Collapse a section through the plan-editing tool the surface calls."""
+    from reckon import mcp as mcp_module
+
+    path = checkout / "docs" / "plans" / f"{_COLLAPSE_PLAN}.html"
+    state = _plan_html.read_state(path.read_text(encoding="utf-8"))
+    return mcp_module._edit_plan_tool(
+        _COLLAPSE_PROJECT,
+        _COLLAPSE_PLAN,
+        expected_version=state["version"],
+        checkout_path=str(checkout),
+        doc_type="plan",
+        mode="state",
+        ops=[
+            {
+                "op": "collapse_section",
+                "section": section,
+                "summary": summary,
+                "evidence_anchor": f"/{_COLLAPSE_PROJECT}/evidence/archive/x#{section}",
+            }
+        ],
+    )
+
+
+def test_a_landing_collapse_leaves_the_fingerprint_while_prose_moves_it(
+    tmp_path: Path,
+) -> None:
+    checkout, path = _collapse_checkout(tmp_path)
+    before = module.plan_fingerprint(path)
+
+    result = _collapse_through_the_op(checkout, "s-landed", "Built the thing.")
+    assert result.get("ok") is True, result
+    collapsed_text = path.read_text(encoding="utf-8")
+    # The collapse really landed: a card is present and the declaration is done.
+    assert 'class="section-landed"' in collapsed_text
+    assert (
+        _plan_html.read_state(collapsed_text)["section_declarations"]["s-landed"]
+        == "done"
+    )
+    # And it does not move the fingerprint: no review is due for a landing.
+    assert module.plan_fingerprint(path) == before, (
+        "a landing collapse must not move the fingerprint"
+    )
+
+    # An authored edit to the other, still-live section still moves it.
+    authored = collapsed_text.replace(
+        "The authored prose a review exists to catch.",
+        "The authored prose a review exists to catch, now edited.",
+        1,
+    )
+    assert authored != collapsed_text
+    assert module.plan_fingerprint(authored) != before, (
+        "an authored edit to a live section must move the fingerprint"
+    )
+
+
+def test_a_review_stored_under_the_legacy_digest_still_reads_as_current(
+    tmp_path: Path,
+) -> None:
+    """A definition change must not orphan a review of unchanged content."""
+    _checkout, path = _collapse_checkout(tmp_path)
+    document = path.read_text(encoding="utf-8")
+
+    current = module.plan_fingerprint(document)
+    legacy = module.plan_fingerprint(document, legacy=True)
+    # The two definitions disagree, or the equality below would be vacuous.
+    assert current != legacy
+
+    # ``_record`` writes under the fixture project, which is where the store
+    # keys the file, so the read names the same project.
+    module.store_plan_review(
+        _record(slug=_COLLAPSE_PLAN, fingerprint=legacy), base_dir=tmp_path
+    )
+    found = module.read_plan_review(
+        PROJECT,
+        _COLLAPSE_PLAN,
+        base_dir=tmp_path,
+        plan_fingerprint={current, legacy},
+    )
+    assert found is not None, "a legacy-digest review must read as current"
+    assert found["plan_fingerprint"] == legacy

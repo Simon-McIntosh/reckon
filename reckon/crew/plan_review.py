@@ -50,14 +50,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
 from reckon import _plan_html
-from reckon._store import write_json_atomically
+from reckon._store import landed_section_ids, write_json_atomically
 from reckon.crew import review as _review_store
 
 # Reviewer-text parsing is owned by reckon.crew.review, so the code-review and
@@ -175,11 +175,23 @@ class _AuthoredProseParser(HTMLParser):
     metadata-only write cannot reach the prose through ``<title>`` or a meta.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, skip_landed_cards: bool = False) -> None:
         super().__init__()
         self._stack: list[bool] = []
         self._in_body = False
         self._chunks: list[str] = []
+        # When set, the text inside a landed card is dropped as machinery, but
+        # the heading it carries is kept: a collapse moves the heading into the
+        # card's header, and the heading is authored content that must read the
+        # same before and after the collapse.
+        self._skip_landed_cards = skip_landed_cards
+        self._card_depth = 0
+        self._heading_depth = 0
+        # A landed card wraps the section's own ``data-reckon="section"`` record,
+        # which is itself a ``<section>``. A bare depth counter would let that
+        # inner record's closing tag close the card, so each open section
+        # remembers whether it is the card and only its own tag decrements.
+        self._section_is_card: list[bool] = []
 
     def _protected(self) -> bool:
         return any(self._stack)
@@ -190,6 +202,15 @@ class _AuthoredProseParser(HTMLParser):
         if tag == "body":
             self._in_body = True
         carries_reckon = any(name == "data-reckon" for name, _value in attrs)
+        if self._skip_landed_cards:
+            if tag == "section":
+                classes = (_attr_value(attrs, "class") or "").split()
+                is_card = "section-landed" in classes
+                self._section_is_card.append(is_card)
+                if is_card:
+                    self._card_depth += 1
+            elif tag == "h2":
+                self._heading_depth += 1
         self._stack.append(
             self._protected() or carries_reckon or tag in _PROSE_SKIP_TAGS
         )
@@ -197,21 +218,51 @@ class _AuthoredProseParser(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if tag in _VOID_TAGS:
             return
+        if self._skip_landed_cards:
+            if tag == "h2" and self._heading_depth:
+                self._heading_depth -= 1
+            elif tag == "section" and self._section_is_card:
+                if self._section_is_card.pop() and self._card_depth:
+                    self._card_depth -= 1
         if self._stack:
             self._stack.pop()
 
     def handle_data(self, data: str) -> None:
-        if self._in_body and not self._protected():
-            self._chunks.append(data)
+        if not self._in_body or self._protected():
+            return
+        if self._skip_landed_cards and self._card_depth and not self._heading_depth:
+            return
+        self._chunks.append(data)
 
     def prose(self) -> str:
-        """Return the collected prose, whitespace-normalised."""
-        return " ".join("".join(self._chunks).split())
+        """Return the collected prose, whitespace-normalised.
+
+        Chunks are separated before the whitespace is collapsed, so a boundary
+        the store moves — a collapse joins a landed card directly to the next
+        heading with no whitespace between them, where the authored document had
+        a newline — reads identically either side. Without the separator the
+        two would concatenate and the machinery write would move the digest.
+        """
+        return " ".join(" ".join(self._chunks).split())
 
 
-def _authored_prose(html: str) -> str:
-    """Return the collected authored prose of a plan document."""
-    parser = _AuthoredProseParser()
+def _attr_value(attrs: list[tuple[str, str | None]], name: str) -> str | None:
+    """The value of one attribute in an :class:`HTMLParser` attribute list."""
+    for attr_name, value in attrs:
+        if attr_name == name:
+            return value
+    return None
+
+
+def _authored_prose(html: str, *, skip_landed_cards: bool = False) -> str:
+    """Return the collected authored prose of a plan document.
+
+    With ``skip_landed_cards`` set, a collapsed section's landed card is treated
+    as machinery: its badge, summary and evidence link are dropped, while the
+    section heading it carries is kept. The plain form digests the whole body
+    including cards, and is what the legacy fingerprint uses.
+    """
+    parser = _AuthoredProseParser(skip_landed_cards=skip_landed_cards)
     parser.feed(html)
     parser.close()
     return parser.prose()
@@ -283,24 +334,71 @@ def _without_run_comments(state: Mapping[str, Any]) -> Mapping[str, Any]:
     return {**state, "comments": kept}
 
 
-def plan_fingerprint(plan: Mapping[str, Any] | str | Path) -> str:
+def _without_section_declarations(state: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Return parsed state with each section's lifecycle declaration removed.
+
+    A section carries a declaration (``deferred``, ``implementable``, ``done``)
+    that a landing work-beat both reads and writes: :func:`reckon._store.
+    _apply_collapse_section` sets it to ``done`` in the same write that replaces
+    the section's authored body with its landed card. That declaration is
+    per-section lifecycle state, the analogue of the plan-level ``status`` scalar
+    already normalised out, and it is not part of the design a review reads. Left
+    in, it moves the fingerprint on a landing collapse even after the card is
+    excluded, so it is dropped — from the ``section_declarations`` map and from
+    each ``sections`` record's ``status`` — and the section is digested by its
+    identity and its structural record instead.
+
+    A state whose keys are the wrong shape is returned with only what can be
+    recognised removed: the normalisation never hides content it cannot classify.
+    """
+    cleaned = {
+        key: value for key, value in state.items() if key != "section_declarations"
+    }
+    sections = cleaned.get("sections")
+    if isinstance(sections, list):
+        cleaned["sections"] = [
+            {k: v for k, v in record.items() if k != "status"}
+            if isinstance(record, Mapping)
+            else record
+            for record in sections
+        ]
+    return cleaned
+
+
+def plan_fingerprint(
+    plan: Mapping[str, Any] | str | Path, *, legacy: bool = False
+) -> str:
     """Return the content fingerprint that joins a review to the plan it read.
 
     Two components are digested. The parsed state has the excluded keys of
-    :data:`PLAN_METADATA_SCALARS` and the derived keys of
-    :data:`PLAN_DERIVED_SCALARS` removed, and the remainder canonicalised with
-    sorted keys; the run comments of :data:`RUN_COMMENT_PREFIX` are removed
-    with them, because a landing record is written by a promotion rather than
-    authored. The document's authored prose — the body text outside every
+    :data:`PLAN_METADATA_SCALARS`, the derived keys of
+    :data:`PLAN_DERIVED_SCALARS`, the per-section lifecycle declarations of
+    :func:`_without_section_declarations` and the run comments of
+    :data:`RUN_COMMENT_PREFIX` removed, and the remainder canonicalised with
+    sorted keys. The document's authored prose — the body text outside every
     ``data-reckon`` block, which the store regenerates from state — is folded in
     beside it, because the parsed state carries no section prose and a
     fingerprint over state alone would not move when a plan's prose is
     rewritten.
 
+    A landing collapse is a machinery write, not an authored one: it replaces a
+    section's body with a landed card (recognised by
+    :func:`reckon._store.landed_section_ids`) and sets the section's declaration
+    to ``done``. Neither is authored design, so neither may move the digest — the
+    card's interiors are dropped while the heading it carries is kept, and the
+    section declarations are normalised out. A section that is declared ``done``
+    but never collapsed keeps its authored prose, so an edit to it still moves
+    the fingerprint, which is the edit a review exists to catch.
+
     A caller passing a mapping passes a state and nothing more, so the digest
     covers state alone; a path or the document text gives the full fingerprint.
     With the excluded keys normalised out, an authored edit changes the digest
-    and a metadata-only write does not. The result is a hex sha256 string.
+    and a machinery write does not. The result is a hex sha256 string.
+
+    ``legacy`` selects the definition this function carried before the landing
+    collapse was excluded, so a review stored under it can still be recognised
+    as current without a re-review. It is the only caller that keeps card
+    interiors and section declarations in the digest.
     """
     if not isinstance(plan, (Mapping, str, Path)):
         raise TypeError(
@@ -308,16 +406,24 @@ def plan_fingerprint(plan: Mapping[str, Any] | str | Path) -> str:
         )
     excluded = frozenset(PLAN_METADATA_SCALARS) | frozenset(PLAN_DERIVED_SCALARS)
     digest_state = _without_run_comments(_as_state(plan))
-    payload: dict[str, Any] = {
-        "state": {
-            str(key): value
-            for key, value in digest_state.items()
-            if key not in excluded
-        }
+    state: Mapping[str, Any] = {
+        str(key): value for key, value in digest_state.items() if key not in excluded
     }
     document = _as_document(plan)
-    if document is not None:
-        payload["prose"] = _authored_prose(document)
+    if legacy:
+        payload: dict[str, Any] = {"state": state}
+        if document is not None:
+            payload["prose"] = _authored_prose(document)
+    else:
+        payload = {"state": _without_section_declarations(state)}
+        if document is not None:
+            # The exported predicate is the one definition of "this section's
+            # extent is a landed card". It decides whether the prose walk must
+            # drop card interiors at all, so a document with no landing is
+            # digested exactly as before the collapse existed.
+            payload["prose"] = _authored_prose(
+                document, skip_landed_cards=bool(landed_section_ids(document))
+            )
     blob = json.dumps(payload, sort_keys=True, default=str, separators=(",", ":"))
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
@@ -471,6 +577,24 @@ def _candidate_paths(
     return sorted(found.values())
 
 
+def _wanted_fingerprints(value: str | Iterable[str] | None) -> frozenset[str] | None:
+    """The set of fingerprints a filter accepts, or ``None`` when unfiltered.
+
+    A plan is joined to its review by one fingerprint, but a change to the
+    fingerprint's definition means the content of a plan can carry two digests
+    at once: the current one and the legacy one a review may have been stored
+    under. A caller passes either a single digest or the handful that select the
+    review of the content it is asking about, so a stored review equal to the
+    legacy digest still counts as current and no plan is reviewed solely because
+    the definition moved.
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return frozenset({value})
+    return frozenset(str(item) for item in value)
+
+
 def _load(path: Path) -> dict[str, Any] | None:
     """Return a stored record, or ``None`` when the file is missing or unreadable."""
     if not path.is_file():
@@ -488,7 +612,7 @@ def read_plan_review(
     plan_version: int | None = None,
     *,
     base_dir: str | Path | None = None,
-    plan_fingerprint: str | None = None,
+    plan_fingerprint: str | Iterable[str] | None = None,
     reviewed_blob_sha: str | None = None,
 ) -> dict[str, Any] | None:
     """Return the newest stored plan review matching the given filters.
@@ -502,12 +626,14 @@ def read_plan_review(
     returned; ``None`` means no stored review matches.
     """
     records: list[tuple[Path, dict[str, Any]]] = []
+    wanted = _wanted_fingerprints(plan_fingerprint)
     for path in _candidate_paths(project, plan_slug, plan_version, base_dir):
         record = _load(path)
         if record is None:
             continue
-        if plan_fingerprint is not None and (
-            str(record.get("plan_fingerprint") or "") != str(plan_fingerprint)
+        if (
+            wanted is not None
+            and str(record.get("plan_fingerprint") or "") not in wanted
         ):
             continue
         if reviewed_blob_sha is not None:
@@ -751,7 +877,7 @@ def delivered_reports(
     project: str,
     plan_slug: str,
     *,
-    plan_fingerprint: str | None = None,
+    plan_fingerprint: str | Iterable[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Return the delivered review reports under a plan, newest first.
 
@@ -760,8 +886,10 @@ def delivered_reports(
     ``report_path`` (the report file's path), ``review_run_id`` (the run
     directory's name), and ``stored`` — whether a stored record already carries
     that run id, so a composed report is not re-stored. A named
-    ``plan_fingerprint`` keeps only the reports whose sidecar carries it, which
-    is how the gate finds the report for the content about to be built.
+    ``plan_fingerprint`` — one digest or a set of digests, so a report stored
+    under the legacy definition is still found — keeps only the reports whose
+    sidecar carries one of them, which is how the gate finds the report for the
+    content about to be built.
     """
     from reckon.crew.runs import reports_dir
 
@@ -769,6 +897,7 @@ def delivered_reports(
     if not root.is_dir():
         return []
     stored = _stored_review_run_ids(project)
+    wanted = _wanted_fingerprints(plan_fingerprint)
     found: list[dict[str, Any]] = []
     for directory in root.iterdir():
         if not directory.is_dir():
@@ -780,8 +909,9 @@ def delivered_reports(
         sidecar = _load(sidecar_path)
         if sidecar is None:
             continue
-        if plan_fingerprint is not None and (
-            str(sidecar.get("plan_fingerprint") or "") != str(plan_fingerprint)
+        if (
+            wanted is not None
+            and str(sidecar.get("plan_fingerprint") or "") not in wanted
         ):
             continue
         entry = dict(sidecar)
