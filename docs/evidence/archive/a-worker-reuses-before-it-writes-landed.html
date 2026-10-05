@@ -60,6 +60,11 @@
     <p>Commits <code>ed4ed1ecf</code> and <code>d2c004db4</code>, merged into main at <code>cad31fa5d</code>. On a synthetic two-commit repository the test asks <code>read_blobs</code> for a path that exists at the second commit and not at the first, in one call, and asserts None for the missing pair and the bytes for the present one. The counter's <code>if text is not None</code> clause is deleted, since <code>read_trees</code> lists its paths with <code>ls-tree</code> at the revision it reads; a comment states that guarantee. Gate: 9 passed, EXIT=0. Negative control (the reader's missing branch replaced by a raise): 1 failed, EXIT=1.</p>
   </section>
 
+  <section id="s13">
+    <h2>§13 — a process-returning git runner and a cache cascade with a stated order</h2>
+    <p>Commits <code>9fe7fadf1</code>, <code>6eb681901</code> and <code>3184f4a8b</code>, merged into main at <code>620502534</code>. <code>velocity.run_git</code> is the module's one subprocess site; <code>git</code> calls it checked and keeps its bytes contract for its fourteen callers, <code>read_blobs</code> feeds its spec list through its payload, and <code>routing._git</code> calls it and translates failure into <code>CrewError</code>. <code>_store.cache_root</code> carries the kind table beside the config-home helper that owns the home precedence; <code>velocity_cache_root</code>, the lane-context, served-client and detector resolvers call it with their kinds, <code>pick_input_cache_path</code> resolves through it, and <code>pick_input_cache_root</code> is gone. The package reads <code>XDG_CACHE_HOME</code> in one function.</p><p>Gate: head 516 passed, final 519 passed, EXIT=0, against a base of 475. Negative control (a private cascade restored in capabilities): 7 failed, EXIT=1, including the one-owner test. New test <code>tests/test_one_cache_cascade_serves_every_kind.py</code> asserts each kind's directory under an isolated home and an explicit XDG cache home, the override, and the unknown-kind error. The section was reviewed seven times before dispatch; the reviews measured fourteen callers of <code>git</code>, five cascades in two orders plus one without a home step, and the store as the owner of path precedence.</p>
+  </section>
+
 </main>
 </body>
 </html>
