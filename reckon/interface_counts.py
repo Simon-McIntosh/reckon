@@ -96,6 +96,139 @@ def definitions(tree):
     return list(visit(tree))
 
 
+def _staged_writes(definition_nodes):
+    """Find locally staged rename sources, including one level of delegation.
+
+    Consume the definitions already read by the interface census. A function
+    owns its body, excluding nested definitions; a rename of a parameter is
+    checked at its callers, while a local binding identifies a staged source.
+    This lifts the historical census's rename predicate out of its JSON-only
+    branch, so raw bytes and text use the same inventory.
+    """
+    functions = {
+        qualified: node
+        for node, qualified, _public, _nested in definition_nodes
+        if isinstance(node, FUNCTIONS)
+    }
+
+    def owned_nodes(function):
+        pending = list(function.body)
+        while pending:
+            node = pending.pop()
+            yield node
+            if not isinstance(node, DEFINITIONS):
+                pending.extend(ast.iter_child_nodes(node))
+
+    def source_name(source):
+        if isinstance(source, ast.Name):
+            return source.id
+        if (
+            isinstance(source, ast.Call)
+            and call_name(source.func) in {"str", "Path", "pathlib.Path"}
+            and len(source.args) == 1
+        ):
+            return source_name(source.args[0])
+        if isinstance(source, ast.BinOp) and isinstance(source.op, ast.Div):
+            return source_name(source.left)
+        return None
+
+    def rename_source(call):
+        name = call_name(call.func)
+        if name in {"os.replace", "os.rename", "replace", "rename"}:
+            return call.args[0] if len(call.args) >= 2 else None
+        if (
+            isinstance(call.func, ast.Attribute)
+            and call.func.attr in {"replace", "rename"}
+            and len(call.args) == 1
+        ):
+            return call.func.value
+        return None
+
+    bodies = {name: list(owned_nodes(node)) for name, node in functions.items()}
+    locals_by_function = {}
+    callees = {}
+    found = set()
+    for name, function in functions.items():
+        body = bodies[name]
+        targets = []
+        for node in body:
+            if isinstance(node, ast.Assign):
+                targets.extend(node.targets)
+            elif isinstance(node, (ast.AnnAssign, ast.NamedExpr)):
+                targets.append(node.target)
+            elif isinstance(node, ast.withitem) and node.optional_vars is not None:
+                targets.append(node.optional_vars)
+        local = {
+            node.id
+            for target in targets
+            for node in ast.walk(target)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)
+        }
+        locals_by_function[name] = local
+        parameters = [*function.args.posonlyargs, *function.args.args]
+        parameter_names = {arg.arg for arg in [*parameters, *function.args.kwonlyargs]}
+        forwarded = set()
+        for call in (node for node in body if isinstance(node, ast.Call)):
+            source = source_name(rename_source(call))
+            if source in local:
+                found.add(name)
+            elif source in parameter_names:
+                forwarded.add(source)
+        if forwarded:
+            callees[name] = (parameters, forwarded)
+
+    for name, body in bodies.items():
+        # An exclusive create that raised FileExistsError did not stage its
+        # target. Renames in that handler reclaim someone else's existing file.
+        not_created = {}
+        for attempt in (node for node in body if isinstance(node, ast.Try)):
+            exclusive = {
+                source_name(call.args[0])
+                for statement in attempt.body
+                for call in ast.walk(statement)
+                if isinstance(call, ast.Call)
+                and call_name(call.func) == "os.open"
+                and len(call.args) >= 2
+                and any(
+                    call_name(flag) == "os.O_EXCL" for flag in ast.walk(call.args[1])
+                )
+            }
+            for handler in attempt.handlers:
+                if handler.type is None or not any(
+                    isinstance(kind, ast.Name) and kind.id == "FileExistsError"
+                    for kind in ast.walk(handler.type)
+                ):
+                    continue
+                for statement in handler.body:
+                    for call in ast.walk(statement):
+                        if isinstance(call, ast.Call):
+                            not_created.setdefault(id(call), set()).update(exclusive)
+        for call in (node for node in body if isinstance(node, ast.Call)):
+            called = call_name(call.func)
+            scope = name.split(".")[:-1]
+            candidates = [
+                ".".join([*scope[:depth], called])
+                for depth in range(len(scope), -1, -1)
+            ]
+            if called.startswith(("self.", "cls.")):
+                candidates.insert(0, ".".join([*scope, called.split(".", 1)[1]]))
+            callee = next(
+                (candidate for candidate in candidates if candidate in functions), None
+            )
+            if callee not in callees:
+                continue
+            parameters, forwarded = callees[callee]
+            arguments = {arg.arg: value for arg, value in zip(parameters, call.args, strict=False)}
+            arguments.update({kw.arg: kw.value for kw in call.keywords if kw.arg})
+            if any(
+                source_name(arguments.get(parameter))
+                in locals_by_function[name] - not_created.get(id(call), set())
+                for parameter in forwarded
+            ):
+                found.add(name)
+    return found
+
+
 def interfaces(trees):
     """The interface surface of a mapping of module paths to parsed trees.
 
