@@ -218,7 +218,20 @@ def _staged_writes(definition_nodes):
             if callee not in callees:
                 continue
             parameters, forwarded = callees[callee]
-            arguments = {arg.arg: value for arg, value in zip(parameters, call.args, strict=False)}
+            if (
+                called.startswith(("self.", "cls."))
+                and parameters
+                and parameters[0].arg in {"self", "cls"}
+                and not any(
+                    call_name(decorator) == "staticmethod"
+                    for decorator in functions[callee].decorator_list
+                )
+            ):
+                parameters = parameters[1:]
+            arguments = {
+                arg.arg: value
+                for arg, value in zip(parameters, call.args, strict=False)
+            }
             arguments.update({kw.arg: kw.value for kw in call.keywords if kw.arg})
             if any(
                 source_name(arguments.get(parameter))

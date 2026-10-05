@@ -206,6 +206,7 @@ def test_byte_publishers_use_binary_handles_and_clean_failed_temporaries(
     monkeypatch.setattr(serve, "write_atomically", publish)
     if interrupt:
         monkeypatch.setattr(os, "replace", refuse)
+
     def action():
         if publisher == "client":
             return serve._client_asset("fixture.js").read_bytes()
@@ -229,3 +230,20 @@ def test_byte_publishers_use_binary_handles_and_clean_failed_temporaries(
         assert not target.exists()
     else:
         assert target.read_bytes() == body
+
+
+@pytest.mark.parametrize("receiver,decorator", [("self", ""), ("cls", "@classmethod")])
+def test_bound_method_forwarding_uses_explicit_argument_positions(receiver, decorator):
+    tree = ast.parse(f"""
+class Writer:
+    {decorator}
+    def _publish({receiver}, source, destination):
+        os.replace(source, destination)
+    {decorator}
+    def write({receiver}, destination):
+        temporary = make_temporary()
+        {receiver}._publish(temporary, destination)
+""")
+    assert interface_counts._staged_writes(interface_counts.definitions(tree)) == {
+        "Writer.write"
+    }
