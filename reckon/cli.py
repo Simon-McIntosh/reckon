@@ -7872,6 +7872,40 @@ def migrate_layout(docs_path, project, check):
         click.echo(f"manifest: {docs_dir / '.reckon/typed-resource-manifest.json'}")
 
 
+def _project_environment_drift() -> tuple[Path | None, list[str]]:
+    """Return the source checkout and the changes ``uv sync`` would make to it.
+
+    The MCP server is registered as ``uv run --project <checkout> reckon mcp``,
+    and ``uv run`` syncs before it launches. A checkout whose environment has
+    drifted from its lockfile therefore spends that sync inside the client's
+    connect timeout, so the server reads as unreachable rather than stale.
+    Returns ``(None, [])`` when reckon is not an editable checkout or uv is
+    unavailable, since there is then no project environment to drift.
+    """
+    checkout = Path(__file__).resolve().parent.parent
+    if not (checkout / "pyproject.toml").is_file() or shutil.which("uv") is None:
+        return None, []
+    try:
+        proc = subprocess.run(
+            ["uv", "sync", "--dry-run", "--project", str(checkout)],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return checkout, [f"uv sync --dry-run did not complete: {exc}"]
+    output = (proc.stdout + proc.stderr).splitlines()
+    if proc.returncode != 0:
+        return checkout, output[-3:] or [f"uv sync --dry-run exited {proc.returncode}"]
+    changes = [
+        line.strip()
+        for line in output
+        if line.lstrip().startswith(("Would install", "Would uninstall", "+ ", "- "))
+    ]
+    return checkout, changes
+
+
 @main.command()
 def doctor():
     """Verify reckon installation health.
@@ -7880,7 +7914,9 @@ def doctor():
     - Skills installed at ~/.claude/skills/reckon-*/
     - mounts.json reachable (default: ~/docs-server/mounts.json)
     - Every mounted project directory exists
-    - Reckon MCP registration present in Claude Desktop or Codex config
+    - Reckon MCP registration present in Claude Code, Claude Desktop or Codex config
+    - The source checkout's environment matches its lockfile, so the MCP
+      server's ``uv run`` launch does not sync inside the connect timeout
 
     Prints a green checkmark on pass or a named fix suggestion on fail.
     """
@@ -7933,6 +7969,7 @@ def doctor():
     # ── MCP config check ─────────────────────────────────────────────────────
     click.echo("\nMCP config")
     claude_candidates = [
+        Path.home() / ".claude.json",
         Path.home() / ".claude" / "claude_desktop_config.json",
         Path.home() / ".config" / "claude" / "claude_desktop_config.json",
     ]
@@ -7970,6 +8007,22 @@ def doctor():
             click.echo(f"       {error}")
         click.echo("       see: https://docs.reckon.dev/mcp")
         ok = False
+
+    # ── Environment check ────────────────────────────────────────────────────
+    checkout, drift = _project_environment_drift()
+    if checkout is not None:
+        click.echo("\nEnvironment")
+        if drift:
+            click.echo(f"  ✗  {checkout} environment differs from its lockfile:")
+            for line in drift[:10]:
+                click.echo(f"       {line}")
+            click.echo(
+                f"       run: uv sync --project {checkout}  "
+                "(the MCP launch would otherwise sync inside the connect timeout)"
+            )
+            ok = False
+        else:
+            click.echo(f"  ✓  {checkout} environment matches its lockfile")
 
     # ── Summary ──────────────────────────────────────────────────────────────
     click.echo("")

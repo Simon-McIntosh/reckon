@@ -21,6 +21,7 @@ class TestDoctor:
         has_mcp=True,
         mcp_has_reckon=True,
         has_codex_mcp=False,
+        has_claude_code_mcp=False,
     ):
         """Build a temporary environment for doctor to inspect."""
         home = tmp_path / "home"
@@ -67,15 +68,22 @@ class TestDoctor:
                 '[mcp_servers.reckon]\ncommand = "reckon"\n'
             )
 
+        if has_claude_code_mcp:
+            (home / ".claude.json").write_text(
+                json.dumps({"mcpServers": {"reckon": {"command": "uv"}}})
+            )
+
         return home
 
-    def _run_doctor(self, tmp_path, **kwargs):
+    def _run_doctor(self, tmp_path, drift=(None, []), **kwargs):
         """Run reckon doctor with a fake HOME.
 
         The configuration home resolves from RECKON_HOME ahead of the
         ~/docs-server fallback, so the fake home is named there too: a run
         that read it from the ambient environment would inspect the real home
-        the rest of the suite shares rather than the fixture's tree.
+        the rest of the suite shares rather than the fixture's tree. The
+        environment probe is stubbed with ``drift`` so no run invokes uv
+        against the checkout the suite itself is running from.
         """
         home = self._make_env(tmp_path, **kwargs)
         runner = CliRunner()
@@ -86,6 +94,9 @@ class TestDoctor:
             mock.patch("pathlib.Path.home", return_value=home),
             mock.patch.dict(
                 os.environ, {"RECKON_HOME": str(home / "docs-server")}
+            ),
+            mock.patch(
+                "reckon.cli._project_environment_drift", return_value=drift
             ),
         ):
             result = runner.invoke(main, ["doctor"])
@@ -126,6 +137,28 @@ class TestDoctor:
         )
         assert result.exit_code == 0
         assert "registered in config.toml" in result.output
+
+    def test_claude_code_mcp_registration(self, tmp_path):
+        result = self._run_doctor(
+            tmp_path, has_mcp=False, has_claude_code_mcp=True
+        )
+        assert result.exit_code == 0
+        assert "registered in .claude.json" in result.output
+
+    def test_environment_drift_fails_with_sync_command(self, tmp_path):
+        checkout = tmp_path / "checkout"
+        result = self._run_doctor(
+            tmp_path, drift=(checkout, ["- reckon==0.2.0", "+ reckon-plans==0.2.1"])
+        )
+        assert result.exit_code != 0
+        assert "- reckon==0.2.0" in result.output
+        assert f"uv sync --project {checkout}" in result.output
+
+    def test_environment_in_sync_passes(self, tmp_path):
+        checkout = tmp_path / "checkout"
+        result = self._run_doctor(tmp_path, drift=(checkout, []))
+        assert result.exit_code == 0
+        assert "environment matches its lockfile" in result.output
 
     def test_missing_mount_dir(self, tmp_path):
         result = self._run_doctor(
