@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-title" content="The surviving atomic-writer forks join the owner">
+  <meta name="plan-summary" content="The private sibling-temporary writer is promoted to the public write_atomically with a binary keyword, and the forks in project_state, follow_checkpoint and _store itself render through it. The retired fork definitions are gone, every former call site reaches the one owner, public_definitions rises by exactly one, and an interrupted render at each former call site leaves the whole old file with no temporary behind.">
+  <meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-recorded-at" content="2026-10-05">
+  <meta name="plan-verdict" content="passed">
+  <title>The surviving atomic-writer forks join the owner | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The surviving atomic-writer forks join the owner</h1>
+
+    <section id="surviving-atomic-writer-forks-join-the-owner-defect">
+      <h2>The forks</h2>
+      <p>The atomic-publish core survived at three levels beside
+        <code>_store.write_json_atomically</code>: <code>project_state._durable_replace</code> with a
+        byte-identical <code>_fsync_directory</code> (five call sites), <code>follow_checkpoint._replace_atomically</code>,
+        and three <code>.html.tmp</code> write-then-replace paths inside <code>_store</code> itself. Each kept its
+        own temporary-and-rename beside the primitive that already did the job.</p>
+    </section>
+
+    <section id="surviving-atomic-writer-forks-join-the-owner-changes">
+      <h2>What changed</h2>
+      <ol>
+        <li>The private <code>_store._write_through_sibling_temporary</code> is promoted to the public
+          <code>write_atomically</code>, keeping its signature and gaining one keyword, <code>binary</code>, which
+          opens the sibling temporary in binary mode and hands the render callback a binary handle.
+          <code>write_json_atomically</code> stays the JSON adapter over it.</li>
+        <li>The three <code>_store</code> HTML writers (the evidence-append path and the two plan writers)
+          render their document through <code>write_atomically</code>.</li>
+        <li><code>project_state</code>'s five call sites become calls to <code>write_atomically</code>: the typed-resource
+          HTML branch and the staged-install branch render text, and the three recovery sites render bytes
+          with <code>binary=True</code>. The duplicated <code>_fsync_directory</code> and the retired
+          <code>_durable_replace</code>/<code>_fsync_file</code> are deleted in favour of the owner's.</li>
+        <li><code>follow_checkpoint.append_history</code> renders its line log through
+          <code>write_atomically</code>; <code>_replace_atomically</code> is deleted.</li>
+      </ol>
+      <p>No new function is added to <code>project_state</code> or <code>follow_checkpoint</code>.</p>
+    </section>
+
+    <section id="surviving-atomic-writer-forks-join-the-owner-evidence">
+      <h2>Evidence</h2>
+      <table>
+        <thead><tr><th>Check</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><code>grep -rn 'def _durable_replace\|def _replace_atomically\|def _fsync_directory' reckon/</code></td>
+            <td>exactly one line, <code>reckon/_store.py</code></td></tr>
+          <tr><td><code>grep -n 'os.replace(\|\.replace(path)\|with_suffix(".*.tmp")' reckon/_store.py reckon/project_state.py reckon/crew/follow_checkpoint.py</code></td>
+            <td>one hit, <code>temporary.replace(path)</code> inside <code>write_atomically</code></td></tr>
+          <tr><td><code>interface_counts</code> <code>public_definitions</code></td>
+            <td>base <code>1af6dba95</code>: <strong>1474</strong>; head <code>2f07e9f46</code>: <strong>1475</strong> &mdash; exactly one higher</td></tr>
+        </tbody>
+      </table>
+      <p><code>tests/test_atomic_writer_has_one_owner.py</code> drives each former call site with the shared
+        primitive's render callback made to write part of its payload and then raise, asserting the destination
+        is the whole previous file (or still absent) with no sibling temporary left, and asserts
+        <code>binary=True</code> hands the callback a binary handle.</p>
+      <p>The gate: <code>pytest tests/test_writer_callers_first_wave.py
+        tests/test_writer_callers_second_wave.py tests/test_atomic_writer_has_one_owner.py
+        tests/test_project_state.py tests/test_one_atomic_writer_and_number_decoder.py
+        tests/test_edit_plan_append_evidence.py tests/test_evidence_record_composition.py</code> &mdash;
+        <strong>177 passed</strong>, exit 0.</p>
+
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>Negative control (declared):</strong> the directory-fsync branch was deleted from
+          <code>write_atomically</code> (the call replaced with <code>pass</code>). The durability tests then
+          <strong>failed</strong> (<code>test_directory_fsync_is_reached_when_requested</code>,
+          <code>test_fsync_directory_flushes_the_parent</code>), <code>EXIT=1</code>, and the mutation was
+          reverted. So the directory fsync is what makes the rename durable rather than the test passing
+          regardless.</li>
+      </ul>
+    </section>
+
+    <section id="surviving-atomic-writer-forks-join-the-owner-provenance">
+      <h2>Reproduction</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision</td><td><code>1af6dba95</code></td></tr>
+          <tr><td>Implementation commit</td><td><code>2f07e9f46</code></td></tr>
+          <tr><td>Gate log</td><td><code>gate-atomic-writer.log</code> in the run directory</td></tr>
+          <tr><td>Negative-control log</td><td><code>negative-control-durability.log</code> in the run directory</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
