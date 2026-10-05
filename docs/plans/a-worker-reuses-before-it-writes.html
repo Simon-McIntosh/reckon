@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.95">
-<meta name="plan-version" content="77">
+<meta name="plan-version" content="78">
 <meta name="plan-modified" content="2026-10-05">
 </head>
 <body>
@@ -309,6 +309,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-awrbiw-parsers-and-writer-landed" data-who="s25-coord" data-when="2026-10-03">
     <div class="r-comment-body"><p><strong>Two of the census's unexplained callers are resolved</strong>, against the post-migration census pin.</p><ul><li><strong>unexplained-parser-and-writer</strong> (<code>r-20261002T220842908203</code>, merged at <code>9b75780ef</code>, review 90). <code>quota_weight._as_date</code> now states why it reads a calendar date directly, and the <code>serve.py</code> plan-state POST writes through <code>write_json_atomically</code>. Both are pinned by a behaviour table and an interrupted-write test. Delta over 101 files: 0 added failures.</li><li><strong>run-time-profile-parses-through-the-shared-home</strong> (<code>r-20261003T011342160906</code>, merged at <code>74d467207</code>, review 92). <code>run_time_profile._completed_after</code> now reads through <code>parse_utc</code> and keeps its rule that an unreadable stamp is left in. One behaviour change remains as a follow-on: a stamp ending in a lowercase <code>z</code> now parses, where before it was kept as unreadable. Delta: 0 failures on either arm.</li></ul><p><strong>Remaining for §2:</strong> <code>obligation_snapshot._parse_instant</code>. Four consecutive peer runs on the obligation-snapshot work have claimed that file, so its owner has been asked to fold the change in or to say when the file is free. After that, a census re-pin should read the section's bound.</p><p><strong>Remaining for §3:</strong> a decision on whether a function-local delegate to <code>metering.run_streams</code> counts as one implementation.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261005T083542954607-review-of-reuse-is-a-review-dimension" data-who="reckon-build" data-when="2026-10-05T08:47:38.436Z">
+    <div class="r-comment-body"><p>Independent review of r-20261005T075546675949-reuse-is-a-review-dimension stored as a parsed five-dimension record (total 85: goal_fidelity 19, evidence 14, scope_discipline 19, durability 14, fit 19) naming base 3608bb44 and head a34b2c15; added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own population_base.log/population_head.log (both free of FAILED/ERROR ids), with a positive control proving the derivation instrument reports failures. Two follow-on findings: the reviewed manifest&#x27;s after_suite log population_head.log is incomplete (no pytest summary, no EXIT line) so its completed:true is unsupported; and the change deleted two assertions from tests/test_ledger.py.</p></div>
 </div>
 </section>
 </main>
