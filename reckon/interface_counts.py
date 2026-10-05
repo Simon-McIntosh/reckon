@@ -402,7 +402,11 @@ def count_revision_cached(repo, revision, *, cache_root=None, prefix=DEFAULT_PRE
     """
     if not revision:
         return dict.fromkeys(COUNT_KEYS, 0)
-    sha = git(repo, "rev-parse", revision + "^{commit}").decode().strip()
+    from reckon.crew.recovery import _resolve_commit
+
+    sha = _resolve_commit(Path(repo), revision)
+    if not sha:
+        raise subprocess.CalledProcessError(1, ["git", "rev-parse", revision])
     path = _cache_path(sha, cache_root)
     cached = _load_cached(path, prefix)
     if cached is not None:

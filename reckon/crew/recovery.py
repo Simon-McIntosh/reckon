@@ -1491,20 +1491,7 @@ def _resolve_abbreviated_commit(repository: Path | None, text: str) -> str:
     """
     if repository is None or not text:
         return ""
-    try:
-        completed = subprocess.run(
-            ["git", "rev-parse", "--verify", f"{text}^{{commit}}"],
-            cwd=repository,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except OSError:
-        return ""
-    resolved = completed.stdout.strip()
-    if completed.returncode or not re.fullmatch(r"[0-9A-Fa-f]{40,64}", resolved):
-        return ""
-    return resolved
+    return _resolve_commit(repository, text)
 
 
 def _record_carried_head(record: Mapping[str, Any]) -> str:

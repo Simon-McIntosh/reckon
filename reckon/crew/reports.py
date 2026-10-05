@@ -1525,21 +1525,9 @@ def _citation_tokens(entry: str) -> list[str]:
 
 def _commit_resolves_in(root: Path, revision: str) -> bool:
     """Report whether one revision names a commit object in one repository."""
-    probe = subprocess.run(
-        [
-            "git",
-            "rev-parse",
-            "--verify",
-            "--quiet",
-            "--end-of-options",
-            f"{revision}^{{commit}}",
-        ],
-        cwd=str(root),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return probe.returncode == 0 and bool(probe.stdout.strip())
+    from reckon.crew.recovery import _resolve_commit
+
+    return bool(_resolve_commit(root, revision))
 
 
 def _citation_stores(

@@ -689,9 +689,11 @@ def _commits_beyond_merge_base(
     reports as an unmeasured list rather than as an empty one, so an unreadable
     tree is kept rather than released.
     """
-    integration = _git(
-        repo, "rev-parse", f"{integrated_into}^{{commit}}"
-    ).stdout.strip()
+    from reckon.crew.recovery import _resolve_commit
+
+    integration = _resolve_commit(repo, integrated_into)
+    if not integration:
+        return None
     result = subprocess.run(
         ["git", "cherry", "-v", integration, "HEAD"],
         cwd=path,
@@ -1430,7 +1432,10 @@ def garbage_collect(
     if retention_days < 0:
         raise CrewError("retention days cannot be negative")
     repo_root = Path(repo).resolve()
-    _git(repo_root, "rev-parse", "--verify", f"{integrated_into}^{{commit}}")
+    from reckon.crew.recovery import _resolve_commit
+
+    if not _resolve_commit(repo_root, integrated_into):
+        raise CrewError(f"integration revision {integrated_into!r} is not a commit")
     confined_to: Path | None = None
     if run_id:
         confined_to = _run_worktree_path(repo_root, project, run_id)
@@ -2447,19 +2452,15 @@ def _signal_process_group(
 
 def _base_commit(repo: Path, base: str) -> str:
     """Resolve a worktree base to a commit without accepting option-like refs."""
-    result = subprocess.run(
-        ["git", "rev-parse", "--verify", "--end-of-options", f"{base}^{{commit}}"],
-        cwd=str(repo),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode:
+    from reckon.crew.recovery import _resolve_commit
+
+    commit = _resolve_commit(repo, base)
+    if not commit:
         raise PlanVisibilityError(
             f"worktree base {base!r} is not a readable commit; commit the plan "
             "before dispatching"
         )
-    return result.stdout.strip()
+    return commit
 
 
 def _contains_plan_section(html_text: str, section: str) -> bool:
