@@ -30,6 +30,11 @@
     <p>Both halves of the done-when now hold. The counts: <code>reckon/interface_counts.py</code> measures four families (<code>public_definitions</code>, <code>cli_options</code>, <code>mcp_views</code>, <code>refusal_families</code>), and the velocity view carries them as a weekly <code>interfaces</code> block. Tests are <code>tests/test_velocity_interface_counts.py</code>, including parity with the census at head; the currency audit confirmed them at <code>0da2431ed</code>. The rubric: commit <code>11e895c11</code> makes the plan-review rubric of <code>a-plan-is-reviewed-before-it-is-built</code> §3 (v17) cite the current week's four counts. A section that adds to any of them must name what it retires or merges, or why nothing can be; otherwise it receives a finding. A reviewer can check that from the section text alone.</p>
   </section>
 
+  <section id="s6">
+    <h2>§6 — a parallel path scores its own review dimension</h2>
+    <p>Commits <code>a34b2c15c</code> and <code>0506e9257</code>, merged into main at <code>04605bc86</code>. <code>REVIEW_DIMENSIONS</code> carries <code>reuse</code> last; the parser follows the tuple, so a six-line emission parses with <code>absent</code> empty and one missing the reuse line names it. <code>reckon/crew/prompts/review.md</code> lists six dimensions, scores 20 for a definition that extends its owner or names its search when no owner exists, and at most 5 for a re-implementation of an owned capability, with a FINDING naming the owner. The shipped flight defaults floor it at 10; the floors slot is a free-keyed map so no schema regeneration was needed.</p><p>Gate: 14-file node gate 250 passed, EXIT=0. Population importing <code>reckon.crew.review</code> (71 files): 737 passed at head against 737 at base, zero added. Negative control (reuse removed from the tuple): 7 failed, EXIT=1. Independent review r-20261005T083542954607 scored 85/100 at a34b2c15c; a delta review of the test-only 0506e9257 was composed by the reflex.</p><p>Worker's follow-on: <code>REVIEW_ACCEPTANCE_FLOOR</code> in reckon/crew/recovery.py hardcodes the dimension count as the literal 5, so the acceptance floor stayed at 90 while the maximum total moved to 120. Folded as §7.</p>
+  </section>
+
 </main>
 </body>
 </html>
