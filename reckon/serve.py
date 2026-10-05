@@ -53,7 +53,6 @@ import socket
 import struct
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 from collections.abc import Iterable, Mapping
@@ -81,6 +80,7 @@ from reckon._store import (
     _config_home,
     _mounts_path,
     _state_root,
+    write_atomically,
     write_json_atomically,
 )
 from reckon._timestamps import parse_utc
@@ -495,12 +495,13 @@ def _client_asset(name: str) -> Path:
             raise ClientAssetError(
                 f"client asset {name} digest mismatch: expected {expected}, got {actual}"
             )
-        with tempfile.NamedTemporaryFile(
-            dir=destination.parent, prefix=f".{name}.", delete=False
-        ) as handle:
-            handle.write(payload)
-            temporary = Path(handle.name)
-        temporary.replace(destination)
+        write_atomically(
+            destination,
+            lambda handle: handle.write(payload),
+            fsync=False,
+            mode=0o600,
+            binary=True,
+        )
     return destination
 
 
@@ -559,12 +560,13 @@ process.stdin.on("end", () => {
     with _CLIENT_ASSET_LOCK:
         if not destination.is_file():
             destination.parent.mkdir(parents=True, exist_ok=True)
-            with tempfile.NamedTemporaryFile(
-                dir=destination.parent, prefix=f".{digest}.", delete=False
-            ) as handle:
-                handle.write(payload)
-                temporary = Path(handle.name)
-            temporary.replace(destination)
+            write_atomically(
+                destination,
+                lambda handle: handle.write(payload),
+                fsync=False,
+                mode=0o600,
+                binary=True,
+            )
     return payload
 
 
@@ -2316,11 +2318,9 @@ def _thumbnail_bytes(source: Path, identity: str) -> bytes:
     body = _render_thumbnail(source)
     try:
         cached.parent.mkdir(parents=True, exist_ok=True)
-        temporary = cached.with_name(
-            f"{cached.name}.{os.getpid()}.{threading.get_ident()}.tmp"
+        write_atomically(
+            cached, lambda handle: handle.write(body), fsync=False, binary=True
         )
-        temporary.write_bytes(body)
-        temporary.replace(cached)
     except OSError as exc:
         LOGGER.warning("cannot cache thumbnail for %s: %s", source, exc)
     return body
@@ -3624,9 +3624,7 @@ class Handler(BaseHTTPRequestHandler):
             )
             return
 
-        tmp = plan_file.with_suffix(".html.tmp")
-        tmp.write_text(new_text, encoding="utf-8")
-        tmp.replace(plan_file)
+        write_atomically(plan_file, lambda handle: handle.write(new_text), fsync=False)
         self._send_json(
             HTTPStatus.OK, {"ok": True, "slug": slug, "version": state["version"]}
         )

@@ -132,12 +132,13 @@ def apply_archive_candidates(
 
     archived: list[Path] = []
     for path, text in rendered:
-        temporary = path.with_suffix(f"{path.suffix}.tmp")
+        from reckon._store import write_atomically
+
         try:
-            temporary.write_text(text, encoding="utf-8")
-            temporary.replace(path)
+            write_atomically(
+                path, lambda handle, text=text: handle.write(text), fsync=False
+            )
         except OSError as exc:
-            temporary.unlink(missing_ok=True)
             raise ArchiveError(f"cannot archive {path}: {exc}") from exc
         archived.append(path)
     return tuple(archived)

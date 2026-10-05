@@ -146,3 +146,86 @@ def writer(destination):
     assert interface_counts._staged_writes(interface_counts.definitions(tree)) == {
         "writer"
     }
+
+
+@pytest.mark.parametrize("publisher", ["client", "compiled", "thumbnail"])
+@pytest.mark.parametrize("interrupt", [False, True])
+def test_byte_publishers_use_binary_handles_and_clean_failed_temporaries(
+    tmp_path, monkeypatch, publisher, interrupt
+):
+    import hashlib
+    import io
+    from contextlib import closing
+    from types import SimpleNamespace
+
+    from reckon import _store, serve
+
+    payload = b"\x89PNG\x00\xff"
+    monkeypatch.setenv("RECKON_CLIENT_CACHE", str(tmp_path / "client"))
+    monkeypatch.setattr(
+        serve, "_thumbnail_cache_path", lambda *args: tmp_path / "image.png"
+    )
+    monkeypatch.setattr(serve, "_render_thumbnail", lambda source: payload)
+    monkeypatch.setattr(
+        serve,
+        "CLIENT_ASSETS",
+        {
+            "fixture.js": (
+                "https://invalid.test/fixture",
+                hashlib.sha256(payload).hexdigest(),
+            )
+        },
+    )
+    monkeypatch.setattr(
+        serve, "urlopen", lambda *args, **kwargs: closing(io.BytesIO(payload))
+    )
+    if publisher == "compiled":
+        monkeypatch.setattr(
+            serve, "_client_asset", lambda name: tmp_path / "compiler.js"
+        )
+        monkeypatch.setattr(serve, "node_executable", lambda: tmp_path / "node")
+        monkeypatch.setattr(
+            serve.subprocess,
+            "run",
+            lambda *args, **kwargs: SimpleNamespace(
+                returncode=0, stdout="window.label = 'é';", stderr=""
+            ),
+        )
+    calls = []
+
+    def publish(path, render, **kwargs):
+        assert kwargs["binary"] is True
+        calls.append(path)
+        return _store.write_atomically(path, render, **kwargs)
+
+    def refuse(source, destination):
+        assert Path(source).is_file()
+        assert Path(source).read_bytes()
+        raise OSError("rename interrupted")
+
+    monkeypatch.setattr(serve, "write_atomically", publish)
+    if interrupt:
+        monkeypatch.setattr(os, "replace", refuse)
+    def action():
+        if publisher == "client":
+            return serve._client_asset("fixture.js").read_bytes()
+        if publisher == "compiled":
+            return serve.compile_jsx("source", filename="fixture.jsx")
+        return serve._thumbnail_bytes(tmp_path / "source.png", "identity")
+
+    if interrupt and publisher != "thumbnail":
+        with pytest.raises(OSError, match="rename interrupted"):
+            action()
+    else:
+        body = action()
+        if publisher == "compiled":
+            assert "é".encode() in body
+        else:
+            assert body == payload
+    assert len(calls) == 1
+    target = calls[0]
+    assert not list(target.parent.glob(f".{target.name}.*.tmp"))
+    if interrupt:
+        assert not target.exists()
+    else:
+        assert target.read_bytes() == body

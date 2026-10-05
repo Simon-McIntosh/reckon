@@ -5,7 +5,6 @@ from __future__ import annotations
 import html
 import json
 import re
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -671,22 +670,13 @@ def synthesize_landed_record(
     rendered = _render_document(project, plan, source, records, docs_dir.parent)
     destination = docs_dir / "evidence" / "archive" / f"{plan_slug}-landed.html"
     destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary: Path | None = None
+    from reckon._store import write_atomically
+
     try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=destination.parent,
-            prefix=f".{destination.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            handle.write(rendered)
-            temporary = Path(handle.name)
-        temporary.replace(destination)
+        write_atomically(
+            destination, lambda handle: handle.write(rendered), fsync=False, mode=0o600
+        )
     except OSError as exc:
-        if temporary is not None:
-            temporary.unlink(missing_ok=True)
         raise EvidenceSynthesisError(
             f"cannot write landed evidence record {destination}: {exc}"
         ) from exc

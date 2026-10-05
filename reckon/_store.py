@@ -425,7 +425,7 @@ def _open_sibling_temporary(
 
 def write_atomically(
     path: Path,
-    render: Callable[[TextIO], None],
+    render: Callable[[IO[Any]], Any],
     *,
     fsync: bool = True,
     mode: int | None = None,

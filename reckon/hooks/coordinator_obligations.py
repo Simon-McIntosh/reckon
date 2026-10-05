@@ -470,22 +470,6 @@ def _read_digest(path: Path) -> str:
         return ""
 
 
-def _store_digest(path: Path, digest: str) -> None:
-    """Record one digest atomically, never raising into the session.
-
-    A config home this session cannot write to leaves the hook speaking every
-    turn, which is the harmless direction: the digest suppresses a repeat, it
-    must never suppress the first telling.
-    """
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name(path.name + ".tmp")
-        temporary.write_text(digest + "\n", encoding="utf-8")
-        os.replace(temporary, path)
-    except OSError:
-        return
-
-
 def local_lane(project: str) -> str:
     """The backend this host's local lane resolves to, or empty when none is."""
     try:
@@ -812,13 +796,29 @@ def _inject_list(
     digest_file = digest_path(project, session)
     if not items and not reloading:
         if _read_digest(digest_file):
-            _store_digest(digest_file, "")
+            try:
+                from reckon._store import write_atomically
+
+                digest_file.parent.mkdir(parents=True, exist_ok=True)
+                write_atomically(
+                    digest_file, lambda handle: handle.write("\n"), fsync=False
+                )
+            except OSError:
+                pass
         return
     digest = duty_digest(items, reloading=reloading)
     if _read_digest(digest_file) == digest:
         return
     inject(payload, format_checklist(obligations, note=note))
-    _store_digest(digest_file, digest)
+    try:
+        from reckon._store import write_atomically
+
+        digest_file.parent.mkdir(parents=True, exist_ok=True)
+        write_atomically(
+            digest_file, lambda handle: handle.write(digest + "\n"), fsync=False
+        )
+    except OSError:
+        pass
 
 
 def _prompt(payload: dict[str, Any]) -> int:
@@ -1105,7 +1105,15 @@ def _stop(payload: dict[str, Any]) -> int:
         # before the next prompt is exactly the case a prompt-only clear would
         # swallow.
         if _read_digest(digest_file):
-            _store_digest(digest_file, "")
+            try:
+                from reckon._store import write_atomically
+
+                digest_file.parent.mkdir(parents=True, exist_ok=True)
+                write_atomically(
+                    digest_file, lambda handle: handle.write("\n"), fsync=False
+                )
+            except OSError:
+                pass
         return 0
     if not _blocking_items(items):
         # Only duties some reflex already owns: they are listed, and they do

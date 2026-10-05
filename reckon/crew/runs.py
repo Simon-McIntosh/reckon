@@ -21,7 +21,12 @@ from pathlib import Path
 from typing import Any
 
 from reckon import __version__
-from reckon._store import _config_home, _docs_dir_for_project, write_json_atomically
+from reckon._store import (
+    _config_home,
+    _docs_dir_for_project,
+    write_atomically,
+    write_json_atomically,
+)
 from reckon._timestamps import parse_utc
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
@@ -1437,9 +1442,7 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
     as_delivered = manifest.with_name(manifest.name + AS_DELIVERED_SUFFIX)
     if not as_delivered.exists():
         as_delivered.write_text(original, encoding="utf-8")
-    tmp = manifest.parent / f".{manifest.name}.repair.tmp"
-    tmp.write_text(rewritten, encoding="utf-8")
-    os.replace(tmp, manifest)
+    write_atomically(manifest, lambda handle: handle.write(rewritten), fsync=False)
     record = {
         "run_id": run_id,
         "status": verdict,

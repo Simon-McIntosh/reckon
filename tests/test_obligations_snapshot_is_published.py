@@ -237,8 +237,9 @@ def _stopped_between_write_and_rename(staging: str, destination: str) -> None:
 
 def test_a_writer_stopped_before_the_rename_leaves_the_previous_snapshot(
     fleet: dict[str, Any],
+    monkeypatch,
 ) -> None:
-    """A snapshot writer that dies mid-write leaves the last snapshot readable."""
+    """An interrupted publication preserves the snapshot and removes its temporary."""
     _write_pointer(fleet, "r-owed", phase="complete", status="complete")
     with (
         runs.follower_registration(PROJECT, SESSION, delivery="stream"),
@@ -251,18 +252,18 @@ def test_a_writer_stopped_before_the_rename_leaves_the_previous_snapshot(
     path = obligation_snapshot.snapshot_path(PROJECT, SESSION)
     temps_before = [p for p in path.parent.iterdir() if p != path]
 
+    monkeypatch.setattr(os, "replace", _stopped_between_write_and_rename)
     with pytest.raises(OSError, match="stopped before renaming"):
         obligation_snapshot.write_snapshot(
             PROJECT,
             SESSION,
             {"project": PROJECT, "session": SESSION, "obligations": [], "summary": {}},
-            replace=_stopped_between_write_and_rename,
         )
 
     assert json.loads(path.read_text(encoding="utf-8")) == previous
     assert obligation_snapshot.read_snapshot(PROJECT, SESSION) == previous
     temps_after = [p for p in path.parent.iterdir() if p != path]
-    assert len(temps_after) > len(temps_before), "the stopped write left its temp"
+    assert temps_after == temps_before, "the interrupted write removed its temporary"
 
 
 def _document(
