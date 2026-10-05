@@ -40,6 +40,11 @@
     <p>Commits <code>2f07e9f46</code> and <code>352f287e1</code>, merged into main at <code>92231ed7d</code>. The private sibling-temporary writer is promoted to <code>write_atomically(path, render, *, fsync, mode, fsync_directory, binary)</code>; <code>write_json_atomically</code> stays the JSON adapter over it. In <code>reckon/project_state.py</code> the durable replace, its file fsync and the byte-copied directory fsync are deleted and five call sites render through the owner, one of them binary; in <code>reckon/crew/follow_checkpoint.py</code> the line-log writer is deleted and the history rewrite renders through the owner with the directory fsync; in <code>reckon/_store.py</code> the three <code>.html.tmp</code> write-then-replace paths render through it. The definition grep returns one line and the replace grep one hit, both inside the owner.</p><p>Gate: seven files, 177 passed, EXIT=0. Interface counter at head: public_definitions 1475 against 1474 at base, exactly the promoted name. Negative control (directory fsync branch deleted): 2 failed, EXIT=1, including the durability test. New test file <code>tests/test_atomic_writer_has_one_owner.py</code> covers the interrupted render at each former site and the binary handle.</p>
   </section>
 
+  <section id="s7">
+    <h2>§7 — the acceptance floor derives from the dimension count</h2>
+    <p>Commit <code>8b571a3d4</code>, merged into main at <code>135c4e767</code>. The floor is <code>len(REVIEW_DIMENSIONS) * REVIEW_MAX_SCORE * 9 // 10</code>; a head probe records that a five-dimension total of 90 is no longer accepted. The seven prose copies of the count (a line-break-tolerant search found them across <code>reckon/crew/recovery.py</code>, <code>reckon/crew/promotion.py</code> and <code>reckon/crew/review.py</code>) now read every dimension, and the same search returns nothing at the head. The only integer beside <code>REVIEW_MAX_SCORE</code> in the package is the nine-tenths ratio.</p><p>Gate: 131 passed, EXIT=0. Negative control (literal 5 restored): 2 failed, EXIT=1, including the tracking test. New test <code>tests/test_review_acceptance_floor_tracks_the_dimension_count.py</code> asserts the floor tracks the tuple length and that a total one below the derived floor is refused while the floor itself is accepted.</p>
+  </section>
+
 </main>
 </body>
 </html>

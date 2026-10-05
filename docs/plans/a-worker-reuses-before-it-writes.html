@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="a-review-is-sized-to-its-risk,a-refusal-is-about-the-work,a-landing-record-never-conflicts,the-fleet-reports-its-velocity">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>A Worker Reuses Before It Writes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.93">
-<meta name="plan-version" content="97">
+<meta name="plan-version" content="98">
 <meta name="plan-modified" content="2026-10-05">
 </head>
 <body>
@@ -84,9 +84,12 @@
   <p class="landed-summary">Landed <code>reuse</code> as the sixth dimension in <code>REVIEW_DIMENSIONS</code> (reckon/crew/review.py), the prompt's scoring rule moved out of <code>fit</code> into its own dimension with a clone-detector pointer, and <code>reuse: 10</code> under <code>gates.dimension_floors</code>; fixtures derive the dimension set from the schema. Gate 250 passed; population 737 at head = 737 at base; review 85/100. Merged at 04605bc86. <a href="s6">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-05</span>
     <h2 id="s7">§7 — The acceptance floor derives from the dimension count</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p><code>REVIEW_ACCEPTANCE_FLOOR</code> in <code>reckon/crew/recovery.py</code> is written as <code>5 * REVIEW_MAX_SCORE * 9 // 10</code>: the literal 5 is the dimension count as it stood before §6, so the floor reads 90 against a maximum total that is now 120. A review scoring 15 on every one of six dimensions totals 90 and is accepted, where the intended rule, 90 percent of the maximum, would require 108. The repair derives the count from <code>len(REVIEW_DIMENSIONS)</code> so a dimension added in the schema moves the floor with it, and grants the tests that spell 90 or the old total.</p><p>The count is also spelled in prose beside the constant and in the promotion summary: the comment block above the floor in <code>reckon/crew/recovery.py</code> and its resume docstring say five, as do the promotion summary in <code>reckon/crew/promotion.py</code> (twice) and, in <code>reckon/crew/review.py</code>, both the parser docstring and the module docstring, where the phrase wraps across a line break and so escapes a line-oriented grep. Each is rewritten to say every dimension, or to read the count from the tuple where it is a figure, so the schema has one home.</p><p><strong>Done when</strong>: the floor equals <code>len(REVIEW_DIMENSIONS) * REVIEW_MAX_SCORE * 9 // 10</code>, a test asserts it tracks the tuple length, the negative control (the literal restored) reddens that test, no other site in <code>reckon/</code> spells the dimension count as a literal (<code>grep -rn 'REVIEW_MAX_SCORE' reckon/</code> shows no integer multiplier beside it), and a line-break-tolerant search, <code>grep -Przo 'five[-\s]+dimension|5 dimension' reckon/ --include=*.py</code>, returns nothing (at version 94 it returns seven matches across three files).</p>
+<section data-reckon="section" data-id="s7" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed: <code>REVIEW_ACCEPTANCE_FLOOR</code> in reckon/crew/recovery.py derives from <code>len(REVIEW_DIMENSIONS)</code>, reading 108 against the six-dimension maximum of 120; the seven prose copies of the count in recovery, promotion and review are rewritten. Gate 131 passed; negative control (literal 5 restored) 2 failed. Merged at 135c4e767. <a href="s7">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-05</span>
