@@ -3836,12 +3836,14 @@ def _sweep_review_tier(
         return review_tiers.FULL
 
 
-# The score a five-dimension review must reach for its acceptance to promote
+# The score a complete review must reach for its acceptance to promote
 # the reviewed run without a coordinator. The total a review can score is the
-# five dimensions at ``REVIEW_MAX_SCORE`` each, and the floor is nine tenths of
+# schema dimensions at ``REVIEW_MAX_SCORE`` each, and the floor is nine tenths of
 # that, so the accepting branch over a stored record whose total merely parses
 # is what this exists to prevent.
-REVIEW_ACCEPTANCE_FLOOR = 5 * review_module.REVIEW_MAX_SCORE * 9 // 10
+REVIEW_ACCEPTANCE_FLOOR = (
+    len(review_module.REVIEW_DIMENSIONS) * review_module.REVIEW_MAX_SCORE * 9 // 10
+)
 
 
 def _review_accepts_promotion(review: Mapping[str, Any] | None) -> bool:
@@ -3943,7 +3945,7 @@ def accept_clean_review(
 ) -> dict[str, Any] | None:
     """Promote the reviewed run when its stored review is clean.
 
-    When a review run completes with a stored record whose five-dimension total
+    When a review run completes with a stored record whose complete total
     is at least the acceptance floor and which carries no finding, the reviewed
     run is promoted without a coordinator: the commits its manifest names must
     already be ancestors of the repository's head, the run's own recorded gate
