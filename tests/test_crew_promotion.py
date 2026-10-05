@@ -275,6 +275,7 @@ def test_a_reviewed_run_carries_its_dimensions_on_the_ledger_row(
             "scope_discipline": 17,
             "durability": 19,
             "fit": 16,
+            "reuse": 20,
         },
     )
     _promote(repository, run_id)
@@ -289,9 +290,10 @@ def test_a_reviewed_run_carries_its_dimensions_on_the_ledger_row(
             "scope_discipline": 17,
             "durability": 19,
             "fit": 16,
+            "reuse": 20,
         },
         "absent": [],
-        "total": 85,
+        "total": 105,
     }
 
 

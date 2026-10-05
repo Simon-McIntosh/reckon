@@ -4,10 +4,10 @@ A promoted run today carries a gate the worker wrote itself, which is why
 gate pass sits at 1.00 on every lane in the committed ledger and cannot
 separate one lane from another. This module supplies the second opinion: the
 artefacts an independent review worker emits, how they are parsed into one
-five-dimension record, and where those records live so they survive the run
+six-dimension record, and where those records live so they survive the run
 directory and the worktree that produced them.
 
-The five dimensions and their meanings are authored once in two mirrored
+The six dimensions and their meanings are authored once in two mirrored
 places. The Python schema below names them; the review worker learns their
 meaning from ``prompts/review.md``, which this module loads from disk on each
 call. A dimension renamed in the schema and not in the prompt fails the
@@ -75,9 +75,15 @@ from typing import Any
 from reckon import _store
 from reckon._store import write_json_atomically
 
-# ── The schema: five dimensions, one maximum ────────────────────────────────
+# ── The schema: six dimensions, one maximum ────────────────────────────────
 # A dimension added later is added in exactly one place. The mirror lives in
 # prompts/review.md, whose text the falsifier checks against these names.
+#
+# ``reuse`` is the sixth, and it is deliberately independent of the clone
+# detector in ``reckon/clones.py``: that detector runs at promotion and sees
+# textual copies, while this module's review judgement runs before promotion
+# and reads capability duplication the detector cannot see — a re-implementation
+# in different code of a mechanism the repository already owns.
 
 REVIEW_DIMENSIONS: tuple[str, ...] = (
     "goal_fidelity",
@@ -85,6 +91,7 @@ REVIEW_DIMENSIONS: tuple[str, ...] = (
     "scope_discipline",
     "durability",
     "fit",
+    "reuse",
 )
 
 REVIEW_MAX_SCORE = 20
@@ -757,7 +764,7 @@ def parse_plan_review_report(text: str, *, rubric: str) -> dict[str, Any]:
 # The total a review of a run with unretired added failures is capped at. The
 # promotion path reads REVIEW_MAX_SCORE as the score a fully satisfied dimension
 # reaches, so a capped total a quarter of one dimension cannot be read as the
-# reviewer's own arithmetic on the five dimensions. The record carries the
+# reviewer's own arithmetic on the six dimensions. The record carries the
 # count, the ids and the reason beside it, so the cap is never mistaken for a
 # measurement the reviewer made.
 ADDED_FAILURES_TOTAL_CAP = REVIEW_MAX_SCORE // 4
@@ -1976,7 +1983,7 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
 
     The checklist item verdicts are deliberately not carried here. This block
     is what a promotion and a lane comparison read, and both are defined on
-    the five dimensions alone; the item verdicts are recorded in the stored
+    the six dimensions alone; the item verdicts are recorded in the stored
     record instead. A ledger block that gained a second, non-comparable set of
     fields would change what those readers mean without changing their code.
     """
@@ -2006,7 +2013,7 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
 # ── Floors on the dimensions, and the dispositions that answer them ─────────
 # A total is a sum, so a single dimension far below the others is invisible in
 # it: a review whose durability is 5 of 20 promotes on the same 78 as one whose
-# five dimensions are even. The floor closes that, and it lives in flight
+# six dimensions are even. The floor closes that, and it lives in flight
 # configuration under ``gates.dimension_floors``, keyed by dimension name, so
 # the standard a stored score is read against travels with the other gate
 # settings and is readable by whoever is deciding what to do next.

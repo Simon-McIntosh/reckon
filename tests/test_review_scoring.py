@@ -1,4 +1,4 @@
-"""The reviewer artefact: a prompt, a five-dimension schema, a parser and a
+"""The reviewer artefact: a prompt, a six-dimension schema, a parser and a
 durable store, and the falsifiers that keep each half honest.
 
 An independent review is a second opinion the worker did not author, so its
@@ -35,6 +35,8 @@ SCORE durability: 19
 JUSTIFICATION durability: tests/test_review_scoring.py fails if an out-of-range score is clamped
 SCORE fit: 16
 JUSTIFICATION fit: the module follows the surrounding style of reckon/crew/summary.py
+SCORE reuse: 19
+JUSTIFICATION reuse: no owner for a durable review store exists; the search over reckon/crew found none
 FINDING reckon/crew/query.py:120 an out-of-scope helper was added to a file the node was not fenced to write
 """
 
@@ -60,9 +62,9 @@ def _config_file_set(root: Path) -> set[str]:
 # ── The schema ──────────────────────────────────────────────────────────────
 
 
-def test_schema_names_five_dimensions_once_with_the_maximum_stated_once() -> None:
-    assert len(review_module.REVIEW_DIMENSIONS) == 5
-    assert len(set(review_module.REVIEW_DIMENSIONS)) == 5
+def test_schema_names_six_dimensions_once_with_the_maximum_stated_once() -> None:
+    assert len(review_module.REVIEW_DIMENSIONS) == 6
+    assert len(set(review_module.REVIEW_DIMENSIONS)) == 6
     assert review_module.REVIEW_MAX_SCORE == 20
     target = review_module.review_path("reckon", "r-any")
     assert "runs" not in target.parts
@@ -115,9 +117,9 @@ def test_full_emission_parses_to_every_dimension_with_an_arithmetic_total() -> N
     assert record["status"] == "parsed"
     assert record["absent"] == []
     assert set(record["scores"]) == set(review_module.REVIEW_DIMENSIONS)
-    assert record["total"] == 18 + 15 + 17 + 19 + 16
+    assert record["total"] == 18 + 15 + 17 + 19 + 16 + 19
     assert record["total"] == sum(record["scores"].values())
-    assert len(record["justifications"]) == 5
+    assert len(record["justifications"]) == 6
     assert "reckon/crew/review.py" in record["justifications"]["goal_fidelity"]
     assert record["findings"] == [
         {
@@ -145,7 +147,8 @@ def test_missing_dimension_is_named_absent_not_a_partial_total() -> None:
         "SCORE goal_fidelity: 18\n"  # fit omitted
         "SCORE evidence: 15\n"
         "SCORE scope_discipline: 17\n"
-        "SCORE durability: 19"
+        "SCORE durability: 19\n"
+        "SCORE reuse: 19"
     )
     record = review_module.parse_review(text)
     assert record["status"] == "parsed"
@@ -177,7 +180,7 @@ def test_omitted_item_verdict_is_named_absent_with_the_aggregate_withheld() -> N
     assert record["item_aggregate"] is None, (
         "a count over the items present would read as a review that checked fewer"
     )
-    assert record["total"] == 85, (
+    assert record["total"] == 104, (
         "an omitted item verdict must not move the dimension scoring"
     )
 
@@ -238,13 +241,13 @@ def test_surrounding_prose_is_ignored() -> None:
     mixed = "Some preamble.\n\n" + VALID_TEXT + "\n\nSome closing note."
     record = review_module.parse_review(mixed)
     assert record["status"] == "parsed"
-    assert record["total"] == 85
+    assert record["total"] == 104
 
 
 def test_boundary_scores_are_accepted() -> None:
     record = review_module.parse_review(
         "SCORE goal_fidelity: 0\nSCORE evidence: 20\nSCORE scope_discipline: 0\n"
-        "SCORE durability: 20\nSCORE fit: 0"
+        "SCORE durability: 20\nSCORE fit: 0\nSCORE reuse: 20"
     )
     assert record["scores"] == {
         "goal_fidelity": 0,
@@ -252,8 +255,9 @@ def test_boundary_scores_are_accepted() -> None:
         "scope_discipline": 0,
         "durability": 20,
         "fit": 0,
+        "reuse": 20,
     }
-    assert record["total"] == 40
+    assert record["total"] == 60
 
 
 # ── The durable store ───────────────────────────────────────────────────────
@@ -350,7 +354,7 @@ def test_base_dir_override_moves_the_store_and_leaves_config_untouched(
         "reckon", "r-reviewed-run", base_dir=elsewhere
     )
     assert read_back is not None
-    assert read_back["total"] == 85
+    assert read_back["total"] == 104
     assert _config_file_set(real_reviews) == before
 
 
@@ -369,9 +373,10 @@ def test_a_parsed_review_reduces_to_its_ledger_row_block() -> None:
             "scope_discipline": 17,
             "durability": 19,
             "fit": 16,
+            "reuse": 19,
         },
         "absent": [],
-        "total": 85,
+        "total": 104,
     }
 
 
@@ -393,6 +398,7 @@ def test_absent_unparsed_and_scored_zero_stay_three_distinct_blocks() -> None:
                 "scope_discipline": 0,
                 "durability": 0,
                 "fit": 0,
+                "reuse": 0,
             },
             "absent": [],
             "total": 0,

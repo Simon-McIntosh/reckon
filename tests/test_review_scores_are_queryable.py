@@ -1,6 +1,6 @@
 """Per-dimension review scores are readable from committed state.
 
-A stored review's five dimensions are written onto the promoted run's committed
+A stored review's six dimensions are written onto the promoted run's committed
 ledger row, and nothing read them back: the reader existed with no caller, so a
 score was recorded and never consulted. These tests hold the crew ``scores``
 view to the three distinctions the committed block is built to preserve — a
@@ -33,6 +33,7 @@ REVIEWED_SCORES = {
     "scope_discipline": 17,
     "durability": 5,
     "fit": 16,
+    "reuse": 6,
 }
 
 

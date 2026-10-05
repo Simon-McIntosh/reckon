@@ -2,7 +2,7 @@
 
 The promotion refusal that stops a run landing without a review exists so a
 source change is read by an independent reviewer. The review's own deliverable
-is a stored record scoring all five dimensions, and a record that is clean — a
+is a stored record scoring all six dimensions, and a record that is clean — a
 total at or above the acceptance floor and no finding at all — is the state a
 coordinator would otherwise promote by hand. This node adds the accepting
 branch: when a clean-review run is promotable, the sweep confirms the run's own
