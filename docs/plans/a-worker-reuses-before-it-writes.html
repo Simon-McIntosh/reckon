@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="a-review-is-sized-to-its-risk,a-refusal-is-about-the-work,a-landing-record-never-conflicts,the-fleet-reports-its-velocity">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>A Worker Reuses Before It Writes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="121">
+<meta name="plan-version" content="122">
 <meta name="plan-modified" content="2026-10-05">
 </head>
 <body>
@@ -112,9 +112,12 @@
   <p class="landed-summary">Landed: <code>read_blobs</code> and <code>velocity_cache_root</code> are public on reckon/velocity.py, the plan-meta census reads through the one batched reader, and the interface counter's private reader, cache root and git wrapper are deleted; the census parity assertion is retired with its premise. Gate 103 passed; negative control reddens the single-invocation test. Merged at 2a6067335. <a href="s10">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-05</span>
     <h2 id="s11">§11 — The missing-object branch of the shared reader is exercised</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="a-worker-reuses-before-it-writes#s10"></section>
-<p>The review of §10 left one follow-on: <code>read_blobs</code> answers a <code>(revision, path)</code> pair that git reports missing with <code>None</code>, and the interface counter filters those <code>None</code> entries before parsing, yet no test builds a spec for a path that does not exist at its revision, so both branches are covered by inspection only. A branch that handles absence is the one most likely to drift silently, because every ordinary run takes the other branch.</p><p>The repair is a test beside the one-reader test: on a synthetic repository with two commits it asks the reader for a path that exists at the second commit and not at the first, asserts <code>None</code> for the missing pair and the bytes for the present one in a single call, and does not test the counter's filter, because that filter is dead: <code>read_trees</code> builds its specs from <code>ls-tree</code> at the very revision it then reads, so every listed path yields bytes and the <code>None</code> key cannot occur there. A guard that cannot execute is deleted rather than tested, so the counter's <code>if text is not None</code> clause goes, with a one-line comment stating why the listing guarantees presence. No definition is added; the changed paths are the test file and <code>reckon/interface_counts.py</code>.</p><p><strong>Done when</strong>: the test asserts the <code>None</code> answer for a missing pair and the bytes for a present pair from one <code>read_blobs</code> call, and <code>grep -n 'is not None' reckon/interface_counts.py</code> returns nothing in the tree reader; the negative control replaces the reader's missing-object branch with a raise and reddens that test; the gate runs the test file with the tests line giving the pytest command followed by its result as N passed, EXIT=0, and the gate log ending in a bare EXIT=0 line.</p>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links="a-worker-reuses-before-it-writes#s10"></section></header>
+  <p class="landed-summary">Landed: a test asks <code>read_blobs</code> for a missing pair beside a present one from one call and gets None and bytes; the interface counter's unreachable None filter is deleted with a comment stating the listing guarantees presence. Gate 9 passed; negative control (raise in the reader's missing branch) reddens the test. Merged at cad31fa5d. <a href="s11">full record</a></p>
+</section>
 
     <h2 id="s12">§12 — The clone detector reads revisions through velocity&#x27;s owners</h2>
 <section data-reckon="section" data-id="s12" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="a-worker-reuses-before-it-writes#s10"></section>

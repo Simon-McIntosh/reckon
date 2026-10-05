@@ -55,6 +55,11 @@
     <p>Commits <code>b6866f54e</code>, <code>cea8f41b7</code> and <code>12dc5eb95</code>, merged into main at <code>2a6067335</code>. <code>read_blobs(repo, specs)</code> answers an ordered sequence of (revision, path) pairs in one <code>cat-file --batch</code> process, returning bytes or None per pair; <code>_plan_metas</code> keeps its parsing on top of it, and the counter imports <code>git</code>, <code>read_blobs</code> and <code>velocity_cache_root</code> from velocity. The counter carries no <code>_read_blobs</code>, <code>_cache_root</code> or <code>git</code> of its own; the batch flag appears in exactly one function in the package. The census parity assertion is removed from the staged-write inventory test and its positive control stays.</p><p>Gate: 103 passed, EXIT=0. Negative control (a private batch loop restored in the counter): 2 failed, EXIT=1, including the single-invocation test. New test <code>tests/test_one_blob_reader_serves_velocity_and_the_counter.py</code> asserts the counter and the plan-meta census read the same bytes through the one reader.</p><p>This section was reviewed five times before dispatch; the reviews narrowed its scope from "consolidate the census predicates" to the one duplication that existed inside the package, after showing that a census importing live predicates would break its pinned figures, that the predicate consumers do not overlap, and that velocity has no revision-keyed cache.</p>
   </section>
 
+  <section id="s11">
+    <h2>§11 — the missing-object branch of the shared reader is exercised</h2>
+    <p>Commits <code>ed4ed1ecf</code> and <code>d2c004db4</code>, merged into main at <code>cad31fa5d</code>. On a synthetic two-commit repository the test asks <code>read_blobs</code> for a path that exists at the second commit and not at the first, in one call, and asserts None for the missing pair and the bytes for the present one. The counter's <code>if text is not None</code> clause is deleted, since <code>read_trees</code> lists its paths with <code>ls-tree</code> at the revision it reads; a comment states that guarantee. Gate: 9 passed, EXIT=0. Negative control (the reader's missing branch replaced by a raise): 1 failed, EXIT=1.</p>
+  </section>
+
 </main>
 </body>
 </html>
