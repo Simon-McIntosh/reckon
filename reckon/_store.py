@@ -1601,7 +1601,7 @@ def _require_new_section_contracts(before_html: str, after_html: str) -> None:
         heading.own_id
         for heading in _plan_html.plan_headings(after_html)
         if heading.level == 2
-        and re.fullmatch(r"s[0-9]+", heading.own_id or "")
+        and re.fullmatch(rf"s{_plan_html.SECTION_NUMBER_PATTERN}", heading.own_id or "")
         and heading.own_id not in old_ids
     }
     if not added:
@@ -1610,7 +1610,10 @@ def _require_new_section_contracts(before_html: str, after_html: str) -> None:
         records = _plan_html.read_state(after_html).get("sections", [])
     except ValueError as exc:
         raise ValueError(_section_contract_refusal(str(exc))) from exc
-    missing = added - {record["id"] for record in records}
+    record_ids = {record["id"] for record in records}
+    missing = {
+        sid for sid in added if _plan_html.section_record_id(sid) not in record_ids
+    }
     if missing:
         raise ValueError(
             _section_contract_refusal(
