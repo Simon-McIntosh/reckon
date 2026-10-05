@@ -3,6 +3,10 @@
 ``reckon.service`` carries the systemd unit installer, so importing it must not
 pull in the crew runtime: the base both consumers derive from is resolved
 there, and the crew modules import it rather than the other way round.
+
+The modules under test are imported inside each case rather than at module
+level. Importability is one of the facts under test here, and an import that
+fails must redden that case rather than abort collection before it runs.
 """
 
 from __future__ import annotations
@@ -16,9 +20,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
-from reckon import service
-from reckon.crew import fleet_supervisor, paid_lanes
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -93,6 +94,9 @@ def test_the_probe_sees_crew_modules_when_they_are_loaded() -> None:
 def test_the_xdg_base_serves_both_consumers(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from reckon import service
+    from reckon.crew import fleet_supervisor, paid_lanes
+
     config_home = tmp_path / "xdg"
     monkeypatch.setenv("XDG_CONFIG_HOME", str(config_home))
 
@@ -113,6 +117,9 @@ def test_the_xdg_base_serves_both_consumers(
 def test_config_directory_reads_the_base_from_the_service_module(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from reckon import service
+    from reckon.crew import fleet_supervisor
+
     base = tmp_path / "sentinel"
     seen: list[Mapping[str, str] | None] = []
 
@@ -130,6 +137,9 @@ def test_config_directory_reads_the_base_from_the_service_module(
 def test_without_the_variable_the_base_is_the_home_config(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from reckon import service
+    from reckon.crew import fleet_supervisor
+
     home = tmp_path / "home"
     monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
     monkeypatch.setenv("HOME", str(home))
