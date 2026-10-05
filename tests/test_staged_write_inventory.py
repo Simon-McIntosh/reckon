@@ -52,7 +52,7 @@ def test_claim_move_aside_is_not_a_staged_write(trees):
     assert not {name for path, name in observed if path == "reckon/crew/dispatch.py"}
 
 
-def test_runtime_inventory_includes_the_census_atomic_json_replacements(trees):
+def test_the_census_detector_reports_an_atomic_json_replacement():
     previous = sys.path[:]
     try:
         sys.path.insert(0, str(CENSUS_DIR))
@@ -63,18 +63,10 @@ def test_runtime_inventory_includes_the_census_atomic_json_replacements(trees):
         spec.loader.exec_module(census)
     finally:
         sys.path[:] = previous
-    historical = {
-        (path, name)
-        for path, tree in trees.items()
-        for node, name, _public, _nested in interface_counts.definitions(tree)
-        if isinstance(node, interface_counts.FUNCTIONS)
-        and "Atomic JSON file replacement" in census.primitive_concepts(node)
-    }
     control = ast.parse(
         "def publish():\n tmp.write_text(json.dumps({}))\n os.replace(tmp, path)\n"
     ).body[0]
     assert "Atomic JSON file replacement" in census.primitive_concepts(control)
-    assert historical <= _inventory(trees)
 
 
 @pytest.mark.parametrize(

@@ -32,6 +32,8 @@ import json
 import subprocess
 from pathlib import Path
 
+from reckon.velocity import git, read_blobs, velocity_cache_root
+
 FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef)
 DEFINITIONS = (*FUNCTIONS, ast.ClassDef)
 COUNT_KEYS = (
@@ -49,10 +51,6 @@ __all__ = [
     "counts",
     "read_trees",
 ]
-
-
-def git(repo, *args):
-    return subprocess.check_output(["git", "-C", str(repo), *args], timeout=180)
 
 
 def call_name(node):
@@ -440,35 +438,6 @@ def counts(trees):
     }
 
 
-def _read_blobs(repo, revision, paths):
-    """Read named blobs of a revision in one ``cat-file --batch`` pass."""
-    if not paths:
-        return {}
-    payload = "".join(f"{revision}:{path}\n" for path in paths).encode()
-    result = subprocess.run(
-        ["git", "-C", str(repo), "cat-file", "--batch"],
-        input=payload,
-        capture_output=True,
-        check=False,
-        timeout=180,
-    )
-    if result.returncode != 0:
-        raise subprocess.CalledProcessError(
-            result.returncode, result.args, result.stdout, result.stderr
-        )
-    data, position, blobs = result.stdout, 0, {}
-    for path in paths:
-        newline = data.index(b"\n", position)
-        header = data[position:newline].decode()
-        position = newline + 1
-        if header.strip().endswith("missing"):
-            continue
-        size = int(header.split()[2])
-        blobs[path] = data[position : position + size]
-        position += size + 1
-    return blobs
-
-
 def read_trees(repo, revision, *, prefix=DEFAULT_PREFIX):
     """Parse a revision's Python modules under ``prefix``, read through git.
 
@@ -478,10 +447,11 @@ def read_trees(repo, revision, *, prefix=DEFAULT_PREFIX):
     """
     listing = git(repo, "ls-tree", "-r", "--name-only", revision, "--", prefix).decode()
     paths = [path for path in listing.splitlines() if path.endswith(".py")]
-    blobs = _read_blobs(repo, revision, paths)
+    blobs = read_blobs(repo, [(revision, path) for path in paths])
     return {
         path: ast.parse(text.decode("utf-8-sig"), filename=path)
-        for path, text in blobs.items()
+        for (_revision, path), text in blobs.items()
+        if text is not None
     }
 
 
@@ -492,16 +462,8 @@ def count_revision(repo, revision, *, prefix=DEFAULT_PREFIX):
     return counts(read_trees(repo, revision, prefix=prefix))
 
 
-def _cache_root():
-    # Late import: the velocity view imports this module, so importing it back
-    # at module scope would close the cycle.
-    from reckon.velocity import _velocity_cache_root
-
-    return _velocity_cache_root()
-
-
 def _cache_path(sha, cache_root=None):
-    root = Path(cache_root) if cache_root is not None else _cache_root()
+    root = Path(cache_root) if cache_root is not None else velocity_cache_root()
     return root / "interfaces" / (sha + ".json")
 
 

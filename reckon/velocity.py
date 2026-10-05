@@ -63,13 +63,15 @@ __all__ = [
     "plan_cohort",
     "promotion_receipts",
     "ratio",
+    "read_blobs",
     "recover_ledger_clocks",
-    "report",
     "replay",
+    "report",
     "session_continuity",
     "session_usage",
     "transcript_index",
     "velocity",
+    "velocity_cache_root",
 ]
 
 CODE = Path("/home/ITER/mcintos/Code")
@@ -355,17 +357,19 @@ def _plan_history(repo, head, prefix=PLAN_DIRECTORY):
     return history
 
 
-def _plan_metas(repo, specs):
-    """Read each plan blob once and return its ``(status, archived)`` pair.
+def read_blobs(repo, specs):
+    """Read each named blob in one ``cat-file --batch`` process.
 
-    ``specs`` is an ordered list of ``(sha, path)`` pairs; the returned mapping
-    is keyed the same way. One ``cat-file --batch`` process serves every plan,
-    so a full-history census is a single pass over the object store rather than
-    one subprocess per commit.
+    ``specs`` is an ordered sequence of ``(revision, path)`` pairs; the result
+    maps each pair to its blob bytes, or to ``None`` when git reports the object
+    missing at that revision. One process answers the whole sequence, so a
+    census over many revisions or many paths is a single pass over the object
+    store rather than one subprocess per object.
     """
+    specs = list(specs)
     if not specs:
         return {}
-    payload = "".join(f"{sha}:{path}\n" for sha, path in specs).encode()
+    payload = "".join(f"{revision}:{path}\n" for revision, path in specs).encode()
     result = subprocess.run(
         ["git", "-C", str(repo), "cat-file", "--batch"],
         input=payload,
@@ -377,20 +381,37 @@ def _plan_metas(repo, specs):
         raise subprocess.CalledProcessError(
             result.returncode, result.args, result.stdout, result.stderr
         )
-    data, position, metas = result.stdout, 0, {}
-    for sha, path in specs:
+    data, position, blobs = result.stdout, 0, {}
+    for spec in specs:
         newline = data.index(b"\n", position)
-        header = data[position : newline + 1].decode()
+        header = data[position:newline].decode()
         position = newline + 1
         if header.strip().endswith("missing"):
-            content = b""
-        else:
-            size = int(header.split()[2])
-            content = data[position : position + size]
-            position += size + 1
+            blobs[spec] = None
+            continue
+        size = int(header.split()[2])
+        blobs[spec] = data[position : position + size]
+        position += size + 1
+    return blobs
+
+
+def _plan_metas(repo, specs):
+    """Read each plan blob once and return its ``(status, archived)`` pair.
+
+    ``specs`` is an ordered list of ``(sha, path)`` pairs; the returned mapping
+    is keyed the same way. The blobs come from one batched object read, so a
+    full-history census is a single pass over the object store rather than one
+    subprocess per commit.
+    """
+    if not specs:
+        return {}
+    blobs = read_blobs(repo, specs)
+    metas = {}
+    for spec in specs:
+        content = blobs[spec] or b""
         status = _PLAN_STATUS.search(content)
         archived = _PLAN_ARCHIVED.search(content)
-        metas[(sha, path)] = (
+        metas[spec] = (
             status.group(1).decode() if status else "",
             archived.group(1).decode() if archived else "",
         )
@@ -518,7 +539,7 @@ def plan_cohort(repo, head, *, start=START, end=END, prefix=PLAN_DIRECTORY):
 CACHE_VERSION = 1
 
 
-def _velocity_cache_root():
+def velocity_cache_root():
     """The directory the captured-history cache lives under.
 
     Outside every repository, so a cache write never dirties a checkout. The
@@ -542,7 +563,7 @@ def _velocity_cache_root():
 def _velocity_cache_path(repo, cache_root=None):
     """One cache file per repository path.
     """
-    root = Path(cache_root) if cache_root is not None else _velocity_cache_root()
+    root = Path(cache_root) if cache_root is not None else velocity_cache_root()
     digest = hashlib.sha256(str(Path(repo).resolve()).encode()).hexdigest()
     return root / (digest + ".json")
 
@@ -581,7 +602,7 @@ def _ledger_cache_path(repo, cache_root=None):
     different walks: the history by the commit census, the clock recovery by a
     patch-generating log over the ledger path alone.
     """
-    root = Path(cache_root) if cache_root is not None else _velocity_cache_root()
+    root = Path(cache_root) if cache_root is not None else velocity_cache_root()
     digest = hashlib.sha256(str(Path(repo).resolve()).encode()).hexdigest()
     return root / (digest + ".ledger.json")
 
