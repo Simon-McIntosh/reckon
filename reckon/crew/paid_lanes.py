@@ -809,20 +809,6 @@ def render_timer_unit(*, service: str = SERVICE_NAME) -> str:
     )
 
 
-def _write_if_changed(path: Path, content: str) -> bool:
-    """Write ``content`` to ``path`` only when it differs; report whether it did.
-
-    The deployment is idempotent: an unchanged definition is left untouched, so
-    a re-run neither rewrites the file nor gives the manager a reason to reload.
-    The comparison is on the rendered bytes, which is what systemd reads.
-    """
-    if path.is_file() and path.read_text(encoding="utf-8") == content:
-        return False
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
-    return True
-
-
 def install_timer(
     executable: str | Path | None = None,
     *,
@@ -840,11 +826,14 @@ def install_timer(
     """
     from reckon import service
 
-    target = Path(directory) if directory is not None else systemd_user_dir()
-    service_path = target / SERVICE_NAME
-    timer_path = target / TIMER_NAME
-    changed = _write_if_changed(service_path, render_service_unit(executable))
-    changed = _write_if_changed(timer_path, render_timer_unit()) or changed
+    target = Path(directory) if directory is not None else None
+    service_path, service_changed = service.write_named_unit(
+        SERVICE_NAME, render_service_unit(executable), directory=target
+    )
+    timer_path, timer_changed = service.write_named_unit(
+        TIMER_NAME, render_timer_unit(), directory=target
+    )
+    changed = service_changed or timer_changed
     commands: list[list[str]] = []
     if changed:
         command = run or (lambda args: service.systemctl(*args))

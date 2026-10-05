@@ -1,6 +1,9 @@
 """Unit rendering and installation for the systemd user service."""
 
+import os
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -111,6 +114,7 @@ def test_writing_reports_a_change_only_when_the_content_moves(
 
     path, changed = service.write_unit()
     assert changed and path.is_file()
+    assert path.parent == Path(os.environ["XDG_CONFIG_HOME"]) / "systemd" / "user"
 
     _, changed_again = service.write_unit()
     assert not changed_again
@@ -126,6 +130,39 @@ def test_operations_refuse_to_run_against_a_missing_unit(
     assert not service.installed()
     with pytest.raises(service.ServiceError, match="not installed"):
         service.require_installed()
+
+
+def test_a_shared_outer_config_home_receives_no_test_unit(tmp_path: Path) -> None:
+    outer_config = tmp_path / "shared-xdg"
+    outer_config.mkdir()
+    repo = Path(__file__).resolve().parents[1]
+    test_file = Path(__file__).resolve()
+    environment = dict(os.environ)
+    environment["XDG_CONFIG_HOME"] = str(outer_config)
+    environment["PYTHONPATH"] = str(repo)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-q",
+            f"{test_file}::test_writing_reports_a_change_only_when_the_content_moves",
+            f"{test_file}::test_operations_refuse_to_run_against_a_missing_unit",
+        ],
+        cwd=repo,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "2 passed" in completed.stdout
+    assert list(outer_config.iterdir()) == []
 
 
 def test_output_is_captured_to_a_readable_file(executable: Path):

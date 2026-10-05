@@ -13,11 +13,15 @@ than assumed:
 """
 
 import os
+import shlex
 import shutil
 import socket
 import subprocess
 import sys
+from collections.abc import Callable, Mapping
 from pathlib import Path
+
+from reckon.crew.paid_lanes import systemd_user_dir
 
 UNIT_NAME = "reckon.service"
 
@@ -86,9 +90,9 @@ def node_executable() -> Path:
     )
 
 
-def unit_path() -> Path:
-    """Return the path the reckon user unit is written to."""
-    return Path.home() / ".config" / "systemd" / "user" / UNIT_NAME
+def unit_path(unit_name: str = UNIT_NAME, *, directory: Path | None = None) -> Path:
+    """Return a named user unit's path in the manager's unit directory."""
+    return (directory if directory is not None else systemd_user_dir()) / unit_name
 
 
 def log_path() -> Path:
@@ -170,6 +174,35 @@ def render_unit(
     )
 
 
+def render_watch_unit(
+    project: str,
+    *,
+    template: str,
+    unit_name: str,
+    unit_variable: str,
+    log_file: Path,
+    environment: Mapping[str, str],
+    executable: str,
+) -> str:
+    """Render a project's watcher under its named user unit."""
+    argv = [executable, "crew", "watch", "--project", project]
+    override = "".join(
+        f'Environment="{name}={value}"\n'
+        for name, value in environment.items()
+        if name != "PATH"
+    )
+    return template.format(
+        project=project,
+        working_directory=Path.home(),
+        path=environment.get("PATH") or os.defpath,
+        unit_variable=unit_variable,
+        unit=unit_name,
+        environment=override,
+        exec_start=" ".join(shlex.quote(part) for part in argv),
+        log_file=log_file,
+    )
+
+
 def _run(argv: list[str]) -> subprocess.CompletedProcess:
     try:
         return subprocess.run(argv, capture_output=True, text=True, check=False)
@@ -233,12 +266,66 @@ def write_unit(
     mounts_file: Path | None = None,
 ) -> tuple[Path, bool]:
     """Write the unit file, returning its path and whether the content changed."""
-    target = unit_path()
+    return write_named_unit(
+        UNIT_NAME,
+        render_unit(port=port, host=host, mounts_file=mounts_file),
+        log_file=log_path(),
+    )
+
+
+def write_named_unit(
+    unit_name: str,
+    content: str,
+    *,
+    log_file: Path | None = None,
+    directory: Path | None = None,
+) -> tuple[Path, bool]:
+    """Install a named user unit once per content change."""
+    target = unit_path(unit_name, directory=directory)
     target.parent.mkdir(parents=True, exist_ok=True)
-    # systemd opens the log file but will not create its parent directory.
-    log_path().parent.mkdir(parents=True, exist_ok=True)
-    content = render_unit(port=port, host=host, mounts_file=mounts_file)
-    unchanged = target.is_file() and target.read_text() == content
+    if log_file is not None:
+        # systemd opens the log file but will not create its parent directory.
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+    unchanged = target.is_file() and target.read_text(encoding="utf-8") == content
     if not unchanged:
-        target.write_text(content)
+        target.write_text(content, encoding="utf-8")
     return target, not unchanged
+
+
+class SystemdUserUnitManager:
+    """Control one family's named user units through the shared installer."""
+
+    def __init__(
+        self,
+        unit_name: Callable[[str], str],
+        log_file: Callable[[str], Path],
+    ) -> None:
+        self._unit_name = unit_name
+        self._log_file = log_file
+
+    def unit_path(self, project: str) -> Path:
+        return unit_path(self._unit_name(project))
+
+    def installed(self, project: str) -> bool:
+        return self.unit_path(project).is_file()
+
+    def active(self, project: str) -> bool:
+        return (
+            systemctl("is-active", self._unit_name(project), check=False).returncode
+            == 0
+        )
+
+    def lingering(self) -> bool:
+        return linger_enabled()
+
+    def enable_linger(self) -> None:
+        enable_linger()
+
+    def write_unit(self, project: str, content: str) -> tuple[Path, bool]:
+        return write_named_unit(
+            self._unit_name(project), content, log_file=self._log_file(project)
+        )
+
+    def start(self, project: str, *, restart: bool) -> None:
+        systemctl("daemon-reload")
+        systemctl("restart" if restart else "start", self._unit_name(project))
