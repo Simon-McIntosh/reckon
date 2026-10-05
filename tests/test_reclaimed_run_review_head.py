@@ -287,6 +287,7 @@ def test_a_live_run_with_no_readable_tree_still_owes_its_sub_floor_duty(
                 "scope_discipline": 18,
                 "durability": 5,
                 "fit": 18,
+                "reuse": 18,
             },
             head=fleet.head(),
         )

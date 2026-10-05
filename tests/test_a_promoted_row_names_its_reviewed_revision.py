@@ -33,6 +33,7 @@ SCORES = {
     "scope_discipline": 17,
     "durability": 19,
     "fit": 16,
+    "reuse": 20,
 }
 TOTAL = sum(SCORES.values())
 

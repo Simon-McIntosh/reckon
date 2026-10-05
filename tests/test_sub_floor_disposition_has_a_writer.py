@@ -44,7 +44,7 @@ FIXTURE_PLAN = "fixture-plan"
 
 # The shape this plan's own landings measured: a total that passes with room to
 # spare while one dimension sits far below the rest.
-PASSING_TOTAL = 79
+PASSING_TOTAL = 97
 SUB_FLOOR_SCORE = 5
 CLEAN_SCORE = 16
 FOLD_NODE = "repair-durability-node"
@@ -190,6 +190,7 @@ def fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Fixture:
                 "scope_discipline": 18,
                 "durability": SUB_FLOOR_SCORE,
                 "fit": 18,
+                "reuse": 18,
             },
             base_sha=base_sha,
             head_sha=head_sha,

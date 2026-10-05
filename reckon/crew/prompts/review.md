@@ -70,7 +70,7 @@ durability score rests on such an assertion, say so in its JUSTIFICATION. This
 is a reading, not an experiment — the reading bound above still holds, so you do
 not modify the node to test it.
 
-## The five dimensions
+## The six dimensions
 
 Score the landed change on each dimension with an integer from 0 to 20,
 where 20 means the dimension is fully satisfied. The scores are independent of
@@ -85,11 +85,17 @@ one another; never rank, weigh or compare them.
   and green assertion is not that test on its own; judge it by the rule under
   *The assertions the run added* above.
 - **fit** — the change matches the idiom of the code around it and introduces
-  no name the repository naming rules forbid. A change that adds a function,
-  class or module whose capability the repository already owns, without
-  extending that owner, scores fit below 10, and the review emits a FINDING
-  naming the owning file and whether the addition extends, wraps or duplicates
-  it.
+  no name the repository naming rules forbid.
+- **reuse** — the landed change does not fork a capability the repository
+  already owns. Score 20 when every added definition extends the owner of its
+  capability, or no owner exists and the review names what it searched; score
+  at most 5 when an added definition re-implements a capability the repository
+  already owns without extending the owner, with a FINDING naming the owning
+  file and whether the addition extends, wraps or duplicates it. The clone
+  detector in `reckon/clones.py` runs at promotion and catches textual copies;
+  this dimension judges capability duplication whatever the text, so a
+  different implementation of a mechanism the repository already owns is yours
+  to score.
 
 ## The revision you record
 
@@ -106,7 +112,7 @@ timestamp.
 
 For each of the first five checklist items, emit one VERDICT line. The sixth
 item is recorded by the required CALL_SITES line below. For every one of the
-five dimensions, emit one SCORE line and one JUSTIFICATION line.
+six dimensions, emit one SCORE line and one JUSTIFICATION line.
 Then emit one FINDING line per defect you found. A verdict says what you read
 and what you found there, and must cite the path or line it is about. A
 justification is one sentence and must cite the path or line of the code it
@@ -173,5 +179,7 @@ SCORE durability: 19
 JUSTIFICATION durability: tests/test_review_scoring.py fails if an out-of-range score is clamped instead of refused.
 SCORE fit: 16
 JUSTIFICATION fit: the module follows the surrounding style of reckon/crew/summary.py:11.
+SCORE reuse: 20
+JUSTIFICATION reuse: no owner for a durable review store exists; the search over reckon/crew found none and the store is the first.
 FINDING reckon/crew/query.py:120 follow-on: an out-of-scope helper was added to a file the node was not fenced to write.
 ```

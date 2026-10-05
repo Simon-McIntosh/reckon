@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-title" content="A parallel path scores its own review dimension">
+  <meta name="plan-summary" content="The landed-node review scores a sixth dimension, reuse, taken against a per-dimension floor of 10 in the shipped flight defaults. A definition that extends the owner of its capability, or for which no owner exists and the review names its search, scores 20; a re-implementation of a capability the repository already owns without extending the owner scores at most 5 and emits a FINDING naming the owner. The clause added to fit is moved here so one rule has one home, and the clone detector is named as the complementary promotion-time instrument. Held by the prompt-contract case, the six-line parse case and its negative control.">
+  <meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-recorded-at" content="2026-10-05">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>A parallel path scores its own review dimension | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A parallel path scores its own review dimension.</h1>
+
+    <section id="reuse-is-a-review-dimension-anchor">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/review.py</code> carries <code>reuse</code> last in
+        <code>REVIEW_DIMENSIONS</code>; the parser follows the tuple, so a
+        six-SCORE-line emission parses with <code>absent</code> empty and one
+        missing the reuse line parses with <code>absent</code> naming it.
+        <code>reckon/crew/prompts/review.md</code> lists six dimensions, moves
+        the reuse clause out of <code>fit</code> into the new dimension's
+        scoring rule, names the clone detector as the complementary instrument,
+        and emits a reuse line in its example. The shipped
+        <code>reckon/schema/flight-defaults.yaml</code> carries
+        <code>reuse: 10</code> under <code>gates.dimension_floors</code>; the
+        slot is a free-keyed inlined map, so no LinkML regeneration was needed.
+        Every fixture that spelled the dimension set literally now derives it
+        from <code>REVIEW_DIMENSIONS</code> or carries reuse.</p>
+      <p>Gate: the node's 14-file gate — 250 passed, 0 failed, EXIT=0. Wider
+        population importing <code>reckon.crew.review</code> (71 files): 737
+        passed at head against 737 passed at base — zero added failures.
+        Negative control (reuse removed from the tuple): 7 failed, EXIT=1,
+        including the six-line parse case.</p>
+    </section>
+  </main>
+</body>
+</html>

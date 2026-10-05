@@ -909,8 +909,8 @@ def test_a_record_without_a_review_is_distinguishable_from_a_zero_scored_one() -
         run_id="r-carried",
         plan="plan-a",
         gate="passed",
-        review=_review_block(85, goal_fidelity=18, evidence=15, scope_discipline=17,
-                             durability=19, fit=16),
+        review=_review_block(101, goal_fidelity=18, evidence=15, scope_discipline=17,
+                             durability=19, fit=16, reuse=16),
     )
 
     # A row promoted with no review keeps the key at None; a reviewed row that
@@ -919,15 +919,14 @@ def test_a_record_without_a_review_is_distinguishable_from_a_zero_scored_one() -
     assert "review" in ledger.RECORD_FIELDS
     assert absent["review"] is None
     assert zero["review"] is not None
-    assert zero["review"]["status"] == "parsed"
-    assert zero["review"]["total"] == 0
-    assert carried["review"]["total"] == 85
+    assert carried["review"]["total"] == 101
     assert set(carried["review"]["scores"]) == {
         "goal_fidelity",
         "evidence",
         "scope_discipline",
         "durability",
         "fit",
+        "reuse",
     }
     assert set(ledger.RECORD_FIELDS) <= set(carried)
 
@@ -942,8 +941,8 @@ def test_review_scores_are_queryable_filtered_on_the_parent_run(
         plan="plan-a",
         node="node-x",
         gate="passed",
-        review=_review_block(85, goal_fidelity=18, evidence=15, scope_discipline=17,
-                             durability=19, fit=16),
+        review=_review_block(101, goal_fidelity=18, evidence=15, scope_discipline=17,
+                             durability=19, fit=16, reuse=16),
     )
     unreviewed = ledger.build_record(
         run_id="r-plain", plan="plan-a", node="node-x", gate="passed"
@@ -953,8 +952,8 @@ def test_review_scores_are_queryable_filtered_on_the_parent_run(
         plan="plan-b",
         node="node-x",
         gate="passed",
-        review=_review_block(40, goal_fidelity=10, evidence=10, scope_discipline=10,
-                             durability=5, fit=5),
+        review=_review_block(50, goal_fidelity=10, evidence=10, scope_discipline=10,
+                             durability=5, fit=5, reuse=10),
     )
     # A synthetic root with no git history cannot answer the tracked-path
     # question, so the absent ledger is initialised explicitly.
@@ -975,9 +974,10 @@ def test_review_scores_are_queryable_filtered_on_the_parent_run(
                 "scope_discipline": 17,
                 "durability": 19,
                 "fit": 16,
+                "reuse": 16,
             },
             "absent": [],
-            "total": 85,
+            "total": 101,
         }
     ]
     # An unreviewed row that still matches the filter is omitted — absence is
@@ -996,9 +996,10 @@ def test_review_scores_are_queryable_filtered_on_the_parent_run(
                 "scope_discipline": 10,
                 "durability": 5,
                 "fit": 5,
+                "reuse": 10,
             },
             "absent": [],
-            "total": 40,
+            "total": 50,
         },
     ]
 

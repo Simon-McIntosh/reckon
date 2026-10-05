@@ -176,7 +176,7 @@ def test_promotion_reads_the_review_of_the_revision_it_promotes(
 
     row = stored["record"]
     assert row["promoted_revision"] == head
-    assert row["review"]["total"] == 100  # five dimensions at 20
+    assert row["review"]["total"] == 20 * len(review_module.REVIEW_DIMENSIONS)
     assert row["review"]["scores"] == dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20)
 
 

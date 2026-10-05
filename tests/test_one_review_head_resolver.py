@@ -50,6 +50,7 @@ SCORES = {
     "scope_discipline": 18,
     "durability": 5,
     "fit": 18,
+    "reuse": 18,
 }
 FLOORS = {"durability": 10}
 
