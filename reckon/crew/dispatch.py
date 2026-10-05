@@ -3384,6 +3384,7 @@ class DispatchPlan:
     lane_gate: dict[str, Any] | None = None
     lane_allowance: dict[str, Any] | None = None
     orchestrator_lane_stop: dict[str, Any] | None = None
+    orchestrator_lane_override: dict[str, str] | None = None
     lane_advisory: dict[str, Any] | None = None
     open_endedness: float | None = None
     picker_selection: dict[str, Any] | None = None
@@ -3428,6 +3429,11 @@ class DispatchPlan:
                 None
                 if self.orchestrator_lane_stop is None
                 else dict(self.orchestrator_lane_stop)
+            ),
+            "orchestrator_lane_override": (
+                None
+                if self.orchestrator_lane_override is None
+                else dict(self.orchestrator_lane_override)
             ),
             "requested_backend": self.requested_backend,
             "run_id": self.run_id,
@@ -5200,6 +5206,7 @@ def plan_dispatch(
     repo: str | Path | None = None,
     base: str = "HEAD",
     execution_override: bool = False,
+    orchestrator_lane_reason: str | None = None,
     authority: Mapping[str, Any] | None = None,
     report_live_conflicts: bool = False,
     local: bool = False,
@@ -5642,6 +5649,28 @@ def plan_dispatch(
         role=node.role,
         spec_level=node.spec_level,
     )
+    reason = (
+        None
+        if orchestrator_lane_reason is None
+        else str(orchestrator_lane_reason).strip()
+    )
+    if reason == "":
+        raise CrewError("--allow-orchestrator-lane requires a non-empty reason")
+    if reason and orchestrator_lane_stop["state"] != "declared":
+        raise CrewError(
+            f"resolved lane {backend_name!r} does not declare "
+            f"{ORCHESTRATOR_LANE_DECLARATION_KEY}; --allow-orchestrator-lane "
+            "override does not apply"
+        )
+    orchestrator_lane_override = None
+    if reason and orchestrator_lane_stop["state"] == "declared":
+        orchestrator_lane_override = {"lane": backend_name, "reason": reason}
+        orchestrator_lane_stop = {
+            **orchestrator_lane_stop,
+            "state": "overridden",
+            "severity": "overridden",
+            "reason": reason,
+        }
     resolution = DispatchPlan(
         run_id=resolved_run_id,
         backend=backend_name,
@@ -5668,6 +5697,7 @@ def plan_dispatch(
         lane_gate=lane_gate,
         lane_allowance=lane_allowance,
         orchestrator_lane_stop=orchestrator_lane_stop,
+        orchestrator_lane_override=orchestrator_lane_override,
         lane_advisory=lane_advisory,
         open_endedness=open_endedness,
         # A resolved plan records the picker answer only when the route used it.
@@ -6524,6 +6554,7 @@ def dispatch(
     check_budget: bool = True,
     budget_state: Mapping[str, Any] | None = None,
     execution_override: bool = False,
+    orchestrator_lane_reason: str | None = None,
     unreconciled_override: bool = False,
     unreviewed_plan_override: bool = False,
     watch_required: bool = False,
@@ -6653,6 +6684,7 @@ def dispatch(
             repo=repo_root,
             base=base,
             execution_override=execution_override,
+            orchestrator_lane_reason=orchestrator_lane_reason,
             authority=authority,
             local=local,
             backend_override=backend_override,
@@ -6827,6 +6859,7 @@ def dispatch(
                 repo=repo_root,
                 base=base,
                 execution_override=execution_override,
+                orchestrator_lane_reason=orchestrator_lane_reason,
                 authority=authority,
                 local=local,
                 run_id=resolution.run_id,
@@ -7309,6 +7342,7 @@ def dispatch(
             # nothing" has to be distinguishable from a record written before
             # the declaration existed.
             "orchestrator_lane_stop": resolution.orchestrator_lane_stop,
+            "orchestrator_lane_override": resolution.orchestrator_lane_override,
             "local": resolution.local,
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,

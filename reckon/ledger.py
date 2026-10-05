@@ -167,6 +167,7 @@ RECORD_FIELDS = (
     "picker_selection",
     "route_mode",
     "unreconciled_override",
+    "orchestrator_lane_override",
     # A brief run's authority in place of a plan section: the digest and stored
     # path of the brief it read, the plan an unplanned implement landing changed,
     # and the reason it changed none. All three ride every row, null when the run
@@ -2052,6 +2053,7 @@ def build_record(
     lineage: Mapping[str, Any] | None = None,
     shadow_patch: str = "",
     unreconciled_override: Mapping[str, Any] | None = None,
+    orchestrator_lane_override: Mapping[str, str] | None = None,
     gate_check: Mapping[str, Any] | None = None,
     require_gate_check: bool = False,
     suite_delta: Mapping[str, Any] | None = None,
@@ -2193,6 +2195,11 @@ def build_record(
         "shadow_patch": str(shadow_patch),
         "unreconciled_override": (
             None if unreconciled_override is None else dict(unreconciled_override)
+        ),
+        "orchestrator_lane_override": (
+            None
+            if orchestrator_lane_override is None
+            else dict(orchestrator_lane_override)
         ),
         "review": None if review is None else dict(review),
         # Every declared field is present on every row, so the clone report is
