@@ -919,6 +919,8 @@ def test_a_record_without_a_review_is_distinguishable_from_a_zero_scored_one() -
     assert "review" in ledger.RECORD_FIELDS
     assert absent["review"] is None
     assert zero["review"] is not None
+    assert zero["review"]["status"] == "parsed"
+    assert zero["review"]["total"] == 0
     assert carried["review"]["total"] == 101
     assert set(carried["review"]["scores"]) == {
         "goal_fidelity",
