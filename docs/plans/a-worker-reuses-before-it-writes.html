@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="116">
+<meta name="plan-version" content="117">
 <meta name="plan-modified" content="2026-10-05">
 </head>
 <body>
@@ -376,6 +376,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261005T130903496556-review-of-every-write-then-replace-reaches-the-owner" data-who="reckon-build" data-when="2026-10-05T13:19:54.422Z">
     <div class="r-comment-body"><p>Independent review of run r-20261005T120942518103-every-write-then-replace-reaches-the-owner stored at both granted paths; total 111/120 (goal_fidelity 20, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 18), one follow-on finding: the census-parity assertion is inert at the head.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261005T140433943974-interface-counter-reads-blobs-through-velocity" data-who="reckon-build" data-when="2026-10-05T14:25:40.449Z">
+    <div class="r-comment-body"><p>promote reckon/velocity.py&#x27;s batched blob reader (public read_blobs, an ordered sequence of (revision, path) pairs answered in one cat-file --batch process) and cache root (public velocity_cache_root) and have reckon/interface_counts.py import them in place of its own _read_blobs/_cache_root/git copies; velocity._plan_metas and the counter now read the same bytes through the one reader; interface_counts public_definitions reads 1475 at base e4afabb7c and 1476 at source head b6866f54e (+1)</p></div>
 </div>
 </section>
 </main>
