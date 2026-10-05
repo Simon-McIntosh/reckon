@@ -23,7 +23,7 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="49">
 <meta name="plan-modified" content="2026-10-05">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -324,7 +324,10 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
     <div class="r-comment-body">Amended by the design review of version 43 (findings duplicate_owner-1 and duplicate_owner-2), both acted on. (a) is narrowed: the census imports the store's plan-file pattern from reckon/crew/plan_review.py, the module that owns the store's filename grammar, and spells no glob of its own. (d) is added: plan_review.plan_review_path extends reckon/crew/review.py:review_path's blob-keyed sibling rule (the .at-<sha> suffix and its validation) instead of carrying its own regex and suffix spelling, so the store's keying rule lives once; a record stored before the change must still be found at the same path.</sha></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261005T000929038505-census-and-grep-read-the-whole-package" data-who="reckon-build" data-when="2026-10-05T00:28:02.907Z">
-    <div class="r-comment-body"><p>§12 — census.py imports PLAN_REVIEW_FILE_GLOB and reports it beside the broad plan-*.json count, loads the blob of the document a plan anchor&#x27;s path names, and scopes repair confirmation to the reviewed plan recording the confirming section id (v23 findings still confirm at #s9/#s10); _blob_suffix in review.py gives review_path and plan_review_path one blob-keyed suffix rule parameterised by length (no record moves); the ownership grep in tests/test_plan_review_prefix_is_one_constant.py walks reckon/crew recursively; the dead PLAN_REVIEW_RUBRICS re-export is removed; gate 81 passed EXIT=0, negative control reddens EXIT=1, census two runs diff empty, §11 shares restated as 12 of 12 and 30 of 31.</p></div>
+    <div class="r-comment-body"><p>§12 — census.py imports PLAN_REVIEW_FILE_GLOB and reports it beside the broad plan-*.json count, loads the blob of the document a plan anchor's path names, and scopes repair confirmation to the reviewed plan recording the confirming section id (v23 findings still confirm at #s9/#s10); _blob_suffix in review.py gives review_path and plan_review_path one blob-keyed suffix rule parameterised by length (no record moves); the ownership grep in tests/test_plan_review_prefix_is_one_constant.py walks reckon/crew recursively; the dead PLAN_REVIEW_RUBRICS re-export is removed; gate 81 passed EXIT=0, negative control reddens EXIT=1, census two runs diff empty, §11 shares restated as 12 of 12 and 30 of 31.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261005T002850875878-review-of-census-and-grep-read-the-whole-package" data-who="reckon-build" data-when="2026-10-05T00:37:48.746Z">
+    <div class="r-comment-body"><p>review of run r-20261005T000929038505-census-and-grep-read-the-whole-package at head 06d117c6 against base cc80e8ec: goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 18, total 92/100; §12&#x27;s four specified repairs all landed (census imports PLAN_REVIEW_FILE_GLOB and reports it beside the broad count, resolves a plan anchor against the named document&#x27;s blob, scopes repair confirmation to the reviewed plan recording the confirming id; the ownership grep is rglob and its control reddens; the dead PLAN_REVIEW_RUBRICS re-export is removed; _blob_suffix gives review_path and plan_review_path one keying rule); three follow-on findings, none blocking.</p></div>
 </div>
 </section>
 </main>
