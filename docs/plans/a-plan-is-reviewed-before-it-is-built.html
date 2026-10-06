@@ -23,7 +23,7 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="209">
+<meta name="plan-version" content="210">
 <meta name="plan-modified" content="2026-10-06">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;}">
 </head>
@@ -538,7 +538,10 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
     <div class="r-comment-body"><p>reviewed run r-20261006T124051225029 (a-delivered-review-that-is-not-stored-says-why, section 23 first half) at head b51dac1ae against base fa990e12e; stored a parsed six-dimension review record (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20, total 116) at both granted review-store paths, with three follow-on findings (uncleared store_error on a later-stored sidecar; stale recovery.py:522 docstring citing the now-private name; the cli/mcp callers deferred by the plan's own cut). No blocking findings; the head arm and the negative control both reproduce.</p></div>
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261006T132314655465-review-of-a-delivered-review-that-is-not-stored-says-why" data-who="reckon-build" data-when="2026-10-06T13:30:02.258Z">
-    <div class="r-comment-body"><p>stored a parsed six-dimension review of run r-20261006T124051225029-a-delivered-review-that-is-not-stored-says-why at head a187ec0ab against base fa990e12e to both granted review-store paths (total 118: goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 19, reuse 20), with added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite and after_suite logs; three advisory follow-on findings; no blocking finding</p></div>
+    <div class="r-comment-body"><p>stored a parsed six-dimension review of run r-20261006T124051225029-a-delivered-review-that-is-not-stored-says-why at head a187ec0ab against base fa990e12e to both granted review-store paths (total 118: goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 19, reuse 20), with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline_suite and after_suite logs; three advisory follow-on findings; no blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261006T124051225029-a-delivered-review-that-is-not-stored-says-why" data-who="reckon-build" data-when="2026-10-06T13:22:25.025Z">
+    <div class="r-comment-body"><p>hoisted the delivered-review store step from routing._store_delivered_plan_review to the public plan_review.store_delivered_reviews beside a now-private _store_delivered_report, recording each refused store&#x27;s reason as store_error on the delivery&#x27;s own sidecar through write_review_sidecar and naming it in the gate&#x27;s refusal, re-expressed read_plan_review over the coverage predicate so the gate takes its record from it, and cleared a stale store_error from a delivery&#x27;s sidecar whenever a later pass stores it cleanly; gate 37 passed EXIT=0 (baseline 34 passed EXIT=0), public_definitions 1482==1482</p></div>
 </div>
 </section>
 </main>
