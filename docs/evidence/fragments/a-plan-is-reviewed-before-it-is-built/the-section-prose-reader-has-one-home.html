@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="the-section-prose-reader-has-one-home">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s16">
+<meta name="plan-title" content="One section-prose reader verification">
+<meta name="plan-recorded-at" content="2026-10-06">
+<meta name="plan-verifies-node" content="the-section-prose-reader-has-one-home">
+<meta name="plan-verdict" content="passed">
+<title>One section-prose reader verification | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="the-section-prose-reader-has-one-home-verification">
+<h1>One section-prose reader verification</h1>
+<figure>
+<img src="/reckon/figures/a-plan-is-reviewed-before-it-is-built/the-section-prose-reader-has-one-home/one-reader-three-consumers.svg" alt="Before, three BeautifulSoup walks read the authored prose separately; after, one public section_prose reader feeds the review digests and the two MCP views.">
+<figcaption>Three consumers of a plan's authored prose previously used independent BeautifulSoup walks; they now read one value from <code>_plan_html.section_prose</code>.</figcaption>
+</figure>
+<table><thead><tr><th>Measure</th><th>Result</th><th>Receipt / meaning</th></tr></thead><tbody>
+<tr><td>Implementation revision</td><td id="the-section-prose-reader-has-one-home-impl-rev">f7abe89f767697b735ea17ae9997edc689e999c5</td><td>Reader, private span rule, document key, two surfaces, review module, tests; transparent section record and kept-card heading slice</td></tr>
+<tr><td>Public reader</td><td id="the-section-prose-reader-has-one-home-reader">reckon/_plan_html.py <code>section_prose</code></td><td>One definition; returns (identity, prose) pairs</td></tr>
+<tr><td>Private span rule</td><td id="the-section-prose-reader-has-one-home-spanrule">reckon/_plan_html.py <code>_section_spans</code></td><td><code>every_marked_element</code> / <code>skip_landed_cards</code> occur only in this module</td></tr>
+<tr><td>Document-unit key</td><td id="the-section-prose-reader-has-one-home-dockey">reckon/_plan_html.py <code>DOCUMENT_UNIT</code></td><td>One <code>"_document"</code> literal in reckon/</td></tr>
+<tr><td>Transparent section record</td><td id="the-section-prose-reader-has-one-home-transparent">a section carrying the section marker yields its own prose</td><td>Its interior is the section's authored text; only marked collections nested inside it are subtracted. Before this, such a section read as empty</td></tr>
+<tr><td>Sections that become prose</td><td id="the-section-prose-reader-has-one-home-move-a">36 sections across 8 plans, empty &rarr; non-empty</td><td>a-review-can-see-the-figure s1&ndash;s5; a-review-dies-where-nobody-is-looking s1&ndash;s9; a-worker-cannot-write-your-home s1&ndash;s4; history-persists-as-detail-washes-out s7; new-work-gets-a-new-worker s1&ndash;s7; the-boundary-check-reads-two-trees s1,s2; the-ledger-is-one-file-per-run s1&ndash;s4; the-orchestrator-lane-is-not-a-worker-lane s1&ndash;s4</td></tr>
+<tr><td>Kept landed card</td><td id="the-section-prose-reader-has-one-home-card">slice starts at the card's first heading</td><td>The generated badge in the card header is reported under the document unit, so a section read excludes it and a search join keeps it</td></tr>
+<tr><td>Reference parity</td><td id="the-section-prose-reader-has-one-home-parity">both surfaces reproduce the retired algorithms</td><td>The search reference keeps a marked section element's interior (the retired walk dropped it); the section reference is the retired heading-plus-body extraction</td></tr>
+<tr><td>Exempt plan set</td><td id="the-section-prose-reader-has-one-home-exempt">3 named parser divergences, asserted exactly</td><td>the-mcp-answers-within-its-ceiling (bare <code>&lt;</code> in prose); fleet-monitor-legibility (two level-two headings share id s7); orchestrator-crew-pattern-studies (comment text inside a section body)</td></tr>
+<tr><td>Retired snapshot fixture</td><td id="the-section-prose-reader-has-one-home-fixture">tests/section_prose_base_outputs.json deleted</td><td>Replaced by test-only reference functions so a plan edit moves both sides alike</td></tr>
+<tr><td>Body-tag regex in reckon/</td><td id="the-section-prose-reader-has-one-home-bodyregex">0</td><td>No <code>&lt;body</code> / <code>&lt;/body</code> expression remains; no BeautifulSoup inside <code>authored_plan_text</code></td></tr>
+<tr><td>Base/head package interface counts</td><td id="the-section-prose-reader-has-one-home-counts">public_definitions 1489 = 1489; cli_options 317 = 317; mcp_views 33 = 33; refusal_families 23 = 23</td><td><code>reckon.interface_counts</code>; <code>section_prose</code> added, <code>strip_tags</code> retired, net zero</td></tr>
+<tr><td>Gate</td><td id="the-section-prose-reader-has-one-home-gate">277 passed, EXIT=0</td><td>Reference test plus the plan-review, MCP-view, section-reader and significant-change suites; first log line names the head revision</td></tr>
+<tr><td>Negative control</td><td id="the-section-prose-reader-has-one-home-negctl">FAILED, EXIT=1</td><td>Dropping <code>keep_landed_notes</code> from <code>authored_plan_text</code>'s call fails the reference test</td></tr>
+<tr><td>Lint delta</td><td id="the-section-prose-reader-has-one-home-lint">added 0 findings</td><td>Only staged paths linted; ruff format applied to staged paths</td></tr>
+<tr><td>Gate scope</td><td id="the-section-prose-reader-has-one-home-scope">this node only</td><td>Merged-head verification belongs to the coordinator's test node</td></tr>
+</tbody></table>
+<h2>Recorded commands</h2>
+<table><thead><tr><th>Arm</th><th>Command</th></tr></thead><tbody>
+<tr><td>Head gate</td><td id="the-section-prose-reader-has-one-home-headcmd">see gate_constructs.log; its first line names the head revision</td></tr>
+<tr><td>Negative control</td><td id="the-section-prose-reader-has-one-home-negcmd">pytest tests/test_the_section_prose_reader_has_one_home.py::test_surfaces_reproduce_their_reference_outputs_on_every_plan</td></tr>
+</tbody></table>
+<h2>Durable receipts</h2>
+<table><thead><tr><th>Artifact</th><th>Path</th></tr></thead><tbody>
+<tr><td>gate_constructs.log</td><td id="the-section-prose-reader-has-one-home-gatelog">/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/gate_constructs.log</td></tr>
+<tr><td>negative_control_keyword_constructs.log</td><td id="the-section-prose-reader-has-one-home-negctl-log">/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/negative_control_keyword_constructs.log</td></tr>
+<tr><td>baseline.log</td><td id="the-section-prose-reader-has-one-home-baselog">/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/baseline.log</td></tr>
+<tr><td>construct_a_measure.txt</td><td id="the-section-prose-reader-has-one-home-measurelog">/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/construct_a_measure.txt</td></tr>
+</tbody></table>
+</section>
+</main></body></html>

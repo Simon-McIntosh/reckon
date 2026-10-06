@@ -412,19 +412,23 @@ def plan_headings(html_text: str):
     )
 
 
-def structured_section_spans(
-    html_text: str,
+def _section_spans(
+    records,
     *,
     every_marked_element: bool = False,
     skip_landed_cards: bool = False,
+    keep_landed_notes: bool = False,
 ) -> tuple[tuple[int, int], ...]:
-    """Protected ranges for editing or extracting authored review prose.
+    """The protected ranges one parsed record set yields.
 
-    The default protects structured sections and typed heading openings.
-    Review extraction opts into whole marked elements. Card interiors can be
-    excluded independently so historical digests can retain their prose.
+    The default protects structured sections and typed heading openings. The
+    prose reader opts into whole marked elements and can subtract landed-card
+    interiors with their heading kept, so historical digests retain their
+    prose. ``keep_landed_notes`` leaves the text of a marked note that is not a
+    structured section — a ``div`` or ``p`` carrying the marker — in the prose reader's
+    output, where the default blanks every marked element alike. The store-facing
+    projection reads only the default.
     """
-    records = _structural_spans(html_text)
     spans = [
         (
             record.start,
@@ -434,6 +438,12 @@ def structured_section_spans(
         )
         for record in records
         if (record.kind is not None if every_marked_element else record.protected)
+        # A section record element, a section carrying the owned marker, is
+        # transparent: its interior is that section's authored prose, and only
+        # a marked collection nested inside it is subtracted. Without this a
+        # section authored inside its own marked wrapper reads as empty prose.
+        and not (every_marked_element and record.kind == "section")
+        and not (every_marked_element and keep_landed_notes and record.tag != "section")
     ]
     if skip_landed_cards:
         for card in records:
@@ -450,6 +460,98 @@ def structured_section_spans(
                     cursor = heading.end
             spans.append((cursor, card.end))
     return tuple(sorted(spans))
+
+
+def structured_section_spans(html_text: str) -> tuple[tuple[int, int], ...]:
+    """Protected ranges for editing authored plan sections."""
+    return _section_spans(_structural_spans(html_text))
+
+
+# The identity key every authored unit outside a section is digested under.
+DOCUMENT_UNIT = "_document"
+
+
+def section_prose(
+    document: str,
+    *,
+    keep_landed_cards: bool = False,
+    keep_landed_notes: bool = False,
+):
+    """Yield each authored unit's prose in document order from one raw read.
+
+    Each item is an ``(identity, prose)`` pair: a level-two authored section's
+    prose keyed by its identity, or a remainder stretch keyed by
+    :data:`DOCUMENT_UNIT`. Remainder prose interleaves between sections, so the
+    result is an ordered sequence rather than a bare mapping. The document is
+    parsed once, and the span rule and the body extent both come from that one
+    record set. A landed card's interior is subtracted with its heading kept
+    unless ``keep_landed_cards`` is set. Every marked element's text is
+    subtracted unless ``keep_landed_notes`` is set, which retains the text of a
+    marked note that is not a structured section — a ``div`` or ``p`` carrying the
+    marker — so a search surface can keep a plan's landed notes.
+    """
+    records = _structural_spans(document)
+    headings = [
+        record.heading
+        for record in records
+        if record.heading is not None
+        and record.heading.level == 2
+        and record.heading.identity
+        and not record.heading.machinery
+    ]
+    protected = _section_spans(
+        records,
+        every_marked_element=True,
+        skip_landed_cards=not keep_landed_cards,
+        keep_landed_notes=keep_landed_notes,
+    )
+    body = next((record for record in records if record.tag == "body"), None)
+    start = body.open_end if body is not None else 0
+    end = body.close_start if body is not None else len(document)
+    # A landed card is a section element whose heading leads its parent header,
+    # so its kept slice starts at the heading: the generated badge before it is
+    # not authored prose. That stretch is reported under the document unit, so
+    # a search surface that joins every slice keeps it while a section read of
+    # the identity does not.
+    card_headers = []
+    for card in records:
+        if card.tag != "section" or not _is_landed(card.attributes):
+            continue
+        lead = next(
+            (
+                heading
+                for heading in headings
+                if card.start < heading.heading_span[0] < card.end
+            ),
+            None,
+        )
+        if lead is not None and card.start < lead.heading_span[0]:
+            card_headers.append((card.start, lead.heading_span[0]))
+    cuts = {start, end}
+    for left, right in (
+        *protected,
+        *(heading.span for heading in headings),
+        *card_headers,
+    ):
+        cuts.update((max(start, min(end, left)), max(start, min(end, right))))
+    points = sorted(cuts)
+    for left, right in pairwise(points):
+        identity = next(
+            (
+                heading.identity
+                for heading in headings
+                if heading.span[0] <= left and right <= heading.span[1]
+            ),
+            DOCUMENT_UNIT,
+        )
+        if any(low <= left and right <= high for low, high in card_headers):
+            identity = DOCUMENT_UNIT
+        raw = (
+            ""
+            if any(low <= left and right <= high for low, high in protected)
+            else document[left:right]
+        )
+        yield identity, _strip_tags(raw)
 
 
 def landed_section_ids(html_text: str) -> frozenset[str]:
@@ -1877,7 +1979,7 @@ _TAG_RE = re.compile(r"<[^>]+>")
 _PROSE_SKIP_TAGS = frozenset({"script", "style", "head"})
 
 
-def strip_tags(text: str) -> str:
+def _strip_tags(text: str) -> str:
     """Extract entity-decoded prose, omitting non-prose element interiors."""
     for tag in _PROSE_SKIP_TAGS:
         text = re.sub(
