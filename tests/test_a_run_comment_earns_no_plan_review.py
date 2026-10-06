@@ -1,33 +1,30 @@
-"""A promotion's landing comment does not earn its plan a review.
+"""A plan's comments do not earn it a review; a decision edit does.
 
 A promotion appends one comment per promoted run to the section the run landed
-against, under an id derived from the run id (``c-run-...``). Nothing authored
-changes when it does, so a fingerprint that counted those comments read every
-promotion as an edit and bought the plan another review of an unchanged design,
-once per review round its runs completed. These cases hold the boundary from
-both sides: appending a run comment leaves the digest unchanged and the sweep
-composes no review for it, while an authored comment still moves the digest and
-still earns the review.
+against, under an id derived from the run id (``c-run-...``). Comments and
+followups left the document unit, so neither a run comment nor an authored one
+moves the fingerprint a review keys on: the design a review reads is the
+sections, decisions and dependencies. These cases hold the boundary from both
+sides: a run comment and an authored comment each leave the digest unchanged,
+while an edit to a decision's text still moves it.
 
 The cases drive the machinery itself — the promotion comment writer and the
-sweep — against a synthesised mounted project under ``RECKON_HOME``, so nothing
-here reads or writes the real crew home.
+plan store — against a synthesised mounted project under ``RECKON_HOME``, so
+nothing here reads or writes the real crew home.
 """
 
 from __future__ import annotations
 
 import json
-import os
 import subprocess
-import time
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-from reckon import _store, flight
+from reckon import _plan_html, _store, flight
 from reckon.crew import plan_review as module
-from reckon.crew import promotion, recovery
+from reckon.crew import promotion
 
 CONFIG = {
     "default_backend": "worker",
@@ -82,12 +79,6 @@ def project(tmp_path, monkeypatch):
     return home, repo, path
 
 
-def _quiet(path: Path) -> None:
-    """Backdate the plan so the sweep's settle window has passed."""
-    stamp = time.time() - 1000
-    os.utime(path, (stamp, stamp))
-
-
 def _append_authored_comment(path: Path, repo: Path, body: str) -> str:
     """Append a comment the way the plan surface does, and return its id."""
     state, version = _store.read_plan("sample", "fixture", repo, artifact_type="plan")
@@ -129,15 +120,19 @@ def _record_landing(path: Path, repo: Path, run_id: str) -> dict:
     )
 
 
-def _sweep() -> dict:
-    return recovery.dispatch_awaiting_reviews(
-        project="sample", config=CONFIG, session="coordinator"
-    )
+def _edit_a_decision(path: Path, rationale: str) -> None:
+    """Rewrite a decision's text, the way the plan surface does."""
+    text = path.read_text(encoding="utf-8")
+    state = _plan_html.read_state(text)
+    state.setdefault("decisions", {})["choice"] = {
+        "question": "Which owner?",
+        "choice": "shared",
+        "rationale": rationale,
+    }
+    path.write_text(_plan_html.write_state(text, state), encoding="utf-8")
 
 
-def test_a_run_comment_keeps_the_fingerprint_and_an_authored_comment_moves_it(
-    project,
-):
+def test_comments_leave_the_fingerprint_and_a_decision_edit_moves_it(project):
     _home, repo, path = project
     before = module.plan_fingerprint(path)
 
@@ -154,48 +149,11 @@ def test_a_run_comment_keeps_the_fingerprint_and_an_authored_comment_moves_it(
     authored_id = _append_authored_comment(path, repo, "<p>An authored remark.</p>")
     authored = path.read_text(encoding="utf-8")
     assert f'data-id="{authored_id}"' in authored
+    assert module.plan_fingerprint(path) == before, (
+        "an authored comment must not move the fingerprint"
+    )
+
+    _edit_a_decision(path, "A different owner.")
     assert module.plan_fingerprint(path) != before, (
-        "an authored comment must still move the fingerprint"
+        "an edit to a decision's text must move the fingerprint"
     )
-
-
-def test_the_sweep_composes_no_review_for_a_run_comment(project, monkeypatch):
-    _home, repo, path = project
-    _quiet(path)
-    module.store_plan_review(
-        {
-            "project": "sample",
-            "plan_slug": "fixture",
-            "plan_version": 3,
-            "rubric": "design",
-            "reviewed_blob_sha": "a" * 40,
-            "plan_fingerprint": module.plan_fingerprint(path),
-            "findings": [],
-            "responses": {},
-        }
-    )
-    calls: list = []
-    monkeypatch.setattr(
-        recovery,
-        "dispatch_review_for_run",
-        lambda *args, **kwargs: calls.append((args, kwargs)) or {"dispatched": False},
-    )
-
-    # Reviewed and quiet: the sweep composes nothing.
-    _sweep()
-    assert calls == []
-
-    # A landing record lands on the reviewed content: still nothing to review.
-    _record_landing(path, repo, "r-20261004T213000-a-landing-run")
-    _quiet(path)
-    report = _sweep()
-    assert report["dispatched"] == [] and calls == [], (
-        "a run comment must not compose a review of unchanged content"
-    )
-
-    # An authored comment is an edit, and still earns its review.
-    _append_authored_comment(path, repo, "<p>An authored remark.</p>")
-    _quiet(path)
-    _sweep()
-    assert len(calls) == 1, "an authored comment must still compose a review"
-    assert calls[0][1]["prefer_local"] is True
