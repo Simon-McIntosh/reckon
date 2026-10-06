@@ -34,7 +34,7 @@ import json
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from statistics import median
 
@@ -57,6 +57,26 @@ OUT_DIR = Path(__file__).resolve().parent
 BASE_SETTLE_SECONDS = 600
 REPLAY_SETTLE_SECONDS = (1800, 3600)
 
+# The settle-window replay is a counterfactual baseline calibrated against the
+# actual schedule rather than a bound on it: where its quiet-window model fires
+# more reviews than a plan actually ran, that disagreement is a calibration
+# result reported in the data file and the research document, not a bug the run
+# should die on. Every other mechanism must not exceed the actual count, and
+# the run exits non-zero if one does.
+# The settle-window rows are exempt from the invariant on the documented
+# ground that they are a calibrated baseline rather than a bound: the model
+# reviews every content state that settled quietly, while the actual system
+# reviewed only those a dispatcher demanded, so a plan whose actual schedule
+# was sparser than its quiet windows is expected to exceed there. Those
+# exceedances are listed in the data file and the research document (the
+# m4_calibration table), and M4 savings are always reported against the 600 s
+# replay rather than against the actual count. Every other mechanism must not
+# exceed the plan's actual count in its window, and would fail the run if it did.
+INVARIANT_EXEMPT = {
+    f"M4-settle-{window}s"
+    for window in (BASE_SETTLE_SECONDS,) + REPLAY_SETTLE_SECONDS
+}
+
 CODE_PATH_RE = re.compile(
     r"[A-Za-z0-9_][A-Za-z0-9_./-]*"
     r"\.(?:py|js|jsx|ts|tsx|html|json|yaml|yml|md|cfg|toml|sh|txt)"
@@ -65,6 +85,7 @@ CODE_PATH_RE = re.compile(
 
 COLOR_MAIN = "#3B6FA0"
 COLOR_ALT = "#B4762B"
+COLOR_DE_GATED = "#5E8F63"
 COLOR_NEUTRAL = "#6E6E6E"
 
 # Parsing a plan document is the script's unit of work; every digest, prose map
@@ -120,6 +141,53 @@ def parse_ts(value):
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=timezone.utc)
     return moment.astimezone(timezone.utc)
+
+
+RUN_ID_TIME_RE = re.compile(r"r-(\d{8}T\d{6})(\d{0,6})")
+
+
+def review_run_time(record):
+    """The review's own time, from the stamp in its run id.
+
+    A record's ``timestamp`` is when the store wrote it, which for imported
+    batches is not when the review ran; the run id carries the launch time.
+    """
+    match = RUN_ID_TIME_RE.search(str(record.get("review_run_id") or ""))
+    if not match:
+        return None
+    moment = datetime.strptime(match.group(1), "%Y%m%dT%H%M%S").replace(
+        tzinfo=timezone.utc
+    )
+    fraction = match.group(2)
+    if fraction:
+        moment = moment.replace(microsecond=int(fraction.ljust(6, "0")[:6]))
+    return moment
+
+
+def response_round(prev, nxt):
+    """True when ``nxt`` answers ``prev``: prev has an acted response stamped
+    before nxt ran. Otherwise nxt opens a new chain at fresh authoring."""
+    for response in (prev.get("responses") or {}).values():
+        if response.get("action") != "acted":
+            continue
+        when = parse_ts(response.get("when"))
+        if when is not None and when < nxt["_ts"]:
+            return True
+    return False
+
+
+def review_chains(reviews):
+    """Split a plan's reviews into chains, each opening at fresh authoring."""
+    chains = []
+    current = []
+    for index, review in enumerate(reviews):
+        if index and not response_round(reviews[index - 1], review):
+            chains.append(current)
+            current = []
+        current.append(review)
+    if current:
+        chains.append(current)
+    return chains
 
 
 def git(repo, *args):
@@ -449,11 +517,18 @@ def main():
     by_plan: dict[tuple[str, str], list[dict]] = collections.defaultdict(list)
     recovery = collections.Counter()
     for record in records:
-        ts = parse_ts(record.get("timestamp"))
+        store_ts = parse_ts(record.get("timestamp"))
+        run_ts = review_run_time(record)
+        ts = run_ts or store_ts
         if ts is None:
             recovery["no_timestamp"] += 1
             continue
+        recovery["time_from_run_id" if run_ts else "time_from_timestamp"] += 1
+        if run_ts is not None and store_ts is not None:
+            if abs((store_ts - run_ts).total_seconds()) > 300:
+                recovery["time_delta_over_5min"] += 1
         record["_ts"] = ts
+        record["_store_ts"] = store_ts
         repo = repos.get(record["project"])
         relpath = plan_relative_path(record)
         text = None
@@ -481,7 +556,17 @@ def main():
         f"recovery {dict(recovery)}"
     )
 
-    plans = {key: {"reviews": reviews} for key, reviews in by_plan.items()}
+    plans = {}
+    for key, reviews in by_plan.items():
+        # Every replay stays inside the plan's observed review window: from the
+        # settle interval before its first review to its last review.
+        plans[key] = {
+            "reviews": reviews,
+            "window": (
+                reviews[0]["_ts"] - timedelta(seconds=BASE_SETTLE_SECONDS),
+                reviews[-1]["_ts"],
+            ),
+        }
     q1 = q1_cadence(plans)
 
     # ── Q2 / Q3 / Q4: consecutive pairs ─────────────────────────────────────
@@ -574,206 +659,316 @@ def main():
     note(f"dispatch times loaded for {len(dispatch_times)} plans; replaying mechanisms")
     mechanisms: dict[str, dict] = {}
     lost_lists: dict[str, list[str]] = {}
+    plan_runs: dict[str, dict[str, tuple[int, int]]] = collections.defaultdict(dict)
     actual_total = sum(len(v["reviews"]) for v in plans.values())
 
-    # M1 — review at demand: one review per build dispatch.
+    # M1 — review at demand: one review per build dispatch, counted only when
+    # the state it would review differs from the last state a demand review saw.
     m1_run = 0
     m1_lost = []
     m1_plans = {}
     for key, plan in plans.items():
         reviews = plan["reviews"]
-        dispatches = dispatch_times.get(key, [])
+        low, high = plan["window"]
+        dispatches = [m for m in dispatch_times.get(key, []) if low <= m <= high]
         selected = set()
-        cursor = None
+        last_fp = None
         for moment in dispatches:
-            window = [
-                idx
-                for idx, review in enumerate(reviews)
-                if review["_ts"] <= moment and (cursor is None or review["_ts"] > cursor)
-            ]
-            if window:
-                selected.add(window[-1])
-            cursor = moment
-        m1_run += len(dispatches)
-        dropped = [r for idx, r in enumerate(reviews) if idx not in selected]
+            prior = [r for r in reviews if r["_ts"] <= moment]
+            if not prior or prior[-1]["_text"] is None:
+                continue
+            review = prior[-1]
+            fp = _cached(review["_text"], "fp", plan_review.plan_fingerprint)
+            if fp != last_fp:
+                selected.add(id(review))
+                last_fp = fp
+        m1_run += len(selected)
+        dropped = [r for r in reviews if id(r) not in selected]
         lost = [label_for(rv, f) for rv, f in acted_findings(dropped)]
         m1_lost.extend(lost)
-        m1_plans[f"{key[0]}/{key[1]}"] = {
-            "dispatches": len(dispatches),
+        label = f"{key[0]}/{key[1]}"
+        m1_plans[label] = {
+            "dispatches_in_window": len(dispatches),
             "reviews_actual": len(reviews),
-            "reviews_run": len(dispatches),
+            "reviews_run": len(selected),
             "reviews_dropped": len(dropped),
             "acted_lost": len(lost),
         }
+        plan_runs["M1-review-at-demand"][label] = (len(selected), len(reviews))
     mechanisms["M1-review-at-demand"] = {
         "reviews_run": m1_run,
         "reviews_actual": actual_total,
-        "acted_lost_or_deferred": len(m1_lost),
+        "acted_lost": len(m1_lost),
+        "acted_de_gated": 0,
     }
     lost_lists["M1-review-at-demand"] = m1_lost
 
-    # M2 — delta-scoped re-review: the chain continues only while some finding
-    # of the newest review lands in a unit changed since the previous review.
+    # M2 — delta-scoped re-review, per chain: a chain opens at fresh authoring;
+    # after its first round, a round's findings gate only when they land in a
+    # unit that changed since the previous round. Rounds after the gating stops
+    # are not run; their findings are de-gated.
     m2_run = 0
-    m2_deferred = []
-    m2_lost = []
+    m2_de_gated = []
     m2_plans = {}
     for key, plan in plans.items():
         reviews = plan["reviews"]
-        stop = len(reviews)
-        for i in range(1, len(reviews)):
-            prev, nxt = reviews[i - 1], reviews[i]
-            if prev["_text"] is None or nxt["_text"] is None:
-                continue
-            changed = changed_units(prev["_text"], nxt["_text"])
-            responses = nxt.get("responses") or {}
-            gating = False
-            for finding in nxt.get("findings", []):
-                unit, _ = finding_unit(finding, nxt["_text"])
-                if unit is None or unit in changed:
-                    gating = True
-                elif (responses.get(finding.get("id")) or {}).get("action") == "acted":
-                    m2_deferred.append(label_for(nxt, finding))
-            if not gating:
-                stop = i + 1
-                break
-        m2_run += stop
-        m2_lost.extend(label_for(rv, f) for rv, f in acted_findings(reviews[stop:]))
-        prefix = f"{key[0]}/{key[1]}#v"
-        m2_plans[f"{key[0]}/{key[1]}"] = {
+        chains = review_chains(reviews)
+        run = 0
+        de_gated = 0
+        for chain in chains:
+            keep = len(chain)
+            for i in range(1, len(chain)):
+                prev, nxt = chain[i - 1], chain[i]
+                if prev["_text"] is None or nxt["_text"] is None:
+                    continue
+                changed = changed_units(prev["_text"], nxt["_text"])
+                responses = nxt.get("responses") or {}
+                gating = False
+                for finding in nxt.get("findings", []):
+                    unit, _ = finding_unit(finding, nxt["_text"])
+                    if unit is None or unit in changed:
+                        gating = True
+                    elif (responses.get(finding.get("id")) or {}).get(
+                        "action"
+                    ) == "acted":
+                        m2_de_gated.append(label_for(nxt, finding))
+                        de_gated += 1
+                if not gating:
+                    keep = i + 1
+                    break
+            run += keep
+            tail = [label_for(rv, f) for rv, f in acted_findings(chain[keep:])]
+            m2_de_gated.extend(tail)
+            de_gated += len(tail)
+        m2_run += run
+        label = f"{key[0]}/{key[1]}"
+        m2_plans[label] = {
             "reviews_actual": len(reviews),
-            "reviews_run": stop,
-            "acted_deferred": sum(1 for x in m2_deferred if x.startswith(prefix)),
-            "acted_lost": sum(1 for x in m2_lost if x.startswith(prefix)),
+            "reviews_run": run,
+            "acted_de_gated": de_gated,
+            "chains": len(chains),
         }
+        plan_runs["M2-delta-scoped"][label] = (run, len(reviews))
     mechanisms["M2-delta-scoped"] = {
         "reviews_run": m2_run,
         "reviews_actual": actual_total,
-        "acted_lost_or_deferred": len(m2_deferred) + len(m2_lost),
-        "detail": {"deferred": len(m2_deferred), "lost": len(m2_lost)},
+        "acted_lost": 0,
+        "acted_de_gated": len(m2_de_gated),
     }
-    lost_lists["M2-delta-scoped"] = m2_deferred + m2_lost
+    lost_lists["M2-delta-scoped"] = m2_de_gated
 
-    # M3 — round cap K: after K consecutive all-acted rounds, later findings
-    # do not gate, so the chain's edits stop there.
+    # M3 — round cap K, applied per chain: within a chain, rounds run until K
+    # consecutive rounds whose findings were all acted have occurred; the
+    # remaining rounds of that chain do not run and do not gate.
     for k_cap in (1, 2, 3):
         run = 0
-        lost = []
+        de_gated = []
         for key, plan in plans.items():
             reviews = plan["reviews"]
-            stop = len(reviews)
-            streak = 0
-            for i, review in enumerate(reviews):
-                if i >= 1 and streak >= k_cap:
-                    stop = i + 1
-                    break
-                responses = review.get("responses") or {}
-                findings = review.get("findings", [])
-                all_acted = bool(findings) and all(
-                    (responses.get(f.get("id")) or {}).get("action") == "acted"
-                    for f in findings
+            plan_run = 0
+            for chain in review_chains(reviews):
+                streak = 0
+                keep = 0
+                for review in chain:
+                    if keep >= 1 and streak >= k_cap:
+                        break
+                    keep += 1
+                    responses = review.get("responses") or {}
+                    findings = review.get("findings", [])
+                    all_acted = bool(findings) and all(
+                        (responses.get(f.get("id")) or {}).get("action") == "acted"
+                        for f in findings
+                    )
+                    streak = streak + 1 if all_acted else 0
+                plan_run += keep
+                de_gated.extend(
+                    label_for(rv, f) for rv, f in acted_findings(chain[keep:])
                 )
-                streak = streak + 1 if all_acted else 0
-            run += stop
-            lost.extend(label_for(rv, f) for rv, f in acted_findings(reviews[stop:]))
+            run += plan_run
+            plan_runs[f"M3-round-cap-{k_cap}"][f"{key[0]}/{key[1]}"] = (
+                plan_run,
+                len(reviews),
+            )
         mechanisms[f"M3-round-cap-{k_cap}"] = {
             "reviews_run": run,
             "reviews_actual": actual_total,
-            "acted_lost_or_deferred": len(lost),
+            "acted_lost": 0,
+            "acted_de_gated": len(de_gated),
         }
-        lost_lists[f"M3-round-cap-{k_cap}"] = lost
+        lost_lists[f"M3-round-cap-{k_cap}"] = de_gated
 
-    # M4 — longer settle windows, replayed on the plan file's commit times.
+    # M4 — longer settle windows, replayed on the plan file's commit times
+    # inside each plan's window. A content state is reviewed when it has been
+    # quiet for the window and its fingerprint was not already reviewed.
+    m4_calibration = {}
+    m4_baseline_fps = {}
     for window in (BASE_SETTLE_SECONDS,) + REPLAY_SETTLE_SECONDS:
         run = 0
-        deferred = []
+        lost = []
         per_plan = {}
         for key, plan in plans.items():
             reviews = plan["reviews"]
             repo = repos.get(key[0])
+            low, high = plan["window"]
             if repo is None:
                 continue
             relpath = plan_relative_path(reviews[0])
-            hist = store.history(repo, relpath)
-            count = 0
-            seen = set()
-            cluster_last = None
+            history = [
+                item for item in store.history(repo, relpath) if low <= item[0] <= high
+            ]
+            fires = []
             prev_time = None
-
-            def close_cluster():
-                nonlocal count, cluster_last
-                if cluster_last is None:
-                    return
-                text = store.blob_text(repo, cluster_last)
-                if text is not None:
-                    fp = _cached(text, "fp", plan_review.plan_fingerprint)
-                    if fp not in seen:
-                        seen.add(fp)
-                        count += 1
-                cluster_last = None
-
-            for when, sha in hist:
+            last_sha = None
+            for when, sha in history:
                 if (
                     prev_time is not None
                     and (when - prev_time).total_seconds() > window
                 ):
-                    close_cluster()
-                cluster_last = sha
+                    fires.append((prev_time, last_sha))
                 prev_time = when
-            close_cluster()
+                last_sha = sha
+            if prev_time is not None:
+                fires.append((prev_time, last_sha))
+            reviewed_fps = set()
+            count = 0
+            for write_time, sha in fires:
+                # A cluster counts by the time the content it reviews was
+                # written; counting by its fire time instead would make the
+                # count non-monotone in the window, because a smaller window
+                # fires before the window opens and is discarded there.
+                if not (low <= write_time <= high):
+                    continue
+                text = store.blob_text(repo, sha) if sha else None
+                if text is None:
+                    continue
+                fp = _cached(text, "fp", plan_review.plan_fingerprint)
+                if fp in reviewed_fps:
+                    continue
+                reviewed_fps.add(fp)
+                count += 1
+            matched = 0
+            baseline = m4_baseline_fps.get(f"{key[0]}/{key[1]}", set())
             for review in reviews:
-                sha = str(review.get("reviewed_blob_sha") or "").strip()
-                when = (
-                    store.commit_time_for_instance(repo, relpath, sha, review["_ts"])
-                    if sha
-                    else None
-                )
-                if when is not None and (review["_ts"] - when).total_seconds() > 0:
-                    quiet = (review["_ts"] - when).total_seconds()
-                else:
-                    quiet = None
-                if quiet is not None and quiet < window:
-                    deferred.extend(
+                if review["_text"] is None:
+                    continue
+                fp = _cached(review["_text"], "fp", plan_review.plan_fingerprint)
+                if fp in reviewed_fps:
+                    matched += 1
+                elif window == BASE_SETTLE_SECONDS or fp in baseline:
+                    # At the baseline window a finding is lost against the
+                    # actual history (the calibration gap); at longer windows
+                    # it is lost only when the baseline would have read it and
+                    # this window does not, so the count is the mechanism's
+                    # own marginal effect rather than the model's gap.
+                    lost.extend(
                         label_for(rv, f) for rv, f in acted_findings([review])
                     )
-            run += count
-            per_plan[f"{key[0]}/{key[1]}"] = {
+            label = f"{key[0]}/{key[1]}"
+            if window == BASE_SETTLE_SECONDS:
+                m4_baseline_fps[label] = set(reviewed_fps)
+            per_plan[label] = {
                 "reviews_run": count,
                 "reviews_actual": len(reviews),
+                "reviews_matched": matched,
+                "reviews_baseline_600s": len(baseline) if window != BASE_SETTLE_SECONDS else count,
             }
+            plan_runs[f"M4-settle-{window}s"][label] = (count, len(reviews))
+            if window == BASE_SETTLE_SECONDS:
+                m4_calibration[label] = dict(per_plan[label])
+            run += count
         mechanisms[f"M4-settle-{window}s"] = {
             "reviews_run": run,
             "reviews_actual": actual_total,
-            "acted_lost_or_deferred": len(deferred),
-            "per_plan": per_plan,
+            "acted_lost": len(lost),
+            "acted_de_gated": 0,
         }
-        lost_lists[f"M4-settle-{window}s"] = deferred
+        lost_lists[f"M4-settle-{window}s"] = lost
 
-    # M5 — document-unit split: followups and comments leave the fingerprint.
+    # M4 savings are ratios to the 600 s replay baseline, never to the actual
+    # count, because the replay is a calibrated model rather than a bound.
+    baseline_600 = mechanisms[f"M4-settle-{BASE_SETTLE_SECONDS}s"]["reviews_run"]
+    for window in REPLAY_SETTLE_SECONDS:
+        mechanisms[f"M4-settle-{window}s"]["ratio_to_600s"] = (
+            round(
+                mechanisms[f"M4-settle-{window}s"]["reviews_run"] / baseline_600, 2,
+            )
+            if baseline_600
+            else None
+        )
+
+    # M5 — document-unit split: followups and authored comments leave the
+    # fingerprint, so a review whose non-document content was already reviewed
+    # is not run; its findings are recorded without gating.
     m5_run = 0
-    m5_lost = []
+    m5_de_gated = []
     for key, plan in plans.items():
         reviews = plan["reviews"]
         seen = set()
-        stop = len(reviews)
-        for i, review in enumerate(reviews):
+        run = 0
+        for review in reviews:
             if review["_text"] is None:
+                run += 1
                 continue
             fp = trimmed_fingerprint(review["_text"])
             if fp in seen:
-                if stop == len(reviews):
-                    stop = i
-            else:
-                seen.add(fp)
-        m5_run += stop
-        m5_lost.extend(label_for(rv, f) for rv, f in acted_findings(reviews[stop:]))
+                m5_de_gated.extend(
+                    label_for(rv, f) for rv, f in acted_findings([review])
+                )
+                continue
+            seen.add(fp)
+            run += 1
+        m5_run += run
+        plan_runs["M5-document-split"][f"{key[0]}/{key[1]}"] = (run, len(reviews))
     mechanisms["M5-document-split"] = {
         "reviews_run": m5_run,
         "reviews_actual": actual_total,
-        "acted_lost_or_deferred": len(m5_lost),
+        "acted_lost": 0,
+        "acted_de_gated": len(m5_de_gated),
     }
-    lost_lists["M5-document-split"] = m5_lost
+    lost_lists["M5-document-split"] = m5_de_gated
+
+    # Invariant: a damping mechanism may not run more reviews than the plan
+    # actually ran inside its window. An exceedance means the replay is wrong.
+    violations = []
+    exempted = []
+    for name, rows in plan_runs.items():
+        for label, (ran, actual) in rows.items():
+            if ran > actual:
+                if name in INVARIANT_EXEMPT:
+                    exempted.append(f"{name} {label}: {ran} > {actual}")
+                else:
+                    violations.append(f"{name} {label}: ran {ran} > actual {actual}")
+    exempt_rows = []
+    for line in exempted:
+        note(f"invariant exemption (documented): {line}")
+        name, rest = line.split(" ", 1)
+        label, counts = rest.split(": ", 1)
+        ran_text, actual_text = counts.split(" > ")
+        exempt_rows.append(
+            {
+                "mechanism": name,
+                "plan": label,
+                "reviews_run": int(ran_text),
+                "reviews_actual": int(actual_text),
+            }
+        )
+    if violations:
+        for line in violations:
+            print("INVARIANT VIOLATION:", line, flush=True)
+        note("invariant violated; refusing to write outputs")
+        return 2
     note("replay complete")
+    m4_calibration_rows = {}
+    for label, row in sorted(m4_calibration.items()):
+        actual = row["reviews_actual"]
+        replayed = row["reviews_run"]
+        ratio = round(replayed / actual, 3) if actual else None
+        m4_calibration_rows[label] = {
+            "actual": actual,
+            "replayed_600s": replayed,
+            "ratio": ratio,
+            "over_25pct": ratio is not None and abs(ratio - 1.0) > 0.25,
+        }
 
     # ── Data file ───────────────────────────────────────────────────────────
     data = {
@@ -803,6 +998,9 @@ def main():
                 for resp in (r.get("responses") or {}).values()
                 if resp.get("action") == "declined"
             ),
+            "time_from_run_id": recovery.get("time_from_run_id", 0),
+            "time_from_timestamp_fallback": recovery.get("time_from_timestamp", 0),
+            "time_delta_over_5min": recovery.get("time_delta_over_5min", 0),
         },
         "q1_cadence": q1,
         "q2_trigger": {
@@ -829,10 +1027,12 @@ def main():
         "q4_instance_at_a_time": q4_rows,
         "q5_mechanisms": {
             "mechanisms": mechanisms,
-            "lost_counts": {name: len(ids) for name, ids in lost_lists.items()},
-            "lost_examples": {name: ids[:40] for name, ids in lost_lists.items()},
+            "stopped_counts": {name: len(ids) for name, ids in lost_lists.items()},
+            "stopped_examples": {name: ids[:12] for name, ids in lost_lists.items()},
             "m1_per_plan": m1_plans,
             "m2_per_plan": m2_plans,
+            "m4_calibration": m4_calibration_rows,
+            "m4_exceedances": exempt_rows,
         },
     }
     data_path = OUT_DIR / "review-cycles-data.json"
@@ -877,7 +1077,22 @@ def main():
     ]
     labels = [name.split("-", 1)[1] for name in order]
     runs = [mechanisms[name]["reviews_run"] for name in order]
-    lost = [mechanisms[name]["acted_lost_or_deferred"] for name in order]
+    # Two different consequences, kept apart: a "lost" finding is one no
+    # reviewer would ever have read (the schedule-changing mechanisms M1 and
+    # M4); a "de-gated" finding is one still recorded but without gating force
+    # (the gating-changing mechanisms M2, M3 and M5).
+    stopped = [
+        mechanisms[name]["acted_lost"]
+        + mechanisms[name]["acted_de_gated"]
+        for name in order
+    ]
+    category = [
+        "de-gated" if mechanisms[name]["acted_de_gated"] else "lost"
+        for name in order
+    ]
+    colors = [
+        COLOR_DE_GATED if cat == "de-gated" else COLOR_ALT for cat in category
+    ]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 7))
     ys = list(range(len(order)))
@@ -899,12 +1114,13 @@ def main():
     ax1.set_xlabel("reviews run", fontsize=22)
     ax1.tick_params(axis="x", labelsize=20)
 
-    ax2.barh(ys, lost, color=COLOR_ALT, height=0.62)
-    for y, value in zip(ys, lost):
-        ax2.text(value, y, f" {value}", va="center", fontsize=20, color=COLOR_ALT)
+    ax2.barh(ys, stopped, color=colors, height=0.62)
+    for y, value, cat in zip(ys, stopped, category):
+        ax2.text(value, y, f" {value} {cat}", va="center", fontsize=20,
+                 color=COLOR_DE_GATED if cat == "de-gated" else COLOR_ALT)
     ax2.set_yticks(ys)
     ax2.set_yticklabels([])
-    ax2.set_xlabel("acted findings not gating", fontsize=22)
+    ax2.set_xlabel("acted findings stopped", fontsize=22)
     ax2.tick_params(axis="x", labelsize=20)
     fig.tight_layout()
     fig.savefig(OUT_DIR / "fig-mechanisms.png", dpi=100)
@@ -923,9 +1139,31 @@ def main():
     )
     for name in order:
         row = mechanisms[name]
-        print(f"{name}: run={row['reviews_run']} lost={row['acted_lost_or_deferred']}")
+        print(
+            f"{name}: run={row['reviews_run']} lost={row['acted_lost']} "
+            f"de_gated={row['acted_de_gated']} actual={row['reviews_actual']}"
+        )
+    disagree = [label for label, row in m4_calibration_rows.items() if row["over_25pct"]]
+    total_actual = sum(row["actual"] for row in m4_calibration_rows.values())
+    total_replayed = sum(row["replayed_600s"] for row in m4_calibration_rows.values())
+    print(
+        "m4 calibration vs actual:",
+        f"{total_replayed}/{total_actual}",
+        f"({round(100 * total_replayed / total_actual)}%)",
+        "plans over 25%:",
+        len(disagree),
+        "of",
+        len(m4_calibration_rows),
+    )
     print("wrote", data_path.name)
+    for window in REPLAY_SETTLE_SECONDS:
+        row = mechanisms[f"M4-settle-{window}s"]
+        print(
+            f"M4-settle-{window}s ratio to 600s baseline: "
+            f"{row['reviews_run']}/{baseline_600} = {row['ratio_to_600s']}"
+        )
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
