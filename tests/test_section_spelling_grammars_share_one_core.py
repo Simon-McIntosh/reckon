@@ -178,44 +178,72 @@ def test_number_core_is_owned_once_and_frames_compose_it():
         )
 
 
+#: ``re.fullmatch`` sites that compose the resource-segment grammar over an
+#: argument that is not a section id, named by enclosing function and argument
+#: so the exception is a fact about those two arguments rather than a
+#: permitted count.
+_SEGMENT_GRAMMAR_NON_SECTION = {
+    ("_apply_append_evidence", "plan"),
+    ("_apply_append_evidence", "anchor"),
+}
+
+
+def _function_nodes(tree):
+    return [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    ]
+
+
+def _is_section_identity_call(node):
+    return (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "is_section_identity"
+    )
+
+
+def _is_grammar_full_match(node):
+    return (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "fullmatch"
+        and node.args
+        and "A-Za-z0-9" in ast.unparse(node.args[0])
+    )
+
+
 def test_section_identity_validation_reuses_the_shared_helper():
     """The store validates a section id through the shared helper, never by
     re-spelling the identity grammar inline.
 
     A section identity is a resource path segment, so the grammar is owned by
     ``is_section_identity``. A validation that re-implements the full match
-    drifts the moment the grammar moves, so every section-identity refusal
-    routes through the helper and none performs an inline full match.
+    drifts the moment the grammar moves, so the store's section-id validations
+    route through the helper and no function anywhere in the store composes the
+    segment grammar inline over an argument that is a section id. The two
+    ``append_evidence`` arguments that share the grammar without being section
+    ids — the plan slug and the evidence anchor — are the named exceptions.
     """
     tree = ast.parse(Path(_store.__file__).read_text())
-    validators = {
+    callers = {
         node.name
-        for node in ast.walk(tree)
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-        and any(
-            isinstance(call, ast.Call)
-            and isinstance(call.func, ast.Name)
-            and call.func.id == "is_section_identity"
-            for call in ast.walk(node)
-        )
+        for node in _function_nodes(tree)
+        if any(_is_section_identity_call(call) for call in ast.walk(node))
     }
-    assert validators == {
+    assert {
         "_apply_set",
         "_require_authored_section_fields",
         "_apply_collapse_section",
+    } <= callers
+    inline = {
+        (node.name, ast.unparse(call.args[1]) if len(call.args) > 1 else "")
+        for node in _function_nodes(tree)
+        for call in ast.walk(node)
+        if _is_grammar_full_match(call)
     }
-    inline_full_match = {
-        node.name
-        for node in ast.walk(tree)
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-        and any(
-            isinstance(call, ast.Call)
-            and isinstance(call.func, ast.Attribute)
-            and call.func.attr == "fullmatch"
-            for call in ast.walk(node)
-        )
-    }
-    assert not (validators & inline_full_match)
+    assert inline - _SEGMENT_GRAMMAR_NON_SECTION == set()
 
 
 def test_numbered_heading_with_adjacent_contract_is_accepted():
