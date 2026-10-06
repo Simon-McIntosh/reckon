@@ -153,6 +153,12 @@ DEFAULT_STATUS = "ready"
 # answer closes the finding for the dispatch gate; a decline must carry a reason.
 RESPONSE_ACTIONS: tuple[str, ...] = ("acted", "declined")
 
+# The append-only list of every answer a record has received. The ``responses``
+# map keeps only the latest answer per finding, so a finding answered twice
+# keeps only the second there; this list is where the first survives, as the
+# event it was. The record body itself is never rewritten.
+RESPONSE_EVENTS_KEY = "response_events"
+
 # A finding type declined across this many distinct plans surfaces to the lead.
 RECURRENCE_THRESHOLD = 3
 
@@ -353,6 +359,8 @@ def plan_review_path(
     base_dir: str | Path | None = None,
     *,
     reviewed_blob_sha: str | None = None,
+    committed_root: str | Path | None = None,
+    review_run_id: str | None = None,
 ) -> Path:
     """Return the durable path of a plan review, keyed by version and blob.
 
@@ -360,7 +368,27 @@ def plan_review_path(
     ``reviewed_blob_sha`` selects the ``.at-<blob8>`` sibling the second review
     of one version lands on, so a re-review never overwrites its predecessor. An
     invalid blob naming is refused rather than silently normalised into a path.
+
+    ``committed_root`` selects the committed tree instead:
+    ``<committed_root>/plan/<plan-slug>/<review-id>.json``, the plan directory
+    named for the reviewed plan and the file named for the review run that
+    produced it (``review_run_id``). The committed file is keyed by the review
+    run rather than by version or blob — a re-review is a new review run and the
+    record it carries names the version it read. A committed path carrying no
+    review run id is refused rather than given a name it was never told.
     """
+    if committed_root is not None:
+        name = str(review_run_id or "").strip()
+        if not name:
+            raise ValueError(
+                "a committed plan review path needs the review run id that names it"
+            )
+        return (
+            Path(committed_root)
+            / _review_store.COMMITTED_PLAN_DIRNAME
+            / plan_slug
+            / f"{name}.json"
+        )
     suffix = (
         ""
         if reviewed_blob_sha is None
@@ -920,15 +948,24 @@ def record_response(
     reason_value = str(reason or "").strip()
     if action_value == "declined" and not reason_value:
         raise ValueError("a declined finding needs a one-line reason")
-    updated = dict(record)
-    responses = dict(updated.get("responses") or {})
-    responses[str(finding_id)] = {
+    response = {
         "action": action_value,
         "reason": reason_value,
         "by": str(by or ""),
         "when": when or datetime.now(UTC).isoformat(),
     }
+    updated = dict(record)
+    responses = dict(updated.get("responses") or {})
+    responses[str(finding_id)] = response
     updated["responses"] = responses
+    # The answer is appended to an event list as well as written into the
+    # latest-per-finding map. The map is what the dispatch gate reads, but it
+    # rewrites an answer in place, so the history of what was answered and when
+    # survives only here. The record's findings and every other body field are
+    # carried through untouched: only these two keys move.
+    events = list(updated.get(RESPONSE_EVENTS_KEY) or [])
+    events.append({"finding": str(finding_id), **response})
+    updated[RESPONSE_EVENTS_KEY] = events
     return store_plan_review(updated, base_dir=base_dir)
 
 
