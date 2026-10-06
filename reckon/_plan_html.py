@@ -438,6 +438,11 @@ def _section_spans(
         )
         for record in records
         if (record.kind is not None if every_marked_element else record.protected)
+        # A section record element, a section carrying the owned marker, is
+        # transparent: its interior is that section's authored prose, and only
+        # a marked collection nested inside it is subtracted. Without this a
+        # section authored inside its own marked wrapper reads as empty prose.
+        and not (every_marked_element and record.kind == "section")
         and not (every_marked_element and keep_landed_notes and record.tag != "section")
     ]
     if skip_landed_cards:
@@ -503,8 +508,31 @@ def section_prose(
     body = next((record for record in records if record.tag == "body"), None)
     start = body.open_end if body is not None else 0
     end = body.close_start if body is not None else len(document)
+    # A landed card is a section element whose heading leads its parent header,
+    # so its kept slice starts at the heading: the generated badge before it is
+    # not authored prose. That stretch is reported under the document unit, so
+    # a search surface that joins every slice keeps it while a section read of
+    # the identity does not.
+    card_headers = []
+    for card in records:
+        if card.tag != "section" or not _is_landed(card.attributes):
+            continue
+        lead = next(
+            (
+                heading
+                for heading in headings
+                if card.start < heading.heading_span[0] < card.end
+            ),
+            None,
+        )
+        if lead is not None and card.start < lead.heading_span[0]:
+            card_headers.append((card.start, lead.heading_span[0]))
     cuts = {start, end}
-    for left, right in (*protected, *(heading.span for heading in headings)):
+    for left, right in (
+        *protected,
+        *(heading.span for heading in headings),
+        *card_headers,
+    ):
         cuts.update((max(start, min(end, left)), max(start, min(end, right))))
     points = sorted(cuts)
     for left, right in pairwise(points):
@@ -516,6 +544,8 @@ def section_prose(
             ),
             DOCUMENT_UNIT,
         )
+        if any(low <= left and right <= high for low, high in card_headers):
+            identity = DOCUMENT_UNIT
         raw = (
             ""
             if any(low <= left and right <= high for low, high in protected)
