@@ -461,25 +461,41 @@ def _review_owed_fields(
     moment its author is present, so the write that changed it names the units
     the coverage predicate now reports uncovered rather than leaving a later
     dispatcher to refuse the build. ``review_owed`` lists each uncovered unit
-    with the measured change the predicate computes where one exists, and an
+    with the measured change the predicate computes where one exists, and is an
     empty list when nothing is owed; ``review_invocation`` is the one-line
     command that composes a review of exactly those units. The tool composes no
     review itself — the author decides when a session's authoring is finished —
     so a burst of edits earns one review and no review is attributed to a
-    session that did not ask for it. A write whose content cannot be read back
-    for the note returns an empty list rather than failing the completed write.
+    session that did not ask for it.
+
+    A predicate that cannot answer is reported as unknown, not as nothing owed:
+    ``review_owed`` is null and ``review_owed_error`` names why (the written
+    path was not reported, or the plan could not be read). An empty list and a
+    null are different facts — nothing is owed, or the debt is unknown — and
+    collapsing the second into the first would let a failed read pass for a
+    clean answer. The write itself has already succeeded, so only ``OSError``
+    (the unreadable-plan failure the predicate raises) is caught here; anything
+    else is a defect that must not be swallowed.
     """
     from reckon.crew import plan_review
 
     invocation = f"reckon crew review-plan --project {project} --plan {slug} --local"
     if written_path is None:
-        return {"review_owed": [], "review_invocation": invocation}
+        return {
+            "review_owed": None,
+            "review_owed_error": "the successful write reported no path to the plan",
+            "review_invocation": invocation,
+        }
     try:
         _records, uncovered, changes = plan_review.review_coverage(
             project, slug, plan=Path(written_path)
         )
-    except Exception:  # noqa: BLE001 — the review note never fails a written plan
-        return {"review_owed": [], "review_invocation": invocation}
+    except OSError as error:
+        return {
+            "review_owed": None,
+            "review_owed_error": f"{type(error).__name__}: {error}",
+            "review_invocation": invocation,
+        }
     owed = [{"unit": unit, "change": changes.get(unit)} for unit in sorted(uncovered)]
     return {"review_owed": owed, "review_invocation": invocation}
 

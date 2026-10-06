@@ -670,7 +670,11 @@ reckon crew review-plan --project <project> --plan <slug> --local
 ```
 
 The tool composes no review itself; the author decides when the session's
-authoring is finished. An empty `review_owed` owes nothing.
+authoring is finished. An empty `review_owed` owes nothing. A **null
+`review_owed`** means the review owed is **unknown** — the coverage predicate
+could not read the plan back, and `review_owed_error` names why — so treat it as
+owed and run the invocation before a build. An empty list and a null are
+different facts: nothing is owed, versus the debt is unknown.
 
 ### Step 5 — Confirm
 

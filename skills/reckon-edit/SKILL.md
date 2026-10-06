@@ -174,7 +174,11 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    and answer every finding it raises before a build is dispatched. The tool
    composes no review itself, so a burst of edits earns one review and the
    author decides when the session's authoring is finished. An empty
-   `review_owed` owes nothing.
+   `review_owed` owes nothing. A **null `review_owed`** means the review owed is
+   **unknown** — the coverage predicate could not read the plan back, and
+   `review_owed_error` names why — so treat it as owed and run the invocation
+   before a build. An empty list and a null are different facts: nothing is
+   owed, versus the debt is unknown.
 
 ## Authoring for faithful display (the SPA render contract)
 
