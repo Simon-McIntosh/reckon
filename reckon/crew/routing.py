@@ -2674,7 +2674,7 @@ def require_plan_reviewed(
         return None
 
     _store_delivered_plan_review(project, node.plan)
-    records, uncovered, changes = plan_review._review_coverage_report(
+    records, uncovered, changes = plan_review._review_coverage(
         project, node.plan, plan=resource.path
     )
     if uncovered:

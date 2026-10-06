@@ -4,12 +4,12 @@
   <p>Plan review now covers a unit — an authored section, or the document unit
   that carries decisions, gates and dependencies — by how much its prose changed
   since the review that last read it, not by any edit at all.
-  <code>reckon/crew/plan_review.py</code> gains <code>_review_coverage_report</code>,
-  the three-value predicate (§21's two-value <code>_review_coverage</code> is kept
-  beside it for its existing callers): it compares each outstanding unit's present
+  <code>reckon/crew/plan_review.py</code> gains <code>_review_coverage</code>, a
+  single predicate that returns the contributing records, the uncovered units and
+  each unit's measured change: it compares each outstanding unit's present
   prose against the newest covering review's <em>snapshot</em> — exactly, through
   the digest recomputed from that snapshot, or within the declared fraction of the
-  unit's words — and reports the uncovered units with their measured share. The
+  unit's words — so the gate can name the uncovered units beside their share. The
   word share is <code>difflib.SequenceMatcher</code> over
   <code>dispatch._normalised_words</code>, so the measure adds a comparison and no
   second tokeniser and both texts come from the one reader the digests use
@@ -22,7 +22,10 @@
 
   <p>The threshold is <code>review.plan_change_threshold: 0.30</code>, declared in
   <code>reckon/schema/flight-defaults.yaml</code> and read through the new public
-  <code>reckon/flight.py:plan_review_change_threshold</code>. The schema cleaner
+  <code>reckon/flight.py:plan_review_change_threshold</code>. The predicate
+  resolves the project's own flight config when no caller passes one, so a host
+  or project layer that retunes the threshold changes every caller's verdict —
+  the gate included — rather than only a caller handed a config. The schema cleaner
   and <code>validate_layer</code> now read one table,
   <code>flight.REVIEW_OWNED_KEYS</code> — <code>plan_settle_seconds</code> a
   non-negative integer, <code>plan_change_threshold</code> a number in [0, 1] — so
@@ -34,22 +37,23 @@
   <h4>Evidence</h4>
   <ul>
     <li><strong>Tests</strong>: <code>tests/test_review_is_earned_by_significant_change.py</code>
-    (13 cases) plus <code>tests/test_plan_settle_window_is_declared.py</code>:
-    <code>uv run --no-sync pytest -p no:cacheprovider -q
+    (13 cases) plus <code>tests/test_plan_settle_window_is_declared.py</code> (2
+    cases): <code>uv run --no-sync pytest -p no:cacheprovider -q
     tests/test_review_is_earned_by_significant_change.py
-    tests/test_plan_settle_window_is_declared.py</code> → <strong>14 passed,
-    EXIT=0</strong>. Log: <code>logs/newtests.log</code> (ends in a bare
+    tests/test_plan_settle_window_is_declared.py</code> → <strong>15 passed,
+    EXIT=0</strong>. Log: <code>logs/gate-tests.log</code> (ends in a bare
     <code>EXIT=0</code>).</li>
     <li><strong>Existing review, gate and flight tests</strong>, same target list
-    at base and at head: base <code>64e6b3376</code> → <strong>200 passed, 3
-    failed</strong> (<code>logs/baseline-suite.log</code>); head → <strong>201
-    passed, 2 failed</strong> (<code>logs/after-suite.log</code>). The two
-    remaining failures are both in <code>test_a_run_comment_earns_no_plan_review.py</code>
-    and are pre-existing: swapping the base revision's <code>plan_review.py</code>
-    back in reproduces the identical two (<code>logs/baseline-combined-tests.log</code>,
-    EXIT=1). Added failures: <strong>zero</strong>; the base's third failure was
-    this node's own new settle-window assertion against the pre-change defaults,
-    and it passes at head.</li>
+    at base and at the reviewed head: base <code>64e6b3376</code> → <strong>200
+    passed, 3 failed</strong> (<code>logs/baseline-suite.log</code>); head →
+    <strong>201 passed, 2 failed</strong> (<code>logs/gate-suite.log</code>). The
+    two remaining failures are both in
+    <code>test_a_run_comment_earns_no_plan_review.py</code> and are pre-existing:
+    swapping the base revision's <code>plan_review.py</code> back in reproduces
+    the identical two (<code>logs/baseline-combined-tests.log</code>, EXIT=1).
+    Added failures: <strong>zero</strong>; the base's third failure was this
+    node's own new settle-window assertion against the pre-change defaults, and
+    it passes at head.</li>
     <li><strong>Negative control</strong>: the measure changed to compare each unit
     against the previously-seen plan state instead of the reviewed snapshot reddens
     the cumulative three-edit test —

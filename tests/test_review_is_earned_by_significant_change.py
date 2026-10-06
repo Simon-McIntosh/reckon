@@ -27,6 +27,11 @@ from tests.test_review_plan_command import project as project  # noqa: PLC0414
 THRESHOLD = 0.30
 SNAPSHOT_RUN_ID = "review-earned-by-change"
 
+# Captured before any fixture runs: the shared ``project`` fixture patches
+# ``flight.resolve`` to a stub, and a case that must exercise the real layer
+# resolution restores this reference for its own scope.
+_REAL_RESOLVE = flight.resolve
+
 
 def _plain(prefix: str, count: int = 25) -> str:
     """Distinct, single-token words, so a substitution moves an exact share."""
@@ -136,9 +141,7 @@ def _review(path, *, store=True, run_id=SNAPSHOT_RUN_ID, version=3, findings=())
 
 
 def _coverage(path, *, config=None):
-    return plan_review._review_coverage_report(
-        "sample", "fixture", plan=path, config=config
-    )
+    return plan_review._review_coverage("sample", "fixture", plan=path, config=config)
 
 
 def _gate(repo):
@@ -318,6 +321,35 @@ def test_a_project_override_changes_the_verdict(sectioned):
     assert "b" in _coverage(path)[1]
     loose = {"review": {"plan_change_threshold": 0.5}}
     assert "b" not in _coverage(path, config=loose)[1]
+
+
+def test_a_project_layer_threshold_changes_the_gate_verdict(sectioned, monkeypatch):
+    _, repo, path = sectioned
+    _review(path)
+    words = _section_paragraph(path, "b")
+    total = len(plan_review._prose_texts(path)["b"].split())
+    for index in range(3):  # about a tenth of the section's words
+        words[index] = f"small{index:02d}"
+    _rewrite_section(path, "b", words)
+    assert _gate(repo) is None, "a tenth stays covered under the shipped threshold"
+
+    # Restore the real resolution and write the project's own layer where the
+    # registered mount resolves it: the gate, which passes no config, must pick
+    # the tighter threshold up through that path alone.
+    monkeypatch = monkeypatch.setattr(flight, "resolve", _REAL_RESOLVE)
+    layer = flight.project_config_path("sample")
+    layer.parent.mkdir(parents=True, exist_ok=True)
+    layer.write_text("review:\n  plan_change_threshold: 0.05\n", encoding="utf-8")
+    assert _REAL_RESOLVE(project="sample").config["review"][
+        "plan_change_threshold"
+    ] == (0.05)
+
+    share_percent = round(100 * 3 / total)
+    with pytest.raises(
+        PlanReviewMissingError,
+        match=rf"uncovered units: b;.*b changed by {share_percent}% of its words",
+    ):
+        _gate(repo)
 
 
 def test_the_threshold_is_read_through_the_flight_accessor():

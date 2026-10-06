@@ -16,10 +16,13 @@ a version that no longer exists, and the dispatch gate would refuse every later
 build with no review able to clear it. So the fingerprint normalises out exactly
 the server-managed metadata scalars — the plan's version, modified stamp,
 implementation fraction, status, ROI, effort, owner, sprint, tags and archive
-flag — and digests the authored content: declarations, sections, decisions,
-followups, relationships and comments, except the landing comments a promotion
-writes for a run, which record that work landed rather than an authored change
-and are normalised out beside the metadata scalars. The parser derives a little
+flag — and digests the authored content: the sections' prose and the document
+unit's decisions, gates, dependencies and other authored state. Comments and
+followups are normalised out beside the metadata scalars, both the authored and
+the promotion's landing ones, because they record work done and next steps
+rather than the design a review reads; the section declarations are normalised
+out too, since a landing collapse rewrites a section's lifecycle declaration in
+the same write that replaces its body with a landed card. The parser derives a little
 more state from those scalars, so :data:`PLAN_DERIVED_SCALARS` removes that
 too; without it, adding the named effort field to a plan that carried only the
 legacy effort letter would move the fingerprint through the derived calibration
@@ -328,8 +331,9 @@ def plan_fingerprint(plan: Mapping[str, Any] | str | Path) -> str:
 
     Section digests let a review continue covering outstanding authored work
     after another section lands. Metadata and lifecycle declarations are
-    normalised out; decisions, followups and authored comments belong to the
-    document unit alongside the remaining parsed state.
+    normalised out, and so are comments and followups — the authored ones and
+    the landing ones a promotion writes alike. Decisions, gates, dependencies
+    and the other remaining authored state belong to the document unit.
     """
     return _digest(_section_digests(plan))
 
@@ -580,8 +584,9 @@ def _edit_share(reviewed: str, present: str) -> float:
 
     The words are those the package's one word tokeniser yields, the same one
     the done-when overlap warning reads, so the measure adds a comparison and
-    no second tokeniser. The result is the changed-word count over the larger
-    word count, the sequence-matcher edit share §22 declares.
+    no second tokeniser. The result is the longest-common-subsequence changed
+    word count over the larger word count, so a section that replaces a third
+    of its words reads as a third changed against the review that read it.
     """
     from reckon.crew.dispatch import _normalised_words
 
@@ -595,7 +600,7 @@ def _edit_share(reviewed: str, present: str) -> float:
     return (larger - matching) / larger
 
 
-def _review_coverage_report(
+def _review_coverage(
     project: str,
     plan_slug: str,
     *,
@@ -612,10 +617,19 @@ def _review_coverage_report(
     its stored digests, so the threshold is read as zero for it. A unit absent
     from the review is never covered, a section the review's snapshot did not
     declare implementable counts as new, and a changed done-when leaves its
-    section uncovered whatever the fraction — the three revisions ``reckon-edit``
-    rule 9 names material, beside the threshold.
+    section uncovered whatever the fraction — those three revisions are material
+    beside the threshold.
+
+    The threshold comes from the project's own resolved flight config when the
+    caller passes none, so a host or project layer that retunes it changes every
+    caller's verdict rather than only a caller handed a config.
     """
+    from reckon import flight
     from reckon.roadmap import implementable_sections
+
+    if config is None:
+        config = flight.resolve(project=project).config
+    threshold = flight.plan_review_change_threshold(config)
 
     document = _as_document(plan)
     content = document if document is not None else plan
@@ -655,7 +669,6 @@ def _review_coverage_report(
         return [newest], became_implementable, changes
     digests = _section_digests(content)
     present_prose = _prose_texts(content)
-    threshold = _plan_review_change_threshold(config)
     covered: set[str] = set()
     contributing = []
     newest_evidence: dict[str, float | None] = {}
@@ -719,28 +732,6 @@ def _review_coverage_report(
     uncovered = outstanding - covered
     changes = {identity: newest_evidence.get(identity) for identity in uncovered}
     return contributing, uncovered, changes
-
-
-def _review_coverage(
-    project: str,
-    plan_slug: str,
-    *,
-    plan: Mapping[str, Any] | str | Path,
-    base_dir: str | Path | None = None,
-    config: Mapping[str, Any] | None = None,
-) -> tuple[list[dict[str, Any]], set[str]]:
-    """Return contributing reviews and uncovered outstanding authored units."""
-    records, uncovered, _changes = _review_coverage_report(
-        project, plan_slug, plan=plan, base_dir=base_dir, config=config
-    )
-    return records, uncovered
-
-
-def _plan_review_change_threshold(config: Mapping[str, Any] | None) -> float:
-    """The change threshold, read through the flight accessor."""
-    from reckon.flight import plan_review_change_threshold
-
-    return plan_review_change_threshold(config)
 
 
 def _load(path: Path) -> dict[str, Any] | None:

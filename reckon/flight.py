@@ -722,9 +722,10 @@ def plan_review_change_threshold(config: Mapping[str, Any] | None) -> float:
         if isinstance(review, Mapping)
         else DEFAULT_PLAN_CHANGE_THRESHOLD
     )
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+    shape = REVIEW_OWNED_KEYS["plan_change_threshold"]
+    if not _review_owned_key_shape_is_valid(shape, value):
         return DEFAULT_PLAN_CHANGE_THRESHOLD
-    return float(value) if 0.0 <= value <= 1.0 else DEFAULT_PLAN_CHANGE_THRESHOLD
+    return float(value)
 
 
 def _review_owned_key_shape_is_valid(shape: str, value: Any) -> bool:
