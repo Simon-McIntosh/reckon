@@ -20,11 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-impl" content="0.1667">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -59,17 +60,12 @@
       it could report the class (83% of <code>duplicate_owner</code> findings follow a review that raised the
       same type), and the review of a run dispatched with <code>--brief</code> cannot be dispatched at all.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-06</span>
     <h2 id="s2">§2 — A reviewer reports every instance of a finding type</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The design-review prompt,
-      <code>reckon/crew/prompts/plan_design_review.md</code>, loaded by
-      <code>load_plan_design_review_prompt</code> in <code>reckon/crew/review.py</code>, tells the reviewer that
-      a finding of one type is a census: when it finds one instance (an unplanned importer, a duplicate owner, a
-      missed reuse), it searches for every instance of that type in the same pass and lists them all under one
-      finding. The change is to that text only; it adds no option, field or verb.</p>
-    <p><strong>Done when</strong> a test asserts the loaded design-review prompt carries the instruction, and the
-      recurrence of a finding type after an acted same-type finding is re-measured one week after landing
-      against the 41.9% baseline for <code>duplicate_owner</code>, with the figure recorded on this plan.</p>
+<section data-reckon="section" data-id="s2" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed at <code>f84d80977</code>: the design-review prompt asks for every instance of a finding type on one FINDING line (review 116/120). The one-week recurrence re-measure against 41.9% is still due. <a href="s2">full record</a></p>
+</section>
 
     <h2 id="s3">§3 — Every review is a committed record, apart from the plan it reviews</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
