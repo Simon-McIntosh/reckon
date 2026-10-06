@@ -7966,6 +7966,56 @@ def _landing_preconditions(
     }
 
 
+def _staging_review_record_by_run(project: str, run_id: str) -> dict[str, Any] | None:
+    """The staged review record a review run delivered, found by its own id.
+
+    A plan review is stored by the plan-review store rather than as a scored run
+    review, so the run-store lookup the run-review path uses does not find it.
+    Both kinds name the review run that produced them, which is the one stable
+    key they share, so the staging store is scanned for that id and the newest
+    matching record is returned.
+    """
+    directory = review_module.review_store_root() / project
+    if not directory.is_dir():
+        return None
+    candidates: list[tuple[float, Path]] = []
+    for path in directory.glob("*.json"):
+        try:
+            candidates.append((path.stat().st_mtime, path))
+        except OSError:
+            continue
+    for _mtime, path in sorted(candidates, key=lambda item: item[0], reverse=True):
+        payload = _read_json_object(path)
+        if str(payload.get("review_run_id") or "").strip() == run_id:
+            return payload
+    return None
+
+
+def _delivered_review_payload_for_commit(
+    record: Mapping[str, Any], project: str, run_id: str
+) -> dict[str, Any] | None:
+    """The stored review record a promoting run delivered, or ``None``.
+
+    A review run's deliverable is the record it stored beside the subject it
+    read, and that record is the review's whole evidence: landing the run lands
+    the record with it. A run-review's record is read from the run store; a
+    plan review, which carries no run-review scores, is found by the review run
+    id it names. A run that is not a review, or a review run that delivered no
+    readable record, returns ``None`` and lands as before.
+    """
+    from reckon.crew import recovery
+
+    if not recovery._is_review_run(record):
+        return None
+    delivered = recovery._delivered_review_record(
+        record, str(record.get("project") or "")
+    )
+    if delivered is not None:
+        payload = _read_json_object(delivered[1])
+        return payload or None
+    return _staging_review_record_by_run(project, run_id)
+
+
 def _complete_locked(
     run_id: str,
     *,
@@ -8317,6 +8367,22 @@ def _complete_locked(
     # does not read it here can never recover it. A run with no recorded
     # disposition records null, never an inferred verb.
     disposition = _recorded_disposition(record)
+    # A review run's deliverable is the record it stored for the subject it
+    # read, so landing the run lands the record with it. The delivered record is
+    # read here, before the ledger row is assembled, so its own id can name it
+    # on the row and its committed write can join the row's commit below. A run
+    # that is not a review, or a review run that delivered no readable record,
+    # leaves the row's review block as the review gate resolved it.
+    committed_review_payload: dict[str, Any] | None = None
+    if not shadow:
+        committed_review_payload = _delivered_review_payload_for_commit(
+            record, project, run_id
+        )
+    if committed_review_payload is not None:
+        committed_block = review_module.ledger_block(committed_review_payload)
+        if committed_block is not None:
+            committed_block["id"] = run_id
+            reviewed = committed_block
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
@@ -8565,6 +8631,7 @@ def _complete_locked(
             "version": ledger_version,
             "run": dict(existing),
         }
+    committed_review_path: Path | None = None
     with _report_written_ledger_row(
         run_id,
         ledger_path=written["path"],
@@ -8578,6 +8645,32 @@ def _complete_locked(
         if store_outcome is None:
             recorded = written["run"].get("store_write")
             store_outcome = dict(recorded) if isinstance(recorded, Mapping) else None
+        store_row_written = (
+            not already_promoted
+            and isinstance(store_outcome, Mapping)
+            and store_outcome.get("status") == "written"
+        )
+        # A promoting review run's delivered record is written into the committed
+        # reviews tree now, before the landing commit: the run's own per-run file
+        # was just written, so it supplies the record's dispatch and completion
+        # stamps, and the record then joins the ledger row's commit rather than
+        # adding one. The store refuses a record it cannot key or time, and that
+        # refusal takes back the row this attempt appended so neither the record
+        # nor the ledger row is committed and the retry re-promotes cleanly.
+        if committed_review_payload is not None and not already_promoted:
+            try:
+                committed_review_path = review_module.store_committed_review(
+                    committed_review_payload, root=ledger_root
+                )
+            except ValueError as exc:
+                rollback = _restore_landing_writes(checkout, [Path(written["path"])])
+                if store_row_written:
+                    _discard_run_store_row(run_id)
+                raise _landing_refusal(
+                    f"cannot store the review record for run {run_id!r} in the "
+                    f"committed reviews tree, so the landing was rolled back: {exc}",
+                    rollback,
+                ) from exc
 
         # The two tracked stores this promotion wrote (the ledger row and, when a
         # narrative landed, the plan comment) are committed as one landing, so the
@@ -8597,12 +8690,9 @@ def _complete_locked(
                     root=ledger_root,
                     checkout=checkout,
                 ),
+                *([committed_review_path] if committed_review_path else []),
             ],
-            store_row_written=(
-                not already_promoted
-                and isinstance(store_outcome, Mapping)
-                and store_outcome.get("status") == "written"
-            ),
+            store_row_written=store_row_written,
         )
 
         # Return capture metadata while the pointer still exists. Session

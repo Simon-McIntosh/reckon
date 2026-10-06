@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="A promotion commits the review record it delivered">
+  <meta name="plan-summary" content="A review run's promotion writes the record it delivered into the committed reviews tree before the landing commit, so the record and the run's ledger row land in one commit. The record's id names it on the row, the committed store refuses a record with no review run id, and a record the store cannot key or time rolls the ledger row back so nothing is committed.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-06">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>A promotion commits the review record it delivered | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A promotion commits the review record it delivered</h1>
+
+    <section id="promotion-commits-the-review-record-anchor">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/promotion.py</code>: <code>_complete_locked</code>
+        reads a review run's delivered record before it assembles the ledger
+        row, so the row's <code>review</code> block carries the record's own id,
+        and writes that record into the committed reviews tree just before the
+        landing commit. The record's path joins the set
+        <code>_commit_landing_writes</code> stages, so the review record and the
+        run's ledger row land in one commit and the record adds none of its own.
+        A record the committed store refuses rolls the row this attempt
+        appended back out, so neither is committed and the retry re-promotes
+        cleanly.</p>
+      <p><code>reckon/crew/review.py</code>: <code>store_committed_review</code>
+        now requires the review run id that names a committed record and refuses
+        a record carrying none, rather than filing it under the run it reviews;
+        it routes a plan review under <code>plan/&lt;slug&gt;/</code> and a run
+        review under <code>run/&lt;reviewed-run-id&gt;/</code>, and takes the
+        dispatch and completion stamps from the review run's own record, falling
+        back to the reviewed run's only when a run review carries no times of
+        its own. The <code>run_record_times</code> docstring states that a live
+        pointer supplies both stamps, its dispatch and its completion stamp.</p>
+      <p>Gate: <code>tests/test_review_record_committed_at_promotion.py</code>
+        promotes a run review and a plan review in a synthesised project and
+        holds each record to the row's commit, checks the row's
+        <code>review.id</code>, checks the no-id refusal, and checks that a
+        record that cannot be stored commits neither; it passes alongside
+        <code>tests/test_review_records_have_a_committed_root.py</code>,
+        <code>tests/test_state_write_commits_a_set_of_paths.py</code>,
+        <code>tests/test_ledger.py</code> and
+        <code>tests/test_a_review_promotes_what_it_passed.py</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

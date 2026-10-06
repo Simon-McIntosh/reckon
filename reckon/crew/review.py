@@ -1723,9 +1723,10 @@ def run_record_times(
 
     The run's own record — its committed per-run file beside the ledger — is
     what carries both stamps, so a committed review's times are the run's own
-    rather than the moment the review file was stored. The live pointer is read
-    only as a fallback for a run not yet promoted, and contributes its single
-    ``created_at`` dispatch stamp; a run carrying no stamp yields an empty
+    rather than the moment the review file was stored. A run not yet promoted
+    has no committed per-run file, so the live pointer stands in and supplies
+    both stamps it carries: its ``created_at`` dispatch stamp and its
+    ``completed_at`` completion stamp. A run carrying no stamp yields an empty
     string for it rather than the store's own clock, because a defaulted time
     is a time nobody recorded.
     """
@@ -1759,36 +1760,48 @@ def store_committed_review(
 ) -> Path:
     """Persist one review record into the project's committed tree.
 
-    The record must name ``project`` and ``reviewed_run_id``. ``review_run_id``
-    — the run that produced the review — keys the committed file and supplies
-    the dispatch and completion times, so the record carries when the review
-    ran rather than when its file was stored; when it is absent the reviewed
-    run supplies both. Both stamps must resolve from one of the two run records
-    or the write is refused, naming the run: the store clock is never
-    substituted for a stamp and a stamp is never silently omitted, because a
-    committed review whose times are wrong or missing is exactly the defect the
-    committed store exists to remove.
+    The record must name ``project`` and ``review_run_id`` — the run that
+    produced the review. That id keys the committed file and supplies the
+    dispatch and completion times, so the record carries when the review ran
+    rather than when its file was stored; a record carrying no review run id is
+    refused rather than filed under the run it reviews, because two review runs
+    of one reviewed run would otherwise name the same committed file. Both
+    stamps must resolve from one of the two run records — the review run's, or
+    the reviewed run's when the review run's own record carries none — or the
+    write is refused, naming the run: the store clock is never substituted for
+    a stamp and a stamp is never silently omitted, because a committed review
+    whose times are wrong or missing is exactly the defect the committed store
+    exists to remove.
 
     ``committed_root`` names the tree directly (a caller that already resolved
     it, or a test); omitted, it resolves through :func:`committed_review_root`
     against ``root``. A plan review (one naming ``plan_slug``) is written under
-    ``plan/<slug>/`` and a run review under ``run/<reviewed-run-id>/``; the write
-    is atomic and every other body field is preserved.
+    ``plan/<slug>/`` and needs no reviewed run; a run review is written under
+    ``run/<reviewed-run-id>/`` and must name the reviewed run. The write is
+    atomic and every other body field is preserved.
     """
     project = str(record.get("project") or "").strip()
     if not project:
         raise ValueError("review record is missing project")
+    review_run_id = str(record.get("review_run_id") or "").strip()
+    if not review_run_id:
+        raise ValueError(
+            "a committed review record needs the review run id that names it; "
+            "refusing to file it under the reviewed run"
+        )
     reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
-    if not reviewed_run_id:
-        raise ValueError("review record is missing reviewed_run_id")
-    review_run_id = str(record.get("review_run_id") or "").strip() or reviewed_run_id
+    if not reviewed_run_id and not str(record.get("plan_slug") or "").strip():
+        raise ValueError(
+            "review record names neither a reviewed run nor a plan, so it has "
+            "no subject to be filed under"
+        )
     if committed_root is None:
         committed_root = committed_review_root(project, root=root)
     if committed_root is None:
         raise ValueError(f"no committed reviews tree resolves for project {project!r}")
 
     dispatched, completed = run_record_times(project, review_run_id, root=root)
-    if not dispatched or not completed:
+    if (not dispatched or not completed) and reviewed_run_id:
         review_dispatched, review_completed = run_record_times(
             project, reviewed_run_id, root=root
         )
