@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="reviews-are-kept-and-earned-by-significant-edits">
+  <meta name="plan-title" content="Reviews Are Kept, And Earned By Significant Edits">
+  <meta name="plan-summary" content="Only a material plan revision earns a full review, an answer earns a check, and every review is a committed record kept after its work lands.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="15.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;}">
+  <title>Reviews Are Kept, And Earned By Significant Edits | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-06">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: review time is spent on edits nobody needed read again</h2>
+    <p>Over 5 and 6 October the local lane ran 456 plan reviews (48.7 run-hours) and 130 code reviews
+      (21.5 run-hours) beside 100 build runs (83.4 run-hours), counted from the committed ledgers of reckon,
+      imas-ambix, imas-codex and nova. Plan reviews outnumbered builds 4.5 to 1, and reviews of both kinds
+      took about 46% of the lane's run-hours. The imas-ambix log shows the shape: an edit such as
+      "call the 268 JT-60SA coil entries filaments" is followed by a plan review, its promotion and its
+      release, and then by the next edit.</p>
+    <p>The cause is measured in
+      <a href="/reckon/research/plan-review-cycles">plan-review cycles</a> over 308 stored reviews of 32 plans.
+      Only 18 reviews carried no finding. Of 313 answers, 259 were "acted", and acting means editing the plan,
+      which moves its fingerprint, which earns the next whole-plan review. 49 of 280 re-reviews were triggered
+      by the document unit alone, 42 of them by authored comments: landing records and rulings that answer a
+      finding. The commonest finding type, <code>duplicate_owner</code>, is 270 of 502 findings, and 83% of
+      them follow a review that already raised the same type, so a plan with ten missed instances of one class
+      takes about ten rounds to clear.</p>
+    <p>The code also disagrees with the rule the skills already state. <code>reckon-edit</code> hard rule 9
+      defines a <strong>material revision</strong> as a change to a decision, a done-when, a section
+      declaration or a gate, and says a landing comment or an <code>impl</code> move needs no review. The
+      fingerprint in <code>reckon/crew/plan_review.py</code> instead digests every word of section prose and
+      every authored comment and followup, and it normalises section declarations <em>out</em>. The reflex
+      therefore reviews what the rule says needs no review and is blind to one of the four things the rule
+      says does.</p>
+    <p>Reviews are also not durable. A promoted plan-review run's ledger row carries <code>review: null</code>
+      and an outcome sentence. The findings, answers, fingerprints and unit digests exist only in the host's
+      configuration directory, <code>~/.config/reckon/crew/reviews/&lt;project&gt;/</code>, which is not
+      versioned and not shared with any other clone. Its record <code>timestamp</code> is the time a record
+      was stored, not reviewed: 92 records of one plan carry the same stamp from a batch import. Answering a
+      finding rewrites the record in place. The <code>nova</code> directory holds 2.5 GB that is not review
+      records at all: copied worktrees, a 627 MB <code>tree.tar</code>, a <code>.git</code> and a
+      <code>.codex</code> left by one September session that used the store as a working directory.</p>
+    <p>The imas-ambix coordinator is writing an RCA of review time on the local lane. Its findings are added to
+      this section when it lands, and any it raises that this design does not answer become sections.</p>
+
+    <h2 id="s2">§2 — One definition of a material revision</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> One Python owner of the question "does this change need a reviewer?":
+      <code>classify_revision(before, after)</code>, taking two plan documents and returning a class
+      (<code>material</code>, <code>correction</code> or <code>bookkeeping</code>), the authored units that
+      changed, and one reason per unit. The classes are these.</p>
+    <ul>
+      <li><strong>Material</strong>, which is the rule 9 set widened by the structural changes it implies: a
+        decision's question, options or choice changed; a section's done-when changed; a section was added or
+        removed, or its declaration moved to <code>implementable</code> or <code>deferred</code>; a gate was
+        added, changed or removed; a relationship changed (<code>depends-on</code>, <code>blocks</code>,
+        <code>after</code>, <code>section-depends-on</code>); or a section's prose changed by more than the
+        correction bound.</li>
+      <li><strong>Correction</strong>: section prose changed within the bound, with none of the material
+        changes above.</li>
+      <li><strong>Bookkeeping</strong>: authored comments, followups, landed cards, a declaration moving to
+        <code>done</code>, and the server-managed scalars the fingerprint already normalises out.</li>
+    </ul>
+    <p>The correction bound is a flight key, <code>review.plan_correction</code>, with a word count and a
+      fraction of the section's words, declared in <code>reckon/schema/flight-defaults.yaml</code> beside
+      <code>review.plan_settle_seconds</code>. It is measured against the last fully reviewed baseline, not
+      against the previous edit, so a run of small corrections that together exceed the bound is material.
+      The done-when is read by one reader in <code>reckon/_plan_html.py</code> beside
+      <code>structured_section_spans</code>; <code>_done_when_plan_overlap_warning</code> in
+      <code>reckon/crew/dispatch.py</code> moves to it rather than keeping its own. Rule 9 in
+      <code>skills/reckon-edit/SKILL.md</code> names this function as the definition.</p>
+    <p><strong>Calibration.</strong> The bound is chosen from the stored history, reusing the pair machinery in
+      <code>docs/figures/plan-review-cycles/measure_review_cycles.py</code>. For every consecutive pair of
+      reviews, record the class the change between them would receive and whether the later review's acted
+      findings landed in a unit the change classed as a correction. Report that miss rate against the bound
+      and choose the default where no more than 5% of acted findings followed a correction-only change. The
+      table goes into this plan's evidence fragment.</p>
+    <p><strong>Done when</strong> fixture plans drive each material trigger, a correction, an accumulated
+      correction crossing the bound, and each bookkeeping change to its class in a test; the calibration table
+      is recorded; and the default bound is declared in flight defaults with its miss rate beside it.</p>
+
+    <h2 id="s3">§3 — Only a material revision earns a full review, and an answer earns a check</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The sweep in <code>reckon/crew/recovery.py</code>, the
+      <code>crew review-plan</code> verb and the dispatch gate <code>require_plan_reviewed</code> in
+      <code>reckon/crew/routing.py</code> all read §2's class, measured from the last full review's baseline.</p>
+    <ul>
+      <li><strong>Material</strong> earns a full review, as now.</li>
+      <li><strong>Correction or bookkeeping</strong> earns no review. The sweep stores a classification
+        record (§5) naming the class and reasons, so a skipped review is auditable, and dispatches nothing.</li>
+      <li><strong>An answer</strong> earns a check. When the change since review N is confined to the units
+        that N's acted findings name, plus corrections and bookkeeping elsewhere, the sweep dispatches a
+        <em>check</em> review at the light tier (<code>reckon/review_tiers.py</code>). Its brief carries N's
+        findings, the answers and the diff. It reports, for each acted finding, whether the edit resolved it,
+        and it reports new defects only inside the changed units. A finding a check raises on an unchanged
+        unit is recorded as follow-on and never blocks.</li>
+      <li><strong>A round cap.</strong> After two consecutive rounds on one baseline whose findings were all
+        acted on, later findings on that baseline are recorded as follow-on. This writes into the record the
+        practice coordinators adopted by hand, deferring further findings to a later pass.</li>
+      <li>The gate passes when the last full review's baseline reaches the current content through
+        corrections, bookkeeping and answered checks, and when it refuses it names the class and the reason.
+        <code>crew review-plan</code> applies the same test and answers "nothing material since review X"
+        rather than dispatching; <code>--force</code> dispatches anyway and records why.</li>
+    </ul>
+    <p>The landing-beat comment in <code>skills/reckon-build/SKILL.md</code> and its "Review the design" step
+      point at the classifier, so the skill and the code state one rule.</p>
+    <p><strong>Done when</strong> a test drives the sweep through each class and through a response round and
+      observes a full review, nothing, and a light check respectively; the gate passes on a corrected plan
+      and refuses on a done-when edit, naming the class; the research script, replayed over the stored
+      history under this rule, reports the reviews that would have run beside the 308 that did; and one live
+      plan on this host receives a correction that earns no review and a done-when edit that earns one.</p>
+
+    <h2 id="s4">§4 — A reviewer reports every instance of a finding type</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The design-review prompt composed for a plan review tells the reviewer
+      that a finding of one type is a census: when it finds one instance (an unplanned importer, a duplicate
+      owner, a missed reuse), it searches for every instance of that type in the same pass and lists them all
+      under one finding. The prompt is composed in one place today; this changes that text and nothing
+      else.</p>
+    <p><strong>Done when</strong> the composed design-review prompt carries the instruction in a test, and the
+      recurrence of a finding type after an acted same-type finding is re-measured one week after landing
+      against the 41.9% baseline for <code>duplicate_owner</code>, with the figure recorded on this plan.</p>
+
+    <h2 id="s5">§5 — Every review is a committed record, apart from the plan it reviews</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A review store committed in each project's repository, beside the ledger,
+      holding plan reviews, run reviews and §3's classification records under one schema.</p>
+    <table>
+      <thead><tr><th>Property</th><th>Design</th></tr></thead>
+      <tbody>
+        <tr><td>Location</td><td><code>docs/state/&lt;project&gt;/reviews/plan/&lt;slug&gt;/&lt;review-id&gt;.json</code>
+          and <code>…/reviews/run/&lt;reviewed-run-id&gt;/&lt;review-id&gt;.json</code>, in the repository
+          the project is mounted from.</td></tr>
+        <tr><td>Identity</td><td>The review run's id, which is already unique and already carries its dispatch
+          time. A classification record that dispatched nothing takes <code>cls-&lt;utc-stamp&gt;-&lt;blob8&gt;</code>.</td></tr>
+        <tr><td>Body</td><td>Subject (kind, project, plan or run, section); what was read (blob or head sha, base
+          sha, fingerprint, unit digests); the §2 class that earned the review; tier and rubric; the reviewer's
+          model, effort, backend and lane; dispatch and completion times from the run record, never the store
+          time; findings verbatim (id, type, severity, anchor, text, reason); scores for a run review; and the
+          sha256 of the raw report.</td></tr>
+        <tr><td>Answers</td><td>An append-only list of events: finding, action, reason, by, when. The body is
+          never rewritten and a record is never deleted.</td></tr>
+        <tr><td>Write path</td><td>A live review writes to the host staging store as today, where the gate and
+          acceptance read it. The review run's own promotion commit moves the record into the committed store,
+          so no new commit is created. An answer appends its event and commits that one path explicitly.</td></tr>
+        <tr><td>Reviewed bytes</td><td>The reviewed plan bytes are written to the repository's object store at
+          review time (<code>git hash-object -w</code>), so a look-back can diff a review taken against an
+          uncommitted plan write.</td></tr>
+        <tr><td>Reads</td><td>One reader, extending <code>reckon/crew/review.py</code>, serves
+          <code>select_review_for_head</code>, <code>list_plan_reviews</code>, the gate, acceptance,
+          <code>crew(view="plan-review")</code>, the MCP surface and a server route
+          <code>GET /review/&lt;project&gt;/&lt;id&gt;</code>. It reads the committed store first and the staging
+          store only for runs not yet promoted.</td></tr>
+        <tr><td>References</td><td><code>review:&lt;project&gt;/&lt;id&gt;</code> in a plan comment, a followup
+          or an evidence record; <code>reckon audit-doc</code> resolves it. The ledger row's
+          <code>review</code> field names the id.</td></tr>
+      </tbody>
+    </table>
+    <p>The raw report text stays on the host, where §6 governs how long it is kept, because the committed record
+      carries every finding verbatim and the report's digest. At about 4 KB a record and the measured rate,
+      the store grows by about 1 MB a day across all projects before §3 cuts the rate.</p>
+    <p><strong>Done when</strong> a review run promoted in a test lands its record under
+      <code>docs/state/&lt;project&gt;/reviews/</code> inside the promotion commit; the gate still reads it
+      after the staging file is deleted; an answer appends an event and the body's bytes are unchanged; the
+      server and MCP return a record by id; and the ledger row names the id.</p>
+
+    <h2 id="s6">§6 — Reviews are kept after their work lands</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A lifecycle derived in Python from the record and the plan, never stored on
+      the record: <em>open</em> (a blocking finding is unanswered), <em>answered</em>, <em>superseded</em> (a
+      later full review of the same subject exists), and <em>landed</em> (the reviewed section has collapsed,
+      the plan has shipped, or the reviewed run is promoted). The gate, the sweep, the obligations view and
+      the SPA's default view read only the hot set, open and answered but not landed. The look-back views read
+      the archive: finding-type recurrence, declined recurrence across plans
+      (<code>declined_recurrence</code>), §2's calibration, and how often a later review contradicts an
+      earlier one.</p>
+    <p>What is discarded is what the record already distils: the raw report text and a review run's scratch,
+      after <code>review.raw_report_retention_days</code> (default 30) on the host.</p>
+    <p><strong>Done when</strong> each lifecycle state is derived in a test from fixture records; a plan
+      shipping moves its reviews to landed without any record being rewritten; <code>declined_recurrence</code>
+      and §2's calibration read the committed archive; and the raw-report retention runs on the host with its
+      removals printed.</p>
+
+    <h2 id="s7">§7 — Import the host store, and set aside what is not a record</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A migration command, dry run by default and <code>--write</code> to act. For
+      each project, it parses every file under the host store. Each one matching the plan-review or run-review
+      shape becomes a committed record, timed from its run id and deduplicated by subject, reviewed sha and
+      review run id. Everything else is listed by path, size and modification time, then moved, not deleted,
+      to a quarantine directory outside the store. From then on a guard on the store refuses to write anything
+      that is not a record. The 2.5 GB in <code>nova</code> is the known case. Deleting quarantined content is
+      a lead decision taken on the printed inventory.</p>
+    <p><strong>Done when</strong> the dry run's inventory is recorded with counts and bytes per project; the
+      imported count per project equals the recognised records; the store holds records only; and a test shows
+      the guard refusing a non-record write.</p>
+
+    <h2 id="s8">§8 — A review of a brief-carried run names its brief</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>_review_dispatch_fields</code> in <code>reckon/crew/recovery.py</code>
+      copies the reviewed node's plan and section and never its brief, so the review of a run dispatched with
+      <code>--brief</code> composes a node with no authority, and dispatch refuses it as
+      <code>not-dispatchable</code>. This was measured on 2026-10-06 for <code>plan-review-cycles</code>. The
+      composed review carries the reviewed run's stored brief as its authority when the reviewed node names no
+      plan, and the <code>review-missing</code> obligation's command is then dispatchable as printed.</p>
+    <p><strong>Done when</strong> a test composes the review of a brief-carried run and the dispatch dry run
+      validates it.</p>
+
+    <h2 id="s9">§9 — An author can hold a plan out of review while writing it</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Two <code>edit_plan</code> ops, <code>hold_review</code> (with a reason and
+      an optional expiry) and <code>release_review</code>. They write a <code>plan-review-hold</code> meta
+      carrying the holding session, start, expiry and reason, normalised out of the fingerprint like the other
+      server scalars. While a plan is held, the sweep skips it, <code>crew review-plan</code> refuses and names
+      the holder, and the gate refuses a build of it. Release classifies the change since the last review at
+      once, with no settle wait, and dispatches what §3 says. A hold lapses at its expiry, two hours by
+      default, and the holder's own edits renew it.</p>
+    <p><strong>Done when</strong> a test drives the hold through the sweep, the verb, the gate, release and
+      expiry.</p>
+
+    <h2 id="s10">§10 — Build order</h2>
+    <p>The first wave is §2, §4, §5 and §8, whose write scopes do not overlap: the classifier module, the done-when
+      reader and the flight defaults; the review prompt; the review store and promotion; and the review dispatch
+      fields. §3 follows §2, after the open coverage section §16 of
+      <a href="/reckon/plans/a-plan-is-reviewed-before-it-is-built#s16">a plan is reviewed before it is built</a>
+      lands, because both change plan-review coverage. §6 and §7 follow §5. §9 follows §3.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="review-store" data-choice="committed" data-by="e4e34290, on the lead&#x27;s delegation" data-when="2026-10-06">
+    <p class="r-dec-q">Where do review records live?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="committed">Committed beside the ledger in each project&#x27;s repository</button>
+      <button class="r-opt" data-value="host">The host configuration store, as now</button>
+      <button class="r-opt" data-value="database">A database on the host</button>
+      </p>
+    <p class="r-dec-rat">Committed. A review is evidence about a plan, and the plan, its ledger and its evidence are already versioned and travel with the repository. The host store is invisible to other clones, has no history, timestamps records with the store time and rewrites them on every answer. A host database would carry the same faults. Promotion already commits every review run, so the record travels in an existing commit.</p>
+    </div>
+<div class="r-dec" data-key="review-retention" data-choice="keep" data-by="e4e34290, on the lead&#x27;s delegation" data-when="2026-10-06">
+    <p class="r-dec-q">Is a review discarded once the work it reviewed lands?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="keep">Keep every record, and archive it out of the hot reads once its work lands</button>
+      <button class="r-opt" data-value="discard">Discard the record once its work lands</button>
+      </p>
+    <p class="r-dec-rat">Keep. Every measurement that led to this plan read history: the 83% same-type recurrence, the 18% bookkeeping trigger rate, the store-time defect. §2&#x27;s correction bound is calibrated on history and must be re-calibrated on it. The lead&#x27;s rubric rule counts a finding type declined across three or more plans, which spans plans and time. Plans cite the review behind a ruling. A record is about 4 KB. What gets discarded is the raw report text and run scratch, which the record already distils.</p>
+    </div>
+<div class="r-dec" data-key="correction-review" data-choice="none" data-by="e4e34290, on the lead&#x27;s delegation" data-when="2026-10-06">
+    <p class="r-dec-q">Does a correction earn any review?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="none">None; its classification is recorded, and corrections accumulate toward the bound</button>
+      <button class="r-opt" data-value="light">A light review</button>
+      </p>
+    <p class="r-dec-rat">None. A correction is by definition below the size at which a second reader changes the outcome, and §2 calibrates that size against the history. Accumulating corrections against the last full review stops a material change being made in small slices.</p>
+    </div>
+<div class="r-dec" data-key="answer-review" data-choice="check" data-by="e4e34290, on the lead&#x27;s delegation" data-when="2026-10-06">
+    <p class="r-dec-q">What does an edit that answers a finding earn?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="check">A light check of the answered findings and the units the edit changed</button>
+      <button class="r-opt" data-value="full">A full review, as now</button>
+      <button class="r-opt" data-value="none">Nothing</button>
+      </p>
+    <p class="r-dec-rat">A check. A full re-review of the whole plan after each answer is the loop measured in §1. Nothing at all would leave an answer unread, and an answer can introduce a defect of its own. A check confirms the answer and reads only what changed.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-rkes-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-06" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the first wave: §2, §4, §5 and §8</h4>
+    <div class="r-fu-body"><p>The four sections write disjoint files and run in parallel; §3, §6, §7 and §9 follow as §10 orders them.</p></div>
+    <pre class="r-fu-prompt">/reckon-build reviews-are-kept-and-earned-by-significant-edits</pre>
+    </article>
+</section>
+  <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-rkes-1" data-section="s3" data-gated-sections="s3" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">the coverage reader that section 16 of a-plan-is-reviewed-before-it-is-built introduces has landed, so the classifier extends that reader rather than adding a second coverage path</h4>
+    <p class="r-gate-required-evidence">a-plan-is-reviewed-before-it-is-built#s16</p>
+    </div>
+</section>
+</main>
+</body>
+</html>
