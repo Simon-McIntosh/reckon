@@ -30,6 +30,21 @@
     <p>Run <code>brief-run-reviews-name-their-brief</code> changed <code>_review_dispatch_fields</code> in <code>reckon/crew/recovery.py</code>. A run whose node names no plan now carries its stored brief into the review fields, and the existing token composer turns that into <code>--brief</code>, so the review and the <code>review-missing</code> obligation's command are dispatchable as printed. A run that names a plan keeps the plan as its authority. <code>tests/test_review_of_a_brief_run_names_its_brief.py</code> composes the review of a brief-carried run and validates its dispatch dry run. The gate covered that file, <code>tests/test_ledger.py</code> and every test file importing <code>_review_dispatch_fields</code>: 192 passed, EXIT=0. With the brief dropped, 3 tests fail with EXIT=1. Commits <code>54b1f300f</code> and <code>7aa10bad1</code>, merged at <code>7b4aeaeb9</code>, reviewed 116/120 with no findings.</p>
   </section>
 
+  <section id="s3">
+    <h2>§3 — every review is a committed record, apart from the plan it reviews</h2>
+    <p>Section 3 landed across six nodes, each reviewed and merged on reckon <code>main</code>:</p>
+<ul>
+<li><code>state-write-commits-a-set-of-paths</code>, merged at <code>26e6502aa</code> (review 114): <code>_commit_state_write</code> commits a set of paths in one commit.</li>
+<li><code>review-records-have-a-committed-root</code>, merged at <code>6ff61b8d3</code> (reviews 112, then 116 after a resumed fix): <code>review_path</code> and <code>plan_review_path</code> resolve a committed path keyed by review run id. A record's times come from the run records. Answers append to <code>response_events</code>.</li>
+<li><code>promotion-commits-the-review-record</code>, merged at <code>1e303f9a9</code> (review 116): a review run's promotion writes its record into the same commit as its ledger row, and the row's <code>review</code> field names the record id. Verified live: <code>7ddc17a6f</code> committed <code>docs/state/reckon/reviews/run/…/r-20261006T150602714740-….json</code> beside its ledger row.</li>
+<li><code>audit-doc-resolves-review-references</code>, merged at <code>2ee3f3a5a</code> (review 117): <code>review:PROJECT/REVIEW-ID</code> citations resolve against the committed tree.</li>
+<li><code>reviews-read-the-committed-store-first</code>, merged at <code>4bc6d3692</code> (review 119), with <code>recovery-keys-on-committed-reviews</code>, merged at <code>0c9199d4e</code> (review 117): the readers read the committed tree first. The classification memo keys on committed records. <code>git hash-object -w</code> keeps the reviewed plan bytes. A read-only classification of all 18 <code>review_store_root</code> call sites found that only three read history.</li>
+<li><code>every-review-round-is-committed</code>, merged at <code>fdd1588c9</code> (review 117), with a lint follow-up at <code>9540cb45f</code> (review 118): every stored round is committed, the resolver falls back to staging at an uncommitted head, the project is taken from the promotion, and mounted projects are listed.</li>
+</ul>
+<p><strong>A regression, and its fix.</strong> <code>fdd1588c9</code> made a promotion refuse when any stored round lacked <code>review_run_id</code>, which is true of about 13% of stored run reviews, so those review-run promotions rolled back. Hotfix <code>a-review-without-its-run-id-still-promotes</code> merged at <code>ca2c52f84</code> (review 116). It files the delivering round under the promoting run's id and skips any other unnamed round with a logged note. Verified live by re-promoting the run the regression had blocked. The review's follow-on: derive a legacy id for a skipped round instead of dropping it. That is queued with section 5, where the import script already derives one.</p>
+<p><strong>Whole-suite measurement.</strong> Base <code>0375c0ac7</code> to head <code>1f156a117</code>: one added failure, a stale fixture, fixed by <code>fdd1588c9</code>. Base <code>1f156a117</code> to head <code>87f6c16ac</code>: 0 added failures (11,706 passed, 8 failed and 1 error, all pre-existing).</p>
+  </section>
+
 </main>
 </body>
 </html>

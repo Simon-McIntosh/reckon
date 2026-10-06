@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.4">
-<meta name="plan-version" content="34">
+<meta name="plan-impl" content="0.6">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -70,71 +70,12 @@
   <p class="landed-summary">Landed at <code>f84d80977</code>: the design-review prompt asks for every instance of a finding type on one FINDING line (review 116/120). The one-week recurrence re-measure against 41.9% is still due. <a href="s2">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-06</span>
     <h2 id="s3">§3 — Every review is a committed record, apart from the plan it reviews</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> A review store committed in each project's repository, beside the ledger,
-      holding plan reviews and run reviews under one schema.</p>
-    <table>
-      <thead><tr><th>Property</th><th>Design</th></tr></thead>
-      <tbody>
-        <tr><td>Location</td><td><code>docs/state/&lt;project&gt;/reviews/plan/&lt;slug&gt;/&lt;review-id&gt;.json</code>
-          and <code>…/reviews/run/&lt;reviewed-run-id&gt;/&lt;review-id&gt;.json</code>, in the repository
-          the project is mounted from. The path is resolved by the functions that already own a review's path,
-          <code>review_path</code> in <code>reckon/crew/review.py</code> and <code>plan_review_path</code> in
-          <code>reckon/crew/plan_review.py</code>. They gain a committed root beside the host staging root
-          rather than a second path rule.</td></tr>
-        <tr><td>Identity</td><td>The review run's id, which is already unique and already carries its dispatch
-          time.</td></tr>
-        <tr><td>Body</td><td>Subject (kind, project, plan or run, section); what was read (blob or head sha, base
-          sha, fingerprint, unit digests); tier and rubric; the reviewer's model, effort, backend and lane;
-          dispatch and completion times from the run record, never the store time; findings verbatim (id, type,
-          severity, anchor, text, reason); scores for a run review; and the sha256 of the raw report.</td></tr>
-        <tr><td>Answers</td><td>An append-only list of events: finding, action, reason, by, when. The body is
-          never rewritten and a record is never deleted.</td></tr>
-        <tr><td>Write path</td><td>A live review is written to the host staging store as today, where the gate
-          and acceptance read it. A review run makes no repository commit, because its deliverable sits outside
-          the repository (<code>_COMMITLESS_ROLES</code> in <code>reckon/crew/promotion.py</code>), but its
-          promotion still writes the run's ledger row through <code>_commit_state_write</code> in
-          <code>reckon/ledger.py</code>, which today stages and commits exactly one path. It is extended to
-          commit a set of paths, so the ledger row and the review record share the commit the promotion already
-          makes and no commit is added. The function that
-          stores a delivered plan review is the one §23 of a plan is reviewed before it is built makes public,
-          <code>plan_review.store_delivered_reviews</code>; this section changes where it writes rather than
-          adding a second store path. An answer appends its event through the same
-          <code>_commit_state_write</code>.</td></tr>
-        <tr><td>Reviewed bytes</td><td>The reviewed plan bytes are written to the repository's object store at
-          review time, so a look-back, and §22's cumulative comparison, can read the text of a review taken
-          against an uncommitted plan write. This extends the existing call rather than adding a mechanism: the
-          plan-review composition in <code>reckon/crew/recovery.py</code> already runs
-          <code>git hash-object --stdin</code> to compute <code>reviewed_blob_sha</code>, and gains
-          <code>-w</code>.</td></tr>
-        <tr><td>Reads</td><td>The existing readers are repointed rather than joined by a new one:
-          <code>list_plan_reviews</code> and <code>read_plan_review</code> in <code>reckon/crew/plan_review.py</code>,
-          <code>read_review</code> in <code>reckon/crew/review.py</code>, and <code>select_review_for_head</code> in
-          <code>reckon/crew/recovery.py</code>. None of them decides the read order itself. The resolver that
-          already owns a record's location, <code>stored_record</code> in <code>reckon/crew/review.py</code>, reads
-          the committed store first and the staging store only for runs not yet promoted, and the four readers go
-          through it. <code>review_store_root</code> has further direct callers in <code>recovery.py</code>,
-          <code>reports.py</code>, <code>runs.py</code>, <code>dispatch.py</code> (the sandbox write roots it grants a
-          worker) and <code>cli.py</code> (<code>reckon path --kind reviews</code>). Each is classified in the node's manifest: a caller about
-          a live run's own record, such as write-path matching or own-record existence, stays on the staging root,
-          where live reviews are still written; a caller that reads history goes through the resolver. No MCP tool,
-          view, view argument or server route is added. A plan's reviews are already listed by
-          <code>crew(view="plan-review", plan=…)</code>, and a reference by id is resolved in Python by
-          <code>reckon audit-doc</code>.</td></tr>
-        <tr><td>References</td><td><code>review:&lt;project&gt;/&lt;id&gt;</code> in a plan comment, a followup
-          or an evidence record; <code>reckon audit-doc</code> resolves it. The ledger row's
-          <code>review</code> field names the id.</td></tr>
-      </tbody>
-    </table>
-    <p>The raw report text stays on the host, where §4 governs how long it is kept, because the committed record
-      carries every finding verbatim and the report's digest. At about 4 KB a record and the measured rate, the
-      store grows by about 1 MB a day across all projects, and by less once §22's threshold cuts the rate.</p>
-    <p><strong>Done when</strong> a review run promoted in a test lands its record under
-      <code>docs/state/&lt;project&gt;/reviews/</code> inside the promotion commit; the gate still reads it
-      after the staging file is deleted; an answer appends an event and the body's bytes are unchanged;
-      a <code>review:&lt;project&gt;/&lt;id&gt;</code> reference resolves in <code>reckon audit-doc</code>; and the
-      ledger row names the id.</p>
+<section data-reckon="section" data-id="s3" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed in six reviewed nodes plus a hotfix (<code>26e6502aa</code> … <code>ca2c52f84</code>). A review run's promotion commits every stored review round beside its ledger row, the readers read the committed tree first, and <code>audit-doc</code> resolves <code>review:PROJECT/REVIEW-ID</code>. The whole suite added 0 failures. Follow-on: derive legacy ids for unnamed rounds, queued with §5. <a href="s3">full record</a></p>
+</section>
 
     <h2 id="s4">§4 — Reviews are kept after their work lands</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -226,10 +167,16 @@
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §3</pre>
     <p class="r-fu-outcome">Applied ahead of §23, because the sweep's retirement means a plan edit no longer buys a review. §3 names review_path and plan_review_path as the path owners, repoints list_plan_reviews, read_plan_review, read_review and select_review_for_head, and extends _commit_state_write to a set of paths. §5 takes import_runs_into_store.py's contract. §7, the author hold, is withdrawn: it existed only to keep the sweep away from a plan mid-rewrite.</p>
     </article>
-<article class="r-fu" data-id="f-erkc-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="e4e34290" data-written-at="2026-10-06" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-erkc-003" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="e4e34290" data-written-at="2026-10-06" data-recommends-skill="reckon-build" data-resolved-at="2026-10-06T18:25:29+00:00" data-resolved-by="e4e34290">
     <h4 class="r-fu-title">When §23 of a plan is reviewed before it is built lands, review this plan once, then build §3</h4>
     <div class="r-fu-body"><p>The deferred findings are applied. Once §23 merges and store_delivered_reviews exists, run one design review of this plan with crew review-plan, answer it, and dispatch §3. §5 and then §4 follow.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §3</pre>
+    <p class="r-fu-outcome">Section 3 landed: six nodes and a hotfix merged and reviewed (112–119), live promotion verified, and 0 added suite failures. The import script for section 5 landed at 0f31936d4.</p>
+    </article>
+<article class="r-fu" data-id="f-erkc-004" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="e4e34290" data-written-at="2026-10-06" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Finish §5: import every project, add the store guard, derive legacy ids at promotion; then §4</h4>
+    <div class="r-fu-body"><p>The reckon import runs as node <code>reckon-host-reviews-imported</code>. Importing the other five projects (nova, imas-ambix, imas-codex, imas-efit, imas-ink) commits into their repositories and moves nova's 2.55 GB of scratch to quarantine, so it waits for the lead's go-ahead. The store guard edits <code>plan_review.py</code>, so it follows §16 of a plan is reviewed before it is built. Promotion should derive a legacy id for an unnamed round rather than skip it, matching the import. §4 follows the import.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §5</pre>
     </article>
 </section>
 
