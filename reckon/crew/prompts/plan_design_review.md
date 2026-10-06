@@ -54,12 +54,26 @@ most resembles and say whether the plan extends it, wraps it, or duplicates it.
 A claim about prior art is checked by opening the code, not by reading the plan's
 account of it.
 
+## Every instance of a type, not the first
+
+A finding of one type is a census, not a sample. When you find one instance of a
+defect — an unplanned importer of a module the plan is meant to replace, a
+duplicate owner of a shared mechanism, a missed reuse of machinery that already
+exists — you search for every instance of that type in the same pass and list
+them all under one finding, naming each file and line. A finding that reports
+only the first instance hands the author a partial census without saying so, and
+the rest are found later, one review at a time. The census is what makes a
+finding actionable: an author who sees every site of one defect fixes them in a
+single pass, and a defect type reported once is a defect type that recurs.
+
 ## What to emit
 
 For each of the five items, emit one `RUBRIC` line. Then emit one `FINDING`
 line per defect, and on each finding carry the would-change verdict and its
-reason. Emit the lines exactly in these forms and nothing else with these
-prefixes:
+reason. When a finding is a census of many instances of one type, that one
+`FINDING` line carries every instance of that type, each with its own
+`<file>:<line>`. Emit the lines exactly in these forms and nothing else with
+these prefixes:
 
 ```
 RUBRIC <item>: <pass, or the finding it produced — one sentence citing the mechanism or file it is about>
