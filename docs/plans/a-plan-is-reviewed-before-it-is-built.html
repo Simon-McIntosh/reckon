@@ -23,7 +23,7 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="195">
+<meta name="plan-version" content="196">
 <meta name="plan-modified" content="2026-10-06">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;}">
 </head>
@@ -468,6 +468,9 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
 <div class="r-comment" data-section="s16" data-id="c-20261006T095909Z-s16-review-v190" data-who="reckon-build" data-when="2026-10-06T09:59:09Z">
     <div class="r-comment-body">Plan review of v190 (run r-20261006T093852634327) raised two findings on the second node, both to fold into this section's text before that node is cut. First: tests/test_a_section_reviewed_as_authored_stays_reviewed.py:321 still calls structured_section_spans(markup, every_marked_element=True), so the node must either keep the every_marked_element and skip_landed_cards keywords or rewrite that caller and say so; the claim that the deleted slicer was their only caller is wrong. Second: the node rewrites authored_plan_text, _authored_section_headings and _section_response in reckon/mcp_views.py, so its interface accounting must also state that the mcp_views family (33) is unchanged, beside public_definitions.</div>
 </div>
+<div class="r-comment" data-section="s16" data-id="c-20261006T105000Z-s16-review-v195" data-who="reckon-build" data-when="2026-10-06T10:50:00Z">
+    <div class="r-comment-body">Plan review of v195 (run r-20261006T103315826144) adds two corrections to fold into this section's text before its second node is cut, beside the two recorded from v190. First: section_anchor already lives at reckon/_plan_html.py:106, re-homed by section 17 and imported there by evidence.py, so the instructed move from routing is a no-op and the clause must say so. Second: _fingerprint_forms at reckon/crew/plan_review.py:489 already returns three forms, the section-set digest and both whole-document variants, so the third form this section says it adds already exists. The mcp_views accounting gap from v190 was raised again.</div>
+</div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261006T040543167994-review-of-a-composition-pin-asserts-the-property-not-a-count" data-who="reckon-build" data-when="2026-10-06T04:12:36.152Z">
     <div class="r-comment-body"><p>Independent review of run r-20261006T035320552323-a-composition-pin-asserts-the-property-not-a-count (§20) stored as a parsed record scoring all six dimensions (goal_fidelity 19, evidence 17, scope_discipline 20, durability 16, fit 18, reuse 20; total 110) against reviewed_base_sha f25c6ede09a75a9f4d1ea49f1f783f5a3237433e and reviewed_head_sha 700e2dde433b40612885bab79627fcb11510e578, with two follow-on findings at tests/test_section_spelling_grammars_share_one_core.py:202 (exact-set assertion reddens on a legitimate fourth is_section_identity caller — the count-over-source brittleness §20 removes) and :218 (the inline-full-match guard only catches a fullmatch inside a function that already calls the helper, narrower than its stated property).</p></div>
 </div>
@@ -494,6 +497,9 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
 </div>
 <div class="r-comment" data-section="s22" data-id="c-20261006T104500Z-s22-one-node-again" data-who="reckon-build" data-when="2026-10-06T10:45:00Z">
     <div class="r-comment-body">Supersedes the two-node cut recorded earlier today. Lead decision 2026-10-06 retires the plan-review sweep (§25), so the settle window and the sweep repoint leave this section: it no longer writes reckon/crew/recovery.py and is one node again, adding plan_review_change_threshold beside the settle accessor rather than merging them. The first node dispatched under the old scope, r-20261006T102223311184, was stopped six minutes in with no changes in its worktree.</div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-20261006T105000Z-s26-review-v195" data-who="reckon-build" data-when="2026-10-06T10:50:00Z">
+    <div class="r-comment-body">Plan review of v195 (run r-20261006T103315826144), to fold into this section before its node is cut: do not add review_owed as a second public reader over _review_coverage. Make the coverage predicate itself the one public entry, renamed review_coverage, called by the gate in routing.py and by the edit tool in reckon/mcp.py alike, with rule 9 in skills/reckon-edit/SKILL.md renamed to match; public_definitions still rises by one, and the gate and the edit cannot disagree because they call the same function.</div>
 </div>
 </section>
 </main>
