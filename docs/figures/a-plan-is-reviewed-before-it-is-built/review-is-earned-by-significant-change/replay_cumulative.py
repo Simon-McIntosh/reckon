@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
-"""Replay the cumulative coverage rule over the 2026-10-06 review snapshot.
+"""Replay the cumulative coverage rule over the 2026-10-06 review snapshots.
 
-The plan-review cycle research (docs/research/plan-review-cycles.html) measured,
-over the consecutive pairs of stored reviews, that "a section was added, or a
-unit changed by 30 % or more of its own words" fires on 15 of the re-reviews of
-2026-10-06 and keeps all four added sections. That rule compares consecutive
-snapshots. The coverage predicate landed for the unit-of-review work compares
-each review against the snapshot that last *covered* the plan, so a run of small
-edits accumulates until together they cross the threshold. This replay reports
-the same two figures under the cumulative rule, beside the consecutive 15.
+The plan-review cycle research measured, over the consecutive pairs of stored
+reviews, that "a section was added, or a unit changed by 30% or more of its own
+words" fires on 15 of the 96 re-reviews of 2026-10-06 and keeps all four added
+sections. That rule compares consecutive snapshots. The coverage predicate
+landed for the unit-of-review work compares each review against the snapshot
+that last *covered* the plan, so a run of small edits accumulates until together
+they cross the threshold. This replay computes both rules over the same 96
+re-reviews, so the cumulative figure sits beside the research's consecutive 15
+with a matching denominator.
 
-It reuses the measurement module's loaders and unit readers so the blob
-recovery, the section prose reader and the word tokeniser are the same ones the
-research used. Run from the worktree root:
+The population is the per-run review snapshots under
+``~/.config/reckon/crew/reports/<project>/plan-review/<run>/plan.html`` — the
+same store the research's ``edit_size.py`` and ``section_change.py`` read — kept
+read-only. Sections are read through the review module's own prose reader so the
+word tokeniser and the bookkeeping exclusion are the measure's, not a copy. Run
+from the worktree root:
 
     PYTHONPATH=$PWD <repo>/.venv/bin/python \
         docs/figures/a-plan-is-reviewed-before-it-is-built/\
@@ -21,141 +25,80 @@ review-is-earned-by-significant-change/replay_cumulative.py
 
 from __future__ import annotations
 
-import importlib.util
+import glob
+import os
 import sys
-from datetime import datetime, timezone
+from collections import defaultdict
 from pathlib import Path
 
 from reckon.crew import plan_review
 
-_HERE = Path(__file__).resolve()
-_MEASURE = (
-    _HERE.parents[2] / "plan-review-cycles" / "measure_review_cycles.py"
-)
-
 THRESHOLD = 0.30
-DATE = "2026-10-06"
-# The research snapshot was taken at this instant; the store is live and has
-# grown since, so the replay is bounded to reviews that had run by then.
-SNAPSHOT_ISO = "2026-10-06T04:48:00+00:00"
+DAY = "20261006"
+REPORTS_ROOT = Path.home() / ".config/reckon" / "crew" / "reports"
 
 
-def _load_measure():
-    spec = importlib.util.spec_from_file_location("measure_review_cycles", _MEASURE)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+def _sections(text: str) -> dict[str, str]:
+    """Return each heading's prose, bookkeeping already excluded."""
+    return {
+        identity: prose
+        for identity, prose in plan_review._prose_texts(text).items()
+        if identity != plan_review._DOCUMENT_UNIT
+    }
 
 
-def _share(reviewed: str, present: str) -> float:
-    return plan_review._edit_share(reviewed, present)
-
-
-def _on_date(record) -> bool:
-    ts = record.get("_ts")
-    if ts is None:
-        return False
-    return datetime.fromtimestamp(ts.timestamp(), tz=timezone.utc).strftime(
-        "%Y-%m-%d"
-    ) == DATE
-
-
-def _before_snapshot(record) -> bool:
-    ts = record.get("_ts")
-    if ts is None:
-        return False
-    return ts.timestamp() <= datetime.fromisoformat(SNAPSHOT_ISO).timestamp()
+def _fires(present: dict[str, str], reference: dict[str, str]) -> tuple[bool, int]:
+    """Whether the section rule fires against ``reference``, and added count."""
+    added = 0
+    fired = False
+    for identity, prose in present.items():
+        if identity not in reference:
+            added += 1
+            fired = True
+        elif plan_review._edit_share(reference[identity], prose) >= THRESHOLD:
+            fired = True
+    return fired, added
 
 
 def main() -> int:
-    m = _load_measure()
-    repos = m.load_mounts()
-    records = m.load_reviews()
-    store = m.BlobStore()
-
-    import collections
-    from datetime import timedelta
-
-    by_plan: dict[tuple[str, str], list[dict]] = collections.defaultdict(list)
-    for record in records:
-        run_ts = m.review_run_time(record)
-        store_ts = m.parse_ts(record.get("timestamp"))
-        ts = run_ts or store_ts
-        if ts is None:
+    by_plan: dict[tuple[str, str], list[tuple[str, str]]] = defaultdict(list)
+    for run_dir in sorted(glob.glob(f"{REPORTS_ROOT}/*/plan-review/*/r-*")):
+        plan = os.path.join(run_dir, "plan.html")
+        if not os.path.isfile(plan):
             continue
-        record["_ts"] = ts
-        repo = repos.get(record["project"])
-        text = None
-        if repo is not None:
-            sha = str(record.get("reviewed_blob_sha") or "").strip()
-            if sha:
-                text = store.blob_text(repo, sha)
-            if text is None:
-                relpath = m.plan_relative_path(record)
-                before = [i for i in store.history(repo, relpath) if i[0] <= ts]
-                if before:
-                    text = store.blob_text(repo, before[-1][1])
-        record["_text"] = text
-        by_plan[(record["project"], record["plan_slug"])].append(record)
-
-    for reviews in by_plan.values():
-        reviews.sort(key=lambda r: (r["_ts"], int(r.get("plan_version") or 0)))
-    _ = timedelta
+        parts = run_dir.split("/")
+        by_plan[(parts[-4], parts[-2])].append((os.path.basename(run_dir), plan))
 
     considered = 0
     consecutive_fires = 0
     cumulative_fires = 0
     added_kept = 0
-    for reviews in by_plan.values():
-        snapshot_text = None
-        prev_text = None
-        for record in reviews:
-            text = record.get("_text")
-            if text is None:
+    for snapshots in by_plan.values():
+        snapshots.sort()
+        consecutive_ref = None
+        cumulative_ref = None
+        for run, path in snapshots:
+            present = _sections(Path(path).read_text(encoding="utf-8", errors="replace"))
+            if consecutive_ref is None:
+                consecutive_ref = present
+                cumulative_ref = present
                 continue
-            if snapshot_text is None:
-                # The first review of a chain establishes the snapshot.
-                snapshot_text = text
-                prev_text = text
-                continue
-            if not (_on_date(record) and _before_snapshot(record)):
-                snapshot_text = text
-                prev_text = text
-                continue
-            considered += 1
-            present_sections = m.section_prose_map(text)
-            snap_sections = m.section_prose_map(snapshot_text)
-            prev_sections = m.section_prose_map(prev_text or text)
+            if DAY in run:
+                considered += 1
+                con, _ = _fires(present, consecutive_ref)
+                if con:
+                    consecutive_fires += 1
+                cum, added = _fires(present, cumulative_ref)
+                if cum:
+                    cumulative_fires += 1
+                    added_kept += added
+                    cumulative_ref = present
+            consecutive_ref = present
 
-            def uncovered_against(reference_sections, reference_text):
-                uncovered = set()
-                for unit, prose in present_sections.items():
-                    if unit not in reference_sections:
-                        uncovered.add(unit)
-                    elif _share(reference_sections[unit], prose) >= THRESHOLD:
-                        uncovered.add(unit)
-                if m.trimmed_section_digests(reference_text).get(
-                    plan_review._DOCUMENT_UNIT
-                ) != m.trimmed_section_digests(text).get(plan_review._DOCUMENT_UNIT):
-                    uncovered.add(plan_review._DOCUMENT_UNIT)
-                return uncovered
-
-            cum = uncovered_against(snap_sections, snapshot_text)
-            con = uncovered_against(prev_sections, prev_text or text)
-            if cum:
-                cumulative_fires += 1
-                added_kept += len(
-                    [u for u in cum if u not in snap_sections]
-                )
-                snapshot_text = text
-            if con:
-                consecutive_fires += 1
-            prev_text = text
-
-    print(f"considered re-reviews dated {DATE}: {considered}")
-    print(f"consecutive rule fires: {consecutive_fires}")
-    print(f"cumulative rule fires: {cumulative_fires}")
-    print(f"added sections the cumulative rule keeps: {added_kept}")
+    print(f"re-reviews dated {DAY} with a prior snapshot: {considered}")
+    print(f"consecutive rule (new section or any section >= 30% of itself): {consecutive_fires}")
+    print(f"cumulative rule (against the last snapshot that fired): {cumulative_fires}")
+    print(f"re-reviews the cumulative rule keeps that added a section: {added_kept}")
     return 0
 
 

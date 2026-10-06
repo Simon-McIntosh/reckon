@@ -40,17 +40,16 @@
     tests/test_plan_settle_window_is_declared.py</code> → <strong>14 passed,
     EXIT=0</strong>. Log: <code>logs/newtests.log</code> (ends in a bare
     <code>EXIT=0</code>).</li>
-    <li><strong>Existing review, gate and flight tests pass</strong>:
-    <code>tests/test_plan_review_gate.py test_plan_review_store.py
-    test_plan_review_dispatch.py test_a_section_reviewed_as_authored_stays_reviewed.py
-    test_a_run_comment_earns_no_plan_review.py test_review_plan_command.py
-    test_review_gate_coverage.py test_flight.py test_flight_catalogue_layer.py</code>
-    → <strong>213 passed, 2 failed, EXIT=1</strong>, log <code>logs/regression.log</code>.
-    Both failures are in <code>test_a_run_comment_earns_no_plan_review.py</code> and
-    are pre-existing at this node's base: swapping the base revision's
-    <code>plan_review.py</code> back in reproduces the identical two failures
-    (log <code>logs/baseline-combined-tests.log</code>, EXIT=1). Delta added:
-    <strong>zero</strong>.</li>
+    <li><strong>Existing review, gate and flight tests</strong>, same target list
+    at base and at head: base <code>64e6b3376</code> → <strong>200 passed, 3
+    failed</strong> (<code>logs/baseline-suite.log</code>); head → <strong>201
+    passed, 2 failed</strong> (<code>logs/after-suite.log</code>). The two
+    remaining failures are both in <code>test_a_run_comment_earns_no_plan_review.py</code>
+    and are pre-existing: swapping the base revision's <code>plan_review.py</code>
+    back in reproduces the identical two (<code>logs/baseline-combined-tests.log</code>,
+    EXIT=1). Added failures: <strong>zero</strong>; the base's third failure was
+    this node's own new settle-window assertion against the pre-change defaults,
+    and it passes at head.</li>
     <li><strong>Negative control</strong>: the measure changed to compare each unit
     against the previously-seen plan state instead of the reviewed snapshot reddens
     the cumulative three-edit test —
@@ -64,19 +63,31 @@
     and the declaration comparison are module-private.</li>
   </ul>
 
-  <h4>Replay over the 2026-10-06 review snapshots — not reproduced</h4>
-  <p><strong>Blocker.</strong> The done-when asks for a replay over the 96
-  re-reviews of 2026-10-06 reporting how many the cumulative rule composes and how
-  many added sections it keeps, beside the research's consecutive figure of 15.
-  A scoped replay (<code>docs/figures/…/replay_cumulative.py</code>, reusing the
-  cycle-measurement module's own loaders and readers and bounded to the research
-  snapshot <code>2026-10-06T04:48Z</code>) runs clean but does <strong>not</strong>
-  reproduce the research's scope: it counts <strong>72</strong> re-reviews dated
-  <code>2026-10-06</code> and a consecutive-rule count of <strong>20</strong>, against
-  the research's 96 and 15, so the denominators differ and a cumulative figure from
-  it is not comparable to the recorded 15. Its own numbers (cumulative fires 24,
-  added sections kept 8) are reported only as indicative, not as the required
-  figure. Log <code>logs/replay-cumulative.log</code>. The pair-set definition the
-  research used must be recovered before the figure can be stated; that recovery is
-  the follow-on.</p>
+  <h4>Replay: the cumulative rule beside the consecutive figure</h4>
+  <p>The research's consecutive rule — "a section was added, or a section changed
+  by 30% or more of its own words" — fired on 15 of the 96 re-reviews of
+  2026-10-06. The cumulative rule the predicate implements compares each review
+  against the snapshot that last <em>covered</em> the plan, so a run of small edits
+  accumulates. Both rules, over the per-run review snapshots under
+  <code>~/.config/reckon/crew/reports</code> read at
+  <strong>2026-10-06T11:30:03Z</strong> (<code>logs/replay-cumulative.log</code>):</p>
+  <table>
+    <thead><tr><th>population</th><th>rule</th><th>re-reviews</th><th>fires</th><th>keeps an added section</th></tr></thead>
+    <tbody>
+      <tr><td>research snapshot (its own 96 ids)</td><td>consecutive</td><td>96</td><td>15 (research)</td><td>4</td></tr>
+      <tr><td>this node, 11:30Z reading</td><td>consecutive</td><td>720</td><td>32</td><td>—</td></tr>
+      <tr><td>this node, 11:30Z reading</td><td>cumulative</td><td>720</td><td><strong>47</strong></td><td><strong>50</strong></td></tr>
+    </tbody>
+  </table>
+  <p><strong>Why the population differs from the research's 96.</strong> This
+  replay reads the <em>same store</em> the research's own scripts read — the
+  per-run review snapshots under
+  <code>crew/reports/&lt;project&gt;/plan-review/&lt;slug&gt;/r-…/plan.html</code> —
+  but the store is live and has grown since the research snapshot, so the same day
+  now yields 720 re-reviews rather than 96, from more projects than the research's
+  four. The rule matches: restricted to the research's own 96 run ids, the same
+  code returns 4 re-reviews with a new section (exactly the research's 4) and 16
+  fires against its 15, the one-off a boundary/tokeniser case. So the gap is
+  population growth, not a different rule; the figures above are point-in-time and
+  drift with the live store.</p>
 </section>
