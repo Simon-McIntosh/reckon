@@ -12,14 +12,15 @@ a separate script from ``import_runs_into_store.py`` rather than one more comman
 on the surface: that one copies the committed ledger into the shadow run store,
 this one moves staged reviews into the repository.
 
-Dry run by default; ``--write`` acts. Every file whose body is a plan review
-(a record naming a plan) or a run review (a record naming the run it reviewed and
-the run that produced it) is committed through
+Dry run by default; ``--write`` acts. Every file that carries review material
+and has a subject — a plan or a run the body names, or, when the body names
+neither, the run the filename names under the store's
+``<reviewed-run-id>[.at-<head>].json`` grammar — is committed through
 :func:`review.store_committed_review`, so its dispatch and completion times are
 the run's own, resolved from its review run id, rather than the moment the file
-was stored. Two host files that resolve the same committed path — the primary
-path and its ``.at-<blob>`` sibling name one review run — import once; a record
-already committed is left untouched, so a second immediate pass imports zero.
+was stored. Two host files that resolve the same committed path import once; a
+record already committed is left untouched, so a second immediate pass imports
+zero.
 
 Everything else under the store — a scratch directory, a cache, a probe file, a
 ``.keep`` — is listed with its path, size and modification time and, under
@@ -32,6 +33,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import sys
 from collections.abc import Mapping
@@ -142,28 +144,71 @@ def _carries_review_evidence(body: Mapping[str, Any]) -> bool:
     )
 
 
-def _review_identity(raw: bytes, body: Any) -> tuple[str, str, bool] | None:
-    """Return ``(kind, review_run_id, derived)`` for a review body, else ``None``.
+# The staging store names a run review by the run it reviewed:
+# ``<reviewed-run-id>.json``, with a ``.at-<head>`` sibling when the reviewed
+# head is named. A record whose body omits the reviewed run still has it in the
+# filename, so the store's own grammar recovers the subject the body dropped.
+_AT_SIBLING = re.compile(r"^(?P<id>.+)\.at-[0-9a-f]{7,40}$")
 
-    A file is a review record when its body names a plan or a run it reviewed and
-    carries review material; a review run id is not required. A body with no
-    explicit review run id is filed under a derived, stable legacy id.
+
+def _filename_run_subject(name: str | None) -> str | None:
+    """Return the reviewed run id a staging filename names, or ``None``.
+
+    A run review is staged as ``<reviewed-run-id>.json`` or its
+    ``<reviewed-run-id>.at-<head>.json`` sibling, so the stem before the
+    optional ``.at-<head>`` suffix is the reviewed run. A name that is not a
+    JSON file, or whose stem is empty, names nothing.
     """
-    if not isinstance(body, Mapping):
+    if not name or not name.endswith(".json"):
+        return None
+    stem = name[: -len(".json")]
+    match = _AT_SIBLING.match(stem)
+    if match:
+        stem = match.group("id")
+    return stem.strip() or None
+
+
+def _review_identity(
+    raw: bytes, body: Any, filename: str | None = None
+) -> tuple[str, str, str, bool] | None:
+    """Return ``(kind, subject, review_run_id, derived)`` for a review, else ``None``.
+
+    A file is a review record when it carries review material and has a subject:
+    a plan or a run its body names, or — when the body names neither — the run
+    the filename names under the store's ``<reviewed-run-id>[.at-<head>].json``
+    grammar. A review run id is not required; one that names none is filed under
+    a derived, stable legacy id.
+    """
+    if not isinstance(body, Mapping) or not _carries_review_evidence(body):
         return None
     kind = _subject_kind(body)
-    if kind is None or not _carries_review_evidence(body):
-        return None
+    if kind == "plan":
+        subject = str(body["plan_slug"]).strip()
+    elif kind == "run":
+        subject = str(body["reviewed_run_id"]).strip()
+    else:
+        # The body named no usable subject; a body that named one it could not
+        # use (a plan with no version) is refused rather than misread as a run.
+        if (
+            str(body.get("plan_slug") or "").strip()
+            or str(body.get("reviewed_run_id") or "").strip()
+        ):
+            return None
+        subject = _filename_run_subject(filename)
+        if not subject:
+            return None
+        kind = "run"
     explicit = _explicit_review_run_id(body)
     if explicit:
-        return kind, explicit, False
-    return kind, _derived_review_run_id(raw), True
+        return kind, subject, explicit, False
+    return kind, subject, _derived_review_run_id(raw), True
 
 
 def _committed_path(
     project: str,
     kind: str,
     body: Mapping[str, Any],
+    subject: str,
     review_run_id: str,
     committed_root: Path,
 ) -> Path:
@@ -171,21 +216,22 @@ def _committed_path(
 
     The path comes from the two store owners rather than being spelled again
     here, so the importer and the writer that lands the record agree on where it
-    goes by construction.
+    goes by construction. The subject is the plan slug or the reviewed run id,
+    which may come from the body or from the staging filename.
     """
     if kind == "plan":
         from reckon.crew import plan_review
 
         return plan_review.plan_review_path(
             project,
-            str(body["plan_slug"]).strip(),
+            subject,
             int(body["plan_version"]),
             committed_root=committed_root,
             review_run_id=review_run_id,
         )
     return review_store.review_path(
         project,
-        str(body["reviewed_run_id"]).strip(),
+        subject,
         committed_root=committed_root,
         review_run_id=review_run_id,
     )
@@ -218,12 +264,13 @@ def _iso_mtime(path: Path) -> str:
 def _plan(project: str, store_root: Path, committed_root: Path) -> dict[str, Any]:
     """Sort the store's entries into recognised records and non-records.
 
-    Only the store's top-level entries are considered: a record is a file whose
-    body is a review, and a directory is one non-record however many files it
+    Only the store's top-level entries are considered: a record is a file that
+    carries review material and names a subject (in its body or, for a run
+    review, in its filename), and a directory is one non-record however many files it
     holds, because it is the directory that is quarantined. Two entries that
     resolve one committed path are duplicates and the first sorted path wins.
     """
-    records: list[tuple[Path, Mapping[str, Any], Path, str, bool, str]] = []
+    records: list[tuple[Path, Mapping[str, Any], Path, str, str, bool, str]] = []
     non_records: list[Path] = []
     duplicates: list[tuple[Path, Path]] = []
     seen: dict[Path, Path] = {}
@@ -236,17 +283,19 @@ def _plan(project: str, store_root: Path, committed_root: Path) -> dict[str, Any
             continue
         raw = _read_bytes(entry)
         body = _parse_json(raw)
-        identity = _review_identity(raw, body)
+        identity = _review_identity(raw, body, entry.name)
         if identity is None:
             non_records.append(entry)
             continue
-        kind, review_run_id, derived = identity
-        committed = _committed_path(project, kind, body, review_run_id, committed_root)
+        kind, subject, review_run_id, derived = identity
+        committed = _committed_path(
+            project, kind, body, subject, review_run_id, committed_root
+        )
         if committed in seen:
             duplicates.append((entry, seen[committed]))
             continue
         seen[committed] = entry
-        records.append((entry, body, committed, review_run_id, derived, kind))
+        records.append((entry, body, committed, subject, review_run_id, derived, kind))
     return {"records": records, "non_records": non_records, "duplicates": duplicates}
 
 
@@ -300,20 +349,26 @@ def _quarantine(
 def _commit(
     project: str,
     body: Mapping[str, Any],
+    kind: str,
+    subject: str,
     review_run_id: str,
     derived: bool,
     root: str | None,
 ) -> Path:
     """Commit one recognised record through the shared committed writer.
 
-    The committed writer keys the file by ``review_run_id``, so the identity this
-    import resolved is written in. A record that named no review run of its own
-    carries the derived legacy id and is marked ``review_run_id_source:
-    derived``, so a later reader knows the id was synthesised rather than read
-    from the record.
+    The committed writer keys the file by ``review_run_id`` and files a run
+    review under the reviewed run named in the body, so both the identity this
+    import resolved and — when the body omitted it and the staging filename
+    supplied it — the reviewed run are written in. A record that named no review
+    run of its own carries the derived legacy id and is marked
+    ``review_run_id_source: derived``, so a later reader knows the id was
+    synthesised rather than read from the record.
     """
     stored = dict(body)
     stored["review_run_id"] = review_run_id
+    if kind == "run":
+        stored["reviewed_run_id"] = subject
     if derived:
         stored["review_run_id_source"] = "derived"
     return review_store.store_committed_review(stored, project=project, root=root)
@@ -328,12 +383,12 @@ def _import_records(
     imported = 0
     already_present = 0
     refused: list[str] = []
-    for _src, body, committed, review_run_id, derived, _kind in plan["records"]:
+    for _src, body, committed, subject, review_run_id, derived, kind in plan["records"]:
         if committed.is_file():
             already_present += 1
             continue
         try:
-            _commit(project, body, review_run_id, derived, root)
+            _commit(project, body, kind, subject, review_run_id, derived, root)
         except (OSError, ValueError) as exc:
             refused.append(f"{committed.name}: {type(exc).__name__}: {exc}")
             continue

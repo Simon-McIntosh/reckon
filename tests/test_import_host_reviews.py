@@ -346,23 +346,103 @@ def test_recognition_needs_a_subject_and_rejects_a_bare_reference() -> None:
     assert module._review_identity(
         raw,
         {"review_run_id": "r-x", "plan_slug": "p", "plan_version": 1, "findings": []},
-    ) == ("plan", "r-x", False)
+    ) == ("plan", "p", "r-x", False)
     assert module._review_identity(
         raw, {"review_run_id": "r-x", "reviewed_run_id": "r-y", "scores": {}}
-    ) == ("run", "r-x", False)
+    ) == ("run", "r-y", "r-x", False)
     # The legacy review-run field is kept as the identity rather than derived.
     assert module._review_identity(
         raw, {"reviewer_run_id": "r-x", "reviewed_run_id": "r-y", "rubric": "design"}
-    ) == ("run", "r-x", False)
+    ) == ("run", "r-y", "r-x", False)
     # No review run id: recognised by subject and material, filed under the
     # stable derived id.
     assert module._review_identity(
         raw, {"reviewed_run_id": "r-y", "reviewed_head_sha": "c" * 40, "findings": []}
-    ) == ("run", derived, True)
+    ) == ("run", "r-y", derived, True)
 
     # A bare reference carries neither subject nor material and is not a record.
     assert module._review_identity(raw, {"reviewed_run_id": "r-y"}) is None
     assert module._review_identity(raw, {"hello": "world"}) is None
     assert module._review_identity(raw, ["not", "a", "mapping"]) is None
-    # A plan name with no version cannot resolve a committed path.
+    # A plan name with no version cannot resolve a committed path and is not
+    # misread as a run just because the filename looks like one.
     assert module._review_identity(raw, {"plan_slug": "p", "findings": []}) is None
+    assert (
+        module._review_identity(
+            raw,
+            {"plan_slug": "p", "findings": []},
+            "r-20260101T000000000000-a-run.json",
+        )
+        is None
+    )
+
+
+def test_recognition_takes_the_subject_from_a_filename_when_the_body_omits_it() -> None:
+    module = _load_script()
+    raw = b"run review bytes"
+    derived = "legacy-" + hashlib.sha256(raw).hexdigest()[:12]
+    # A review that carries findings but names neither a plan nor a reviewed run:
+    # the store named the reviewed run in the filename.
+    body = {"project": "demo-store", "findings": [], "reviewed_head_sha": "d" * 40}
+    assert module._review_identity(raw, body, "r-abc.json") == (
+        "run",
+        "r-abc",
+        derived,
+        True,
+    )
+    # The ``.at-<head>`` sibling names the same reviewed run.
+    assert module._review_identity(raw, body, f"r-abc.at-{'e' * 40}.json") == (
+        "run",
+        "r-abc",
+        derived,
+        True,
+    )
+    # An explicit review run id in the body is kept even when the subject comes
+    # from the filename.
+    assert module._review_identity(
+        raw, dict(body, review_run_id="r-review"), "r-abc.json"
+    ) == ("run", "r-abc", "r-review", False)
+    # Without a filename and without a body subject there is nothing to file it
+    # under; a name that is not a JSON file names nothing.
+    assert module._review_identity(raw, body) is None
+    assert module._review_identity(raw, body, "r-abc.txt") is None
+    assert module._review_identity(raw, body, ".json") is None
+    # The filename helper reads the run id out of both store spellings.
+    assert module._filename_run_subject("r-abc.json") == "r-abc"
+    assert module._filename_run_subject(f"r-abc.at-{'e' * 40}.json") == "r-abc"
+    assert module._filename_run_subject("notes.txt") is None
+
+
+def test_write_imports_a_filename_named_run_review(harness) -> None:
+    module = _load_script()
+    store = harness["store"]
+    repo = harness["repo"]
+    # A run review whose body names the reviewed run only in its filename: the
+    # store would quarantine it before the subject falls back to the name.
+    source = _write_record(
+        store,
+        "r-fn-run.json",
+        {
+            "project": PROJECT,
+            "status": "parsed",
+            "findings": [],
+            "call_sites": [],
+            "reviewed_head_sha": "f" * 40,
+        },
+    )
+    _run_record(repo, "r-fn-run")
+
+    code, out = _run_cli(module, ["--project", PROJECT, "--root", str(repo), "--write"])
+
+    assert code == 0
+    assert "imported: 1" in out
+    expected = "legacy-" + hashlib.sha256(source.read_bytes()).hexdigest()[:12]
+    committed = repo / "docs" / "state" / PROJECT / "reviews" / "run" / "r-fn-run"
+    stored = json.loads((committed / f"{expected}.json").read_text(encoding="utf-8"))
+    # The reviewed run recovered from the filename is written into the body so
+    # the committed file is filed and readable under the run it reviewed.
+    assert stored["reviewed_run_id"] == "r-fn-run"
+    assert stored["review_run_id"] == expected
+    assert stored["review_run_id_source"] == "derived"
+    # The staging file is a record, so it stays in place.
+    assert source.is_file()
