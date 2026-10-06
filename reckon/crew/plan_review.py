@@ -495,23 +495,35 @@ def _candidate_paths(
 ) -> list[Path]:
     """Return the plain and blob-keyed files a plan review could occupy.
 
-    A named version restricts the search to that version's files; an unnamed
-    version spans every version of the plan, so a caller asking "is this plan
-    reviewed at this fingerprint?" searches across versions rather than guessing
-    which one the stored review named.
+    A named version restricts the search to that version's staging files; an
+    unnamed version spans every version of the plan, so a caller asking "is this
+    plan reviewed at this fingerprint?" searches across versions rather than
+    guessing which one the stored review named.
+
+    The project's committed plan-review tree is searched beside the staging
+    root, so a review promoted out of staging is still found. A committed file
+    is keyed by the review run that produced it rather than by version or blob,
+    so it is enumerated by plan slug alone; the version filter is applied to the
+    record's own ``plan_version`` in :func:`read_plan_review`, where the record
+    content is in hand.
     """
-    root = _review_store.review_store_root(base_dir) / project
-    if not root.is_dir():
-        return []
-    if plan_version is not None:
-        patterns = [f"plan-{plan_slug}.v{int(plan_version)}.json"]
-        patterns.append(f"plan-{plan_slug}.v{int(plan_version)}.at-*.json")
-    else:
-        patterns = [f"plan-{plan_slug}.v*.json"]
     found: dict[str, Path] = {}
-    for pattern in patterns:
-        for path in root.glob(pattern):
-            found[str(path)] = path
+    root = _review_store.review_store_root(base_dir) / project
+    if root.is_dir():
+        if plan_version is not None:
+            patterns = [f"plan-{plan_slug}.v{int(plan_version)}.json"]
+            patterns.append(f"plan-{plan_slug}.v{int(plan_version)}.at-*.json")
+        else:
+            patterns = [f"plan-{plan_slug}.v*.json"]
+        for pattern in patterns:
+            for path in root.glob(pattern):
+                found[str(path)] = path
+    committed = _review_store.committed_review_root(project)
+    if committed is not None:
+        plan_dir = committed / _review_store.COMMITTED_PLAN_DIRNAME / plan_slug
+        if plan_dir.is_dir():
+            for path in sorted(plan_dir.glob("*.json")):
+                found[str(path)] = path
     return sorted(found.values())
 
 
@@ -824,6 +836,15 @@ def read_plan_review(
         record = _load(path)
         if record is None:
             continue
+        # A committed file is keyed by review run rather than by version, so a
+        # named version is enforced against the record's own ``plan_version``
+        # here; the staging filename already restricts a named version.
+        if (
+            plan_version is not None
+            and record.get("plan_version") is not None
+            and int(record.get("plan_version") or 0) != int(plan_version)
+        ):
+            continue
         if (
             wanted is not None
             and str(record.get("plan_fingerprint") or "") not in wanted
@@ -846,6 +867,31 @@ def _review_blob_matches(record: Mapping[str, Any], reviewed_blob_sha: str) -> b
     return bool(carried) and (carried.startswith(named) or named.startswith(carried))
 
 
+def _plan_review_identity(record: Mapping[str, Any]) -> str:
+    """Return the identity that marks one review present in both trees.
+
+    A review is the same record whether it is read from the staging store, where
+    it is keyed by plan version and blob, or from the committed tree, where it
+    is keyed by the review run that produced it. The review run id names it
+    across both trees, and the plan slug, version and reviewed blob distinguish
+    two reviews that share a run id — a hand-written store may reuse one — so a
+    listing counts a promoted review once rather than once per tree. A record
+    naming no review run cannot be known to be the same as another and returns
+    an empty identity, which the caller reads as "do not deduplicate".
+    """
+    run_id = str(record.get("review_run_id") or "").strip()
+    if not run_id:
+        return ""
+    return "|".join(
+        (
+            run_id,
+            str(record.get("plan_slug") or ""),
+            str(record.get("plan_version") or ""),
+            str(record.get("reviewed_blob_sha") or ""),
+        )
+    )
+
+
 def list_plan_reviews(
     project: str | None = None,
     *,
@@ -854,11 +900,19 @@ def list_plan_reviews(
     """Return every stored plan review, newest last.
 
     Code reviews share the store root with plan reviews; only files named
-    ``plan-<slug>.v<N>.json`` (and their ``.at-`` siblings) are plan reviews, so
-    a listing never mixes the two populations. ``project`` restricts the walk to
-    one project directory; omitted, every project under the root is read. Each
-    returned record carries its ``review_path`` so a caller can rewrite the very
-    file it read.
+    ``plan-<slug>.v<N>.json`` (and their ``.at-`` siblings) are staging plan
+    reviews, so a listing never mixes the two populations. The project's
+    committed plan-review tree is listed beside the staging root, so a review
+    promoted out of staging is still found. ``project`` restricts the walk to
+    one project directory; omitted, every project directory under the root is
+    read. Each returned record carries its ``review_path`` so a caller can
+    rewrite the very file it read.
+
+    A record present in both trees is listed once, as the committed copy: the
+    committed tree is read first and the staging enumeration skips a review run
+    id the committed tree already supplied. Records are identified by the review
+    run that produced them, the one key the two trees share — a staging file is
+    named for the plan version and blob, a committed file for the review run.
     """
     root = _review_store.review_store_root(base_dir)
     if project is not None:
@@ -868,16 +922,38 @@ def list_plan_reviews(
     else:
         directories = []
     records: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def _collect(path: Path, default_project: str) -> None:
+        record = _load(path)
+        if record is None:
+            return
+        identity = _plan_review_identity(record)
+        if identity and identity in seen:
+            return
+        if identity:
+            seen.add(identity)
+        record.setdefault("project", default_project)
+        record["review_path"] = str(path)
+        records.append(record)
+
+    for directory in directories:
+        committed = _review_store.committed_review_root(directory.name)
+        if committed is None:
+            continue
+        plan_root = committed / _review_store.COMMITTED_PLAN_DIRNAME
+        if not plan_root.is_dir():
+            continue
+        for slug_dir in sorted(plan_root.iterdir()):
+            if not slug_dir.is_dir():
+                continue
+            for path in sorted(slug_dir.glob("*.json")):
+                _collect(path, directory.name)
     for directory in directories:
         if not directory.is_dir():
             continue
         for path in sorted(directory.glob(PLAN_REVIEW_FILE_GLOB)):
-            record = _load(path)
-            if record is None:
-                continue
-            record.setdefault("project", directory.name)
-            record["review_path"] = str(path)
-            records.append(record)
+            _collect(path, directory.name)
     records.sort(
         key=lambda item: (str(item.get("timestamp") or ""), item["review_path"])
     )
