@@ -1570,16 +1570,146 @@ def audit_fragment_ids(
     )
 
 
-def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
+# ── Review references (``review:<project>/<review-id>``) ────────────────────
+#
+# A plan comment, a followup or an evidence record may cite a stored review by
+# the id of the review run that produced it. The record is committed in the
+# project's own repository beside the ledger, so the citation is resolved
+# against that committed tree rather than against the host staging store a
+# worker writes to: a citation is meant to survive a clone, and a reference
+# whose record no clone carries is a dangling claim a reader cannot follow.
+_REVIEW_REFERENCE = re.compile(
+    r"(?<![A-Za-z0-9_])review:"
+    r"(?P<project>[A-Za-z][A-Za-z0-9_-]*)/"
+    r"(?P<review_id>[A-Za-z0-9][A-Za-z0-9._-]*)"
+)
+# The body-bearing classes a citation is read from — a comment and a followup.
+# An evidence record's prose is the record itself rather than a widget body, so
+# its whole visible text is read when the document declares that type.
+_REVIEW_CITATION_CLASSES = ("r-comment-body", "r-fu-body", "r-fu-outcome")
+# The finding code a citation with no committed record raises.
+_REVIEW_REFERENCE_MISSING = "review-reference-missing"
+
+
+def _declared_doc_type(html_text: str) -> str:
+    soup = BeautifulSoup(html_text or "", "html.parser")
+    meta = soup.find("meta", attrs={"name": "reckon-type"})
+    return ((meta.get("content") if meta else "") or "plan").strip().lower()
+
+
+def _review_citation_texts(html_text: str, declared_type: str) -> list[str]:
+    """Return the text scopes a ``review:`` citation is read from."""
+
+    soup = BeautifulSoup(html_text or "", "html.parser")
+    texts = [
+        _prose_text(el)
+        for cls in _REVIEW_CITATION_CLASSES
+        for el in soup.select(f".{cls}")
+    ]
+    if declared_type == "evidence":
+        texts.append(soup.get_text(" ", strip=True))
+    return texts
+
+
+def checkout_root_for(path: Path) -> Path | None:
+    """Return the checkout root a document sits under, or ``None``.
+
+    A project's committed reviews tree lives at ``<checkout>/docs/state/...``,
+    so the root is the parent of the ``docs`` component the document is filed
+    beneath. A document outside a ``docs`` tree has no such root and resolves
+    through the project mount instead.
+    """
+    for parent in path.resolve().parents:
+        if parent.name == "docs":
+            return parent.parent
+    return None
+
+
+def _committed_review_present(committed_root: Path, review_id: str) -> bool:
+    """Whether the committed tree holds a record named for ``review_id``.
+
+    A run review is filed ``run/<reviewed-run-id>/<review-id>.json`` and a plan
+    review ``plan/<slug>/<review-id>.json``; both name the file for the review
+    run that produced it, so the id a reference carries matches a file name
+    under either subtree. ``review_id`` is ``[A-Za-z0-9._-]*`` from the
+    reference grammar, so it holds no path or glob metacharacter.
+    """
+
+    from reckon.crew.review import COMMITTED_PLAN_DIRNAME, COMMITTED_RUN_DIRNAME
+
+    if not committed_root.is_dir():
+        return False
+    target = f"{review_id}.json"
+    for subtree in (COMMITTED_RUN_DIRNAME, COMMITTED_PLAN_DIRNAME):
+        base = committed_root / subtree
+        if base.is_dir() and any(base.glob(f"*/{target}")):
+            return True
+    return False
+
+
+def review_reference_findings(
+    html_text: str, *, root: str | Path | None = None
+) -> list[Finding]:
+    """Report a ``review:<project>/<id>`` citation with no committed record.
+
+    The reference names the project whose committed tree holds the review and
+    the review run id that names its file. The tree is resolved from ``root`` (a
+    checkout or worktree) when one is named, and from the project's mount
+    otherwise. A reference that resolves to a committed record is silent — an
+    audit does not narrate every citation it could follow — and one that does
+    not is an error naming the reference, because a dangling citation is a claim
+    a reader cannot check. A reference is only looked up against the committed
+    tree; the audit neither writes nor reads the host staging store.
+    """
+
+    from reckon.crew.review import committed_review_root
+
+    declared_type = _declared_doc_type(html_text)
+    seen: set[tuple[str, str]] = set()
+    ordered: list[tuple[str, str]] = []
+    for text in _review_citation_texts(html_text, declared_type):
+        for match in _REVIEW_REFERENCE.finditer(text or ""):
+            identity = (match.group("project"), match.group("review_id"))
+            if identity not in seen:
+                seen.add(identity)
+                ordered.append(identity)
+
+    out: list[Finding] = []
+    for ref_project, review_id in ordered:
+        committed_root = committed_review_root(ref_project, root=root)
+        if committed_root is not None and _committed_review_present(
+            committed_root, review_id
+        ):
+            continue
+        out.append(
+            Finding(
+                "error",
+                _REVIEW_REFERENCE_MISSING,
+                f"review reference review:{ref_project}/{review_id} does not"
+                f" resolve to a committed review record under"
+                f" docs/state/{ref_project}/reviews/ — the cited review is not"
+                " in the project's committed tree",
+            )
+        )
+    return out
+
+
+def audit_file(
+    path: Path, *, project: str | None = None, root: str | Path | None = None
+) -> list[Finding]:
     from reckon.evidence import evidence_record_plan
 
     if not path.is_file():
         return [Finding("error", "io", f"cannot read {path}: file does not exist")]
+    resolved_root: str | Path | None = (
+        root if root is not None else checkout_root_for(path)
+    )
     record_plan = evidence_record_plan(path)
     if record_plan is None:
         text = _plan_html._read_plan_text(path)
         findings = audit_html(text, project=project)
         findings.extend(_duplicate_element_id_findings(text, [("the document", text)]))
+        findings.extend(review_reference_findings(text, root=resolved_root))
         findings.sort(key=lambda f: SEVERITIES.index(f.severity))
         return findings
     text, compose_error = _composed_record_text(path, record_plan, project)
@@ -1589,6 +1719,7 @@ def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
             text, _composed_record_sources(path, record_plan)
         )
     )
+    findings.extend(review_reference_findings(text, root=resolved_root))
     if compose_error is not None:
         findings.append(
             Finding(
@@ -2108,7 +2239,11 @@ def slug_collision_findings(
 
 
 def run(
-    paths: list[str], *, project: str | None = None, check_links: bool = False
+    paths: list[str],
+    *,
+    project: str | None = None,
+    check_links: bool = False,
+    root: str | Path | None = None,
 ) -> int:
     """Audit each path; print findings; return process exit code (0 = no errors)."""
     path_objs = [Path(raw).expanduser() for raw in paths]
@@ -2136,7 +2271,7 @@ def run(
 
     any_error = False
     for p in path_objs:
-        findings = audit_file(p, project=project)
+        findings = audit_file(p, project=project, root=root)
         # Merge in link and cross-type slug-collision findings for this path.
         findings = findings + link_findings.get(p, []) + collision_findings.get(p, [])
         # Re-sort worst-first.
