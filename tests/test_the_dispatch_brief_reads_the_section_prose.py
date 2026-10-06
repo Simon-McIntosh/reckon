@@ -210,15 +210,19 @@ def test_the_exempt_plan_list_holds_exactly_the_named_parser_divergences():
 
 
 def test_the_section_text_no_longer_reads_the_heading_span():
-    """The retired span read is gone: the reader is the section's one source.
+    """An authored section's text comes from the one reader, not a soup walk.
 
     ``_plan_section_text`` keeps its spelling resolution and the branch for an
-    identified non-heading element, so the only soup reads it retains are the id
-    lookup and that branch. It takes the section text from ``section_prose``, so
-    it carries no ``get_text`` call over the heading's own span.
+    identified non-heading element, so the only soup read it retains besides the
+    id lookup is that branch's ``identified.get_text``. A heading the reader
+    serves takes its text from ``section_prose``; a heading it does not serve
+    keeps its own extent's prose through ``_strip_tags``, which carries no
+    ``get_text`` call.
     """
     import inspect
 
     source = inspect.getsource(dispatch._plan_section_text)
     assert "section_prose(" in source
-    assert "slice(*heading.span)" not in source
+    assert "_strip_tags(html_text[slice(*heading.span)])" in source
+    without_branch = source.replace('identified.get_text(" ", strip=True)', "")
+    assert ".get_text(" not in without_branch
