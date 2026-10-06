@@ -175,6 +175,7 @@ reckon crew placement --ensure --session <session> --project <project>
 reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --reason <text>
 reckon crew repair-status --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
 reckon crew resume --run <id> --advice <text>    reckon crew resume-ready --project <project>
+reckon crew review-plan --project <project> --plan <slug> --session <session> --local
 reckon crew shadow    reckon crew stop    reckon crew unwatch --project <project>
 reckon crew verify-gate --project <project> --run <id> --checkout-path <path>
 reckon crew watch --project <project> --stall-window <duration>
