@@ -288,14 +288,21 @@ def test_marked_elements_keep_no_prose():
     ]
 
 
-def test_headingless_and_marked_sections_keep_no_prose():
+def test_a_headingless_landed_section_keeps_no_prose_and_a_marked_section_is_transparent():
+    """A landed card with no heading carries no authored section.
+
+    A section carrying the section marker is transparent instead: its interior
+    is that section's authored prose, so it is yielded rather than subtracted.
+    """
     markup = (
         '<body><section class="section-landed"><p>Landed.</p></section>'
         '<section id="a" data-reckon="section"><h2>Alpha</h2><p>Record.</p></section>'
         '<h2 id="b">Beta</h2><p>Authored.</p></body>'
     )
     slices = list(_plan_html.section_prose(markup))
-    assert " ".join(text for _, text in slices if text) == "Beta Authored."
+    assert (
+        " ".join(text for _, text in slices if text) == "Alpha Record. Beta Authored."
+    )
     assert "a" in plan_review._section_digests(markup)
 
 
