@@ -167,9 +167,7 @@ def _complete_run_review(head: str | None, *, review_run_id: str | None) -> dict
 
 
 def _store(record: dict, *, head: str | None = None) -> Path:
-    path = review_module.review_path(
-        PROJECT, SUBJECT, reviewed_head_sha=head
-    )
+    path = review_module.review_path(PROJECT, SUBJECT, reviewed_head_sha=head)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record), encoding="utf-8")
     return path
@@ -190,9 +188,7 @@ def test_a_review_without_its_run_id_lands_under_the_promoting_run_id(
     delivered_path = _store(_complete_run_review(None, review_run_id=None))
     # A round carrying its own id is committed beside it.
     _store(_complete_run_review(HEAD_TWO, review_run_id=OTHER_REVIEW), head=HEAD_TWO)
-    _review_pointer(
-        repository, tmp_path, run_id=REVIEW, declared=[str(delivered_path)]
-    )
+    _review_pointer(repository, tmp_path, run_id=REVIEW, declared=[str(delivered_path)])
 
     crew.complete(REVIEW, gate="passed", root=repository)
 
@@ -223,9 +219,7 @@ def test_an_unnameable_round_is_skipped_with_a_note_not_refused(
     unnameable_path = _store(
         _complete_run_review(HEAD_ONE, review_run_id=None), head=HEAD_ONE
     )
-    _review_pointer(
-        repository, tmp_path, run_id=REVIEW, declared=[str(delivered_path)]
-    )
+    _review_pointer(repository, tmp_path, run_id=REVIEW, declared=[str(delivered_path)])
 
     with caplog.at_level(logging.WARNING, logger="reckon.crew.promotion"):
         crew.complete(REVIEW, gate="passed", root=repository)
