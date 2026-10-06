@@ -484,7 +484,10 @@ def test_an_attaching_follower_reports_its_fleet_as_transitions(home) -> None:
     silence this surface exists to remove. The fix is that a follower carries no
     state filter, so the baseline reports every live run as a transition. It is
     not a second stream of follower status: a reader wants worker transitions
-    and the fleet posture, and nothing about the follower itself.
+    and the fleet posture, and nothing about the follower itself. A run's
+    arrival in dispatched is held for its window and printed late when the run
+    has not moved, so the fleet is reported whole without a launch repeating
+    itself where it does move.
     """
     _write_pointer(home, "r-one", "one-node", session="mine", phase="starting")
     _write_pointer(home, "r-two", "two-node", session="mine", phase="working")
@@ -495,9 +498,13 @@ def test_an_attaching_follower_reports_its_fleet_as_transitions(home) -> None:
             "proj", session="mine", until=lambda received: len(received) >= 2
         )
 
+    # A run already moved off dispatched reports at once; a run still sitting
+    # in dispatched has its arrival held for the window, because the launch
+    # that has not moved may yet collapse into its first transition, and only
+    # prints late — here on the stop that drains the hold — if it never moves.
     assert [(e["node"], e["to_state"]) for e in events] == [
-        ("one-node", "dispatched"),
         ("two-node", "working"),
+        ("one-node", "dispatched"),
     ]
     assert all(e.get("event") in {"baseline", "transition"} for e in events), (
         "the follower's own lifecycle is not fleet state and does not belong here"
