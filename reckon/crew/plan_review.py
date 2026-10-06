@@ -50,14 +50,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
-from html.parser import HTMLParser
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
 from reckon import _plan_html
-from reckon._plan_html import LANDED_SECTION_CLASS, landed_section_ids, machinery_kind
+from reckon._plan_html import landed_section_ids
 from reckon._store import write_json_atomically
 from reckon.crew import review as _review_store
 
@@ -109,10 +110,8 @@ PLAN_DERIVED_SCALARS: tuple[str, ...] = (
     "compatibility_warnings",
 )
 
-# A review is taken under one of two rubrics: the section 2 rubber duck of a
-# plan's authored content, and the section 3 prior-art-and-depth review the
-# first implementation dispatch of a plan additionally requires. Their names
-# and item sets are owned by reckon.crew.review, re-exported above.
+# Content and design reviews share their rubric vocabulary with the report
+# parser in reckon.crew.review, which owns the names and item sets.
 
 # ── The promotion-comment exclusion ─────────────────────────────────────────
 # A promotion appends one comment per promoted run to the section the run
@@ -143,138 +142,46 @@ RESPONSE_ACTIONS: tuple[str, ...] = ("acted", "declined")
 # A finding type declined across this many distinct plans surfaces to the lead.
 RECURRENCE_THRESHOLD = 3
 
-# Tags whose content is never authored prose, and the void elements that carry
-# no text and would otherwise leave an unbalanced protected-stack behind.
-_PROSE_SKIP_TAGS = frozenset({"script", "style", "head"})
-_VOID_TAGS = frozenset(
-    {
-        "area",
-        "base",
-        "br",
-        "col",
-        "embed",
-        "hr",
-        "img",
-        "input",
-        "link",
-        "meta",
-        "param",
-        "source",
-        "track",
-        "wbr",
-    }
-)
+_DOCUMENT_UNIT = "_document"
 
 
-class _AuthoredProseParser(HTMLParser):
-    """Collect a plan document's authored prose.
-
-    The parsed state carries no section prose: :func:`reckon._plan_html.read_state`
-    reads the metas, the typed section records and the reckon-owned blocks, and
-    the paragraphs a reader sees under each heading are never part of it. A
-    fingerprint over state alone would therefore not move when a plan's prose is
-    rewritten, leaving the one edit a review exists to catch invisible.
-
-    So the digest also covers the document's authored text — what lies in the
-    body outside every element carrying ``data-reckon="..."``, which are the
-    blocks :func:`reckon._plan_html.write_state` regenerates from state and which
-    the state component already covers canonically. The head is skipped, so a
-    metadata-only write cannot reach the prose through ``<title>`` or a meta.
-    """
-
-    def __init__(self, *, skip_landed_cards: bool = False) -> None:
-        super().__init__()
-        self._stack: list[bool] = []
-        self._in_body = False
-        self._chunks: list[str] = []
-        # When set, the text inside a landed card is dropped as machinery, but
-        # the heading it carries is kept: a collapse moves the heading into the
-        # card's header, and the heading is authored content that must read the
-        # same before and after the collapse.
-        self._skip_landed_cards = skip_landed_cards
-        self._card_depth = 0
-        self._heading_depth = 0
-        self._heading_tag = ""
-        # A landed card wraps the section's own ``data-reckon="section"`` record,
-        # which is itself a ``<section>``. A bare depth counter would let that
-        # inner record's closing tag close the card, so each open section
-        # remembers whether it is the card and only its own tag decrements.
-        self._section_is_card: list[bool] = []
-
-    def _protected(self) -> bool:
-        return any(self._stack)
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag in _VOID_TAGS:
-            return
-        if tag == "body":
-            self._in_body = True
-        carries_reckon = machinery_kind(attrs) is not None
-        if self._skip_landed_cards:
-            if tag == "section":
-                classes = (_attr_value(attrs, "class") or "").split()
-                is_card = LANDED_SECTION_CLASS in classes
-                self._section_is_card.append(is_card)
-                if is_card:
-                    self._card_depth += 1
-            elif tag == "h2":
-                self._heading_tag = tag
-                self._heading_depth += 1
-        self._stack.append(
-            self._protected() or carries_reckon or tag in _PROSE_SKIP_TAGS
+def _prose_slices(document: str, *, skip_landed_cards: bool = True):
+    """Yield identity and raw prose slices in document order from shared spans."""
+    headings = [
+        heading
+        for heading in _plan_html.plan_headings(document)
+        if heading.level == 2 and heading.identity and not heading.machinery
+    ]
+    protected = list(
+        _plan_html.structured_section_spans(
+            document,
+            every_marked_element=True,
+            skip_landed_cards=skip_landed_cards,
         )
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag in _VOID_TAGS:
-            return
-        if self._skip_landed_cards:
-            if tag == self._heading_tag and self._heading_depth:
-                self._heading_depth -= 1
-            elif tag == "section" and self._section_is_card:
-                if self._section_is_card.pop() and self._card_depth:
-                    self._card_depth -= 1
-        if self._stack:
-            self._stack.pop()
-
-    def handle_data(self, data: str) -> None:
-        if not self._in_body or self._protected():
-            return
-        if self._skip_landed_cards and self._card_depth and not self._heading_depth:
-            return
-        self._chunks.append(data)
-
-    def prose(self) -> str:
-        """Return the collected prose, whitespace-normalised.
-
-        Chunks are separated before the whitespace is collapsed, so a boundary
-        the store moves — a collapse joins a landed card directly to the next
-        heading with no whitespace between them, where the authored document had
-        a newline — reads identically either side. Without the separator the
-        two would concatenate and the machinery write would move the digest.
-        """
-        return " ".join(" ".join(self._chunks).split())
-
-
-def _attr_value(attrs: list[tuple[str, str | None]], name: str) -> str | None:
-    """The value of one attribute in an :class:`HTMLParser` attribute list."""
-    for attr_name, value in attrs:
-        if attr_name == name:
-            return value
-    return None
-
-
-def _authored_prose(html: str, *, skip_landed_cards: bool = False) -> str:
-    """Return the collected authored prose of a plan document.
-
-    With ``skip_landed_cards`` set, a collapsed section's landed card is treated
-    as machinery: its badge, summary and evidence link are dropped, while the
-    section heading it carries is kept. The plain form digests the whole body
-    including cards, and is what the legacy fingerprint uses.
-    """
-    parser = _AuthoredProseParser(skip_landed_cards=skip_landed_cards)
-    parser.feed(html)
-    parser.close()
-    return parser.prose()
+    )
+    body = re.search(r"<body\b[^>]*>", document, re.IGNORECASE)
+    start = body.end() if body else 0
+    closing = re.search(r"</body\s*>", document[start:], re.IGNORECASE)
+    end = start + closing.start() if closing else len(document)
+    cuts = {start, end}
+    for left, right in protected + [heading.span for heading in headings]:
+        cuts.update((max(start, min(end, left)), max(start, min(end, right))))
+    points = sorted(cuts)
+    for left, right in pairwise(points):
+        identity = next(
+            (
+                heading.identity
+                for heading in headings
+                if heading.span[0] <= left and right <= heading.span[1]
+            ),
+            _DOCUMENT_UNIT,
+        )
+        raw = (
+            ""
+            if any(a <= left and right <= b for a, b in protected)
+            else document[left:right]
+        )
+        yield identity, raw
 
 
 def _as_state(plan: Mapping[str, Any] | str | Path) -> Mapping[str, Any]:
@@ -371,67 +278,45 @@ def _without_section_declarations(state: Mapping[str, Any]) -> Mapping[str, Any]
     return cleaned
 
 
-def plan_fingerprint(
-    plan: Mapping[str, Any] | str | Path, *, legacy: bool = False
-) -> str:
-    """Return the content fingerprint that joins a review to the plan it read.
-
-    Two components are digested. The parsed state has the excluded keys of
-    :data:`PLAN_METADATA_SCALARS`, the derived keys of
-    :data:`PLAN_DERIVED_SCALARS`, the per-section lifecycle declarations of
-    :func:`_without_section_declarations` and the run comments of
-    :data:`RUN_COMMENT_PREFIX` removed, and the remainder canonicalised with
-    sorted keys. The document's authored prose — the body text outside every
-    ``data-reckon`` block, which the store regenerates from state — is folded in
-    beside it, because the parsed state carries no section prose and a
-    fingerprint over state alone would not move when a plan's prose is
-    rewritten.
-
-    A landing collapse is a machinery write, not an authored one: it replaces a
-    section's body with a landed card (recognised by
-    :func:`reckon._plan_html.landed_section_ids`) and sets the section's declaration
-    to ``done``. Neither is authored design, so neither may move the digest — the
-    card's interiors are dropped while the heading it carries is kept, and the
-    section declarations are normalised out. A section that is declared ``done``
-    but never collapsed keeps its authored prose, so an edit to it still moves
-    the fingerprint, which is the edit a review exists to catch.
-
-    A caller passing a mapping passes a state and nothing more, so the digest
-    covers state alone; a path or the document text gives the full fingerprint.
-    With the excluded keys normalised out, an authored edit changes the digest
-    and a machinery write does not. The result is a hex sha256 string.
-
-    ``legacy`` selects the definition this function carried before the landing
-    collapse was excluded, so a review stored under it can still be recognised
-    as current without a re-review. It is the only caller that keeps card
-    interiors and section declarations in the digest.
-    """
-    if not isinstance(plan, (Mapping, str, Path)):
-        raise TypeError(
-            f"plan_fingerprint expects a mapping, path or html, got {type(plan)!r}"
-        )
-    excluded = frozenset(PLAN_METADATA_SCALARS) | frozenset(PLAN_DERIVED_SCALARS)
-    digest_state = _without_run_comments(_as_state(plan))
-    state: Mapping[str, Any] = {
-        str(key): value for key, value in digest_state.items() if key not in excluded
-    }
-    document = _as_document(plan)
-    if legacy:
-        payload: dict[str, Any] = {"state": state}
-        if document is not None:
-            payload["prose"] = _authored_prose(document)
-    else:
-        payload = {"state": _without_section_declarations(state)}
-        if document is not None:
-            # The exported predicate is the one definition of "this section's
-            # extent is a landed card". It decides whether the prose walk must
-            # drop card interiors at all, so a document with no landing is
-            # digested exactly as before the collapse existed.
-            payload["prose"] = _authored_prose(
-                document, skip_landed_cards=bool(landed_section_ids(document))
-            )
+def _digest(payload: Any) -> str:
     blob = json.dumps(payload, sort_keys=True, default=str, separators=(",", ":"))
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def _digest_state(plan, *, keep_declarations=False):
+    excluded = frozenset(PLAN_METADATA_SCALARS) | frozenset(PLAN_DERIVED_SCALARS)
+    state = {
+        str(key): value
+        for key, value in _without_run_comments(_as_state(plan)).items()
+        if key not in excluded
+    }
+    return state if keep_declarations else _without_section_declarations(state)
+
+
+def _section_digests(plan: Mapping[str, Any] | str | Path) -> dict[str, str]:
+    """Digest authored sections and the remaining document independently."""
+    document = _as_document(plan)
+    buckets: dict[str, list[str]] = {_DOCUMENT_UNIT: []}
+    if document is not None:
+        for identity, raw in _prose_slices(document):
+            buckets.setdefault(identity, []).append(_plan_html.strip_tags(raw))
+    payloads = {
+        identity: {"prose": " ".join(" ".join(parts).split())}
+        for identity, parts in buckets.items()
+    }
+    payloads[_DOCUMENT_UNIT]["state"] = _digest_state(plan)
+    return {identity: _digest(payload) for identity, payload in payloads.items()}
+
+
+def plan_fingerprint(plan: Mapping[str, Any] | str | Path) -> str:
+    """Return the identity of the sorted authored-unit digest mapping.
+
+    Section digests let a review continue covering outstanding authored work
+    after another section lands. Metadata and lifecycle declarations are
+    normalised out; decisions, followups and authored comments belong to the
+    document unit alongside the remaining parsed state.
+    """
+    return _digest(_section_digests(plan))
 
 
 # The store's plan-file grammar: a plan review is stored at
@@ -601,13 +486,72 @@ def _wanted_fingerprints(value: str | Iterable[str] | None) -> frozenset[str] | 
     return frozenset(str(item) for item in value)
 
 
-def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> frozenset[str]:
-    """The current and legacy digests of one snapshot of plan content."""
+def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> tuple[str, str, str]:
+    """Section-set, pre-collapse and whole-document digests of one snapshot."""
     document = _as_document(plan)
     content = document if document is not None else plan
-    return frozenset(
-        {plan_fingerprint(content), plan_fingerprint(content, legacy=True)}
-    )
+    forms = [plan_fingerprint(content)]
+    for keep_declarations in (True, False):
+        payload = {"state": _digest_state(content, keep_declarations=keep_declarations)}
+        if document is not None:
+            payload["prose"] = " ".join(
+                prose
+                for _, raw in _prose_slices(
+                    document,
+                    skip_landed_cards=not keep_declarations
+                    and bool(landed_section_ids(document)),
+                )
+                if (prose := _plan_html.strip_tags(raw))
+            )
+        forms.append(_digest(payload))
+    return tuple(forms)
+
+
+def _review_coverage(
+    project: str,
+    plan_slug: str,
+    *,
+    plan: Mapping[str, Any] | str | Path,
+    base_dir: str | Path | None = None,
+) -> tuple[list[dict[str, Any]], set[str]]:
+    """Return contributing reviews and uncovered outstanding authored units."""
+    from reckon.roadmap import implementable_sections
+
+    document = _as_document(plan)
+    content = document if document is not None else plan
+    records = [
+        record
+        for record in list_plan_reviews(project, base_dir=base_dir)
+        if record.get("plan_slug") == plan_slug
+    ]
+    forms = _fingerprint_forms(content)
+    whole = [record for record in records if record.get("plan_fingerprint") in forms]
+    if whole:
+        return [
+            max(whole, key=lambda record: int(record.get("plan_version") or 0))
+        ], set()
+    outstanding = {
+        _plan_html.section_record_id(section)
+        for section in implementable_sections(
+            _as_state(content).get("section_declarations")
+        )
+    } | {_DOCUMENT_UNIT}
+    digests = _section_digests(content)
+    covered: set[str] = set()
+    contributing = []
+    for record in records:
+        stored = record.get("section_digests")
+        if not isinstance(stored, Mapping):
+            continue
+        matches = {
+            identity
+            for identity in outstanding
+            if identity in digests and stored.get(identity) == digests[identity]
+        }
+        if matches:
+            covered.update(matches)
+            contributing.append(record)
+    return contributing, outstanding - covered
 
 
 def _load(path: Path) -> dict[str, Any] | None:
@@ -858,7 +802,7 @@ def write_review_sidecar(
     plan_slug: str,
     plan_version: int,
     reviewed_blob_sha: str,
-    plan_fingerprint: str,
+    document: Mapping[str, Any] | str | Path,
     rubric: str,
     report_path: Path,
 ) -> Path:
@@ -876,7 +820,8 @@ def write_review_sidecar(
         "plan_slug": str(plan_slug),
         "plan_version": int(plan_version),
         "reviewed_blob_sha": str(reviewed_blob_sha),
-        "plan_fingerprint": str(plan_fingerprint),
+        "plan_fingerprint": plan_fingerprint(document),
+        "section_digests": _section_digests(document),
         "rubric": str(rubric),
         "report_path": str(Path(report_path)),
     }
@@ -990,6 +935,7 @@ def store_delivered_report(
         "rubric": rubric,
         "reviewed_blob_sha": str(sidecar.get("reviewed_blob_sha") or ""),
         "plan_fingerprint": str(sidecar.get("plan_fingerprint") or ""),
+        "section_digests": dict(sidecar.get("section_digests") or {}),
         "findings": parsed["findings"],
         "responses": {},
         "status": DEFAULT_STATUS,

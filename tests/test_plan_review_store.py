@@ -483,7 +483,7 @@ def test_a_review_stored_under_the_legacy_digest_still_reads_as_current(
     document = path.read_text(encoding="utf-8")
 
     current = module.plan_fingerprint(document)
-    legacy = module.plan_fingerprint(document, legacy=True)
+    legacy = module._fingerprint_forms(document)[1]
     # The two definitions disagree, or the equality below would be vacuous.
     assert current != legacy
 

@@ -2579,33 +2579,23 @@ def _plan_review_verdict(enforce: bool, detail: str) -> str | None:
     return f"plan-review gate in report-only mode — {detail}"
 
 
-def _store_delivered_plan_review(
-    project: str, plan_slug: str, plan: Path
-) -> dict[str, Any] | None:
-    """Store the delivered report matching plan content and return its record.
+def _store_delivered_plan_review(project: str, plan_slug: str) -> None:
+    """Store unstored deliveries so section coverage can use their reviewed units.
 
-    A plan review is dispatched as a run that leaves its report and sidecar on a
-    durable path, so the coordinator never runs a store step. When the gate finds
-    no stored review for the content about to be built, it takes the newest
-    delivered report whose sidecar matches that content, stores it, and
-    reads the record back. A report already stored is passed over, and a report
-    the store refuses is passed over rather than raised, because a report the
-    gate cannot use is one the caller's own refusal already names. ``None``
-    means no delivered report answered the plan content.
+    A delivery may predate another section's landing, so its whole-document
+    fingerprint need not match. The coverage predicate owns relevance; this
+    step only persists usable reports and leaves malformed ones to the gate's
+    missing-review refusal.
     """
     from reckon.crew import plan_review
 
-    for sidecar in plan_review.delivered_reports(project, plan_slug, plan=plan):
+    for sidecar in plan_review.delivered_reports(project, plan_slug):
         if sidecar.get("stored"):
             continue
         try:
             plan_review.store_delivered_report(sidecar)
         except (OSError, ValueError):
             continue
-        record = plan_review.read_plan_review(project, plan_slug, plan=plan)
-        if record is not None:
-            return record
-    return None
 
 
 def require_plan_reviewed(
@@ -2663,16 +2653,18 @@ def require_plan_reviewed(
         # an unresolved resource here has nothing to review.
         return None
 
-    record = plan_review.read_plan_review(project, node.plan, plan=resource.path)
-    if record is None:
-        record = _store_delivered_plan_review(project, node.plan, resource.path)
-    if record is None:
+    _store_delivered_plan_review(project, node.plan)
+    records, uncovered = plan_review._review_coverage(
+        project, node.plan, plan=resource.path
+    )
+    if uncovered:
         return _plan_review_verdict(
             enforce,
             f"plan {node.plan!r} in project {project!r} carries no stored review "
-            "of the content about to be built; "
+            f"of the content about to be built; uncovered units: {', '.join(sorted(uncovered))}; "
             "a plan is reviewed before it is built",
         )
+    record = max(records, key=lambda item: int(item.get("plan_version") or 0))
     unanswered = plan_review.unanswered_findings(record)
     if unanswered:
         return _plan_review_verdict(

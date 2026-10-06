@@ -137,7 +137,7 @@ def _deliver_report(plan_path: Path, *, run_id: str = "r-delivered-report") -> P
         plan_slug="fixture",
         plan_version=1,
         reviewed_blob_sha="a" * 40,
-        plan_fingerprint=plan_review.plan_fingerprint(plan_path),
+        document=plan_path,
         rubric="plan_review",
         report_path=report_path,
     )

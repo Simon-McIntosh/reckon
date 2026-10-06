@@ -42,6 +42,25 @@ from reckon.capability import (
 )
 from reckon.tags import normalise_tag
 
+_VOID_TAGS = frozenset(
+    {
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr",
+    }
+)
+
 RECKON_ATTRIBUTE = "data-reckon"
 LANDED_SECTION_CLASS = "section-landed"
 _SECTION_OPEN_RE = re.compile(r"<section\b[^>]*>", re.IGNORECASE)
@@ -165,6 +184,7 @@ class _StructuredSectionSpanParser(HTMLParser):
         self.line_offsets = [0, *(match.end() for match in re.finditer(r"\n", source))]
         self.records: list[_StructuralSpan] = []
         self.stack: list[_StructuralSpan] = []
+        self.elements: list[tuple[str, _StructuralSpan | None]] = []
 
     def _offset(self) -> int:
         line, column = self.getpos()
@@ -172,11 +192,14 @@ class _StructuredSectionSpanParser(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         level = int(tag[1]) if re.fullmatch(r"h[1-6]", tag) else None
-        if level is None and tag not in {"section", "main", "body"}:
+        values = {name: value if value is not None else "" for name, value in attrs}
+        structural = level is not None or tag in {"section", "main", "body"}
+        if not structural and machinery_kind(values) is None:
+            if tag not in _VOID_TAGS:
+                self.elements.append((tag, None))
             return
         start = self._offset()
         end = start + len(self.get_starttag_text())
-        values = {name: value if value is not None else "" for name, value in attrs}
         record = _StructuralSpan(
             tag,
             values,
@@ -184,7 +207,12 @@ class _StructuredSectionSpanParser(HTMLParser):
             end,
             len(self.source),
             len(self.source),
-            parents=tuple(self.stack),
+            parents=tuple(
+                record
+                for record in self.stack
+                if record.tag in {"section", "main", "body"}
+                or record.heading is not None
+            ),
         )
         kind = machinery_kind(values)
         record.protected = (tag == "section" and kind is not None) or (
@@ -214,19 +242,34 @@ class _StructuredSectionSpanParser(HTMLParser):
                 any(parent.kind not in (None, "section") for parent in self.stack),
             )
         self.records.append(record)
-        self.stack.append(record)
+        if tag in _VOID_TAGS:
+            record.close_start = record.end = record.open_end
+            record.closed = True
+        else:
+            self.stack.append(record)
+            self.elements.append((tag, record))
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self.handle_starttag(tag, attrs)
-        if self.stack and self.stack[-1].start == self._offset():
-            record = self.stack.pop()
-            record.close_start = record.end = record.open_end
-            record.closed = True
+        if self.elements and self.elements[-1][0] == tag:
+            _, record = self.elements.pop()
+            if record is not None:
+                self.stack.remove(record)
+                record.close_start = record.end = record.open_end
+                record.closed = True
 
     def handle_endtag(self, tag: str) -> None:
-        record = next(
-            (entry for entry in reversed(self.stack) if entry.tag == tag), None
+        index = next(
+            (
+                i
+                for i in range(len(self.elements) - 1, -1, -1)
+                if self.elements[i][0] == tag
+            ),
+            None,
         )
+        if index is None:
+            return
+        _, record = self.elements.pop(index)
         if record is None:
             return
         start = self._offset()
@@ -369,15 +412,44 @@ def plan_headings(html_text: str):
     )
 
 
-def structured_section_spans(html_text: str) -> tuple[tuple[int, int], ...]:
-    """Return source ranges that authored-text operations must not overlap."""
-    return tuple(
-        sorted(
-            (record.start, record.open_end if record.heading else record.end)
-            for record in _structural_spans(html_text)
-            if record.protected
+def structured_section_spans(
+    html_text: str,
+    *,
+    every_marked_element: bool = False,
+    skip_landed_cards: bool = False,
+) -> tuple[tuple[int, int], ...]:
+    """Protected ranges for editing or extracting authored review prose.
+
+    The default protects structured sections and typed heading openings.
+    Review extraction opts into whole marked elements. Card interiors can be
+    excluded independently so historical digests can retain their prose.
+    """
+    records = _structural_spans(html_text)
+    spans = [
+        (
+            record.start,
+            record.end
+            if every_marked_element or not record.heading
+            else record.open_end,
         )
-    )
+        for record in records
+        if (record.kind is not None if every_marked_element else record.protected)
+    ]
+    if skip_landed_cards:
+        for card in records:
+            if card.tag != "section" or not _is_landed(card.attributes):
+                continue
+            cursor = card.start
+            for heading in records:
+                if (
+                    heading.heading is not None
+                    and heading.heading.level == 2
+                    and card.start < heading.start < card.end
+                ):
+                    spans.append((cursor, heading.start))
+                    cursor = heading.end
+            spans.append((cursor, card.end))
+    return tuple(sorted(spans))
 
 
 def landed_section_ids(html_text: str) -> frozenset[str]:
@@ -1802,6 +1874,20 @@ _DEC_BLOCK_RE = re.compile(
 _DEC_CHOICE_RE = re.compile(r'\bdata-choice="([^"]*)"', re.IGNORECASE)
 _DEC_RAT_RE = re.compile(r'class="r-dec-rat"[^>]*>(.*?)</p>', re.IGNORECASE | re.DOTALL)
 _TAG_RE = re.compile(r"<[^>]+>")
+_PROSE_SKIP_TAGS = frozenset({"script", "style", "head"})
+
+
+def strip_tags(text: str) -> str:
+    """Extract entity-decoded prose, omitting non-prose element interiors."""
+    for tag in _PROSE_SKIP_TAGS:
+        text = re.sub(
+            rf"<{tag}\b[^>]*>.*?</{tag}\s*>",
+            " ",
+            text,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+    text = re.sub(r"<!--.*?-->|<![^>]*>|<\?[^>]*>", " ", text, flags=re.DOTALL)
+    return " ".join(_htmlmod.unescape(_TAG_RE.sub(" ", text)).split())
 
 
 def _decision_open(choice: str | None, rationale: str | None) -> bool:
