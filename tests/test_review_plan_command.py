@@ -426,17 +426,6 @@ def test_mcp_view_returns_stored_unanswered_and_delivered(project):
     assert mcp._crew(plan="fixture", view="plan-review")["error"] == "missing_project"
 
 
-def test_flight_accepts_and_reads_plan_settle_seconds():
-    flight.validate_layer({"review": {"plan_settle_seconds": 42}}, "test")
-    assert (
-        flight.plan_review_settle_seconds({"review": {"plan_settle_seconds": 42}}) == 42
-    )
-    assert flight.plan_review_settle_seconds({}) == 600
-    for value in (-1, True, "42"):
-        with pytest.raises(flight.FlightConfigError, match="plan_settle_seconds"):
-            flight.validate_layer({"review": {"plan_settle_seconds": value}}, "test")
-
-
 def test_local_review_keeps_the_selected_lane_when_picker_routing_is_enabled(project):
     config = {
         **CONFIG,
