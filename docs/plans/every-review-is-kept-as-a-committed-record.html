@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.4">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -103,15 +103,24 @@
           adding a second store path. An answer appends its event through the same
           <code>_commit_state_write</code>.</td></tr>
         <tr><td>Reviewed bytes</td><td>The reviewed plan bytes are written to the repository's object store at
-          review time (<code>git hash-object -w</code>), so a look-back, and §22's cumulative comparison, can
-          read the text of a review taken against an uncommitted plan write.</td></tr>
+          review time, so a look-back, and §22's cumulative comparison, can read the text of a review taken
+          against an uncommitted plan write. This extends the existing call rather than adding a mechanism: the
+          plan-review composition in <code>reckon/crew/recovery.py</code> already runs
+          <code>git hash-object --stdin</code> to compute <code>reviewed_blob_sha</code>, and gains
+          <code>-w</code>.</td></tr>
         <tr><td>Reads</td><td>The existing readers are repointed rather than joined by a new one:
           <code>list_plan_reviews</code> and <code>read_plan_review</code> in <code>reckon/crew/plan_review.py</code>,
           <code>read_review</code> in <code>reckon/crew/review.py</code>, and <code>select_review_for_head</code> in
-          <code>reckon/crew/recovery.py</code>. Each reads the committed store first and the staging store only for
-          runs not yet promoted. A record is returned by id
-          through the existing <code>crew(view="plan-review")</code>, which gains a <code>review</code> argument;
-          no MCP tool, view or server route is added.</td></tr>
+          <code>reckon/crew/recovery.py</code>. None of them decides the read order itself. The resolver that
+          already owns a record's location, <code>stored_record</code> in <code>reckon/crew/review.py</code>, reads
+          the committed store first and the staging store only for runs not yet promoted, and the four readers go
+          through it. <code>review_store_root</code> has further direct callers in <code>recovery.py</code>,
+          <code>reports.py</code> and <code>runs.py</code>. Each is classified in the node's manifest: a caller about
+          a live run's own record, such as write-path matching or own-record existence, stays on the staging root,
+          where live reviews are still written; a caller that reads history goes through the resolver. No MCP tool,
+          view, view argument or server route is added. A plan's reviews are already listed by
+          <code>crew(view="plan-review", plan=…)</code>, and a reference by id is resolved in Python by
+          <code>reckon audit-doc</code>.</td></tr>
         <tr><td>References</td><td><code>review:&lt;project&gt;/&lt;id&gt;</code> in a plan comment, a followup
           or an evidence record; <code>reckon audit-doc</code> resolves it. The ledger row's
           <code>review</code> field names the id.</td></tr>
@@ -123,7 +132,8 @@
     <p><strong>Done when</strong> a review run promoted in a test lands its record under
       <code>docs/state/&lt;project&gt;/reviews/</code> inside the promotion commit; the gate still reads it
       after the staging file is deleted; an answer appends an event and the body's bytes are unchanged;
-      <code>crew(view="plan-review")</code> returns a record by id; and the ledger row names the id.</p>
+      a <code>review:&lt;project&gt;/&lt;id&gt;</code> reference resolves in <code>reckon audit-doc</code>; and the
+      ledger row names the id.</p>
 
     <h2 id="s4">§4 — Reviews are kept after their work lands</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -159,7 +169,9 @@
       file under the host store. Each one matching the plan-review or run-review shape becomes a committed
       record, timed from its run id and deduplicated by subject, reviewed sha and review run id. Everything else
       is listed by path, size and modification time, then moved, not deleted, to a quarantine directory outside
-      the store. From then on a guard in the store's writer refuses anything that is not a record. The 2.5 GB in
+      the store. From then on a guard in the store's writer refuses anything that is not a record. The guard is a
+      check inside the existing writers, not a new command or refusal family. It retires the store's acceptance of
+      arbitrary files, which is how a session's scratch reached it. The 2.5 GB in
       <code>nova</code> is the known case. Deleting quarantined content is a lead decision taken on the printed
       inventory.</p>
     <p><strong>Done when</strong> the dry run's inventory is recorded with counts and bytes per project; the
