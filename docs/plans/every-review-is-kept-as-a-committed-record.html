@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.4">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -277,6 +277,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261006T144413981177-review-of-audit-doc-resolves-review-references" data-who="reckon-build" data-when="2026-10-06T14:52:22.173Z">
     <div class="r-comment-body"><p>review accepted run r-20261006T143249132698-audit-doc-resolves-review-references at base b51e8a8e head 7d127e9ce — a parsed 6-dimension record total 117, no blocking findings, one follow-on naming the re-spelled citation classes; the record is stored at the run-id path and its .at-7d127e9ce sibling</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261006T142939560365-promotion-commits-the-review-record" data-who="reckon-build" data-when="2026-10-06T15:05:35.161Z">
+    <div class="r-comment-body"><p>A review run&#x27;s promotion now commits the record it delivered. _complete_locked reads the delivered record before assembling the ledger row, so the row&#x27;s review block carries the record&#x27;s own id, and writes that record into the committed reviews tree just before the landing commit; its path joins the set _commit_landing_writes stages, so the record and the run&#x27;s ledger row land in one commit and the record adds none of its own. A record the committed store refuses rolls the row this attempt appended back out, so neither is committed and the retry re-promotes cleanly. store_committed_review now requires the review run id that names a committed record, refuses a record carrying none rather than filing it under the run it reviews, routes a plan review under plan/&lt;slug&gt;/ and a run review under run/&lt;reviewed-run-id&gt;/, and takes its two stamps from the review run&#x27;s own record. Landing record: docs/evidence/fragments/every-review-is-kept-as-a-committed-record/promotion-commits-the-review-record.html.</p></div>
 </div>
 </section>
 </main>
