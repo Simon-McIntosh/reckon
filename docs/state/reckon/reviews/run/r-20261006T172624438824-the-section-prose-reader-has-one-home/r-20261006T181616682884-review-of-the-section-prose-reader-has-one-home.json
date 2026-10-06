@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_views.py:authored_plan_text",
+    "reckon/mcp_views.py:_section_response",
+    "reckon/crew/plan_review.py:_prose_texts",
+    "reckon/crew/plan_review.py:_fingerprint_forms"
+  ],
+  "commits_read": [
+    "f77a6875991daddb813dddba7dd68db31dbfae91",
+    "387d3cdb9e43c54cacdbbfb91c6bb3299bb7366d"
+  ],
+  "completed_at": "2026-10-06T18:28:58.518Z",
+  "dispatched_at": "2026-10-06T18:16:36Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "2065",
+      "severity": "follow-on",
+      "text": "follow-on: the search text now diverges from its pre-change output on 54 of 155 committed plans (e.g. a-landing-beat-needs-no-hand-edit.html 329 to 193 words, a-crew-process-ends-with-its-owner.html differing at its tail) because section_prose subtracts landed-card interiors by default, while the done-when states the search text equals its base output up to whitespace normalisation; tests/test_the_section_prose_reader_has_one_home.py:129 pins it to the reader's join instead of to a base output, so the node's own declared measure is satisfied by neither the code nor the test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 87f6c16ac0649f7ec91eba4fe859a8f281f432d3; f77a6875991daddb813dddba7dd68db31dbfae91 defines _section_spans over a record set and section_prose above it, exports DOCUMENT_UNIT, renames strip_tags to private _strip_tags, and re-points plan_review._prose_texts/_fingerprint_forms and mcp_views.authored_plan_text/_section_response at the one reader while deleting _prose_slices and _inside_structured_region; 387d3cdb9 adds the evidence fragment and figure only.",
+    "done_when": "the done-when is a set of structural and behavioural guards; I reproduced its greps at the head worktree and every one holds (def section_prose=1, def strip_tags=0, def _strip_tags=1, _prose_slices=0, _inside_structured_region=0, one '_document' literal), the reader parity and authored-list pins pass in tests/test_the_section_prose_reader_has_one_home.py, and gate.log records 277 passed EXIT=0 at f77a6875991daddb813dddba7dd68db31dbfae91, but the done-when's clause that the search text and each section-response text equal their base outputs up to whitespace normalisation is neither achieved nor pinned.",
+    "goal": "the node goal is to land section_prose as the one public reader of a plan's authored text on reckon/_plan_html.py with the stripper beneath it private; reckon/_plan_html.py:464 defines section_prose as the single public reader and reckon/_plan_html.py:1936 makes the stripper private as _strip_tags, reached by reckon/crew/plan_review.py:276 and :517 and by reckon/mcp_views.py:2065 and :2214.",
+    "manifest": "read against the tree; its changed_paths match the 7 changed files, it names baseline.log and gate.log as its arms, status complete with no terminal plan status, its negative_control_log is the bare path to a run that fails one test at EXIT=1 the head arm does not fail, and its interface figure (public_definitions base=1489 head=1489) is the stated net-zero.",
+    "write_paths": "read the fenced list; `git diff --name-only 87f6c16ac0649f7ec91eba4fe859a8f281f432d3 387d3cdb9e43c54cacdbbfb91c6bb3299bb7366d` lists exactly 7 files, every one inside the declared write paths, with the declared tests/test_one_raw_text_section_reader.py left untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_the_section_prose_reader_has_one_home.py:105 pins section_prose against the first node's slicer loaded from its merge blob (an independent oracle) and :160 reconstitutes the base authored-section rule, but the surface pins at :129 and :139 compare each surface to the reader rather than to a base output, so the exact regression the done-when names is not guarded.",
+    "evidence": "gate.log line 1 names the commit and ends EXIT=0 over 277 passed, but the done-when's search-text/section-text base-parity clause is unmeasured and unmet \u2014 the shipped pin at tests/test_the_section_prose_reader_has_one_home.py:129 asserts equality with the reader's own join, not with a base output, and the two differ on 54 of 155 plans.",
+    "fit": "the change matches the surrounding style \u2014 reckon/_plan_html.py:415 _section_spans and :455 structured_section_spans project one record-set read \u2014 and introduces no plan or ticket name, DOCUMENT_UNIT (:461) naming a mechanism.",
+    "goal_fidelity": "reckon/_plan_html.py:464 section_prose is the one public reader and reckon/_plan_html.py:1936 _strip_tags is private, both consumers satisfied via reckon/mcp_views.py:2065 and reckon/crew/plan_review.py:276.",
+    "reuse": "the change removes forks rather than adding one \u2014 reckon/crew/plan_review.py loses _prose_slices and reckon/mcp_views.py loses _inside_structured_region, and every added definition extends the capability owner reckon/_plan_html.py rather than duplicating it.",
+    "scope_discipline": "every path in `git diff --name-only 87f6c16ac0649f7ec91eba4fe859a8f281f432d3 387d3cdb9e43c54cacdbbfb91c6bb3299bb7366d` \u2014 reckon/_plan_html.py, reckon/crew/plan_review.py, reckon/mcp_views.py and two test files plus the fragment and figure \u2014 lies inside the manifest's declared write paths."
+  },
+  "node": "review-of-the-section-prose-reader-has-one-home",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to land section_prose as the one public reader of a plan's authored text on reckon/_plan_html.py with the stripper beneath it private; reckon/_plan_html.py:464 defines section_prose as the single public reader and reckon/_plan_html.py:1936 makes the stripper private as _strip_tags, reached by reckon/crew/plan_review.py:276 and :517 and by reckon/mcp_views.py:2065 and :2214.\nVERDICT done_when: the done-when is a set of structural and behavioural guards; I reproduced its greps at the head worktree and every one holds (def section_prose=1, def strip_tags=0, def _strip_tags=1, _prose_slices=0, _inside_structured_region=0, one '_document' literal), the reader parity and authored-list pins pass in tests/test_the_section_prose_reader_has_one_home.py, and gate.log records 277 passed EXIT=0 at f77a6875991daddb813dddba7dd68db31dbfae91, but the done-when's clause that the search text and each section-response text equal their base outputs up to whitespace normalisation is neither achieved nor pinned.\nVERDICT write_paths: read the fenced list; `git diff --name-only 87f6c16ac0649f7ec91eba4fe859a8f281f432d3 387d3cdb9e43c54cacdbbfb91c6bb3299bb7366d` lists exactly 7 files, every one inside the declared write paths, with the declared tests/test_one_raw_text_section_reader.py left untouched.\nVERDICT manifest: read against the tree; its changed_paths match the 7 changed files, it names baseline.log and gate.log as its arms, status complete with no terminal plan status, its negative_control_log is the bare path to a run that fails one test at EXIT=1 the head arm does not fail, and its interface figure (public_definitions base=1489 head=1489) is the stated net-zero.\nVERDICT diff: read commit by commit against 87f6c16ac0649f7ec91eba4fe859a8f281f432d3; f77a6875991daddb813dddba7dd68db31dbfae91 defines _section_spans over a record set and section_prose above it, exports DOCUMENT_UNIT, renames strip_tags to private _strip_tags, and re-points plan_review._prose_texts/_fingerprint_forms and mcp_views.authored_plan_text/_section_response at the one reader while deleting _prose_slices and _inside_structured_region; 387d3cdb9 adds the evidence fragment and figure only.\nCALL_SITES: reckon/mcp_views.py:authored_plan_text, reckon/mcp_views.py:_section_response, reckon/crew/plan_review.py:_prose_texts, reckon/crew/plan_review.py:_fingerprint_forms\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:464 section_prose is the one public reader and reckon/_plan_html.py:1936 _strip_tags is private, both consumers satisfied via reckon/mcp_views.py:2065 and reckon/crew/plan_review.py:276.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate.log line 1 names the commit and ends EXIT=0 over 277 passed, but the done-when's search-text/section-text base-parity clause is unmeasured and unmet \u2014 the shipped pin at tests/test_the_section_prose_reader_has_one_home.py:129 asserts equality with the reader's own join, not with a base output, and the two differ on 54 of 155 plans.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --name-only 87f6c16ac0649f7ec91eba4fe859a8f281f432d3 387d3cdb9e43c54cacdbbfb91c6bb3299bb7366d` \u2014 reckon/_plan_html.py, reckon/crew/plan_review.py, reckon/mcp_views.py and two test files plus the fragment and figure \u2014 lies inside the manifest's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_section_prose_reader_has_one_home.py:105 pins section_prose against the first node's slicer loaded from its merge blob (an independent oracle) and :160 reconstitutes the base authored-section rule, but the surface pins at :129 and :139 compare each surface to the reader rather than to a base output, so the exact regression the done-when names is not guarded.\nSCORE fit: 19\nJUSTIFICATION fit: the change matches the surrounding style \u2014 reckon/_plan_html.py:415 _section_spans and :455 structured_section_spans project one record-set read \u2014 and introduces no plan or ticket name, DOCUMENT_UNIT (:461) naming a mechanism.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes forks rather than adding one \u2014 reckon/crew/plan_review.py loses _prose_slices and reckon/mcp_views.py loses _inside_structured_region, and every added definition extends the capability owner reckon/_plan_html.py rather than duplicating it.\nFINDING reckon/mcp_views.py:2065 follow-on: the search text now diverges from its pre-change output on 54 of 155 committed plans (e.g. a-landing-beat-needs-no-hand-edit.html 329 to 193 words, a-crew-process-ends-with-its-owner.html differing at its tail) because section_prose subtracts landed-card interiors by default, while the done-when states the search text equals its base output up to whitespace normalisation; tests/test_the_section_prose_reader_has_one_home.py:129 pins it to the reader's join instead of to a base output, so the node's own declared measure is satisfied by neither the code nor the test.",
+  "review_run_id": "r-20261006T181616682884-review-of-the-section-prose-reader-has-one-home",
+  "reviewed_base_sha": "87f6c16ac0649f7ec91eba4fe859a8f281f432d3",
+  "reviewed_head_sha": "387d3cdb9e43c54cacdbbfb91c6bb3299bb7366d",
+  "reviewed_run_id": "r-20261006T172624438824-the-section-prose-reader-has-one-home",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261006T181616682884-review-of-the-section-prose-reader-has-one-home",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T18:27:43.512466+00:00",
+  "total": 104
+}

@@ -23,7 +23,7 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="227">
+<meta name="plan-version" content="228">
 <meta name="plan-modified" content="2026-10-06">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;implementable&quot;}">
 </head>
@@ -485,6 +485,9 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
 </div>
 <div class="r-comment" data-section="s16" data-id="c-20261006T162500Z-s16-node-two-split" data-who="reckon-build" data-when="2026-10-06T16:25:00Z">
     <div class="r-comment-body">The local lane's earlier refusal of this section's second node was its context check, not its capability: the refusal reuses the competence message, and the write paths estimate 286,510 tokens against a 230,144 window, reckon/crew/dispatch.py alone 151,477. The node is cut in two so both fit the local lane. The first, the-section-prose-reader-has-one-home, carries section_prose on reckon/_plan_html.py and every reader outside the dispatch module, about 135,000 tokens. The second, the-dispatch-brief-reads-the-section-prose, repoints dispatch._plan_section_text alone. Between the two merges the dispatch brief still reads the section through its own get_text call, which the second node removes.</div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261006T181616682884-review-of-the-section-prose-reader-has-one-home" data-who="reckon-build" data-when="2026-10-06T18:28:58.518Z">
+    <div class="r-comment-body"><p>independent review of r-20261006T172624438824-the-section-prose-reader-has-one-home stored at reviews/reckon/&lt;run&gt;.at-387d3cdb9e43c54cacdbbfb91c6bb3299bb7366d.json — 6/6 dimensions, total 104, added_failure_count 0, one follow-on finding on search-text base parity</p></div>
 </div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261006T040543167994-review-of-a-composition-pin-asserts-the-property-not-a-count" data-who="reckon-build" data-when="2026-10-06T04:12:36.152Z">
     <div class="r-comment-body"><p>Independent review of run r-20261006T035320552323-a-composition-pin-asserts-the-property-not-a-count (§20) stored as a parsed record scoring all six dimensions (goal_fidelity 19, evidence 17, scope_discipline 20, durability 16, fit 18, reuse 20; total 110) against reviewed_base_sha f25c6ede09a75a9f4d1ea49f1f783f5a3237433e and reviewed_head_sha 700e2dde433b40612885bab79627fcb11510e578, with two follow-on findings at tests/test_section_spelling_grammars_share_one_core.py:202 (exact-set assertion reddens on a legitimate fourth is_section_identity caller — the count-over-source brittleness §20 removes) and :218 (the inline-full-match guard only catches a fullmatch inside a function that already calls the helper, narrower than its stated property).</p></div>
