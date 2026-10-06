@@ -51,7 +51,7 @@ def section_plan(project):
     return home, repo, path
 
 
-def _subject(path):
+def _subject(path, *, run_id="review-authored-content"):
     return {
         "subject": "plan",
         "project": "sample",
@@ -61,12 +61,20 @@ def _subject(path):
         "session": "coordinator",
         "rubric": "content",
         "local": True,
-        "run_id": "review-authored-content",
+        "run_id": run_id,
     }
 
 
 def _review(path, *, store=True, version=None, findings=()):
-    fields = recovery._review_dispatch_fields(_subject(path))
+    # Each review writes its own snapshot under its own run id, so a plan
+    # reviewed twice in one case carries two snapshots rather than one
+    # overwriting the other.
+    run_id = (
+        "review-authored-content"
+        if version is None
+        else f"review-authored-content-v{version}"
+    )
+    fields = recovery._review_dispatch_fields(_subject(path, run_id=run_id))
     sidecar = json.loads(Path(fields["sidecar"]).read_text())
     if version is not None:
         sidecar["plan_version"] = version
@@ -77,7 +85,7 @@ def _review(path, *, store=True, version=None, findings=()):
                 **sidecar,
                 "findings": list(findings),
                 "responses": {},
-                "review_run_id": _subject(path)["run_id"],
+                "review_run_id": run_id,
             }
         )
     return sidecar
@@ -171,6 +179,13 @@ def test_digestless_review_covers_only_an_unchanged_plan(
         review_run_id=_subject(path)["run_id"],
     )
     plan_review.store_plan_review(record)
+    # A fingerprint-only record: its snapshot is removed too, so the coverage
+    # predicate falls back to the stored digests the record does not carry
+    # rather than recomputing them from the snapshot. What remains is the
+    # whole-document fingerprint, which certifies only an unchanged plan.
+    plan_review.review_report_directory(
+        "sample", "fixture", _subject(path)["run_id"]
+    ).joinpath(plan_review._REVIEW_SNAPSHOT_NAME).unlink()
     assert _coverage(path)[1] == set()
     assert not recovery._plan_review_pending(_subject(path))
     assert _gate(repo) is None

@@ -105,9 +105,19 @@ PLAN_METADATA_SCALARS: tuple[str, ...] = (
 #                           rather than plan content; a warning about authored
 #                           content sits beside the key it concerns, which the
 #                           digest carries on its own.
+#   impl_source           - "computed" or "authored", set from whether the
+#                           parser derived ``impl`` from the section records or
+#                           read it from the ``plan-impl`` meta. It states how
+#                           the implementation fraction was supplied, not
+#                           authored content, and every plan's first landing
+#                           beat sets an impl on a plan that carried none while
+#                           a later write may flip it between authored and
+#                           computed — either would move the digest without an
+#                           authored change.
 PLAN_DERIVED_SCALARS: tuple[str, ...] = (
     "effort_calibrated",
     "compatibility_warnings",
+    "impl_source",
 )
 
 # Content and design reviews share their rubric vocabulary with the report
@@ -247,6 +257,29 @@ def _without_run_comments(state: Mapping[str, Any]) -> Mapping[str, Any]:
     return {**state, "comments": kept}
 
 
+def _without_comments_and_followups(state: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Return parsed state with authored comments and followups removed.
+
+    The document unit digests the design a worker builds from. Comments and
+    followups record work done and next steps — the landing comments and
+    followups a coordinator writes as it works — not that design, so folding
+    them in re-arms a review of the whole plan on every landing beat. Both keys
+    are dropped entirely; a promotion's run comments fall out with the rest, so
+    the run-comment recognition below is subsumed here for the digest. Decisions
+    and dependencies stay: a resolved decision or a new dependency changes what
+    is built, so it belongs to the reviewed content.
+
+    A state without either key is returned with what it carries; the
+    normalisation drops whole keys and never reaches inside a value it cannot
+    classify.
+    """
+    return {
+        key: value
+        for key, value in state.items()
+        if key not in ("comments", "followups")
+    }
+
+
 def _without_section_declarations(state: Mapping[str, Any]) -> Mapping[str, Any]:
     """Return parsed state with each section's lifecycle declaration removed.
 
@@ -287,7 +320,7 @@ def _digest_state(plan, *, keep_declarations=False):
     excluded = frozenset(PLAN_METADATA_SCALARS) | frozenset(PLAN_DERIVED_SCALARS)
     state = {
         str(key): value
-        for key, value in _without_run_comments(_as_state(plan)).items()
+        for key, value in _without_comments_and_followups(_as_state(plan)).items()
         if key not in excluded
     }
     return state if keep_declarations else _without_section_declarations(state)
@@ -507,6 +540,31 @@ def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> tuple[str, str, 
     return tuple(forms)
 
 
+def _snapshot_unit_digests(
+    project: str, plan_slug: str, record: Mapping[str, Any]
+) -> dict[str, str] | None:
+    """Recompute a stored review's unit digests from its own snapshot.
+
+    The stored record names the run that composed the review; that run's report
+    directory holds the ``plan.html`` snapshot the reviewer read. Recomputing
+    the digests from that snapshot under the present definition is what makes a
+    definition change re-review nothing: the review still covers the content it
+    read, measured the way the definition measures it now, so the stored digests
+    become a cache rather than the authority. Returns ``None`` when the record
+    names no run or the snapshot is missing, so the caller falls back to the
+    stored digests.
+    """
+    run_id = str(record.get("review_run_id") or "").strip()
+    if not run_id:
+        return None
+    snapshot = (
+        review_report_directory(project, plan_slug, run_id) / _REVIEW_SNAPSHOT_NAME
+    )
+    if not snapshot.is_file():
+        return None
+    return _section_digests(snapshot)
+
+
 def _review_coverage(
     project: str,
     plan_slug: str,
@@ -541,12 +599,14 @@ def _review_coverage(
     contributing = []
     for record in records:
         stored = record.get("section_digests")
-        if not isinstance(stored, Mapping):
+        recomputed = _snapshot_unit_digests(project, plan_slug, record)
+        record_digests = recomputed if recomputed is not None else stored
+        if not isinstance(record_digests, Mapping):
             continue
         matches = {
             identity
             for identity in outstanding
-            if identity in digests and stored.get(identity) == digests[identity]
+            if identity in digests and record_digests.get(identity) == digests[identity]
         }
         if matches:
             covered.update(matches)
@@ -782,17 +842,34 @@ def declined_recurrence(
 
 _REVIEW_REPORT_NAME = "report.md"
 _REVIEW_SIDECAR_NAME = "plan-review.json"
+# The snapshot is the plan's ``plan.html`` copied beside the report when a
+# review is dispatched. It is the one durable copy of the plan content a stored
+# review composed for, so coverage recomputes a review's unit digests from it
+# and the store's definition of what a digest covers can change without
+# re-reviewing a plan nobody touched. The writer in :mod:`reckon.crew.recovery`
+# reads this spelling rather than restating it.
+_REVIEW_SNAPSHOT_NAME = "plan.html"
 
 # The report grammar (RUBRIC and FINDING lines) is parsed by
 # reckon.crew.review.parse_plan_review_report, re-exported above, so the
 # code-review and plan-report grammars read reviewer text through one reader.
 
 
-def review_report_directory(project: str, plan_slug: str, run_id: str) -> Path:
-    """Return the directory a review run writes its report and sidecar into."""
+def _plan_review_report_root(project: str, plan_slug: str) -> Path:
+    """Return the plan-level review-report directory both readers build on.
+
+    One owner for the report-directory layout: :func:`review_report_directory`
+    extends it with a run id and :func:`delivered_reports` lists it, so the
+    ``plan-review`` path segment is spelled here alone.
+    """
     from reckon.crew.runs import reports_dir
 
-    return reports_dir() / project / "plan-review" / plan_slug / run_id
+    return reports_dir() / project / "plan-review" / plan_slug
+
+
+def review_report_directory(project: str, plan_slug: str, run_id: str) -> Path:
+    """Return the directory a review run writes its report and sidecar into."""
+    return _plan_review_report_root(project, plan_slug) / run_id
 
 
 def write_review_sidecar(
@@ -861,9 +938,7 @@ def delivered_reports(
     ``plan`` accepts a path, document or state and selects both current and
     legacy fingerprints, taking precedence over ``plan_fingerprint``.
     """
-    from reckon.crew.runs import reports_dir
-
-    root = reports_dir() / project / "plan-review" / plan_slug
+    root = _plan_review_report_root(project, plan_slug)
     if not root.is_dir():
         return []
     stored = _stored_review_run_ids(project)
