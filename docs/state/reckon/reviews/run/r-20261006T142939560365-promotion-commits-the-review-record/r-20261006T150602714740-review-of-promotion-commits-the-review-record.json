@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete",
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/review.py:store_committed_review"
+  ],
+  "completed_at": "2026-10-06T15:14:20.773Z",
+  "dispatched_at": "2026-10-06T15:06:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "7969",
+      "severity": "follow-on",
+      "text": "follow-on: _staging_review_record_by_run re-walks the review store directory (review_store_root()/project/*.json, one _read_json_object per file) to match on review_run_id, duplicating the indexed store scan the same store already owns for its reviewed_run_id lookups (_store_index/_build_store_index, reckon/crew/review.py:2076-2101), whose comment calls a whole-store pass per lookup the dominant cost of a per-turn reader. The run-review path correctly extends recovery._delivered_review_record; the plan-review fallback could instead key the store index on review_run_id. Modest, because a promotion is not a per-turn path, but it is a second scan where the owner exists."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:complete -> _complete_locked (reckon/crew/promotion.py:5710, 8376) is the production path; reckon/crew/review.py:store_committed_review is reached from promotion.py:8662 and by the committed-review tests; run_record_times is reached only through store_committed_review (reckon/crew/review.py:1803).",
+    "diff": "Read commit by commit: 811b6579d adds _staging_review_record_by_run and _delivered_review_payload_for_commit and the _complete_locked wiring in promotion.py, tightens store_committed_review and corrects the run_record_times docstring in review.py, and adds the 348-line test module and the fragment; 6206f12894 removes one unused fixture constant. Four files, 530 insertions / 23 deletions.",
+    "done_when": "The done-when's gate is tests/test_review_record_committed_at_promotion.py with four sibling modules under --basetemp; the manifest records 120 passed EXIT=0 (gate-case.log) and the declared negative control records 2 failed/2 passed EXIT=1 (negative-control.log); I re-ran the node's own module at 6206f1289 and got 4 passed EXIT=0.",
+    "goal": "The reviewed node's goal is that a review run's promotion writes its delivered record through store_committed_review into the same state write as its ledger row; _complete_locked reads the delivered record before assembling the row and adds the committed record's path to the landing set, and the gate promotes a run review and a plan review and holds each record to the row's commit.",
+    "manifest": "status complete; commits 811b6579d31a26c44cecb40a2e3f67db02699a3d and 6206f12894a1c2487e916498c0718fb43c5225bd; test_logs name gate-case.log; negative_control_log names negative-control.log whose last line is EXIT=1; changed_paths and commits populate and reconcile with the diff; baseline_suite and after_suite are absent, so the added-failure count is unmeasured.",
+    "write_paths": "Declared: reckon/crew/promotion.py, reckon/crew/review.py, tests/test_review_record_committed_at_promotion.py, and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/promotion-commits-the-review-record.html; the diff touches all four and nothing else."
+  },
+  "justifications": {
+    "durability": "Each added case names a concrete regression it would catch: the record not riding the row's commit, a no-id record being filed under the reviewed run, and a store refusal leaving the row committed. The declared negative control (given the record its own commit) reddens exactly the membership cases (2 failed, EXIT=1), and I reproduced the positive module (4 passed) independently; the rollback case uses independent expectations (HEAD subject is the seed, the row is untracked, no reviews path is tracked) rather than echoing its inputs.",
+    "evidence": "The done-when's gate is tests/test_review_record_committed_at_promotion.py with four sibling modules; the reviewed manifest records 120 passed EXIT=0 under --basetemp in gate-case.log, and I re-ran the node's own module at 6206f1289 in this worktree (4 passed, EXIT=0). The declared negative control reddens exactly the two commit-membership cases (2 failed/2 passed, EXIT=1). Docked one point because the reviewed manifest names no baseline_suite/after_suite, so the added-failure count is unmeasured (null) and a reader cannot reconcile added failures; the reviewed node's done-when did not require an armed pair.",
+    "fit": "Names describe mechanism (_delivered_review_payload_for_commit, _staging_review_record_by_run, committed_review_payload); no version, plan, sprint or ticket identifiers and no attribution appear in symbols, comments or the fragment; the lazy recovery import and _read_json_object reuse match promotion.py's idiom; promotion.py gains no ruff findings at the head and the new test module is ruff-clean.",
+    "goal_fidelity": "The goal is that a review run's promotion writes its delivered record through store_committed_review into the same state write as its ledger row; _complete_locked (reckon/crew/promotion.py:8376-8383) reads the delivered record before assembling the row and sets the row's review id to the review run id, store_committed_review is called at reckon/crew/promotion.py:8662 and its path joins the set _commit_landing_writes stages at reckon/crew/promotion.py:8690-8697, so the record and the row land in one commit; tests/test_review_record_committed_at_promotion.py:200-235 asserts exactly that and I reproduced it (4 passed).",
+    "reuse": "The run-review path extends the owner rather than forking it: _delivered_review_payload_for_commit (reckon/crew/promotion.py:7994) calls recovery._delivered_review_record first. The plan-review fallback _staging_review_record_by_run (reckon/crew/promotion.py:7969) re-walks the store directory with glob('*.json') and one read per file instead of extending the store's own indexed scan (_store_index/_build_store_index, reckon/crew/review.py:2076-2101), which its comment justifies as avoiding a whole-store pass per lookup; a follow-on rather than a fork of the run-review path, since no existing owner matches on review_run_id to return the record payload.",
+    "scope_discipline": "Every path in the base..head diff is inside the declared write paths: reckon/crew/promotion.py, reckon/crew/review.py, the new tests/test_review_record_committed_at_promotion.py and the evidence fragment under docs/evidence/fragments/every-review-is-kept-as-a-committed-record/; no plan HTML, ledger, index or sprint state is touched, and the worktree is clean at 6206f1289."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: a review run's promotion writes its delivered record into the same state write as its ledger row (reckon/crew/promotion.py:8376-8383, 8662); reproduced by the differing-commit negative control.\nVERDICT done_when: tests/test_review_record_committed_at_promotion.py plus four sibling modules ran at head, 120 passed EXIT=0 (gate-case.log); node module re-run 4 passed EXIT=0; negative control EXIT=1.\nVERDICT write_paths: the base..head diff touches promotion.py, review.py, the new test module and the fragment, all declared; nothing else.\nVERDICT manifest: status complete; commits 811b6579d, 6206f1289; gate-case.log named; negative-control.log EXIT=1; baseline_suite/after_suite absent so added failures unmeasured.\nVERDICT diff: read commit by commit; 811b6579d carries the mechanism and tests, 6206f1289 removes an unused constant; four files, 530+/23-.\nCALL_SITES: reckon/crew/promotion.py:complete, reckon/crew/promotion.py:_complete_locked, reckon/crew/review.py:store_committed_review\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The goal is that a review run's promotion writes its delivered record through store_committed_review into the same state write as its ledger row; _complete_locked (reckon/crew/promotion.py:8376-8383) reads the delivered record before assembling the row and sets the row's review id to the review run id, store_committed_review is called at reckon/crew/promotion.py:8662 and its path joins the set _commit_landing_writes stages at reckon/crew/promotion.py:8690-8697, so the record and the row land in one commit; tests/test_review_record_committed_at_promotion.py:200-235 asserts exactly that and I reproduced it (4 passed).\nSCORE evidence: 19\nJUSTIFICATION evidence: The done-when's gate is tests/test_review_record_committed_at_promotion.py with four sibling modules; the reviewed manifest records 120 passed EXIT=0 under --basetemp in gate-case.log, and I re-ran the node's own module at 6206f1289 in this worktree (4 passed, EXIT=0). The declared negative control reddens exactly the two commit-membership cases (2 failed/2 passed, EXIT=1). Docked one point because the reviewed manifest names no baseline_suite/after_suite, so the added-failure count is unmeasured (null) and a reader cannot reconcile added failures; the reviewed node's done-when did not require an armed pair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the base..head diff is inside the declared write paths: reckon/crew/promotion.py, reckon/crew/review.py, the new tests/test_review_record_committed_at_promotion.py and the evidence fragment under docs/evidence/fragments/every-review-is-kept-as-a-committed-record/; no plan HTML, ledger, index or sprint state is touched, and the worktree is clean at 6206f1289.\nSCORE durability: 20\nJUSTIFICATION durability: Each added case names a concrete regression it would catch: the record not riding the row's commit, a no-id record being filed under the reviewed run, and a store refusal leaving the row committed. The declared negative control (given the record its own commit) reddens exactly the membership cases (2 failed, EXIT=1), and I reproduced the positive module (4 passed) independently; the rollback case uses independent expectations (HEAD subject is the seed, the row is untracked, no reviews path is tracked) rather than echoing its inputs.\nSCORE fit: 20\nJUSTIFICATION fit: Names describe mechanism (_delivered_review_payload_for_commit, _staging_review_record_by_run, committed_review_payload); no version, plan, sprint or ticket identifiers and no attribution appear in symbols, comments or the fragment; the lazy recovery import and _read_json_object reuse match promotion.py's idiom; promotion.py gains no ruff findings at the head and the new test module is ruff-clean.\nSCORE reuse: 17\nJUSTIFICATION reuse: The run-review path extends the owner rather than forking it: _delivered_review_payload_for_commit (reckon/crew/promotion.py:7994) calls recovery._delivered_review_record first. The plan-review fallback _staging_review_record_by_run (reckon/crew/promotion.py:7969) re-walks the store directory with glob('*.json') and one read per file instead of extending the store's own indexed scan (_store_index/_build_store_index, reckon/crew/review.py:2076-2101), which its comment justifies as avoiding a whole-store pass per lookup; a follow-on rather than a fork of the run-review path, since no existing owner matches on review_run_id to return the record payload.\nFINDING reckon/crew/promotion.py:7969 follow-on: follow-on: _staging_review_record_by_run re-walks the review store directory (review_store_root()/project/*.json, one _read_json_object per file) to match on review_run_id, duplicating the indexed store scan the same store already owns for its reviewed_run_id lookups (_store_index/_build_store_index, reckon/crew/review.py:2076-2101), whose comment calls a whole-store pass per lookup the dominant cost of a per-turn reader. The run-review path correctly extends recovery._delivered_review_record; the plan-review fallback could instead key the store index on review_run_id. Modest, because a promotion is not a per-turn path, but it is a second scan where the owner exists.\nreviewed_base_sha: c25b76332bc8f51da2ed498c4fccf0d15892e523\nreviewed_head_sha: 6206f12894a1c2487e916498c0718fb43c5225bd\n",
+  "review_run_id": "r-20261006T150602714740-review-of-promotion-commits-the-review-record",
+  "reviewed_base_sha": "c25b76332bc8f51da2ed498c4fccf0d15892e523",
+  "reviewed_head_sha": "6206f12894a1c2487e916498c0718fb43c5225bd",
+  "reviewed_run_id": "r-20261006T142939560365-promotion-commits-the-review-record",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T15:13:34.641548+00:00",
+  "total": 116
+}
