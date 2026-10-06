@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping
 
 from reckon import _backends, _store, capability, flight, ledger
-from reckon._plan_html import plan_headings, section_id_candidates
+from reckon._plan_html import plan_headings, section_id_candidates, section_prose
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import bar as bar_module
 from reckon.crew import lane_document as _lane_document
@@ -340,8 +340,10 @@ def _plan_section_text(html_text: str, section: str) -> str | None:
         )
     if heading is None:
         return None
-    return BeautifulSoup(html_text[slice(*heading.span)], "html.parser").get_text(
-        " ", strip=True
+    return " ".join(
+        prose
+        for identity, prose in section_prose(html_text)
+        if identity == heading.identity
     )
 
 
