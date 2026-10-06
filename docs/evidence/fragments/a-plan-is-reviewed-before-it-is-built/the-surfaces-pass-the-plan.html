@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-title" content="The answer verb and the plan-review view read through the plan">
+  <meta name="plan-summary" content="The review-plan answer verb stores a plan's unstored delivered review before reading, and both it and the MCP plan-review view resolve the plan file and pass its content to read_plan_review, so a plan covered section by section reads as reviewed on both surfaces and answering a finding never depends on a build having stored the delivery.">
+  <meta name="plan-evidence-for" content="reckon:a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-verifies" content="reckon:a-plan-is-reviewed-before-it-is-built#s23">
+  <meta name="plan-recorded-at" content="2026-10-06">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,plan-review,answer-verb,mcp,coverage">
+  <title>The answer verb and the plan-review view read through the plan — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-surfaces-pass-the-plan" data-reckon="landed" data-when="2026-10-06">
+  <h2 id="the-surfaces-pass-the-plan-landed">The answer verb and the plan-review view read through the plan</h2>
+
+  <p id="the-surfaces-pass-the-plan-mechanism">The delivered-review store step and the section-aware <code>read_plan_review</code> landed in the sibling node, but only the build gate read through them. Two surfaces still read the old way. <code>crew review-plan --answer</code> in <code>reckon/cli.py</code> called <code>read_plan_review(project, plan_slug)</code> without the plan's content, so a plan whose only review was an unstored delivery — one no build had judged — reported <code>no stored review</code>; and the MCP plan-review view in <code>reckon/mcp.py</code> called it the same way, so a plan covered section by section read as unreviewed there while the gate admitted it. Both callers now resolve the plan file through <code>_store._resolve_html_file</code>, the same resolver the plan editor and promotion already use, and pass it to <code>read_plan_review</code>; the answer verb additionally calls <code>plan_review.store_delivered_reviews</code> for the plan before it reads, so answering a finding stores any delivery first and never depends on a dispatch having stored it. A plan path that does not resolve passes an empty document, so an absent plan yields no coverage rather than a read error.</p>
+
+  <h2 id="the-surfaces-pass-the-plan-measure-heading">Measure</h2>
+  <p id="the-surfaces-pass-the-plan-measure">The gate runs <code>pytest -p no:cacheprovider -q tests/test_the_surfaces_pass_the_plan.py tests/test_review_plan_command.py tests/test_plan_review_store.py tests/test_plan_review_gate.py tests/test_a_delivered_review_that_is_not_stored_says_why.py tests/test_a_section_reviewed_as_authored_stays_reviewed.py tests/test_mcp_views.py</code> at head <code>0012244e3</code>: <code>116 passed in 87.18s</code>, <code>EXIT=0</code>; the log is <code>logs/gate.log</code> under the run directory and ends in a bare <code>EXIT=0</code>. The two new cases: the answer verb answers a finding on a plan whose only review is an unstored delivery (the store step runs first, so the finding is found and recorded); and a plan carrying a stored review whose section digests match but whose whole-document fingerprint matches no recognised form — covered section by section, not as a whole document — is returned by the answer verb and by <code>mcp._crew(view="plan-review")</code> alike.</p>
+
+  <h2 id="the-surfaces-pass-the-plan-greps-heading">Shape checks</h2>
+  <p id="the-surfaces-pass-the-plan-greps">At the head, <code>grep -rn 'read_plan_review(' reckon/</code> reports the definition in <code>reckon/crew/plan_review.py</code> and three call sites — <code>reckon/cli.py:2621</code>, <code>reckon/mcp.py:4326</code> and the gate's <code>reckon/crew/routing.py:2676</code> — each passing the plan's content; no call outside the review module omits it. <code>grep -rn 'def store_delivered_reviews' reckon/</code> returns one line in <code>reckon/crew/plan_review.py</code>; <code>grep -rn 'def _store_delivered_plan_review' reckon/</code> returns nothing.</p>
+
+  <h2 id="the-surfaces-pass-the-plan-negative-control-heading">Negative control</h2>
+  <p id="the-surfaces-pass-the-plan-negative-control">The declared mutation removes the <code>store_delivered_reviews</code> call from the answer verb in a scratch copy of the worktree under <code>$TMPDIR</code>, so the module under test resolves to the scratch tree and the worktree is left unmodified. <code>test_answer_stores_an_unstored_delivery_before_answering</code> then fails — <code>no stored review for sample:fixture</code> — <code>1 failed, 2 passed in 3.78s</code>, <code>EXIT=1</code>. Log: <code>logs/negative-control-no-store.log</code> under the run directory; its last line is a bare <code>EXIT=1</code>.</p>
+
+  <p id="the-surfaces-pass-the-plan-interface">Interface accounting: no public definition is added or retired. <code>reckon.interface_counts.count_revision</code> reads <code>public_definitions</code> 1481 at the base revision <code>d934afc8c</code> and 1481 at the head <code>0012244e3</code> — equal, both figures recorded.</p>
+</article>
+</body>
+</html>
