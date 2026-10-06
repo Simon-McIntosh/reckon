@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.4">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -309,7 +309,10 @@
     <div class="r-comment-body"><p>attached an independent review of run r-20261006T172709656322-promotion-adds-no-lint-finding (the PERF401 removal in reckon/crew/promotion.py); the parsed record scores goal_fidelity 20, evidence 20, scope_discipline 20, durability 18, fit 20, reuse 20 (total 118/120), records reviewed_base_sha 87f6c16ac0649f7ec91eba4fe859a8f281f432d3 and reviewed_head_sha 5f89f2a931b3dd41976d2aa57a9554d40a8b1df7, and carries added_failure_count null (no baseline_suite/after_suite arms in the reviewed manifest) with added_failure_ids [].</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261006T174310999140-a-review-without-its-run-id-still-promotes" data-who="reckon-build" data-when="2026-10-06T18:11:44.252Z">
-    <div class="r-comment-body"><p>promotion files the delivered review round under the promoting run&#x27;s id when the round carries no review_run_id, and skips with a warning a round it cannot key; gate 21 passed, EXIT=0</p></div>
+    <div class="r-comment-body"><p>promotion files the delivered review round under the promoting run's id when the round carries no review_run_id, and skips with a warning a round it cannot key; gate 21 passed, EXIT=0</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261006T181247299378-review-of-a-review-without-its-run-id-still-promotes" data-who="reckon-build" data-when="2026-10-06T18:23:14.587Z">
+    <div class="r-comment-body"><p>reviewed run r-20261006T174310999140-a-review-without-its-run-id-still-promotes at base 6573b06f0 head 443b26ac0 and stored a parsed six-dimension record at both assigned paths: goal_fidelity 20, evidence 20, scope_discipline 18, durability 19, fit 19, reuse 20 (total 116), one follow-on finding on the unnameable-round skip at promotion.py:8063, added_failure_count null (unmeasured, no baseline_suite/after_suite arm in the reviewed manifest)</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261006T172834926975-host-reviews-import-into-the-committed-tree" data-who="reckon-build" data-when="2026-10-06T18:12:57.671Z">
     <div class="r-comment-body"><p>scripts/import_host_reviews.py imports each project's host review store into its committed tree (records via review.store_committed_review, times from the run id) and quarantines only the non-records outside the store; a record is recognised by review material plus a subject, taken from the body (a plan with a version, or a run it reviewed) or, when the body names neither, from a staging filename under the store's &lt;reviewed-run-id&gt;[.at-&lt;head&gt;].json grammar, and one naming no review run is filed under a stable derived id; in reckon only .keep, .probe-write.txt and the .ruff_cache directory remain non-records; real host dry run recognised reckon 1647 (77 derived)/nova 431 (102)/imas-ambix 362 (2)/imas-codex 202 (0)/imas-efit 67 (2)/imas-ink 27 (0); gate 17 passed EXIT=0.</p></div>
