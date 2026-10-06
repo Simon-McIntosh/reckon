@@ -427,6 +427,31 @@ def _plan_path_hint(kwargs: Mapping[str, Any]) -> str | None:
     return _written_path(str(project), str(slug), checkout, doc_type)
 
 
+def _stale_plan_review(project: str, plan_slug: str) -> tuple[int, str] | None:
+    """The newest stored review of a plan, with its version.
+
+    A plan with stored reviews none of which covers the current content reads
+    as unreviewed however many it carries, so a reader that reports only "no
+    stored review" hides the review that exists and misleads its author. This
+    names the newest stored review and the command that composes a review of
+    the content now present, reading it through the review module's own lookup
+    rather than re-selecting a newest itself. ``None`` means the plan has no
+    stored review at all, which is a different fact the caller states plainly.
+    """
+    from reckon.crew import plan_review
+
+    newest = plan_review.read_plan_review(project, plan_slug)
+    if newest is None:
+        return None
+    version = int(newest.get("plan_version") or 0)
+    detail = (
+        f"the newest stored review of {project}:{plan_slug} is version {version} "
+        "and no longer covers the plan; run `crew review-plan --project "
+        f"{project} --plan {plan_slug}` to compose a review of the current content"
+    )
+    return version, detail
+
+
 #: Environment variable a crew run exports into every worker it launches. The
 #: worker's harness — and the MCP server that harness starts as a child — inherit
 #: it, so a plan write can tell it is running inside a run.
@@ -4321,12 +4346,31 @@ def _crew(
                 "error": "missing_plan",
                 "detail": "plan-review needs project and plan",
             }
-        record = plan_review.read_plan_review(project, plan)
-        return {
+        try:
+            plan_path = _resolve_html_file(project, plan, artifact_type="plan")
+            record = plan_review.read_plan_review(
+                project, plan, plan=plan_path if plan_path is not None else ""
+            )
+        except (OSError, ValueError) as exc:
+            return {
+                "ok": False,
+                "error": "crew_error",
+                "view": view,
+                "detail": str(exc),
+            }
+        payload = {
             "record": record,
             "unanswered": plan_review.unanswered_findings(record) if record else [],
             "delivered": plan_review.delivered_reports(project, plan),
         }
+        if record is None:
+            stale = _stale_plan_review(project, plan)
+            if stale is not None:
+                payload["stale_review"] = {
+                    "plan_version": stale[0],
+                    "detail": stale[1],
+                }
+        return payload
     try:
         if view == "obligations":
             if not session:
