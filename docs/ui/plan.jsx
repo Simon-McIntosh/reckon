@@ -353,6 +353,12 @@ function readerFigurePath(item) {
   return `docs/figures/${item?.slug || ""}`;
 }
 
+// A figure whose response is lost on the way (a dropped tunnel, a reset
+// connection) fails exactly like a missing one, and an <img> never asks again.
+// Each failure mounts a fresh element after the next delay; past the last delay
+// the reader says the image did not load and keeps offering a retry.
+const FIGURE_RETRY_DELAYS_MS = [1000, 2000, 4000, 8000];
+
 function readerDownloadHref(item) {
   return typeof item?.download === "string" ? item.download : "";
 }
@@ -437,6 +443,14 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
   const [figurePanning, setFigurePanning] = useState(false);
   const figureViewportRef = useRef(null);
   const figureDragRef = useRef(null);
+  // Load state belongs to one figure: keyed by it, so a figure opened after a
+  // failed one starts clean even if an error event lands before any effect runs.
+  const figureKey = `${kind}:${PG.slug}`;
+  const [figureLoadState, setFigureLoadState] = useState({ key: figureKey, attempt: 0, load: "loading" });
+  const figureLoad = figureLoadState.key === figureKey
+    ? figureLoadState
+    : { key: figureKey, attempt: 0, load: "loading" };
+  const figureRetryRef = useRef(null);
   const dependencyCone = isPlan
     ? window.ReckonShell.plans?.dependencyConeRows?.(M.inventory || [], slug)
     : null;
@@ -450,7 +464,27 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
     figureDragRef.current = null;
     const viewport = figureViewportRef.current;
     if (viewport) viewport.scrollTo({ left: 0, top: 0 });
+    return () => window.clearTimeout(figureRetryRef.current);
   }, [kind, PG.slug]);
+
+  const figureFailed = () => {
+    const wait = FIGURE_RETRY_DELAYS_MS[figureLoad.attempt];
+    window.clearTimeout(figureRetryRef.current);
+    if (wait === undefined) {
+      setFigureLoadState({ ...figureLoad, load: "failed" });
+      return;
+    }
+    setFigureLoadState({ ...figureLoad, load: "retrying" });
+    figureRetryRef.current = window.setTimeout(() => {
+      setFigureLoadState(current => (current.key === figureLoad.key
+        ? { ...current, attempt: current.attempt + 1 }
+        : current));
+    }, wait);
+  };
+  const retryFigure = () => {
+    window.clearTimeout(figureRetryRef.current);
+    setFigureLoadState({ ...figureLoad, attempt: figureLoad.attempt + 1, load: "loading" });
+  };
 
   const zoomFigureToNaturalSize = event => {
     if (figureZoom > 1) return;
@@ -974,6 +1008,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
                 onPointerCancel={endFigurePan}
               >
                 <img src={readerFigureSource(PG, project)}
+                  key={figureLoad.attempt}
                   alt={PG.title || PG.slug}
                   draggable={false}
                   style={{
@@ -981,10 +1016,20 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
                       ? `${figureNaturalWidth * figureZoom}px`
                       : `${figureZoom * 100}%`,
                   }}
-                  onLoad={event => setFigureNaturalWidth(event.currentTarget.naturalWidth)}
+                  onLoad={event => {
+                    setFigureNaturalWidth(event.currentTarget.naturalWidth);
+                    setFigureLoadState({ ...figureLoad, load: "loaded" });
+                  }}
+                  onError={figureFailed}
                   onClick={zoomFigureToNaturalSize}
                 />
               </div>
+              {(figureLoad.load === "retrying" || figureLoad.load === "failed") && (
+                <div className="r-reader-figure-load" role="status">
+                  <span>{figureLoad.load === "failed" ? "Image did not load." : "Image did not load; trying again…"}</span>
+                  <button type="button" onClick={retryFigure}>Retry</button>
+                </div>
+              )}
               <div className="r-reader-figure-tools" aria-label="Figure zoom controls">
                 <button type="button" className="r-figure-zoom-out" aria-label="Zoom out" disabled={figureZoom <= 1} onClick={() => zoomFigureBy(0.8)}>−</button>
                 <span>{Math.round(figureZoom * 100)}%</span>
