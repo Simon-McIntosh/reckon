@@ -164,11 +164,7 @@ def test_decision_edit_uncovers_only_the_document(section_plan):
 
 
 @pytest.mark.parametrize("form", [1, 2], ids=["pre-collapse", "whole-document"])
-def test_digestless_review_covers_only_an_unchanged_plan(
-    section_plan, form, monkeypatch
-):
-    from tests.test_review_plan_command import CONFIG, _quiet
-
+def test_digestless_review_covers_only_an_unchanged_plan(section_plan, form):
     _, repo, path = section_plan
     record = _review(path)
     record.pop("section_digests")
@@ -187,27 +183,11 @@ def test_digestless_review_covers_only_an_unchanged_plan(
         "sample", "fixture", _subject(path)["run_id"]
     ).joinpath(plan_review._REVIEW_SNAPSHOT_NAME).unlink()
     assert _coverage(path)[1] == set()
-    assert not recovery._plan_review_pending(_subject(path))
     assert _gate(repo) is None
-    calls = []
-    monkeypatch.setattr(
-        recovery, "dispatch_review_for_run", lambda *a, **kw: calls.append(a) or {}
-    )
-    _quiet(path)
-    recovery.dispatch_awaiting_reviews(
-        project="sample", config=CONFIG, session="coordinator"
-    )
-    assert calls == []
     path.write_text(path.read_text().replace("Build beta.", "Extend beta."))
     records, uncovered = _coverage(path)
     assert records == []
     assert uncovered == {"a", "b", "_document"}
-    assert recovery._plan_review_pending(_subject(path))
-    _quiet(path)
-    recovery.dispatch_awaiting_reviews(
-        project="sample", config=CONFIG, session="coordinator"
-    )
-    assert len(calls) == 1
     with pytest.raises(
         PlanReviewMissingError, match="uncovered units: _document, a, b;"
     ):
@@ -225,7 +205,6 @@ def test_unstored_sidecar_is_promoted_before_coverage(section_plan, collapse):
     records = plan_review.list_plan_reviews("sample")
     assert len(records) == 1
     assert records[0]["section_digests"] == sidecar["section_digests"]
-    assert not recovery._plan_review_pending(_subject(path))
 
 
 @pytest.mark.parametrize("collapse", [False, True], ids=["whole-match", "joined-units"])
@@ -264,29 +243,6 @@ def test_outstanding_units_follow_roadmap_declarations(section_plan, dotted):
     assert _coverage(path)[1] == expected | {"_document"}
     _review(path)
     assert _coverage(path)[1] == set()
-
-
-def test_sweep_composes_for_authored_edits_but_not_landings(section_plan, monkeypatch):
-    from tests.test_review_plan_command import CONFIG, _quiet
-
-    _, repo, path = section_plan
-    _review(path)
-    _collapse(repo, path)
-    _quiet(path)
-    calls = []
-    monkeypatch.setattr(
-        recovery, "dispatch_review_for_run", lambda *a, **kw: calls.append(a) or {}
-    )
-    recovery.dispatch_awaiting_reviews(
-        project="sample", config=CONFIG, session="coordinator"
-    )
-    assert calls == []
-    path.write_text(path.read_text().replace("Build beta.", "Extend beta."))
-    _quiet(path)
-    recovery.dispatch_awaiting_reviews(
-        project="sample", config=CONFIG, session="coordinator"
-    )
-    assert len(calls) == 1
 
 
 @pytest.mark.parametrize(

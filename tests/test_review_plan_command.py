@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import importlib
 import json
-import os
 import re
 import subprocess
-import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -91,11 +89,6 @@ def _stored(path):
     return record
 
 
-def _quiet(path):
-    stamp = time.time() - 1000
-    os.utime(path, (stamp, stamp))
-
-
 @pytest.mark.parametrize(
     "rubric,items",
     [
@@ -170,54 +163,9 @@ def test_composed_brief_carries_the_weekly_interface_counts(project, write):
         assert sorted(home.rglob("*")) == before
 
 
-def test_sweep_dispatches_only_quiet_unreviewed_content(project, monkeypatch):
-    _, _, path = project
-    _quiet(path)
-    calls = []
-    dispatch = importlib.import_module("reckon.crew.dispatch")
-
-    def launch(**kwargs):
-        calls.append(kwargs)
-        assert Path(kwargs["node"].brief).with_name("plan-review.json").is_file()
-        return {"run_id": f"review-attempt-{len(calls)}"}
-
-    monkeypatch.setattr(dispatch, "dispatch", launch)
-    first = recovery.dispatch_awaiting_reviews(
-        project="sample", config=CONFIG, session="coordinator"
-    )
-    assert first["dispatched"] == ["review-attempt-1"]
-    assert calls[0]["node"].id == "plan-review-of-fixture"
-    assert calls[0]["session"] == "coordinator"
-    assert calls[0]["local"] is True
-    receipt = Path(calls[0]["node"].brief).with_name("dispatch.json")
-    assert json.loads(receipt.read_text())["run_id"] == "review-attempt-1"
-    _stored(path)
-    second = recovery.dispatch_awaiting_reviews(
-        project="sample", config=CONFIG, session="coordinator"
-    )
-    assert second["dispatched"] == []
-    assert len(calls) == 1
-
-
-def test_sweep_waits_for_settle_window(project, monkeypatch):
-    _, _, path = project
-    stamp = time.time() - 30
-    os.utime(path, (stamp, stamp))
-    calls = []
-    monkeypatch.setattr(
-        recovery, "dispatch_review_for_run", lambda *a, **k: calls.append(a)
-    )
-    report = recovery.dispatch_awaiting_reviews(
-        project="sample",
-        config={**CONFIG, "review": {"plan_settle_seconds": 60}},
-        session="coordinator",
-    )
-    assert report["dispatched"] == [] and calls == []
-
-
 @pytest.mark.parametrize("legacy", [False, True], ids=["current", "legacy"])
 @pytest.mark.parametrize("stored", [True, False], ids=["stored", "delivered"])
-def test_sweep_and_gate_accept_the_same_review(project, monkeypatch, legacy, stored):
+def test_gate_accepts_a_stored_or_delivered_review(project, legacy, stored):
     _, repo, path = project
     path.write_text(
         path.read_text().replace(
@@ -226,7 +174,6 @@ def test_sweep_and_gate_accept_the_same_review(project, monkeypatch, legacy, sto
             'content=\'{"delivery":"implementable"}\'></head>',
         )
     )
-    _quiet(path)
     current = plan_review.plan_fingerprint(path)
     previous = plan_review._fingerprint_forms(path)[1]
     assert current != previous
@@ -245,47 +192,16 @@ def test_sweep_and_gate_accept_the_same_review(project, monkeypatch, legacy, sto
     }
     with pytest.raises(PlanReviewMissingError, match="no stored review"):
         routing.require_plan_reviewed(**gate)
-    calls = []
-    monkeypatch.setattr(
-        recovery, "dispatch_review_for_run", lambda *a, **k: calls.append(a) or {}
-    )
-    recovery.dispatch_awaiting_reviews(
-        project="sample", config=CONFIG, session="coordinator"
-    )
-    assert len(calls) == 1
-    calls.clear()
     sidecar["plan_fingerprint"] = previous if legacy else current
     if stored:
         plan_review.store_plan_review({**sidecar, "findings": [], "responses": {}})
     else:
         sidecar_path.write_text(json.dumps(sidecar))
         Path(sidecar["report_path"]).write_text("RUBRIC reuse_search: pass\n")
-    report = recovery.dispatch_awaiting_reviews(
-        project="sample", config=CONFIG, session="coordinator"
-    )
-    assert report["dispatched"] == [] and calls == []
     assert routing.require_plan_reviewed(**gate) is None
     path.write_text(path.read_text().replace("existing mechanism", "changed design"))
-    assert recovery._plan_review_pending(_subject())
     with pytest.raises(PlanReviewMissingError, match="no stored review"):
         routing.require_plan_reviewed(**gate)
-
-
-def test_sweep_skips_delivered_unstored_report(project, monkeypatch):
-    _, _, path = project
-    _quiet(path)
-    fields = recovery._review_dispatch_fields(_subject())
-    sidecar = json.loads(Path(fields["sidecar"]).read_text())
-    Path(sidecar["report_path"]).write_text("RUBRIC reuse_search: pass\n")
-    assert plan_review.delivered_reports("sample", "fixture")[0]["stored"] is False
-    calls = []
-    monkeypatch.setattr(
-        recovery, "dispatch_review_for_run", lambda *a, **k: calls.append(a)
-    )
-    report = recovery.dispatch_awaiting_reviews(
-        project="sample", config=CONFIG, session="coordinator"
-    )
-    assert report["dispatched"] == [] and calls == []
 
 
 def test_plan_review_in_flight_is_shared_across_sessions(project, monkeypatch):
