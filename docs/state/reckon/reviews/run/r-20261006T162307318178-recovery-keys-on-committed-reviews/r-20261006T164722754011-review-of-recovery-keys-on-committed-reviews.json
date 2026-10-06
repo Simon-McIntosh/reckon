@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log (both null), so the added-failure count was not taken. The reviewed run's head gate (gate.log: 112 passed EXIT=0) and its declared negative control (negative_control.log: 1 failed, 111 passed, EXIT=1) were both independently reproduced by this review against a scratch extraction of the reviewed head.",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:_classification_inputs -> _review_input_identities (the memo key)",
+    "reckon/crew/recovery.py:_review_dispatch_fields (plan-review composition, hash-object -w)"
+  ],
+  "completed_at": "2026-10-06T16:58:43.112Z",
+  "dispatched_at": "2026-10-06T16:47:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "7589",
+      "severity": "follow-on",
+      "text": "follow-on: the committed run directory's record set is enumerated in two places with no shared owner. _review_input_identities globs committed/run/<run_id>/*.json to key each record (_directory_identity on the run dir plus _file_identity per file), while review.stored_record inlines the same enumeration (sorted(run_directory.glob(\"*.json\"))) to pick the record it returns. The two must agree on what the committed tree holds for the key to describe the read that was actually made; plan reviews already have the shared enumerator (_candidate_paths in plan_review.py, which reads committed plan/<slug>/ first). A private committed-run-record-paths helper in review.py, used by both, would spell the rule once. Modest, because both sites currently glob the identical shape, but it is a second copy of a filename rule the store already owns."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/recovery.py:_review_input_identities is called only from _classification_inputs (recovery.py:7659), the classification-memo input set; _review_dispatch_fields is the plan-review composition reached from the review dispatch paths in recovery.py (704, 808, 1399, 2356, 2451, 3320) and the incomplete-run probe at 2330.",
+    "diff": "Read commit by commit: 1878104080d adds the committed-tree keying block and the -w flag in reckon/crew/recovery.py and adds the 176-line test module; 09334dfab517db66e41864998934ef73ee6249cb adds the evidence fragment. Three files, 263 insertions / 2 deletions.",
+    "done_when": "The node's gate is tests/test_recovery_keys_on_committed_reviews.py (3 cases) beside test_ledger.py, test_pointer_classification_is_memoised.py and test_memo_keys_a_misfiled_record.py; the manifest records 112 passed EXIT=0 (gate.log) and a declared negative control of 1 failed EXIT=1 (negative_control.log). I re-ran the node's own module from a scratch extraction of the reviewed head at 09334dfab: 3 passed EXIT=0 (review-head-gate.log).",
+    "goal": "The reviewed node's goal is that the live-run classification memo keys the project's committed reviews tree, so committing a review record moves the key the memo is stored under, and that a composed plan review writes its reviewed bytes to the object store so reviewed_blob_sha resolves after an uncommitted plan write. _review_input_identities now keys committed/run/<run_id>/ and every *.json under it and settles a committed record as the run's own; _review_dispatch_fields runs git hash-object -w --stdin. Both are the plan's named extensions rather than new mechanisms.",
+    "manifest": "status complete; commits 1878104080d1587464d70a18c9b2a44af5c1cf71 and 09334dfab517db66e41864998934ef73ee6249cb; test_logs name gate.log; negative_control_log names negative_control.log whose last line is EXIT=1; changed_paths and commits populate and reconcile with the diff (recovery.py, tests/test_recovery_keys_on_committed_reviews.py, the fragment); baseline_suite and after_suite are both null, so the added-failure count is unmeasured.",
+    "write_paths": "Declared: reckon/crew/recovery.py, tests/test_recovery_keys_on_committed_reviews.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/recovery-keys-on-committed-reviews.html, and docs/figures/every-review-is-kept-as-a-committed-record/recovery-keys-on-committed-reviews (a directory). The diff touches the first three and writes no figure; nothing is touched outside the declared scope."
+  },
+  "justifications": {
+    "durability": "The added cases name concrete regressions: committing a record must move the memo key (test_a_committed_review_write_changes_the_memo_key), an unchanged tree must leave the key in force so the memo is not defeated (test_an_unchanged_committed_tree_leaves_the_key_in_force), and a composed review over an uncommitted plan must leave a blob git cat-file -e resolves. The declared control reddens the first case. I falsified both halves independently in a scratch tree of the reviewed head: leaving the committed tree out of the key reddens test_a_committed_review_write_changes_the_memo_key (1 failed, 2 passed, EXIT=1, review-negative-control.log), and dropping -w reddens the composition case (1 failed, 2 passed, EXIT=1, review-negative-control-blob.log). Neither failing id appears in the head arm's 3 passed.",
+    "evidence": "Independently reproduced: head extraction 3 passed EXIT=0; both mutations red with the expected ids and EXIT=1. The recorded gate (112 passed) and the reviewed run's own control (1 failed) are consistent with the reviewed logs.",
+    "fit": "The change extends the owners the plan names: committed_review_root and COMMITTED_RUN_DIRNAME from reckon/crew/review.py are reused rather than a second path rule, and the -w flag is added to the existing git hash-object call rather than a new store path.",
+    "goal_fidelity": "Both halves of the dispatch goal are present and load-bearing: the committed run directory and its records join the classification key, a committed record settles the run as having its own (no store-wide staging search), and the plan-review composition writes the reviewed bytes with -w.",
+    "reuse": "Reuses review_module.committed_review_root, _directory_identity, _file_identity and contextlib.suppress; adds no new mechanism. One duplication remains: the committed run directory's *.json enumeration is now inlined here as well as in review.stored_record (see the follow-on).",
+    "scope_discipline": "Three files changed, all declared; no figure was written where the orientation file list named a figures directory, and no path outside the declaration is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the classification memo keys the project's committed reviews tree and a composed plan review writes its bytes to the object store (reckon/crew/recovery.py:_review_input_identities 7565-7620, _review_dispatch_fields 491-540); reproduced by a scratch-tree mutation of each half. EVIDENCE: head extraction 3 passed EXIT=0; committed-tree mutation 1 failed EXIT=1 (test_a_committed_review_write_changes_the_memo_key); -w mutation 1 failed EXIT=1 (test_composing_a_plan_review_stores_the_reviewed_plan_bytes); the reviewed manifest's own gate is 112 passed EXIT=0 and its declared control 1 failed EXIT=1, both consistent. SCOPE: recovery.py, the new test module, the fragment; nothing else. DURABILITY: each case names a regression; both halves falsifiable. FIT: extends committed_review_root/COMMITTED_RUN_DIRNAME and the existing hash-object call. REUSE: one follow-on - the committed run directory's *.json enumeration is duplicated with review.stored_record. No blocking finding.",
+  "review_run_id": "r-20261006T164722754011-review-of-recovery-keys-on-committed-reviews",
+  "reviewed_base_sha": "3cd8accd21d9027a61d511673f61a80b2e5a5263",
+  "reviewed_head_sha": "09334dfab517db66e41864998934ef73ee6249cb",
+  "reviewed_run_id": "r-20261006T162307318178-recovery-keys-on-committed-reviews",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T16:57:18.609774+00:00",
+  "total": 117
+}
