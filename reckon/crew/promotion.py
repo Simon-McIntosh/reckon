@@ -8706,12 +8706,12 @@ def _complete_locked(
         # committed and the retry re-promotes cleanly.
         if committed_review_payloads and not already_promoted:
             try:
-                for payload in committed_review_payloads:
-                    committed_review_paths.append(
-                        review_module.store_committed_review(
-                            payload, project=project, root=ledger_root
-                        )
+                committed_review_paths.extend(
+                    review_module.store_committed_review(
+                        payload, project=project, root=ledger_root
                     )
+                    for payload in committed_review_payloads
+                )
             except ValueError as exc:
                 rollback = _restore_landing_writes(
                     checkout, [Path(written["path"]), *committed_review_paths]
