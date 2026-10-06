@@ -23,7 +23,7 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="199">
+<meta name="plan-version" content="200">
 <meta name="plan-modified" content="2026-10-06">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;}">
 </head>
@@ -497,6 +497,9 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
 </div>
 <div class="r-comment" data-section="s22" data-id="c-20261006T104500Z-s22-one-node-again" data-who="reckon-build" data-when="2026-10-06T10:45:00Z">
     <div class="r-comment-body">Supersedes the two-node cut recorded earlier today. Lead decision 2026-10-06 retires the plan-review sweep (§25), so the settle window and the sweep repoint leave this section: it no longer writes reckon/crew/recovery.py and is one node again, adding plan_review_change_threshold beside the settle accessor rather than merging them. The first node dispatched under the old scope, r-20261006T102223311184, was stopped six minutes in with no changes in its worktree.</div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261006T115055889255-review-of-review-is-earned-by-significant-change" data-who="reckon-build" data-when="2026-10-06T12:05:56.811Z">
+    <div class="r-comment-body"><p>review of r-20261006T104213071108-review-is-earned-by-significant-change stored as a parsed six-dimension record: total 103 (goal_fidelity 17, evidence 18, scope_discipline 17, durability 18, fit 14, reuse 19), three follow-on findings, added_failure_count 0, reviewed 64e6b3376..0a5e3a893.</p></div>
 </div>
 <div class="r-comment" data-section="s26" data-id="c-20261006T105000Z-s26-review-v195" data-who="reckon-build" data-when="2026-10-06T10:50:00Z">
     <div class="r-comment-body">Plan review of v195 (run r-20261006T103315826144), to fold into this section before its node is cut: do not add review_owed as a second public reader over _review_coverage. Make the coverage predicate itself the one public entry, renamed review_coverage, called by the gate in routing.py and by the edit tool in reckon/mcp.py alike, with rule 9 in skills/reckon-edit/SKILL.md renamed to match; public_definitions still rises by one, and the gate and the edit cannot disagree because they call the same function.</div>
