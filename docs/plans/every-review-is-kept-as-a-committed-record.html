@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.4">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -255,7 +255,10 @@
     <div class="r-comment-body"><p>Independent review of run r-20261006T063739329759-brief-run-reviews-name-their-brief stored at the head-keyed review-store path: all six dimensions scored in 0..20 (total 116), revision pair bd6b700b7/7aa10bad1 recorded, added-failure fields carried unmeasured because the reviewed manifest names no baseline_suite/after_suite pair.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261006T140311245358-review-of-review-records-have-a-committed-root" data-who="reckon-build" data-when="2026-10-06T14:10:37.516Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261006T134946510136-review-records-have-a-committed-root (reckon:every-review-is-kept-as-a-committed-record §3) stored a parsed record at both fence paths — scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 16, fit 20, reuse 20 (total 112), reviewed_base_sha 3c7a3f36a and reviewed_head_sha 2e05df719, added_failure_count null (the reviewed manifest carries no baseline_suite/after_suite arm) — with two follow-on findings: review_path&#x27;s committed branch defaults a missing review_run_id to reviewed_run_id where its sibling plan_review_path refuses, and run_record_times&#x27; live-pointer fallback is untested. No blocking finding; the node&#x27;s committed-store mechanism is correct and its declared guard fires.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261006T134946510136-review-records-have-a-committed-root (reckon:every-review-is-kept-as-a-committed-record §3) stored a parsed record at both fence paths — scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 16, fit 20, reuse 20 (total 112), reviewed_base_sha 3c7a3f36a and reviewed_head_sha 2e05df719, added_failure_count null (the reviewed manifest carries no baseline_suite/after_suite arm) — with two follow-on findings: review_path's committed branch defaults a missing review_run_id to reviewed_run_id where its sibling plan_review_path refuses, and run_record_times' live-pointer fallback is untested. No blocking finding; the node's committed-store mechanism is correct and its declared guard fires.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261006T134908735148-state-write-commits-a-set-of-paths" data-who="reckon-build" data-when="2026-10-06T14:01:59.239Z">
+    <div class="r-comment-body"><p>_commit_state_write in reckon/ledger.py commits a set of paths in one commit: a single Path commits exactly as before, an iterable resolves every path to one checkout before staging (a set spanning two checkouts is refused with nothing staged) and stages/commits them together; new tests/test_state_write_commits_a_set_of_paths.py, gate 100 passed EXIT=0, negative control (commit only the first path of the set) 1 failed EXIT=1.</p></div>
 </div>
 </section>
 </main>
