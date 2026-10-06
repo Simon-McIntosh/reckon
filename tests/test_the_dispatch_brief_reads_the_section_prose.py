@@ -192,10 +192,11 @@ def test_every_section_text_matches_the_retired_read_up_to_its_exclusions(plans)
             if got == expected:
                 exact += 1
                 continue
-            if heading.is_card or _has_marked_machinery(source, heading):
-                if _is_subsequence(got.split(), expected.split()):
-                    subtracted += 1
-                    continue
+            if (heading.is_card or _has_marked_machinery(source, heading)) and (
+                _is_subsequence(got.split(), expected.split())
+            ):
+                subtracted += 1
+                continue
             unjustified.append(f"{path}#{identity}")
     assert exact, "the parity population must contain a section read verbatim"
     assert subtracted, "the parity population must exercise a machinery subtraction"

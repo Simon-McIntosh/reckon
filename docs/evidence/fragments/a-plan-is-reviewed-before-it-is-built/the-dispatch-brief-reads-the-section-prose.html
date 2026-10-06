@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="the-dispatch-brief-reads-the-section-prose">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s16">
+<meta name="plan-title" content="The dispatch brief reads the section prose verification">
+<meta name="plan-recorded-at" content="2026-10-06">
+<meta name="plan-verifies-node" content="the-dispatch-brief-reads-the-section-prose">
+<meta name="plan-verdict" content="passed">
+<title>The dispatch brief reads the section prose verification | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="the-dispatch-brief-reads-the-section-prose-verification">
+<h1>The dispatch brief reads the section prose verification</h1>
+<p><code>dispatch._plan_section_text</code> resolved a requested section spelling to a heading record and then read the section's text with its own soup walk over the heading span. That walk was the same extraction the section view and the review digests take. It now takes an authored plan section's text from <code>_plan_html.section_prose</code>, the one reader the review digests cover, so no second walk extracts a plan section's prose.</p>
+<table><thead><tr><th>Measure</th><th>Result</th><th>Receipt / meaning</th></tr></thead><tbody>
+<tr><td>Implementation revision</td><td id="the-dispatch-brief-reads-the-section-prose-impl-rev">d80ddc9a1 (first commit 1449dc34a)</td><td>d80ddc9a1 adds the level-bound fallback after the gate caught its loss; 1449dc34a repoints the read</td></tr>
+<tr><td>Section text source</td><td id="the-dispatch-brief-reads-the-section-prose-reader">reckon/_plan_html.py <code>section_prose</code></td><td>An authored (level-two) plan section's text is the joined <code>section_prose</code> value for its identity — the same value the review digests and the section view read</td></tr>
+<tr><td>Spelling resolution kept</td><td id="the-dispatch-brief-reads-the-section-prose-resolution">unchanged</td><td>An element whose id is a candidate spelling is preferred; a heading matched by identity or text otherwise</td></tr>
+<tr><td>Identified-element branch kept</td><td id="the-dispatch-brief-reads-the-section-prose-branch">unchanged</td><td>An identified element that is not a heading still returns <code>identified.get_text(" ", strip=True)</code>; this is the one remaining <code>get_text</code> in the function, classified below as not a plan-prose reader</td></tr>
+<tr><td>Level-bound fallback</td><td id="the-dispatch-brief-reads-the-section-prose-levelbound"><code>_strip_tags(html_text[slice(*heading.span)])</code></td><td>A heading <code>section_prose</code> does not serve as a unit — a nested subsection or the document title — keeps its own extent's prose. The raw reader's tag stripper, which holds no boundary logic of its own; carries no <code>get_text</code> call</td></tr>
+<tr><td>Interface counts, base &rarr; head</td><td id="the-dispatch-brief-reads-the-section-prose-counts">public_definitions 1489 = 1489; cli_options 317 = 317; mcp_views 33 = 33; refusal_families 23 = 23</td><td><code>reckon.interface_counts</code> at eadc8989 and d80ddc9a1; no public definition added</td></tr>
+<tr><td>Reference parity, every plan</td><td id="the-dispatch-brief-reads-the-section-prose-parity">every section text equals the retired span read, less the reader's exclusions</td><td>Across 151 plans: a plain section matches the retired read exactly; where a landed card or a marked collection sits in the section the reader's tokens are a subsequence of the retired tokens, so it only drops text and never adds or reorders. 53 plans subtract machinery (144 landed-card sections, 32 nested-collection sections)</td></tr>
+<tr><td>Named divergence</td><td id="the-dispatch-brief-reads-the-section-prose-exempt">1 plan: fleet-monitor-legibility</td><td>Two level-two headings share the id <code>s7</code>; the reader keys both extents to that one identity while the retired span read resolves the first only. The exempt set is asserted exactly in the test</td></tr>
+<tr><td>Gate</td><td id="the-dispatch-brief-reads-the-section-prose-gate">94 passed, EXIT=0</td><td>New test plus the brief, section-routing, raw-text-section-reader, section-prose-reader and section-reviewed-as-authored suites; first log line names the head commit and the imported module path</td></tr>
+<tr><td>Baseline / after</td><td id="the-dispatch-brief-reads-the-section-prose-suites">base 89 passed EXIT=0; head 94 passed EXIT=0</td><td>The five extra are the new test file; the base arm runs the same suite in a scratch extraction of eadc8989</td></tr>
+<tr><td>Negative control</td><td id="the-dispatch-brief-reads-the-section-prose-negctl">1 failed, EXIT=1</td><td>Restoring the <code>get_text</code> span read fails <code>test_the_dispatch_section_text_reads_through_the_one_reader</code></td></tr>
+<tr><td>Gate scope</td><td id="the-dispatch-brief-reads-the-section-prose-scope">this node only</td><td>Merged-head verification belongs to a separately dispatched test node</td></tr>
+</tbody></table>
+<h2>The <code>get_text</code> / <code>stripped_strings</code> census at head</h2>
+<p><code>grep -rn "stripped_strings\|get_text(" reckon/</code> reports 12 lines. No line extracts a plan section's or body's prose outside <code>section_prose</code>. Each remaining line, by kind:</p>
+<table><thead><tr><th>Line</th><th>Kind</th></tr></thead><tbody>
+<tr><td id="the-dispatch-brief-reads-the-section-prose-census-doccheck-295">reckon/doccheck.py:295</td><td>The document check's element helper</td></tr>
+<tr><td id="the-dispatch-brief-reads-the-section-prose-census-doccheck-1308">reckon/doccheck.py:1308</td><td>The document check's preformatted-line measure</td></tr>
+<tr><td id="the-dispatch-brief-reads-the-section-prose-census-doccheck-1320">reckon/doccheck.py:1320</td><td>The document check's whole-document lint text</td></tr>
+<tr><td id="the-dispatch-brief-reads-the-section-prose-census-doccheck-1610">reckon/doccheck.py:1610</td><td>The document check's whole-document lint text</td></tr>
+<tr><td id="the-dispatch-brief-reads-the-section-prose-census-html-292">reckon/_plan_html.py:292</td><td>The parser's heading text</td></tr>
+<tr><td id="the-dispatch-brief-reads-the-section-prose-census-html-678">reckon/_plan_html.py:678</td><td>The plan-HTML module's record-field helper</td></tr>
+<tr><td id="the-dispatch-brief-reads-the-section-prose-census-html-862">reckon/_plan_html.py:862</td><td>The plan-HTML module's emptiness test</td></tr>
+<tr><td id="the-dispatch-brief-reads-the-section-prose-census-html-1068">reckon/_plan_html.py:1068</td><td>The plan-HTML module's title read</td></tr>
+<tr><td id="the-dispatch-brief-reads-the-section-prose-census-html-1164">reckon/_plan_html.py:1164</td><td>The plan-HTML module's followup-prompt read</td></tr>
+<tr><td id="the-dispatch-brief-reads-the-section-prose-census-mcp-2128">reckon/mcp_views.py:2128</td><td>A typed record's own text field in the MCP views</td></tr>
+<tr><td id="the-dispatch-brief-reads-the-section-prose-census-dispatch-293">reckon/crew/dispatch.py:293</td><td>The dispatch brief's plain-text helper over a fragment</td></tr>
+<tr><td id="the-dispatch-brief-reads-the-section-prose-census-dispatch-331">reckon/crew/dispatch.py:331</td><td>The resolver's branch for an identified element that is not a heading</td></tr>
+</tbody></table>
+<h2>Recorded commands</h2>
+<table><thead><tr><th>Arm</th><th>Command</th></tr></thead><tbody>
+<tr><td>Head gate</td><td id="the-dispatch-brief-reads-the-section-prose-headcmd">see gate.log; its first line names the head commit, tree, command and imported module path</td></tr>
+<tr><td>Baseline arm</td><td id="the-dispatch-brief-reads-the-section-prose-basecmd">see baseline.log; the same suite minus the new test file, in an extraction of eadc8989</td></tr>
+<tr><td>Negative control</td><td id="the-dispatch-brief-reads-the-section-prose-negcmd">pytest tests/test_the_dispatch_brief_reads_the_section_prose.py::test_the_dispatch_section_text_reads_through_the_one_reader with the span get_text restored</td></tr>
+</tbody></table>
+<h2>Durable receipts</h2>
+<table><thead><tr><th>Artifact</th><th>Path</th></tr></thead><tbody>
+<tr><td>gate.log</td><td id="the-dispatch-brief-reads-the-section-prose-gatelog">/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T203346928189-the-dispatch-brief-reads-the-section-prose/gate.log</td></tr>
+<tr><td>baseline.log</td><td id="the-dispatch-brief-reads-the-section-prose-baselog">/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T203346928189-the-dispatch-brief-reads-the-section-prose/baseline.log</td></tr>
+<tr><td>negative-control.log</td><td id="the-dispatch-brief-reads-the-section-prose-neglog">/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T203346928189-the-dispatch-brief-reads-the-section-prose/negative-control.log</td></tr>
+</tbody></table>
+</section>
+</main></body></html>
