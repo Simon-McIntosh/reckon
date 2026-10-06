@@ -913,14 +913,23 @@ def list_plan_reviews(
     id the committed tree already supplied. Records are identified by the review
     run that produced them, the one key the two trees share — a staging file is
     named for the plan version and blob, a committed file for the review run.
+
+    A project with no staging directory is still listed when it is mounted: its
+    reviews may all be committed, so the staging root no longer names it even
+    though its committed tree holds every one. The mounted projects are
+    enumerated beside the staging directories for that reason.
     """
+    from reckon import flight
+
     root = _review_store.review_store_root(base_dir)
     if project is not None:
         directories = [root / project]
-    elif root.is_dir():
-        directories = sorted(entry for entry in root.iterdir() if entry.is_dir())
     else:
-        directories = []
+        names: set[str] = set()
+        if root.is_dir():
+            names.update(entry.name for entry in root.iterdir() if entry.is_dir())
+        names.update(flight.mounted_project_docs())
+        directories = sorted(root / name for name in names)
     records: list[dict[str, Any]] = []
     seen: set[str] = set()
 

@@ -7980,29 +7980,70 @@ def _staging_review_record_by_run(project: str, run_id: str) -> dict[str, Any] |
     return None if found is None else found[1]
 
 
-def _delivered_review_payload_for_commit(
+def _delivered_review_payloads_for_commit(
     record: Mapping[str, Any], project: str, run_id: str
-) -> dict[str, Any] | None:
-    """The stored review record a promoting run delivered, or ``None``.
+) -> list[dict[str, Any]]:
+    """Every stored review record a promoting review run should commit.
 
     A review run's deliverable is the record it stored beside the subject it
-    read, and that record is the review's whole evidence: landing the run lands
-    the record with it. A run-review's record is read from the run store; a
-    plan review, which carries no run-review scores, is found by the review run
-    id it names. A run that is not a review, or a review run that delivered no
-    readable record, returns ``None`` and lands as before.
+    read, and that record is one round of that subject's review: the run makes
+    no repository commit of its own, so landing it is the moment the round can
+    be landed. A subject reviewed more than once — a first review, then a
+    repair round and its re-review at a new head — leaves one round per head in
+    the host staging store, and every one of them is the subject's review. So
+    the promotion commits every stored round of the subject, across all heads
+    and all review run ids, not only the round this run selected for the head
+    it promotes; the earlier rounds would otherwise survive only in the staging
+    store and nowhere that travels with the plan and the ledger.
+
+    The subject is resolved from the run's node id (a plan review reviews a
+    plan and names no reviewed run), and its rounds are enumerated from the
+    staging store. The round this run delivered is included whether or not the
+    store index already lists it, so a record filed off the run's own path is
+    still committed. A plan review, whose subject is a plan, contributes the
+    single round this run produced. A run that is not a review contributes
+    nothing and lands as before. Rounds are deduplicated by review run id, the
+    key the committed file is filed under, so the delivered round and the same
+    round read from the index commit once.
+
+    The store refuses a record it cannot key or time; this function does not
+    filter such a record out, because the refusal must reach the caller as a
+    rolled-back landing rather than as a silently dropped round.
     """
     from reckon.crew import recovery
 
     if not recovery._is_review_run(record):
-        return None
+        return []
+    payloads: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def include(payload: Mapping[str, Any] | None) -> None:
+        if not payload:
+            return
+        key = str(payload.get("review_run_id") or "").strip()
+        if key:
+            if key in seen:
+                return
+            seen.add(key)
+        payloads.append(dict(payload))
+
     delivered = recovery._delivered_review_record(
         record, str(record.get("project") or "")
     )
     if delivered is not None:
-        payload = _read_json_object(delivered[1])
-        return payload or None
-    return _staging_review_record_by_run(project, run_id)
+        include(_read_json_object(delivered[1]))
+    reviewed_run_id = recovery._resolved_reviewed_run_id(record, project)
+    if reviewed_run_id:
+        for _path, stored in review_module.stored_records_for_run(
+            project, reviewed_run_id
+        ):
+            include(stored)
+    if not payloads:
+        # A plan review names no reviewed run and its own round was not found
+        # through the delivered lookup, so the store index for the review run
+        # id is the remaining way to reach it.
+        include(_staging_review_record_by_run(project, run_id))
+    return payloads
 
 
 def _complete_locked(
@@ -8357,16 +8398,31 @@ def _complete_locked(
     # disposition records null, never an inferred verb.
     disposition = _recorded_disposition(record)
     # A review run's deliverable is the record it stored for the subject it
-    # read, so landing the run lands the record with it. The delivered record is
-    # read here, before the ledger row is assembled, so its own id can name it
-    # on the row and its committed write can join the row's commit below. A run
-    # that is not a review, or a review run that delivered no readable record,
-    # leaves the row's review block as the review gate resolved it.
-    committed_review_payload: dict[str, Any] | None = None
+    # read, so landing the run lands the record with it — and every earlier
+    # round of that subject too, so a review of another head is not left only in
+    # the host staging store. The rounds are read here, before the ledger row is
+    # assembled, so the round this run produced can name the row and every
+    # round's committed write can join the row's commit below. A run that is not
+    # a review, or a review run that delivered no readable round, leaves the
+    # row's review block as the review gate resolved it.
+    committed_review_payloads: list[dict[str, Any]] = []
     if not shadow:
-        committed_review_payload = _delivered_review_payload_for_commit(
+        committed_review_payloads = _delivered_review_payloads_for_commit(
             record, project, run_id
         )
+    committed_review_payload = next(
+        (
+            payload
+            for payload in committed_review_payloads
+            if str(payload.get("review_run_id") or "").strip() == run_id
+        ),
+        None,
+    )
+    if committed_review_payload is None and committed_review_payloads:
+        # The run's own round is normally the one naming each review run id, but
+        # a record that carries none (which the store refuses below) still names
+        # the row so the refusal is the store's and not an absent block.
+        committed_review_payload = committed_review_payloads[0]
     if committed_review_payload is not None:
         committed_block = review_module.ledger_block(committed_review_payload)
         if committed_block is not None:
@@ -8620,7 +8676,7 @@ def _complete_locked(
             "version": ledger_version,
             "run": dict(existing),
         }
-    committed_review_path: Path | None = None
+    committed_review_paths: list[Path] = []
     with _report_written_ledger_row(
         run_id,
         ledger_path=written["path"],
@@ -8639,20 +8695,27 @@ def _complete_locked(
             and isinstance(store_outcome, Mapping)
             and store_outcome.get("status") == "written"
         )
-        # A promoting review run's delivered record is written into the committed
+        # A promoting review run's stored rounds are written into the committed
         # reviews tree now, before the landing commit: the run's own per-run file
-        # was just written, so it supplies the record's dispatch and completion
-        # stamps, and the record then joins the ledger row's commit rather than
-        # adding one. The store refuses a record it cannot key or time, and that
-        # refusal takes back the row this attempt appended so neither the record
-        # nor the ledger row is committed and the retry re-promotes cleanly.
-        if committed_review_payload is not None and not already_promoted:
+        # was just written, so it supplies the records' dispatch and completion
+        # stamps, and the records then join the ledger row's commit rather than
+        # adding one. Every round of the subject is written, not only the round
+        # this run selected. The store refuses a record it cannot key or time,
+        # and that refusal takes back every record already written this attempt
+        # and the row it appended, so neither a record nor the ledger row is
+        # committed and the retry re-promotes cleanly.
+        if committed_review_payloads and not already_promoted:
             try:
-                committed_review_path = review_module.store_committed_review(
-                    committed_review_payload, root=ledger_root
-                )
+                for payload in committed_review_payloads:
+                    committed_review_paths.append(
+                        review_module.store_committed_review(
+                            payload, project=project, root=ledger_root
+                        )
+                    )
             except ValueError as exc:
-                rollback = _restore_landing_writes(checkout, [Path(written["path"])])
+                rollback = _restore_landing_writes(
+                    checkout, [Path(written["path"]), *committed_review_paths]
+                )
                 if store_row_written:
                     _discard_run_store_row(run_id)
                 raise _landing_refusal(
@@ -8679,7 +8742,7 @@ def _complete_locked(
                     root=ledger_root,
                     checkout=checkout,
                 ),
-                *([committed_review_path] if committed_review_path else []),
+                *committed_review_paths,
             ],
             store_row_written=store_row_written,
         )
