@@ -22,7 +22,7 @@
 <figcaption>Three consumers of a plan's authored prose previously used independent BeautifulSoup walks; they now read one value from <code>_plan_html.section_prose</code>.</figcaption>
 </figure>
 <table><thead><tr><th>Measure</th><th>Result</th><th>Receipt / meaning</th></tr></thead><tbody>
-<tr><td>Implementation revision</td><td id="the-section-prose-reader-has-one-home-impl-rev">f77a6875991daddb813dddba7dd68db31dbfae91</td><td>Reader, private span rule, document key, two surfaces, review module, tests</td></tr>
+<tr><td>Implementation revision</td><td id="the-section-prose-reader-has-one-home-impl-rev">994fade063dc166fb0a6da8fcee10fe0d5b274e9</td><td>Reader, private span rule, document key, two surfaces, review module, tests; base-parity repair on the two surfaces</td></tr>
 <tr><td>Public reader</td><td id="the-section-prose-reader-has-one-home-reader">reckon/_plan_html.py:464 <code>section_prose</code></td><td>One definition; returns (identity, prose) pairs</td></tr>
 <tr><td>Private span rule</td><td id="the-section-prose-reader-has-one-home-spanrule">reckon/_plan_html.py <code>_section_spans</code></td><td><code>every_marked_element</code> / <code>skip_landed_cards</code> occur only in this module</td></tr>
 <tr><td>Document-unit key</td><td id="the-section-prose-reader-has-one-home-dockey">reckon/_plan_html.py:461 <code>DOCUMENT_UNIT</code></td><td>One <code>"_document"</code> literal in reckon/</td></tr>
@@ -42,20 +42,21 @@
 <tr><td>Repair negative control</td><td id="the-section-prose-reader-has-one-home-repairneg">FAILED, EXIT=1</td><td>The base-parity pin fails against the pre-repair head (387d3cdb9)</td></tr>
 <tr><td>Authored-section list</td><td id="the-section-prose-reader-has-one-home-list">unchanged</td><td>Pinned equal to the base rule on every plan</td></tr>
 <tr><td>Dispatch section text</td><td id="the-section-prose-reader-has-one-home-dispatch">untouched</td><td><code>crew/dispatch._plan_section_text</code> left unchanged</td></tr>
-<tr><td>Declared negative control</td><td id="the-section-prose-reader-has-one-home-negctl">FAILED, EXIT=1</td><td>Restoring the BeautifulSoup walk in <code>authored_plan_text</code> fails the search-text pin</td></tr>
+<tr><td>Declared negative control</td><td id="the-section-prose-reader-has-one-home-negctl">superseded, EXIT=1</td><td>The phase-1 reader-based search text differed from its base output; the base-parity pin reports it. Superseded by the repair control above</td></tr>
 <tr><td>Lint delta</td><td id="the-section-prose-reader-has-one-home-lint">added 0 findings</td><td>Only staged paths linted; ruff format applied to staged paths</td></tr>
 <tr><td>Run environment</td><td id="the-section-prose-reader-has-one-home-env">allocation 1277272; in place</td><td>Shared root environment, repository through PYTHONPATH, isolated temp repos</td></tr>
 <tr><td>Gate scope</td><td id="the-section-prose-reader-has-one-home-scope">this node only</td><td>Merged-head verification belongs to the coordinator's test node</td></tr>
 </tbody></table>
 <h2>Recorded commands</h2>
 <table><thead><tr><th>Arm</th><th>Command</th></tr></thead><tbody>
-<tr><td>Head gate</td><td id="the-section-prose-reader-has-one-home-headcmd">see gate.log; first line names commit f77a6875991daddb813dddba7dd68db31dbfae91</td></tr>
-<tr><td>Negative control</td><td id="the-section-prose-reader-has-one-home-negcmd">pytest tests/test_the_section_prose_reader_has_one_home.py::test_authored_plan_text_is_the_document_prose_on_every_plan</td></tr>
+<tr><td>Head gate</td><td id="the-section-prose-reader-has-one-home-headcmd">see gate_after.log; its first line names the head revision</td></tr>
+<tr><td>Negative control</td><td id="the-section-prose-reader-has-one-home-negcmd">pytest tests/test_the_section_prose_reader_has_one_home.py::test_surfaces_reproduce_their_base_outputs_on_every_plan</td></tr>
 </tbody></table>
 <h2>Durable receipts</h2>
 <table><thead><tr><th>Artifact</th><th>Path</th></tr></thead><tbody>
-<tr><td>gate.log</td><td id="the-section-prose-reader-has-one-home-gatelog">/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/gate.log</td></tr>
-<tr><td>negative_control.log</td><td id="the-section-prose-reader-has-one-home-neglog">/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/negative_control.log</td></tr>
+<tr><td>gate_after.log</td><td id="the-section-prose-reader-has-one-home-gatelog">/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/gate_after.log</td></tr>
+<tr><td>baseline.log</td><td id="the-section-prose-reader-has-one-home-baselog">/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/baseline.log</td></tr>
+<tr><td>repair_negative_control.log</td><td id="the-section-prose-reader-has-one-home-repairneglog">/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/repair_negative_control.log</td></tr>
 </tbody></table>
 </section>
 </main></body></html>
