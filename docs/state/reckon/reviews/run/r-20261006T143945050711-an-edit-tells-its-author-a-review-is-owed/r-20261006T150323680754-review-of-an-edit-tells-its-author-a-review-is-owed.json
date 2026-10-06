@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "505feb87ce1d0cdff09047c1357f3dbc476315b9",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/routing.py:require_plan_reviewed",
+    "reckon/mcp.py:_review_owed_fields"
+  ],
+  "completed_at": "2026-10-06T15:12:27.736Z",
+  "dispatched_at": "2026-10-06T15:03:41Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "481",
+      "severity": "follow-on",
+      "text": "follow-on: _review_owed_fields catches Exception and returns review_owed as an empty list when the coverage predicate raises, so a debt that cannot be measured reads as nothing owed and the author cannot tell it from the truth; narrowing the catch to the errors an unreadable plan raises and surfacing the unknown (a null plus the error) removes the fail-open."
+    }
+  ],
+  "head_log_revision": "419571efa7c33da9d4dac4e1521c7b474d695ebf",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit \u2014 419571efa renames _review_coverage to review_coverage across reckon/crew/plan_review.py, its read_plan_review caller, the routing.py gate and four test files, adds _review_owed_fields and wires it into _edit_plan_tool (reckon/mcp.py:455,3957), and adds the new test file and the two skill paragraphs; 63a010ea4 adds only the evidence fragment.",
+    "done_when": "every done-when clause reproduced at head 63a010ea4: the five cases of tests/test_an_edit_tells_its_author_a_review_is_owed.py pass in the gate arm (109 passed, EXIT=0, gate.log); the done-when edit names {c}, the comment-only edit returns [], create=True names _document, the gate's PlanReviewMissingError names the same {c}, and both skills name review_owed and the invocation; grep _review_coverage returns nothing; public_definitions is 1484 at base 505feb87c and 1485 at head (reckon.interface_counts.count_revision).",
+    "goal": "\u00a726's goal \u2014 a successful write to a plan returns review_owed naming the uncovered units and the one-line invocation it owes \u2014 is met at reckon/mcp.py:3957, where _edit_plan_tool attaches _review_owed_fields only when result.resource.type == \"plan\"; _review_owed_fields (reckon/mcp.py:455) reports the units review_coverage returns uncovered. grep _review_coverage over reckon/ tests/ skills/ at head returns nothing, and review_coverage is called by the gate (reckon/crew/routing.py:2673) and the edit tool (reckon/mcp.py:478), so the gate's refusal and the edit's report name one set.",
+    "manifest": "read; status complete, commits 419571efa and 63a010ea4, tests line names gate.log (109 passed, EXIT=0), negative_control_log names 3 failed EXIT=1, baseline_suite and after_suite both completed with failure_count 0; the run's live pointer then shows it was resumed (attempt 2) to head d185ca050 while this review read 63a010ea4.",
+    "write_paths": "the manifest declares reckon/mcp.py, reckon/crew/plan_review.py, reckon/crew/routing.py, both skills, five test files, the evidence fragment and a figures dir; git diff --name-only 505feb87c..63a010ea4 lists exactly those eleven files, nothing outside the declaration, and the figures dir is unwritten because the done-when names no figure."
+  },
+  "justifications": {
+    "durability": "the three done-when edit cases are guarded by tests/test_an_edit_tells_its_author_a_review_is_owed.py and the negative control reddens exactly them (3 failed, EXIT=1); the failure path is not, so a regression in \u2014 or a genuine failure of \u2014 the coverage read is silent.",
+    "evidence": "the gate arm (109 passed, EXIT=0, gate.log), the base arm (104 passed, EXIT=0, baseline.log), the negative control (3 failed, EXIT=1, negative-control.log) and public_definitions 1484->1485 were all re-read and the last two re-measured; the gate ran at 419571efa rather than the reviewed head 63a010ea4, which is docs-only, so the result carries.",
+    "fit": "the helper is module-private with a lazy import and an idiom-matching docstring, and no plan or stage label is introduced, but reckon/mcp.py:481 catches Exception with noqa BLE001 where the file elsewhere prefers typed errors, which is the same broad swallow this record flags as a finding.",
+    "goal_fidelity": "\u00a726 is met \u2014 review_owed carries each uncovered unit and its measured change beside review_invocation, is empty when nothing is owed, and one predicate review_coverage is read by both the gate and the edit tool (reckon/mcp.py:455, reckon/crew/routing.py:2673); the single gap is that an unanswerable predicate also returns the empty list, which \u00a726 defines as nothing owed.",
+    "reuse": "the node reuses the one predicate \u2014 _review_coverage is renamed review_coverage and every caller updated rather than a second reader added beside it \u2014 and _review_owed_fields only formats its return, so no mechanism is duplicated.",
+    "scope_discipline": "git diff --name-only 505feb87c..63a010ea4 lists exactly the eleven files the manifest declares and nothing else, and the declared figures dir is legitimately unwritten because the done-when names no figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a726's goal \u2014 a successful write to a plan returns review_owed naming the uncovered units and the one-line invocation it owes \u2014 is met at reckon/mcp.py:3957, where _edit_plan_tool attaches _review_owed_fields only when result.resource.type == \"plan\"; _review_owed_fields (reckon/mcp.py:455) reports the units review_coverage returns uncovered. grep _review_coverage over reckon/ tests/ skills/ at head returns nothing, and review_coverage is called by the gate (reckon/crew/routing.py:2673) and the edit tool (reckon/mcp.py:478), so the gate's refusal and the edit's report name one set.\nVERDICT done_when: every done-when clause reproduced at head 63a010ea4: the five cases of tests/test_an_edit_tells_its_author_a_review_is_owed.py pass in the gate arm (109 passed, EXIT=0, gate.log); the done-when edit names {c}, the comment-only edit returns [], create=True names _document, the gate's PlanReviewMissingError names the same {c}, and both skills name review_owed and the invocation; grep _review_coverage returns nothing; public_definitions is 1484 at base 505feb87c and 1485 at head (reckon.interface_counts.count_revision).\nVERDICT write_paths: the manifest declares reckon/mcp.py, reckon/crew/plan_review.py, reckon/crew/routing.py, both skills, five test files, the evidence fragment and a figures dir; git diff --name-only 505feb87c..63a010ea4 lists exactly those eleven files, nothing outside the declaration, and the figures dir is unwritten because the done-when names no figure.\nVERDICT manifest: read; status complete, commits 419571efa and 63a010ea4, tests line names gate.log (109 passed, EXIT=0), negative_control_log names 3 failed EXIT=1, baseline_suite and after_suite both completed with failure_count 0; the run's live pointer then shows it was resumed (attempt 2) to head d185ca050 while this review read 63a010ea4.\nVERDICT diff: read commit by commit \u2014 419571efa renames _review_coverage to review_coverage across reckon/crew/plan_review.py, its read_plan_review caller, the routing.py gate and four test files, adds _review_owed_fields and wires it into _edit_plan_tool (reckon/mcp.py:455,3957), and adds the new test file and the two skill paragraphs; 63a010ea4 adds only the evidence fragment.\nCALL_SITES: reckon/crew/routing.py:require_plan_reviewed, reckon/mcp.py:_review_owed_fields\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: \u00a726 is met \u2014 review_owed carries each uncovered unit and its measured change beside review_invocation, is empty when nothing is owed, and one predicate review_coverage is read by both the gate and the edit tool (reckon/mcp.py:455, reckon/crew/routing.py:2673); the single gap is that an unanswerable predicate also returns the empty list, which \u00a726 defines as nothing owed.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate arm (109 passed, EXIT=0, gate.log), the base arm (104 passed, EXIT=0, baseline.log), the negative control (3 failed, EXIT=1, negative-control.log) and public_definitions 1484->1485 were all re-read and the last two re-measured; the gate ran at 419571efa rather than the reviewed head 63a010ea4, which is docs-only, so the result carries.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 505feb87c..63a010ea4 lists exactly the eleven files the manifest declares and nothing else, and the declared figures dir is legitimately unwritten because the done-when names no figure.\nSCORE durability: 17\nJUSTIFICATION durability: the three done-when edit cases are guarded by tests/test_an_edit_tells_its_author_a_review_is_owed.py and the negative control reddens exactly them (3 failed, EXIT=1); the failure path is not, so a regression in \u2014 or a genuine failure of \u2014 the coverage read is silent.\nSCORE fit: 18\nJUSTIFICATION fit: the helper is module-private with a lazy import and an idiom-matching docstring, and no plan or stage label is introduced, but reckon/mcp.py:481 catches Exception with noqa BLE001 where the file elsewhere prefers typed errors, which is the same broad swallow this record flags as a finding.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node reuses the one predicate \u2014 _review_coverage is renamed review_coverage and every caller updated rather than a second reader added beside it \u2014 and _review_owed_fields only formats its return, so no mechanism is duplicated.\nFINDING reckon/mcp.py:481 follow-on: _review_owed_fields catches Exception and returns review_owed as an empty list when the coverage predicate raises, so a debt that cannot be measured reads as nothing owed and the author cannot tell it from the truth; narrowing the catch to the errors an unreadable plan raises and surfacing the unknown (a null plus the error) removes the fail-open.\n",
+  "review_run_id": "r-20261006T150323680754-review-of-an-edit-tells-its-author-a-review-is-owed",
+  "reviewed_base_sha": "505feb87ce1d0cdff09047c1357f3dbc476315b9",
+  "reviewed_head_sha": "63a010ea48e155923905e70bd65454c3092cdd5e",
+  "reviewed_run_id": "r-20261006T143945050711-an-edit-tells-its-author-a-review-is-owed",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T15:16:25.609906+00:00",
+  "total": 113
+}
