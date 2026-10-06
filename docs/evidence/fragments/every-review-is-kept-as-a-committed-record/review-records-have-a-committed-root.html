@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="A review record can be written to the project's committed reviews tree">
+  <meta name="plan-summary" content="review_path and plan_review_path gain a committed root under docs/state/<project>/reviews/, keyed run/<reviewed-run-id>/<review-id>.json or plan/<slug>/<review-id>.json, beside the unchanged staging path; a committed record carries its dispatch and completion times from the run record rather than the store clock; and record_response appends each answer to an append-only event list while the responses map keeps the latest answer per finding.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-06">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>A review record can be written to the project's committed reviews tree | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A review record can be written to the project's committed reviews tree</h1>
+
+    <section id="review-records-have-a-committed-root-anchor">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/review.py</code> gains <code>committed_review_root</code>
+        (the project's <code>docs/state/&lt;project&gt;/reviews/</code> tree, resolved
+        through the same docs-dir owner the ledger uses), and a committed branch on
+        <code>review_path</code> resolving <code>run/&lt;reviewed-run-id&gt;/&lt;review-id&gt;.json</code>
+        and refusing the path when the review run id that names the file is missing
+        (as does <code>plan_review_path</code>, so the two owners of a committed path
+        agree). <code>reckon/crew/plan_review.py</code> gains the committed branch on
+        <code>plan_review_path</code> resolving <code>plan/&lt;slug&gt;/&lt;review-id&gt;.json</code>;
+        the staging path both functions returned before is byte-identical.
+        <code>run_record_times</code> reads a run's own committed per-run record for its
+        <code>dispatched_at</code>/<code>completed_at</code>, falling back to the live
+        pointer's stamps for a run not yet promoted, and <code>store_committed_review</code>
+        writes a record into the committed tree carrying those times — never the store
+        clock — and refuses the write, naming the run, when neither source resolves both
+        stamps. <code>record_response</code> appends each answer to a
+        <code>response_events</code> list while the <code>responses</code> map keeps the
+        latest answer per finding, leaving the findings and every other body field unchanged.</p>
+      <p>Gate: <code>tests/test_review_records_have_a_committed_root.py</code> with
+        <code>tests/test_plan_review_store.py</code>,
+        <code>tests/test_review_store_reads_and_fences_by_head.py</code> and
+        <code>tests/test_review_records_its_revision.py</code> — 39 passed, 0 failed, EXIT=0.
+        Negative control (record_response overwrites the answer without appending an event)
+        — 1 failed (<code>test_record_response_appends_events_and_keeps_the_body</code>),
+        38 passed, EXIT=1.</p>
+    </section>
+  </main>
+</body>
+</html>

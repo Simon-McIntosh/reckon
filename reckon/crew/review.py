@@ -1220,6 +1220,52 @@ def review_store_root(base_dir: str | Path | None = None) -> Path:
     return _store._config_home() / "crew" / "reviews"
 
 
+# ── The committed store ─────────────────────────────────────────────────────
+# The host staging store above holds a live review where the gate and
+# acceptance read it, but it is not versioned and not shared with any other
+# clone: its record timestamp is when the record was stored rather than when
+# the reviewed work was dispatched and completed, and answering a finding
+# rewrites it in place. A review is evidence about a plan or a run, so it also
+# belongs beside the ledger, in the project's repository, where it travels with
+# the plan, the ledger and the evidence and keeps its history.
+#
+# The committed tree is ``docs/state/<project>/reviews/`` — the same
+# ``docs/state/<project>`` directory the ledger lives in — with a ``plan/<slug>``
+# or ``run/<reviewed-run-id>`` directory naming the subject and one file per
+# review named for the review run that produced it. The path functions below
+# gain the committed root beside the unchanged staging root rather than a
+# second path rule, so a caller selects the tree it writes to and the staging
+# path is byte-identical to what it always was.
+
+COMMITTED_REVIEWS_DIRNAME = "reviews"
+COMMITTED_PLAN_DIRNAME = "plan"
+COMMITTED_RUN_DIRNAME = "run"
+
+# The two stamps a committed record carries from the run that produced it,
+# never the moment the file was stored.
+DISPATCH_TIME_KEY = "dispatched_at"
+COMPLETION_TIME_KEY = "completed_at"
+
+
+def committed_review_root(
+    project: str, *, root: str | Path | None = None
+) -> Path | None:
+    """Return the project's committed reviews tree, or ``None`` when unmounted.
+
+    The tree lives under the project's own ``docs/state/<project>/`` — the
+    directory its ledger is committed in — so it is shared with every clone.
+    ``root`` names the checkout to resolve against (a worker's worktree);
+    omitted, the project's mounted docs directory resolves it, so no caller
+    supplies a second path rule. A project with no resolvable docs directory
+    has no committed tree and ``None`` is returned rather than an invented
+    path under the configuration home.
+    """
+    docs_dir = _store._docs_dir_for_project(project, root)
+    if docs_dir is None:
+        return None
+    return docs_dir / "state" / project / COMMITTED_REVIEWS_DIRNAME
+
+
 def _blob_suffix(value: str, *, length: int | None = None) -> str:
     """Validate a revision and return its ``.at-<sha>`` sibling suffix.
 
@@ -1245,8 +1291,35 @@ def review_path(
     base_dir: str | Path | None = None,
     *,
     reviewed_head_sha: str | None = None,
+    committed_root: str | Path | None = None,
+    review_run_id: str | None = None,
 ) -> Path:
-    """Return the legacy path or a path keyed by the reviewed head revision."""
+    """Return the store path of one run review.
+
+    The staging path — ``<store>/<project>/<reviewed-run-id>.json``, with a
+    ``.at-<sha>`` sibling when the reviewed head is named — is unchanged and
+    is what is returned when ``committed_root`` is omitted.
+
+    ``committed_root`` selects the committed tree instead:
+    ``<committed_root>/run/<reviewed-run-id>/<review-id>.json``, the run
+    directory named for the reviewed run and the file named for the review run
+    that produced it. The committed file is keyed by the review run rather than
+    by a head revision, because a re-review is a new review run rather than a
+    second file of one run; a caller that names no review run is refused, so
+    two review runs of one reviewed run can never resolve the same file.
+    """
+    if committed_root is not None:
+        name = str(review_run_id or "").strip()
+        if not name:
+            raise ValueError(
+                "a committed review path needs the review run id that names it"
+            )
+        return (
+            Path(committed_root)
+            / COMMITTED_RUN_DIRNAME
+            / reviewed_run_id
+            / f"{name}.json"
+        )
     suffix = "" if reviewed_head_sha is None else _blob_suffix(reviewed_head_sha)
     return review_store_root(base_dir) / project / f"{reviewed_run_id}{suffix}.json"
 
@@ -1637,6 +1710,123 @@ def store_review(
         path = _partial_review_path(project, reviewed_run_id, record, base_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
     _write_record(path, record)
+    return path
+
+
+def run_record_times(
+    project: str,
+    run_id: str,
+    *,
+    root: str | Path | None = None,
+) -> tuple[str, str]:
+    """Return the ``(dispatched_at, completed_at)`` a run's own record carries.
+
+    The run's own record — its committed per-run file beside the ledger — is
+    what carries both stamps, so a committed review's times are the run's own
+    rather than the moment the review file was stored. The live pointer is read
+    only as a fallback for a run not yet promoted, and contributes its single
+    ``created_at`` dispatch stamp; a run carrying no stamp yields an empty
+    string for it rather than the store's own clock, because a defaulted time
+    is a time nobody recorded.
+    """
+    if not run_id:
+        return "", ""
+    from reckon import ledger
+
+    try:
+        path = ledger.run_path(project, run_id, root)
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, ledger.LedgerError):
+        record = None
+    if not isinstance(record, Mapping):
+        pointer = _reviewed_run_pointer(run_id)
+        if pointer is None:
+            return "", ""
+        return str(pointer.get("created_at") or ""), str(
+            pointer.get("completed_at") or ""
+        )
+    return (
+        str(record.get("dispatched_at") or ""),
+        str(record.get("completed_at") or ""),
+    )
+
+
+def store_committed_review(
+    record: dict[str, Any],
+    *,
+    root: str | Path | None = None,
+    committed_root: str | Path | None = None,
+) -> Path:
+    """Persist one review record into the project's committed tree.
+
+    The record must name ``project`` and ``reviewed_run_id``. ``review_run_id``
+    — the run that produced the review — keys the committed file and supplies
+    the dispatch and completion times, so the record carries when the review
+    ran rather than when its file was stored; when it is absent the reviewed
+    run supplies both. Both stamps must resolve from one of the two run records
+    or the write is refused, naming the run: the store clock is never
+    substituted for a stamp and a stamp is never silently omitted, because a
+    committed review whose times are wrong or missing is exactly the defect the
+    committed store exists to remove.
+
+    ``committed_root`` names the tree directly (a caller that already resolved
+    it, or a test); omitted, it resolves through :func:`committed_review_root`
+    against ``root``. A plan review (one naming ``plan_slug``) is written under
+    ``plan/<slug>/`` and a run review under ``run/<reviewed-run-id>/``; the write
+    is atomic and every other body field is preserved.
+    """
+    project = str(record.get("project") or "").strip()
+    if not project:
+        raise ValueError("review record is missing project")
+    reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
+    if not reviewed_run_id:
+        raise ValueError("review record is missing reviewed_run_id")
+    review_run_id = str(record.get("review_run_id") or "").strip() or reviewed_run_id
+    if committed_root is None:
+        committed_root = committed_review_root(project, root=root)
+    if committed_root is None:
+        raise ValueError(f"no committed reviews tree resolves for project {project!r}")
+
+    dispatched, completed = run_record_times(project, review_run_id, root=root)
+    if not dispatched or not completed:
+        review_dispatched, review_completed = run_record_times(
+            project, reviewed_run_id, root=root
+        )
+        dispatched = dispatched or review_dispatched
+        completed = completed or review_completed
+    if not dispatched or not completed:
+        raise ValueError(
+            "no dispatch and completion times resolve for review run "
+            f"{review_run_id!r} (reviewed run {reviewed_run_id!r}); the "
+            "committed record is refused rather than stored with missing times"
+        )
+
+    stored = dict(record)
+    stored[DISPATCH_TIME_KEY] = dispatched
+    stored[COMPLETION_TIME_KEY] = completed
+    if not stored.get("timestamp"):
+        stored["timestamp"] = datetime.now(UTC).isoformat()
+
+    plan_slug = str(record.get("plan_slug") or "").strip()
+    if plan_slug:
+        from reckon.crew.plan_review import plan_review_path
+
+        path = plan_review_path(
+            project,
+            plan_slug,
+            int(record.get("plan_version") or 0),
+            committed_root=committed_root,
+            review_run_id=review_run_id,
+        )
+    else:
+        path = review_path(
+            project,
+            reviewed_run_id,
+            committed_root=committed_root,
+            review_run_id=review_run_id,
+        )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_record(path, stored)
     return path
 
 
