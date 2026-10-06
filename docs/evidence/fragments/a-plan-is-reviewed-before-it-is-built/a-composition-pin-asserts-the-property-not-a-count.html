@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="a-composition-pin-asserts-the-property-not-a-count">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s20">
+<meta name="plan-title" content="Composition pins assert the property, not a count">
+<meta name="plan-recorded-at" content="2026-10-06">
+<meta name="plan-verdict" content="passed">
+<title>Composition pins assert the property, not a count | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="a-composition-pin-asserts-the-property-not-a-count-verification">
+<h1>Composition pins assert the property, not a count</h1>
+<p>Two cross-module greps feed a <code>count(</code> over a module source, so an unrelated docstring or a second legitimate composition reddens them with no regression. Each is replaced with an assertion of the property the count proxied for.</p>
+
+<h2 id="a-composition-pin-asserts-the-property-not-a-count-base">Base listing</h2>
+<p>The base grep of the four §16/§17/§19 test files for <code>getsource|read_text</code> beside a <code>count(</code> over a symbol name or a source fragment reports these two lines:</p>
+<table id="a-composition-pin-asserts-the-property-not-a-count-base-table"><thead><tr><th>File:line</th><th>Base assertion</th></tr></thead><tbody>
+<tr><td>tests/test_the_invocation_parser_spells_a_section.py:177-178</td><td><code>source = Path(followup_pointers.__file__).read_text()</code> ; <code>assert source.count("SECTION_NUMBER_PATTERN") == 2</code></td></tr>
+<tr><td>tests/test_section_spelling_grammars_share_one_core.py:179</td><td><code>assert Path(_store.__file__).read_text().count("A-Za-z0-9._-") == 4</code></td></tr>
+</tbody></table>
+<p>No line in the reader tests (<code>test_one_raw_text_section_reader.py</code>, <code>test_a_section_reviewed_as_authored_stays_reviewed.py</code>) feeds a count over a source fragment: their one remaining <code>.count(</code> counts a produced document's <code>data-id</code>, built from a string literal rather than a module source read, so it is not a count over a symbol name or a source fragment and stays.</p>
+
+<h2 id="a-composition-pin-asserts-the-property-not-a-count-rewrites">Rewrites</h2>
+<table id="a-composition-pin-asserts-the-property-not-a-count-rewrite-table"><thead><tr><th>Pin</th><th>Old</th><th>New property asserted</th></tr></thead><tbody>
+<tr><td><code>test_invocation_expression_is_composed_from_the_exported_core</code></td><td><code>followup_pointers.py</code> source contains <code>SECTION_NUMBER_PATTERN</code> exactly twice</td><td>The compiled <code>_INVOCATION_RE.pattern</code> contains the exported core <code>SECTION_NUMBER_PATTERN</code>, and <code>parse_invocation</code> resolves the pinned spellings <code>§5</code>&rarr;<code>s5</code>, <code>§5.1</code>&rarr;<code>s5-1</code>, <code>§5-1</code>&rarr;<code>s5-1</code>, <code>§5a</code>&rarr;no section</td></tr>
+<tr><td><code>test_section_identity_validation_reuses_the_shared_helper</code></td><td><code>_store.py</code> source contains <code>A-Za-z0-9._-</code> exactly four times</td><td>The store's three section-id validations <code>_apply_set</code>, <code>_require_authored_section_fields</code> and <code>_apply_collapse_section</code> are <em>among</em> the <code>is_section_identity</code> callers (containment, so a fourth legitimate caller does not redden), and no function anywhere in <code>_store.py</code> composes the resource-segment grammar as an inline <code>re.fullmatch</code> over a section id — the two <code>_apply_append_evidence</code> arguments that share the grammar without being section ids (its <code>plan</code> slug and its <code>anchor</code>) are the named exceptions</td></tr>
+</tbody></table>
+<p>Both rewrites read the property off the compiled expression or the module's AST, not from a text count of a literal.</p>
+
+<h2 id="a-composition-pin-asserts-the-property-not-a-count-measurements">Measurements</h2>
+<table id="a-composition-pin-asserts-the-property-not-a-count-measure-table"><thead><tr><th>Measure</th><th>Result</th><th>Receipt / scope</th></tr></thead><tbody>
+<tr><td>Gate</td><td>112 passed, EXIT=0</td><td>logs/gate.log — the four §16/§17/§19 test files at rev f25c6ede</td></tr>
+<tr><td><code>public_definitions</code> at base f25c6ede</td><td>1481</td><td><code>reckon.interface_counts.count_revision</code></td></tr>
+<tr><td><code>public_definitions</code> at head 371c5324</td><td>1481</td><td><code>reckon.interface_counts.count_revision</code> — equal to base, tests only</td></tr>
+</tbody></table>
+
+<h2 id="a-composition-pin-asserts-the-property-not-a-count-negative-control">Negative controls</h2>
+<table id="a-composition-pin-asserts-the-property-not-a-count-nc-table"><thead><tr><th>Declared mutation</th><th>Result</th><th>Log</th></tr></thead><tbody>
+<tr><td>Bare <code>\d+</code> section token restored in <code>followup_pointers._INVOCATION_RE</code></td><td>1 failed, EXIT=1; failing id <code>test_invocation_expression_is_composed_from_the_exported_core</code></td><td>logs/negative-control-invocation.log</td></tr>
+<tr><td>An existing section-id guard re-spells the resource-segment grammar as an inline full match and drops the helper call</td><td>1 failed, EXIT=1; failing id <code>test_section_identity_validation_reuses_the_shared_helper</code></td><td>logs/negative-control-grammar.log</td></tr>
+<tr><td>A new store function full-matches a section id inline without calling <code>is_section_identity</code></td><td>1 failed, EXIT=1; failing id <code>test_section_identity_validation_reuses_the_shared_helper</code></td><td>logs/negative-control-grammar-new-validator.log</td></tr>
+</tbody></table>
+<p>All three controls ran in a scratch copy of the worktree under <code>$TMPDIR</code> with the mutation applied there, so the module under test resolved to the scratch tree and the worktree was left unmodified. None of the failing ids fails in the head arm. A fourth control is a positive check of the containment repair: adding a fourth legitimate <code>is_section_identity</code> caller leaves the assertion green (<code>EXIT=0</code>, logs/positive-fourth-caller.log).</p>
+</section>
+</main></body></html>
