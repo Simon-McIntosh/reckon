@@ -533,8 +533,12 @@ def _review_dispatch_fields(
         directory = plan_review.review_report_directory(project, slug, run_id)
         report = directory / "report.md"
         snapshot = directory / plan_review._REVIEW_SNAPSHOT_NAME
+        # ``-w`` writes the reviewed bytes to the repository's object store, so
+        # a look-back at the record's ``reviewed_blob_sha`` can read the text a
+        # review was taken against even after the plan is written past it or the
+        # snapshot is gone: the digest alone names no bytes without the object.
         blob = subprocess.run(
-            ["git", "hash-object", "--stdin"],
+            ["git", "hash-object", "-w", "--stdin"],
             input=document_bytes,
             capture_output=True,
             check=True,
@@ -7575,9 +7579,28 @@ def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
     identities: dict[str, str] = {}
     if not project or not run_id:
         return identities
+    # The committed reviews tree is read before the staging store, so a promoted
+    # run's classification reads it: its run directory and every record filed
+    # under the run id are inputs beside the staging candidates. A committed
+    # record appears where the staging store holds none, and committing one adds
+    # a file and moves the directory, so a key that skipped that tree would
+    # serve the classification taken before the record was committed over the
+    # record the reader now returns.
+    committed = review_module.committed_review_root(project)
+    committed_record_exists = False
+    if committed is not None:
+        run_directory = committed / review_module.COMMITTED_RUN_DIRNAME / run_id
+        identities[str(run_directory)] = _directory_identity(run_directory)
+        with contextlib.suppress(OSError):
+            for path in sorted(run_directory.glob("*.json")):
+                identities[str(path)] = _file_identity(path)
+                committed_record_exists = True
     directory = review_module.review_store_root() / project
     identities[str(directory)] = _directory_identity(directory)
-    own_record_exists = _own_review_record_exists(record)
+    # A run whose record is committed is answered from the committed tree before
+    # any staging file is consulted, so its own record exists and no store-wide
+    # staging search runs — the same settling the staging check makes alone.
+    own_record_exists = committed_record_exists or _own_review_record_exists(record)
     # Whether the run has a record at one of its own paths is part of the key
     # rather than a note beside it: a run with none is answered by listing the
     # whole store, so the appearance of its own file is what moves that answer
