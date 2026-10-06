@@ -23,7 +23,7 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="191">
+<meta name="plan-version" content="192">
 <meta name="plan-modified" content="2026-10-06">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;deferred&quot;}">
 </head>
@@ -473,6 +473,9 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261006T075850328823-bookkeeping-earns-no-review" data-who="reckon-build" data-when="2026-10-06T09:04:01.410Z">
     <div class="r-comment-body"><p>§21 — the document unit stops folding authored comments and followups (new _without_comments_and_followups, which subsumes the retired run-comment normaliser) and impl_source joins PLAN_DERIVED_SCALARS; _review_coverage recomputes each stored review's unit digests from its own plan.html snapshot via the new _REVIEW_SNAPSHOT_NAME constant and _snapshot_unit_digests, falling back to the stored digests only when the snapshot is missing; _plan_review_report_root is the one owner of the plan-level report root; gate 108 passed EXIT=0 under the project's own 300s timeout (gate-f4444907fd9-head.log); census over every stored review of every project: 33 plans read, 15 change coverage verdict, all toward covered, each flipped unit covered by a snapshot whose present-definition digests match the current plan; public_definitions base=head=1481; negative control reddens the bookkeeping test; follow-on f4444907fd9 acted.</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-20261006T101500Z-s22-two-nodes" data-who="reckon-build" data-when="2026-10-06T10:15:00Z">
+    <div class="r-comment-body">Cut as two sequential nodes because the local lane's context check refused the whole section: its write paths estimate 311,875 tokens against a 230,144 window, and reckon/crew/recovery.py alone counts 147,534. The first node, review-is-earned-by-significant-change, carries everything except recovery.py: the measure in plan_review.py, the gate refusal in routing.py, plan_review_settings and the review-key table in flight.py, the threshold in the flight defaults, rule 9, and the repointed settle-window tests. Its head leaves plan_review_settle_seconds defined with the sweep as its only caller, so public_definitions reads one above the base between the two merges. The second node, the-sweep-reads-the-review-settings, repoints the sweep in recovery.py to plan_review_settings, deletes plan_review_settle_seconds, and makes the sweep's report name each uncovered unit with its measured change; its head returns public_definitions to the base, which is the section's own measure. recovery.py, flight.py and test_review_plan_command.py cannot share one node within the window, so the old accessor cannot be retired in the same node that adds the new one.</div>
 </div>
 </section>
 </main>
