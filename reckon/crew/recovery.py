@@ -487,18 +487,6 @@ def plan_review_subject(
     }
 
 
-def _plan_review_pending(record: Mapping[str, Any]) -> bool:
-    """Whether this content still needs a report, stored or delivered."""
-    project, slug = record["project"], record["plan_slug"]
-    plan = Path(record["plan_path"])
-    if not plan_review._review_coverage(project, slug, plan=plan)[1]:
-        return False
-    return not any(
-        not report["stored"]
-        for report in plan_review.delivered_reports(project, slug, plan=plan)
-    )
-
-
 def _review_dispatch_fields(
     record: Mapping[str, Any],
     *,
@@ -4209,37 +4197,6 @@ def dispatch_awaiting_reviews(
         if repair_report.get("dispatched"):
             reports.append(repair_report)
             repaired.append(str(repair_report.get("repair_run_id") or ""))
-    if sweeping:
-        from reckon import _plan_html, flight
-
-        for mounted_project, docs in flight.mounted_project_docs().items():
-            if project and project != mounted_project:
-                continue
-            resolved = _resolved_review_config(mounted_project, config)
-            settle = flight.plan_review_settle_seconds(resolved)
-            for path in sorted((docs / "plans").glob("*.html")):
-                state = _plan_html.read_state_file(path)
-                if state.get("status") not in ("active", "draft"):
-                    continue
-                if time.time() - path.stat().st_mtime < settle:
-                    continue
-                subject = plan_review_subject(
-                    mounted_project, path.stem, sweeping, local=True
-                )
-                if not _plan_review_pending(subject):
-                    continue
-                report = dispatch_review_for_run(
-                    subject, config=resolved, launcher=launcher, prefer_local=True
-                )
-                reports.append(report)
-                if report.get("dispatched"):
-                    dispatched.append(str(report.get("review_run_id") or ""))
-                elif report.get("awaiting_lane"):
-                    awaiting_lane.append(str(report.get("run_id") or ""))
-                elif report.get("error") == "lane-paused":
-                    lane_paused.append(str(report.get("run_id") or ""))
-                elif report.get("refused"):
-                    refused.append(report)
     return {
         "reports": reports,
         "dispatched": dispatched,
