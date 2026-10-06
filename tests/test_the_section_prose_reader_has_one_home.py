@@ -9,7 +9,9 @@ and pin the surfaces that read the one value.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
 import re
 import subprocess
 import sys
@@ -27,10 +29,17 @@ ROOT = Path(__file__).resolve().parents[1]
 # The merge that landed the first node's slicer; its _plan_html.py is the
 # parser output this node's reader must reproduce byte for byte.
 FIRST_NODE_MERGE = "6d06a5290"
+# The revision whose search text and section text the surface outputs must
+# reproduce; the hashes were generated from its modules, not this worktree.
+BASE_REVISION = "87f6c16ac0649f7ec91eba4fe859a8f281f432d3"
 
 
 def _normalise(text: str) -> str:
     return " ".join(text.split())
+
+
+def _hash(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 @pytest.fixture(scope="module")
@@ -126,35 +135,34 @@ def test_section_prose_keys_match_the_first_node_slicer_on_every_plan(plans):
         assert got == expected, path
 
 
-def test_authored_plan_text_is_the_document_prose_on_every_plan(plans):
+def test_surfaces_reproduce_their_base_outputs_on_every_plan(plans):
+    fixture = json.loads(
+        (ROOT / "tests" / "section_prose_base_outputs.json").read_text()
+    )
+    expected_plans = fixture["plans"]
+    assert len(expected_plans) == len(plans)
     for path, source in plans:
-        joined = " ".join(
-            prose for _, prose in _plan_html.section_prose(source) if prose
-        )
-        assert _normalise(mcp_views.authored_plan_text(source)) == _normalise(joined), (
-            path
-        )
-
-
-def test_section_response_text_is_the_sections_prose_from_the_one_reader(plans):
-    for path, source in plans:
+        key = str(path)
+        expected = expected_plans.get(key)
+        assert expected is not None, f"no base output pin for {key}"
+        search = _hash(_normalise(mcp_views.authored_plan_text(source)))
+        assert search == expected["search"], f"search text differs: {key}"
         state = _plan_html.read_state(source)
-        for identity, _heading in mcp_views._authored_section_headings(source):
-            response = mcp_views._section_response(
-                ResourceSelector(project="reckon", type="plan", id=path.stem),
-                1,
-                state,
-                section=identity,
-                html_text=source,
-            )["section"]
-            joined = " ".join(
-                prose
-                for section_id, prose in _plan_html.section_prose(
-                    source, keep_landed_cards=True
+        section_hashes = {
+            identity: _hash(
+                _normalise(
+                    mcp_views._section_response(
+                        ResourceSelector(project="reckon", type="plan", id=path.stem),
+                        1,
+                        state,
+                        section=identity,
+                        html_text=source,
+                    )["section"]["text"]
                 )
-                if section_id == identity and prose
             )
-            assert _normalise(response["text"]) == _normalise(joined), (path, identity)
+            for identity, _heading in mcp_views._authored_section_headings(source)
+        }
+        assert section_hashes == expected["sections"], f"section text differs: {key}"
 
 
 def test_authored_section_list_matches_its_base_rule_on_every_plan(plans):

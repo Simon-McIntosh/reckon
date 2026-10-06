@@ -29,14 +29,17 @@
 <tr><td>Retired public stripper</td><td id="the-section-prose-reader-has-one-home-stripper">0 <code>def strip_tags</code></td><td>Renamed to the private <code>_strip_tags</code>; one definition</td></tr>
 <tr><td>Retired second slicer</td><td id="the-section-prose-reader-has-one-home-slicer">0 <code>_prose_slices</code></td><td>Absent from reckon/ and tests/; the review module reads the one reader</td></tr>
 <tr><td>Retired region predicate</td><td id="the-section-prose-reader-has-one-home-predicate">0 <code>_inside_structured_region</code></td><td>Absent from reckon/; the section view takes its text from the reader</td></tr>
-<tr><td>BeautifulSoup in the search text</td><td id="the-section-prose-reader-has-one-home-soup">none</td><td><code>authored_plan_text</code> joins the reader's values</td></tr>
+<tr><td>Search text rule</td><td id="the-section-prose-reader-has-one-home-soup">base rule restored</td><td>The search text follows the base rule (keeps landed notes and card interiors, excludes the section[data-reckon] collections)</td></tr>
+<tr><td>Section text source</td><td id="the-section-prose-reader-has-one-home-sectsrc">shared private stripper</td><td>The section view strips its rendered section HTML with <code>_strip_tags</code>, not BeautifulSoup</td></tr>
 <tr><td>Body-tag regex in reckon/</td><td id="the-section-prose-reader-has-one-home-bodyregex">0</td><td>No <code><body</code> / <code></body</code> expression remains</td></tr>
 <tr><td>Base/head package interface counts</td><td id="the-section-prose-reader-has-one-home-counts">public_definitions 1489 = 1489; mcp_views 33 = 33</td><td><code>reckon.interface_counts</code>; <code>section_prose</code> added, <code>strip_tags</code> retired, net zero</td></tr>
 <tr><td>Per-module public definitions</td><td id="the-section-prose-reader-has-one-home-permodule">_plan_html 20=20; mcp_views 28=28</td><td>Added <code>section_prose</code>; removed <code>strip_tags</code>; mcp_views family unchanged</td></tr>
 <tr><td>Reader parity population</td><td id="the-section-prose-reader-has-one-home-pop">155 plans</td><td>Every committed plan under docs/plans/, both card modes</td></tr>
 <tr><td>Reader vs first-node slicer</td><td id="the-section-prose-reader-has-one-home-parity">zero differences</td><td>Compared against the first node's parser loaded from its merge blob</td></tr>
-<tr><td>Search-text pin</td><td id="the-section-prose-reader-has-one-home-searchpin">reader value</td><td>Search text equals the joined reader output on every plan</td></tr>
-<tr><td>Section-view pin</td><td id="the-section-prose-reader-has-one-home-viewpin">reader value</td><td>Section text equals the reader's value for that identity on every plan</td></tr>
+<tr><td>Search-text pin</td><td id="the-section-prose-reader-has-one-home-searchpin">base output</td><td>Search text reproduces its base revision output on every plan (sha256 fixture)</td></tr>
+<tr><td>Section-view pin</td><td id="the-section-prose-reader-has-one-home-viewpin">base output</td><td>Every section text reproduces its base revision output (1167 sections, sha256 fixture)</td></tr>
+<tr><td>Base-output fixture</td><td id="the-section-prose-reader-has-one-home-fixture">tests/section_prose_base_outputs.json</td><td>Per plan, sha256 of the whitespace-normalised search text and every section text, generated from base 87f6c16ac</td></tr>
+<tr><td>Repair negative control</td><td id="the-section-prose-reader-has-one-home-repairneg">FAILED, EXIT=1</td><td>The base-parity pin fails against the pre-repair head (387d3cdb9)</td></tr>
 <tr><td>Authored-section list</td><td id="the-section-prose-reader-has-one-home-list">unchanged</td><td>Pinned equal to the base rule on every plan</td></tr>
 <tr><td>Dispatch section text</td><td id="the-section-prose-reader-has-one-home-dispatch">untouched</td><td><code>crew/dispatch._plan_section_text</code> left unchanged</td></tr>
 <tr><td>Declared negative control</td><td id="the-section-prose-reader-has-one-home-negctl">FAILED, EXIT=1</td><td>Restoring the BeautifulSoup walk in <code>authored_plan_text</code> fails the search-text pin</td></tr>

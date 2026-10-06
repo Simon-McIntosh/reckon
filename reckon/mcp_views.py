@@ -21,9 +21,9 @@ from reckon import _backends, ledger
 from reckon import budget as budget_module
 from reckon._plan_html import (
     RECKON_ATTRIBUTE,
+    _strip_tags,
     machinery_kind,
     plan_headings,
-    section_prose,
     section_record_id,
 )
 from reckon._timestamps import parse_utc
@@ -2060,9 +2060,23 @@ def normalize_view(view: str | None) -> str:
 
 
 def authored_plan_text(html_text: str) -> str:
-    """Return searchable prose while excluding Reckon's structured collections."""
+    """Return searchable prose while excluding Reckon's structured collections.
 
-    return " ".join(prose for _, prose in section_prose(html_text or "") if prose)
+    The search text keeps landed notes and landed-card interiors: the base
+    surface dropped only ``section[data-reckon]`` collections, and a plan's
+    history is worth searching. A ``div[data-reckon]`` landed note is therefore
+    retained, unlike the review digests, which subtract every marked element.
+    """
+
+    soup = BeautifulSoup(html_text or "", "html.parser")
+    scope = soup.body or soup
+    for element in scope.select(
+        f"script, style, section[{RECKON_ATTRIBUTE}]:not([{RECKON_ATTRIBUTE}='section'])"
+    ):
+        element.decompose()
+    for element in scope.select(f"section[{RECKON_ATTRIBUTE}='section']"):
+        element.decompose()
+    return " ".join(scope.stripped_strings)
 
 
 def _authored_section_headings(html_text: str) -> list:
@@ -2209,11 +2223,7 @@ def _section_response(
         str(element).strip() for element in body.contents if str(element).strip()
     )
     section_html = "\n".join(fragments)
-    section_text = " ".join(
-        prose
-        for section_id, prose in section_prose(source, keep_landed_cards=True)
-        if section_id == identity
-    )
+    section_text = _strip_tags(section_html)
     record = next(
         (
             item
