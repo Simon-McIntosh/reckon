@@ -137,7 +137,7 @@ def test_collapse_keeps_coverage(section_plan):
 
 
 def _coverage(path):
-    records, uncovered, _changes = plan_review._review_coverage(
+    records, uncovered, _changes = plan_review.review_coverage(
         "sample", "fixture", plan=path
     )
     return records, uncovered

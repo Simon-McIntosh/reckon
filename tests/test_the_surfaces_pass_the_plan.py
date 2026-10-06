@@ -210,7 +210,7 @@ def test_answer_surface_reads_a_section_covering_review(project):
     # regardless of coverage would return the stale one instead, so the two
     # answers diverge and the surface must give the covering one.
     assert covering["plan_fingerprint"] not in plan_review._fingerprint_forms(document)
-    assert plan_review._review_coverage("sample", "fixture", plan=document)[1] == set()
+    assert plan_review.review_coverage("sample", "fixture", plan=document)[1] == set()
     assert plan_review.read_plan_review("sample", "fixture")["plan_version"] == int(
         stale["plan_version"]
     )

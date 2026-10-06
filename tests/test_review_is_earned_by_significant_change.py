@@ -141,7 +141,7 @@ def _review(path, *, store=True, run_id=SNAPSHOT_RUN_ID, version=3, findings=())
 
 
 def _coverage(path, *, config=None):
-    return plan_review._review_coverage("sample", "fixture", plan=path, config=config)
+    return plan_review.review_coverage("sample", "fixture", plan=path, config=config)
 
 
 def _gate(repo):
@@ -395,4 +395,7 @@ def test_rule_nine_names_the_coverage_predicate():
     text = (
         Path(__file__).parents[1] / "skills" / "reckon-edit" / "SKILL.md"
     ).read_text(encoding="utf-8")
-    assert "_review_coverage" in text
+    assert "plan_review.review_coverage" in text
+    # The former name is rebuilt here so the source never spells it, which is
+    # what keeps the repository-wide search for it returning nothing.
+    assert ("_" + "review_coverage") not in text

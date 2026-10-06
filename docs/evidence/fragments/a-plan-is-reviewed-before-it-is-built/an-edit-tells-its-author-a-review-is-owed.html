@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="an-edit-tells-its-author-a-review-is-owed">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s26">
+<meta name="plan-title" content="An edit tells its author a review is owed">
+<meta name="plan-recorded-at" content="2026-10-06">
+<meta name="plan-verdict" content="passed">
+<title>An edit tells its author a review is owed | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="an-edit-tells-its-author-a-review-is-owed-verification">
+<h1>An edit tells its author a review is owed</h1>
+<p>Creation and every structured edit of a plan go through one tool, <code>_edit_plan_tool</code> in <code>reckon/mcp.py</code>. After a successful write to a plan — not to a doc — the response now carries <code>review_owed</code>: the outstanding units the coverage predicate reports uncovered, each with the measured change where one exists, beside <code>review_invocation</code>, the one-line command that composes a review of them. The tool composes no review itself; the author decides when an authoring session is finished, so a burst of edits earns one review and no review is attributed to a session that did not ask for it.</p>
+<p>A predicate that cannot answer is reported as unknown, not as nothing owed. When the coverage predicate raises at all, or the write reports no path, <code>review_owed</code> is <strong>null</strong> and <code>review_owed_error</code> names the exception type and message, so a failed read never passes for a clean answer. An empty list and a null are different facts — nothing is owed, versus the debt is unknown — and the author runs the invocation on either the non-empty or the null answer. Every exception at that one point is caught and named rather than escaping after the write: an escaping error would report a completed write as a tool error, which its author may retry into a version conflict. Nothing is hidden, because the error is stated in the response.</p>
+
+<h2 id="an-edit-tells-its-author-a-review-is-owed-change">One predicate, two readers</h2>
+<p><code>_review_coverage</code> in <code>reckon/crew/plan_review.py</code> is renamed <code>review_coverage</code> with its return unchanged, and every caller is renamed with it — the dispatch gate in <code>reckon/crew/routing.py</code>, <code>read_plan_review</code>, and the four plan-review test files. The edit tool reads it across the package boundary, so the gate's refusal and the edit's <code>review_owed</code> cannot disagree about which units are owed. Renaming the one function rather than adding a second reader raises <code>public_definitions</code> by exactly one.</p>
+
+<h2 id="an-edit-tells-its-author-a-review-is-owed-measures">Measurements</h2>
+<table id="an-edit-tells-its-author-a-review-is-owed-measure-table"><thead><tr><th>Measure</th><th>Result</th><th>Receipt / scope</th></tr></thead><tbody>
+<tr><td>Gate</td><td>109 passed, EXIT=0</td><td>gate.log — head 419571efa; the node's own test file plus the plan-review, edit-tool and gate tests</td></tr>
+<tr><td>Base arm</td><td>104 passed, EXIT=0</td><td>baseline.log — base 505feb87c in a scratch tree; the same tests minus the new file (its five cases are the +5 delta)</td></tr>
+<tr><td><code>grep -rn _review_coverage reckon/ tests/ skills/</code></td><td>no output</td><td>the former private name is gone from all three trees</td></tr>
+<tr><td><code>public_definitions</code> at base 505feb87c</td><td>1484</td><td><code>reckon.interface_counts.count_revision</code></td></tr>
+<tr><td><code>public_definitions</code> at head 419571efa</td><td>1485</td><td><code>reckon.interface_counts.count_revision</code> — one above base</td></tr>
+</tbody></table>
+
+<h2 id="an-edit-tells-its-author-a-review-is-owed-cases">The done-when cases</h2>
+<table id="an-edit-tells-its-author-a-review-is-owed-case-table"><thead><tr><th>Case</th><th>Assertion</th></tr></thead><tbody>
+<tr><td>An edit that changes a section's done-when</td><td><code>review_owed</code> names that section (<code>c</code>); <code>review_invocation</code> carries <code>reckon crew review-plan --project sample --plan fixture --local</code></td></tr>
+<tr><td>The gate and the edit name the same units</td><td>the gate raises <code>PlanReviewMissingError</code> matching <code>uncovered units: c;</code> and the edit's <code>review_owed</code> is the same one-element set</td></tr>
+<tr><td>A comment-only edit</td><td><code>review_owed == []</code> — comments and followups are outside the digest the review keys on</td></tr>
+<tr><td>The predicate cannot answer</td><td>a forced <code>OSError</code> and a forced <code>ValueError</code> each leave the write <code>ok</code>, set <code>review_owed</code> to null and <code>review_owed_error</code> to the exception type and message (naming <code>OSError</code> or <code>ValueError</code>); <code>review_invocation</code> stays</td></tr>
+<tr><td><code>create=True</code> on a new plan</td><td><code>review_owed</code> names at least <code>_document</code></td></tr>
+<tr><td>Both skills</td><td><code>reckon-create</code> and <code>reckon-edit</code> name <code>review_owed</code> and the invocation, and tell the author to run it once at the end of a session whose last write reported a debt</td></tr>
+</tbody></table>
+
+<h2 id="an-edit-tells-its-author-a-review-is-owed-negative-control">Negative control</h2>
+<table id="an-edit-tells-its-author-a-review-is-owed-nc-table"><thead><tr><th>Declared mutation</th><th>Result</th><th>Log</th></tr></thead><tbody>
+<tr><td>Make <code>_edit_plan_tool</code> return an empty <code>review_owed</code> whatever coverage reports</td><td>3 failed, EXIT=1; the done-when edit case reddens at <code>assert _owed_units(result) == {"c"}</code>, and the gate-agreement and create cases with it</td><td>negative-control.log</td></tr>
+</tbody></table>
+<p>The control ran in a scratch copy of the tree at head under <code>$TMPDIR</code>, so the module under test resolved to the scratch tree (<code>…/nc.RasCRc/reckon/mcp.py</code>) and the worktree was left unmodified. None of the three failing ids fails in the head arm.</p>
+</section>
+</main></body></html>

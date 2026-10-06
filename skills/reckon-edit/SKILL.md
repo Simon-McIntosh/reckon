@@ -108,7 +108,7 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    A **material revision** is any change to a decision, a done-when, a section
    declaration, or a gate. A landing comment or an `impl` move is not one, and
    neither needs a review. What counts as covered — an overview of the rule the
-   code enforces — is the coverage predicate `plan_review._review_coverage` in
+   code enforces — is the coverage predicate `plan_review.review_coverage` in
    `reckon/crew/plan_review.py`, which decides per unit of a plan: a section, or
    the document unit carrying its decisions, gates and dependencies. A unit
    stays covered by a stored review that read it when its authored prose differs
@@ -157,6 +157,28 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
 <h2 id="s3">§3 · Implementation</h2>
 <p>New module <code>src/preprocess.py</code> exposes …</p>
 ```
+
+10. **A write that reports `review_owed` starts a review you finish before
+   release.** Every successful write to a plan through `edit_plan` returns
+   `review_owed` beside `review_invocation`: the outstanding units the coverage
+   predicate `plan_review.review_coverage` reports uncovered, each with its
+   measured change where one exists, and the one-line command that composes a
+   review of them. A **non-empty `review_owed` on the last write of an authoring
+   session** — not on each edit of a burst — means rule 9's read-back is owed.
+   Run the invocation once,
+
+   ```bash
+   reckon crew review-plan --project <project> --plan <slug> --local
+   ```
+
+   and answer every finding it raises before a build is dispatched. The tool
+   composes no review itself, so a burst of edits earns one review and the
+   author decides when the session's authoring is finished. An empty
+   `review_owed` owes nothing. A **null `review_owed`** means the review owed is
+   **unknown** — the coverage predicate could not read the plan back, and
+   `review_owed_error` names why — so treat it as owed and run the invocation
+   before a build. An empty list and a null are different facts: nothing is
+   owed, versus the debt is unknown.
 
 ## Authoring for faithful display (the SPA render contract)
 

@@ -2670,7 +2670,7 @@ def require_plan_reviewed(
         return None
 
     refusals = plan_review.store_delivered_reviews(project, node.plan)
-    _records, uncovered, changes = plan_review._review_coverage(
+    _records, uncovered, changes = plan_review.review_coverage(
         project, node.plan, plan=resource.path
     )
     record = plan_review.read_plan_review(project, node.plan, plan=resource.path)
