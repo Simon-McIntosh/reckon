@@ -115,7 +115,7 @@ def test_a_plan_review_directory_lands_under_the_report_root(
     )
     assert Path(fields["write_path"]) == directory
     assert directory.is_dir()
-    assert fields["report_directories_created"][0] == str(directory)
+    assert fields["report_directory_created"] is True
 
 
 def test_a_paused_lane_leaves_no_run_directory_and_still_reports_lane_paused(
@@ -180,18 +180,37 @@ def test_a_run_directory_that_existed_before_the_call_survives_a_refusal(
     assert sentinel.read_text(encoding="utf-8") == "RUBRIC reuse_search: pass\n"
 
 
-def test_the_shared_exit_is_one_private_function_the_refusal_branches_call() -> None:
-    """The removal lives in one helper rather than being copied into each branch."""
+def test_the_removal_is_one_exit_at_the_composing_caller_not_one_per_branch() -> None:
+    """The removal is a single call at the caller, not copied into each branch."""
     source = Path(recovery.__file__).read_text(encoding="utf-8")
     assert "def _discard_composed_plan_review(" in source
-    # the lane-paused branch is one of the exits that share it
-    assert source.count("_discard_composed_plan_review(record, fields)") >= 3
-    # and no branch removes the directory itself
-    assert "shutil.rmtree(" in source
+    # one call site, at the caller that composed the fields
+    assert source.count("_discard_composed_plan_review(fields, report)") == 1
+    # and the removal itself lives in one place, without ignoring errors
     assert source.count("shutil.rmtree(") == 1
+    assert "ignore_errors" not in source
 
 
-def test_the_docstring_citation_of_store_delivered_report_still_resolves() -> None:
-    source = Path(recovery.__file__).read_text(encoding="utf-8")
-    assert ":func:`plan_review.store_delivered_report`" in source
-    assert callable(plan_review.store_delivered_report)
+def test_a_failed_removal_is_reported_not_swallowed(
+    project: tuple[Path, Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _home, _repo, _path = project
+    gate = _paused_gate(tmp_path)
+    subject = _subject()
+    directory = plan_review.review_report_directory(
+        "sample", "fixture", subject["run_id"]
+    )
+
+    def refuse(path, *args, **kwargs):
+        raise OSError(13, "Permission denied")
+
+    monkeypatch.setattr(recovery.shutil, "rmtree", refuse)
+
+    result = recovery.dispatch_review_for_run(subject, config=_config(gate))
+
+    assert result["dispatched"] is False
+    assert result["error"] == "lane-paused"
+    assert result["discard_error"]["path"] == str(directory)
+    assert "Permission denied" in result["discard_error"]["error"]

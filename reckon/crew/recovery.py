@@ -488,25 +488,6 @@ def plan_review_subject(
     }
 
 
-def _missing_ancestors(directory: Path) -> list[str]:
-    """The directories ``directory.mkdir(parents=True)`` would bring into being.
-
-    Returned deepest first, so a caller that later removes them prunes the run
-    directory before the empty ancestors above it. A dispatch composes its run
-    directory with ``parents=True``; naming the directories this call created is
-    what lets a refusal remove exactly those and leave a directory that already
-    existed untouched.
-    """
-    missing: list[str] = []
-    probe = directory
-    while not probe.exists():
-        missing.append(str(probe))
-        if probe.parent == probe:
-            break
-        probe = probe.parent
-    return missing
-
-
 def _review_dispatch_fields(
     record: Mapping[str, Any],
     *,
@@ -538,10 +519,9 @@ def _review_dispatch_fields(
     plan snapshot and sidecar are then returned as the paths and text they
     would be written with — ``brief_text`` carries the composed brief — and
     nothing is created: a preview leaves the plan's report root unchanged and
-    repeated previews mint no run directory for
-    :func:`plan_review.store_delivered_report` to miss. The paths returned are
-    the same ones a real dispatch writes, so the preview still names the
-    command and the scope that dispatch would use.
+    repeated previews mint no run directory for the delivered-review store to
+    find. The paths returned are the same ones a real dispatch writes, so the
+    preview still names the command and the scope that dispatch would use.
     """
     if record.get("subject") == "plan":
         from reckon import _plan_html
@@ -588,9 +568,12 @@ def _review_dispatch_fields(
         # composed path and the written path are one spelling rather than two.
         sidecar = directory / plan_review._REVIEW_SIDECAR_NAME
         plan_version = _plan_html.read_state(document).get("version") or 0
-        composed_directories: list[str] = []
+        # A dispatch composes its run directory here, before the lane decides,
+        # so it records whether this call created the directory: an exit that
+        # launches nothing removes what it created and never a directory that
+        # was already on disk.
+        directory_created = write and not directory.exists()
         if write:
-            composed_directories = _missing_ancestors(directory)
             directory.mkdir(parents=True, exist_ok=True)
             snapshot.write_bytes(document_bytes)
             brief.write_text(brief_text, encoding="utf-8")
@@ -625,7 +608,7 @@ def _review_dispatch_fields(
             ),
             "write_path": str(directory),
             "write_paths": [str(directory)],
-            "report_directories_created": composed_directories,
+            "report_directory_created": directory_created,
         }
     node = record.get("node") or {}
     run_id = str(record.get("run_id") or "")
@@ -2361,15 +2344,24 @@ def dispatch_review_for_run(
                     "review_run_id": standing,
                     "reason": "a plan review is already in flight as a live run",
                 }
-            return _dispatch_composed_review(
+            # The composed fields are held so the one exit below can discard the
+            # run directory they composed when the dispatch launched nothing:
+            # every refusal and hold the dispatch can return reads as not
+            # dispatched, so one check covers them all rather than a removal
+            # copied into each branch.
+            fields = _review_dispatch_fields(record)
+            report = _dispatch_composed_review(
                 record,
-                _review_dispatch_fields(record),
+                fields,
                 config=config,
                 launcher=launcher,
                 allow_unreconciled_runs=allow_unreconciled_runs,
                 prefer_local=prefer_local,
                 dry_run=False,
             )
+            if not report.get("dispatched"):
+                report = _discard_composed_plan_review(fields, report)
+            return report
     run_id = str(record.get("run_id") or "")
     if _is_review_node(record):
         return {
@@ -2485,29 +2477,28 @@ def dispatch_review_for_run(
 
 
 def _discard_composed_plan_review(
-    record: Mapping[str, Any], fields: Mapping[str, Any]
-) -> None:
+    fields: Mapping[str, Any], report: Mapping[str, Any]
+) -> dict[str, Any]:
     """Remove the plan-review run directory a dispatch composed but did not launch.
 
     A plan-review attempt composes its run directory — the brief, the plan
-    snapshot and the sidecar — before the lane admits it, so every exit that
-    launches nothing discards it through this one function rather than a removal
-    copied into each refusal branch. Only the directories this call created are
-    removed, deepest first, and the empty ancestors it created are pruned, so a
-    refusal leaves no new directory under the plan-review report root. A
-    directory that already existed when the call began is never removed.
+    snapshot and the sidecar — before the lane admits it, so the caller that
+    composed it discards it here once when the dispatch launched nothing, rather
+    than a removal copied into each of the dispatch's refusal branches. Only the
+    directory this call created is removed: a run directory that already existed
+    when the fields were composed leaves the returned report untouched. A
+    removal that fails is not swallowed — it is named on the report under
+    ``discard_error`` with the path and the error, so a caller can see what was
+    left behind.
     """
-    if record.get("subject") != "plan":
-        return
-    created = [str(path) for path in fields.get("report_directories_created") or ()]
-    if not created:
-        return
-    shutil.rmtree(created[0], ignore_errors=True)
-    for ancestor in created[1:]:
-        try:
-            Path(ancestor).rmdir()
-        except OSError:
-            break
+    if not fields.get("report_directory_created"):
+        return dict(report)
+    directory = Path(str(fields.get("write_path") or ""))
+    try:
+        shutil.rmtree(directory)
+    except OSError as exc:
+        return {**report, "discard_error": {"path": str(directory), "error": str(exc)}}
+    return dict(report)
 
 
 def _dispatch_composed_review(
@@ -2533,7 +2524,6 @@ def _dispatch_composed_review(
             reason=reason,
             reviewed_head=fields["head"],
         )
-        _discard_composed_plan_review(record, fields)
         return {"run_id": run_id, "dispatched": False, "reason": reason}
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -2554,7 +2544,6 @@ def _dispatch_composed_review(
                 reason=reason,
                 reviewed_head=fields["head"],
             )
-            _discard_composed_plan_review(record, fields)
             return {
                 "run_id": run_id,
                 "dispatched": False,
@@ -2688,7 +2677,6 @@ def _dispatch_composed_review(
             backend=backend,
             reviewed_head=fields["head"],
         )
-        _discard_composed_plan_review(record, fields)
         return {
             "run_id": run_id,
             "dispatched": False,
@@ -2716,7 +2704,6 @@ def _dispatch_composed_review(
             backend=backend,
             reviewed_head=fields["head"],
         )
-        _discard_composed_plan_review(record, fields)
         return {
             "run_id": run_id,
             "dispatched": False,
@@ -2737,7 +2724,6 @@ def _dispatch_composed_review(
             backend=backend,
             reviewed_head=fields["head"],
         )
-        _discard_composed_plan_review(record, fields)
         return {
             "run_id": run_id,
             "dispatched": False,
