@@ -225,38 +225,6 @@ def _as_document(plan: Mapping[str, Any] | str | Path) -> str | None:
     )
 
 
-def _without_run_comments(state: Mapping[str, Any]) -> Mapping[str, Any]:
-    """Return parsed state with the promotion comments a run wrote removed.
-
-    ``comments`` maps a section id to the records anchored to it, and a
-    promotion appends one record per promoted run under an id beginning with
-    :data:`RUN_COMMENT_PREFIX`. Nothing authored changes when a landing is
-    recorded, so those records are dropped — and a section left empty is
-    dropped with them, so a plan holding only run comments digests exactly as
-    one holding none. Every record written for another reason stays in and
-    moves the digest.
-
-    A state carrying no ``comments`` key, or one whose value is not the parsed
-    mapping shape, is returned untouched: the normalisation removes records it
-    can recognise and never hides one it cannot classify.
-    """
-    comments = state.get("comments")
-    if "comments" not in state or not isinstance(comments, Mapping):
-        return state
-    kept: dict[str, Any] = {}
-    for section, entries in comments.items():
-        kept_entries = entries
-        if isinstance(entries, (list, tuple)):
-            kept_entries = [
-                entry
-                for entry in entries
-                if not (isinstance(entry, Mapping) and _is_run_comment(entry.get("id")))
-            ]
-        if kept_entries:
-            kept[str(section)] = kept_entries
-    return {**state, "comments": kept}
-
-
 def _without_comments_and_followups(state: Mapping[str, Any]) -> Mapping[str, Any]:
     """Return parsed state with authored comments and followups removed.
 
@@ -264,10 +232,9 @@ def _without_comments_and_followups(state: Mapping[str, Any]) -> Mapping[str, An
     followups record work done and next steps — the landing comments and
     followups a coordinator writes as it works — not that design, so folding
     them in re-arms a review of the whole plan on every landing beat. Both keys
-    are dropped entirely; a promotion's run comments fall out with the rest, so
-    the run-comment recognition below is subsumed here for the digest. Decisions
-    and dependencies stay: a resolved decision or a new dependency changes what
-    is built, so it belongs to the reviewed content.
+    are dropped entirely, so a promotion's run comments fall out with the
+    authored ones. Decisions and dependencies stay: a resolved decision or a
+    new dependency changes what is built, so it belongs to the reviewed content.
 
     A state without either key is returned with what it carries; the
     normalisation drops whole keys and never reaches inside a value it cannot
