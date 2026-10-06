@@ -23,7 +23,7 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="204">
+<meta name="plan-version" content="205">
 <meta name="plan-modified" content="2026-10-06">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;}">
 </head>
@@ -521,6 +521,9 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261006T104254996936-nothing-sweeps-old-plans" data-who="reckon-build" data-when="2026-10-06T11:41:55.673Z">
     <div class="r-comment-body"><p>refactor(crew): the plan walk in dispatch_awaiting_reviews and its _plan_review_pending helper are deleted so a follower pass composes no plan review, while the run-review reflex and plan_review_subject survive; tests/test_a_run_comment_earns_no_plan_review.py is rewritten to the rule that comments and followups left the document unit (a run comment and an authored comment each leave plan_fingerprint unchanged, a decision-text edit moves it); public_definitions 1481 at base and 1481 at head (no public name retired).</p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261006T125351557789-review-of-the-settle-window-is-retired" data-who="reckon-build" data-when="2026-10-06T13:04:17.343Z">
+    <div class="r-comment-body"><p>review attached to run r-20261006T124142324010-the-settle-window-is-retired — 6 dimensions (goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 19, reuse 20, total 118), added_failure_count 0, one follow-on finding on the host brake that must be removed in the same beat as the merge</p></div>
 </div>
 <div class="r-comment" data-section="s23" data-id="c-20261006T124500Z-s23-two-nodes" data-who="reckon-build" data-when="2026-10-06T12:45:00Z">
     <div class="r-comment-body">Cut as two sequential nodes because the local lane refused the section whole: its write paths estimate 274,545 tokens against a 230,144 window, with reckon/cli.py at 96,680 and reckon/mcp.py at 58,010, though each only changes one caller. The first node, a-delivered-review-that-is-not-stored-says-why, carries the review module and the gate: the named causes, store_error on the sidecar, the hoist to plan_review.store_delivered_reviews, _store_delivered_report going private, and read_plan_review re-expressed over the coverage predicate with the gate taking its record from it. Its head leaves the CLI and MCP callers calling read_plan_review without the plan, which keeps today's answer. The second node, the-surfaces-pass-the-plan, makes the answer verb in reckon/cli.py store an unstored delivery before it answers and makes it and the plan-review view in reckon/mcp.py pass the plan path, so the section's grep for a call without the plan holds at its head.</div>
