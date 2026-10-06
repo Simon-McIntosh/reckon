@@ -1,0 +1,82 @@
+<section data-reckon="evidence" data-node="review-is-earned-by-significant-change">
+  <h3>A review is earned by significant change, measured per unit</h3>
+
+  <p>Plan review now covers a unit — an authored section, or the document unit
+  that carries decisions, gates and dependencies — by how much its prose changed
+  since the review that last read it, not by any edit at all.
+  <code>reckon/crew/plan_review.py</code> gains <code>_review_coverage_report</code>,
+  the three-value predicate (§21's two-value <code>_review_coverage</code> is kept
+  beside it for its existing callers): it compares each outstanding unit's present
+  prose against the newest covering review's <em>snapshot</em> — exactly, through
+  the digest recomputed from that snapshot, or within the declared fraction of the
+  unit's words — and reports the uncovered units with their measured share. The
+  word share is <code>difflib.SequenceMatcher</code> over
+  <code>dispatch._normalised_words</code>, so the measure adds a comparison and no
+  second tokeniser and both texts come from the one reader the digests use
+  (<code>_prose_texts</code>). Three cases stay material whatever their size: a
+  changed done-when (located by <code>_done_when_paragraph</code> and compared
+  whitespace-normalised), a section that became implementable since the review
+  (read from the snapshot's own declarations), and a unit absent from the review —
+  a new section above all. A review with no snapshot covers only an exact digest
+  match, its threshold read as zero.</p>
+
+  <p>The threshold is <code>review.plan_change_threshold: 0.30</code>, declared in
+  <code>reckon/schema/flight-defaults.yaml</code> and read through the new public
+  <code>reckon/flight.py:plan_review_change_threshold</code>. The schema cleaner
+  and <code>validate_layer</code> now read one table,
+  <code>flight.REVIEW_OWNED_KEYS</code> — <code>plan_settle_seconds</code> a
+  non-negative integer, <code>plan_change_threshold</code> a number in [0, 1] — so
+  a key added to one is set aside by the cleaner and checked by the validator in
+  the same edit. The gate refusal in <code>reckon/crew/routing.py</code> names each
+  uncovered unit beside its measured change (for example <code>b changed by 35% of
+  its words</code>).</p>
+
+  <h4>Evidence</h4>
+  <ul>
+    <li><strong>Tests</strong>: <code>tests/test_review_is_earned_by_significant_change.py</code>
+    (13 cases) plus <code>tests/test_plan_settle_window_is_declared.py</code>:
+    <code>uv run --no-sync pytest -p no:cacheprovider -q
+    tests/test_review_is_earned_by_significant_change.py
+    tests/test_plan_settle_window_is_declared.py</code> → <strong>14 passed,
+    EXIT=0</strong>. Log: <code>logs/newtests.log</code> (ends in a bare
+    <code>EXIT=0</code>).</li>
+    <li><strong>Existing review, gate and flight tests pass</strong>:
+    <code>tests/test_plan_review_gate.py test_plan_review_store.py
+    test_plan_review_dispatch.py test_a_section_reviewed_as_authored_stays_reviewed.py
+    test_a_run_comment_earns_no_plan_review.py test_review_plan_command.py
+    test_review_gate_coverage.py test_flight.py test_flight_catalogue_layer.py</code>
+    → <strong>213 passed, 2 failed, EXIT=1</strong>, log <code>logs/regression.log</code>.
+    Both failures are in <code>test_a_run_comment_earns_no_plan_review.py</code> and
+    are pre-existing at this node's base: swapping the base revision's
+    <code>plan_review.py</code> back in reproduces the identical two failures
+    (log <code>logs/baseline-combined-tests.log</code>, EXIT=1). Delta added:
+    <strong>zero</strong>.</li>
+    <li><strong>Negative control</strong>: the measure changed to compare each unit
+    against the previously-seen plan state instead of the reviewed snapshot reddens
+    the cumulative three-edit test —
+    <code>test_three_successive_edits_accumulate_against_the_reviewed_snapshot</code>
+    fails <code>assert set() == {'b'}</code>, <strong>EXIT=1</strong>; log
+    <code>logs/negative-control.log</code>. The mutation was reverted byte-exact.</li>
+    <li><strong>Interface accounting</strong>: <code>reckon.interface_counts</code>
+    reports <code>public_definitions</code> <strong>1481</strong> at base
+    <code>64e6b3376</code> and <strong>1482</strong> at head — one above, the added
+    <code>plan_review_change_threshold</code>. The measure, the done-when locator
+    and the declaration comparison are module-private.</li>
+  </ul>
+
+  <h4>Replay over the 2026-10-06 review snapshots — not reproduced</h4>
+  <p><strong>Blocker.</strong> The done-when asks for a replay over the 96
+  re-reviews of 2026-10-06 reporting how many the cumulative rule composes and how
+  many added sections it keeps, beside the research's consecutive figure of 15.
+  A scoped replay (<code>docs/figures/…/replay_cumulative.py</code>, reusing the
+  cycle-measurement module's own loaders and readers and bounded to the research
+  snapshot <code>2026-10-06T04:48Z</code>) runs clean but does <strong>not</strong>
+  reproduce the research's scope: it counts <strong>72</strong> re-reviews dated
+  <code>2026-10-06</code> and a consecutive-rule count of <strong>20</strong>, against
+  the research's 96 and 15, so the denominators differ and a cumulative figure from
+  it is not comparable to the recorded 15. Its own numbers (cumulative fires 24,
+  added sections kept 8) are reported only as indicative, not as the required
+  figure. Log <code>logs/replay-cumulative.log</code>. The pair-set definition the
+  research used must be recovered before the figure can be stated; that recovery is
+  the follow-on.</p>
+</section>
