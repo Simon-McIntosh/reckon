@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "a5e0eeb3e04bb8ffcdfc370ac692ff9436baf2a5",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-06T16:16:15.666Z",
+  "dispatched_at": "2026-10-06T15:55:38Z",
+  "findings": [
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1076",
+      "severity": "follow-on",
+      "text": "follow-on: the change edits a file outside the node's declared write paths; the (named == expected) census makes the edit unavoidable and the run discloses it, so it does not hold the node but needs coordinator sanction."
+    }
+  ],
+  "head_log_revision": "f77d3c2e1a8714f25c3eeafc5341261ec18ddeb5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read each change -- f77d3c2e1 is the single change on a5e0eeb3: skills/reckon-build/SKILL.md:178 adds the full `reckon crew review-plan` line, tests/test_crew_directory.py:276 now reads SKILL.md together with references/*.md, and tests/test_skill_contracts.py:1076 adds the verb to the expected-command table.",
+    "done_when": "the done-when names tests/test_crew_directory.py plus tests/test_skill_contracts.py passing in full; the reviewed gate records 68 passed EXIT=0 over exactly those files, and I independently reproduced the base failures and the head pass.",
+    "goal": "the node repairs the two skill-contract tests that fail on main after the reckon-build split -- tests/test_crew_directory.py:276 and tests/test_skill_contracts.py:1206 -- and both are green at the reviewed head f77d3c2e1.",
+    "manifest": "read; status complete; head f77d3c2e1; gate.log 68 passed EXIT=0; negative-control.log 1 failed EXIT=1; the manifest itself flags the third-file scope deviation.",
+    "write_paths": "the node declared tests/test_crew_directory.py and skills/reckon-build/SKILL.md; the diff also changes tests/test_skill_contracts.py:1076, outside that declaration."
+  },
+  "justifications": {
+    "durability": "removing the guidance from skills/reckon-build/references/coordinator-reference.md:582 reddens tests/test_crew_directory.py:283 (EXIT=1), and head SKILL.md without the table entry reddens tests/test_skill_contracts.py:1093 -- both guards reproduced.",
+    "evidence": "the reviewed gate records 68 passed EXIT=0 over the two named files; I re-ran the base at a5e0eeb3 (2 failed) and the head at f77d3c2e1 (68 passed), though its gate.log header names head=a5e0eeb3 while the tree carried the f77d3c2e1 fix.",
+    "fit": "the skills/reckon-build/SKILL.md:178 line matches the surrounding command list and the tests/test_skill_contracts.py:1076 dict entry matches its neighbours; ruff check adds no finding on either changed file.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:178 documents the registered verb and tests/test_crew_directory.py:276 now reads the references holding the guidance, so both named failures are repaired.",
+    "reuse": "the diff adds no function, class or module -- it reuses the existing normalized/_command_at helpers and the skill's own command list, so no capability is forked.",
+    "scope_discipline": "tests/test_skill_contracts.py:1076 is outside the declared write paths (tests/test_crew_directory.py, skills/reckon-build/SKILL.md), forced by the (named == expected) verb census the node itself discloses."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: a5e0eeb3e04bb8ffcdfc370ac692ff9436baf2a5\nreviewed_head_sha: f77d3c2e1a8714f25c3eeafc5341261ec18ddeb5\nVERDICT goal: the node repairs the two skill-contract tests that fail on main after the reckon-build split -- tests/test_crew_directory.py:276 and tests/test_skill_contracts.py:1206 -- and both are green at the reviewed head f77d3c2e1.\nVERDICT done_when: the done-when names tests/test_crew_directory.py plus tests/test_skill_contracts.py passing in full; the reviewed gate records 68 passed EXIT=0 over exactly those files, and I independently reproduced the base failures and the head pass.\nVERDICT write_paths: the node declared tests/test_crew_directory.py and skills/reckon-build/SKILL.md; the diff also changes tests/test_skill_contracts.py:1076, outside that declaration.\nVERDICT manifest: read; status complete; head f77d3c2e1; gate.log 68 passed EXIT=0; negative-control.log 1 failed EXIT=1; the manifest itself flags the third-file scope deviation.\nVERDICT diff: read each change -- f77d3c2e1 is the single change on a5e0eeb3: skills/reckon-build/SKILL.md:178 adds the full `reckon crew review-plan` line, tests/test_crew_directory.py:276 now reads SKILL.md together with references/*.md, and tests/test_skill_contracts.py:1076 adds the verb to the expected-command table.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:178 documents the registered verb and tests/test_crew_directory.py:276 now reads the references holding the guidance, so both named failures are repaired.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed gate records 68 passed EXIT=0 over the two named files; I re-ran the base at a5e0eeb3 (2 failed) and the head at f77d3c2e1 (68 passed), though its gate.log header names head=a5e0eeb3 while the tree carried the f77d3c2e1 fix.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: tests/test_skill_contracts.py:1076 is outside the declared write paths (tests/test_crew_directory.py, skills/reckon-build/SKILL.md), forced by the (named == expected) verb census the node itself discloses.\nSCORE durability: 20\nJUSTIFICATION durability: removing the guidance from skills/reckon-build/references/coordinator-reference.md:582 reddens tests/test_crew_directory.py:283 (EXIT=1), and head SKILL.md without the table entry reddens tests/test_skill_contracts.py:1093 -- both guards reproduced.\nSCORE fit: 20\nJUSTIFICATION fit: the skills/reckon-build/SKILL.md:178 line matches the surrounding command list and the tests/test_skill_contracts.py:1076 dict entry matches its neighbours; ruff check adds no finding on either changed file.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module -- it reuses the existing normalized/_command_at helpers and the skill's own command list, so no capability is forked.\nFINDING tests/test_skill_contracts.py:1076 follow-on: the change edits a file outside the node's declared write paths; the (named == expected) census makes the edit unavoidable and the run discloses it, so it does not hold the node but needs coordinator sanction.\n",
+  "review_run_id": "r-20261006T155521299123-review-of-skill-contract-tests-after-the-split",
+  "reviewed_base_sha": "a5e0eeb3e04bb8ffcdfc370ac692ff9436baf2a5",
+  "reviewed_head_sha": "f77d3c2e1a8714f25c3eeafc5341261ec18ddeb5",
+  "reviewed_run_id": "r-20261006T154333576993-skill-contract-tests-after-the-split",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T16:12:16.947275+00:00",
+  "total": 114
+}
