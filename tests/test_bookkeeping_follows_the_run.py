@@ -181,12 +181,15 @@ def test_a_corrective_attempt_promotes_exempt_and_needs_no_impl_flag(
 # (2) a review run's outcome is the review it stored
 
 
-def _write_stored_review(reviewed_run_id: str) -> Path:
+def _write_stored_review(reviewed_run_id: str, review_run_id: str) -> Path:
     path = review_module.review_path(PROJECT, reviewed_run_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
             {
+                "project": PROJECT,
+                "reviewed_run_id": reviewed_run_id,
+                "review_run_id": review_run_id,
                 "status": "parsed",
                 "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, 3),
                 "total": 17,
@@ -214,7 +217,7 @@ def test_a_review_runs_outcome_defaults_to_its_stored_review(
     _set_plan(repository, impl=0.5)
     reviewed = "r-20260918T084000000000-reviewed"
     review_run = "r-20260918T084100000000-reviewer"
-    stored_review = _write_stored_review(reviewed)
+    stored_review = _write_stored_review(reviewed, review_run)
     _write_pointer(
         repository,
         review_run,

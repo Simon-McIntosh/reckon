@@ -1755,13 +1755,18 @@ def run_record_times(
 def store_committed_review(
     record: dict[str, Any],
     *,
+    project: str | None = None,
     root: str | Path | None = None,
     committed_root: str | Path | None = None,
 ) -> Path:
     """Persist one review record into the project's committed tree.
 
     The record must name ``project`` and ``review_run_id`` — the run that
-    produced the review. That id keys the committed file and supplies the
+    produced the review. ``project`` may be supplied by the caller instead,
+    which is how a promotion commits a record whose own body omits the project:
+    the promoting run knows the project it is landing into, so the committed
+    record takes that project rather than the write being refused. The review
+    run id keys the committed file and supplies the
     dispatch and completion times, so the record carries when the review ran
     rather than when its file was stored; a record carrying no review run id is
     refused rather than filed under the run it reviews, because two review runs
@@ -1780,7 +1785,7 @@ def store_committed_review(
     ``run/<reviewed-run-id>/`` and must name the reviewed run. The write is
     atomic and every other body field is preserved.
     """
-    project = str(record.get("project") or "").strip()
+    project = str(record.get("project") or "").strip() or str(project or "").strip()
     if not project:
         raise ValueError("review record is missing project")
     review_run_id = str(record.get("review_run_id") or "").strip()
@@ -1815,6 +1820,7 @@ def store_committed_review(
         )
 
     stored = dict(record)
+    stored["project"] = project
     stored[DISPATCH_TIME_KEY] = dispatched
     stored[COMPLETION_TIME_KEY] = completed
     if not stored.get("timestamp"):
@@ -1986,10 +1992,14 @@ def stored_record(
     a record another writer filed under a different run id does not run: a
     named head that matched none of them is a fact about the revision, not
     about the filing, and the caller that wants the newest record asks again
-    without a head. The committed tree settles the same way: once it carries a
-    record for this run, none of the run's staging files nor a store-wide search
-    can displace it. Only a run with none of its own files in either tree
-    reaches the store-wide search.
+    without a head. The committed tree answers for a run it carries a record
+    for, and the staging store is consulted when it does not: a committed tree
+    holding a record for this run at some head but none at the named one
+    returns no record, and the staging store is then searched for one at that
+    head before the tree reports the absence. Once the committed tree carries a
+    record for the run and a staging file of its own exists, the committed tree
+    settles and a store-wide search does not run. Only a run with none of its
+    own files in either tree reaches the store-wide search.
 
     A record file that cannot be read or does not parse — a review worker
     composing its record by hand can be met mid-write — is skipped rather than
@@ -2001,15 +2011,23 @@ def stored_record(
     dropped.
     """
     committed = committed_review_root(project)
+    committed_selected: tuple[Path | None, dict[str, Any] | None] | None = None
     if committed is not None:
         run_directory = committed / COMMITTED_RUN_DIRNAME / reviewed_run_id
         committed_paths = (
             sorted(run_directory.glob("*.json")) if run_directory.is_dir() else []
         )
         if committed_paths:
-            return _select_stored_record(
+            committed_selected = _select_stored_record(
                 committed_paths, reviewed_head_sha, skipped=skipped
             )
+            # A committed record answers unless the committed tree holds records
+            # for this run and none at the named head: a review of another head
+            # is still reachable by that head, so the staging store is searched
+            # for one rather than the committed tree returning an absence the
+            # staging store could fill.
+            if committed_selected[1] is not None or reviewed_head_sha is None:
+                return committed_selected
     directory = review_store_root(base_dir) / project
     candidates = [review_path(project, reviewed_run_id, base_dir)]
     if directory.is_dir():
@@ -2019,6 +2037,11 @@ def stored_record(
         return _select_stored_record(
             list(existing.values()), reviewed_head_sha, skipped=skipped
         )
+    if committed_selected is not None:
+        # The committed tree holds records for this run and no staging file of
+        # its own exists, so the committed tree settles the search: a record
+        # already committed to this run is not displaced by a store-wide search.
+        return committed_selected
     # No file of this run's own exists, so the store's records are searched for
     # one whose content names the run it reviews — the shape a hand-written
     # record takes when its worker keys the file on its own run id instead of
@@ -2026,6 +2049,60 @@ def stored_record(
     return _record_filed_elsewhere(
         directory, reviewed_run_id, reviewed_head_sha, skipped=skipped
     )
+
+
+def stored_records_for_run(
+    project: str,
+    reviewed_run_id: str,
+    *,
+    base_dir: str | Path | None = None,
+    skipped: list[dict[str, str]] | None = None,
+) -> list[tuple[Path, dict[str, Any]]]:
+    """Return every readable staging record the named reviewed run carries.
+
+    A run is reviewed once per round, so its staging directory can hold one
+    record per round — at different heads, written by different review runs,
+    beside a legacy copy — and none of them displaces another: each is the
+    run's review of one revision. A caller that keeps the run's reviews rather
+    than reading the one a by-head selection returns (a promotion committing
+    every round into the project's tree) reads them all through this lookup.
+
+    Only the staging store is enumerated: the committed tree holds what a
+    promotion has already landed, not the live rounds this serves. The store's
+    own index answers, so the walk is one pass per project directory and per
+    process, and a record filed under another name but naming this run is
+    included — the same content-keyed rule the by-head readers apply. Records
+    come back oldest first by mtime, so two runs of the same store read them in
+    the same order. A file that cannot be read or does not parse is skipped and
+    named to the caller's ``skipped`` list or collection region, the same rule
+    the by-head readers apply.
+    """
+    directory = review_store_root(base_dir) / project
+    if not directory.is_dir():
+        return []
+    records: list[tuple[Path, dict[str, Any]]] = []
+    seen: set[str] = set()
+    entries = sorted(
+        _store_index(directory).get(reviewed_run_id) or [],
+        key=lambda item: item["mtime_ns"],
+    )
+    for entry in entries:
+        path = entry["path"]
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            _note_skipped_record(path, error, into=skipped)
+            continue
+        if not isinstance(record, Mapping):
+            continue
+        if str(record.get("reviewed_run_id") or "").strip() != reviewed_run_id:
+            continue
+        records.append((path, dict(record)))
+    return records
 
 
 def _record_filed_elsewhere(
