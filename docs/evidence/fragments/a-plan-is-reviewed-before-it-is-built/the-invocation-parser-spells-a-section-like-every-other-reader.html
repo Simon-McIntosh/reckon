@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="the-invocation-parser-spells-a-section-like-every-other-reader">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s19">
+<meta name="plan-title" content="Invocation section parser verification">
+<meta name="plan-recorded-at" content="2026-10-06">
+<meta name="plan-verdict" content="passed">
+<title>Invocation section parser verification | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="the-invocation-parser-spells-a-section-like-every-other-reader-verification">
+<h1>Invocation section parser verification</h1>
+<p>The followup invocation parser now composes its section token from the shared section-number core, so a prompt naming a dotted or hyphenated section resolves to that section's identity instead of its parent's.</p>
+<h2>Measurements</h2>
+<table><thead><tr><th>Measure</th><th>Result</th><th>Receipt / scope</th></tr></thead><tbody>
+<tr><td>Base revision</td><td>e853f22d45f7ce65dbac91820508d4b1cdc5d71c</td><td>Unmodified product source during the base gate</td></tr>
+<tr><td>Implementation revision</td><td>04e755946b3a07acfebb537f6dc4a33b70a18bbc</td><td>Parser composition and the new focused tests</td></tr>
+<tr><td>Base affected tests</td><td>184 passed in 73.25s; EXIT=0</td><td>base-gate.log</td></tr>
+<tr><td>Head affected tests</td><td>196 passed in 74.34s; EXIT=0</td><td>head-gate.log</td></tr>
+<tr><td>Focused new tests</td><td>12 passed in 3.13s; EXIT=0</td><td>focused-gate.log</td></tr>
+<tr><td>Negative control</td><td>10 failed, 2 passed in 1.49s; EXIT=1</td><td>negative-control.log</td></tr>
+<tr><td>Declared mutation</td><td>restore the bare \d+ section token in followup_pointers._INVOCATION_RE</td><td>The dotted-section pin fails; the whole-number case still passes</td></tr>
+<tr><td>Section spellings resolved</td><td>&#167;5 &#8594; s5 (unchanged); &#167;5.1 and &#167;5-1 &#8594; s5-1; &#167;5a &#8594; no section</td><td>section_record_id carries the identity; the alphabetic suffix is rejected</td></tr>
+<tr><td>Section-spelling frames at head</td><td>7</td><td>Six frames plus followup_pointers._INVOCATION_RE, each composed from the shared core or its continuation</td></tr>
+<tr><td>Core composition in followup_pointers</td><td>grep reports the import plus the one composition</td><td>grep -rn "SECTION_NUMBER_PATTERN\|SECTION_NUMBER_CONTINUATION" reckon/followup_pointers.py</td></tr>
+<tr><td>Public definitions</td><td>1480 / 1480</td><td>reckon.interface_counts.count_revision; delta 0</td></tr>
+<tr><td>Open-followup census</td><td>42 open followups; 0 moved</td><td>open-followup-census.json; positive control: an injected dotted prompt moves s5/section-not-implementable &#8594; s5-1/implementable-section</td></tr>
+</tbody></table>
+<h2>Open followups per plan, section at base and at the head</h2>
+<table><thead><tr><th>Plan</th><th>Followup</th><th>Base section</th><th>Head section</th><th>Moved</th></tr></thead><tbody>
+<tr><td>a-lane-can-say-where-it-stands.html</td><td>f-wisnaf-mig-a-lane-can-say-where-it-</td><td><code>s7</code></td><td><code>s7</code></td><td>no</td></tr>
+<tr><td>a-page-load-reads-each-file-once.html</td><td>f-aplref-002</td><td><code>s9</code></td><td><code>s9</code></td><td>no</td></tr>
+<tr><td>a-plan-is-reviewed-before-it-is-built.html</td><td>f-apirbiib-dry-run-gate-skip</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>a-review-can-see-the-figure.html</td><td>f-arcstf-002</td><td><code>s2</code></td><td><code>s2</code></td><td>no</td></tr>
+<tr><td>a-review-is-sized-to-its-risk.html</td><td>f-arist-012</td><td><code>s3</code></td><td><code>s3</code></td><td>no</td></tr>
+<tr><td>a-window-paces-the-lane.html</td><td>f-20260922T1145-no-commit-guard-owner</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>a-worker-is-charged-to-a-job.html</td><td>f-awcj-006-first-rung-under-the-held-reservation</td><td><code>s6</code></td><td><code>s6</code></td><td>no</td></tr>
+<tr><td>a-worker-owns-its-own-record.html</td><td>f-awo-001</td><td><code>s2</code></td><td><code>s2</code></td><td>no</td></tr>
+<tr><td>a-worker-reuses-before-it-writes.html</td><td>f-awrbiw-git-access-has-one-owner</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>an-orchestrator-is-bound-by-its-inbox.html</td><td>f-obi-001</td><td><code>s2</code></td><td><code>s2</code></td><td>no</td></tr>
+<tr><td>an-orchestrator-is-bound-by-its-inbox.html</td><td>f-aobi-wire-the-review-reflex-into-the-watcher</td><td><code>s2</code></td><td><code>s2</code></td><td>no</td></tr>
+<tr><td>an-orchestrator-is-bound-by-its-inbox.html</td><td>f-obi-reflex-routes-to-an-unlaunchable-lane</td><td><code>s2</code></td><td><code>s2</code></td><td>no</td></tr>
+<tr><td>background-agent-fitness-and-dispatch-scope.html</td><td>f-bafds-002-review-sandbox-for-gate-reruns</td><td><code>s3</code></td><td><code>s3</code></td><td>no</td></tr>
+<tr><td>background-agent-fitness-and-dispatch-scope.html</td><td>f-bafds-003-class-fitness-record</td><td><code>s1</code></td><td><code>s1</code></td><td>no</td></tr>
+<tr><td>codex-agent-context-compatibility.html</td><td>f-cacc-next-eoh-20260729</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>concurrency-and-schedule-visibility.html</td><td>f-csv-003</td><td><code>s2</code></td><td><code>s2</code></td><td>no</td></tr>
+<tr><td>consumers-read-reckon-through-verbs.html</td><td>f-crrtv-002</td><td><code>s3</code></td><td><code>s3</code></td><td>no</td></tr>
+<tr><td>crew-effort-routing.html</td><td>f-cer-004</td><td><code>s4</code></td><td><code>s4</code></td><td>no</td></tr>
+<tr><td>crew-run-ledger.html</td><td>f-crl-002</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>crew-runtime-positive-controls.html</td><td>f-crpc-s21-after-decision</td><td><code>s21</code></td><td><code>s21</code></td><td>no</td></tr>
+<tr><td>fleet-monitor-legibility.html</td><td>f-fml-002</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>flight-control-config.html</td><td>f-fcc-002</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>history-persists-as-detail-washes-out.html</td><td>f-hpdw-002</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>model-capability-schema.html</td><td>f-mcs-next-eoh-20260729</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>monitor-renders-what-it-is-given.html</td><td>f-mrwig-003</td><td><code>s10</code></td><td><code>s10</code></td><td>no</td></tr>
+<tr><td>one-typesafe-model-picker.html</td><td>f-otmp-stamp-test</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>one-typesafe-model-picker.html</td><td>f-otmp-week-compare</td><td><code>s6</code></td><td><code>s6</code></td><td>no</td></tr>
+<tr><td>one-typesafe-model-picker.html</td><td>f-otmp-outcomes-reread</td><td><code>s6</code></td><td><code>s6</code></td><td>no</td></tr>
+<tr><td>one-typesafe-model-picker.html</td><td>f-otmp-review-follow-ons</td><td><code>s6</code></td><td><code>s6</code></td><td>no</td></tr>
+<tr><td>open-work-is-capped.html</td><td>f-owic-003</td><td><code>s3</code></td><td><code>s3</code></td><td>no</td></tr>
+<tr><td>research-evidence-provenance.html</td><td>f-rep-next-eoh-20260729</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>self-hosted-worker-backends.html</td><td>f-shwb-002</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>spa-surface-redesign.html</td><td>f-ssr-004</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>sprint-horizon-surface.html</td><td>f-shs-002</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>sprint-review-persistence.html</td><td>f-srp-002</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>surface-latency-and-legibility.html</td><td>f-slal-004</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>the-local-lane-is-the-default.html</td><td>f-tllitd-readings-and-durability</td><td><code>s5</code></td><td><code>s5</code></td><td>no</td></tr>
+<tr><td>the-local-lane-is-the-default.html</td><td>f-tllitd-worker-digest</td><td><code>s9</code></td><td><code>s9</code></td><td>no</td></tr>
+<tr><td>the-orchestrator-orchestrates.html</td><td>f-too-verify-gate-replays-the-result-clause</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>the-suite-is-green-at-head.html</td><td>f-tsigah-three-load-only-ids-for-section-three</td><td><code>s3</code></td><td><code>s3</code></td><td>no</td></tr>
+<tr><td>work-scheduling-surface.html</td><td>f-wss-one-active-superseded</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+<tr><td>worker-spend-is-legible-in-the-pane.html</td><td>f-wslp-002</td><td><code></code></td><td><code></code></td><td>no</td></tr>
+</tbody></table>
+<p>No open followup in this project names a dotted or hyphenated section, so no resolution moves; the positive control shows the census reports a move when one exists.</p>
+</section>
+</main></body></html>
