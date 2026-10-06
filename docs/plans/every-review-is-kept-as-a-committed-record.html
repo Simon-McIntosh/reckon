@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.4">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -304,6 +304,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261006T172709656322-promotion-adds-no-lint-finding" data-who="reckon-build" data-when="2026-10-06T17:31:02.620Z">
     <div class="r-comment-body"><p>promotion.py:8707-8714 now builds the committed review-record path list with a single list.extend over a generator instead of a per-payload append loop, so the review-round loop adds no PERF401 finding; ruff on the file reports exactly three findings (UP035, UP017, PERF403) and no PERF401, and the named suites pass 10 EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261006T173130951688-review-of-promotion-adds-no-lint-finding" data-who="reckon-build" data-when="2026-10-06T17:37:45.099Z">
+    <div class="r-comment-body"><p>attached an independent review of run r-20261006T172709656322-promotion-adds-no-lint-finding (the PERF401 removal in reckon/crew/promotion.py); the parsed record scores goal_fidelity 20, evidence 20, scope_discipline 20, durability 18, fit 20, reuse 20 (total 118/120), records reviewed_base_sha 87f6c16ac0649f7ec91eba4fe859a8f281f432d3 and reviewed_head_sha 5f89f2a931b3dd41976d2aa57a9554d40a8b1df7, and carries added_failure_count null (no baseline_suite/after_suite arms in the reviewed manifest) with added_failure_ids [].</p></div>
 </div>
 </section>
 </main>
