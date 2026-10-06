@@ -7,10 +7,11 @@ to the constant is a check no reader can enumerate. This is the same mirror the
 code-review prompt is held to, extended to the two plan rubrics. It fails in both
 directions for both prompts.
 
-The two focused cases hold the two rubric clauses the pilot's first run turned
-into requirements: the anchor rule resolves an extensionless href the way the
-surface does before it reports a finding, and the reasoning check names the
-caller the mechanism runs on.
+The focused cases hold the rubric clauses the pilot's runs turned into
+requirements: the anchor rule resolves an extensionless href the way the surface
+does before it reports a finding, the reasoning check names the caller the
+mechanism runs on, and the design-review prompt asks for every instance of one
+finding type under a single finding.
 """
 
 from __future__ import annotations
@@ -82,6 +83,18 @@ def test_reasoning_check_names_the_real_path_caller() -> None:
     assert "does the mechanism run on the real code path, with the caller named" in text
     assert "does the stated root cause match the cited evidence" in text
     assert "does each section's mechanism produce its done-when" in text
+
+
+def test_design_review_prompt_asks_for_every_instance_of_a_finding() -> None:
+    """A finding of one type is a census, not a single instance.
+
+    The prompt must tell the reviewer to search for every instance of that type
+    in the same pass and list them under one finding, so a reviewer cannot
+    report the first instance and leave the rest unfound.
+    """
+    text = review_module.load_plan_design_review_prompt()
+    assert "search for every instance of that type" in text
+    assert "under one finding" in text
 
 
 @pytest.mark.parametrize(("constant", "path_attr", "loader"), PLAN_RUBRICS)

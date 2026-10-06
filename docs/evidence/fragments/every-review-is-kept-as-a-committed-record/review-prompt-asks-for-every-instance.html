@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="The design-review prompt asks for every instance of a finding type">
+  <meta name="plan-summary" content="The design-review prompt gains a census clause: a finding of one type is a census, not a sample — when the reviewer finds one instance (an unplanned importer, a duplicate owner, a missed reuse) it searches for every instance of that type in the same pass and lists them all under one finding carrying each file and line. Held by a prompt-contract case and its deletion control.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-06">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The design-review prompt asks for every instance of a finding type | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The design-review prompt asks for every instance of a finding type</h1>
+
+    <section id="review-prompt-asks-for-every-instance-anchor">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/prompts/plan_design_review.md</code> gains a
+        "Every instance of a type, not the first" section and a matching
+        emission note: a finding of one type is a census, and the single
+        <code>FINDING</code> line for that type carries every instance, each
+        with its own <code>&lt;file&gt;:&lt;line&gt;</code>.
+        <code>tests/test_plan_review_prompt.py</code> adds a case asserting the loaded prompt
+        carries the clause, with a control that deletes the clause and shows
+        the check reddens.</p>
+      <p>Gate: <code>tests/test_plan_review_prompt.py</code> — 9 passed, 0
+        failed, EXIT=0. Negative control (every-instance instruction deleted) —
+        1 failed (the new case), 8 passed, EXIT=1.</p>
+    </section>
+  </main>
+</body>
+</html>
