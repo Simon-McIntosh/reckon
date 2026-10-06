@@ -57,12 +57,11 @@ import json
 import re
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
-from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
 from reckon import _plan_html
-from reckon._plan_html import landed_section_ids
+from reckon._plan_html import DOCUMENT_UNIT, landed_section_ids
 from reckon._store import write_json_atomically
 from reckon.crew import review as _review_store
 
@@ -161,47 +160,6 @@ RESPONSE_EVENTS_KEY = "response_events"
 
 # A finding type declined across this many distinct plans surfaces to the lead.
 RECURRENCE_THRESHOLD = 3
-
-_DOCUMENT_UNIT = "_document"
-
-
-def _prose_slices(document: str, *, skip_landed_cards: bool = True):
-    """Yield identity and raw prose slices in document order from shared spans."""
-    headings = [
-        heading
-        for heading in _plan_html.plan_headings(document)
-        if heading.level == 2 and heading.identity and not heading.machinery
-    ]
-    protected = list(
-        _plan_html.structured_section_spans(
-            document,
-            every_marked_element=True,
-            skip_landed_cards=skip_landed_cards,
-        )
-    )
-    body = re.search(r"<body\b[^>]*>", document, re.IGNORECASE)
-    start = body.end() if body else 0
-    closing = re.search(r"</body\s*>", document[start:], re.IGNORECASE)
-    end = start + closing.start() if closing else len(document)
-    cuts = {start, end}
-    for left, right in protected + [heading.span for heading in headings]:
-        cuts.update((max(start, min(end, left)), max(start, min(end, right))))
-    points = sorted(cuts)
-    for left, right in pairwise(points):
-        identity = next(
-            (
-                heading.identity
-                for heading in headings
-                if heading.span[0] <= left and right <= heading.span[1]
-            ),
-            _DOCUMENT_UNIT,
-        )
-        raw = (
-            ""
-            if any(a <= left and right <= b for a, b in protected)
-            else document[left:right]
-        )
-        yield identity, raw
 
 
 def _as_state(plan: Mapping[str, Any] | str | Path) -> Mapping[str, Any]:
@@ -307,16 +265,16 @@ def _prose_texts(plan: Mapping[str, Any] | str | Path) -> dict[str, str]:
     """Return each authored unit's prose, whitespace-normalised, in one read.
 
     This is the one reader the unit digests and the change measure share: a
-    section's prose or the remaining document prose, taken through the same
-    slicer and tag stripper, so the measure extracts no text of its own and
-    both texts it compares come from here. A parsed-state input carries no
-    document text, so it yields no prose rather than an invented one.
+    section's prose or the remaining document prose, taken through the one
+    section-prose reader, so the measure extracts no text of its own and both
+    texts it compares come from here. A parsed-state input carries no document
+    text, so it yields no prose rather than an invented one.
     """
     document = _as_document(plan)
-    buckets: dict[str, list[str]] = {_DOCUMENT_UNIT: []}
+    buckets: dict[str, list[str]] = {DOCUMENT_UNIT: []}
     if document is not None:
-        for identity, raw in _prose_slices(document):
-            buckets.setdefault(identity, []).append(_plan_html.strip_tags(raw))
+        for identity, prose in _plan_html.section_prose(document):
+            buckets.setdefault(identity, []).append(prose)
     return {
         identity: " ".join(" ".join(parts).split())
         for identity, parts in buckets.items()
@@ -328,7 +286,7 @@ def _section_digests(plan: Mapping[str, Any] | str | Path) -> dict[str, str]:
     payloads = {
         identity: {"prose": prose} for identity, prose in _prose_texts(plan).items()
     }
-    payloads[_DOCUMENT_UNIT]["state"] = _digest_state(plan)
+    payloads[DOCUMENT_UNIT]["state"] = _digest_state(plan)
     return {identity: _digest(payload) for identity, payload in payloads.items()}
 
 
@@ -553,14 +511,13 @@ def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> tuple[str, str, 
     for keep_declarations in (True, False):
         payload = {"state": _digest_state(content, keep_declarations=keep_declarations)}
         if document is not None:
+            keep_cards = keep_declarations or not bool(landed_section_ids(document))
             payload["prose"] = " ".join(
                 prose
-                for _, raw in _prose_slices(
-                    document,
-                    skip_landed_cards=not keep_declarations
-                    and bool(landed_section_ids(document)),
+                for _, prose in _plan_html.section_prose(
+                    document, keep_landed_cards=keep_cards
                 )
-                if (prose := _plan_html.strip_tags(raw))
+                if prose
             )
         forms.append(_digest(payload))
     return tuple(forms)
@@ -685,7 +642,7 @@ def review_coverage(
         for section in implementable_sections(
             _as_state(content).get("section_declarations")
         )
-    } | {_DOCUMENT_UNIT}
+    } | {DOCUMENT_UNIT}
     if whole:
         # The whole-plan fingerprint is unchanged, so every unit is covered
         # except a section that became implementable since the review: a
@@ -703,7 +660,7 @@ def review_coverage(
         became_implementable = {
             identity
             for identity in outstanding
-            if identity != _DOCUMENT_UNIT and identity not in implemented
+            if identity != DOCUMENT_UNIT and identity not in implemented
         }
         changes = dict.fromkeys(became_implementable)
         return [newest], became_implementable, changes
@@ -737,7 +694,7 @@ def review_coverage(
         for identity in outstanding:
             if identity not in digests:
                 continue
-            if identity == _DOCUMENT_UNIT:
+            if identity == DOCUMENT_UNIT:
                 # The document unit carries decisions, gates and dependencies
                 # in its digest, which are material whatever their size, so an
                 # exact digest match is its only cover.

@@ -263,30 +263,29 @@ def test_outstanding_units_follow_roadmap_declarations(section_plan, dotted):
         ("before<!-- hidden -->after", "before after"),
     ],
 )
-def test_strip_tags_extracts_only_prose(markup, expected):
-    assert _plan_html.strip_tags(markup) == expected
+def test_section_prose_extracts_only_prose(markup, expected):
+    body = f"<body>{markup}</body>"
+    assert (
+        " ".join(prose for _, prose in _plan_html.section_prose(body) if prose)
+        == expected
+    )
 
 
 def test_entity_only_rationale_keeps_inventory_decision_closed():
     markup = '<div class="r-dec" data-choice=""><p class="r-dec-rat">&nbsp;</p></div>'
-    assert _plan_html.strip_tags("&nbsp;") == ""
+    assert [p for _, p in _plan_html.section_prose("<body>&nbsp;</body>") if p] == []
     assert _plan_html.count_open_decisions(markup) == 0
     assert _plan_html.count_open_decisions(markup.replace("&nbsp;", "")) == 1
 
 
-def test_marked_spans_are_opt_in_and_keep_nested_elements_whole():
-    markup = '<body><div data-reckon="landed"><div>Nested</div>Tail</div><p>Authored</p></body>'
-    assert _plan_html.structured_section_spans(markup) == ()
-    spans = _plan_html.structured_section_spans(markup, every_marked_element=True)
-    assert [markup[a:b] for a, b in spans] == [
-        '<div data-reckon="landed"><div>Nested</div>Tail</div>'
-    ]
-    assert (
-        " ".join(
-            _plan_html.strip_tags(raw) for _, raw in plan_review._prose_slices(markup)
-        ).strip()
-        == "Authored"
+def test_marked_elements_keep_no_prose():
+    markup = (
+        '<body><div data-reckon="landed"><div>Nested</div>Tail</div>'
+        "<p>Authored</p></body>"
     )
+    assert [prose for _, prose in _plan_html.section_prose(markup) if prose] == [
+        "Authored"
+    ]
 
 
 def test_headingless_and_marked_sections_keep_no_prose():
@@ -295,11 +294,8 @@ def test_headingless_and_marked_sections_keep_no_prose():
         '<section id="a" data-reckon="section"><h2>Alpha</h2><p>Record.</p></section>'
         '<h2 id="b">Beta</h2><p>Authored.</p></body>'
     )
-    slices = list(plan_review._prose_slices(markup))
-    assert (
-        " ".join(text for _, raw in slices if (text := _plan_html.strip_tags(raw)))
-        == "Beta Authored."
-    )
+    slices = list(_plan_html.section_prose(markup))
+    assert " ".join(text for _, text in slices if text) == "Beta Authored."
     assert "a" in plan_review._section_digests(markup)
 
 
