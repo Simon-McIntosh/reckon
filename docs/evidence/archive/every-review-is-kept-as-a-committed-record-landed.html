@@ -25,6 +25,11 @@
     <p>Run <code>review-prompt-asks-for-every-instance</code> changed <code>reckon/crew/prompts/plan_design_review.md</code> to treat a finding type as a census. When the reviewer finds one instance of a type, it searches for every instance in the same pass and lists them on one <code>FINDING</code> line, each with its file and line. The report parser reads the anchor as everything up to the first separator, so a list of anchors parses as one finding and none is dropped. <code>tests/test_plan_review_prompt.py</code> pins the instruction: 9 passed, EXIT=0. With the instruction deleted, the new test fails with EXIT=1. Commit <code>d9c0b5a8c</code>, merged at <code>f84d80977</code>, reviewed 116/120 with no findings. The recurrence of a finding type after an acted same-type finding is to be re-measured one week after landing, against the 41.9% baseline for <code>duplicate_owner</code>.</p>
   </section>
 
+  <section id="s6">
+    <h2>§6 — a review of a brief-carried run names its brief</h2>
+    <p>Run <code>brief-run-reviews-name-their-brief</code> changed <code>_review_dispatch_fields</code> in <code>reckon/crew/recovery.py</code>. A run whose node names no plan now carries its stored brief into the review fields, and the existing token composer turns that into <code>--brief</code>, so the review and the <code>review-missing</code> obligation's command are dispatchable as printed. A run that names a plan keeps the plan as its authority. <code>tests/test_review_of_a_brief_run_names_its_brief.py</code> composes the review of a brief-carried run and validates its dispatch dry run. The gate covered that file, <code>tests/test_ledger.py</code> and every test file importing <code>_review_dispatch_fields</code>: 192 passed, EXIT=0. With the brief dropped, 3 tests fail with EXIT=1. Commits <code>54b1f300f</code> and <code>7aa10bad1</code>, merged at <code>7b4aeaeb9</code>, reviewed 116/120 with no findings.</p>
+  </section>
+
 </main>
 </body>
 </html>

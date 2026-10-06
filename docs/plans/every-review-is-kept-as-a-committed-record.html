@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.1667">
-<meta name="plan-version" content="6">
+<meta name="plan-impl" content="0.3333">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -154,16 +154,12 @@
       imported count per project equals the recognised records; the store holds records only; and a test shows
       the guard refusing a non-record write.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-06</span>
     <h2 id="s6">§6 — A review of a brief-carried run names its brief</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>_review_dispatch_fields</code> in <code>reckon/crew/recovery.py</code>
-      copies the reviewed node's plan and section and never its brief, so the review of a run dispatched with
-      <code>--brief</code> composes a node with no authority, and dispatch refuses it as
-      <code>not-dispatchable</code>. This was measured on 2026-10-06 for <code>plan-review-cycles</code>. The
-      composed review carries the reviewed run's stored brief as its authority when the reviewed node names no
-      plan, and the <code>review-missing</code> obligation's command is then dispatchable as printed.</p>
-    <p><strong>Done when</strong> a test composes the review of a brief-carried run and the dispatch dry run
-      validates it.</p>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed at <code>7b4aeaeb9</code>: the review of a <code>--brief</code> run carries that run's stored brief, so it and the obligation's command dispatch as printed (review 116/120). <a href="s6">full record</a></p>
+</section>
 
     <h2 id="s7">§7 — An author can hold a plan out of review while rewriting it</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -209,10 +205,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-erkc-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-06" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-erkc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-06" data-recommends-skill="reckon-build" data-resolved-at="2026-10-06T07:15:58+00:00" data-resolved-by="e4e34290">
     <h4 class="r-fu-title">Build the first wave: §2 and §6</h4>
     <div class="r-fu-body"><p>The two sections write disjoint files and run in parallel; §3 and §7 wait for §23 of a plan is reviewed before it is built, and §4 and §5 follow §3.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §2</pre>
+    <p class="r-fu-outcome">Both first-wave sections landed: §2 at f84d80977 and §6 at 7b4aeaeb9, each reviewed 116/120 with no findings.</p>
+    </article>
+<article class="r-fu" data-id="f-erkc-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="e4e34290" data-written-at="2026-10-06" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Once §23 of a plan is reviewed before it is built lands, revise §3, §5 and §7 for eight deferred findings, then build §3</h4>
+    <div class="r-fu-body"><p>The three design reviews of this plan deferred eight findings on §3, §5 and §7, which are gated on that §23. The revision before dispatch must:</p><ul><li><strong>§3, write path.</strong> Name the review-path owner as <code>review_path</code> in <code>reckon/crew/review.py</code> and <code>plan_review_path</code> in <code>reckon/crew/plan_review.py</code>, not <code>reckon/ledger.py</code>. Repoint <code>list_plan_reviews</code> and <code>read_plan_review</code> (in <code>plan_review.py</code>) and <code>select_review_for_head</code> (in <code>recovery.py</code>) rather than add a reader in <code>review.py</code>. <code>_commit_state_write</code> in <code>reckon/ledger.py</code> commits one path, so either extend it to a set of paths so the ledger row and the record share a commit, or drop the no-extra-commit claim. Name the delivered-review store function as §23 leaves it.</li><li><strong>§5, import.</strong> Follow and cite <code>scripts/import_runs_into_store.py</code>: its parse of a host store, identity deduplication, idempotent re-run, dry run and exit contract.</li><li><strong>§7, author hold.</strong> Account for the refusals it adds in the review-plan verb, the sweep and the gate, and for the new settable path and meta scalar. Either fold the hold onto an existing settable scalar or name what it retires.</li></ul><p>The findings are stored with these deferral reasons on the third review (<code>plan-every-review-is-kept-as-a-committed-record.v2.json</code>) and in the sweep's review <code>r-20261006T070337956905</code>.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §3</pre>
     </article>
 </section>
 
@@ -235,7 +237,7 @@
     <div class="r-comment-body"><p>Independent review of run r-20261006T063703708839-review-prompt-asks-for-every-instance stored at the head-keyed review-store path: all six dimensions scored in 0..20, total 116, revision pair bd6b700b7/d9c0b5a8c recorded, added-failure fields carried unmeasured because the reviewed manifest names no baseline_suite/after_suite pair.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261006T063739329759-brief-run-reviews-name-their-brief" data-who="reckon-build" data-when="2026-10-06T07:05:25.135Z">
-    <div class="r-comment-body"><p>The run-carried branch of _review_dispatch_fields carries the reviewed run&#x27;s stored brief (node.brief_path, else node.brief) as the composed review&#x27;s authority when the node names no plan, so the review of a --brief run is dispatchable; gate 192 passed, declared mutation 3 failed.</p></div>
+    <div class="r-comment-body"><p>The run-carried branch of _review_dispatch_fields carries the reviewed run's stored brief (node.brief_path, else node.brief) as the composed review's authority when the node names no plan, so the review of a --brief run is dispatchable; gate 192 passed, declared mutation 3 failed.</p></div>
 </div>
 </section>
 </main>
