@@ -30,6 +30,7 @@ Deleting quarantined content is a later decision taken on the printed inventory.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import sys
@@ -77,35 +78,42 @@ def _quarantine_root(store_root: Path, override: str | None) -> Path:
     return store_root.parent / "reviews-quarantine"
 
 
-def _read_json(path: Path) -> Any:
+def _read_bytes(path: Path) -> bytes:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return path.read_bytes()
+    except OSError:
+        return b""
+
+
+def _parse_json(raw: bytes) -> Any:
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return None
 
 
-def _review_run_id(body: Mapping[str, Any]) -> str:
+def _explicit_review_run_id(body: Mapping[str, Any]) -> str:
     """Return the review run id the record names, whichever field carries it.
 
     Current records name ``review_run_id``; an older vintage names the same run
     as ``reviewer_run_id`` and leaves ``review_run_id`` absent, so both are read
-    and the newer field wins when both are present.
+    and the committed file keeps whatever key the record supplied.
     """
     return str(body.get("review_run_id") or body.get("reviewer_run_id") or "").strip()
 
 
-def _classify(body: Any) -> str | None:
-    """Return ``"plan"``, ``"run"`` or ``None`` for a parsed review body.
+def _derived_review_run_id(raw: bytes) -> str:
+    """Return the stable legacy id a record with no review run id is filed under.
 
-    A plan review names the plan it read (``plan_slug`` plus ``plan_version``); a
-    run review names the run it reviewed (``reviewed_run_id``). Both carry the
-    review run id that keys their committed file, so a body missing it is not a
-    filable record and is quarantined like any other file rather than retried.
+    The id is ``legacy-`` plus the first twelve hex of the sha256 of the record's
+    bytes, so a re-run of the same file derives the same id and imports nothing
+    a second time, while two different records never collide.
     """
-    if not isinstance(body, Mapping):
-        return None
-    if not _review_run_id(body):
-        return None
+    return "legacy-" + hashlib.sha256(raw).hexdigest()[:12]
+
+
+def _subject_kind(body: Mapping[str, Any]) -> str | None:
+    """Return ``"plan"``, ``"run"`` or ``None`` for the subject a body names."""
     if str(body.get("plan_slug") or "").strip():
         try:
             int(body.get("plan_version"))
@@ -117,8 +125,47 @@ def _classify(body: Any) -> str | None:
     return None
 
 
+def _carries_review_evidence(body: Mapping[str, Any]) -> bool:
+    """Return whether a body shows it is a review rather than an unrelated file.
+
+    A review carries the material its rubric or findings produce: a ``findings``,
+    ``scores`` or ``rubric`` field, or the revision it read. Merely naming a plan
+    or a run is not enough, so a ledger row or an index that happens to reference
+    a run is not mistaken for a review of it.
+    """
+    if any(key in body for key in ("findings", "scores", "rubric")):
+        return True
+    return any(
+        key in ("reviewed_commit", "reviewed_commits")
+        or (str(key).startswith("reviewed_") and "sha" in str(key))
+        for key in body
+    )
+
+
+def _review_identity(raw: bytes, body: Any) -> tuple[str, str, bool] | None:
+    """Return ``(kind, review_run_id, derived)`` for a review body, else ``None``.
+
+    A file is a review record when its body names a plan or a run it reviewed and
+    carries review material; a review run id is not required. A body with no
+    explicit review run id is filed under a derived, stable legacy id.
+    """
+    if not isinstance(body, Mapping):
+        return None
+    kind = _subject_kind(body)
+    if kind is None or not _carries_review_evidence(body):
+        return None
+    explicit = _explicit_review_run_id(body)
+    if explicit:
+        return kind, explicit, False
+    return kind, _derived_review_run_id(raw), True
+
+
 def _committed_path(
-    project: str, body: Mapping[str, Any], committed_root: Path
+    project: str,
+    kind: str,
+    body: Mapping[str, Any],
+    review_run_id: str,
+    committed_root: Path,
 ) -> Path:
     """Return the committed path a recognised record resolves, without writing.
 
@@ -126,14 +173,12 @@ def _committed_path(
     here, so the importer and the writer that lands the record agree on where it
     goes by construction.
     """
-    review_run_id = _review_run_id(body)
-    plan_slug = str(body.get("plan_slug") or "").strip()
-    if plan_slug:
+    if kind == "plan":
         from reckon.crew import plan_review
 
         return plan_review.plan_review_path(
             project,
-            plan_slug,
+            str(body["plan_slug"]).strip(),
             int(body["plan_version"]),
             committed_root=committed_root,
             review_run_id=review_run_id,
@@ -178,7 +223,7 @@ def _plan(project: str, store_root: Path, committed_root: Path) -> dict[str, Any
     holds, because it is the directory that is quarantined. Two entries that
     resolve one committed path are duplicates and the first sorted path wins.
     """
-    records: list[tuple[Path, Mapping[str, Any], Path]] = []
+    records: list[tuple[Path, Mapping[str, Any], Path, str, bool, str]] = []
     non_records: list[Path] = []
     duplicates: list[tuple[Path, Path]] = []
     seen: dict[Path, Path] = {}
@@ -186,16 +231,22 @@ def _plan(project: str, store_root: Path, committed_root: Path) -> dict[str, Any
     directory = store_root / project
     entries = sorted(directory.iterdir()) if directory.is_dir() else []
     for entry in entries:
-        body = _read_json(entry) if entry.is_file() else None
-        if _classify(body) is None:
+        if not entry.is_file():
             non_records.append(entry)
             continue
-        committed = _committed_path(project, body, committed_root)
+        raw = _read_bytes(entry)
+        body = _parse_json(raw)
+        identity = _review_identity(raw, body)
+        if identity is None:
+            non_records.append(entry)
+            continue
+        kind, review_run_id, derived = identity
+        committed = _committed_path(project, kind, body, review_run_id, committed_root)
         if committed in seen:
             duplicates.append((entry, seen[committed]))
             continue
         seen[committed] = entry
-        records.append((entry, body, committed))
+        records.append((entry, body, committed, review_run_id, derived, kind))
     return {"records": records, "non_records": non_records, "duplicates": duplicates}
 
 
@@ -203,18 +254,20 @@ def _print_inventory(project: str, store_root: Path, plan: dict[str, Any]) -> No
     records = plan["records"]
     non_records = plan["non_records"]
     duplicates = plan["duplicates"]
-    plan_count = sum(1 for _src, body, _path in records if _classify(body) == "plan")
+    plan_count = sum(1 for *_rest, kind in records if kind == "plan")
     run_count = len(records) - plan_count
-    record_bytes = sum(_entry_size(src) for src, _body, _path in records)
+    derived_count = sum(1 for *_rest, derived, _kind in records if derived)
+    record_bytes = sum(_entry_size(rec[0]) for rec in records)
     non_record_bytes = sum(_entry_size(src) for src in non_records)
     print(f"project: {project}")
     print(f"store: {store_root / project}")
     print(
         f"recognised records: {len(records)} "
-        f"(plan reviews: {plan_count}, run reviews: {run_count}, bytes: {record_bytes})"
+        f"(plan reviews: {plan_count}, run reviews: {run_count}, "
+        f"derived review run ids: {derived_count}, bytes: {record_bytes})"
     )
-    for src, _body, _path in records:
-        print(f"  record\t{src}\t{_entry_size(src)}\t{_iso_mtime(src)}")
+    for rec in records:
+        print(f"  record\t{rec[0]}\t{_entry_size(rec[0])}\t{_iso_mtime(rec[0])}")
     print(f"non-records: {len(non_records)} (bytes: {non_record_bytes})")
     for src in non_records:
         print(f"  non-record\t{src}\t{_entry_size(src)}\t{_iso_mtime(src)}")
@@ -244,16 +297,26 @@ def _quarantine(
     return dest
 
 
-def _commit(project: str, record: Mapping[str, Any], root: str | None) -> Path:
+def _commit(
+    project: str,
+    body: Mapping[str, Any],
+    review_run_id: str,
+    derived: bool,
+    root: str | None,
+) -> Path:
     """Commit one recognised record through the shared committed writer.
 
-    An older record that named its review run only as ``reviewer_run_id`` is
-    normalised first, because the committed writer keys the file by
-    ``review_run_id`` and refuses a record that does not carry it.
+    The committed writer keys the file by ``review_run_id``, so the identity this
+    import resolved is written in. A record that named no review run of its own
+    carries the derived legacy id and is marked ``review_run_id_source:
+    derived``, so a later reader knows the id was synthesised rather than read
+    from the record.
     """
-    body = dict(record)
-    body.setdefault("review_run_id", _review_run_id(record))
-    return review_store.store_committed_review(body, project=project, root=root)
+    stored = dict(body)
+    stored["review_run_id"] = review_run_id
+    if derived:
+        stored["review_run_id_source"] = "derived"
+    return review_store.store_committed_review(stored, project=project, root=root)
 
 
 def _import_records(
@@ -265,12 +328,12 @@ def _import_records(
     imported = 0
     already_present = 0
     refused: list[str] = []
-    for _src, body, committed in plan["records"]:
+    for _src, body, committed, review_run_id, derived, _kind in plan["records"]:
         if committed.is_file():
             already_present += 1
             continue
         try:
-            _commit(project, body, root)
+            _commit(project, body, review_run_id, derived, root)
         except (OSError, ValueError) as exc:
             refused.append(f"{committed.name}: {type(exc).__name__}: {exc}")
             continue

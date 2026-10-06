@@ -15,6 +15,7 @@ and leaves a second pass importing zero.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import io
 import json
@@ -33,6 +34,15 @@ REVIEWED_RUN = "r-run-a"
 PLAN_REVIEW_RUN = "r-review-plan"
 RUN_REVIEW_RUN = "r-review-run"
 LEGACY_REVIEW_RUN = "r-legacy-review-run"
+DERIVED_REVIEWED_RUN = "r-derived-run"
+_RUN_RECORD_IDS = (
+    REVIEWED_RUN,
+    "r-old-run",
+    DERIVED_REVIEWED_RUN,
+    RUN_REVIEW_RUN,
+    PLAN_REVIEW_RUN,
+    LEGACY_REVIEW_RUN,
+)
 
 
 def _load_script():
@@ -131,9 +141,26 @@ def _fixture_records(store: Path) -> None:
             "findings": [],
         },
     )
-    # Non-records: a probe file, a keep file, and a scratch directory.
+    # A review that names no review run of its own: recognised by its subject
+    # and material, filed under a derived id.
+    _write_record(
+        store,
+        f"{DERIVED_REVIEWED_RUN}.json",
+        {
+            "project": PROJECT,
+            "reviewed_run_id": DERIVED_REVIEWED_RUN,
+            "reviewed_head_sha": "b" * 40,
+            "status": "parsed",
+            "findings": [],
+        },
+    )
+    # Non-records: a body that names a run but carries no review material, a
+    # non-JSON file, and a scratch directory.
+    (store / "not-a-review.json").write_text(
+        json.dumps({"reviewed_run_id": "r-some-run"}), encoding="utf-8"
+    )
+    (store / "scratch.bin").write_bytes(b"\x00\x01not json")
     (store / ".probe-write.txt").write_text("scratch", encoding="utf-8")
-    (store / ".keep").write_text("", encoding="utf-8")
     scratch = store / "scratch-dir"
     scratch.mkdir()
     (scratch / "leftover.txt").write_text("x" * 11, encoding="utf-8")
@@ -151,7 +178,7 @@ def test_dry_run_lists_inventory_and_writes_nothing(harness) -> None:
     store = harness["store"]
     repo = harness["repo"]
     _fixture_records(store)
-    for run_id in (RUN_REVIEW_RUN, PLAN_REVIEW_RUN, LEGACY_REVIEW_RUN):
+    for run_id in _RUN_RECORD_IDS:
         _run_record(repo, run_id)
 
     code, out = _run_cli(module, ["--project", PROJECT, "--root", str(repo)])
@@ -179,7 +206,7 @@ def test_write_commits_records_once_and_quarantines_non_records(harness) -> None
     store = harness["store"]
     repo = harness["repo"]
     _fixture_records(store)
-    for run_id in (RUN_REVIEW_RUN, PLAN_REVIEW_RUN, LEGACY_REVIEW_RUN):
+    for run_id in _RUN_RECORD_IDS:
         _run_record(repo, run_id)
 
     code, out = _run_cli(module, ["--project", PROJECT, "--root", str(repo), "--write"])
@@ -202,24 +229,41 @@ def test_write_commits_records_once_and_quarantines_non_records(harness) -> None
     # The plan review is filed under its plan slug.
     assert (committed / "plan" / "demo" / f"{PLAN_REVIEW_RUN}.json").is_file()
 
-    # The legacy record is normalised: its review run id is written into the
-    # record the committed writer keys the file by.
+    # The legacy record keeps its own reviewer_run_id, which is the run's real
+    # identity, rather than a derived one.
     legacy = committed / "run" / "r-old-run" / f"{LEGACY_REVIEW_RUN}.json"
     assert legacy.is_file()
     legacy_body = json.loads(legacy.read_text(encoding="utf-8"))
     assert legacy_body["review_run_id"] == LEGACY_REVIEW_RUN
+    assert legacy_body.get("review_run_id_source") != "derived"
+
+    # A record that names no review run is filed under the derived id its bytes
+    # hash to and marked derived in the committed body.
+    expected = (
+        "legacy-"
+        + hashlib.sha256(
+            (store / f"{DERIVED_REVIEWED_RUN}.json").read_bytes()
+        ).hexdigest()[:12]
+    )
+    derived = committed / "run" / DERIVED_REVIEWED_RUN / f"{expected}.json"
+    assert derived.is_file()
+    derived_body = json.loads(derived.read_text(encoding="utf-8"))
+    assert derived_body["review_run_id"] == expected
+    assert derived_body["review_run_id_source"] == "derived"
+    # The staging file of a record is left in place: only non-records move.
+    assert (store / f"{DERIVED_REVIEWED_RUN}.json").is_file()
 
     # The imported count equals the recognised records; the duplicate is not a
     # second import.
-    assert "imported: 3" in out
+    assert "imported: 4" in out
     assert "duplicates: 1" in out
 
     # Every non-record was moved outside the store, nothing deleted.
     quarantine = tmp / "config" / "crew" / "reviews-quarantine" / PROJECT
-    assert not (store / ".probe-write.txt").exists()
+    for name in (".probe-write.txt", "scratch.bin", "not-a-review.json"):
+        assert not (store / name).exists()
+        assert (quarantine / name).is_file()
     assert not (store / "scratch-dir").exists()
-    assert (quarantine / ".probe-write.txt").is_file()
-    assert (quarantine / ".keep").is_file()
     assert (quarantine / "scratch-dir" / "leftover.txt").read_text(
         encoding="utf-8"
     ) == "x" * 11
@@ -227,12 +271,46 @@ def test_write_commits_records_once_and_quarantines_non_records(harness) -> None
     assert store not in quarantine.parents
 
 
+def test_derived_legacy_id_is_idempotent_across_a_second_pass(harness) -> None:
+    module = _load_script()
+    store = harness["store"]
+    repo = harness["repo"]
+    # Only the derived-id record is present, so the test isolates its id.
+    _write_record(
+        store,
+        f"{DERIVED_REVIEWED_RUN}.json",
+        {
+            "project": PROJECT,
+            "reviewed_run_id": DERIVED_REVIEWED_RUN,
+            "reviewed_head_sha": "b" * 40,
+            "status": "parsed",
+            "findings": [],
+        },
+    )
+    _run_record(repo, DERIVED_REVIEWED_RUN)
+    original = (store / f"{DERIVED_REVIEWED_RUN}.json").read_bytes()
+
+    argv = ["--project", PROJECT, "--root", str(repo), "--write"]
+    assert _run_cli(module, argv)[0] == 0
+    # The same bytes derive the same id, so the second pass imports nothing and
+    # the committed file is untouched.
+    committed = (
+        repo / "docs" / "state" / PROJECT / "reviews" / "run" / DERIVED_REVIEWED_RUN
+    )
+    first = sorted(p.name for p in committed.iterdir())
+    code, out = _run_cli(module, argv)
+    assert code == 0
+    assert "imported: 0" in out
+    assert sorted(p.name for p in committed.iterdir()) == first
+    assert (store / f"{DERIVED_REVIEWED_RUN}.json").read_bytes() == original
+
+
 def test_a_second_write_pass_imports_zero(harness) -> None:
     module = _load_script()
     store = harness["store"]
     repo = harness["repo"]
     _fixture_records(store)
-    for run_id in (RUN_REVIEW_RUN, PLAN_REVIEW_RUN, LEGACY_REVIEW_RUN):
+    for run_id in _RUN_RECORD_IDS:
         _run_record(repo, run_id)
 
     argv = ["--project", PROJECT, "--root", str(repo), "--write"]
@@ -258,18 +336,33 @@ def test_exit_contract_zero_with_a_target_and_one_without(harness) -> None:
     assert _run_cli(module, ["--project", PROJECT, "--root", str(missing)])[0] == 1
 
 
-def test_classify_recognises_plan_and_run_records_and_rejects_the_rest() -> None:
+def test_recognition_needs_a_subject_and_rejects_a_bare_reference() -> None:
     module = _load_script()
-    assert (
-        module._classify({"review_run_id": "r-x", "plan_slug": "p", "plan_version": 1})
-        == "plan"
-    )
-    assert module._classify({"review_run_id": "r-x", "reviewed_run_id": "r-y"}) == "run"
-    # The legacy review-run field is accepted.
-    assert (
-        module._classify({"reviewer_run_id": "r-x", "reviewed_run_id": "r-y"}) == "run"
-    )
-    # Anything without a review run id or a subject is not a record.
-    assert module._classify({"reviewed_run_id": "r-y"}) is None
-    assert module._classify({"hello": "world"}) is None
-    assert module._classify(["not", "a", "mapping"]) is None
+    raw = b"some bytes"
+    derived = "legacy-" + hashlib.sha256(raw).hexdigest()[:12]
+
+    # A plan review and a run review are recognised; the explicit review run id
+    # is kept and nothing is derived.
+    assert module._review_identity(
+        raw,
+        {"review_run_id": "r-x", "plan_slug": "p", "plan_version": 1, "findings": []},
+    ) == ("plan", "r-x", False)
+    assert module._review_identity(
+        raw, {"review_run_id": "r-x", "reviewed_run_id": "r-y", "scores": {}}
+    ) == ("run", "r-x", False)
+    # The legacy review-run field is kept as the identity rather than derived.
+    assert module._review_identity(
+        raw, {"reviewer_run_id": "r-x", "reviewed_run_id": "r-y", "rubric": "design"}
+    ) == ("run", "r-x", False)
+    # No review run id: recognised by subject and material, filed under the
+    # stable derived id.
+    assert module._review_identity(
+        raw, {"reviewed_run_id": "r-y", "reviewed_head_sha": "c" * 40, "findings": []}
+    ) == ("run", derived, True)
+
+    # A bare reference carries neither subject nor material and is not a record.
+    assert module._review_identity(raw, {"reviewed_run_id": "r-y"}) is None
+    assert module._review_identity(raw, {"hello": "world"}) is None
+    assert module._review_identity(raw, ["not", "a", "mapping"]) is None
+    # A plan name with no version cannot resolve a committed path.
+    assert module._review_identity(raw, {"plan_slug": "p", "findings": []}) is None
