@@ -10,7 +10,8 @@
   <meta name="plan-summary" content="A promoting review run supplies its own id for the round it delivered when that round carries no review_run_id, so the round lands instead of being refused; a round the index returns that is neither this run's delivered round nor carries an id is skipped with a warning naming the file, and every other round still commits.">
   <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
   <meta name="plan-recorded-at" content="2026-10-06">
-  <meta name="plan-verdict" content="blocked">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
   <title>A review without its run id still promotes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -36,25 +37,23 @@
       <p>Gate: <code>tests/test_a_review_without_its_run_id_still_promotes.py</code>
         (new) plus <code>tests/test_every_review_round_is_committed.py</code>,
         <code>tests/test_review_record_committed_at_promotion.py</code> and
-        <code>tests/test_review_records_have_a_committed_root.py</code> — the
-        new file passes (2 cases); <strong>one pre-existing case fails</strong>,
-        see the blocker below. Negative control: reverting the stamping makes
-        the new file's two cases fail with <code>EXIT=1</code>.</p>
+        <code>tests/test_review_records_have_a_committed_root.py</code> — 21
+        cases pass, <code>EXIT=0</code>. Negative control: reverting the
+        stamping makes the new file's two cases fail with
+        <code>EXIT=1</code>.</p>
     </section>
 
-    <section id="a-review-without-its-run-id-still-promotes-blocker">
-      <h2>Blocker — a stale gate case outside the node's write scope</h2>
-      <p>The gate the brief names includes
-        <code>tests/test_review_record_committed_at_promotion.py</code>, whose
-        case <code>test_a_promotion_that_cannot_write_its_record_commits_nothing</code>
-        stages a delivered run-review record carrying
-        <em>no</em> <code>review_run_id</code> and asserts the promotion
-        <em>refuses</em> it. That is exactly the input this node's goal requires
-        to now <em>succeed</em> and commit under the promoting run's id, so the
-        two cannot both hold: the case fails with <code>DID NOT RAISE</code>.
-        The file is not in this node's fence and is not a concurrent node's
-        path. A scope extension is requested to update that one case; the rest
-        of that file passes.</p>
+    <section id="a-review-without-its-run-id-still-promotes-rollback">
+      <h2>The rollback case, repointed</h2>
+      <p><code>tests/test_review_record_committed_at_promotion.py</code>'s
+        <code>test_a_promotion_that_cannot_write_its_record_commits_nothing</code>
+        staged a delivered record with no <code>review_run_id</code> and
+        asserted the promotion refused it — the inverse of this node's goal, so
+        a scope extension was granted to repoint it. A missing id is no longer
+        a write failure, so the case now makes the write fail by raising from
+        <code>store_committed_review</code> (monkeypatched) and still asserts
+        the property it protects: no committed record, no ledger row, and the
+        live pointer kept.</p>
     </section>
   </main>
 </body>
