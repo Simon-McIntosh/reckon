@@ -35,7 +35,6 @@ PLAN = "review-record-commit-target"
 PLAN_SLUG = "review-record-commit-plan"
 PLAN_VERSION = 4
 RUN_ID = "r-20261006T120000000000-review-of-a-landed-node"
-PLAN_RUN_ID = "r-20261006T120000000000-plan-review-of-review-record-commit-plan"
 REVIEWED_RUN = "r-20261006T110000000000-landed-node"
 
 DISPATCH_TS = "2026-10-06T12:00:00Z"
