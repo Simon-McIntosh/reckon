@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import json
+import logging
 import os
 import re
 import shlex
@@ -94,6 +95,8 @@ from reckon.crew.runs import (
 from reckon.evidence import EXECUTABLE_SECTION_ROLES
 
 # ── Promotion: the transient record becomes committed evidence ──────────────
+
+LOGGER = logging.getLogger(__name__)
 
 _COORDINATOR_LANDING_AUTHOR = "reckon-build"
 
@@ -8006,6 +8009,17 @@ def _delivered_review_payloads_for_commit(
     key the committed file is filed under, so the delivered round and the same
     round read from the index commit once.
 
+    The round this run delivered is filed under the promoting run's id. A
+    record a reviewer wrote by hand can lose its own ``review_run_id``, and
+    since the promoting run is exactly the run that produced that round its id
+    is the correct key: refusing would abandon the round the run was minted to
+    deliver, and filing it under the reviewed run would collide across two
+    review runs of one subject. A round the index returns that is neither this
+    run's own delivered round nor carries a review run id cannot be keyed at
+    all, so it is skipped with a note naming the file rather than refusing the
+    whole promotion — the other rounds it sits beside are still the subject's
+    review and should land.
+
     The store refuses a record it cannot key or time; this function does not
     filter such a record out, because the refusal must reach the caller as a
     rolled-back landing rather than as a silently dropped round.
@@ -8030,13 +8044,30 @@ def _delivered_review_payloads_for_commit(
     delivered = recovery._delivered_review_record(
         record, str(record.get("project") or "")
     )
-    if delivered is not None:
-        include(_read_json_object(delivered[1]))
+    delivered_path = delivered[1] if delivered is not None else None
+    if delivered_path is not None:
+        delivered_payload = _read_json_object(delivered_path)
+        if delivered_payload and not str(
+            delivered_payload.get("review_run_id") or ""
+        ).strip():
+            delivered_payload = {**delivered_payload, "review_run_id": run_id}
+        include(delivered_payload)
     reviewed_run_id = recovery._resolved_reviewed_run_id(record, project)
     if reviewed_run_id:
-        for _path, stored in review_module.stored_records_for_run(
+        for path, stored in review_module.stored_records_for_run(
             project, reviewed_run_id
         ):
+            if delivered_path is not None and Path(path) == Path(delivered_path):
+                continue
+            if not str(stored.get("review_run_id") or "").strip():
+                LOGGER.warning(
+                    "skipping stored review round %s of run %r: it carries no "
+                    "review run id and is not the round this promotion "
+                    "delivered, so it cannot be filed under a committed path",
+                    path,
+                    reviewed_run_id,
+                )
+                continue
             include(stored)
     if not payloads:
         # A plan review names no reviewed run and its own round was not found
@@ -8419,9 +8450,10 @@ def _complete_locked(
         None,
     )
     if committed_review_payload is None and committed_review_payloads:
-        # The run's own round is normally the one naming each review run id, but
-        # a record that carries none (which the store refuses below) still names
-        # the row so the refusal is the store's and not an absent block.
+        # A round whose own body carried no review run id is filed under this
+        # run's id above, so it is normally the selected one; if none names the
+        # row, the first round still stands in so the row's review block is not
+        # left absent.
         committed_review_payload = committed_review_payloads[0]
     if committed_review_payload is not None:
         committed_block = review_module.ledger_block(committed_review_payload)
