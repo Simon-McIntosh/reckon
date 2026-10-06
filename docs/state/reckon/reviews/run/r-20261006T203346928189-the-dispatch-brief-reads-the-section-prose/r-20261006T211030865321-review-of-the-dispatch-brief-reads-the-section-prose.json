@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_resolved_plan_section_text",
+    "reckon/crew/dispatch.py:_plan_section_text",
+    "reckon/crew/plan_review.py:_prose_texts",
+    "reckon/mcp_views.py:_section_response"
+  ],
+  "commits_read": [
+    "1449dc34adc2041b649c57005d32941513f35cdc",
+    "d80ddc9a170b700ab855e56ff35e4f8c4f4f7bf7",
+    "741b20408bbd939bf5d918c23a99bea1ca884490"
+  ],
+  "completed_at": "2026-10-06T21:23:39.457Z",
+  "dispatched_at": "2026-10-06T21:10:52Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/the-dispatch-brief-reads-the-section-prose.html",
+      "line": "28",
+      "severity": "follow-on",
+      "text": "follow-on: the parity row reports the population as 151 plans, but the test it describes iterates rglob('*.html') under docs/plans, which at head is 155 files (152 top-level plus 3 under docs/plans/archive/), and an independent run finds 154 non-exempt plans and a plan-subtracting count of 52 against the row's 53, so the recorded figures undercount the population the test actually measures."
+    },
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/the-dispatch-brief-reads-the-section-prose.html",
+      "line": "48",
+      "severity": "follow-on",
+      "text": "follow-on: the census table is headed 'at head' but its two dispatch.py line numbers (293 at :48, 331 at :49) are the base revision's; at head 741b20408 those calls are at reckon/crew/dispatch.py:298 and 345, so a reader following the row to the head file lands on the wrong lines."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "VERDICT call_sites: read the changed function and its callers; _plan_section_text is reached from reckon/crew/dispatch.py:395 in _resolved_plan_section_text, itself reached from reckon/crew/dispatch.py:526; the shared reader section_prose is also consumed at reckon/crew/plan_review.py:276 and :517 and reckon/mcp_views.py:2074 and :2226.",
+    "diff": "read commit by commit across eadc8989..741b20408; 1449dc34a repoints the read at section_prose, d80ddc9a1 adds the _strip_tags level-bound fallback for a heading the reader does not serve, 741b20408 is the evidence fragment.",
+    "done_when": "the done-when names tests/test_the_dispatch_brief_reads_the_section_prose.py and the manifest records the gate at 94 passed EXIT=0 with baseline 89 passed EXIT=0 and negative control EXIT=1; the new test file independently rerun at head 741b20408 gives 5 passed EXIT=0, and the census grep returns the 12 lines it lists.",
+    "goal": "the node's goal is that dispatch._plan_section_text read a plan section's text through _plan_html.section_prose; at head reckon/crew/dispatch.py:357-364 takes the text from section_prose for the resolved heading identity and keeps the identified-element branch at reckon/crew/dispatch.py:345.",
+    "manifest": "read; it reports status complete with commits 1449dc34a d80ddc9a1 741b20408, gate 94 passed EXIT=0, baseline 89 passed EXIT=0, negative control 1 failed EXIT=1, and interface counts public_definitions 1489=1489.",
+    "write_paths": "read the manifest's declared paths reckon/crew/dispatch.py, tests/test_the_dispatch_brief_reads_the_section_prose.py, the evidence fragment and its figures directory; the diff touches only the first three, every one inside scope."
+  },
+  "justifications": {
+    "durability": "tests/test_the_dispatch_brief_reads_the_section_prose.py:145 pins the read through a sentinel and :235 asserts the source holds no get_text outside the identified branch, and independent mutation of the reader (restoring the span get_text) reddens 3 tests including test_the_dispatch_section_text_reads_through_the_one_reader.",
+    "evidence": "gate_final.log ends 94 passed EXIT=0 at 741b20408 and baseline.log 89 passed EXIT=0 at eadc8989, negative-control.log ends EXIT=1, and the new test file reruns 5 passed at head, but the fragment's parity row at :28 states the population as 151 plans where the test's rglob measures 155.",
+    "fit": "reckon/crew/dispatch.py:31 imports section_prose and _strip_tags from the owner module and the new docstring names the mechanism without any plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch.py:357 selects the section_prose items by the resolved heading identity and joins them, so an authored section's text comes from the one reader while the identified-non-heading branch at :345 is unchanged.",
+    "reuse": "the change removes dispatch's own BeautifulSoup span walk and routes through section_prose, the capability owner at reckon/_plan_html.py:474, falling back to its private _strip_tags rather than adding a third reader.",
+    "scope_discipline": "the diff across eadc8989..741b20408 touches only reckon/crew/dispatch.py, tests/test_the_dispatch_brief_reads_the_section_prose.py and the evidence fragment, all inside the declared write paths."
+  },
+  "node": "review-of-the-dispatch-brief-reads-the-section-prose",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that dispatch._plan_section_text read a plan section's text through _plan_html.section_prose; at head reckon/crew/dispatch.py:357-364 takes the text from section_prose for the resolved heading identity and keeps the identified-element branch at reckon/crew/dispatch.py:345.\nVERDICT done_when: the done-when names tests/test_the_dispatch_brief_reads_the_section_prose.py and the manifest records the gate at 94 passed EXIT=0 with baseline 89 passed EXIT=0 and negative control EXIT=1; the new test file independently rerun at head 741b20408 gives 5 passed EXIT=0, and the census grep returns the 12 lines it lists.\nVERDICT write_paths: read the manifest's declared paths reckon/crew/dispatch.py, tests/test_the_dispatch_brief_reads_the_section_prose.py, the evidence fragment and its figures directory; the diff touches only the first three, every one inside scope.\nVERDICT manifest: read; it reports status complete with commits 1449dc34a d80ddc9a1 741b20408, gate 94 passed EXIT=0, baseline 89 passed EXIT=0, negative control 1 failed EXIT=1, and interface counts public_definitions 1489=1489.\nVERDICT diff: read commit by commit across eadc8989..741b20408; 1449dc34a repoints the read at section_prose, d80ddc9a1 adds the _strip_tags level-bound fallback for a heading the reader does not serve, 741b20408 is the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:_resolved_plan_section_text, reckon/crew/dispatch.py:_plan_section_text, reckon/crew/plan_review.py:_prose_texts, reckon/mcp_views.py:_section_response\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:357 selects the section_prose items by the resolved heading identity and joins them, so an authored section's text comes from the one reader while the identified-non-heading branch at :345 is unchanged.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate_final.log ends 94 passed EXIT=0 at 741b20408 and baseline.log 89 passed EXIT=0 at eadc8989, negative-control.log ends EXIT=1, and the new test file reruns 5 passed at head, but the fragment's parity row at :28 states the population as 151 plans where the test's rglob measures 155.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff across eadc8989..741b20408 touches only reckon/crew/dispatch.py, tests/test_the_dispatch_brief_reads_the_section_prose.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_dispatch_brief_reads_the_section_prose.py:145 pins the read through a sentinel and :235 asserts the source holds no get_text outside the identified branch, and independent mutation of the reader (restoring the span get_text) reddens 3 tests including test_the_dispatch_section_text_reads_through_the_one_reader.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch.py:31 imports section_prose and _strip_tags from the owner module and the new docstring names the mechanism without any plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes dispatch's own BeautifulSoup span walk and routes through section_prose, the capability owner at reckon/_plan_html.py:474, falling back to its private _strip_tags rather than adding a third reader.\nFINDING docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/the-dispatch-brief-reads-the-section-prose.html:28 follow-on: the parity row reports the population as 151 plans, but the test it describes iterates rglob('*.html') under docs/plans, which at head is 155 files (152 top-level plus 3 under docs/plans/archive/), and an independent run finds 154 non-exempt plans and a plan-subtracting count of 52 against the row's 53, so the recorded figures undercount the population the test actually measures.\nFINDING docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/the-dispatch-brief-reads-the-section-prose.html:48 follow-on: the census table is headed 'at head' but its two dispatch.py line numbers (293 at :48, 331 at :49) are the base revision's; at head 741b20408 those calls are at reckon/crew/dispatch.py:298 and :49's at :345, so a reader following the row to the head file lands on the wrong lines.",
+  "review_run_id": "r-20261006T211030865321-review-of-the-dispatch-brief-reads-the-section-prose",
+  "reviewed_base_sha": "eadc898917a7e5a3b7d94a90a322c78b23a7d52c",
+  "reviewed_head_sha": "741b20408bbd939bf5d918c23a99bea1ca884490",
+  "reviewed_run_id": "r-20261006T203346928189-the-dispatch-brief-reads-the-section-prose",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261006T211030865321-review-of-the-dispatch-brief-reads-the-section-prose",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T21:22:06.640485+00:00",
+  "total": 114
+}
