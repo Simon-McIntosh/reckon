@@ -24,7 +24,7 @@
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -191,34 +191,34 @@
       it changes the sweep's eligibility, the review-plan verb and the gate that §22 and §23 also change.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="review-store" data-choice="committed" data-by="e4e34290, on the lead's delegation" data-when="2026-10-06">
-        <p class="r-dec-q">Where do review records live?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="committed">Committed beside the ledger in each project's repository</button>
-          <button class="r-opt" data-value="host">The host configuration store, as now</button>
-          <button class="r-opt" data-value="database">A database on the host</button>
-        </p>
-        <p class="r-dec-rat">Committed. A review is evidence about a plan, and the plan, its ledger and its evidence are already versioned and travel with the repository. The host store is invisible to other clones, has no history, timestamps records with the store time and rewrites them on every answer. A host database would carry the same faults. Promotion already commits every review run, so the record travels in an existing commit.</p>
-      </div>
-      <div class="r-dec" data-key="review-retention" data-choice="keep" data-by="e4e34290, on the lead's delegation" data-when="2026-10-06">
-        <p class="r-dec-q">Is a review discarded once the work it reviewed lands?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="keep">Keep every record, and archive it out of the hot reads once its work lands</button>
-          <button class="r-opt" data-value="discard">Discard the record once its work lands</button>
-        </p>
-        <p class="r-dec-rat">Keep. Every measurement that led to this plan read history: the 83% same-type recurrence, the per-section change figures behind §22's threshold, the store-time defect. §22's threshold is a measured choice and must be re-measured on history. The lead's rubric rule counts a finding type declined across three or more plans, which spans plans and time. Plans cite the review behind a ruling. A record is about 4 KB. What gets discarded is the raw report text and run scratch, which the record already distils.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="review-store" data-choice="committed" data-by="e4e34290, on the lead&#x27;s delegation" data-when="2026-10-06">
+    <p class="r-dec-q">Where do review records live?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="committed">Committed beside the ledger in each project&#x27;s repository</button>
+      <button class="r-opt" data-value="host">The host configuration store, as now</button>
+      <button class="r-opt" data-value="database">A database on the host</button>
+      </p>
+    <p class="r-dec-rat">Committed. A review is evidence about a plan, and the plan, its ledger and its evidence are already versioned and travel with the repository. The host store is invisible to other clones, has no history, timestamps records with the store time and rewrites them on every answer. A host database would carry the same faults. Promotion already commits every review run, so the record travels in an existing commit.</p>
+    </div>
+<div class="r-dec" data-key="review-retention" data-choice="keep" data-by="e4e34290, on the lead&#x27;s delegation" data-when="2026-10-06">
+    <p class="r-dec-q">Is a review discarded once the work it reviewed lands?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="keep">Keep every record, and archive it out of the hot reads once its work lands</button>
+      <button class="r-opt" data-value="discard">Discard the record once its work lands</button>
+      </p>
+    <p class="r-dec-rat">Keep. Every measurement that led to this plan read history: the 83% same-type recurrence, the per-section change figures behind §22&#x27;s threshold, the store-time defect. §22&#x27;s threshold is a measured choice and must be re-measured on history. The lead&#x27;s rubric rule counts a finding type declined across three or more plans, which spans plans and time. Plans cite the review behind a ruling. A record is about 4 KB. What gets discarded is the raw report text and run scratch, which the record already distils.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-erkc-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-06" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Build the first wave: §2 and §6</h4>
-        <div class="r-fu-body"><p>The two sections write disjoint files and run in parallel; §3 and §7 wait for §23 of a plan is reviewed before it is built, and §4 and §5 follow §3.</p></div>
-        <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §2</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-erkc-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-06" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the first wave: §2 and §6</h4>
+    <div class="r-fu-body"><p>The two sections write disjoint files and run in parallel; §3 and §7 wait for §23 of a plan is reviewed before it is built, and §4 and §5 follow §3.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §2</pre>
+    </article>
+</section>
 
   <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
@@ -230,6 +230,11 @@
     <h4 class="r-gate-measure">the sweep eligibility, the review-plan verb and the gate that the threshold and store sections change have landed, so the hold extends them rather than racing them</h4>
     <p class="r-gate-required-evidence">a-plan-is-reviewed-before-it-is-built#s23</p>
     </div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261006T063703708839-review-prompt-asks-for-every-instance" data-who="reckon-build" data-when="2026-10-06T06:41:26.840Z">
+    <div class="r-comment-body"><p>The design-review prompt now states a finding of one type is a census — the reviewer searches for every instance of that type in the same pass and lists them under one FINDING line carrying each site — held by a prompt-contract case; gate tests/test_plan_review_prompt.py 9 passed EXIT=0, negative control 1 failed EXIT=1.</p></div>
+</div>
 </section>
 </main>
 </body>

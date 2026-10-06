@@ -1,0 +1,597 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "bd6b700b7a3a01da285a5900667c71ecd2cf626e",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 2175820,
+      "input_tokens_cumulative": 2175820,
+      "output_tokens": 13009,
+      "output_tokens_cumulative": 13009,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 72,
+    "files": 3,
+    "removed": 6
+  },
+  "clone_matches": [],
+  "commit_resolution": null,
+  "commits": [
+    "d9c0b5a8c5a7807b26e5f2ec62b677a12cb4460f"
+  ],
+  "completed_at": "2026-10-06T06:41:26.840Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-06T06:37:28Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest run",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_plan_review_prompt.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T063703708839-review-prompt-asks-for-every-instance/gate.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": null,
+    "plan": "every-review-is-kept-as-a-committed-record",
+    "reason": "no-impl-recorded-at-dispatch",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-06T07:07:04.925952+00:00",
+    "horizon_seconds": 1800,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-06T06:37:04Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 14,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 1,
+    "headroom": 15,
+    "mean_context": 120000,
+    "observed_at": "2026-10-06T06:36:50Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 14,
+      "aggregate_tokens_per_second": 167.709,
+      "detail": "",
+      "mean_tokens_per_second": 83.854,
+      "observed_at": "2026-10-06T06:36:50Z",
+      "runs": 2.0,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-06T06:41:26.840Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T063703708839-review-prompt-asks-for-every-instance/manifest.md",
+  "member": "disposable-r-20261006T063703708839-review-prompt-asks-for-every-instance",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_plan_review_prompt.py::test_design_review_prompt_asks_for_every_instance_of_a_finding"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "baseline_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_plan_review_prompt.py::test_design_review_prompt_asks_for_every_instance_of_a_finding"
+    ],
+    "declaration": "delete the every-instance instruction from reckon/crew/prompts/plan_design_review.md",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T063703708839-review-prompt-asks-for-every-instance/negative_control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T063703708839-review-prompt-asks-for-every-instance/negative_control.log",
+    "test_paths": [
+      "tests/test_plan_review_prompt.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "review-prompt-asks-for-every-instance",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1462,
+          "cached_input_tokens": 450239,
+          "input_tokens": 451703,
+          "output_tokens": 314,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 452017,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "e4e34290-ff45-41cc-a498-eeffd300fb05",
+      "session_id": "e4e34290"
+    },
+    "done_when": "tests/test_plan_review_prompt.py asserts that load_plan_design_review_prompt() carries the every-instance instruction; the manifest tests line records that file's pytest run with EXIT=0, and the declared negative control records a FAILED test with a non-zero EXIT",
+    "estimated_hours": null,
+    "goal": "The plan design-review prompt instructs the reviewer to report every instance of a finding type under one finding",
+    "id": "review-prompt-asks-for-every-instance",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-06T06:37:04Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 14,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 1,
+      "headroom": 15,
+      "mean_context": 120000,
+      "observed_at": "2026-10-06T06:36:50Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 14,
+        "aggregate_tokens_per_second": 167.709,
+        "detail": "",
+        "mean_tokens_per_second": 83.854,
+        "observed_at": "2026-10-06T06:36:50Z",
+        "runs": 2.0,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T063703708839-review-prompt-asks-for-every-instance/manifest.md",
+    "negative_control": "delete the every-instance instruction from reckon/crew/prompts/plan_design_review.md",
+    "plan": "every-review-is-kept-as-a-committed-record",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "guided",
+    "time_budget": "30m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/prompts/plan_design_review.md",
+      "tests/test_plan_review_prompt.py",
+      "docs/evidence/fragments/every-review-is-kept-as-a-committed-record/review-prompt-asks-for-every-instance.html",
+      "docs/figures/every-review-is-kept-as-a-committed-record/review-prompt-asks-for-every-instance"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 510441.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "review-prompt-asks-for-every-instance",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-06T06:37:12.573667+00:00",
+    "score": 0.5875,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "clive",
+    "comment": "",
+    "confidence": 0.66,
+    "decision_source": "jev",
+    "effort": "high",
+    "excluded": [
+      {
+        "availability": "not-probed",
+        "backend": "native",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "in-harness-backend"
+        ],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "local",
+    "jev_latency_ms": 488.691,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 848.962,
+    "model": "deepseek-v4.1-flash",
+    "offered": [
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-haiku",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-opus",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "clive",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "open",
+          "running": 0,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 0
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "outcomes": {
+          "failed": 8,
+          "not-run": 18,
+          "passed": 232,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": 58
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "budget_reason": "recorded account-window reading is stale",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 6,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-astra",
+        "budget_reason": "recorded account-window reading is stale",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 18,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-luna",
+        "budget_reason": "recorded account-window reading is stale",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "claude": 0,
+      "claude-haiku": 0,
+      "claude-opus": 0,
+      "clive": 0.71,
+      "codex": 0.2,
+      "codex-astra": 0.01,
+      "codex-luna": 0.01,
+      "hold": 0.07
+    },
+    "rendered_token_estimate": 944,
+    "usage": {
+      "cost": 0.000122136,
+      "input_tokens": 2908,
+      "output_tokens": 89
+    }
+  },
+  "plan": "every-review-is-kept-as-a-committed-record",
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "d9c0b5a8c5a7807b26e5f2ec62b677a12cb4460f",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "bd6b700b7a3a01da285a5900667c71ecd2cf626e",
+    "reviewed_head_sha": "d9c0b5a8c5a7807b26e5f2ec62b677a12cb4460f",
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 19,
+      "goal_fidelity": 20,
+      "reuse": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 116
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261006T063703708839-review-prompt-asks-for-every-instance",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session": "e4e34290",
+  "session_harness": "claude",
+  "session_id": "12c8386d-0123-4b57-90bb-b6cbe0574241",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 1,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 2175820,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 228.427,
+    "generated_tokens": 13009,
+    "generation_seconds": 187.86,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 38.6,
+    "machine_seconds": 40.567,
+    "peak_input_tokens": 88923,
+    "tokens_per_second": 69.25,
+    "wall_tokens_per_second": 56.95
+  },
+  "time_budget": "30m",
+  "tool_steps": 28.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 238,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-06T06:41:31Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-06T06:37:33Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261006T063703708839-review-prompt-asks-for-every-instance",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 2014,
+    "worker_pid": 751464
+  },
+  "worker_seconds": 207,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
