@@ -6,9 +6,9 @@ one moment that record can be landed. These cases promote a run review and a
 plan review in a synthesised project and hold the promotion to three facts:
 each record lands in the project's ``docs/state/<project>/reviews/`` tree in
 the same commit that carries the run's ledger row — no second commit is added —
-the ledger row's ``review`` field names the record's id, and a record the
-committed store cannot key or time refuses the promotion with neither the
-record nor the ledger row committed.
+the ledger row's ``review`` field names the record's id, and a review-record
+write that fails (the committed store raising) rolls the promotion back with
+neither the record nor the ledger row committed and the live pointer kept.
 
 The committed store itself is held to its own rule here too: a record carrying
 no review run id is refused rather than filed under the run it reviews, so two
@@ -304,10 +304,15 @@ def test_the_committed_store_refuses_a_record_with_no_review_run_id(
 
 
 def test_a_promotion_that_cannot_write_its_record_commits_nothing(
-    repository: Path, tmp_path: Path
+    repository: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # The delivered record is a complete run review with no review run id, so
-    # the delivered lookup finds it and the committed store refuses it.
+    # The delivered record is a complete run review, so the delivered lookup
+    # finds it and the committed store attempts the write. The write is made to
+    # fail — a missing review run id is no longer a failure, since the promoting
+    # run supplies its own — and the promotion must roll back the record it
+    # would have written together with the ledger row.
     record_path = _run_review_staging_path()
     record_path.parent.mkdir(parents=True, exist_ok=True)
     record_path.write_text(
@@ -315,6 +320,7 @@ def test_a_promotion_that_cannot_write_its_record_commits_nothing(
             {
                 "project": PROJECT,
                 "reviewed_run_id": REVIEWED_RUN,
+                "review_run_id": RUN_ID,
                 "status": "parsed",
                 "scores": _scores(),
                 "absent": [],
@@ -330,6 +336,11 @@ def test_a_promotion_that_cannot_write_its_record_commits_nothing(
         node_id="review-of-a-landed-node",
         declared=[str(record_path)],
     )
+
+    def _refuse_to_write(*_args: object, **_kwargs: object) -> Path:
+        raise ValueError("the committed reviews tree is not writable")
+
+    monkeypatch.setattr(review_module, "store_committed_review", _refuse_to_write)
 
     with pytest.raises(crew.CrewError):
         crew.complete(RUN_ID, gate="passed", root=repository)
