@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.4">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -264,7 +264,10 @@
     <div class="r-comment-body"><p>[run review](file:///home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261006T134908735148-state-write-commits-a-set-of-paths.json): parsed record stored at both declared paths, status parsed, scores goal_fidelity 20 / evidence 17 / scope_discipline 20 / durability 18 / fit 20 / reuse 19 (total 114, 6/6 dimensions present), reviewed base 3c7a3f36abd0ffc6546bc3f893db8c004b698886 head 45913ce7a585c151cecedbb5a724c47712b1c3cb, added_failure_count null with added_failure_ids [] (the reviewed manifest declares no baseline_suite or after_suite arm, so the count is unmeasured rather than zero), three follow-on findings.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261006T134946510136-review-records-have-a-committed-root" data-who="reckon-build" data-when="2026-10-06T14:15:33.553Z">
-    <div class="r-comment-body"><p>A review record now resolves and writes to the project&#x27;s committed reviews tree — review_path gains docs/state/&lt;project&gt;/reviews/run/&lt;reviewed-run-id&gt;/&lt;review-id&gt;.json and refuses an empty review run id (as plan_review_path already did), and plan_review_path gains plan/&lt;slug&gt;/&lt;review-id&gt;.json, beside the unchanged staging path; store_committed_review stamps dispatched_at/completed_at from the run&#x27;s own record (falling back to the live pointer&#x27;s stamps) rather than the store clock, and refuses the write naming the run when neither source resolves both stamps; record_response appends each answer to an append-only response_events list while responses keeps the latest per finding — gate 39 passed EXIT=0, declared mutation 1 failed EXIT=1.</p></div>
+    <div class="r-comment-body"><p>A review record now resolves and writes to the project's committed reviews tree — review_path gains docs/state/&lt;project&gt;/reviews/run/&lt;reviewed-run-id&gt;/&lt;review-id&gt;.json and refuses an empty review run id (as plan_review_path already did), and plan_review_path gains plan/&lt;slug&gt;/&lt;review-id&gt;.json, beside the unchanged staging path; store_committed_review stamps dispatched_at/completed_at from the run's own record (falling back to the live pointer's stamps) rather than the store clock, and refuses the write naming the run when neither source resolves both stamps; record_response appends each answer to an append-only response_events list while responses keeps the latest per finding — gate 39 passed EXIT=0, declared mutation 1 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261006T141650475822-review-of-review-records-have-a-committed-root" data-who="reckon-build" data-when="2026-10-06T14:30:16.801Z">
+    <div class="r-comment-body"><p>Independent review of the delta commit 775001135 gained by run r-20261006T134946510136-review-records-have-a-committed-root (reckon:every-review-is-kept-as-a-committed-record §3) stored a parsed record at both fence paths — scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 18, fit 20, reuse 20 (total 116), reviewed_base_sha 2e05df719 and reviewed_head_sha 775001135 — with two follow-on findings: run_record_times&#x27; docstring names only a created_at pointer stamp while its code reads both stamps, and store_committed_review still defaults a missing review_run_id to the reviewed run so the file collision review_path&#x27;s new refusal closes is reachable through the writer. No blocking finding; the delta faithfully repairs both prior follow-ons and its new guards are shown to fire.</p></div>
 </div>
 </section>
 </main>
