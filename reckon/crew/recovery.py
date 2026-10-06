@@ -626,12 +626,23 @@ def _review_dispatch_fields(
         write_paths.append(
             str(review_module.review_path(project, run_id, reviewed_head_sha=head))
         )
+    plan = str(node.get("plan") or "")
+    section = str(node.get("section") or "")
+    # A brief-carried run names no plan section: its authority is the stored
+    # brief the reviewed worker read. Composing the review from a bare plan and
+    # section leaves it with no authority at all, which admission refuses as
+    # not-dispatchable, so the brief's stored copy stands in for the plan/section
+    # pair and the composed review is dispatchable as printed. A run that names
+    # a plan keeps the plan as its authority even when it also carried a brief,
+    # so the plan gates still run.
+    brief = "" if plan else str(node.get("brief_path") or node.get("brief") or "")
     return {
         "run_id": run_id,
         "project": project,
         "head": head,
-        "plan": str(node.get("plan") or ""),
-        "section": str(node.get("section") or ""),
+        "plan": plan,
+        "section": section,
+        "brief": brief,
         "source_node": source_node,
         "node_id": f"{REVIEW_NODE_PREFIX}{source_node}",
         "session": str(record.get("session") or "<session>"),
