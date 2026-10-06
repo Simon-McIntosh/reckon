@@ -1,0 +1,707 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 3,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "87f6c16ac0649f7ec91eba4fe859a8f281f432d3",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 5837301,
+      "input_tokens_cumulative": 5837301,
+      "output_tokens": 32348,
+      "output_tokens_cumulative": 32348,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 196,
+    "files": 3,
+    "removed": 54
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 576,
+        "name": "main",
+        "path": "reckon/crew/worker_digest.py"
+      },
+      "run_function": {
+        "line": 51,
+        "name": "_parse",
+        "path": "scripts/import_host_reviews.py"
+      },
+      "window_line": 62
+    },
+    {
+      "existing_function": {
+        "line": 93,
+        "name": "_write_run_record",
+        "path": "tests/test_every_review_round_is_committed.py"
+      },
+      "run_function": {
+        "line": 70,
+        "name": "_run_record",
+        "path": "tests/test_import_host_reviews.py"
+      },
+      "window_line": 73
+    },
+    {
+      "existing_function": {
+        "line": 45,
+        "name": "_run_record",
+        "path": "tests/test_review_records_have_a_committed_root.py"
+      },
+      "run_function": {
+        "line": 70,
+        "name": "_run_record",
+        "path": "tests/test_import_host_reviews.py"
+      },
+      "window_line": 73
+    },
+    {
+      "existing_function": {
+        "line": 51,
+        "name": "_run_record",
+        "path": "tests/test_reviews_read_the_committed_store_first.py"
+      },
+      "run_function": {
+        "line": 70,
+        "name": "_run_record",
+        "path": "tests/test_import_host_reviews.py"
+      },
+      "window_line": 73
+    },
+    {
+      "existing_function": {
+        "line": 274,
+        "name": "test_derived_legacy_id_is_idempotent_across_a_second_pass",
+        "path": "tests/test_import_host_reviews.py"
+      },
+      "run_function": {
+        "line": 93,
+        "name": "_fixture_records",
+        "path": "tests/test_import_host_reviews.py"
+      },
+      "window_line": 146
+    },
+    {
+      "existing_function": {
+        "line": 308,
+        "name": "test_a_second_write_pass_imports_zero",
+        "path": "tests/test_import_host_reviews.py"
+      },
+      "run_function": {
+        "line": 176,
+        "name": "test_dry_run_lists_inventory_and_writes_nothing",
+        "path": "tests/test_import_host_reviews.py"
+      },
+      "window_line": 177
+    },
+    {
+      "existing_function": {
+        "line": 93,
+        "name": "_fixture_records",
+        "path": "tests/test_import_host_reviews.py"
+      },
+      "run_function": {
+        "line": 274,
+        "name": "test_derived_legacy_id_is_idempotent_across_a_second_pass",
+        "path": "tests/test_import_host_reviews.py"
+      },
+      "window_line": 279
+    },
+    {
+      "existing_function": {
+        "line": 176,
+        "name": "test_dry_run_lists_inventory_and_writes_nothing",
+        "path": "tests/test_import_host_reviews.py"
+      },
+      "run_function": {
+        "line": 308,
+        "name": "test_a_second_write_pass_imports_zero",
+        "path": "tests/test_import_host_reviews.py"
+      },
+      "window_line": 309
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "c569291ff26b21c2e9b89285ec155e807a407517"
+  ],
+  "completed_at": "2026-10-06T18:12:57.671Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-06T17:29:03Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon/crew/review.py",
+    "scripts/",
+    "tests/"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_import_host_reviews.py tests/test_review_records_have_a_committed_root.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172834926975-host-reviews-import-into-the-committed-tree/gate.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.4,
+    "plan": "every-review-is-kept-as-a-committed-record",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-06T18:28:37.722599+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-06T17:28:37Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 3,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 7,
+    "headroom": 9,
+    "mean_context": 113333,
+    "observed_at": "2026-10-06T17:28:34Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 3,
+      "aggregate_tokens_per_second": 213.01,
+      "detail": "",
+      "mean_tokens_per_second": 44.377,
+      "observed_at": "2026-10-06T17:28:34Z",
+      "runs": 4.8,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-06T18:12:57.671Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172834926975-host-reviews-import-into-the-committed-tree/manifest.md",
+  "member": "disposable-r-20261006T172834926975-host-reviews-import-into-the-committed-tree",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_import_host_reviews.py::test_write_commits_records_once_and_quarantines_non_records"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "baseline_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_import_host_reviews.py::test_write_commits_records_once_and_quarantines_non_records"
+    ],
+    "declaration": "delete non-record files instead of moving them to quarantine",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172834926975-host-reviews-import-into-the-committed-tree/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172834926975-host-reviews-import-into-the-committed-tree/negative-control.log",
+    "test_paths": [
+      "tests/test_import_host_reviews.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "host-reviews-import-into-the-committed-tree",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 3105,
+          "cached_input_tokens": 733642,
+          "input_tokens": 736749,
+          "output_tokens": 2292,
+          "reasoning_output_tokens": 1402,
+          "total_tokens": 739041,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "e4e34290-ff45-41cc-a498-eeffd300fb05",
+      "session_id": "e4e34290"
+    },
+    "done_when": "tests/test_import_host_reviews.py drives the script against a temporary RECKON_HOME and temporary repository: a dry run prints an inventory of recognised records and non-records, with path, size and modification time, and writes nothing; --write commits each recognised plan-review and run-review record through store_committed_review with its times taken from its run id, imports a duplicate once, moves every non-record file and directory to a quarantine directory outside the store without deleting any, and a second --write pass imports zero; the script follows scripts/import_runs_into_store.py's --project/--root and exit contract; the manifest records the real host dry run's per-project counts and bytes; the gate runs that file with tests/test_review_records_have_a_committed_root.py under --basetemp in /tmp, recording EXIT=0 on the manifest tests line, and the declared negative control records a FAILED test with a non-zero EXIT",
+    "estimated_hours": 1.5,
+    "goal": "scripts/import_host_reviews.py imports each project's host review records into its committed review tree and moves every non-record to a quarantine outside the store",
+    "id": "host-reviews-import-into-the-committed-tree",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-06T17:28:37Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 3,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 7,
+      "headroom": 9,
+      "mean_context": 113333,
+      "observed_at": "2026-10-06T17:28:34Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 3,
+        "aggregate_tokens_per_second": 213.01,
+        "detail": "",
+        "mean_tokens_per_second": 44.377,
+        "observed_at": "2026-10-06T17:28:34Z",
+        "runs": 4.8,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172834926975-host-reviews-import-into-the-committed-tree/manifest.md",
+    "negative_control": "delete non-record files instead of moving them to quarantine",
+    "plan": "every-review-is-kept-as-a-committed-record",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§5",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "scripts/import_host_reviews.py",
+      "tests/test_import_host_reviews.py",
+      "docs/evidence/fragments/every-review-is-kept-as-a-committed-record/host-reviews-import-into-the-committed-tree.html",
+      "docs/figures/every-review-is-kept-as-a-committed-record/host-reviews-import-into-the-committed-tree"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 2547784.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "host-reviews-import-into-the-committed-tree",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-06T17:28:45.670883+00:00",
+    "score": 0.6625,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "clive",
+    "comment": "",
+    "confidence": 0.79,
+    "decision_source": "jev",
+    "effort": "high",
+    "excluded": [
+      {
+        "availability": "not-probed",
+        "backend": "native",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "in-harness-backend"
+        ],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "local",
+    "jev_latency_ms": 599.992,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 753.485,
+    "model": "deepseek-v4.1-flash",
+    "offered": [
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-haiku",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-opus",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "clive",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "open",
+          "running": 6,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 0
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "outcomes": {
+          "failed": 8,
+          "not-run": 18,
+          "passed": 227,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": 37
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "budget_reason": "recorded account-window reading is stale",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 6,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-astra",
+        "budget_reason": "recorded account-window reading is stale",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 18,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-luna",
+        "budget_reason": "recorded account-window reading is stale",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "claude": 0,
+      "claude-haiku": 0,
+      "claude-opus": 0,
+      "clive": 0.83,
+      "codex": 0.05,
+      "codex-astra": 0.04,
+      "codex-luna": 0,
+      "hold": 0.08
+    },
+    "rendered_token_estimate": 1129,
+    "usage": {
+      "cost": 0.000129864,
+      "input_tokens": 3092,
+      "output_tokens": 89
+    }
+  },
+  "plan": "every-review-is-kept-as-a-committed-record",
+  "plan_impl_at_dispatch": 0.4,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "c569291ff26b21c2e9b89285ec155e807a407517",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "87f6c16ac0649f7ec91eba4fe859a8f281f432d3",
+    "reviewed_head_sha": "c569291ff26b21c2e9b89285ec155e807a407517",
+    "scores": {
+      "durability": 18,
+      "evidence": 19,
+      "fit": 20,
+      "goal_fidelity": 18,
+      "reuse": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 115
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261006T172834926975-host-reviews-import-into-the-committed-tree",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§5",
+  "session": "e4e34290",
+  "session_harness": "claude",
+  "session_id": "68f2dfd8-06e3-474a-a3b9-0d62aa125306",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 1,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 26951437,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 529.546,
+    "generated_tokens": 128547,
+    "generation_seconds": 464.646,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 61.9,
+    "machine_seconds": 64.9,
+    "peak_input_tokens": 142439,
+    "tokens_per_second": 276.66,
+    "wall_tokens_per_second": 242.75
+  },
+  "time_budget": "60m",
+  "tool_steps": 100.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 2634,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 3,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-06T18:13:00Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-06T18:04:02Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261006T172834926975-host-reviews-import-into-the-committed-tree",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 15845,
+    "worker_pid": 251670
+  },
+  "worker_seconds": 2611,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
