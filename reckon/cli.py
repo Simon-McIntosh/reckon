@@ -2622,13 +2622,13 @@ def crew_review_plan(
                 project, plan_slug, plan=plan_path if plan_path is not None else ""
             )
             if record is None:
-                _emit(
-                    {
-                        "error": "crew_error",
-                        "detail": f"no stored review for {project}:{plan_slug}",
-                    },
-                    pretty,
+                from reckon.mcp import _stale_plan_review
+
+                stale = _stale_plan_review(project, plan_slug)
+                detail = (
+                    stale[1] if stale else f"no stored review for {project}:{plan_slug}"
                 )
+                _emit({"error": "crew_error", "detail": detail}, pretty)
                 raise click.exceptions.Exit(1)
             path = plan_review.record_response(
                 record,

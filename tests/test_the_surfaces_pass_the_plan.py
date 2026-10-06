@@ -10,7 +10,9 @@ delivery before reading and must select the review through the plan's content.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -108,16 +110,15 @@ def _delivered_report(project) -> Path:
     return report
 
 
-def _store_section_covering_review(path: Path) -> dict:
-    """Store a review whose section digests match but whose whole digest does not.
+def _covering_record(path: Path) -> dict:
+    """A review that covers the plan's current content section by section.
 
-    This is the subject of the second surface question: a plan covered section
-    by section carries a stored review whose whole-document fingerprint matches
-    the plan in no recognised form, so a reader that joins on the whole document
-    reports it unreviewed while a reader that joins on the sections does not.
+    Its section digests match the plan but its whole-document fingerprint
+    matches no recognised form, so coverage is reached through the sections,
+    not the whole document.
     """
     document = path.read_text(encoding="utf-8")
-    record = {
+    return {
         "project": "sample",
         "plan_slug": "fixture",
         "plan_version": 3,
@@ -130,8 +131,44 @@ def _store_section_covering_review(path: Path) -> dict:
         ],
         "responses": {},
     }
-    plan_review.store_plan_review(record)
-    return record
+
+
+def _stale_record() -> dict:
+    """A review of other content: it matches no section of the current plan."""
+    return {
+        "project": "sample",
+        "plan_slug": "fixture",
+        "plan_version": 4,
+        "reviewed_blob_sha": "b" * 40,
+        "plan_fingerprint": "1" * 64,
+        "section_digests": {"s1": "deadbeef"},
+        "rubric": "design",
+        "findings": [],
+        "responses": {},
+    }
+
+
+def _store_two_reviews(path: Path) -> tuple[dict, dict]:
+    """Store an older covering review and a newer review that does not cover.
+
+    The covering review is the older by version and by file mtime, so a reader
+    that joins on the plan's content returns it while a reader that takes the
+    newest stored record regardless of coverage returns the non-covering one.
+    That difference is what the surface tests assert, so dropping the plan's
+    content from a caller makes them fail rather than silently agreeing on the
+    wrong record.
+    """
+    covering = _covering_record(path)
+    stale = _stale_record()
+    covering_path = plan_review.store_plan_review(covering)
+    stale_path = plan_review.store_plan_review(stale)
+    # Pin the mtimes so the non-covering review is unambiguously newest by file
+    # mtime: the no-plan branch returns the newest by mtime, and the two writes
+    # would otherwise be too close for a filesystem to order reliably.
+    now = time.time()
+    os.utime(covering_path, (now - 10, now - 10))
+    os.utime(stale_path, (now, now))
+    return covering, stale
 
 
 def test_answer_stores_an_unstored_delivery_before_answering(project):
@@ -164,17 +201,19 @@ def test_answer_stores_an_unstored_delivery_before_answering(project):
 
 def test_answer_surface_reads_a_section_covering_review(project):
     _, _, path = project
-    _store_section_covering_review(path)
+    covering, stale = _store_two_reviews(path)
     document = path.read_text(encoding="utf-8")
-    # The stored review is covered by the sections, not by the whole document:
-    # its fingerprint matches none of the plan's recognised forms, and the
-    # coverage predicate reports every unit covered.
-    stored_fingerprint = plan_review.read_plan_review("sample", "fixture")[
-        "plan_fingerprint"
-    ]
-    assert stored_fingerprint not in plan_review._fingerprint_forms(document)
+    # The covering review is covered by the sections, not by the whole document:
+    # its fingerprint matches none of the plan's recognised forms, so a reader
+    # joining on the whole document would miss it, and the coverage predicate
+    # reports every unit covered. A reader that takes the newest stored record
+    # regardless of coverage would return the stale one instead, so the two
+    # answers diverge and the surface must give the covering one.
+    assert covering["plan_fingerprint"] not in plan_review._fingerprint_forms(document)
     assert plan_review._review_coverage("sample", "fixture", plan=document)[1] == set()
-    assert plan_review.read_plan_review("sample", "fixture", plan=document) is not None
+    assert plan_review.read_plan_review("sample", "fixture")["plan_version"] == int(
+        stale["plan_version"]
+    )
 
     result = CliRunner().invoke(
         cli.main,
@@ -192,13 +231,53 @@ def test_answer_surface_reads_a_section_covering_review(project):
     )
     assert result.exit_code == 0, result.output
     stored = plan_review.read_plan_review("sample", "fixture", plan=document)
+    assert stored["plan_version"] == int(covering["plan_version"])
     assert stored["responses"][_FINDING]["action"] == "acted"
 
 
 def test_mcp_view_reads_a_section_covering_review(project):
     _, _, path = project
-    _store_section_covering_review(path)
+    covering, stale = _store_two_reviews(path)
     payload = mcp._crew(project="sample", plan="fixture", view="plan-review")
     assert payload["record"] is not None
     assert payload["record"]["plan_slug"] == "fixture"
+    assert payload["record"]["plan_version"] == int(covering["plan_version"])
     assert payload["record"]["plan_fingerprint"] == "0" * 64
+    assert payload["record"]["plan_fingerprint"] != stale["plan_fingerprint"]
+
+
+def test_absent_covering_review_names_the_stale_one(project):
+    _, _, path = project
+    stale = _stale_record()
+    plan_review.store_plan_review(stale)
+    # The only stored review is of other content, so no review covers the plan
+    # now present. Reporting "no stored review" would hide the one that exists,
+    # so both surfaces name it by version and point at the verb that composes a
+    # review of the current content.
+    document = path.read_text(encoding="utf-8")
+    assert plan_review.read_plan_review("sample", "fixture", plan=document) is None
+
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "review-plan",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--answer",
+            _FINDING,
+            "--acted",
+        ],
+    )
+    assert result.exit_code != 0, result.output
+    detail = json.loads(result.output)["detail"]
+    assert f"version {int(stale['plan_version'])}" in detail
+    assert "no longer covers" in detail
+    assert "crew review-plan" in detail
+
+    payload = mcp._crew(project="sample", plan="fixture", view="plan-review")
+    assert payload["record"] is None
+    assert payload["stale_review"]["plan_version"] == int(stale["plan_version"])
+    assert "no longer covers" in payload["stale_review"]["detail"]
