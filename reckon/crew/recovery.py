@@ -9,6 +9,7 @@ import math
 import os
 import re
 import shlex
+import shutil
 import socket
 import subprocess
 import tempfile
@@ -487,6 +488,25 @@ def plan_review_subject(
     }
 
 
+def _missing_ancestors(directory: Path) -> list[str]:
+    """The directories ``directory.mkdir(parents=True)`` would bring into being.
+
+    Returned deepest first, so a caller that later removes them prunes the run
+    directory before the empty ancestors above it. A dispatch composes its run
+    directory with ``parents=True``; naming the directories this call created is
+    what lets a refusal remove exactly those and leave a directory that already
+    existed untouched.
+    """
+    missing: list[str] = []
+    probe = directory
+    while not probe.exists():
+        missing.append(str(probe))
+        if probe.parent == probe:
+            break
+        probe = probe.parent
+    return missing
+
+
 def _review_dispatch_fields(
     record: Mapping[str, Any],
     *,
@@ -568,7 +588,9 @@ def _review_dispatch_fields(
         # composed path and the written path are one spelling rather than two.
         sidecar = directory / plan_review._REVIEW_SIDECAR_NAME
         plan_version = _plan_html.read_state(document).get("version") or 0
+        composed_directories: list[str] = []
         if write:
+            composed_directories = _missing_ancestors(directory)
             directory.mkdir(parents=True, exist_ok=True)
             snapshot.write_bytes(document_bytes)
             brief.write_text(brief_text, encoding="utf-8")
@@ -603,6 +625,7 @@ def _review_dispatch_fields(
             ),
             "write_path": str(directory),
             "write_paths": [str(directory)],
+            "report_directories_created": composed_directories,
         }
     node = record.get("node") or {}
     run_id = str(record.get("run_id") or "")
@@ -2461,6 +2484,32 @@ def dispatch_review_for_run(
     )
 
 
+def _discard_composed_plan_review(
+    record: Mapping[str, Any], fields: Mapping[str, Any]
+) -> None:
+    """Remove the plan-review run directory a dispatch composed but did not launch.
+
+    A plan-review attempt composes its run directory — the brief, the plan
+    snapshot and the sidecar — before the lane admits it, so every exit that
+    launches nothing discards it through this one function rather than a removal
+    copied into each refusal branch. Only the directories this call created are
+    removed, deepest first, and the empty ancestors it created are pruned, so a
+    refusal leaves no new directory under the plan-review report root. A
+    directory that already existed when the call began is never removed.
+    """
+    if record.get("subject") != "plan":
+        return
+    created = [str(path) for path in fields.get("report_directories_created") or ()]
+    if not created:
+        return
+    shutil.rmtree(created[0], ignore_errors=True)
+    for ancestor in created[1:]:
+        try:
+            Path(ancestor).rmdir()
+        except OSError:
+            break
+
+
 def _dispatch_composed_review(
     record: Mapping[str, Any],
     fields: Mapping[str, Any],
@@ -2484,6 +2533,7 @@ def _dispatch_composed_review(
             reason=reason,
             reviewed_head=fields["head"],
         )
+        _discard_composed_plan_review(record, fields)
         return {"run_id": run_id, "dispatched": False, "reason": reason}
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -2504,6 +2554,7 @@ def _dispatch_composed_review(
                 reason=reason,
                 reviewed_head=fields["head"],
             )
+            _discard_composed_plan_review(record, fields)
             return {
                 "run_id": run_id,
                 "dispatched": False,
@@ -2637,6 +2688,7 @@ def _dispatch_composed_review(
             backend=backend,
             reviewed_head=fields["head"],
         )
+        _discard_composed_plan_review(record, fields)
         return {
             "run_id": run_id,
             "dispatched": False,
@@ -2664,6 +2716,7 @@ def _dispatch_composed_review(
             backend=backend,
             reviewed_head=fields["head"],
         )
+        _discard_composed_plan_review(record, fields)
         return {
             "run_id": run_id,
             "dispatched": False,
@@ -2684,6 +2737,7 @@ def _dispatch_composed_review(
             backend=backend,
             reviewed_head=fields["head"],
         )
+        _discard_composed_plan_review(record, fields)
         return {
             "run_id": run_id,
             "dispatched": False,
