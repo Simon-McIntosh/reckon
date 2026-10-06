@@ -174,5 +174,12 @@ def test_invocation_expression_is_composed_from_the_exported_core():
     assert (
         html_module.SECTION_NUMBER_PATTERN in followup_pointers._INVOCATION_RE.pattern
     )
-    source = Path(followup_pointers.__file__).read_text()
-    assert source.count("SECTION_NUMBER_PATTERN") == 2
+    for written, section in [
+        ("§5", "s5"),
+        ("§5.1", "s5-1"),
+        ("§5-1", "s5-1"),
+        ("§5a", None),
+    ]:
+        parsed = followup_pointers.parse_invocation(f"/reckon-build slug {written}")
+        assert parsed is not None
+        assert parsed.section == section

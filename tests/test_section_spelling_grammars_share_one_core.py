@@ -176,7 +176,46 @@ def test_number_core_is_owned_once_and_frames_compose_it():
             or (isinstance(n, ast.Attribute) and n.attr == "SECTION_NUMBER_PATTERN")
             for n in ast.walk(body)
         )
-    assert Path(_store.__file__).read_text().count("A-Za-z0-9._-") == 4
+
+
+def test_section_identity_validation_reuses_the_shared_helper():
+    """The store validates a section id through the shared helper, never by
+    re-spelling the identity grammar inline.
+
+    A section identity is a resource path segment, so the grammar is owned by
+    ``is_section_identity``. A validation that re-implements the full match
+    drifts the moment the grammar moves, so every section-identity refusal
+    routes through the helper and none performs an inline full match.
+    """
+    tree = ast.parse(Path(_store.__file__).read_text())
+    validators = {
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and any(
+            isinstance(call, ast.Call)
+            and isinstance(call.func, ast.Name)
+            and call.func.id == "is_section_identity"
+            for call in ast.walk(node)
+        )
+    }
+    assert validators == {
+        "_apply_set",
+        "_require_authored_section_fields",
+        "_apply_collapse_section",
+    }
+    inline_full_match = {
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and any(
+            isinstance(call, ast.Call)
+            and isinstance(call.func, ast.Attribute)
+            and call.func.attr == "fullmatch"
+            for call in ast.walk(node)
+        )
+    }
+    assert not (validators & inline_full_match)
 
 
 def test_numbered_heading_with_adjacent_contract_is_accepted():
