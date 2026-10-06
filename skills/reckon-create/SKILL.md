@@ -657,6 +657,21 @@ the intent. What counts as material on a later revision — and the reviewed
 status of a plan you go on to change — is defined once in `reckon-edit`
 SKILL.md hard rule 9.
 
+**The write tells you when a review is owed.** The `edit_plan(create=True)`
+call that registers the plan returns `review_owed` beside `review_invocation`:
+the outstanding units the coverage predicate `plan_review.review_coverage`
+reports uncovered, each with its measured change where one exists. A **non-empty
+`review_owed` on the last write of this authoring session** — one review for a
+burst of edits, not one per edit — means compose it now and answer its findings
+before any build is dispatched:
+
+```bash
+reckon crew review-plan --project <project> --plan <slug> --local
+```
+
+The tool composes no review itself; the author decides when the session's
+authoring is finished. An empty `review_owed` owes nothing.
+
 ### Step 5 — Confirm
 
 Report:

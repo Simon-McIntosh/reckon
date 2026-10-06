@@ -628,7 +628,7 @@ def _edit_share(reviewed: str, present: str) -> float:
     return (larger - matching) / larger
 
 
-def _review_coverage(
+def review_coverage(
     project: str,
     plan_slug: str,
     *,
@@ -800,7 +800,7 @@ def read_plan_review(
     ``plan_fingerprint`` is ignored.
     """
     if plan is not None:
-        contributing = _review_coverage(
+        contributing = review_coverage(
             project, plan_slug, plan=plan, base_dir=base_dir
         )[0]
         covering = [

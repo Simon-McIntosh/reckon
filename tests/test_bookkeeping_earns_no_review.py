@@ -144,7 +144,7 @@ def _store_review(
 
 
 def _coverage(env, document: str):
-    records, uncovered, _changes = plan_review._review_coverage(
+    records, uncovered, _changes = plan_review.review_coverage(
         env["project"], env["slug"], plan=document, base_dir=env["base_dir"]
     )
     return records, uncovered

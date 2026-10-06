@@ -452,6 +452,38 @@ def _stale_plan_review(project: str, plan_slug: str) -> tuple[int, str] | None:
     return version, detail
 
 
+def _review_owed_fields(
+    project: str, slug: str, written_path: str | None
+) -> dict[str, Any]:
+    """The review a successful plan write owes its author.
+
+    A plan is reviewed before it is built, and the moment it changes is the
+    moment its author is present, so the write that changed it names the units
+    the coverage predicate now reports uncovered rather than leaving a later
+    dispatcher to refuse the build. ``review_owed`` lists each uncovered unit
+    with the measured change the predicate computes where one exists, and an
+    empty list when nothing is owed; ``review_invocation`` is the one-line
+    command that composes a review of exactly those units. The tool composes no
+    review itself — the author decides when a session's authoring is finished —
+    so a burst of edits earns one review and no review is attributed to a
+    session that did not ask for it. A write whose content cannot be read back
+    for the note returns an empty list rather than failing the completed write.
+    """
+    from reckon.crew import plan_review
+
+    invocation = f"reckon crew review-plan --project {project} --plan {slug} --local"
+    if written_path is None:
+        return {"review_owed": [], "review_invocation": invocation}
+    try:
+        _records, uncovered, changes = plan_review.review_coverage(
+            project, slug, plan=Path(written_path)
+        )
+    except Exception:  # noqa: BLE001 — the review note never fails a written plan
+        return {"review_owed": [], "review_invocation": invocation}
+    owed = [{"unit": unit, "change": changes.get(unit)} for unit in sorted(uncovered)]
+    return {"review_owed": owed, "review_invocation": invocation}
+
+
 #: Environment variable a crew run exports into every worker it launches. The
 #: worker's harness — and the MCP server that harness starts as a child — inherit
 #: it, so a plan write can tell it is running inside a run.
@@ -3907,7 +3939,7 @@ def _edit_plan_tool(
     within the limit, or in a project declaring no limit, carries no warning.
     """
 
-    return _edit_plan(
+    result = _edit_plan(
         project=project,
         slug=slug,
         ops=ops,
@@ -3920,6 +3952,11 @@ def _edit_plan_tool(
         new_html=new_html,
         replacements=replacements,
     )
+    # A plan write reports the review it owes; a doc write and an index write
+    # do not, so the note is attached only to a plan.
+    if result.get("ok") and result.get("resource", {}).get("type") == "plan":
+        result.update(_review_owed_fields(project, slug, result.get("path")))
+    return result
 
 
 def _roadmap(
