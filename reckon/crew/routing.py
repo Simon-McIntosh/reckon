@@ -2579,6 +2579,26 @@ def _plan_review_verdict(enforce: bool, detail: str) -> str | None:
     return f"plan-review gate in report-only mode — {detail}"
 
 
+def _uncovered_change_detail(
+    uncovered: Iterable[str], changes: Mapping[str, float | None]
+) -> str:
+    """Name each uncovered unit beside its measured change, for the refusal.
+
+    The measured change is the share of a section's words that differ from the
+    review that read it; a unit the measure could not read — a new section, the
+    document unit whose digest alone decides — is named without a figure rather
+    than given an invented one.
+    """
+    parts = []
+    for unit in sorted(uncovered):
+        share = changes.get(unit)
+        if share is None:
+            parts.append(f"{unit} changed")
+        else:
+            parts.append(f"{unit} changed by {round(share * 100)}% of its words")
+    return f"{'; '.join(parts)}; " if parts else ""
+
+
 def _store_delivered_plan_review(project: str, plan_slug: str) -> None:
     """Store unstored deliveries so section coverage can use their reviewed units.
 
@@ -2654,7 +2674,7 @@ def require_plan_reviewed(
         return None
 
     _store_delivered_plan_review(project, node.plan)
-    records, uncovered = plan_review._review_coverage(
+    records, uncovered, changes = plan_review._review_coverage(
         project, node.plan, plan=resource.path
     )
     if uncovered:
@@ -2662,6 +2682,7 @@ def require_plan_reviewed(
             enforce,
             f"plan {node.plan!r} in project {project!r} carries no stored review "
             f"of the content about to be built; uncovered units: {', '.join(sorted(uncovered))}; "
+            f"{_uncovered_change_detail(uncovered, changes)}"
             "a plan is reviewed before it is built",
         )
     record = max(records, key=lambda item: int(item.get("plan_version") or 0))

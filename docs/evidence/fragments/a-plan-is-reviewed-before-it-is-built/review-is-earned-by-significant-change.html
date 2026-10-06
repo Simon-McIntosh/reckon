@@ -1,0 +1,100 @@
+<section data-reckon="evidence" data-node="review-is-earned-by-significant-change">
+  <h3>A review is earned by significant change, measured per unit</h3>
+
+  <p>Plan review now covers a unit — an authored section, or the document unit
+  that carries decisions, gates and dependencies — by how much its prose changed
+  since the review that last read it, not by any edit at all.
+  <code>reckon/crew/plan_review.py</code> gains <code>_review_coverage</code>, a
+  single predicate that returns the contributing records, the uncovered units and
+  each unit's measured change: it compares each outstanding unit's present
+  prose against the newest covering review's <em>snapshot</em> — exactly, through
+  the digest recomputed from that snapshot, or within the declared fraction of the
+  unit's words — so the gate can name the uncovered units beside their share. The
+  word share is <code>difflib.SequenceMatcher</code> over
+  <code>dispatch._normalised_words</code>, so the measure adds a comparison and no
+  second tokeniser and both texts come from the one reader the digests use
+  (<code>_prose_texts</code>). Three cases stay material whatever their size: a
+  changed done-when (located by <code>_done_when_paragraph</code> and compared
+  whitespace-normalised), a section that became implementable since the review
+  (read from the snapshot's own declarations), and a unit absent from the review —
+  a new section above all. A review with no snapshot covers only an exact digest
+  match, its threshold read as zero.</p>
+
+  <p>The threshold is <code>review.plan_change_threshold: 0.30</code>, declared in
+  <code>reckon/schema/flight-defaults.yaml</code> and read through the new public
+  <code>reckon/flight.py:plan_review_change_threshold</code>. The predicate
+  resolves the project's own flight config when no caller passes one, so a host
+  or project layer that retunes the threshold changes every caller's verdict —
+  the gate included — rather than only a caller handed a config. The schema cleaner
+  and <code>validate_layer</code> now read one table,
+  <code>flight.REVIEW_OWNED_KEYS</code> — <code>plan_settle_seconds</code> a
+  non-negative integer, <code>plan_change_threshold</code> a number in [0, 1] — so
+  a key added to one is set aside by the cleaner and checked by the validator in
+  the same edit. The gate refusal in <code>reckon/crew/routing.py</code> names each
+  uncovered unit beside its measured change (for example <code>b changed by 35% of
+  its words</code>).</p>
+
+  <h4>Evidence</h4>
+  <ul>
+    <li><strong>Tests</strong>: <code>tests/test_review_is_earned_by_significant_change.py</code>
+    (13 cases) plus <code>tests/test_plan_settle_window_is_declared.py</code> (2
+    cases): <code>uv run --no-sync pytest -p no:cacheprovider -q
+    tests/test_review_is_earned_by_significant_change.py
+    tests/test_plan_settle_window_is_declared.py</code> → <strong>15 passed,
+    EXIT=0</strong>. Log: <code>logs/gate-tests.log</code> (ends in a bare
+    <code>EXIT=0</code>).</li>
+    <li><strong>Existing review, gate and flight tests</strong>, same target list
+    at base and at the reviewed head: base <code>64e6b3376</code> → <strong>200
+    passed, 3 failed</strong> (<code>logs/baseline-suite.log</code>); head →
+    <strong>201 passed, 2 failed</strong> (<code>logs/gate-suite.log</code>). The
+    two remaining failures are both in
+    <code>test_a_run_comment_earns_no_plan_review.py</code> and are pre-existing:
+    swapping the base revision's <code>plan_review.py</code> back in reproduces
+    the identical two (<code>logs/baseline-combined-tests.log</code>, EXIT=1).
+    Added failures: <strong>zero</strong>; the base's third failure was this
+    node's own new settle-window assertion against the pre-change defaults, and
+    it passes at head.</li>
+    <li><strong>Negative control</strong>: the measure changed to compare each unit
+    against the previously-seen plan state instead of the reviewed snapshot reddens
+    the cumulative three-edit test —
+    <code>test_three_successive_edits_accumulate_against_the_reviewed_snapshot</code>
+    fails <code>assert set() == {'b'}</code>, <strong>EXIT=1</strong>; log
+    <code>logs/negative-control.log</code>. The mutation was reverted byte-exact.</li>
+    <li><strong>Interface accounting</strong>: <code>reckon.interface_counts</code>
+    reports <code>public_definitions</code> <strong>1481</strong> at base
+    <code>64e6b3376</code> and <strong>1482</strong> at head — one above, the added
+    <code>plan_review_change_threshold</code>. The measure, the done-when locator
+    and the declaration comparison are module-private.</li>
+  </ul>
+
+  <h4>Replay: the cumulative rule beside the consecutive figure</h4>
+  <p>The research's consecutive rule — "a section was added, or a section changed
+  by 30% or more of its own words" — fired on 15 of the 96 re-reviews of
+  2026-10-06. The cumulative rule the predicate implements compares each review
+  against the snapshot that last <em>covered</em> the plan, so a run of small edits
+  accumulates. Both rules, over the per-run review snapshots under
+  <code>~/.config/reckon/crew/reports</code> read at
+  <strong>2026-10-06T11:30:03Z</strong> (<code>logs/replay-cumulative.log</code>):</p>
+  <table>
+    <thead><tr><th>population</th><th>rule</th><th>re-reviews</th><th>fires</th><th>keeps an added section</th></tr></thead>
+    <tbody>
+      <tr><td>research snapshot (its own 96 ids)</td><td>consecutive</td><td>96</td><td>15 (research)</td><td>4</td></tr>
+      <tr><td>this node, 11:30Z reading</td><td>consecutive</td><td>720</td><td>32</td><td>—</td></tr>
+      <tr><td>this node, 11:30Z reading</td><td>cumulative</td><td>720</td><td><strong>47</strong></td><td><strong>50</strong></td></tr>
+    </tbody>
+  </table>
+  <p><strong>Why the population differs from the research's 96.</strong> This
+  replay reads the <em>same store</em> the research's own scripts read — the
+  per-run review snapshots under
+  <code>crew/reports/&lt;project&gt;/plan-review/&lt;slug&gt;/r-…/plan.html</code> —
+  but the store is live and has grown since the research snapshot, so the same day
+  now yields 720 re-reviews rather than 96. The research's <code>edit_size.json</code>
+  and <code>section_change.json</code> hold the 96 that existed at its reading
+  (four projects: imas-ambix, imas-codex, nova, reckon); by 11:30Z the day carries
+  re-reviews from those four plus imas-ink, which the earlier reading could not
+  see. The rule matches: restricted to the research's own 96 run ids, the same
+  code returns 4 re-reviews with a new section (exactly the research's 4) and 16
+  fires against its 15, the one-off a boundary/tokeniser case. So the gap is
+  population growth, not a different rule; the figures above are point-in-time and
+  drift with the live store.</p>
+</section>

@@ -137,7 +137,10 @@ def test_collapse_keeps_coverage(section_plan):
 
 
 def _coverage(path):
-    return plan_review._review_coverage("sample", "fixture", plan=path)
+    records, uncovered, _changes = plan_review._review_coverage(
+        "sample", "fixture", plan=path
+    )
+    return records, uncovered
 
 
 def test_authored_edit_uncovers_only_its_section(section_plan):

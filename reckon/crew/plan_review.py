@@ -16,10 +16,13 @@ a version that no longer exists, and the dispatch gate would refuse every later
 build with no review able to clear it. So the fingerprint normalises out exactly
 the server-managed metadata scalars — the plan's version, modified stamp,
 implementation fraction, status, ROI, effort, owner, sprint, tags and archive
-flag — and digests the authored content: declarations, sections, decisions,
-followups, relationships and comments, except the landing comments a promotion
-writes for a run, which record that work landed rather than an authored change
-and are normalised out beside the metadata scalars. The parser derives a little
+flag — and digests the authored content: the sections' prose and the document
+unit's decisions, gates, dependencies and other authored state. Comments and
+followups are normalised out beside the metadata scalars, both the authored and
+the promotion's landing ones, because they record work done and next steps
+rather than the design a review reads; the section declarations are normalised
+out too, since a landing collapse rewrites a section's lifecycle declaration in
+the same write that replaces its body with a landed card. The parser derives a little
 more state from those scalars, so :data:`PLAN_DERIVED_SCALARS` removes that
 too; without it, adding the named effort field to a plan that carried only the
 legacy effort letter would move the fingerprint through the derived calibration
@@ -48,6 +51,7 @@ distinct plans per finding type so that recurrence can reach the lead.
 
 from __future__ import annotations
 
+import difflib
 import hashlib
 import json
 import re
@@ -293,16 +297,30 @@ def _digest_state(plan, *, keep_declarations=False):
     return state if keep_declarations else _without_section_declarations(state)
 
 
-def _section_digests(plan: Mapping[str, Any] | str | Path) -> dict[str, str]:
-    """Digest authored sections and the remaining document independently."""
+def _prose_texts(plan: Mapping[str, Any] | str | Path) -> dict[str, str]:
+    """Return each authored unit's prose, whitespace-normalised, in one read.
+
+    This is the one reader the unit digests and the change measure share: a
+    section's prose or the remaining document prose, taken through the same
+    slicer and tag stripper, so the measure extracts no text of its own and
+    both texts it compares come from here. A parsed-state input carries no
+    document text, so it yields no prose rather than an invented one.
+    """
     document = _as_document(plan)
     buckets: dict[str, list[str]] = {_DOCUMENT_UNIT: []}
     if document is not None:
         for identity, raw in _prose_slices(document):
             buckets.setdefault(identity, []).append(_plan_html.strip_tags(raw))
-    payloads = {
-        identity: {"prose": " ".join(" ".join(parts).split())}
+    return {
+        identity: " ".join(" ".join(parts).split())
         for identity, parts in buckets.items()
+    }
+
+
+def _section_digests(plan: Mapping[str, Any] | str | Path) -> dict[str, str]:
+    """Digest authored sections and the remaining document independently."""
+    payloads = {
+        identity: {"prose": prose} for identity, prose in _prose_texts(plan).items()
     }
     payloads[_DOCUMENT_UNIT]["state"] = _digest_state(plan)
     return {identity: _digest(payload) for identity, payload in payloads.items()}
@@ -313,8 +331,9 @@ def plan_fingerprint(plan: Mapping[str, Any] | str | Path) -> str:
 
     Section digests let a review continue covering outstanding authored work
     after another section lands. Metadata and lifecycle declarations are
-    normalised out; decisions, followups and authored comments belong to the
-    document unit alongside the remaining parsed state.
+    normalised out, and so are comments and followups — the authored ones and
+    the landing ones a promotion writes alike. Decisions, gates, dependencies
+    and the other remaining authored state belong to the document unit.
     """
     return _digest(_section_digests(plan))
 
@@ -507,19 +526,20 @@ def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> tuple[str, str, 
     return tuple(forms)
 
 
-def _snapshot_unit_digests(
+def _snapshot_evidence(
     project: str, plan_slug: str, record: Mapping[str, Any]
-) -> dict[str, str] | None:
-    """Recompute a stored review's unit digests from its own snapshot.
+) -> tuple[dict[str, str], dict[str, str], Mapping[str, Any] | None] | None:
+    """Recompute a stored review's snapshot evidence, or ``None`` without one.
 
     The stored record names the run that composed the review; that run's report
     directory holds the ``plan.html`` snapshot the reviewer read. Recomputing
-    the digests from that snapshot under the present definition is what makes a
-    definition change re-review nothing: the review still covers the content it
-    read, measured the way the definition measures it now, so the stored digests
-    become a cache rather than the authority. Returns ``None`` when the record
+    the unit digests and prose from that snapshot under the present definition
+    is what makes a definition change re-review nothing — the review still
+    covers the content it read, measured the way the definition measures it now
+    — and the snapshot's own declarations let the predicate ask whether a
+    section was implementable when the review read it. ``None`` means the record
     names no run or the snapshot is missing, so the caller falls back to the
-    stored digests.
+    stored digests and reads the threshold as zero for that review alone.
     """
     run_id = str(record.get("review_run_id") or "").strip()
     if not run_id:
@@ -529,7 +549,55 @@ def _snapshot_unit_digests(
     )
     if not snapshot.is_file():
         return None
-    return _section_digests(snapshot)
+    text = snapshot.read_text(encoding="utf-8", errors="replace")
+    return _section_digests(text), _prose_texts(text), _snapshot_declarations(text)
+
+
+def _snapshot_declarations(document: str) -> Mapping[str, Any] | None:
+    """Return a snapshot document's own section declarations, if it carries any."""
+    try:
+        state = _plan_html.read_state(document)
+    except Exception:  # noqa: BLE001 - an unreadable snapshot yields no evidence
+        return None
+    declarations = state.get("section_declarations")
+    return declarations if isinstance(declarations, Mapping) else None
+
+
+# The section's closing done-when paragraph, located within its prose by this
+# one locator. A done-when lives in section prose where a one-word edit falls
+# far under any fraction, so the two texts are compared directly, whitespace
+# already normalised by :func:`_prose_texts`, rather than measured.
+_DONE_WHEN_MARKER = re.compile(r"\bdone when\b", re.IGNORECASE)
+
+
+def _done_when_paragraph(prose: str) -> str | None:
+    """Return the closing done-when text of a unit's prose, or ``None``."""
+    normalised = " ".join(prose.split())
+    match = _DONE_WHEN_MARKER.search(normalised)
+    if match is None:
+        return None
+    return normalised[match.start() :]
+
+
+def _edit_share(reviewed: str, present: str) -> float:
+    """The share of the larger text's words that differ between two prose texts.
+
+    The words are those the package's one word tokeniser yields, the same one
+    the done-when overlap warning reads, so the measure adds a comparison and
+    no second tokeniser. The result is the longest-common-subsequence changed
+    word count over the larger word count, so a section that replaces a third
+    of its words reads as a third changed against the review that read it.
+    """
+    from reckon.crew.dispatch import _normalised_words
+
+    left, _ = _normalised_words(reviewed)
+    right, _ = _normalised_words(present)
+    larger = max(len(left), len(right))
+    if larger == 0:
+        return 0.0
+    matcher = difflib.SequenceMatcher(a=left, b=right, autojunk=False)
+    matching = sum(block.size for block in matcher.get_matching_blocks())
+    return (larger - matching) / larger
 
 
 def _review_coverage(
@@ -538,9 +606,30 @@ def _review_coverage(
     *,
     plan: Mapping[str, Any] | str | Path,
     base_dir: str | Path | None = None,
-) -> tuple[list[dict[str, Any]], set[str]]:
-    """Return contributing reviews and uncovered outstanding authored units."""
+    config: Mapping[str, Any] | None = None,
+) -> tuple[list[dict[str, Any]], set[str], dict[str, float | None]]:
+    """Return contributing reviews, uncovered units and their measured change.
+
+    A unit is covered by a stored review when it existed in that review and its
+    authored prose still matches: exactly, through the digest recomputed from
+    the review's snapshot, or within the change threshold, when the review's
+    snapshot carries the prose to measure; a review without a snapshot has only
+    its stored digests, so the threshold is read as zero for it. A unit absent
+    from the review is never covered, a section the review's snapshot did not
+    declare implementable counts as new, and a changed done-when leaves its
+    section uncovered whatever the fraction — those three revisions are material
+    beside the threshold.
+
+    The threshold comes from the project's own resolved flight config when the
+    caller passes none, so a host or project layer that retunes it changes every
+    caller's verdict rather than only a caller handed a config.
+    """
+    from reckon import flight
     from reckon.roadmap import implementable_sections
+
+    if config is None:
+        config = flight.resolve(project=project).config
+    threshold = flight.plan_review_change_threshold(config)
 
     document = _as_document(plan)
     content = document if document is not None else plan
@@ -551,34 +640,98 @@ def _review_coverage(
     ]
     forms = _fingerprint_forms(content)
     whole = [record for record in records if record.get("plan_fingerprint") in forms]
-    if whole:
-        return [
-            max(whole, key=lambda record: int(record.get("plan_version") or 0))
-        ], set()
     outstanding = {
         _plan_html.section_record_id(section)
         for section in implementable_sections(
             _as_state(content).get("section_declarations")
         )
     } | {_DOCUMENT_UNIT}
-    digests = _section_digests(content)
-    covered: set[str] = set()
-    contributing = []
-    for record in records:
-        stored = record.get("section_digests")
-        recomputed = _snapshot_unit_digests(project, plan_slug, record)
-        record_digests = recomputed if recomputed is not None else stored
-        if not isinstance(record_digests, Mapping):
-            continue
-        matches = {
+    if whole:
+        # The whole-plan fingerprint is unchanged, so every unit is covered
+        # except a section that became implementable since the review: a
+        # declaration is normalised out of the fingerprint, so a change of
+        # declaration alone reaches here and must still be caught.
+        newest = max(whole, key=lambda record: int(record.get("plan_version") or 0))
+        evidence = _snapshot_evidence(project, plan_slug, newest)
+        snapshot_declarations = None if evidence is None else evidence[2]
+        if snapshot_declarations is None:
+            return [newest], set(), {}
+        implemented = {
+            _plan_html.section_record_id(section)
+            for section in implementable_sections(snapshot_declarations)
+        }
+        became_implementable = {
             identity
             for identity in outstanding
-            if identity in digests and record_digests.get(identity) == digests[identity]
+            if identity != _DOCUMENT_UNIT and identity not in implemented
         }
-        if matches:
-            covered.update(matches)
+        changes = dict.fromkeys(became_implementable)
+        return [newest], became_implementable, changes
+    digests = _section_digests(content)
+    present_prose = _prose_texts(content)
+    covered: set[str] = set()
+    contributing = []
+    newest_evidence: dict[str, float | None] = {}
+    for record in sorted(records, key=lambda item: int(item.get("plan_version") or 0)):
+        evidence = _snapshot_evidence(project, plan_slug, record)
+        if evidence is None:
+            snapshot_digests, snapshot_prose, snapshot_declarations = None, None, None
+        else:
+            snapshot_digests, snapshot_prose, snapshot_declarations = evidence
+        record_digests = (
+            snapshot_digests
+            if snapshot_digests is not None
+            else record.get("section_digests")
+        )
+        if not isinstance(record_digests, Mapping):
+            continue
+        implemented = (
+            None
+            if snapshot_declarations is None
+            else {
+                _plan_html.section_record_id(section)
+                for section in implementable_sections(snapshot_declarations)
+            }
+        )
+        matched = False
+        for identity in outstanding:
+            if identity not in digests:
+                continue
+            if identity == _DOCUMENT_UNIT:
+                # The document unit carries decisions, gates and dependencies
+                # in its digest, which are material whatever their size, so an
+                # exact digest match is its only cover.
+                if record_digests.get(identity) == digests[identity]:
+                    covered.add(identity)
+                    matched = True
+                continue
+            if implemented is not None and identity not in implemented:
+                # The review's snapshot did not declare this section
+                # implementable — absent, deferred or done there — so the
+                # section is new to this review and it never covers it.
+                continue
+            if record_digests.get(identity) == digests[identity]:
+                covered.add(identity)
+                matched = True
+                continue
+            if snapshot_prose is None:
+                continue
+            reviewed_text = snapshot_prose.get(identity, "")
+            present_text = present_prose.get(identity, "")
+            if _done_when_paragraph(reviewed_text) != _done_when_paragraph(
+                present_text
+            ):
+                continue
+            share = _edit_share(reviewed_text, present_text)
+            newest_evidence[identity] = share
+            if share < threshold:
+                covered.add(identity)
+                matched = True
+        if matched:
             contributing.append(record)
-    return contributing, outstanding - covered
+    uncovered = outstanding - covered
+    changes = {identity: newest_evidence.get(identity) for identity in uncovered}
+    return contributing, uncovered, changes
 
 
 def _load(path: Path) -> dict[str, Any] | None:

@@ -91,6 +91,19 @@ REVIEW_SUITE_KEY = "suite"
 DEFAULT_LIGHT_CHANGED_LINES = 50
 DEFAULT_LIGHT_TIME_BUDGET = "10m"
 
+# The reckon-owned keys inside the ``review`` block, each with the shape it must
+# hold. The generated schema names none of them — they are not the
+# provider-neutral budget surface — so both the cleaner that holds them out of
+# the schema check and the layer validator read this one table rather than each
+# spelling the same key beside a shape copied from its sibling. A key added here
+# is set aside by the cleaner and checked by the validator in the same edit, so
+# the two cannot drift.
+REVIEW_OWNED_KEYS: dict[str, str] = {
+    "plan_settle_seconds": "non_negative_integer",
+    "plan_change_threshold": "unit_interval",
+}
+DEFAULT_PLAN_CHANGE_THRESHOLD = 0.30
+
 # The unit each budget suffix is worth in seconds. A budget is written as an
 # integer followed by one of these letters, and the reader converts it once so
 # every caller measures the same run against the same number.
@@ -319,7 +332,7 @@ def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
     review = cleaned.get(REVIEW_KEY)
     if isinstance(review, Mapping):
         cleaned[REVIEW_KEY] = {
-            key: value for key, value in review.items() if key != "plan_settle_seconds"
+            key: value for key, value in review.items() if key not in REVIEW_OWNED_KEYS
         }
     backends = cleaned.get("backends")
     if isinstance(backends, Mapping):
@@ -694,6 +707,49 @@ def plan_review_settle_seconds(config: Mapping[str, Any] | None) -> int:
     )
 
 
+def plan_review_change_threshold(config: Mapping[str, Any] | None) -> float:
+    """The share of a unit's words an edit may change and stay covered.
+
+    Read from the resolved config through the one review-key table, so a host
+    or project layer can tighten the threshold without a code change. A config
+    declaring no such key — an in-process caller or a hand-assembled test
+    config — falls back to the shipped default rather than failing, and a value
+    of the wrong shape is treated the same way rather than widening coverage.
+    """
+    review = (config or {}).get(REVIEW_KEY)
+    value = (
+        review.get("plan_change_threshold", DEFAULT_PLAN_CHANGE_THRESHOLD)
+        if isinstance(review, Mapping)
+        else DEFAULT_PLAN_CHANGE_THRESHOLD
+    )
+    shape = REVIEW_OWNED_KEYS["plan_change_threshold"]
+    if not _review_owned_key_shape_is_valid(shape, value):
+        return DEFAULT_PLAN_CHANGE_THRESHOLD
+    return float(value)
+
+
+def _review_owned_key_shape_is_valid(shape: str, value: Any) -> bool:
+    """Whether ``value`` holds the shape a reckon-owned review key declares."""
+    if shape == "non_negative_integer":
+        return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+    if shape == "unit_interval":
+        return (
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and 0.0 <= value <= 1.0
+        )
+    return False
+
+
+def _review_owned_key_shape_message(shape: str) -> str:
+    """The refusal text for a review key holding the wrong shape."""
+    if shape == "non_negative_integer":
+        return "must be a non-negative integer"
+    if shape == "unit_interval":
+        return "must be a number between 0 and 1"
+    return "holds an unknown shape"
+
+
 def review_tier_thresholds(
     config: Mapping[str, Any] | None,
 ) -> tuple[int, str]:
@@ -860,12 +916,14 @@ def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
     _validate_harness_home_files(data, source)
     _validate_plan_review_gate(data, source)
     review = data.get(REVIEW_KEY)
-    if isinstance(review, Mapping) and "plan_settle_seconds" in review:
-        value = review["plan_settle_seconds"]
-        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-            raise FlightConfigError(
-                source, "review.plan_settle_seconds", "must be a non-negative integer"
-            )
+    if isinstance(review, Mapping):
+        for key, shape in REVIEW_OWNED_KEYS.items():
+            if key in review and not _review_owned_key_shape_is_valid(
+                shape, review[key]
+            ):
+                raise FlightConfigError(
+                    source, f"review.{key}", _review_owned_key_shape_message(shape)
+                )
 
     _validate_sprint_recent_days(data, source)
 
