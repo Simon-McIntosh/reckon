@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="The memo keys the committed review tree, and a composed review stores its bytes">
+  <meta name="plan-summary" content="The live-run classification memo now keys the run's committed reviews directory and every record filed under its run id, so committing a review record moves the key the memo is stored under. The plan-review composition writes the reviewed plan bytes to the repository's object store, so the recorded reviewed_blob_sha resolves even while the plan is an uncommitted write.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-06">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The memo keys the committed review tree, and a composed review stores its bytes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The memo keys the committed review tree, and a composed review stores its bytes</h1>
+
+    <section id="recovery-keys-on-committed-reviews-anchor">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/recovery.py</code>: <code>_review_input_identities</code>
+        now keys the project's committed reviews tree beside the host staging
+        store. The review readers resolve a promoted run's record from
+        <code>docs/state/&lt;project&gt;/reviews/run/&lt;reviewed-run-id&gt;/</code>
+        before the staging store, so that tree is the input a promoted run's
+        classification reads; a key that named only the staging paths left the
+        key unchanged when a record was committed, and a memo written before the
+        commit went on serving the earlier verdict. The function keys the run's
+        committed run directory and every <code>*.json</code> record filed under
+        its run id, and a run whose record is committed settles as having its own
+        record, so no store-wide staging search runs for it.</p>
+      <p><code>reckon/crew/recovery.py</code>: the plan-review composition in
+        <code>_review_dispatch_fields</code> runs <code>git hash-object -w
+        --stdin</code> rather than <code>git hash-object --stdin</code>. The
+        <code>-w</code> writes the reviewed plan bytes to the repository's object
+        store, so the <code>reviewed_blob_sha</code> the sidecar records resolves
+        with <code>git cat-file -e</code> even when the reviewed plan is an
+        uncommitted working-tree write — the look-back and the cumulative
+        comparison can read the text a review was taken against.</p>
+      <p>Gate: <code>tests/test_recovery_keys_on_committed_reviews.py</code>
+        writes a run's review record into the committed tree and holds that the
+        memo key moves, holds that an unchanged tree leaves the key in force, and
+        composes a plan review over an uncommitted plan file and holds that the
+        recorded blob resolves in the object store. It runs beside
+        <code>tests/test_ledger.py</code>,
+        <code>tests/test_pointer_classification_is_memoised.py</code> and
+        <code>tests/test_memo_keys_a_misfiled_record.py</code>.</p>
+      <h2>Measure</h2>
+      <p>Gate: 112 passed, <code>EXIT=0</code>. Negative control — the declared
+        mutation leaves the committed tree out of
+        <code>_review_input_identities</code> — 1 failed
+        (<code>test_a_committed_review_write_changes_the_memo_key</code>), 111
+        passed, <code>EXIT=1</code>; the failing id is not one the head arm
+        failed.</p>
+    </section>
+  </main>
+</body>
+</html>
