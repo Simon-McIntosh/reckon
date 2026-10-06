@@ -125,6 +125,7 @@ def test_composer_carries_rubric_snapshot_and_sidecar(project, rubric, items):
     assert sidecar["plan_version"] == 3
     assert sidecar["reviewed_blob_sha"] == blob
     assert sidecar["plan_fingerprint"] == plan_review.plan_fingerprint(path)
+    assert sidecar["section_digests"] == plan_review._section_digests(path)
     assert sidecar["rubric"] == rubric
     argv = recovery._review_dispatch_argv(subject, config=CONFIG)
     assert argv[argv.index("--node") + 1] == fields["node_id"]
@@ -227,7 +228,7 @@ def test_sweep_and_gate_accept_the_same_review(project, monkeypatch, legacy, sto
     )
     _quiet(path)
     current = plan_review.plan_fingerprint(path)
-    previous = plan_review.plan_fingerprint(path, legacy=True)
+    previous = plan_review._fingerprint_forms(path)[1]
     assert current != previous
     fields = recovery._review_dispatch_fields(_subject())
     sidecar_path = Path(fields["sidecar"])

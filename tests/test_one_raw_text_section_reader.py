@@ -223,7 +223,7 @@ def test_heading_rule_reports_only_the_parser_and_shape_exemptions():
         rows = interface_counts._heading_walks(interface_counts.definitions(tree), tree)
         if rows:
             found[str(path.relative_to(ROOT))] = rows
-    assert set(found) == {"reckon/_plan_html.py", "reckon/crew/plan_review.py"}, found
+    assert set(found) == {"reckon/_plan_html.py"}, found
     assert {name for name, _line in found["reckon/_plan_html.py"]} == {
         "_StructuredSectionSpanParser.handle_starttag",
         "_read_section_records",
@@ -243,9 +243,6 @@ def test_heading_rule_reports_only_the_parser_and_shape_exemptions():
             "_authored_child_count",
         ]
     )
-    assert [name for name, _line in found["reckon/crew/plan_review.py"]] == [
-        "_AuthoredProseParser.handle_starttag"
-    ]
 
 
 def test_heading_rule_follows_module_collections_and_local_aliases():

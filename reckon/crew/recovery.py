@@ -491,7 +491,7 @@ def _plan_review_pending(record: Mapping[str, Any]) -> bool:
     """Whether this content still needs a report, stored or delivered."""
     project, slug = record["project"], record["plan_slug"]
     plan = Path(record["plan_path"])
-    if plan_review.read_plan_review(project, slug, plan=plan) is not None:
+    if not plan_review._review_coverage(project, slug, plan=plan)[1]:
         return False
     return not any(
         not report["stored"]
@@ -590,7 +590,7 @@ def _review_dispatch_fields(
                 plan_slug=slug,
                 plan_version=plan_version,
                 reviewed_blob_sha=blob,
-                plan_fingerprint=plan_review.plan_fingerprint(document),
+                document=document,
                 rubric=rubric,
                 report_path=report,
             )
