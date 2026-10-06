@@ -213,7 +213,7 @@ def test_interface_budget_finding_parses_as_a_design_item() -> None:
     assert finding["would_change"] is True
 
 
-def test_store_delivered_report_writes_a_record_the_store_finds_by_fingerprint(
+def test_store_delivered_reviews_writes_a_record_the_store_finds_by_fingerprint(
     reviewed_project: tuple[Path, Path, Path],
 ) -> None:
     config_home, _repo, plan_path = reviewed_project
@@ -227,15 +227,19 @@ def test_store_delivered_report_writes_a_record_the_store_finds_by_fingerprint(
     assert delivered[0]["stored"] is False
     assert Path(delivered[0]["report_path"]) == report_path
 
-    stored_path = plan_review.store_delivered_report(delivered[0])
+    refusals = plan_review.store_delivered_reviews("sample", "fixture")
 
-    assert stored_path.is_file()
+    assert refusals == []
     record = plan_review.read_plan_review(
         "sample", "fixture", plan_fingerprint=fingerprint
     )
     assert record is not None
     assert plan_review.finding_ids(record) == [WIRING_FINDING, REASONING_FINDING]
-    assert config_home in stored_path.parents
+    stored = sorted(
+        (config_home / "crew" / "reviews" / "sample").glob("plan-fixture.v*.json")
+    )
+    assert len(stored) == 1
+    assert config_home in stored[0].parents
 
 
 def test_enforce_mode_stores_a_delivered_report_then_refuses_by_the_finding(

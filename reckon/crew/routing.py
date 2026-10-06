@@ -2599,23 +2599,19 @@ def _uncovered_change_detail(
     return f"{'; '.join(parts)}; " if parts else ""
 
 
-def _store_delivered_plan_review(project: str, plan_slug: str) -> None:
-    """Store unstored deliveries so section coverage can use their reviewed units.
+def _refused_store_detail(refusals: Iterable[Mapping[str, Any]]) -> str:
+    """Name each delivery the store refused and the reason it recorded.
 
-    A delivery may predate another section's landing, so its whole-document
-    fingerprint need not match. The coverage predicate owns relevance; this
-    step only persists usable reports and leaves malformed ones to the gate's
-    missing-review refusal.
+    A delivery that does not store is otherwise visible only as the gate's
+    missing-review symptom; naming it and its reason in the refusal is what
+    carries the cause to the reader who meets the symptom.
     """
-    from reckon.crew import plan_review
-
-    for sidecar in plan_review.delivered_reports(project, plan_slug):
-        if sidecar.get("stored"):
-            continue
-        try:
-            plan_review.store_delivered_report(sidecar)
-        except (OSError, ValueError):
-            continue
+    parts = [
+        f"delivery {item.get('review_run_id') or '?'} did not store: "
+        f"{item.get('store_error')}"
+        for item in refusals
+    ]
+    return "; ".join(parts) + "; " if parts else ""
 
 
 def require_plan_reviewed(
@@ -2673,19 +2669,20 @@ def require_plan_reviewed(
         # an unresolved resource here has nothing to review.
         return None
 
-    _store_delivered_plan_review(project, node.plan)
-    records, uncovered, changes = plan_review._review_coverage(
+    refusals = plan_review.store_delivered_reviews(project, node.plan)
+    _records, uncovered, changes = plan_review._review_coverage(
         project, node.plan, plan=resource.path
     )
-    if uncovered:
+    record = plan_review.read_plan_review(project, node.plan, plan=resource.path)
+    if uncovered or record is None:
         return _plan_review_verdict(
             enforce,
             f"plan {node.plan!r} in project {project!r} carries no stored review "
             f"of the content about to be built; uncovered units: {', '.join(sorted(uncovered))}; "
             f"{_uncovered_change_detail(uncovered, changes)}"
+            f"{_refused_store_detail(refusals)}"
             "a plan is reviewed before it is built",
         )
-    record = max(records, key=lambda item: int(item.get("plan_version") or 0))
     unanswered = plan_review.unanswered_findings(record)
     if unanswered:
         return _plan_review_verdict(

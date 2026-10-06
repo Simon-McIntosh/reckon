@@ -759,20 +759,39 @@ def read_plan_review(
 
     ``plan_version`` restricts the search to one version when named. A
     ``plan_fingerprint`` filter selects the review of the content being asked
-    about, which is how the dispatch gate joins a review to the plan it will
-    build: the fingerprint, not the version integer, is the key that survives an
-    impl bump. A ``reviewed_blob_sha`` filter selects a named content revision.
+    about, which is how the caller joins a review to the plan it will build:
+    the fingerprint, not the version integer, is the key that survives an impl
+    bump. A ``reviewed_blob_sha`` filter selects a named content revision.
     Among the records that pass the filters the newest by file mtime is
     returned; ``None`` means no stored review matches.
-    ``plan`` accepts a path, document or state and selects both current and
-    legacy fingerprints, taking precedence over ``plan_fingerprint``.
+    ``plan`` accepts a path, document or state and selects the review of the
+    content being asked about by the coverage predicate rather than by the whole
+    document, so a plan covered section by section reads as reviewed here as the
+    gate reads it there; with ``plan`` given, the newest among the covering
+    records — the one whose findings a caller checks — is returned, and
+    ``plan_fingerprint`` is ignored.
     """
+    if plan is not None:
+        contributing = _review_coverage(
+            project, plan_slug, plan=plan, base_dir=base_dir
+        )[0]
+        covering = [
+            record
+            for record in contributing
+            if (
+                plan_version is None
+                or int(record.get("plan_version") or 0) == int(plan_version)
+            )
+            and (
+                reviewed_blob_sha is None
+                or _review_blob_matches(record, reviewed_blob_sha)
+            )
+        ]
+        if not covering:
+            return None
+        return max(covering, key=lambda record: int(record.get("plan_version") or 0))
     records: list[tuple[Path, dict[str, Any]]] = []
-    wanted = (
-        _fingerprint_forms(plan)
-        if plan is not None
-        else _wanted_fingerprints(plan_fingerprint)
-    )
+    wanted = _wanted_fingerprints(plan_fingerprint)
     for path in _candidate_paths(project, plan_slug, plan_version, base_dir):
         record = _load(path)
         if record is None:
@@ -782,17 +801,21 @@ def read_plan_review(
             and str(record.get("plan_fingerprint") or "") not in wanted
         ):
             continue
-        if reviewed_blob_sha is not None:
-            named = str(reviewed_blob_sha).strip().lower()
-            carried = _record_blob8(record) or ""
-            if not carried or not (
-                carried.startswith(named) or named.startswith(carried)
-            ):
-                continue
+        if reviewed_blob_sha is not None and not _review_blob_matches(
+            record, reviewed_blob_sha
+        ):
+            continue
         records.append((path, record))
     if not records:
         return None
     return max(records, key=lambda item: item[0].stat().st_mtime_ns)[1]
+
+
+def _review_blob_matches(record: Mapping[str, Any], reviewed_blob_sha: str) -> bool:
+    """Whether a stored review carries the named content revision, by prefix."""
+    named = str(reviewed_blob_sha).strip().lower()
+    carried = _record_blob8(record) or ""
+    return bool(carried) and (carried.startswith(named) or named.startswith(carried))
 
 
 def list_plan_reviews(
@@ -995,13 +1018,15 @@ def review_report_directory(project: str, plan_slug: str, run_id: str) -> Path:
 def write_review_sidecar(
     directory: Path,
     *,
-    project: str,
-    plan_slug: str,
-    plan_version: int,
-    reviewed_blob_sha: str,
-    document: Mapping[str, Any] | str | Path,
-    rubric: str,
-    report_path: Path,
+    project: str | None = None,
+    plan_slug: str | None = None,
+    plan_version: int | None = None,
+    reviewed_blob_sha: str | None = None,
+    document: Mapping[str, Any] | str | Path | None = None,
+    rubric: str | None = None,
+    report_path: Path | None = None,
+    payload: Mapping[str, Any] | None = None,
+    store_error: str | None = None,
 ) -> Path:
     """Write the sidecar that joins a report to the plan content it read.
 
@@ -1010,18 +1035,29 @@ def write_review_sidecar(
     keyed to what the reviewer read rather than to what the plan says later. It
     is written beside the report through the shared atomic writer, so a reader
     never meets a half-written sidecar.
+
+    The shape is built from the named fields, or carried back verbatim when
+    ``payload`` is given, which is how a later reader that only adds a key
+    rewrites the delivery's own bytes rather than re-deriving them. A store
+    that refuses the delivery records its reason under ``store_error``; a
+    delivery stored cleanly carries no such key.
     """
     directory = Path(directory)
-    payload = {
-        "project": str(project),
-        "plan_slug": str(plan_slug),
-        "plan_version": int(plan_version),
-        "reviewed_blob_sha": str(reviewed_blob_sha),
-        "plan_fingerprint": plan_fingerprint(document),
-        "section_digests": _section_digests(document),
-        "rubric": str(rubric),
-        "report_path": str(Path(report_path)),
-    }
+    if payload is None:
+        payload = {
+            "project": str(project),
+            "plan_slug": str(plan_slug),
+            "plan_version": int(plan_version),
+            "reviewed_blob_sha": str(reviewed_blob_sha),
+            "plan_fingerprint": plan_fingerprint(document),
+            "section_digests": _section_digests(document),
+            "rubric": str(rubric),
+            "report_path": str(Path(report_path)),
+        }
+    else:
+        payload = dict(payload)
+    if store_error is not None:
+        payload["store_error"] = str(store_error)
     path = directory / _REVIEW_SIDECAR_NAME
     write_json_atomically(path, payload, indent=2, sort_keys=True, mode=None)
     return path
@@ -1097,7 +1133,7 @@ def delivered_reports(
     return found
 
 
-def store_delivered_report(
+def _store_delivered_report(
     sidecar: Mapping[str, Any],
     *,
     base_dir: str | Path | None = None,
@@ -1139,3 +1175,72 @@ def store_delivered_report(
         "absent_items": parsed["absent_items"],
     }
     return store_plan_review(record, base_dir=base_dir)
+
+
+def store_delivered_reviews(
+    project: str,
+    plan_slug: str,
+    *,
+    base_dir: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """Store every unstored delivered review for a plan, recording refusals.
+
+    A delivered review is a report a review run left on the durable report path
+    with a sidecar beside it. It is stored at the moment the plan is built, so
+    the coordinator never runs a store step; a delivery the store refuses is
+    recorded on its own sidecar, under ``store_error``, with the reason, rather
+    than skipped, so the next reader sees why the review did not take rather
+    than the gate's missing-review symptom. A delivery that stores on a later
+    pass has that reason cleared from its sidecar, so the file never contradicts
+    the stored review beside it. The returned list names each refused delivery
+    and its reason, for a caller that reports them.
+    """
+    refused: list[dict[str, Any]] = []
+    for sidecar in delivered_reports(project, plan_slug):
+        if sidecar.get("stored"):
+            continue
+        try:
+            _store_delivered_report(sidecar, base_dir=base_dir)
+        except (OSError, ValueError) as exc:
+            reason = f"{type(exc).__name__}: {exc}"
+            _record_store_error(sidecar, reason)
+            refused.append(
+                {"review_run_id": sidecar.get("review_run_id"), "store_error": reason}
+            )
+        else:
+            _clear_store_error(sidecar)
+    return refused
+
+
+def _record_store_error(sidecar: Mapping[str, Any], reason: str) -> None:
+    """Write a refused delivery's reason onto its own sidecar.
+
+    The delivery's existing payload is read back and rewritten through the one
+    sidecar writer with ``store_error`` added, so the shape keeps one spelling
+    and a later reader reads the cause off the file rather than its absence. A
+    sidecar that cannot be read leaves nothing to amend and is skipped.
+    """
+    report_path = Path(str(sidecar.get("report_path") or ""))
+    directory = report_path.parent
+    payload = _load(directory / _REVIEW_SIDECAR_NAME)
+    if payload is None:
+        return
+    write_review_sidecar(directory, payload=payload, store_error=reason)
+
+
+def _clear_store_error(sidecar: Mapping[str, Any]) -> None:
+    """Remove a stale ``store_error`` from a delivery that has now stored.
+
+    A delivery refused once and stored cleanly on a later pass would otherwise
+    keep a reason for a refusal that no longer holds, contradicting the stored
+    review beside it. The sidecar is read back and rewritten through the one
+    sidecar writer without the key; a sidecar that carries no ``store_error`` is
+    left untouched, so a clean store writes nothing.
+    """
+    report_path = Path(str(sidecar.get("report_path") or ""))
+    directory = report_path.parent
+    payload = _load(directory / _REVIEW_SIDECAR_NAME)
+    if payload is None or "store_error" not in payload:
+        return
+    payload.pop("store_error", None)
+    write_review_sidecar(directory, payload=payload)
