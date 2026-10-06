@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, width=device-width">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="plan-review-cycles">
+  <meta name="plan-title" content="Why plan-review re-review cycles do not converge">
+  <meta name="plan-summary" content="Measurements over the stored plan-review history and a counterfactual replay of five damping mechanisms">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-source" content="stored plan reviews and committed crew ledgers">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-10-06">
+  <meta name="plan-read" content="1">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <title>Why plan-review re-review cycles do not converge | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Research input</p>
+      <h1>Why plan-review re-review cycles do not converge</h1>
+      <p class="lead">308 stored reviews over 32 plans, each timed by the stamp in its own run id rather than by when the store wrote it, show the re-review loop carried by a handful of chains: the two longest carry 167 of the 308 reviews, 49 of 276 re-reviews (17.8 %) were triggered by a change confined to the document unit alone, and 152 of 502 findings in re-reviews (30.3 %) land on plan text that had not changed since the previous review. Replaying five damping mechanisms over the same timeline separates two costs: the schedule-changing mechanisms (a review only at build demand, longer settle windows) stop findings no reviewer would ever have read, while the gating-changing mechanisms (delta-scoped rounds, a round cap, a document-unit split) still record a finding but strip its gating force.</p>
+    </header>
+
+    <section id="method">
+      <h2>Method and sample</h2>
+      <p>Everything below is recomputed by <code>docs/figures/plan-review-cycles/measure_review_cycles.py</code>, which reads three stores and modifies nothing: the review store under <code>~/.config/reckon/crew/reviews/</code>, each project's committed crew ledger (<code>docs/state/&lt;project&gt;/crew.json</code>) for dispatch times, and the plan HTML itself through <code>git</code>. A review's time is the stamp inside its <code>review_run_id</code> (<code>r-YYYYMMDDTHHMMSSffffff-&hellip;</code>), which is when the review ran; the record's <code>timestamp</code> field is when the store wrote it and is used only as a fallback. All 308 records carry a run-id time &mdash; no record needed the fallback &mdash; and 255 of them differ from their store timestamp by more than five minutes (for one plan, 92 records carry a single store stamp from one import batch), so a cadence measured from store times would be an import artefact. Every reviewed content state was recovered from its recorded <code>reviewed_blob_sha</code> (308 of 308); none needed the commit fallback. The snapshot is 2026-10-06T04:48Z; the store is live, so every count is a point-in-time figure.</p>
+      <p>Units are the plan's own authored record ids: one unit per section record plus <code>_document</code> for the scalars, decisions, followups and authored comments &mdash; the same keying the plan fingerprint uses. A unit <em>changed</em> between two reviews when its digest differs between the two reviewed content states, computed with the script's own digest path. Every replay is bounded to its plan's review window, from 600&nbsp;s before the first review to the last review: no dispatch, commit or content state outside a plan's observed review span is counted. The script exits non-zero if any mechanism other than the settle-window replays runs more reviews than the plan actually ran inside its window; the settle-window rows are exempt as a calibration baseline, and &sect;5 states why and how far the exemption is exercised.</p>
+    </section>
+
+    <section id="cadence">
+      <h2>&sect;1 &mdash; Cadence of re-review chains</h2>
+      <p>Thirteen plans carry three or more reviews. The two longest chains carry 167 of the 308 reviews: <em>a-plan-is-reviewed-before-it-is-built</em> with 102 reviews in 34.94 h (2.92/h) and <em>jt60sa-discovery-completion</em> with 65 in 22.9 h. The median interval between consecutive reviews is 7.2 minutes on the longest chain and 7.4 on the second &mdash; a sweep's cadence, not an authoring loop's. The median gap from an <code>acted</code> response to the next review is 31.8 minutes on the longest chain and 0.4 on the second, so response latency does not pace the loop. Across the store, 18 reviews carry no findings at all, and 259 of 313 responses are <code>acted</code>.</p>
+      <table>
+  <thead><tr>
+    <th>plan</th>
+    <th>reviews</th>
+    <th>span [h]</th>
+    <th>reviews/h</th>
+    <th>median interval [min]</th>
+    <th>median response to next review [min]</th>
+  </tr></thead>
+  <tbody>
+  <tr><td>reckon:a-plan-is-reviewed-before-it-is-built</td><td>102</td><td>34.94</td><td>2.92</td><td>7.2</td><td>31.8</td></tr>
+  <tr><td>imas-codex:jt60sa-discovery-completion</td><td>65</td><td>22.9</td><td>2.84</td><td>7.4</td><td>0.4</td></tr>
+  <tr><td>imas-ambix:jt60sa-machine-map</td><td>36</td><td>22.89</td><td>1.57</td><td>15.5</td><td>1.1</td></tr>
+  <tr><td>nova:converged-forward-solve</td><td>34</td><td>35.76</td><td>0.95</td><td>20.0</td><td>11.3</td></tr>
+  <tr><td>nova:artifacts-carry-no-worktree-paths</td><td>10</td><td>1.45</td><td>6.91</td><td>10.2</td><td>0.8</td></tr>
+  <tr><td>reckon:a-worker-reuses-before-it-writes</td><td>7</td><td>9.28</td><td>0.75</td><td>96.9</td><td>82.1</td></tr>
+  <tr><td>imas-ambix:project-environment-declared</td><td>6</td><td>12.47</td><td>0.48</td><td>151.4</td><td>66.3</td></tr>
+  <tr><td>nova:forward-solver-route-integrity</td><td>6</td><td>3.27</td><td>1.84</td><td>26.8</td><td>10.6</td></tr>
+  <tr><td>nova:nova-portfolio-replan</td><td>5</td><td>1.76</td><td>2.85</td><td>19.6</td><td>10.4</td></tr>
+  <tr><td>reckon:a-dispatch-returns-without-its-worker</td><td>4</td><td>6.05</td><td>0.66</td><td>85.2</td><td>30.3</td></tr>
+  <tr><td>imas-ambix:jt60sa-geometry-and-signal-figures</td><td>3</td><td>0.24</td><td>12.69</td><td>7.1</td><td>0.6</td></tr>
+  <tr><td>nova:centroid-constrained-oracle-solve</td><td>3</td><td>4.85</td><td>0.62</td><td>145.4</td><td>10.0</td></tr>
+  <tr><td>nova:playable-forward-solve</td><td>3</td><td>3.35</td><td>0.89</td><td>100.6</td><td>10.3</td></tr>
+  </tbody>
+</table>
+      <figure>
+        <img src="/reckon/figures/plan-review-cycles/fig-review-timeline.png" alt="Findings per review over time for the three most-reviewed plans">
+        <figcaption>Findings per review over time for the three most-reviewed plans, on review-run time. One panel per plan; each stem is one stored review, its height the number of findings that review carried.</figcaption>
+      </figure>
+    </section>
+
+    <section id="trigger">
+      <h2>&sect;2 &mdash; What changed between consecutive reviews</h2>
+      <p>Of 276 consecutive pairs with both content states in hand, <strong>49 (17.8 %) changed only the document unit</strong> &mdash; no authored section changed at all. Their document-unit moves are 42 comments, 8 followups and 4 decisions (a pair may move more than one key), so roughly one re-review in six fires on bookkeeping: a run comment landing, a followup written or resolved. The churn is concentrated: <em>converged-forward-solve</em> contributes 29 of its own 33 pairs and <em>forward-solver-route-integrity</em> all five of its five. The remaining 227 pairs moved at least one authored section.</p>
+      <table>
+  <thead><tr>
+    <th>plan</th>
+    <th>consecutive pairs</th>
+    <th>decisions</th>
+    <th>followups</th>
+    <th>comments</th>
+    <th>relationships</th>
+    <th>other</th>
+    <th>document-only pairs</th>
+  </tr></thead>
+  <tbody>
+  <tr><td>reckon:a-plan-is-reviewed-before-it-is-built</td><td>101</td><td>0</td><td>0</td><td>3</td><td>0</td><td>0</td><td>3</td></tr>
+  <tr><td>imas-codex:jt60sa-discovery-completion</td><td>64</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+  <tr><td>imas-ambix:jt60sa-machine-map</td><td>35</td><td>0</td><td>0</td><td>2</td><td>0</td><td>2</td><td>2</td></tr>
+  <tr><td>nova:converged-forward-solve</td><td>33</td><td>3</td><td>0</td><td>29</td><td>0</td><td>0</td><td>29</td></tr>
+  <tr><td>nova:artifacts-carry-no-worktree-paths</td><td>9</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+  <tr><td>reckon:a-worker-reuses-before-it-writes</td><td>6</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+  <tr><td>imas-ambix:project-environment-declared</td><td>5</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+  <tr><td>nova:forward-solver-route-integrity</td><td>5</td><td>1</td><td>3</td><td>2</td><td>0</td><td>0</td><td>5</td></tr>
+  <tr><td>nova:nova-portfolio-replan</td><td>4</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+  <tr><td>reckon:a-dispatch-returns-without-its-worker</td><td>3</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td></tr>
+  <tr><td>imas-ambix:jt60sa-geometry-and-signal-figures</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+  <tr><td>nova:centroid-constrained-oracle-solve</td><td>2</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td><td>2</td></tr>
+  <tr><td>nova:playable-forward-solve</td><td>2</td><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td><td>2</td></tr>
+  <tr><td>nova:cut-cell-current-attribution</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td></tr>
+  <tr><td>nova:figure-and-solver-audit</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td></tr>
+  <tr><td>nova:null-identification-authority</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td><td>1</td></tr>
+  <tr><td>reckon:crew-runtime-positive-controls</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td></tr>
+  <tr><td>reckon:the-orchestrator-lane-is-not-a-worker-lane</td><td>1</td><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td><td>1</td></tr>
+  <tr><td>total</td><td>276</td><td>4</td><td>8</td><td>42</td><td>0</td><td>4</td><td>49</td></tr>
+  </tbody>
+</table>
+    </section>
+
+    <section id="acted-vs-fresh">
+      <h2>&sect;3 &mdash; Acted-on content versus fresh readings</h2>
+      <p>Each finding of a re-review is placed in the authored unit its anchor names, then classed as <em>acted</em> (its unit changed since the previous review, so acting on the plan plausibly produced it) or <em>fresh</em> (its unit is byte-identical, so the finding is a new reading of unchanged text). Of 502 findings in re-reviews, <strong>249 (49.6 %) land in a changed unit, 152 (30.3 %) in unchanged text</strong>, and 101 (20.1 %) resolve to no unit at all and are reported as such rather than guessed. Anchors resolve by a section id in 64 findings, by a code path named in exactly one section's prose in 146, and by a code path appearing in more than one section in 191 (attributed to the first candidate, so treat those as approximate). The two regimes separate by plan: the longest chain is dominated by acted findings (133 of 183), while short chains such as <em>converged-forward-solve</em> are almost entirely fresh readings of unchanged text.</p>
+      <table>
+  <thead><tr>
+    <th>plan</th>
+    <th>findings</th>
+    <th>acted (unit changed)</th>
+    <th>fresh (unit unchanged)</th>
+    <th>unclassifiable</th>
+    <th>unclassifiable %</th>
+  </tr></thead>
+  <tbody>
+  <tr><td>reckon:a-plan-is-reviewed-before-it-is-built</td><td>183</td><td>133</td><td>38</td><td>12</td><td>6.6</td></tr>
+  <tr><td>imas-codex:jt60sa-discovery-completion</td><td>110</td><td>61</td><td>28</td><td>21</td><td>19.1</td></tr>
+  <tr><td>imas-ambix:jt60sa-machine-map</td><td>66</td><td>23</td><td>24</td><td>19</td><td>28.8</td></tr>
+  <tr><td>nova:converged-forward-solve</td><td>49</td><td>3</td><td>30</td><td>16</td><td>32.7</td></tr>
+  <tr><td>nova:artifacts-carry-no-worktree-paths</td><td>20</td><td>10</td><td>3</td><td>7</td><td>35.0</td></tr>
+  <tr><td>nova:nova-portfolio-replan</td><td>13</td><td>13</td><td>0</td><td>0</td><td>0.0</td></tr>
+  <tr><td>nova:forward-solver-route-integrity</td><td>11</td><td>0</td><td>2</td><td>9</td><td>81.8</td></tr>
+  <tr><td>reckon:a-worker-reuses-before-it-writes</td><td>9</td><td>3</td><td>5</td><td>1</td><td>11.1</td></tr>
+  <tr><td>nova:playable-forward-solve</td><td>8</td><td>0</td><td>2</td><td>6</td><td>75.0</td></tr>
+  <tr><td>reckon:a-dispatch-returns-without-its-worker</td><td>7</td><td>0</td><td>7</td><td>0</td><td>0.0</td></tr>
+  <tr><td>nova:centroid-constrained-oracle-solve</td><td>6</td><td>0</td><td>6</td><td>0</td><td>0.0</td></tr>
+  <tr><td>imas-ambix:jt60sa-geometry-and-signal-figures</td><td>4</td><td>0</td><td>1</td><td>3</td><td>75.0</td></tr>
+  <tr><td>nova:figure-and-solver-audit</td><td>4</td><td>0</td><td>0</td><td>4</td><td>100.0</td></tr>
+  <tr><td>imas-ambix:project-environment-declared</td><td>3</td><td>3</td><td>0</td><td>0</td><td>0.0</td></tr>
+  <tr><td>reckon:crew-runtime-positive-controls</td><td>3</td><td>0</td><td>3</td><td>0</td><td>0.0</td></tr>
+  <tr><td>nova:cut-cell-current-attribution</td><td>2</td><td>0</td><td>1</td><td>1</td><td>50.0</td></tr>
+  <tr><td>nova:null-identification-authority</td><td>2</td><td>0</td><td>2</td><td>0</td><td>0.0</td></tr>
+  <tr><td>reckon:the-orchestrator-lane-is-not-a-worker-lane</td><td>2</td><td>0</td><td>0</td><td>2</td><td>100.0</td></tr>
+  <tr><td>all plans</td><td>502</td><td>249</td><td>152</td><td>101</td><td>20.1</td></tr>
+  </tbody>
+</table>
+    </section>
+
+    <section id="recurrence">
+      <h2>&sect;4 &mdash; Type recurrence inside the loop</h2>
+      <p>Findings also recur by type. The table counts, for each finding type, the instances that follow a previous review carrying an <em>acted</em> instance of the same type, and those that follow any instance at all. <code>duplicate_owner</code> dominates: 270 of the 502 findings, 113 (41.9 %) after an acted same-type finding and 225 (83.3 %) after any instance. <code>reuse_search</code> follows at 120 instances (39/58 after acted/any), then <code>interface_budget</code> 52 (7/21), <code>deep_module</code> 40 (4/12) and <code>thin_wrapper</code> 20 (1/3). The top type is thus both the most frequent and the most recurrent: most <code>duplicate_owner</code> findings appear in a plan whose previous review already raised one.</p>
+      <table>
+  <thead><tr>
+    <th>finding type</th>
+    <th>findings in re-reviews</th>
+    <th>after an acted same-type finding</th>
+    <th>% after acted</th>
+    <th>type present in previous review</th>
+    <th>% after present</th>
+  </tr></thead>
+  <tbody>
+  <tr><td>duplicate_owner</td><td>270</td><td>113</td><td>41.9</td><td>225</td><td>83.3</td></tr>
+  <tr><td>reuse_search</td><td>120</td><td>39</td><td>32.5</td><td>58</td><td>48.3</td></tr>
+  <tr><td>interface_budget</td><td>52</td><td>7</td><td>13.5</td><td>21</td><td>40.4</td></tr>
+  <tr><td>deep_module</td><td>40</td><td>4</td><td>10.0</td><td>12</td><td>30.0</td></tr>
+  <tr><td>thin_wrapper</td><td>20</td><td>1</td><td>5.0</td><td>3</td><td>15.0</td></tr>
+  </tbody>
+</table>
+    </section>
+
+    <section id="mechanisms">
+      <h2>&sect;5 &mdash; Counterfactual replay of five damping mechanisms</h2>
+      <p>Five mechanisms were replayed per plan: <strong>M1</strong> reviews only at a build dispatch, and only when the state it would review differs from the last state a dispatch-triggered review saw; <strong>M2</strong> lets a re-review round gate only while its findings land in units that changed since the previous round, and restarts a chain whenever the previous round carries no <code>acted</code> response recorded before the next review ran; <strong>M3</strong> caps each chain after K consecutive rounds whose findings were all acted; <strong>M4</strong> fires only once a content state has been quiet for the settle window; <strong>M5</strong> keeps followups and authored comments out of the fingerprint, so a review whose remaining content was already reviewed does not run. A finding the schedule never reviews is <em>lost</em> &mdash; no reviewer would ever have read it; a finding still recorded but stripped of gating force is <em>de-gated</em>.</p>
+      <table>
+  <thead><tr>
+    <th>mechanism</th>
+    <th>reviews run</th>
+    <th>relative to the 600 s replay</th>
+    <th>lost</th>
+    <th>de-gated</th>
+  </tr></thead>
+  <tbody>
+  <tr><td>measured history</td><td>308</td><td>—</td><td>—</td><td>—</td></tr>
+  <tr><td>M1 review only at build demand, on a changed state</td><td>0</td><td>—</td><td>259</td><td>0</td></tr>
+  <tr><td>M2 delta-scoped re-review rounds</td><td>259</td><td>—</td><td>0</td><td>98</td></tr>
+  <tr><td>M3 round cap, K = 1</td><td>189</td><td>—</td><td>0</td><td>173</td></tr>
+  <tr><td>M3 round cap, K = 2</td><td>222</td><td>—</td><td>0</td><td>128</td></tr>
+  <tr><td>M3 round cap, K = 3</td><td>236</td><td>—</td><td>0</td><td>106</td></tr>
+  <tr><td>M4 settle window 600 s (calibration)</td><td>154</td><td>baseline (50.0 % of actual)</td><td>123</td><td>0</td></tr>
+  <tr><td>M4 settle window 1800 s</td><td>59</td><td>0.38 × the 600 s replay</td><td>97</td><td>0</td></tr>
+  <tr><td>M4 settle window 3600 s</td><td>35</td><td>0.23 × the 600 s replay</td><td>117</td><td>0</td></tr>
+  <tr><td>M5 document-unit split (comments and followups)</td><td>265</td><td>—</td><td>0</td><td>43</td></tr>
+  </tbody>
+</table>
+      <p>M1 is <strong>unmeasurable on the committed history</strong>: no build dispatch falls inside any plan's window, because the committed ledgers stop before these review windows (their newest dispatch row is dated 2026-10-04), while the measured review waves ran without a corresponding committed build dispatch. Its row reports 0 reviews run and is a limitation of the evidence, not a favourable result; the 259 lost findings it lists are what a demand-gated schedule would have skipped had those dispatches existed. Read M2, M3 and M5 as the measured bounds: M2 runs 259 of the 308 reviews and de-gates 98 acted findings; M3 runs 189, 222 or 236 for K = 1, 2 or 3 and de-gates 173, 128 or 106; M5 runs 265 and de-gates 43. None of the three ever exceeds the actual per-plan count &mdash; the guard below.</p>
+      <p>M4 is calibrated, not bounded. At the store's own 600&nbsp;s settle the replay reproduces <strong>154 of the 308 actual reviews (50.0 %)</strong>, and 25 of 32 plans disagree with their actual count by more than 25&nbsp;%; plan by plan (actual/replayed at 600&nbsp;s): a-plan-is-reviewed-before-it-is-built 102/28; jt60sa-discovery-completion 65/19; jt60sa-machine-map 36/21; converged-forward-solve 34/34; artifacts-carry-no-worktree-paths 10/5; a-worker-reuses-before-it-writes 7/10; project-environment-declared 6/9; forward-solver-route-integrity 6/5; nova-portfolio-replan 5/5; a-dispatch-returns-without-its-worker 4/5; jt60sa-geometry-and-signal-figures 3/1; centroid-constrained-oracle-solve 3/2; playable-forward-solve 3/2; cut-cell-current-attribution 2/2; figure-and-solver-audit 2/1; null-identification-authority 2/1; crew-runtime-positive-controls 2/1; the-orchestrator-lane-is-not-a-worker-lane 2/2; dd-defect-upstreaming 1/0; contour-tree-topology-authority 1/1; gs-absolute-accuracy-gates 1/0; millisecond-converged-solve 1/0; multi-unit-limiter-wall 1/0; plasma-cell-read-fidelity 1/0; separatrix-spline-extraction 1/0; shafranov-observed-side 1/0; topology-read-containment-and-rebank 1/0; uniform-cell-clip-and-coupling 1/0; crew-observability-truth 1/0; section-contract-and-computed-impl 1/0; the-restarted-server-meets-its-shipped-measures 1/0; work-is-a-section-not-a-followup 1/0. The replay reviews settled content states, while the live loop re-reviewed states that had already been reviewed &mdash; that gap is itself a result, so M4 savings are reported <em>only</em> as ratios to the 600&nbsp;s replay and never against the actual count: 1800&nbsp;s runs 59 reviews (0.38&times; the 600&nbsp;s count, 62 % fewer) and 3600&nbsp;s runs 35 (0.23&times;, 77 % fewer). Where the model's premise holds the reproduction is exact: 5 plans match their actual count, among them <em>converged-forward-solve</em> (34 of 34).</p>
+      <figure>
+        <img src="/reckon/figures/plan-review-cycles/fig-mechanisms.png" alt="Reviews run and acted findings stopped per replayed mechanism">
+        <figcaption>Each replayed mechanism against the measured history. Left: reviews each mechanism would run, against the 308 actually run. Right: acted findings each mechanism stops, labelled <em>lost</em> (no reviewer would ever have read it) or <em>de-gated</em> (recorded without gating force). The 600&nbsp;s settle replay is the calibration baseline and is not among the replays shown.</figcaption>
+      </figure>
+      <p>The script exits non-zero if any mechanism other than the settle-window replays runs more reviews than the plan actually ran in its window; the exemption for the settle rows is documented in the script and <strong>exercised</strong>: 3 plans at 600&nbsp;s and 2 at 1800&nbsp;s replay more reviews than actually ran (the largest, <em>project-environment-declared</em>, 9 against 6). Every exceedance is listed in the data file under <code>m4_exceedances</code>; none is a bound of the kind the guard protects.</p>
+    </section>
+
+    <section id="caveats">
+      <h2>Caveats</h2>
+      <ul>
+        <li><strong>Live store.</strong> The review store grew during the measurement; every count is a point-in-time figure for the snapshot above, and the script re-run refreshes it. The per-review blob readback anchors each count to the content a review actually saw.</li>
+        <li><strong>Time source.</strong> Review times come from the run-id stamp. 255 of 308 records differ from their store timestamps by more than five minutes, and one plan's records share a single store stamp from a batch import; store times are unusable as a cadence source.</li>
+        <li><strong>Act is association, not causation.</strong> A finding is classed as acted when its unit changed between the two reviews &mdash; the change plausibly responded to the finding but the store cannot prove it. Re-reported findings and findings raised against unchanged text are the loop's re-reading cost, not its convergence.</li>
+        <li><strong>Anchor ambiguity.</strong> 191 findings (38.0 %) name a code path appearing in more than one section and are attributed to the first candidate, and 101 resolve to no unit at all; those classes are reported rather than redistributed.</li>
+        <li><strong>Counterfactual replay.</strong> Each mechanism is a model over commit times, content digests and recorded responses, not a rerun of the loop; it cannot see an edit that leaves a unit's digest unchanged, and it makes each mechanism perfect (no misses, no batching). Treat the review counts and stopped findings as bounds on the mechanisms' effect, not forecasts.</li>
+        <li><strong>M1 unmeasurable.</strong> No build dispatch falls inside any plan's window in the committed ledgers (newest dispatch 2026-10-04, before every window); M1's row is a statement about the evidence's reach, not about demand gating, and its stopped findings are unread-by-construction only under the dispatch set that exists.</li>
+        <li><strong>M4 calibration gap.</strong> The 600&nbsp;s settle replay reproduces 50.0 % of actual reviews and 25 of 32 plans deviate by more than 25&nbsp;%, so settle-window savings are quoted only as ratios to that replay, never against the actual count; where it exceeds the actual count the model's premise (that reviews follow quiet states) does not hold for that plan.</li>
+        <li><strong>Unit-level view.</strong> The analysis sees authored record digests only; edits internal to a unit count as one change, and a unit that changed for reasons unrelated to a finding still marks that finding acted.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
