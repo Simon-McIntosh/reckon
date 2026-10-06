@@ -1,0 +1,39 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest's baseline_suite and after_suite both read none, so no base and after gate-log pair exists to derive an added-failure count from; the count is recorded as unmeasured rather than a measured zero.",
+  "completed_at": "2026-10-06T18:20:43.381Z",
+  "dispatched_at": "2026-10-06T17:47:54Z",
+  "findings": [],
+  "justifications": {
+    "durability": "solid and non-destructive. The importer defaults to a dry run and acts only under --write; a non-record leaves the store by being moved to <config>/crew/reviews-quarantine/<project>/ outside it, never deleted, so the printed inventory remains the basis for any later decision. A record with no review run id is filed under a stable id (legacy- plus the first twelve hex of the sha256 of its own bytes) and marked review_run_id_source: derived, so a second pass derives the same id and imports zero and two records never collide \u2014 both points are asserted and pass. Refusals (a record whose run times cannot resolve) are caught, reported under refused, and do not abort the run. Held below full on two counts: the guard the plan wants in the writer is absent, so the store can still accumulate non-records by other paths; and the derived-id path was exercised only by a dry run against real data, so the plan's 'imported count equals recognised records' is unverified in production for records whose reviewed run resolves no times.",
+    "evidence": "every quantitative claim reproduces under independent execution. Gate at the reviewed head c569291ff (scripts/import_host_reviews.py + tests/test_import_host_reviews.py + tests/test_review_records_have_a_committed_root.py, run from a scratch tree with PYTHONPATH into the package) \u2014 17 passed, EXIT=0 (/tmp/.../review-gate.log). The declared negative control (delete non-record files instead of moving them to quarantine, applied in _quarantine) \u2014 1 failed (test_write_commits_records_once_and_quarantines... -> test_write_commits_records_once_and_quarantines_non_records), 16 passed, EXIT=1 (/tmp/.../review-negative-control.log), the same failure the fragment names. A mutation of my own \u2014 disabling the head commit's new filename-subject fallback (_filename_run_subject returning None) \u2014 turns exactly the two filename tests red (test_recognition_takes_the_subject_from_a_filename_when_the_body_omits_it, test_write_imports_a_filename_named_run_review), 2 failed 15 passed EXIT=1 (/tmp/.../review-mutation-filename.log), so the tests bind the feature rather than merely passing beside it. The fragment's real-host counts reproduce digit for digit. Held one below full because the reviewed run's own gate.log header records rev=6eff67330 (its tree base) rather than the head it ships, so the stored log alone does not name the revision it was taken at; the tests are identical and the head result reproduces here.",
+    "fit": "the change fits the surrounding system rather than sitting beside it. Committed paths come from the two store owners themselves \u2014 review.review_path for a run review and plan_review.plan_review_path for a plan review \u2014 so the importer and the writer that lands the record agree on the destination by construction rather than by a response spelling it twice, and every record is committed through review.store_committed_review so its times are the run's own. The CLI (--project required, --root, exit 0 with a resolvable target and 1 without) mirrors the sibling scripts/import_runs_into_store.py, and the recognition grammar reuses the store's own <reviewed-run-id>[.at-<head>].json naming rather than inventing a parallel convention.",
+    "goal_fidelity": "plan \u00a75 asks the host review store be imported into the committed tree, with records recognised and only genuine non-records quarantined; the reviewed run delivers both for real data. Independently re-ran the head script against the live host store (RECKON_HOME=/home/ITER/mcintos/.config/reckon, dry run, /tmp/reckon-crew-scratch/.../review-host-dryrun.log EXIT=0): reckon now recognises 1647 records (145 plan, 1502 run, 77 derived) and lists exactly 3 non-records \u2014 .keep, .probe-write.txt and .ruff_cache \u2014 reproducing the coordinator's target and the claim that the head commit recovered the 13 run reviews the previous attempt would have quarantined (the review's own resume-2 advice names 13 of reckon's 16). Held below full because the same \u00a75 done-when asks for a guard in the store's writer refusing a non-record, and no such guard exists in reckon/crew/review.py; the reviewer's manifest flags it as out of this node's write scope (scripts/ + tests/) and unassigned to any sibling, so that half of the plan item is unbuilt.",
+    "reuse": "the deliverable leans entirely on existing machinery: review.store_committed_review, review.review_path, review.review_store_root, review.committed_review_root and plan_review.plan_review_path are all reused rather than reimplemented, and the only new computation \u2014 the derived legacy id and the filename-to-subject recovery \u2014 is small and local. The script is a thin parser-and-router over the store's own owners, which is the shape the plan wanted.",
+    "scope_discipline": "the three commits (75d67bdde, 6eff67330, c569291ff) touch exactly scripts/import_host_reviews.py, tests/test_import_host_reviews.py and the node's own evidence fragment under docs/evidence/fragments/every-review-is-kept-as-a-committed-record/ \u2014 every path inside the declared write set and none outside it. The reviewed worktree is clean at c569291ff with no untracked residue. The store writer reckon/crew/review.py, where the plan's guard would live, is deliberately untouched; the node neither built nor claimed to build it, which is the correct scope behaviour even though it leaves the plan item partly unmet."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261006T174733709447-review-of-host-reviews-import-into-the-committed-tree",
+  "reviewed_base_sha": "87f6c16ac0649f7ec91eba4fe859a8f281f432d3",
+  "reviewed_head_sha": "c569291ff26b21c2e9b89285ec155e807a407517",
+  "reviewed_run_id": "r-20261006T172834926975-host-reviews-import-into-the-committed-tree",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T18:22:40.379176+00:00",
+  "total": 115
+}
