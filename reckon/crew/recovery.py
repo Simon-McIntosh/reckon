@@ -544,7 +544,7 @@ def _review_dispatch_fields(
         project, slug, run_id = record["project"], record["plan_slug"], record["run_id"]
         directory = plan_review.review_report_directory(project, slug, run_id)
         report = directory / "report.md"
-        snapshot = directory / "plan.html"
+        snapshot = directory / plan_review._REVIEW_SNAPSHOT_NAME
         blob = subprocess.run(
             ["git", "hash-object", "--stdin"],
             input=document_bytes,

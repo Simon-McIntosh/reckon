@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-title" content="Bookkeeping earns no review, and a digest definition change re-reviews nothing">
+  <meta name="plan-summary" content="The document unit stops folding authored comments and followups, impl_source joins the derived exclusions, and coverage recomputes each stored review's unit digests from that review's own plan.html snapshot so a definition change re-reviews nothing.">
+  <meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-recorded-at" content="2026-10-06">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>Bookkeeping earns no review | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Bookkeeping earns no review, and a digest definition change re-reviews nothing</h1>
+
+    <section id="bookkeeping-earns-no-review-anchor">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/plan_review.py</code> adds
+          <code>_without_comments_and_followups</code> beside the run-comment
+          filter; <code>_digest_state</code> applies it, so authored comments
+          and followups leave the document unit while decisions and section
+          links stay.</li>
+        <li><code>impl_source</code> joins <code>PLAN_DERIVED_SCALARS</code> with
+          its own entry beside the two already documented.</li>
+        <li><code>_review_coverage</code> recomputes each stored record's unit
+          digests through the new <code>_snapshot_unit_digests</code>, which
+          locates the review's <code>plan.html</code> through
+          <code>review_report_directory</code> joined with the new
+          <code>_REVIEW_SNAPSHOT_NAME</code> constant, calling the existing
+          <code>_section_digests</code> on that path. The stored digests are used
+          only when the snapshot is missing.</li>
+        <li><code>_plan_review_report_root</code> becomes the one owner of the
+          plan-level report root, called by <code>review_report_directory</code>
+          and <code>delivered_reports</code>;
+          <code>reckon/crew/recovery.py</code> writes its snapshot through the
+          constant rather than its own literal.</li>
+      </ul>
+    </section>
+
+    <section id="bookkeeping-earns-no-review-greps">
+      <h2>One owner each</h2>
+      <ul>
+        <li><code>grep -rn '"plan.html"' reckon/crew/</code> at the head reports
+          <code>plan_review.py:852</code> alone — the constant.</li>
+        <li><code>grep -rn '"plan-review"' reckon/crew/</code> at the head reports
+          <code>plan_review.py:868</code> alone — inside
+          <code>_plan_review_report_root</code>.</li>
+      </ul>
+    </section>
+
+    <section id="bookkeeping-earns-no-review-census">
+      <h2>Census over every stored review at the base and the head</h2>
+      <p>Every stored plan review of every mounted project, its coverage verdict
+        computed under the base tree and the head tree. 33 plans were read; 15
+        change verdict, every change toward covered, and every previously
+        uncovered unit is covered at the head by a snapshot whose
+        present-definition digests match the current plan — the plan's content is
+        unchanged since that review and only excluded bookkeeping differs.</p>
+      <table>
+        <thead>
+          <tr><th>Project / plan</th><th>Base: uncovered</th><th>Head: uncovered</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>imas-ambix/jt60sa-machine-map</td><td>_document</td><td>—</td></tr>
+          <tr><td>nova/artifacts-carry-no-worktree-paths</td><td>_document</td><td>—</td></tr>
+          <tr><td>nova/figure-and-solver-audit</td><td>_document</td><td>—</td></tr>
+          <tr><td>nova/forward-solver-route-integrity</td><td>_document</td><td>—</td></tr>
+          <tr><td>nova/millisecond-converged-solve</td><td>_document, s2, s3</td><td>—</td></tr>
+          <tr><td>nova/multi-unit-limiter-wall</td><td>_document, s3</td><td>—</td></tr>
+          <tr><td>reckon/a-dispatch-returns-without-its-worker</td><td>_document, s10, s15, s16, s17, s18</td><td>—</td></tr>
+          <tr><td>reckon/a-worker-reuses-before-it-writes</td><td>_document</td><td>—</td></tr>
+          <tr><td>reckon/crew-observability-truth</td><td>_document, s17, s39</td><td>—</td></tr>
+          <tr><td>reckon/crew-runtime-positive-controls</td><td>_document, s21, s62, s63</td><td>—</td></tr>
+          <tr><td>reckon/every-review-is-kept-as-a-committed-record</td><td>_document</td><td>—</td></tr>
+          <tr><td>reckon/section-contract-and-computed-impl</td><td>_document</td><td>—</td></tr>
+          <tr><td>reckon/the-orchestrator-lane-is-not-a-worker-lane</td><td>_document, s4</td><td>—</td></tr>
+          <tr><td>reckon/the-restarted-server-meets-its-shipped-measures</td><td>_document, s2, s4</td><td>—</td></tr>
+          <tr><td>reckon/work-is-a-section-not-a-followup</td><td>_document</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="bookkeeping-earns-no-review-measures">
+      <h2>Measures</h2>
+      <ul>
+        <li>Gate: <code>pytest</code> over the plan-review store, the
+          section-coverage cases, the gate, the bookkeeping cases, the review
+          command and the remaining-work reader — <strong>108 passed,
+          EXIT=0</strong>.</li>
+        <li>Negative control: restoring authored comments to the document unit
+          reddens <code>test_an_authored_comment_leaves_every_unit_covered</code>
+          — <strong>1 failed, 7 passed, EXIT=1</strong>.</li>
+        <li>Interface accounting: <code>public_definitions</code> is
+          <strong>1481</strong> at both the base and the head.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

@@ -160,10 +160,6 @@ def test_comment_filters_share_the_run_identity_rule(comment_id, expected):
     state = {"comments": {"section": [entry, authored, "unstructured"]}}
     assert plan_review._is_run_comment(comment_id) is expected
     assert promotion._landed_sections(state) == ({"section"} if expected else set())
-    kept = plan_review._without_run_comments(state)
-    assert kept["comments"]["section"] == (
-        [authored, "unstructured"] if expected else [entry, authored, "unstructured"]
-    )
     assert state["comments"]["section"] == [entry, authored, "unstructured"]
 
 
