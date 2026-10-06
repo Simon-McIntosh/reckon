@@ -80,7 +80,9 @@
       <tbody>
         <tr><td>Location</td><td><code>docs/state/&lt;project&gt;/reviews/plan/&lt;slug&gt;/&lt;review-id&gt;.json</code>
           and <code>…/reviews/run/&lt;reviewed-run-id&gt;/&lt;review-id&gt;.json</code>, in the repository
-          the project is mounted from.</td></tr>
+          the project is mounted from. The path is resolved by the owner of the committed state tree,
+          <code>reckon/ledger.py</code> (<code>ledger_path</code>, <code>run_path</code>), extended with a review
+          path beside the run path, not by a second path rule.</td></tr>
         <tr><td>Identity</td><td>The review run's id, which is already unique and already carries its dispatch
           time.</td></tr>
         <tr><td>Body</td><td>Subject (kind, project, plan or run, section); what was read (blob or head sha, base
@@ -90,19 +92,23 @@
         <tr><td>Answers</td><td>An append-only list of events: finding, action, reason, by, when. The body is
           never rewritten and a record is never deleted.</td></tr>
         <tr><td>Write path</td><td>A live review is written to the host staging store as today, where the gate
-          and acceptance read it. The review run's own promotion commit moves the record into the committed
-          store, so no new commit is created. The function that stores a delivered plan review is the one §23 of
-          a plan is reviewed before it is built makes public, <code>plan_review.store_delivered_reviews</code>;
-          this section changes where it writes rather than adding a second store path. An answer appends its
-          event and commits that one path explicitly.</td></tr>
+          and acceptance read it. A review run makes no repository commit, because its deliverable sits outside
+          the repository (<code>_COMMITLESS_ROLES</code> in <code>reckon/crew/promotion.py</code>), but its
+          promotion still writes the run's ledger row through <code>_commit_state_write</code> in
+          <code>reckon/ledger.py</code>. The record is written into the committed store in that same state write,
+          so it travels in the ledger commit the promotion already makes and no commit is added. The function that
+          stores a delivered plan review is the one §23 of a plan is reviewed before it is built makes public,
+          <code>plan_review.store_delivered_reviews</code>; this section changes where it writes rather than
+          adding a second store path. An answer appends its event through the same
+          <code>_commit_state_write</code>.</td></tr>
         <tr><td>Reviewed bytes</td><td>The reviewed plan bytes are written to the repository's object store at
           review time (<code>git hash-object -w</code>), so a look-back, and §22's cumulative comparison, can
           read the text of a review taken against an uncommitted plan write.</td></tr>
         <tr><td>Reads</td><td>One reader, extending <code>reckon/crew/review.py</code>, serves
-          <code>select_review_for_head</code>, <code>list_plan_reviews</code>, the gate, acceptance,
-          <code>crew(view="plan-review")</code>, the MCP surface and a server route
-          <code>GET /review/&lt;project&gt;/&lt;id&gt;</code>. It reads the committed store first and the staging
-          store only for runs not yet promoted.</td></tr>
+          <code>select_review_for_head</code>, <code>list_plan_reviews</code>, the gate and acceptance. It reads the
+          committed store first and the staging store only for runs not yet promoted. A record is returned by id
+          through the existing <code>crew(view="plan-review")</code>, which gains a <code>review</code> argument;
+          no MCP tool, view or server route is added.</td></tr>
         <tr><td>References</td><td><code>review:&lt;project&gt;/&lt;id&gt;</code> in a plan comment, a followup
           or an evidence record; <code>reckon audit-doc</code> resolves it. The ledger row's
           <code>review</code> field names the id.</td></tr>
@@ -113,8 +119,8 @@
       store grows by about 1 MB a day across all projects, and by less once §22's threshold cuts the rate.</p>
     <p><strong>Done when</strong> a review run promoted in a test lands its record under
       <code>docs/state/&lt;project&gt;/reviews/</code> inside the promotion commit; the gate still reads it
-      after the staging file is deleted; an answer appends an event and the body's bytes are unchanged; the
-      server and MCP return a record by id; and the ledger row names the id.</p>
+      after the staging file is deleted; an answer appends an event and the body's bytes are unchanged;
+      <code>crew(view="plan-review")</code> returns a record by id; and the ledger row names the id.</p>
 
     <h2 id="s4">§4 — Reviews are kept after their work lands</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -125,15 +131,16 @@
       SPA's default view read only the hot set, open and answered but not landed. The look-back views read the
       archive: finding-type recurrence, declined recurrence across plans (<code>declined_recurrence</code>),
       and how often a later review contradicts an earlier one. One of them replaces the throwaway scripts behind
-      §1's figures (<code>edit_size.py</code> and <code>section_change.py</code>): a <code>crew</code> view
-      reporting, per plan and per day, the reviews run, the authored-prose change behind each re-review and how
-      often §22's threshold fired. It reads each record's reviewed bytes from the object store, so re-measuring
+      §1's figures (<code>edit_size.py</code> and <code>section_change.py</code>): the existing
+      <code>crew(view="plan-review")</code> gains a per-day summary reporting, per plan, the reviews run, the
+      authored-prose change behind each re-review and how often §22's threshold fired. No view is added, because
+      that view already returns a plan's stored reviews and the summary is a fold over the same records. It reads each record's reviewed bytes from the object store, so re-measuring
       the threshold is a query rather than a script someone has to remember.</p>
     <p>What is discarded is what the record already distils: the raw report text and a review run's scratch,
       after <code>review.raw_report_retention_days</code> (default 30) on the host.</p>
     <p><strong>Done when</strong> each lifecycle state is derived in a test from fixture records; a plan
       shipping moves its reviews to landed without any record being rewritten; <code>declined_recurrence</code>
-      reads the committed archive; the review-change view reproduces §1's per-section figure for 6 October from
+      reads the committed archive; the per-day summary reproduces §1's per-section figure for 6 October from
       the imported records; and the raw-report retention runs on the host with its removals printed.</p>
 
     <h2 id="s5">§5 — Import the host store, and set aside what is not a record</h2>
