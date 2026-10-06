@@ -192,3 +192,60 @@ def test_a_plan_covered_section_by_section_reads_as_reviewed_with_its_plan(
     # when a covering review is found.
     resolution = _plan(config_home, repo)
     assert resolution.validation.ok is True
+
+
+def test_a_delivery_refused_once_clears_its_reason_when_it_stores(
+    reviewed_project: tuple[Path, Path, Path],
+) -> None:
+    _config_home, _repo, plan_path = reviewed_project
+    directory = plan_review.review_report_directory("sample", "fixture", "r-slow-store")
+    directory.mkdir(parents=True)
+    report_path = directory / "report.md"
+    report_path.write_text(
+        "RUBRIC wiring: pass — the plan declares a dependency that resolves.\n",
+        encoding="utf-8",
+    )
+    # The sidecar names no plan_version, which the store cannot key on, so the
+    # first store refuses the delivery and the reason lands on the sidecar
+    # itself. The report file exists, so the delivery is listed and reaches the
+    # store rather than being skipped as incomplete.
+    sidecar_path = directory / "plan-review.json"
+    sidecar_path.write_text(
+        json.dumps(
+            {
+                "project": "sample",
+                "plan_slug": "fixture",
+                "reviewed_blob_sha": "a" * 40,
+                "plan_fingerprint": plan_review.plan_fingerprint(plan_path),
+                "rubric": "plan_review",
+                "report_path": str(report_path),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    first = plan_review.store_delivered_reviews("sample", "fixture")
+
+    assert len(first) == 1
+    reason = first[0]["store_error"]
+    assert "plan_version" in reason
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    assert sidecar.get("store_error") == reason
+
+    # The key the store needs arrives, written back through the one sidecar
+    # writer with the recorded reason carried along, so the reason is present at
+    # the store this pass rather than cleared by the repair.
+    sidecar["plan_version"] = 1
+    plan_review.write_review_sidecar(directory, payload=sidecar)
+    assert (
+        json.loads(sidecar_path.read_text(encoding="utf-8")).get("store_error")
+        == reason
+    )
+
+    second = plan_review.store_delivered_reviews("sample", "fixture")
+
+    assert second == []
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    assert "store_error" not in sidecar
+    delivered = plan_review.delivered_reports("sample", "fixture")
+    assert [entry["stored"] for entry in delivered] == [True]

@@ -1190,8 +1190,10 @@ def store_delivered_reviews(
     the coordinator never runs a store step; a delivery the store refuses is
     recorded on its own sidecar, under ``store_error``, with the reason, rather
     than skipped, so the next reader sees why the review did not take rather
-    than the gate's missing-review symptom. The returned list names each
-    refused delivery and its reason, for a caller that reports them.
+    than the gate's missing-review symptom. A delivery that stores on a later
+    pass has that reason cleared from its sidecar, so the file never contradicts
+    the stored review beside it. The returned list names each refused delivery
+    and its reason, for a caller that reports them.
     """
     refused: list[dict[str, Any]] = []
     for sidecar in delivered_reports(project, plan_slug):
@@ -1205,6 +1207,8 @@ def store_delivered_reviews(
             refused.append(
                 {"review_run_id": sidecar.get("review_run_id"), "store_error": reason}
             )
+        else:
+            _clear_store_error(sidecar)
     return refused
 
 
@@ -1222,3 +1226,21 @@ def _record_store_error(sidecar: Mapping[str, Any], reason: str) -> None:
     if payload is None:
         return
     write_review_sidecar(directory, payload=payload, store_error=reason)
+
+
+def _clear_store_error(sidecar: Mapping[str, Any]) -> None:
+    """Remove a stale ``store_error`` from a delivery that has now stored.
+
+    A delivery refused once and stored cleanly on a later pass would otherwise
+    keep a reason for a refusal that no longer holds, contradicting the stored
+    review beside it. The sidecar is read back and rewritten through the one
+    sidecar writer without the key; a sidecar that carries no ``store_error`` is
+    left untouched, so a clean store writes nothing.
+    """
+    report_path = Path(str(sidecar.get("report_path") or ""))
+    directory = report_path.parent
+    payload = _load(directory / _REVIEW_SIDECAR_NAME)
+    if payload is None or "store_error" not in payload:
+        return
+    payload.pop("store_error", None)
+    write_review_sidecar(directory, payload=payload)
