@@ -135,6 +135,14 @@ review:
   # settled version. Reckon-owned: the generated schema does not carry it, and
   # the flight module's own validator checks its shape.
   plan_settle_seconds: 600
+  # The share of a unit's words an authored plan edit may change and still be
+  # covered by the review that read it. A unit that existed in the newest stored
+  # review of the plan and whose prose changed by less than this fraction of its
+  # own words stays covered; a new section, a changed done-when, a section that
+  # became implementable, and a decision or gate change are never covered
+  # whatever their size. Reckon-owned: the generated schema does not carry it,
+  # and the flight module's own validator checks its shape.
+  plan_change_threshold: 0.30
 
 # The plan-review gate ships advisory, whatever every other gate here does.
 # Almost no plan carries a stored review yet, and the node that writes one is

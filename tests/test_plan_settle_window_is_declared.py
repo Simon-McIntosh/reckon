@@ -24,3 +24,13 @@ def test_shipped_defaults_declare_the_plan_settle_window():
     assert resolved.origin("review.plan_settle_seconds") == "shipped"
     assert resolved.config["review"]["plan_settle_seconds"] == 600
     assert flight.plan_review_settle_seconds(resolved.config) == 600
+
+
+def test_shipped_defaults_declare_the_plan_change_threshold():
+    path = flight.shipped_defaults_path()
+    flight.validate_layer(flight.read_layer_file(path), path)
+
+    resolved = flight.resolve(host_path=Path("/nonexistent/flight.yaml"))
+    assert resolved.origin("review.plan_change_threshold") == "shipped"
+    assert resolved.config["review"]["plan_change_threshold"] == 0.30
+    assert flight.plan_review_change_threshold(resolved.config) == 0.30

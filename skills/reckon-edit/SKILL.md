@@ -107,7 +107,20 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
 9. **A material revision is released only after something has read it back.**
    A **material revision** is any change to a decision, a done-when, a section
    declaration, or a gate. A landing comment or an `impl` move is not one, and
-   neither needs a review. The failure this catches is not a typo — it is a
+   neither needs a review. What counts as covered — an overview of the rule the
+   code enforces — is the coverage predicate `plan_review._review_coverage` in
+   `reckon/crew/plan_review.py`, which decides per unit of a plan: a section, or
+   the document unit carrying its decisions, gates and dependencies. A unit
+   stays covered by a stored review that read it when its authored prose differs
+   from that review's snapshot of the unit by less than the declared fraction
+   `review.plan_change_threshold` (0.30) of its own words. Beside that
+   threshold the predicate treats three cases as material whatever their size: a
+   changed done-when (a one-word edit falls far under any fraction, so the
+   closing done-when paragraph is compared directly), a section that became
+   implementable since the review, and a unit absent from the review — a new
+   section above all. A decision, gate or dependency change moves the document
+   unit's digest, so it is never covered. The failure this catches is not a
+   typo — it is a
    sentence that reads differently to the executor than to its author, and the
    author cannot see it by re-reading, which is why the reader must be someone
    else. Before the revised plan goes back to work, dispatch a read-only
