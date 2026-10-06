@@ -1,0 +1,36 @@
+<section data-reckon="evidence" data-node="nothing-sweeps-old-plans">
+  <h3 id="nothing-sweeps-old-plans-title">A follower pass sweeps no old plans for review</h3>
+  <p>The plan walk in <code>dispatch_awaiting_reviews</code>
+  (<code>reckon/crew/recovery.py</code>) — the block that iterated
+  <code>flight.mounted_project_docs()</code> under the sweeping session and
+  composed a design review for every active or draft plan it could not match to
+  a stored one — is deleted, together with the settle-window read it made and
+  the one helper only it read, <code>_plan_review_pending</code>. The run-review
+  reflex in the same function and <code>plan_review_subject</code>, through
+  which <code>crew review-plan</code> composes on demand, are unchanged.</p>
+  <p>A follower pass over a project holding an active plan with no review now
+  composes no plan review and leaves the plan-review report root untouched,
+  while a finished run awaiting its review in the same pass still has that
+  review composed — both held by
+  <code>tests/test_nothing_sweeps_old_plans.py</code>, which also drives
+  <code>crew review-plan --dry-run</code> to show composition on demand is
+  intact. The sweep tests that drove the walk in
+  <code>tests/test_review_plan_command.py</code> and
+  <code>tests/test_a_section_reviewed_as_authored_stays_reviewed.py</code> are
+  removed or rewritten to assert the pass composes no plan review.</p>
+  <p>Interface accounting: <code>public_definitions</code> is <code>1481</code>
+  at the base revision and <code>1481</code> at this node's head — the only
+  retired name is <code>_plan_review_pending</code>, private, so no counted
+  public name is retired. The console gate over the plan-review, run-review
+  reflex and review-command populations ran <code>80 passed</code> in
+  <code>233.25s</code> at head, <code>EXIT=0</code>. Under the declared
+  mutation — restoring the plan walk — the test asserting a follower pass
+  composes no plan review reddens with <code>EXIT=1</code>.</p>
+  <p>Found but out of this node's write scope:
+  <code>tests/test_a_run_comment_earns_no_plan_review.py</code> already fails
+  twice at the base revision (<code>plan_fingerprint</code> does not move on an
+  authored comment), so this node adds no failure there; its remaining sweep
+  assertion, that an authored comment still earns a review through the sweep,
+  is invalidated by the retired walk and needs a one-line rewrite by that
+  file's owner. Commit <code>e2716ca4f</code>.</p>
+</section>
