@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "505feb87ce1d0cdff09047c1357f3dbc476315b9",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/routing.py:require_plan_reviewed",
+    "reckon/mcp.py:_review_owed_fields"
+  ],
+  "completed_at": "2026-10-06T15:22:49.940Z",
+  "dispatched_at": "2026-10-06T15:17:13Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "493",
+      "severity": "follow-on",
+      "text": "follow-on: _review_owed_fields catches only OSError, so a non-OSError raised inside review_coverage \u2014 for example from flight.resolve while resolving the project config \u2014 propagates out of _edit_plan_tool after the plan write already succeeded, reporting a completed write as a tool error; catching it and setting review_owed null with review_owed_error, as the OSError branch already does, would keep the write's answer honest."
+    }
+  ],
+  "head_log_revision": "d185ca0503a1ab1d4d70b9d3aa37212839eb0e0a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit \u2014 419571efa renames _review_coverage to review_coverage across reckon/crew/plan_review.py, its read_plan_review caller, the routing.py gate and four test files, adds _review_owed_fields and wires it into _edit_plan_tool, and adds the new test file and the two skill paragraphs; 63a010ea4 adds only the evidence fragment; d185ca050 narrows the predicate's catch from Exception to OSError and reports null review_owed with review_owed_error rather than an empty list, updates both skills and the fragment, and adds the unreadable-coverage test.",
+    "done_when": "every clause reproduced at head d185ca050 \u2014 I re-ran tests/test_an_edit_tells_its_author_a_review_is_owed.py and got 6 passed, EXIT=0, covering the done-when edit naming {c}, the comment-only edit returning [], create=True naming _document, the gate's PlanReviewMissingError naming {c}, the unreadable predicate returning null with review_owed_error, and both skills naming review_owed and the invocation; grep _review_coverage over reckon/ tests/ skills/ returns nothing; public_definitions is 1484 at base 505feb87c and 1485 at head, measured with reckon.interface_counts.count_revision.",
+    "goal": "\u00a726's goal \u2014 a successful plan write tells its author the review it owes \u2014 is met at head d185ca050: _edit_plan_tool attaches review_owed only when result.resource.type == \"plan\" (reckon/mcp.py:3973), and _review_owed_fields (reckon/mcp.py:455) reports the units review_coverage returns uncovered, each with its measured change, beside review_invocation.",
+    "manifest": "read; status complete, commits 419571efa, 63a010ea4, d185ca050, baseline_suite and after_suite both completed with failure_count 0, negative_control_log names 3 failed EXIT=1; the head arm ran at d185ca050, the reviewed head.",
+    "write_paths": "the manifest declares the three source files, both skills, five test files, the evidence fragment and a figures dir; git diff --name-only 505feb87c..d185ca050 lists exactly those eleven files and nothing outside the declaration, and the declared figures dir is unwritten because the done-when names no figure."
+  },
+  "justifications": {
+    "durability": "every done-when clause has a test and the failure path is now covered (tests/test_an_edit_tells_its_author_a_review_is_owed.py:test_an_unreadable_plan_reports_the_review_as_unknown), with the negative control reddening exactly the three done-when cases; the residual is that a non-OSError inside review_coverage would abort a completed write.",
+    "evidence": "the head gate is 110 passed EXIT=0 at d185ca050 (gate-review-head.log), the base arm 104 passed EXIT=0 (baseline.log), the negative control 3 failed EXIT=1 (negative-control.log), and I re-ran the new test file myself (6 passed, EXIT=0) and re-measured public_definitions 1484->1485 rather than trusting the manifest.",
+    "fit": "the broad Exception with noqa BLE001 is gone at head in favour of the typed OSError catch (reckon/mcp.py:493), the helper is module-private with a lazy import, and no plan or stage label appears anywhere in the diff.",
+    "goal_fidelity": "\u00a726 is met end to end \u2014 review_owed lists each uncovered unit with its measured change, is [] when nothing is owed, and is null with review_owed_error when the predicate cannot answer, and the one predicate review_coverage is called by both the gate (reckon/crew/routing.py:2673) and the edit tool (reckon/mcp.py:490), so the two cannot disagree.",
+    "reuse": "the node renames the one predicate to review_coverage and updates every caller rather than adding a second reader beside it, and _review_owed_fields only formats its return, so the gate's refusal and the edit's report cannot drift.",
+    "scope_discipline": "git diff --name-only 505feb87c..d185ca050 lists exactly the eleven files the manifest declares and nothing else, and no shared index, sprint state or sibling-node path is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a726's goal \u2014 a successful plan write tells its author the review it owes \u2014 is met at head d185ca050: _edit_plan_tool attaches review_owed only when result.resource.type == \"plan\" (reckon/mcp.py:3973), and _review_owed_fields (reckon/mcp.py:455) reports the units review_coverage returns uncovered, each with its measured change, beside review_invocation.\nVERDICT done_when: every clause reproduced at head d185ca050 \u2014 I re-ran tests/test_an_edit_tells_its_author_a_review_is_owed.py and got 6 passed, EXIT=0, covering the done-when edit naming {c}, the comment-only edit returning [], create=True naming _document, the gate's PlanReviewMissingError naming {c}, the unreadable predicate returning null with review_owed_error, and both skills naming review_owed and the invocation; grep _review_coverage over reckon/ tests/ skills/ returns nothing; public_definitions is 1484 at base 505feb87c and 1485 at head, measured with reckon.interface_counts.count_revision.\nVERDICT write_paths: the manifest declares the three source files, both skills, five test files, the evidence fragment and a figures dir; git diff --name-only 505feb87c..d185ca050 lists exactly those eleven files and nothing outside the declaration, and the declared figures dir is unwritten because the done-when names no figure.\nVERDICT manifest: read; status complete, commits 419571efa, 63a010ea4, d185ca050, baseline_suite and after_suite both completed with failure_count 0, negative_control_log names 3 failed EXIT=1; the head arm ran at d185ca050, the reviewed head.\nVERDICT diff: read commit by commit \u2014 419571efa renames _review_coverage to review_coverage across reckon/crew/plan_review.py, its read_plan_review caller, the routing.py gate and four test files, adds _review_owed_fields and wires it into _edit_plan_tool, and adds the new test file and the two skill paragraphs; 63a010ea4 adds only the evidence fragment; d185ca050 narrows the predicate's catch from Exception to OSError and reports null review_owed with review_owed_error rather than an empty list, updates both skills and the fragment, and adds the unreadable-coverage test.\nCALL_SITES: reckon/crew/routing.py:require_plan_reviewed, reckon/mcp.py:_review_owed_fields\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: \u00a726 is met end to end \u2014 review_owed lists each uncovered unit with its measured change, is [] when nothing is owed, and is null with review_owed_error when the predicate cannot answer, and the one predicate review_coverage is called by both the gate (reckon/crew/routing.py:2673) and the edit tool (reckon/mcp.py:490), so the two cannot disagree.\nSCORE evidence: 20\nJUSTIFICATION evidence: the head gate is 110 passed EXIT=0 at d185ca050 (gate-review-head.log), the base arm 104 passed EXIT=0 (baseline.log), the negative control 3 failed EXIT=1 (negative-control.log), and I re-ran the new test file myself (6 passed, EXIT=0) and re-measured public_definitions 1484->1485 rather than trusting the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 505feb87c..d185ca050 lists exactly the eleven files the manifest declares and nothing else, and no shared index, sprint state or sibling-node path is touched.\nSCORE durability: 19\nJUSTIFICATION durability: every done-when clause has a test and the failure path is now covered (tests/test_an_edit_tells_its_author_a_review_is_owed.py:test_an_unreadable_plan_reports_the_review_as_unknown), with the negative control reddening exactly the three done-when cases; the residual is that a non-OSError inside review_coverage would abort a completed write.\nSCORE fit: 19\nJUSTIFICATION fit: the broad Exception with noqa BLE001 is gone at head in favour of the typed OSError catch (reckon/mcp.py:493), the helper is module-private with a lazy import, and no plan or stage label appears anywhere in the diff.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node renames the one predicate to review_coverage and updates every caller rather than adding a second reader beside it, and _review_owed_fields only formats its return, so the gate's refusal and the edit's report cannot drift.\nFINDING reckon/mcp.py:493 follow-on: _review_owed_fields catches only OSError, so a non-OSError raised inside review_coverage \u2014 for example from flight.resolve while resolving the project config \u2014 propagates out of _edit_plan_tool after the plan write already succeeded, reporting a completed write as a tool error; catching it and setting review_owed null with review_owed_error, as the OSError branch already does, would keep the write's answer honest.\n",
+  "review_run_id": "r-20261006T151653528320-review-of-an-edit-tells-its-author-a-review-is-owed",
+  "reviewed_base_sha": "505feb87ce1d0cdff09047c1357f3dbc476315b9",
+  "reviewed_head_sha": "d185ca0503a1ab1d4d70b9d3aa37212839eb0e0a",
+  "reviewed_run_id": "r-20261006T143945050711-an-edit-tells-its-author-a-review-is-owed",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T15:23:31.662485+00:00",
+  "total": 118
+}
