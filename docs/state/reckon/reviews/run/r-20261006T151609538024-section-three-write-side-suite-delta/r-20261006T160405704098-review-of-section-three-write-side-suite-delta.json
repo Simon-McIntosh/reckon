@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 14,
+  "added_failure_ids": [
+    "tests/test_bookkeeping_follows_the_run.py::test_a_review_runs_outcome_defaults_to_its_stored_review",
+    "tests/test_crew_directory.py::test_ship_guidance_makes_cross_repository_findings_collaborative",
+    "tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition",
+    "tests/test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap",
+    "tests/test_gc_sweeps_orphan_scratch.py::test_sweep_reports_and_removes_only_old_unclaimed_scratch",
+    "tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter",
+    "tests/test_runs_view_shows_brief_runs.py::test_the_skill_retires_the_rule_and_names_the_brief_carrier",
+    "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+    "tests/test_snapshot_loader_keeps_one_instance.py::test_both_loaders_keep_the_one_imported_snapshot_module",
+    "tests/test_spa_browser_harness.py::test_timeout_reap_takes_the_spawned_child_with_the_driver",
+    "tests/test_spa_owed_captures.py::test_plan_capture_gate_opens_no_image_bytes",
+    "tests/test_standing_suite.py::test_a_run_past_its_budget_is_stopped_with_its_whole_group",
+    "tests/test_worker_digest.py::test_committed_digests_regenerate_byte_identically",
+    "tests/test_worker_digest.py::test_the_committed_digests_are_current_on_this_host"
+  ],
+  "added_failures_note": "total capped at 5: the reviewed run added 14 failing test(s) not retired by name (tests/test_crew_directory.py::test_ship_guidance_makes_cross_repository_findings_collaborative, tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition, tests/test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap, tests/test_gc_sweeps_orphan_scratch.py::test_sweep_reports_and_removes_only_old_unclaimed_scratch, tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter, tests/test_runs_view_shows_brief_runs.py::test_the_skill_retires_the_rule_and_names_the_brief_carrier, tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt, tests/test_standing_suite.py::test_a_run_past_its_budget_is_stopped_with_its_whole_group, tests/test_worker_digest.py::test_committed_digests_regenerate_byte_identically, tests/test_worker_digest.py::test_the_committed_digests_are_current_on_this_host)",
+  "base_log_revision": null,
+  "completed_at": "2026-10-06T16:28:07.680Z",
+  "dispatched_at": "2026-10-06T16:04:20Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T151609538024-section-three-write-side-suite-delta/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "baseline_suite.log_path names logs/arms-summary.txt, which carries no pytest FAILED/ERROR line, so the production derivation (reckon/crew/review.py:1419 annotate_added_failures) reads an empty base set and reports all 14 head failures as added rather than the run's own substantiated 1; point baseline_suite.log_path at a base pytest log (the arm-base-*.log files concatenated) so the derivation matches the run's conclusion."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T151609538024-section-three-write-side-suite-delta/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "the baseline_suite and after_suite 'command' fields carry the placeholder '<assigned-worktree>' rather than the literal command that ran, which the manifest contract requires be placeholder-free; the arm logs carry the literal commands, so it is recoverable."
+    }
+  ],
+  "head_log_revision": "1f156a11798d4c56f7ebb58e9bb2bbef56995fc1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node made no commits (commits []) so there is no code diff; its artefact is the measurement, and I reproduced the one added failure it names.",
+    "done_when": "the recorded classification is the deliverable; logs/head-suite.log ends '13 failed, 11662 passed, 78 skipped, 1 error in 1290.49s' EXIT=1, and the arm logs rerun each head failure at head and base with a quoted revision header, so the classification is recorded rather than claimed.",
+    "goal": "the node's goal is to measure the whole suite once at HEAD so any failure the four section-3 merges added is found; its manifest carries an after_suite of 14 failing ids at 1f156a117 and a per-file baseline of 8.",
+    "manifest": "read; status complete, every log named; but its baseline_suite.log_path names logs/arms-summary.txt, which holds no pytest FAILED line, so the derivation the dispatch contract requires reads a base set of zero.",
+    "write_paths": "the node is fenced read-only on the repository with its own run directory as its only write; the manifest records commits [] and changed_paths [] and every artefact stays under the run directory."
+  },
+  "justifications": {
+    "durability": "a measurement lands no code, so its durability is reproducibility; I re-ran tests/test_bookkeeping_follows_the_run.py at 1f156a117 (1 failed, EXIT=1) and at 0375c0ac7 (7 passed, EXIT=0), reproducing the added failure.",
+    "evidence": "logs/review derivations disagree: the run's own arm reruns substantiate 1 added failure (bookkeeping, head EXIT=1 / base EXIT=0), but the production derivation over the declared baseline_suite.log_path (arms-summary.txt, no pytest ids) yields 14 -- reckon/crew/review.py:1419.",
+    "fit": "the arm logs follow the base-vs-head header convention (revision, tree, module.__file__, cwd), but the baseline_suite.log_path does not point at a pytest log the derivation can read, unlike after_suite.log_path.",
+    "goal_fidelity": "logs/head-suite.log records 13 failed + 1 error at 1f156a117 and the arm reruns classify each, so the whole-suite measurement the goal names is present.",
+    "reuse": "no landed definition; standing_suite.py runs one suite and review.py parses FAILED/ERROR ids, but neither classifies a base-vs-head delta, so no owner was forked.",
+    "scope_discipline": "the manifest records commits [] and changed_paths [] and every log stays under the run directory, matching the node's read-only fence."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 0375c0ac7c036c3e6885f1036ecf3339dea2007b\nreviewed_head_sha: 1f156a11798d4c56f7ebb58e9bb2bbef56995fc1\nVERDICT goal: the node's goal is to measure the whole suite once at HEAD so any failure the four section-3 merges added is found; its manifest carries an after_suite of 14 failing ids at 1f156a117 and a per-file baseline of 8.\nVERDICT done_when: the recorded classification is the deliverable; logs/head-suite.log ends '13 failed, 11662 passed, 78 skipped, 1 error in 1290.49s' EXIT=1, and the arm logs rerun each head failure at head and base with a quoted revision header, so the classification is recorded rather than claimed.\nVERDICT write_paths: the node is fenced read-only on the repository with its own run directory as its only write; the manifest records commits [] and changed_paths [] and every artefact stays under the run directory.\nVERDICT manifest: read; status complete, every log named; but its baseline_suite.log_path names logs/arms-summary.txt, which holds no pytest FAILED line, so the derivation the dispatch contract requires reads a base set of zero.\nVERDICT diff: the node made no commits (commits []) so there is no code diff; its artefact is the measurement, and I reproduced the one added failure it names.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: logs/head-suite.log records 13 failed + 1 error at 1f156a117 and the arm reruns classify each, so the whole-suite measurement the goal names is present.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/review derivations disagree: the run's own arm reruns substantiate 1 added failure (bookkeeping, head EXIT=1 / base EXIT=0), but the production derivation over the declared baseline_suite.log_path (arms-summary.txt, no pytest ids) yields 14 -- reckon/crew/review.py:1419.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the manifest records commits [] and changed_paths [] and every log stays under the run directory, matching the node's read-only fence.\nSCORE durability: 18\nJUSTIFICATION durability: a measurement lands no code, so its durability is reproducibility; I re-ran tests/test_bookkeeping_follows_the_run.py at 1f156a117 (1 failed, EXIT=1) and at 0375c0ac7 (7 passed, EXIT=0), reproducing the added failure.\nSCORE fit: 16\nJUSTIFICATION fit: the arm logs follow the base-vs-head header convention (revision, tree, module.__file__, cwd), but the baseline_suite.log_path does not point at a pytest log the derivation can read, unlike after_suite.log_path.\nSCORE reuse: 20\nJUSTIFICATION reuse: no landed definition; standing_suite.py runs one suite and review.py parses FAILED/ERROR ids, but neither classifies a base-vs-head delta, so no owner was forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T151609538024-section-three-write-side-suite-delta/manifest.md:21 follow-on: baseline_suite.log_path names logs/arms-summary.txt, which carries no pytest FAILED/ERROR line, so the production derivation (reckon/crew/review.py:1419 annotate_added_failures) reads an empty base set and reports all 14 head failures as added rather than the run's own substantiated 1; point baseline_suite.log_path at a base pytest log (the arm-base-*.log files concatenated) so the derivation matches the run's conclusion.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T151609538024-section-three-write-side-suite-delta/manifest.md:22 follow-on: the baseline_suite and after_suite 'command' fields carry the placeholder '<assigned-worktree>' rather than the literal command that ran, which the manifest contract requires be placeholder-free; the arm logs carry the literal commands, so it is recoverable.\n",
+  "review_run_id": "r-20261006T160405704098-review-of-section-three-write-side-suite-delta",
+  "reviewed_base_sha": "0375c0ac7c036c3e6885f1036ecf3339dea2007b",
+  "reviewed_head_sha": "1f156a11798d4c56f7ebb58e9bb2bbef56995fc1",
+  "reviewed_run_id": "r-20261006T151609538024-section-three-write-side-suite-delta",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T16:20:00+00:00",
+  "total": 5
+}
