@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/recovery.py:1828",
+    "reckon/crew/recovery.py:3287",
+    "reckon/crew/promotion.py:7979",
+    "reckon/crew/plan_review.py:678",
+    "reckon/crew/plan_review.py:1063",
+    "reckon/crew/plan_review.py:1182",
+    "reckon/crew/routing.py:2676",
+    "reckon/mcp.py:443",
+    "reckon/mcp.py:4406",
+    "reckon/cli.py:2621"
+  ],
+  "completed_at": "2026-10-06T16:25:01.532Z",
+  "dispatched_at": "2026-10-06T16:10:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "921",
+      "severity": "follow-on",
+      "text": "follow-on: list_plan_reviews enumerates the project directories it reads committed reviews from via review_store_root().iterdir(), so with project=None a project whose reviews are all committed and whose staging project directory does not exist is invisible to declined_recurrence (reckon/crew/plan_review.py:1063), which calls it without a project; the committed tree is the durable copy the change exists to read, so the fleet-wide enumeration should reach it without depending on a staging directory existing."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read commit by commit against the base a5e0eeb3; one commit 389a80a4 adds _select_stored_record, _build_store_indexes/_store_indexes/_review_run_index/record_for_review_run in review.py, the committed branches in plan_review.py, and repoints promotion._staging_review_record_by_run at the store index, plus 251 lines of tests and the fragment.",
+    "done_when": "the done-when names tests/test_reviews_read_the_committed_store_first.py with five sibling modules under --basetemp, EXIT=0 on the manifest tests line and a non-zero-EXIT negative control; the manifest records the gate and gate.log holds the run's own summary line (53 passed, EXIT=0).",
+    "goal": "the node's goal is that the review readers read the committed review tree first and the staging store only for runs not yet promoted; reckon/crew/review.py:2003-2013 routes stored_record through committed_review_root/store/run/<run> before the staging root, and plan_review._candidate_paths (reckon/crew/plan_review.py:504-522) and list_plan_reviews (reckon/crew/plan_review.py:940-956) search the committed plan tree beside staging.",
+    "manifest": "read; it records the gate command with tests/test_reviews_read_the_committed_store_first.py, the result on the tests line (53 passed, EXIT=0), test_logs naming gate.log, and negative_control_log naming negative_control.log whose last line is EXIT=1.",
+    "write_paths": "the manifest declares reckon/crew/review.py, reckon/crew/plan_review.py, reckon/crew/promotion.py, tests/test_reviews_read_the_committed_store_first.py and the evidence fragment; git show --stat over 389a80a4 lists exactly those five paths."
+  },
+  "justifications": {
+    "durability": "the declared negative control (make stored_record read the staging store only) reddens exactly test_stored_record_reads_the_committed_tree_after_staging_is_deleted (1 failed, 52 passed, EXIT=1), and test_stored_record_reads_staging_for_an_unpromoted_run, test_a_review_in_both_trees_is_listed_once_as_the_committed_copy and the promotion spy would each redden on their regression; the committed-only discovery gap below is untested.",
+    "evidence": "the done-when's gate is tests/test_reviews_read_the_committed_store_first.py with five sibling modules; the manifest records it and gate.log holds \"53 passed in 71.31s\" EXIT=0, and I reproduced the node's own module at 389a80a4 in this worktree (6 passed, EXIT=0).",
+    "fit": "the added names describe mechanism (_select_stored_record, _build_store_indexes, _review_run_index, record_for_review_run, _plan_review_identity) with no version, plan, sprint or ticket identifier and no attribution; the tolerance/fallthrough idiom matches the surrounding store code.",
+    "goal_fidelity": "reckon/crew/review.py:2003-2013 returns the committed run/<id>/<review>.json before consulting review_store_root (the staging store), and the node's own test test_stored_record_reads_the_committed_tree_after_staging_is_deleted confirms the committed copy answers with staging deleted.",
+    "reuse": "the change extends owners rather than forking them \u2014 the shared selection rule is factored into _select_stored_record (reckon/crew/review.py:1899) for both trees, and promotion._staging_review_record_by_run (reckon/crew/promotion.py:7979) now calls the review store's own indexed lookup record_for_review_run instead of the directory walk it replaced, sharing one scan with _store_index.",
+    "scope_discipline": "git show --stat 389a80a4 lists only reckon/crew/review.py, reckon/crew/plan_review.py, reckon/crew/promotion.py, tests/test_reviews_read_the_committed_store_first.py and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the review readers read the committed review tree first and the staging store only for runs not yet promoted; reckon/crew/review.py:2003-2013 routes stored_record through committed_review_root/store/run/<run> before the staging root, and plan_review._candidate_paths (reckon/crew/plan_review.py:504-522) and list_plan_reviews (reckon/crew/plan_review.py:940-956) search the committed plan tree beside staging.\nVERDICT done_when: the done-when names tests/test_reviews_read_the_committed_store_first.py with five sibling modules under --basetemp, EXIT=0 on the manifest tests line and a non-zero-EXIT negative control; the manifest records the gate and gate.log holds the run's own summary line (53 passed, EXIT=0).\nVERDICT write_paths: the manifest declares reckon/crew/review.py, reckon/crew/plan_review.py, reckon/crew/promotion.py, tests/test_reviews_read_the_committed_store_first.py and the evidence fragment; git show --stat over 389a80a4 lists exactly those five paths.\nVERDICT manifest: read; it records the gate command with tests/test_reviews_read_the_committed_store_first.py, the result on the tests line (53 passed, EXIT=0), test_logs naming gate.log, and negative_control_log naming negative_control.log whose last line is EXIT=1.\nVERDICT diff: read commit by commit against the base a5e0eeb3; one commit 389a80a4 adds _select_stored_record, _build_store_indexes/_store_indexes/_review_run_index/record_for_review_run in review.py, the committed branches in plan_review.py, and repoints promotion._staging_review_record_by_run at the store index, plus 251 lines of tests and the fragment.\nCALL_SITES: reckon/crew/recovery.py:1828, reckon/crew/recovery.py:3287, reckon/crew/promotion.py:7979, reckon/crew/plan_review.py:678, reckon/crew/plan_review.py:1063, reckon/crew/plan_review.py:1182, reckon/crew/routing.py:2676, reckon/mcp.py:443, reckon/mcp.py:4406, reckon/cli.py:2621\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:2003-2013 returns the committed run/<id>/<review>.json before consulting review_store_root (the staging store), and the node's own test test_stored_record_reads_the_committed_tree_after_staging_is_deleted confirms the committed copy answers with staging deleted.\nSCORE evidence: 20\nJUSTIFICATION evidence: the done-when's gate is tests/test_reviews_read_the_committed_store_first.py with five sibling modules; the manifest records it and gate.log holds \"53 passed in 71.31s\" EXIT=0, and I reproduced the node's own module at 389a80a4 in this worktree (6 passed, EXIT=0).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 389a80a4 lists only reckon/crew/review.py, reckon/crew/plan_review.py, reckon/crew/promotion.py, tests/test_reviews_read_the_committed_store_first.py and the evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the declared negative control (make stored_record read the staging store only) reddens exactly test_stored_record_reads_the_committed_tree_after_staging_is_deleted (1 failed, 52 passed, EXIT=1), and test_stored_record_reads_staging_for_an_unpromoted_run, test_a_review_in_both_trees_is_listed_once_as_the_committed_copy and the promotion spy would each redden on their regression; the committed-only discovery gap below is untested.\nSCORE fit: 20\nJUSTIFICATION fit: the added names describe mechanism (_select_stored_record, _build_store_indexes, _review_run_index, record_for_review_run, _plan_review_identity) with no version, plan, sprint or ticket identifier and no attribution; the tolerance/fallthrough idiom matches the surrounding store code.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends owners rather than forking them \u2014 the shared selection rule is factored into _select_stored_record (reckon/crew/review.py:1899) for both trees, and promotion._staging_review_record_by_run (reckon/crew/promotion.py:7979) now calls the review store's own indexed lookup record_for_review_run instead of the directory walk it replaced, sharing one scan with _store_index.\nFINDING reckon/crew/plan_review.py:921 follow-on: list_plan_reviews enumerates the project directories it reads committed reviews from via review_store_root().iterdir(), so with project=None a project whose reviews are all committed and whose staging project directory does not exist is invisible to declined_recurrence (reckon/crew/plan_review.py:1063), which calls it without a project; the committed tree is the durable copy the change exists to read, so the fleet-wide enumeration should reach it without depending on a staging directory existing.\n",
+  "review_run_id": "r-20261006T160947869088-review-of-reviews-read-the-committed-store-first",
+  "reviewed_base_sha": "a5e0eeb3e04bb8ffcdfc370ac692ff9436baf2a5",
+  "reviewed_head_sha": "389a80a417478125c19f80950e169f2b2eef670c",
+  "reviewed_run_id": "r-20261006T154258969715-reviews-read-the-committed-store-first",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T16:20:05.274984+00:00",
+  "total": 119
+}
