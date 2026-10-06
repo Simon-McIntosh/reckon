@@ -28,7 +28,12 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping
 
 from reckon import _backends, _store, capability, flight, ledger
-from reckon._plan_html import plan_headings, section_id_candidates
+from reckon._plan_html import (
+    _strip_tags,
+    plan_headings,
+    section_id_candidates,
+    section_prose,
+)
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import bar as bar_module
 from reckon.crew import lane_document as _lane_document
@@ -306,7 +311,16 @@ def _section_heading_matches(heading, requested: str, ids: set[str]) -> bool:
 
 
 def _plan_section_text(html_text: str, section: str) -> str | None:
-    """Extract one section's visible text without including its successors."""
+    """Extract one section's visible text without including its successors.
+
+    The requested spelling resolves to a heading record. An authored plan
+    section — a level-two heading the section-prose reader serves — takes its
+    text from ``section_prose``, the one reader the review digests and the
+    section view share. A heading that reader does not serve as a unit, such as
+    a nested subsection or the document title, keeps its own extent's prose, so
+    the level bound is unchanged. The branch for an identified element that is
+    not a heading is unchanged.
+    """
     from bs4 import BeautifulSoup
 
     requested = re.sub(r"\s+", " ", section.strip()).casefold()
@@ -340,9 +354,14 @@ def _plan_section_text(html_text: str, section: str) -> str | None:
         )
     if heading is None:
         return None
-    return BeautifulSoup(html_text[slice(*heading.span)], "html.parser").get_text(
-        " ", strip=True
-    )
+    parts = [
+        prose
+        for identity, prose in section_prose(html_text)
+        if identity == heading.identity
+    ]
+    if parts:
+        return " ".join(parts)
+    return _strip_tags(html_text[slice(*heading.span)])
 
 
 def _resolved_plan_section_text(
