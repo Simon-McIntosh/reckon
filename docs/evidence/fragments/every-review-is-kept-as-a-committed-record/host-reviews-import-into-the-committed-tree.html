@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="The host review store is imported into the committed tree">
+  <meta name="plan-summary" content="scripts/import_host_reviews.py imports each project's host review store into its committed tree, and moves every non-record to a quarantine outside the store.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-06">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The host review store is imported into the committed tree | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The host review store is imported into the committed tree</h1>
+
+    <section id="host-reviews-import-into-the-committed-tree-anchor">
+      <h2>What changed</h2>
+      <p><code>scripts/import_host_reviews.py</code> takes
+        <code>scripts/import_runs_into_store.py</code>'s contract —
+        <code>--project</code>/<code>--root</code>, project resolved through the
+        ordinary loader, exit 0 — and adds <code>--write</code>, dry run by
+        default. It sorts a project's host staging store into recognised records
+        and non-records. A file is a record when it carries review material — a
+        <code>findings</code>, <code>scores</code> or <code>rubric</code> field or
+        a reviewed sha — and names a subject: a plan, or a run, that its body
+        gives, or, when the body names neither, the run its filename gives under
+        the store's own <code>&lt;reviewed-run-id&gt;[.at-&lt;head&gt;].json</code>
+        grammar. A review run id is not required. The id that keys its committed
+        file is taken from <code>review_run_id</code> or the legacy
+        <code>reviewer_run_id</code>,
+        and a record naming neither is filed under a stable derived id
+        (<code>legacy-</code> plus the first twelve hex of the sha256 of its bytes)
+        and marked <code>review_run_id_source: derived</code> in the committed
+        body; a reviewed run recovered from the filename is written into the body
+        so the committed file is filed under the run it reviewed. It lists each
+        entry with path, size and modification time, and under
+        <code>--write</code> commits each record through
+        <code>review.store_committed_review</code> so its times are the run's own,
+        importing a duplicate that resolves one committed path once, and moves
+        every non-record to <code>&lt;config&gt;/crew/reviews-quarantine/&lt;project&gt;/</code>
+        outside the store without deleting it. A record's staging file stays in
+        place; only non-records move. A second pass imports zero.</p>
+      <p>Real host dry run (counts = recognised records, of which derived ids shown separately;
+          bytes of records / non-records): reckon 1647, 77 derived, 16.8&nbsp;MB /
+          94&nbsp;B; nova 431, 102 derived, 4.5&nbsp;MB / 2.55&nbsp;GB;
+          imas-ambix 362, 2 derived, 4.0&nbsp;MB / 0; imas-codex 202, 0 derived,
+          2.0&nbsp;MB / 0; imas-efit 67, 2 derived, 0.76&nbsp;MB / 0;
+          imas-ink 27, 0 derived, 190&nbsp;KB / 0. Reckon's remaining three
+          non-records are <code>.keep</code>, <code>.probe-write.txt</code> and the
+          <code>.ruff_cache</code> directory; the 2.55&nbsp;GB is nova's scratch
+          tree. Legacy records naming a review run as <code>reviewer_run_id</code>
+          keep that real id rather than a derived one, so the derived count is the
+          subset naming no review run at all.</p>
+      <p>Gate: <code>tests/test_import_host_reviews.py</code> with
+        <code>tests/test_review_records_have_a_committed_root.py</code> — 17 passed,
+        0 failed, EXIT=0. Negative control (delete non-record files instead of
+        moving them to quarantine) — 1 failed
+        (<code>test_write_commits_records_once_and_quarantines_non_records</code>),
+        16 passed, EXIT=1.</p>
+    </section>
+  </main>
+</body>
+</html>
