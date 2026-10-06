@@ -92,17 +92,19 @@ def _event(clause: str, **overrides: Any) -> dict[str, Any]:
 
 
 def _reason_cell(clause: str, *, room: int = ROOM) -> str:
-    """The reason cell of a row rendered into exactly ``room`` columns.
+    """The reason cell of a row rendered into at most ``room`` columns.
 
     Read off the row's own characters — the cell runs from where the fixed
-    columns end to the row's last one — and the room is asserted rather than
-    assumed, so a layout change cannot move the measure silently.
+    columns end to the row's last one. The row ends on its last glyph rather
+    than being padded out to the room, so the room bounds the cell instead of
+    being its exact width. The bound is asserted rather than assumed, so a
+    layout change cannot move the measure silently.
     """
     model_width = _ticker(0).model_width
     start = _reason_start(model_width)
     row = _ticker(start + room).render(_event(clause))
     assert row.index(clause.split(maxsplit=1)[0]) == start, row
-    assert len(row) - start == room, (len(row), start)
+    assert len(row) - start <= room, (len(row), start)
     return row[start:]
 
 
