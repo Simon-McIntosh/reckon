@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="audit-doc resolves a review reference against the committed tree">
+  <meta name="plan-summary" content="reckon audit-doc follows a review:&lt;project&gt;/&lt;id&gt; citation into the project's committed reviews tree: a reference to a committed record is silent, and a reference no record carries is an error naming it.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-06">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>audit-doc resolves a review reference against the committed tree | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>audit-doc resolves a review reference against the committed tree</h1>
+
+    <section id="audit-doc-resolves-review-references-anchor">
+      <h2>What changed</h2>
+      <p><code>reckon/doccheck.py</code> gains <code>review_reference_findings</code>,
+        which reads <code>review:&lt;project&gt;/&lt;id&gt;</code> citations from a
+        document's comment bodies, followup bodies and — for an evidence record —
+        its whole visible text. Each citation resolves against the project's
+        committed reviews tree, located through
+        <code>reckon.crew.review.committed_review_root</code> from the audited
+        document's own checkout root (<code>checkout_root_for</code>, with an
+        explicit <code>root</code> overriding it). A citation whose id names a
+        committed record is silent; one that names no record is an error,
+        <code>review-reference-missing</code>, naming the reference. No citation
+        is ever looked up against the host staging store.</p>
+      <p>Gate: <code>tests/test_audit_doc_resolves_review_references.py</code>
+        plus every existing <code>tests/test_doccheck*.py</code> and
+        <code>tests/test_audit_doc*.py</code> file — 104 passed, <code>EXIT=0</code>.
+        Negative control (every reference treated as resolved without looking it
+        up): 4 failed, <code>EXIT=1</code>, the failure ids being the four cases
+        the head arm passes.</p>
+    </section>
+  </main>
+</body>
+</html>
