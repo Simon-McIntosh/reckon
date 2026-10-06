@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log (both keys absent), so an added-failure count could not be derived from the reviewed run's own arms. The reviewed run's declared gate (gate-review-rounds.log: 42 passed EXIT=0) and its declared negative control (negative-control.log: 1 failed, 5 passed, EXIT=1) were both independently reproduced by this review against the reviewed head 15aaf3a40, and the negative control was reproduced by an independent mutation of the reviewed head rather than re-read from the manifest.",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:8711 _complete_locked -> review_module.store_committed_review(payload, project=project, root=ledger_root), the new caller that supplies the promoting run's project",
+    "reckon/crew/promotion.py:8037 _delivered_review_payloads_for_commit -> review_module.stored_records_for_run(project, reviewed_run_id), the sole caller of the new enumeration"
+  ],
+  "completed_at": "2026-10-06T17:25:34.949Z",
+  "dispatched_at": "2026-10-06T17:12:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "8710",
+      "severity": "follow-on",
+      "text": "follow-on: the commit adds one ruff finding on a changed path. At the reviewed head, `ruff check` over the five declared changed files reports four findings where the base revision of the same files reports three: the new one is PERF401 (\"Use `list.extend` to create a transformed list\") at promotion.py:8710, the `for payload in committed_review_payloads: committed_review_paths.append(...)` loop added by this commit. The repo's own rule is that a commit adds no findings on the paths it stages, and the reviewed manifest's evidence_inputs claims `ruff: check 7 findings on changed paths vs 10 at base (no added)` \u2014 the direction is right (no dimension of the change is a lint regression in spirit) but the conclusion is contradicted by measurement: the changed source paths gain exactly one. Small and non-blocking (the loop is the readable form here and the finding does not affect behaviour), but it should not be recorded as zero.",
+      "type": "added-lint-finding"
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "928",
+      "severity": "follow-on",
+      "text": "follow-on: list_plan_reviews(project=None) now calls flight.mounted_project_docs() inside its else branch, and that function fails closed (raises FlightConfigError) on malformed mounts.json. A listing that previously read only the staging root and always returned a list can now raise on a corrupt mounts file. This is probably intended (mount registration is the host's authority boundary and fail-closed is the module's documented contract), but it is a new failure surface on a read path, worth naming rather than leaving implicit; no test exercises the malformed-mounts case.",
+      "type": "new-failure-surface"
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "store_committed_review gained an optional `project` keyword defaulting to None, so every existing caller (tests and the promotion path) is unaffected; the only production caller, promotion.py:8711, passes project=project. stored_records_for_run has exactly one caller, promotion.py:8037.",
+    "diff": "Read commit by commit: the single commit 15aaf3a405c3873470f83c5736360fac09b5d1a5 (\"feat(crew): commit every stored review round at promotion\") changes five files, 564 insertions / 44 deletions: reckon/crew/promotion.py (the multi-round commit and the payload enumeration), reckon/crew/review.py (stored_records_for_run, the staging fall-through in stored_record, the project parameter on store_committed_review), reckon/crew/plan_review.py (mount enumeration in list_plan_reviews), tests/test_bookkeeping_follows_the_run.py (fixture now writes a live-shaped record), and the new tests/test_every_review_round_is_committed.py (368 lines).",
+    "done_when": "The brief names four gaps and each has a named test: (1) test_promotion_commits_every_review_round_of_the_subject, (2) test_stored_record_falls_through_to_staging_for_a_head_the_tree_lacks, (3) test_a_record_without_a_project_takes_it_from_the_promotion + test_a_promotion_lands_a_record_whose_body_omits_the_review_project, (4) test_a_fully_committed_project_is_listed_with_no_staging_directory + test_declined_recurrence_sees_a_project_known_only_through_its_mount. All six pass on the reviewed head, and each reddens under a mutation of the code it covers (see evidence).",
+    "goal": "A promotion commits every stored review round of its subject, not only the round it selected for the promoted head, in the same commit as its ledger row; the reviewed revision matches the brief and the plan \u00a73 \"keep every record\" intent.",
+    "manifest": "status complete; commits [15aaf3a40]; gate-review-rounds.log records 42 passed EXIT=0 over six test files; negative_control_log names negative-control.log whose last line is EXIT=1; changed_paths lists the five changed files and reconciles with the diff; baseline_suite and after_suite are absent, so the added-failure count is unmeasured. One manifest claim is contradicted by measurement: the evidence_inputs ruff line reads \"no added\" where the changed source paths gain one PERF401 finding.",
+    "write_paths": "Declared: reckon/crew/review.py, reckon/crew/plan_review.py, reckon/crew/promotion.py, tests/test_bookkeeping_follows_the_run.py, tests/test_every_review_round_is_committed.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/every-review-round-is-committed.html, and a figures directory. The diff touches the five source/test files only; no fragment and no figure were written, which the manifest justifies because the brief's done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "Each of the four behaviours carries a named regression test and each is independently falsifiable: I mutated the reviewed head in a scratch copy (no .git) and the guarded test reddened every time with the expected id and EXIT=1 \u2014 return payloads[:1] (commit only the selected round) reddens test_promotion_commits_every_review_round_of_the_subject (1 failed, 5 passed); forcing the committed-tree branch to return without searching staging reddens test_stored_record_falls_through_to_staging_for_a_head_the_tree_lacks (1 failed); dropping the caller-supplied project reddens both project tests (2 failed); dropping the mount enumeration reddens both listing tests (2 failed). None of the failing ids appear in the head arm's 42 passed.",
+    "evidence": "Independently reproduced rather than read: the reviewed head 15aaf3a40 re-run in its own clean worktree gives 42 passed EXIT=0 (review-head-gate.log, module.__file__ resolving to the reviewed worktree); the declared negative control reproduced by an independent mutation gives 1 failed, 5 passed, EXIT=1; three further mutations falsify the other three halves (review-negative-control-fallthrough/project/mounts.log). The one weakness is manifest accuracy, not the change: the ruff arm of evidence_inputs claims no added finding while the changed source paths gain a PERF401 at promotion.py:8710.",
+    "fit": "Extends the owners the plan names rather than adding mechanisms: store_committed_review gains an optional project keyword, _commit_state_write already took a set of paths and now receives the record paths in the same landing set, list_plan_reviews adds mounted projects beside the staging directories, and stored_records_for_run reuses the store's own index (_store_index). Two fit concerns, both named as follow-ons: the added PERF401 finding against the repo's no-added-findings rule, and the new fail-closed failure surface on list_plan_reviews via mounted_project_docs.",
+    "goal_fidelity": "All four brief gaps are implemented and load-bearing. Item 1: _delivered_review_payloads_for_commit now enumerates every stored round of the subject (delivered round plus every staging record for the resolved reviewed run id, deduplicated by review run id) and _complete_locked writes them all into the committed tree. Item 2: stored_record holds the committed selection and falls through to the staging store only when the committed tree carries records for the run but none at the named head. Item 3: store_committed_review resolves the project from the requesting caller when the record's body omits it, and stores it on the committed record. Item 4: list_plan_reviews enumerates flight.mounted_project_docs() beside the staging root. The four branch fixes rather than restate the plan.",
+    "reuse": "Reuses review_module.committed_review_root, _select_stored_record, _store_index, _note_skipped_record, ledger_block, and promotion._restore_landing_writes; adds no new store path and no new mechanism. One new helper, stored_records_for_run, is justified: the existing by-head reader returns one record and the by-review-run lookup keys a different id, so committing every round needs the enumeration, and it is placed on the module that owns the store rather than inlined in promotion.",
+    "scope_discipline": "Five files changed, all within the declared write paths: reckon/crew/review.py, reckon/crew/plan_review.py, reckon/crew/promotion.py, tests/test_bookkeeping_follows_the_run.py, tests/test_every_review_round_is_committed.py. Nothing outside the declaration is touched and no figure or fragment was written where the orientation file list named directories; recovery.py, which the brief explicitly leaves to a later node, is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: a promotion commits every stored review round of its subject, not only the round it selected for the promoted head, with three supporting repairs \u2014 the committed-tree reader falls through to staging at an uncommitted head, the committed store takes a record's project from the promoting run, and the plan-review listing enumerates mounted projects (reckon/crew/promotion.py:_delivered_review_payloads_for_commit, review.py:stored_record / store_committed_review / stored_records_for_run, plan_review.py:list_plan_reviews); all four reproduced by targeted mutation of the reviewed head. EVIDENCE: head gate independently re-run 42 passed EXIT=0 (module resolved to the reviewed worktree); four mutations red with the expected ids at EXIT=1 (every-round 1 failed; fall-through 1 failed; project 2 failed; mounts 2 failed); none of the failing ids appear in the head arm. SCOPE: five declared files, nothing else; no fragment or figure because the brief's done-when names no artifact. DURABILITY: each of the four behaviours has a named regression test and each is falsifiable. FIT: extends committed_review_root/store_committed_review/_commit_state_write and reuses the store index; TWO follow-ons \u2014 a new PERF401 finding at promotion.py:8710 against the repo's no-added-findings rule (contradicting the manifest's ruff claim), and a new fail-closed failure surface on list_plan_reviews via mounted_project_docs. REUSE: reuses _store_index, _select_stored_record, _restore_landing_writes and ledger_block; adds stored_records_for_run, justified. No blocking finding.",
+  "review_run_id": "r-20261006T171226889187-review-of-every-review-round-is-committed",
+  "reviewed_base_sha": "3cd8accd21d9027a61d511673f61a80b2e5a5263",
+  "reviewed_head_sha": "15aaf3a405c3873470f83c5736360fac09b5d1a5",
+  "reviewed_run_id": "r-20261006T162208732004-every-review-round-is-committed",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T17:22:59.561Z",
+  "total": 117
+}

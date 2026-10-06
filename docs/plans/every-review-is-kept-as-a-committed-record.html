@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.4">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -297,7 +297,10 @@
     <div class="r-comment-body"><p>Independent review of run r-20261006T162307318178-recovery-keys-on-committed-reviews stored a parsed six-dimension record at both granted review-store paths scoring goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20, reuse 18 (total 117), reviewed_base_sha 3cd8accd21d9027a61d511673f61a80b2e5a5263 and reviewed_head_sha 09334dfab517db66e41864998934ef73ee6249cb, with one follow-on finding (the committed run directory's *.json enumeration is duplicated between recovery._review_input_identities and review.stored_record); added_failure_count null and added_failure_ids [] because the reviewed manifest names no baseline_suite/after_suite arm.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261006T162208732004-every-review-round-is-committed" data-who="reckon-build" data-when="2026-10-06T17:11:40.582Z">
-    <div class="r-comment-body"><p>A promotion now commits every stored review round of its subject (all heads, all review run ids) in the same commit as its ledger row, so an earlier head&#x27;s review stays reachable by that head; the committed-tree reader falls through to the staging store at a head the committed tree lacks; the committed store takes a record&#x27;s missing project from the promoting run instead of refusing; and the plan-review listing enumerates mounted projects so a fully-committed project with no staging directory is still seen. Measure: tests/test_every_review_round_is_committed.py covers all four, gate 42 passed EXIT=0.</p></div>
+    <div class="r-comment-body"><p>A promotion now commits every stored review round of its subject (all heads, all review run ids) in the same commit as its ledger row, so an earlier head's review stays reachable by that head; the committed-tree reader falls through to the staging store at a head the committed tree lacks; the committed store takes a record's missing project from the promoting run instead of refusing; and the plan-review listing enumerates mounted projects so a fully-committed project with no staging directory is still seen. Measure: tests/test_every_review_round_is_committed.py covers all four, gate 42 passed EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261006T171226889187-review-of-every-review-round-is-committed" data-who="reckon-build" data-when="2026-10-06T17:25:34.949Z">
+    <div class="r-comment-body"><p>Stored an independent review of run r-20261006T162208732004-every-review-round-is-committed at both granted review-store paths (head-keyed at 15aaf3a405c3873470f83c5736360fac09b5d1a5): parsed six-dimension record, total 117 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 18, reuse 20), reviewed_base_sha 3cd8accd21d9027a61d511673f61a80b2e5a5263, reviewed_head_sha 15aaf3a405c3873470f83c5736360fac09b5d1a5, added_failure_count null with added_failure_ids [] (the reviewed manifest names no baseline_suite/after_suite arm, so the count is unmeasured); two follow-on findings (added PERF401 at promotion.py:8710; a new fail-closed failure surface on list_plan_reviews via mounted_project_docs) and no blocking finding.</p></div>
 </div>
 </section>
 </main>
