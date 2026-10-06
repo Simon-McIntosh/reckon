@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_stored_phase_advances.py::test_stored_phase_advances_from_starting_to_working_to_complete",
+    "tests/test_unreadable_names_its_word.py::test_an_unreadable_manifest_beside_a_live_worker_is_silent"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "1f156a11798d4c56f7ebb58e9bb2bbef56995fc1",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-06T18:25:11.453Z",
+  "dispatched_at": "2026-10-06T18:16:13Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172743048569-section-three-read-side-suite-delta/manifest.md",
+      "line": "25",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's headline added_failure_count 0 is its flaky-adjusted conclusion, but the derivation over its own declared baseline_suite and after_suite gate logs reads 2 (tests/test_stored_phase_advances.py::test_stored_phase_advances_from_starting_to_working_to_complete, tests/test_unreadable_names_its_word.py::test_an_unreadable_manifest_beside_a_live_worker_is_silent); both ids pass single-file at head 87f6c16ac and base 1f156a117 (8 passed each), so the flaky classification is sound but the stored count and the brief's requested added_failure_count line should read 2."
+    }
+  ],
+  "head_log_revision": "87f6c16ac0649f7ec91eba4fe859a8f281f432d3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node made no commits, so there is no code diff; its artefact is the whole-suite measurement and the per-id classification.",
+    "done_when": "the recorded classification is the deliverable; logs/head-suite.log ends '8 failed, 11706 passed, 78 skipped, 1 error in 1366.30s' with EXIT=1, and the per-id arm logs rerun every newly-failing id to green at head and at base.",
+    "goal": "the node's goal is to measure the whole suite once at 87f6c16ac so any failure the three section-3 merges added is found; its manifest records an after_suite of 9 failing ids at 87f6c16ac and a baseline_suite of 14 at 1f156a117, both read from logs/head-suite.log.",
+    "manifest": "read; status complete, after_suite and baseline_suite carry literal commands and log paths, but the manifest's landing and evidence_inputs state added_failure_count 0, which disagrees with the derivation over its own named logs (2).",
+    "write_paths": "the node is fenced read-only on the repository with its own run directory as its only write; the manifest records commits [] and every artefact under the run directory."
+  },
+  "justifications": {
+    "durability": "a measurement lands no code, so its durability is reproducibility; I re-ran tests/test_stored_phase_advances.py and tests/test_unreadable_names_its_word.py at 87f6c16ac and at 1f156a117 (8 passed each, EXIT=0), reproducing the classification.",
+    "evidence": "the gate is recorded, not claimed (logs/head-suite.log EXIT=1), but the manifest's stored added_failure_count 0 disagrees with the derivation the dispatch contract requires over its own baseline_suite and after_suite logs, which yields 2.",
+    "fit": "the manifest fields carry literal commands and JSON suite records, but it omits the brief's requested added_failure_count line and states 0 in landing, at odds with its own logs.",
+    "goal_fidelity": "logs/head-suite.log records the whole-suite run at 87f6c16ac (8 failed, 11706 passed, 1 error) and logs/head-failing-ids.txt classifies each id, so the measurement the goal names is present.",
+    "reuse": "the node lands no definition; it reuses the repository's own suite logs, forking no capability the repository already owns.",
+    "scope_discipline": "the manifest records commits [] and keeps every log and report under its own run directory, matching the read-only fence."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 1f156a11798d4c56f7ebb58e9bb2bbef56995fc1\nreviewed_head_sha: 87f6c16ac0649f7ec91eba4fe859a8f281f432d3\nVERDICT goal: the node's goal is to measure the whole suite once at 87f6c16ac so any failure the three section-3 merges added is found; its manifest records an after_suite of 9 failing ids at 87f6c16ac and a baseline_suite of 14 at 1f156a117, both read from logs/head-suite.log.\nVERDICT done_when: the recorded classification is the deliverable; logs/head-suite.log ends '8 failed, 11706 passed, 78 skipped, 1 error in 1366.30s' with EXIT=1, and the per-id arm logs rerun every newly-failing id to green at head and at base.\nVERDICT write_paths: the node is fenced read-only on the repository with its own run directory as its only write; the manifest records commits [] and every artefact under the run directory.\nVERDICT manifest: read; status complete, after_suite and baseline_suite carry literal commands and log paths, but the manifest's landing and evidence_inputs state added_failure_count 0, which disagrees with the derivation over its own named logs (2).\nVERDICT diff: the node made no commits, so there is no code diff; its artefact is the whole-suite measurement and the per-id classification.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: logs/head-suite.log records the whole-suite run at 87f6c16ac (8 failed, 11706 passed, 1 error) and logs/head-failing-ids.txt classifies each id, so the measurement the goal names is present.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is recorded, not claimed (logs/head-suite.log EXIT=1), but the manifest's stored added_failure_count 0 disagrees with the derivation the dispatch contract requires over its own baseline_suite and after_suite logs, which yields 2.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the manifest records commits [] and keeps every log and report under its own run directory, matching the read-only fence.\nSCORE durability: 18\nJUSTIFICATION durability: a measurement lands no code, so its durability is reproducibility; I re-ran tests/test_stored_phase_advances.py and tests/test_unreadable_names_its_word.py at 87f6c16ac and at 1f156a117 (8 passed each, EXIT=0), reproducing the classification.\nSCORE fit: 16\nJUSTIFICATION fit: the manifest fields carry literal commands and JSON suite records, but it omits the brief's requested added_failure_count line and states 0 in landing, at odds with its own logs.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node lands no definition; it reuses the repository's own suite logs, forking no capability the repository already owns.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172743048569-section-three-read-side-suite-delta/manifest.md:25 follow-on: the manifest's headline added_failure_count 0 is its flaky-adjusted conclusion, but the derivation over its own declared baseline_suite and after_suite gate logs reads 2 (tests/test_stored_phase_advances.py::test_stored_phase_advances_from_starting_to_working_to_complete, tests/test_unreadable_names_its_word.py::test_an_unreadable_manifest_beside_a_live_worker_is_silent); both ids pass single-file at head 87f6c16ac and base 1f156a117 (8 passed each), so the flaky classification is sound but the stored count and the brief's requested added_failure_count line should read 2.\n",
+  "review_run_id": "r-20261006T181555916177-review-of-section-three-read-side-suite-delta",
+  "reviewed_base_sha": "1f156a11798d4c56f7ebb58e9bb2bbef56995fc1",
+  "reviewed_head_sha": "87f6c16ac0649f7ec91eba4fe859a8f281f432d3",
+  "reviewed_run_id": "r-20261006T172743048569-section-three-read-side-suite-delta",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T18:23:23+00:00",
+  "total": 108
+}
