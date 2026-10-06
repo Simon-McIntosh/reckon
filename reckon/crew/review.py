@@ -1303,14 +1303,17 @@ def review_path(
     ``committed_root`` selects the committed tree instead:
     ``<committed_root>/run/<reviewed-run-id>/<review-id>.json``, the run
     directory named for the reviewed run and the file named for the review run
-    that produced it. ``review_run_id`` defaults to the reviewed run id so a
-    caller that writes the record of the run itself names one file; the
-    committed file is keyed by the review run rather than by a head revision,
-    because a re-review is a new review run rather than a second file of one
-    run.
+    that produced it. The committed file is keyed by the review run rather than
+    by a head revision, because a re-review is a new review run rather than a
+    second file of one run; a caller that names no review run is refused, so
+    two review runs of one reviewed run can never resolve the same file.
     """
     if committed_root is not None:
-        name = str(review_run_id or "").strip() or reviewed_run_id
+        name = str(review_run_id or "").strip()
+        if not name:
+            raise ValueError(
+                "a committed review path needs the review run id that names it"
+            )
         return (
             Path(committed_root)
             / COMMITTED_RUN_DIRNAME
@@ -1760,9 +1763,11 @@ def store_committed_review(
     — the run that produced the review — keys the committed file and supplies
     the dispatch and completion times, so the record carries when the review
     ran rather than when its file was stored; when it is absent the reviewed
-    run supplies both. A stamp the run's own record does not carry is left off
-    the committed record entirely: the store clock is never substituted for it,
-    which is the defect the committed store exists to remove.
+    run supplies both. Both stamps must resolve from one of the two run records
+    or the write is refused, naming the run: the store clock is never
+    substituted for a stamp and a stamp is never silently omitted, because a
+    committed review whose times are wrong or missing is exactly the defect the
+    committed store exists to remove.
 
     ``committed_root`` names the tree directly (a caller that already resolved
     it, or a test); omitted, it resolves through :func:`committed_review_root`
@@ -1789,12 +1794,16 @@ def store_committed_review(
         )
         dispatched = dispatched or review_dispatched
         completed = completed or review_completed
+    if not dispatched or not completed:
+        raise ValueError(
+            "no dispatch and completion times resolve for review run "
+            f"{review_run_id!r} (reviewed run {reviewed_run_id!r}); the "
+            "committed record is refused rather than stored with missing times"
+        )
 
     stored = dict(record)
-    if dispatched:
-        stored[DISPATCH_TIME_KEY] = dispatched
-    if completed:
-        stored[COMPLETION_TIME_KEY] = completed
+    stored[DISPATCH_TIME_KEY] = dispatched
+    stored[COMPLETION_TIME_KEY] = completed
     if not stored.get("timestamp"):
         stored["timestamp"] = datetime.now(UTC).isoformat()
 

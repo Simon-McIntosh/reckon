@@ -5,9 +5,10 @@ where a live review is written for the gate to read — it also belongs in the
 repository, under ``docs/state/<project>/reviews/``, where it travels with the
 plan, the ledger and the evidence. These cases hold the two path owners to that
 committed root beside an unchanged staging path, hold a committed record's
-dispatch and completion times to the run record that produced it rather than to
-the store clock, and hold an answered finding to an append-only event list while
-the findings and the rest of the body keep their bytes.
+dispatch and completion times to the run record that produced it — refusing the
+write when neither the review run nor the reviewed run records them — rather
+than to the store clock, and hold an answered finding to an append-only event
+list while the findings and the rest of the body keep their bytes.
 """
 
 from __future__ import annotations
@@ -139,6 +140,18 @@ def test_a_committed_plan_path_without_a_review_run_is_refused(
         )
 
 
+def test_a_committed_run_path_without_a_review_run_is_refused(
+    checkout: Path,
+) -> None:
+    # Both owners of a committed path agree: a missing review run is refused
+    # rather than defaulted, so two review runs of one reviewed run can never
+    # name the same committed file.
+    committed = review_module.committed_review_root(PROJECT, root=checkout)
+    assert committed is not None
+    with pytest.raises(ValueError, match="review run id"):
+        review_module.review_path(PROJECT, REVIEWED_RUN, committed_root=committed)
+
+
 # ── (2) A committed record's times come from the run record ──────────────────
 
 
@@ -170,26 +183,70 @@ def test_a_committed_record_carries_the_run_records_times(checkout: Path) -> Non
     # neither run time was defaulted to it.
     assert stored["timestamp"] not in (DISPATCH_TS, COMPLETION_TS)
 
-    # A run record that carries no times leaves the keys off rather than
-    # substituting the clock: an unrecorded time is never stored as a measured
-    # one.
-    _run_record(checkout, REVIEWED_RUN)
+    # A run record that carries no times is refused rather than stored with
+    # them missing: the committed record never substitutes the clock for a
+    # stamp, and never omits one silently.
     (
         checkout / "docs" / "state" / PROJECT / "runs" / f"{REVIEWED_RUN}.json"
     ).write_text(
         json.dumps({"run_id": REVIEWED_RUN, "project": PROJECT}), encoding="utf-8"
     )
-    bare = review_module.store_committed_review(
+    with pytest.raises(ValueError, match=REVIEWED_RUN):
+        review_module.store_committed_review(
+            {
+                "project": PROJECT,
+                "reviewed_run_id": REVIEWED_RUN,
+                "review_run_id": REVIEWED_RUN,
+            },
+            root=checkout,
+        )
+
+
+def _pointer(config: Path, run_id: str, payload: dict) -> Path:
+    """Write one run's live pointer under the synthesised config home."""
+    path = config / "crew" / "live" / f"{run_id}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
+def test_run_record_times_falls_back_to_a_live_pointer_that_carries_stamps(
+    checkout: Path, tmp_path: Path
+) -> None:
+    # A run not yet promoted has no committed per-run record, so its live
+    # pointer supplies the dispatch stamp it does carry and its completion
+    # stamp; a missing committed record is not a missing time.
+    _pointer(
+        tmp_path / "config",
+        REVIEW_RUN,
         {
-            "project": PROJECT,
-            "reviewed_run_id": REVIEWED_RUN,
-            "review_run_id": REVIEWED_RUN,
+            "run_id": REVIEW_RUN,
+            "created_at": DISPATCH_TS,
+            "completed_at": COMPLETION_TS,
         },
-        root=checkout,
     )
-    stored_bare = _read(bare)
-    assert review_module.DISPATCH_TIME_KEY not in stored_bare
-    assert review_module.COMPLETION_TIME_KEY not in stored_bare
+    assert review_module.run_record_times(PROJECT, REVIEW_RUN, root=checkout) == (
+        DISPATCH_TS,
+        COMPLETION_TS,
+    )
+
+
+def test_run_record_times_yields_empty_when_no_source_carries_a_stamp(
+    checkout: Path, tmp_path: Path
+) -> None:
+    # A live pointer that carries neither stamp yields empty strings rather
+    # than a defaulted clock; the committed store then refuses the write.
+    _pointer(tmp_path / "config", REVIEW_RUN, {"run_id": REVIEW_RUN})
+    assert review_module.run_record_times(PROJECT, REVIEW_RUN, root=checkout) == (
+        "",
+        "",
+    )
+
+    # No record and no pointer at all is the same answer, not a crash.
+    assert review_module.run_record_times(PROJECT, "r-absent", root=checkout) == (
+        "",
+        "",
+    )
 
 
 # ── (3) An answer appends an event; the body keeps its bytes ─────────────────
