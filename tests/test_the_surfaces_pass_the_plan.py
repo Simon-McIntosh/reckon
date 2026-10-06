@@ -249,7 +249,16 @@ def test_mcp_view_reads_a_section_covering_review(project):
 def test_absent_covering_review_names_the_stale_one(project):
     _, _, path = project
     stale = _stale_record()
+    # With nothing stored the stale-review note is absent, which is a different
+    # fact from "a review exists but does not cover the plan".
+    assert mcp._stale_plan_review("sample", "fixture") is None
     plan_review.store_plan_review(stale)
+    # The note names the version the review module's own lookup returns, so the
+    # two surfaces cannot drift from the one rule that selects a stored review.
+    looked_up = plan_review.read_plan_review("sample", "fixture")
+    assert mcp._stale_plan_review("sample", "fixture")[0] == int(
+        looked_up["plan_version"]
+    )
     # The only stored review is of other content, so no review covers the plan
     # now present. Reporting "no stored review" would hide the one that exists,
     # so both surfaces name it by version and point at the verb that composes a

@@ -428,25 +428,21 @@ def _plan_path_hint(kwargs: Mapping[str, Any]) -> str | None:
 
 
 def _stale_plan_review(project: str, plan_slug: str) -> tuple[int, str] | None:
-    """The newest stored review that no longer covers a plan, with its version.
+    """The newest stored review of a plan, with its version.
 
     A plan with stored reviews none of which covers the current content reads
     as unreviewed however many it carries, so a reader that reports only "no
     stored review" hides the review that exists and misleads its author. This
-    names the newest stored review by plan version and the command that
-    composes a review of the content now present. ``None`` means the plan has
-    no stored review at all, which is a different fact the caller states plainly.
+    names the newest stored review and the command that composes a review of
+    the content now present, reading it through the review module's own lookup
+    rather than re-selecting a newest itself. ``None`` means the plan has no
+    stored review at all, which is a different fact the caller states plainly.
     """
     from reckon.crew import plan_review
 
-    reviews = [
-        record
-        for record in plan_review.list_plan_reviews(project)
-        if record.get("plan_slug") == plan_slug
-    ]
-    if not reviews:
+    newest = plan_review.read_plan_review(project, plan_slug)
+    if newest is None:
         return None
-    newest = max(reviews, key=lambda record: int(record.get("plan_version") or 0))
     version = int(newest.get("plan_version") or 0)
     detail = (
         f"the newest stored review of {project}:{plan_slug} is version {version} "
