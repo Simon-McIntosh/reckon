@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "505feb87ce1d0cdff09047c1357f3dbc476315b9",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:_edit_plan_tool",
+    "reckon/crew/routing.py:require_plan_reviewed",
+    "reckon/crew/plan_review.py:read_plan_review"
+  ],
+  "completed_at": "2026-10-06T15:35:08.710Z",
+  "dispatched_at": "2026-10-06T15:28:44Z",
+  "findings": [],
+  "head_log_revision": "b5ff5e4527939a165c5580653f5ec2b4e22a1235",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit \u2014 d185ca050..b5ff5e452 is the single commit b5ff5e452 'catch every coverage failure and name it in the response': reckon/mcp.py:494 changes 'except OSError' to 'except Exception  # noqa: BLE001', the docstring is rewritten, a ValueError-forcing test is added, and the fragment's two sentences and one table row are updated.",
+    "done_when": "\u00a726's measure is the review_owed answer; the delta keeps it intact and hardens the unknown path \u2014 the run's own after_suite gate-acted-f2b1780a290.log is 111 passed EXIT=0 at b5ff5e452, and I re-ran tests/test_an_edit_tells_its_author_a_review_is_owed.py at that head myself (7 passed, EXIT=0).",
+    "goal": "the delta's goal is the residual the previous review of this run raised \u2014 a non-OSError raised inside review_coverage must not escape _edit_plan_tool after the plan write has already succeeded; reckon/mcp.py:492 now catches every Exception there.",
+    "manifest": "read; status complete; the delta commit is b5ff5e452; baseline_suite (505feb87c) and after_suite (b5ff5e452) both completed with failure_count 0; the negative control reddens three done-when cases (EXIT=1).",
+    "write_paths": "the run declares reckon/mcp.py, five test files, both skills, the evidence fragment and a figures dir; git diff --name-only d185ca050..b5ff5e452 lists exactly reckon/mcp.py, tests/test_an_edit_tells_its_author_a_review_is_owed.py and the fragment, all inside that declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_an_edit_tells_its_author_a_review_is_owed.py:test_any_predicate_failure_is_named_not_escaped forces review_coverage to raise and asserts the write stays ok with the error named; reinstating 'except OSError' reddens it, which I reproduced at d185ca050.",
+    "evidence": "the reviewed run's after_suite is 111 passed EXIT=0 at b5ff5e452 (gate-acted-f2b1780a290.log); I re-ran tests/test_an_edit_tells_its_author_a_review_is_owed.py at that head (7 passed, EXIT=0, review-head-gate.log) and reproduced the defect at the base (ValueError escapes at d185ca050, review-base-control.log).",
+    "fit": "'except Exception:  # noqa: BLE001 \u2014 named in the response, not swallowed' (reckon/mcp.py:494) is the codebase's established idiom \u2014 66 such noqa sites, many in reckon/mcp.py \u2014 and ruff check --select BLE001,RUF100 is clean on the file.",
+    "goal_fidelity": "reckon/mcp.py:494 catches every Exception at the one point and names its type and message in review_owed_error with review_owed null (reckon/mcp.py:495-499), so a completed write is never reported as a tool error.",
+    "reuse": "the delta adds no definition and forks no capability; it broadens the existing catch in _review_owed_fields (reckon/mcp.py:455) over the one predicate review_coverage both the gate and the edit tool already share.",
+    "scope_discipline": "git diff --name-only d185ca050..b5ff5e452 lists exactly the three files the run declares and nothing outside them."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: d185ca0503a1ab1d4d70b9d3aa37212839eb0e0a\nreviewed_head_sha: b5ff5e4527939a165c5580653f5ec2b4e22a1235\nVERDICT goal: the delta's goal is the residual the previous review of this run raised \u2014 a non-OSError raised inside review_coverage must not escape _edit_plan_tool after the plan write has already succeeded; reckon/mcp.py:492 now catches every Exception there.\nVERDICT done_when: \u00a726's measure is the review_owed answer; the delta keeps it intact and hardens the unknown path \u2014 the run's own after_suite gate-acted-f2b1780a290.log is 111 passed EXIT=0 at b5ff5e452, and I re-ran tests/test_an_edit_tells_its_author_a_review_is_owed.py at that head myself (7 passed, EXIT=0).\nVERDICT write_paths: the run declares reckon/mcp.py, five test files, both skills, the evidence fragment and a figures dir; git diff --name-only d185ca050..b5ff5e452 lists exactly reckon/mcp.py, tests/test_an_edit_tells_its_author_a_review_is_owed.py and the fragment, all inside that declaration.\nVERDICT manifest: read; status complete; the delta commit is b5ff5e452; baseline_suite (505feb87c) and after_suite (b5ff5e452) both completed with failure_count 0; the negative control reddens three done-when cases (EXIT=1).\nVERDICT diff: read commit by commit \u2014 d185ca050..b5ff5e452 is the single commit b5ff5e452 'catch every coverage failure and name it in the response': reckon/mcp.py:494 changes 'except OSError' to 'except Exception  # noqa: BLE001', the docstring is rewritten, a ValueError-forcing test is added, and the fragment's two sentences and one table row are updated.\nCALL_SITES: reckon/mcp.py:_edit_plan_tool, reckon/crew/routing.py:require_plan_reviewed, reckon/crew/plan_review.py:read_plan_review\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/mcp.py:494 catches every Exception at the one point and names its type and message in review_owed_error with review_owed null (reckon/mcp.py:495-499), so a completed write is never reported as a tool error.\nSCORE evidence: 20\nJUSTIFICATION evidence: the reviewed run's after_suite is 111 passed EXIT=0 at b5ff5e452 (gate-acted-f2b1780a290.log); I re-ran tests/test_an_edit_tells_its_author_a_review_is_owed.py at that head (7 passed, EXIT=0, review-head-gate.log) and reproduced the defect at the base (ValueError escapes at d185ca050, review-base-control.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only d185ca050..b5ff5e452 lists exactly the three files the run declares and nothing outside them.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_an_edit_tells_its_author_a_review_is_owed.py:test_any_predicate_failure_is_named_not_escaped forces review_coverage to raise and asserts the write stays ok with the error named; reinstating 'except OSError' reddens it, which I reproduced at d185ca050.\nSCORE fit: 20\nJUSTIFICATION fit: 'except Exception:  # noqa: BLE001 \u2014 named in the response, not swallowed' (reckon/mcp.py:494) is the codebase's established idiom \u2014 66 such noqa sites, many in reckon/mcp.py \u2014 and ruff check --select BLE001,RUF100 is clean on the file.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition and forks no capability; it broadens the existing catch in _review_owed_fields (reckon/mcp.py:455) over the one predicate review_coverage both the gate and the edit tool already share.\n",
+  "review_run_id": "r-20261006T152824736059-review-of-an-edit-tells-its-author-a-review-is-owed",
+  "reviewed_base_sha": "d185ca0503a1ab1d4d70b9d3aa37212839eb0e0a",
+  "reviewed_head_sha": "b5ff5e4527939a165c5580653f5ec2b4e22a1235",
+  "reviewed_run_id": "r-20261006T143945050711-an-edit-tells-its-author-a-review-is-owed",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T15:34:02.228641+00:00",
+  "total": 120
+}
