@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.4">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -115,7 +115,8 @@
           already owns a record's location, <code>stored_record</code> in <code>reckon/crew/review.py</code>, reads
           the committed store first and the staging store only for runs not yet promoted, and the four readers go
           through it. <code>review_store_root</code> has further direct callers in <code>recovery.py</code>,
-          <code>reports.py</code> and <code>runs.py</code>. Each is classified in the node's manifest: a caller about
+          <code>reports.py</code>, <code>runs.py</code>, <code>dispatch.py</code> (the sandbox write roots it grants a
+          worker) and <code>cli.py</code> (<code>reckon path --kind reviews</code>). Each is classified in the node's manifest: a caller about
           a live run's own record, such as write-path matching or own-record existence, stays on the staging root,
           where live reviews are still written; a caller that reads history goes through the resolver. No MCP tool,
           view, view argument or server route is added. A plan's reviews are already listed by
