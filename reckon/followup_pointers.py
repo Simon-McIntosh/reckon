@@ -17,6 +17,15 @@ reports ``other-plan``, ``other-mount``, ``sprint`` or
 hides work wherever it points inside its own plan, because the roadmap never
 dispatches a completed plan and the work has to move to a live one. A
 followup naming any other plan is a pointer regardless of this plan's status.
+
+The section token composes the shared section-number core exported by
+:mod:`reckon._plan_html` inside this module's own command frame, so a dotted or
+hyphenated spelling the plan writer emits —
+``§5.1``, ``§5-1`` — is captured whole and normalised by
+:func:`reckon._plan_html.section_record_id` to the one identity the plan's
+records carry (``s5-1``). An alphabetic suffix is rejected: the token is bounded
+so ``§5a`` captures no section at all, because a suffix the plan writer never
+emits is not a section.
 """
 
 from __future__ import annotations
@@ -26,6 +35,7 @@ from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from reckon._plan_html import SECTION_NUMBER_PATTERN, section_record_id
 from reckon._schema import is_implementable_section, parse_plan_ref
 from reckon.lifecycle import COMPLETED_STATUSES
 
@@ -40,10 +50,14 @@ HIDING_REASONS = (
 #: Reason words this module may return for a followup that is a pointer.
 POINTER_REASONS = ("other-plan", "other-mount", "sprint", "implementable-section")
 
+# The section token is the shared number core inside this command's frame. The
+# trailing lookahead ends the token at a boundary, so an alphabetic suffix
+# (``§5a``) captures no section — a suffix the plan writer never emits is not a
+# section.
 _INVOCATION_RE = re.compile(
     r"/reckon-[a-z][a-z0-9-]*"
     r"\s+(?P<target>[^\s§]+)"
-    r"(?:\s*§\s*(?P<section>[0-9][0-9a-z]*))?"
+    rf"(?:\s*§\s*(?P<section>{SECTION_NUMBER_PATTERN})(?![0-9A-Za-z.-]))?"
 )
 
 _TRAILING_PUNCTUATION = ".,;"
@@ -72,9 +86,9 @@ class FollowupVerdict:
 def parse_invocation(text: str) -> Invocation | None:
     """Return the first ``/reckon-VERB TARGET [§N]`` line in ``text``.
 
-    ``TARGET`` is one non-space token; the section, when present, becomes the
-    section identity ``s`` plus the number (``§2`` → ``s2``). ``None`` means no
-    invocation line is present at all.
+    ``TARGET`` is one non-space token; the section, when present, is normalised
+    to the plan's section identity (``§2`` → ``s2``, ``§5.1`` and ``§5-1`` →
+    ``s5-1``). ``None`` means no invocation line is present at all.
     """
 
     match = _INVOCATION_RE.search(str(text or ""))
@@ -84,7 +98,9 @@ def parse_invocation(text: str) -> Invocation | None:
     if not target or target.startswith("§"):
         return None
     number = match.group("section")
-    return Invocation(target=target, section=f"s{number}" if number else None)
+    return Invocation(
+        target=target, section=section_record_id(number) if number else None
+    )
 
 
 def find_invocation(followup: Mapping[str, Any]) -> Invocation | None:
