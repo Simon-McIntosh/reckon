@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="A state write commits a set of paths in one commit">
+  <meta name="plan-summary" content="reckon/ledger.py::_commit_state_write is extended to commit a set of paths in one commit so a review run's promotion lands its ledger row and its review record together, adding no commit. A single Path commits exactly as before, and a set that cannot share one checkout is refused before anything is staged.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-06">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>A state write commits a set of paths in one commit | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A state write commits a set of paths in one commit</h1>
+
+    <section id="state-write-commits-a-set-of-paths-anchor">
+      <h2>What changed</h2>
+      <p><code>reckon/ledger.py</code>: <code>_commit_state_write</code> now
+        accepts a single <code>Path</code> or an iterable of paths. Every path
+        resolves through <code>_state_checkout</code> before any staging, so a
+        set spanning two checkouts is refused with nothing staged; the paths
+        are then staged and committed together with one <code>git commit
+        --only</code>. A single-path call stages and commits exactly one path,
+        as before. Callers are unchanged.</p>
+      <p>Gate: <code>tests/test_state_write_commits_a_set_of_paths.py</code> and
+        <code>tests/test_ledger.py</code> — 3 new cases pass and the ledger
+        suite is green.</p>
+    </section>
+  </main>
+</body>
+</html>

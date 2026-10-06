@@ -1654,14 +1654,48 @@ def _merge_in_progress(checkout: Path) -> bool:
     return merge_head.exists()
 
 
+def _state_checkout_paths(
+    project: str, paths: Iterable[Path], what: str
+) -> tuple[Path, list[Path]]:
+    """Resolve a set of state files to one checkout and their relative paths.
+
+    Every path must resolve to the same checkout, because the set shares one
+    commit; a set spanning two checkouts is refused rather than split, so a
+    caller that meant one commit learns its write cannot be one. Resolution
+    runs for every path before any staging, so a refused set leaves nothing
+    staged.
+    """
+    checkout: Path | None = None
+    relatives: list[Path] = []
+    for path in paths:
+        resolved_checkout, relative = _state_checkout(project, path, what)
+        if checkout is None:
+            checkout = resolved_checkout
+        elif resolved_checkout != checkout:
+            raise LedgerError(
+                f"{what} write for {project!r} spans two checkouts: "
+                f"{relative} is in {resolved_checkout}, not {checkout}"
+            )
+        relatives.append(relative)
+    if checkout is None:
+        raise LedgerError(f"no {what} path given to commit")
+    return checkout, relatives
+
+
 def _commit_state_write(
     project: str,
     subject: str,
     body: str,
-    path: Path,
+    path: Path | Iterable[Path],
     what: str = "state",
 ) -> None:
-    """Commit one requested state write without sweeping other staged paths.
+    """Commit the requested state write(s) without sweeping other staged paths.
+
+    ``path`` names one file, as most callers pass, or a set of files that must
+    share one commit: a review run's promotion commits its ledger row and its
+    review record together, so the record lands in the commit the promotion
+    already makes rather than adding one. Every path must resolve to the same
+    checkout, and a refused set leaves nothing staged.
 
     The commit is skipped while a merge is in progress: a commit made there
     would conclude the merge or fail on the conflicted index, and it is the
@@ -1669,24 +1703,33 @@ def _commit_state_write(
     write stays in the tree, exactly as a caller that asked for no commit
     would leave it, and the skip is stated on stderr.
     """
-    checkout, relative_path = _state_checkout(project, path, what)
+    if isinstance(path, (str, Path)):
+        paths = [Path(path)]
+    else:
+        paths = [Path(item) for item in path]
+    if not paths:
+        raise LedgerError(f"no {what} path given to commit")
+    checkout, relative_paths = _state_checkout_paths(project, paths, what)
+    named = ", ".join(str(relative) for relative in relative_paths)
+
     if _merge_in_progress(checkout):
         print(
             f"merge in progress in {checkout}: leaving the {what} write at "
-            f"{relative_path} uncommitted",
+            f"{named} uncommitted",
             file=sys.stderr,
         )
         return
 
+    relative_args = [str(relative) for relative in relative_paths]
     staged = subprocess.run(
-        ["git", "-C", str(checkout), "add", "--", str(relative_path)],
+        ["git", "-C", str(checkout), "add", "--", *relative_args],
         capture_output=True,
         text=True,
         check=False,
     )
     if staged.returncode != 0:
         raise LedgerError(
-            f"could not stage {what} write {relative_path}: "
+            f"could not stage {what} write {named}: "
             f"{staged.stderr.strip() or staged.stdout.strip()}"
         )
 
@@ -1702,7 +1745,7 @@ def _commit_state_write(
             "-m",
             body,
             "--",
-            str(relative_path),
+            *relative_args,
         ],
         capture_output=True,
         text=True,
@@ -1710,22 +1753,13 @@ def _commit_state_write(
     )
     if committed.returncode != 0:
         subprocess.run(
-            [
-                "git",
-                "-C",
-                str(checkout),
-                "reset",
-                "-q",
-                "HEAD",
-                "--",
-                str(relative_path),
-            ],
+            ["git", "-C", str(checkout), "reset", "-q", "HEAD", "--", *relative_args],
             capture_output=True,
             text=True,
             check=False,
         )
         raise LedgerError(
-            f"could not commit {what} write {relative_path}: "
+            f"could not commit {what} write {named}: "
             f"{committed.stderr.strip() or committed.stdout.strip()}"
         )
 
