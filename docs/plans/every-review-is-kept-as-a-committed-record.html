@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.4">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-06">
 </head>
 <body>
@@ -301,6 +301,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261006T171226889187-review-of-every-review-round-is-committed" data-who="reckon-build" data-when="2026-10-06T17:25:34.949Z">
     <div class="r-comment-body"><p>Stored an independent review of run r-20261006T162208732004-every-review-round-is-committed at both granted review-store paths (head-keyed at 15aaf3a405c3873470f83c5736360fac09b5d1a5): parsed six-dimension record, total 117 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 18, reuse 20), reviewed_base_sha 3cd8accd21d9027a61d511673f61a80b2e5a5263, reviewed_head_sha 15aaf3a405c3873470f83c5736360fac09b5d1a5, added_failure_count null with added_failure_ids [] (the reviewed manifest names no baseline_suite/after_suite arm, so the count is unmeasured); two follow-on findings (added PERF401 at promotion.py:8710; a new fail-closed failure surface on list_plan_reviews via mounted_project_docs) and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261006T172709656322-promotion-adds-no-lint-finding" data-who="reckon-build" data-when="2026-10-06T17:31:02.620Z">
+    <div class="r-comment-body"><p>promotion.py:8707-8714 now builds the committed review-record path list with a single list.extend over a generator instead of a per-payload append loop, so the review-round loop adds no PERF401 finding; ruff on the file reports exactly three findings (UP035, UP017, PERF403) and no PERF401, and the named suites pass 10 EXIT=0.</p></div>
 </div>
 </section>
 </main>
