@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="The host review store is imported into the committed tree">
+  <meta name="plan-summary" content="scripts/import_host_reports imports each project's host review store into its committed tree, and moves every non-record to a quarantine outside the store.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-06">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The host review store is imported into the committed tree | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The host review store is imported into the committed tree</h1>
+
+    <section id="host-reviews-import-into-the-committed-tree-anchor">
+      <h2>What changed</h2>
+      <p><code>scripts/import_host_reviews.py</code> takes
+        <code>scripts/import_runs_into_store.py</code>'s contract —
+        <code>--project</code>/<code>--root</code>, project resolved through the
+        ordinary loader, exit 0 — and adds <code>--write</code>, dry run by
+        default. It sorts a project's host staging store into recognised records
+        (a body naming a plan, or a run it reviewed, plus the review run id that
+        keys its committed file, accepting the legacy <code>reviewer_run_id</code>)
+        and non-records, lists each with path, size and modification time, and
+        under <code>--write</code> commits each record through
+        <code>review.store_committed_review</code> so its times are the run's own,
+        importing a duplicate that resolves one committed path once, and moves
+        every non-record to <code>&lt;config&gt;/crew/reviews-quarantine/&lt;project&gt;/</code>
+        outside the store without deleting it. A second pass imports zero.</p>
+      <p>Real host dry run (counts = recognised records; bytes of records /
+          non-records): reckon 1567, 15.9&nbsp;MB / 1.4&nbsp;MB; nova 329,
+          3.3&nbsp;MB / 2.55&nbsp;GB; imas-ambix 355, 3.9&nbsp;MB / 20&nbsp;KB;
+          imas-codex 200, 2.0&nbsp;MB / 0; imas-efit 62, 704&nbsp;KB / 75&nbsp;KB;
+          imas-ink 26, 177&nbsp;KB / 0.</p>
+      <p>Gate: <code>tests/test_import_host_reviews.py</code> with
+        <code>tests/test_review_records_have_a_committed_root.py</code> — 14 passed,
+        0 failed, EXIT=0. Negative control (delete non-record files instead of
+        moving them to quarantine) — 1 failed
+        (<code>test_write_commits_records_once_and_quarantines_non_records</code>),
+        13 passed, EXIT=1.</p>
+    </section>
+  </main>
+</body>
+</html>
