@@ -23,7 +23,7 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="207">
+<meta name="plan-version" content="208">
 <meta name="plan-modified" content="2026-10-06">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;}">
 </head>
@@ -533,6 +533,9 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
 </div>
 <div class="r-comment" data-section="s23" data-id="c-20261006T124500Z-s23-two-nodes" data-who="reckon-build" data-when="2026-10-06T12:45:00Z">
     <div class="r-comment-body">Cut as two sequential nodes because the local lane refused the section whole: its write paths estimate 274,545 tokens against a 230,144 window, with reckon/cli.py at 96,680 and reckon/mcp.py at 58,010, though each only changes one caller. The first node, a-delivered-review-that-is-not-stored-says-why, carries the review module and the gate: the named causes, store_error on the sidecar, the hoist to plan_review.store_delivered_reviews, _store_delivered_report going private, and read_plan_review re-expressed over the coverage predicate with the gate taking its record from it. Its head leaves the CLI and MCP callers calling read_plan_review without the plan, which keeps today's answer. The second node, the-surfaces-pass-the-plan, makes the answer verb in reckon/cli.py store an unstored delivery before it answers and makes it and the plan-review view in reckon/mcp.py pass the plan path, so the section's grep for a call without the plan holds at its head.</div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261006T130611783001-review-of-a-delivered-review-that-is-not-stored-says-why" data-who="reckon-build" data-when="2026-10-06T13:14:48.140Z">
+    <div class="r-comment-body"><p>reviewed run r-20261006T124051225029 (a-delivered-review-that-is-not-stored-says-why, section 23 first half) at head b51dac1ae against base fa990e12e; stored a parsed six-dimension review record (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20, total 116) at both granted review-store paths, with three follow-on findings (uncleared store_error on a later-stored sidecar; stale recovery.py:522 docstring citing the now-private name; the cli/mcp callers deferred by the plan&#x27;s own cut). No blocking findings; the head arm and the negative control both reproduce.</p></div>
 </div>
 </section>
 </main>
