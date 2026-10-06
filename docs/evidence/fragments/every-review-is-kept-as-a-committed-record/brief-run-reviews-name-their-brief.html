@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>Landing: a review of a brief-carried run names its brief | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: a review of a brief-carried run names its brief</h1>
+    </header>
+
+    <section id="brief-run-reviews-name-their-brief-landing-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li><code>reckon/crew/recovery.py</code> &mdash; the run-carried branch of <code>_review_dispatch_fields</code> now carries the reviewed run's stored brief (<code>node.brief_path</code>, falling back to <code>node.brief</code>) as the composed review's authority when the node names no plan, in place of the empty <code>plan</code>/<code>section</code> pair. A node that names a plan keeps the plan as its authority and emits no brief, so the plan gates still run.</li>
+        <li><code>tests/test_review_of_a_brief_run_names_its_brief.py</code> &mdash; composes the review of a brief-carried run through <code>_review_dispatch_fields</code>, checks the composed argv names <code>--brief</code> and not <code>--plan</code>, drives the composed dispatch through the dry run and asserts it validates; a plan-carried run still composes <code>--plan</code> and no <code>--brief</code>.</li>
+      </ul>
+    </section>
+
+    <section id="brief-run-reviews-name-their-brief-landing-measure">
+      <h2>Measure</h2>
+      <ul>
+        <li>Gate: the new file, <code>tests/test_ledger.py</code> and every test file importing <code>_review_dispatch_fields</code> (10 files), run with <code>pytest -p no:cacheprovider -q</code>. Head: <code>192 passed</code>, <code>EXIT=0</code>.</li>
+        <li>Negative control, the declared mutation (the run-carried branch no longer carries the brief), applied to the head: <code>3 failed, 1 passed</code>, <code>EXIT=1</code> &mdash; the three brief-carrying cases fail, the plan-carried case still passes.</li>
+      </ul>
+    </section>
+
+    <section id="brief-run-reviews-name-their-brief-landing-commits">
+      <h2>Commits and records</h2>
+      <p>Code and tests: <code>54b1f300fa72492699bd9ec85090623cdc679149</code>. Logs in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T063739329759-brief-run-reviews-name-their-brief/</code>: <code>gate.log</code> (gate), <code>negative-control.log</code> (declared mutation).</p>
+    </section>
+  </main>
+</body>
+</html>
