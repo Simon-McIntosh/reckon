@@ -4,14 +4,14 @@ The reviewer of a plan reads authored text through one reader. Its slices must
 reproduce the first node's slicer exactly, or a stored review covers different
 bytes than the plan now carries and every landing earns a fresh review. The
 checks here pin that parity on every plan in this project, in both card modes,
-and pin the surfaces that read the one value.
+and pin the two surfaces — the search text and the section view — against the
+retired algorithms, held here as reference functions so a plan edit moves both
+sides alike instead of tripping a snapshot.
 """
 
 from __future__ import annotations
 
-import hashlib
 import importlib.util
-import json
 import re
 import subprocess
 import sys
@@ -22,24 +22,36 @@ import pytest
 from bs4 import BeautifulSoup, Tag
 
 from reckon import _plan_html, mcp_views
-from reckon._plan_html import machinery_kind
+from reckon._plan_html import RECKON_ATTRIBUTE, machinery_kind
 from reckon.mcp_views import ResourceSelector
 
 ROOT = Path(__file__).resolve().parents[1]
 # The merge that landed the first node's slicer; its _plan_html.py is the
 # parser output this node's reader must reproduce byte for byte.
 FIRST_NODE_MERGE = "6d06a5290"
-# The revision whose search text and section text the surface outputs must
-# reproduce; the hashes were generated from its modules, not this worktree.
-BASE_REVISION = "87f6c16ac0649f7ec91eba4fe859a8f281f432d3"
 
 
 def _normalise(text: str) -> str:
     return " ".join(text.split())
 
 
-def _hash(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+def _reference_search_text(html_text: str) -> str:
+    """The retired search walk: drop script, style and every marked section.
+
+    Every ``section`` carrying the reckon marker is dropped, whatever its kind;
+    a ``div``/``p`` note and a landed card's interior are retained and joined
+    with the remaining stripped strings. This is the surface's base algorithm,
+    kept here as a reference rather than a stored snapshot.
+    """
+    soup = BeautifulSoup(html_text or "", "html.parser")
+    scope = soup.body or soup
+    for element in scope.select(
+        f"script, style, section[{RECKON_ATTRIBUTE}]:not([{RECKON_ATTRIBUTE}='section'])"
+    ):
+        element.decompose()
+    for element in scope.select(f"section[{RECKON_ATTRIBUTE}='section']"):
+        element.decompose()
+    return " ".join(scope.stripped_strings)
 
 
 @pytest.fixture(scope="module")
@@ -135,34 +147,77 @@ def test_section_prose_keys_match_the_first_node_slicer_on_every_plan(plans):
         assert got == expected, path
 
 
-def test_surfaces_reproduce_their_base_outputs_on_every_plan(plans):
-    fixture = json.loads(
-        (ROOT / "tests" / "section_prose_base_outputs.json").read_text()
+def _reference_heading_html(heading: Tag) -> str:
+    rendered = BeautifulSoup(str(heading), "html.parser").find(True)
+    if rendered is None:  # pragma: no cover
+        return str(heading)
+    if machinery_kind(rendered.attrs) == "section":
+        for attribute in tuple(rendered.attrs):
+            if (
+                attribute == RECKON_ATTRIBUTE
+                or attribute
+                in {
+                    "data-effort-hours",
+                    "data-attempts",
+                    "data-status",
+                    "data-links",
+                }
+                or attribute.startswith("data-capability-")
+            ):
+                del rendered.attrs[attribute]
+    return str(rendered)
+
+
+def _reference_section_text(source: str, heading) -> str:
+    """The retired section extraction: heading plus the section body.
+
+    The heading's own extent leads, then the raw body between the heading and
+    the section close, with any nested marked ``section`` removed. The result
+    is the section's rendered text. Kept here as a reference, not a snapshot.
+    """
+    opening, closing = heading.heading_span
+    rendered_heading = BeautifulSoup(source[opening:closing], "html.parser").find(True)
+    fragments = [_reference_heading_html(rendered_heading)]
+    body_source = source[slice(*heading.body_span)]
+    body = BeautifulSoup(body_source, "html.parser")
+    for element in body.select(f"section[{RECKON_ATTRIBUTE}]"):
+        if machinery_kind(element.attrs) is not None:
+            element.decompose()
+    fragments.extend(
+        str(element).strip() for element in body.contents if str(element).strip()
     )
-    expected_plans = fixture["plans"]
-    assert len(expected_plans) == len(plans)
+    return " ".join(BeautifulSoup("\n".join(fragments), "html.parser").stripped_strings)
+
+
+def test_surfaces_reproduce_their_reference_outputs_on_every_plan(plans):
+    """The search text and every section text must match the retired algorithms.
+
+    A plan edit changes the plan and the reference alike, so no stored snapshot
+    is involved. Any plan whose surface cannot be reproduced is named.
+    """
+    differing: list[str] = []
     for path, source in plans:
-        key = str(path)
-        expected = expected_plans.get(key)
-        assert expected is not None, f"no base output pin for {key}"
-        search = _hash(_normalise(mcp_views.authored_plan_text(source)))
-        assert search == expected["search"], f"search text differs: {key}"
-        state = _plan_html.read_state(source)
-        section_hashes = {
-            identity: _hash(
-                _normalise(
-                    mcp_views._section_response(
-                        ResourceSelector(project="reckon", type="plan", id=path.stem),
-                        1,
-                        state,
-                        section=identity,
-                        html_text=source,
-                    )["section"]["text"]
-                )
+        if _normalise(mcp_views.authored_plan_text(source)) != _normalise(
+            _reference_search_text(source)
+        ):
+            differing.append(f"{path} (search text)")
+        data = _plan_html.read_state(source)
+        for identity, heading in mcp_views._authored_section_headings(source):
+            got = _normalise(
+                mcp_views._section_response(
+                    ResourceSelector(project="reckon", type="plan", id=path.stem),
+                    1,
+                    data,
+                    section=identity,
+                    html_text=source,
+                )["section"]["text"]
             )
-            for identity, _heading in mcp_views._authored_section_headings(source)
-        }
-        assert section_hashes == expected["sections"], f"section text differs: {key}"
+            expected = _normalise(_reference_section_text(source, heading))
+            if got != expected:
+                differing.append(f"{path}#{identity} (section text)")
+    assert not differing, "surfaces differ from their reference outputs: " + "; ".join(
+        differing
+    )
 
 
 def test_authored_section_list_matches_its_base_rule_on_every_plan(plans):
@@ -214,9 +269,9 @@ def test_the_prose_reader_has_one_home_and_no_second_slicer():
 
 def test_span_rule_keywords_have_one_home_and_document_unit_one_owner():
     keywords = _grep(r"every_marked_element|skip_landed_cards", ("reckon",))
-    assert keywords, "the private span rule must name its two modes"
+    assert keywords, "the private span rule must name its modes"
     homes = {hit.split(":")[0] for hit in keywords}
-    assert homes == {"reckon/_plan_html.py"}
+    assert homes == {"reckon/_plan_html.py"}, homes
     document_literals = _grep(r'"_document"', ("reckon",))
     assert len(document_literals) == 1
     assert document_literals[0].startswith("reckon/_plan_html.py:")

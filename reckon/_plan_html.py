@@ -417,13 +417,17 @@ def _section_spans(
     *,
     every_marked_element: bool = False,
     skip_landed_cards: bool = False,
+    keep_landed_notes: bool = False,
 ) -> tuple[tuple[int, int], ...]:
     """The protected ranges one parsed record set yields.
 
     The default protects structured sections and typed heading openings. The
     prose reader opts into whole marked elements and can subtract landed-card
     interiors with their heading kept, so historical digests retain their
-    prose. The store-facing projection reads only the default.
+    prose. ``keep_landed_notes`` leaves the text of a marked note that is not a
+    structured section — a ``div`` or ``p`` carrying the marker — in the prose reader's
+    output, where the default blanks every marked element alike. The store-facing
+    projection reads only the default.
     """
     spans = [
         (
@@ -434,6 +438,7 @@ def _section_spans(
         )
         for record in records
         if (record.kind is not None if every_marked_element else record.protected)
+        and not (every_marked_element and keep_landed_notes and record.tag != "section")
     ]
     if skip_landed_cards:
         for card in records:
@@ -461,7 +466,12 @@ def structured_section_spans(html_text: str) -> tuple[tuple[int, int], ...]:
 DOCUMENT_UNIT = "_document"
 
 
-def section_prose(document: str, *, keep_landed_cards: bool = False):
+def section_prose(
+    document: str,
+    *,
+    keep_landed_cards: bool = False,
+    keep_landed_notes: bool = False,
+):
     """Yield each authored unit's prose in document order from one raw read.
 
     Each item is an ``(identity, prose)`` pair: a level-two authored section's
@@ -470,7 +480,10 @@ def section_prose(document: str, *, keep_landed_cards: bool = False):
     result is an ordered sequence rather than a bare mapping. The document is
     parsed once, and the span rule and the body extent both come from that one
     record set. A landed card's interior is subtracted with its heading kept
-    unless ``keep_landed_cards`` is set.
+    unless ``keep_landed_cards`` is set. Every marked element's text is
+    subtracted unless ``keep_landed_notes`` is set, which retains the text of a
+    marked note that is not a structured section — a ``div`` or ``p`` carrying the
+    marker — so a search surface can keep a plan's landed notes.
     """
     records = _structural_spans(document)
     headings = [
@@ -482,7 +495,10 @@ def section_prose(document: str, *, keep_landed_cards: bool = False):
         and not record.heading.machinery
     ]
     protected = _section_spans(
-        records, every_marked_element=True, skip_landed_cards=not keep_landed_cards
+        records,
+        every_marked_element=True,
+        skip_landed_cards=not keep_landed_cards,
+        keep_landed_notes=keep_landed_notes,
     )
     body = next((record for record in records if record.tag == "body"), None)
     start = body.open_end if body is not None else 0
