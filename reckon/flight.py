@@ -99,7 +99,6 @@ DEFAULT_LIGHT_TIME_BUDGET = "10m"
 # is set aside by the cleaner and checked by the validator in the same edit, so
 # the two cannot drift.
 REVIEW_OWNED_KEYS: dict[str, str] = {
-    "plan_settle_seconds": "non_negative_integer",
     "plan_change_threshold": "unit_interval",
 }
 DEFAULT_PLAN_CHANGE_THRESHOLD = 0.30
@@ -692,19 +691,6 @@ def plan_review_gate_enforces(config: Mapping[str, Any] | None) -> bool:
     """
     mode = (config or {}).get(PLAN_REVIEW_GATE_KEY) or PLAN_REVIEW_GATE_DEFAULT
     return str(mode) == "enforce"
-
-
-def plan_review_settle_seconds(config: Mapping[str, Any] | None) -> int:
-    """The quiet interval before a changed plan earns a review."""
-    review = (config or {}).get(REVIEW_KEY)
-    value = (
-        review.get("plan_settle_seconds", 600) if isinstance(review, Mapping) else 600
-    )
-    return (
-        value
-        if isinstance(value, int) and not isinstance(value, bool) and value >= 0
-        else 600
-    )
 
 
 def plan_review_change_threshold(config: Mapping[str, Any] | None) -> float:

@@ -336,7 +336,7 @@ def test_a_project_layer_threshold_changes_the_gate_verdict(sectioned, monkeypat
     # Restore the real resolution and write the project's own layer where the
     # registered mount resolves it: the gate, which passes no config, must pick
     # the tighter threshold up through that path alone.
-    monkeypatch = monkeypatch.setattr(flight, "resolve", _REAL_RESOLVE)
+    monkeypatch.setattr(flight, "resolve", _REAL_RESOLVE)
     layer = flight.project_config_path("sample")
     layer.parent.mkdir(parents=True, exist_ok=True)
     layer.write_text("review:\n  plan_change_threshold: 0.05\n", encoding="utf-8")
@@ -372,24 +372,17 @@ def test_the_threshold_is_read_through_the_flight_accessor():
 
 def test_validate_layer_refuses_shapes_outside_the_review_key_table():
     flight.validate_layer({"review": {"plan_change_threshold": 0.2}}, "test")
-    flight.validate_layer({"review": {"plan_settle_seconds": 30}}, "test")
     with pytest.raises(flight.FlightConfigError, match="plan_change_threshold"):
         flight.validate_layer({"review": {"plan_change_threshold": 1.5}}, "test")
     with pytest.raises(flight.FlightConfigError, match="plan_change_threshold"):
         flight.validate_layer({"review": {"plan_change_threshold": -0.1}}, "test")
-    with pytest.raises(flight.FlightConfigError, match="plan_settle_seconds"):
-        flight.validate_layer({"review": {"plan_settle_seconds": 1.5}}, "test")
 
 
 def test_the_schema_cleaner_and_validator_read_one_table():
-    assert set(flight.REVIEW_OWNED_KEYS) == {
-        "plan_settle_seconds",
-        "plan_change_threshold",
-    }
+    assert set(flight.REVIEW_OWNED_KEYS) == {"plan_change_threshold"}
     cleaned = flight._schema_view(
         {
             "review": {
-                "plan_settle_seconds": 600,
                 "plan_change_threshold": 0.3,
                 "tiers": {},
             }
