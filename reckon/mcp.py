@@ -470,12 +470,14 @@ def _review_owed_fields(
 
     A predicate that cannot answer is reported as unknown, not as nothing owed:
     ``review_owed`` is null and ``review_owed_error`` names why (the written
-    path was not reported, or the plan could not be read). An empty list and a
-    null are different facts — nothing is owed, or the debt is unknown — and
+    path was not reported, or the predicate raised). An empty list and a null
+    are different facts — nothing is owed, or the debt is unknown — and
     collapsing the second into the first would let a failed read pass for a
-    clean answer. The write itself has already succeeded, so only ``OSError``
-    (the unreadable-plan failure the predicate raises) is caught here; anything
-    else is a defect that must not be swallowed.
+    clean answer. The write itself has already succeeded, so every exception at
+    this one point is caught and named in the response rather than escaping
+    after the write and reporting a completed write as a tool error, which its
+    author may retry into a version conflict. Nothing is hidden: the error is
+    stated in ``review_owed_error``.
     """
     from reckon.crew import plan_review
 
@@ -490,7 +492,7 @@ def _review_owed_fields(
         _records, uncovered, changes = plan_review.review_coverage(
             project, slug, plan=Path(written_path)
         )
-    except OSError as error:
+    except Exception as error:  # noqa: BLE001 — named in the response, not swallowed
         return {
             "review_owed": None,
             "review_owed_error": f"{type(error).__name__}: {error}",

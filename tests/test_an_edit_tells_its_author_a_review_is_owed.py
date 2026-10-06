@@ -284,6 +284,30 @@ def test_an_unreadable_plan_reports_the_review_as_unknown(sectioned, monkeypatch
     assert result["review_invocation"] == _INVOCATION
 
 
+def test_any_predicate_failure_is_named_not_escaped(sectioned, monkeypatch):
+    _, repo, path = sectioned
+    _review(path)
+
+    def broken(*args, **kwargs):
+        raise ValueError("flight config could not be resolved")
+
+    monkeypatch.setattr(plan_review, "review_coverage", broken)
+    result = mcp._edit_plan_tool(
+        "sample",
+        "fixture",
+        expected_version=_version(path),
+        mode="text",
+        old_html=f"<p><strong>Done when</strong>: {DONE_WHEN}.</p>",
+        new_html="<p><strong>Done when</strong>: charlie ships and nothing breaks.</p>",
+        checkout_path=str(repo),
+    )
+    assert result["ok"], result
+    assert result["review_owed"] is None
+    assert "ValueError" in result["review_owed_error"]
+    assert "flight config could not be resolved" in result["review_owed_error"]
+    assert result["review_invocation"] == _INVOCATION
+
+
 def test_both_skills_name_the_review_and_its_invocation():
     root = Path(__file__).parents[1] / "skills"
     for skill in ("reckon-create", "reckon-edit"):
