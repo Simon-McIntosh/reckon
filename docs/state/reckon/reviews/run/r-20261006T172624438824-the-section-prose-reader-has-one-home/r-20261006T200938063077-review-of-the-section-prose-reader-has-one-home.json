@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/plan_review.py:_prose_texts",
+    "reckon/crew/plan_review.py:_fingerprint_forms",
+    "reckon/mcp_views.py:authored_plan_text",
+    "reckon/mcp_views.py:_section_response"
+  ],
+  "commits_read": [
+    "994fade063dc166fb0a6da8fcee10fe0d5b274e9",
+    "4052306270b58b7c9610d0e52e87f017c1012eba",
+    "114188eabc7bbf0d07258f307c5d5e4aae3729c2",
+    "841f1a1e43b325d98396265b7be13d30342b56be",
+    "f7abe89f767697b735ea17ae9997edc689e999c5",
+    "7e87c9f95f617da6b5344bf37de7e4c545cc36a4"
+  ],
+  "completed_at": "2026-10-06T20:19:40.455Z",
+  "dispatched_at": "2026-10-06T20:09:56Z",
+  "findings": [
+    {
+      "file": "tests/test_the_section_prose_reader_has_one_home.py",
+      "line": "138",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when's clause that the search text and every section text equal their base outputs up to whitespace normalisation is measured against the test's own reference functions rather than the base outputs; the search reference at :66 carries a deliberate correction and EXEMPT_PLANS at :36 removes three plans from the check entirely, and running the retired 87f6c16 authored_plan_text against head shows 9 of 155 plans differing, so the guard is reimplementation parity rather than the base-output parity the done-when names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/manifest.md",
+      "line": "7",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's commits list omits 994fade063dc166fb0a6da8fcee10fe0d5b274e9 and 4052306270b58b7c9610d0e52e87f017c1012eba, both inside the reviewed range, and its changed_paths at :8 names tests/section_prose_base_outputs.json which is deleted at head while omitting tests/test_a_section_reviewed_as_authored_stays_reviewed.py which the range changes."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/manifest.md",
+      "line": "13",
+      "severity": "follow-on",
+      "text": "follow-on: the negative_control_log the manifest names records the mutation \"keep_landed_notes dropped from authored_plan_text\", not the dispatch-declared string \"restore the BeautifulSoup stripped_strings walk inside mcp_views.authored_plan_text\", so a reader comparing the log's header against the declared string sees a mismatch even though the guard demonstrably fires with EXIT=1."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read one change at a time across 387d3cdb..7e87c9f9; 994fade06 and 114188eab re-point both MCP surfaces at section_prose with keep_landed_cards and keep_landed_notes and replace the stored snapshot fixture with test reference functions; 841f1a1e4 makes a marked section transparent and starts a kept landed card's slice at its first heading; f7abe89f7 updates the plan-review test; 405230627 and 7e87c9f95 are evidence only.",
+    "done_when": "the done-when's structural greps hold at head (one section_prose, no strip_tags, no _prose_slices, no _inside_structured_region, one \"_document\" literal at reckon/_plan_html.py:471) and gate_constructs.log records 277 passed EXIT=0 at f7abe89f, but its base-parity clause is measured against test reference functions, not the base outputs, and 9 of 155 plans differ from the retired 87f6c16 output when read directly.",
+    "goal": "the reviewed node's goal is one public section_prose reader on reckon/_plan_html.py with the stripper beneath it private; at head 7e87c9f9 grep reports one `def section_prose` (reckon/_plan_html.py:474) and one `def _strip_tags` (reckon/_plan_html.py:1982), reached from reckon/crew/plan_review.py:276 and reckon/mcp_views.py:2074.",
+    "manifest": "read; it names gate_constructs.log at f7abe89f and baseline.log with status complete, but its commits list omits 994fade06 and 405230627 and its changed_paths names tests/section_prose_base_outputs.json, deleted at head.",
+    "write_paths": "read the reviewed manifest's declared paths; the whole range 387d3cdb..7e87c9f9 touches five paths, every one inside them, with the declared tests/test_one_raw_text_section_reader.py untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_the_section_prose_reader_has_one_home.py:56 and :109 hold independent DOM reimplementations of the retired walks against the raw-slice reader and :131 asserts the exempt set exactly, but the search reference at :66 keeps a marked section element's interior exactly as the code does, so a shared error in that correction moves both sides together.",
+    "evidence": "gate_constructs.log ends EXIT=0 over 277 passed and negative_control_keyword_constructs.log fails the reference test at EXIT=1, but the done-when's base-parity clause is measured against test reference functions carrying a deliberate correction rather than against the base outputs, and a direct run shows 9 of 155 plans differing.",
+    "fit": "reckon/_plan_html.py:420 extends the private span rule with keep_landed_notes beside its two existing modes, and the module introduces no plan or ticket name.",
+    "goal_fidelity": "reckon/_plan_html.py:474 is the one public reader and reckon/_plan_html.py:1982 makes the stripper private, reached from reckon/crew/plan_review.py:276 and reckon/mcp_views.py:2226.",
+    "reuse": "the change removes the tests/section_prose_base_outputs.json fixture and the two BeautifulSoup walks rather than adding a third reader, and keep_landed_notes extends the owner reckon/_plan_html.py:474 instead of duplicating it.",
+    "scope_discipline": "a name-only diff over 387d3cdb..7e87c9f9 lists tests/test_the_section_prose_reader_has_one_home.py, reckon/mcp_views.py, reckon/_plan_html.py, tests/test_a_section_reviewed_as_authored_stays_reviewed.py and the evidence fragment, all inside the reviewed manifest's declared paths."
+  },
+  "node": "review-of-the-section-prose-reader-has-one-home",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is one public section_prose reader on reckon/_plan_html.py with the stripper beneath it private; at head 7e87c9f9 grep reports one `def section_prose` (reckon/_plan_html.py:474) and one `def _strip_tags` (reckon/_plan_html.py:1982), reached from reckon/crew/plan_review.py:276 and reckon/mcp_views.py:2074.\nVERDICT done_when: the done-when's structural greps hold at head (one section_prose, no strip_tags, no _prose_slices, no _inside_structured_region, one \"_document\" literal at reckon/_plan_html.py:471) and gate_constructs.log records 277 passed EXIT=0 at f7abe89f, but its base-parity clause is measured against test reference functions, not the base outputs, and 9 of 155 plans differ from the retired 87f6c16 output when read directly.\nVERDICT write_paths: read the reviewed manifest's declared paths; the whole range 387d3cdb..7e87c9f9 touches five paths, every one inside them, with the declared tests/test_one_raw_text_section_reader.py untouched.\nVERDICT manifest: read; it names gate_constructs.log at f7abe89f and baseline.log with status complete, but its commits list omits 994fade06 and 405230627 and its changed_paths names tests/section_prose_base_outputs.json, deleted at head.\nVERDICT diff: read one change at a time across 387d3cdb..7e87c9f9; 994fade06 and 114188eab re-point both MCP surfaces at section_prose with keep_landed_cards and keep_landed_notes and replace the stored snapshot fixture with test reference functions; 841f1a1e4 makes a marked section transparent and starts a kept landed card's slice at its first heading; f7abe89f7 updates the plan-review test; 405230627 and 7e87c9f95 are evidence only.\nCALL_SITES: reckon/crew/plan_review.py:_prose_texts, reckon/crew/plan_review.py:_fingerprint_forms, reckon/mcp_views.py:authored_plan_text, reckon/mcp_views.py:_section_response\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:474 is the one public reader and reckon/_plan_html.py:1982 makes the stripper private, reached from reckon/crew/plan_review.py:276 and reckon/mcp_views.py:2226.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate_constructs.log ends EXIT=0 over 277 passed and negative_control_keyword_constructs.log fails the reference test at EXIT=1, but the done-when's base-parity clause is measured against test reference functions carrying a deliberate correction rather than against the base outputs, and a direct run shows 9 of 155 plans differing.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: a name-only diff over 387d3cdb..7e87c9f9 lists tests/test_the_section_prose_reader_has_one_home.py, reckon/mcp_views.py, reckon/_plan_html.py, tests/test_a_section_reviewed_as_authored_stays_reviewed.py and the evidence fragment, all inside the reviewed manifest's declared paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_section_prose_reader_has_one_home.py:56 and :109 hold independent DOM reimplementations of the retired walks against the raw-slice reader and :131 asserts the exempt set exactly, but the search reference at :66 keeps a marked section element's interior exactly as the code does, so a shared error in that correction moves both sides together.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_plan_html.py:420 extends the private span rule with keep_landed_notes beside its two existing modes, and the module introduces no plan or ticket name.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change removes the tests/section_prose_base_outputs.json fixture and the two BeautifulSoup walks rather than adding a third reader, and keep_landed_notes extends the owner reckon/_plan_html.py:474 instead of duplicating it.\nFINDING tests/test_the_section_prose_reader_has_one_home.py:138 follow-on: the done-when's clause that the search text and every section text equal their base outputs up to whitespace normalisation is measured against the test's own reference functions rather than the base outputs; the search reference at :66 carries a deliberate correction and EXEMPT_PLANS at :36 removes three plans from the check entirely, and running the retired 87f6c16 authored_plan_text against head shows 9 of 155 plans differing, so the guard is reimplementation parity rather than the base-output parity the done-when names.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/manifest.md:7 follow-on: the manifest's commits list omits 994fade063dc166fb0a6da8fcee10fe0d5b274e9 and 4052306270b58b7c9610d0e52e87f017c1012eba, both inside the reviewed range, and its changed_paths at :8 names tests/section_prose_base_outputs.json which is deleted at head while omitting tests/test_a_section_reviewed_as_authored_stays_reviewed.py which the range changes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T172624438824-the-section-prose-reader-has-one-home/manifest.md:13 follow-on: the negative_control_log the manifest names records the mutation \"keep_landed_notes dropped from authored_plan_text\", not the dispatch-declared string \"restore the BeautifulSoup stripped_strings walk inside mcp_views.authored_plan_text\", so a reader comparing the log's header against the declared string sees a mismatch even though the guard demonstrably fires with EXIT=1.",
+  "review_run_id": "r-20261006T200938063077-review-of-the-section-prose-reader-has-one-home",
+  "reviewed_base_sha": "387d3cdb9e43c54cacdbbfb91c6bb3299bb7366d",
+  "reviewed_head_sha": "7e87c9f95f617da6b5344bf37de7e4c545cc36a4",
+  "reviewed_run_id": "r-20261006T172624438824-the-section-prose-reader-has-one-home",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261006T200938063077-review-of-the-section-prose-reader-has-one-home",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-06T20:18:39.024451+00:00",
+  "total": 107
+}
