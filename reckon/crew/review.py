@@ -65,7 +65,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
@@ -1896,6 +1896,50 @@ def _note_skipped_record(
     target.append(entry)
 
 
+def _select_stored_record(
+    paths: Iterable[Path],
+    reviewed_head_sha: str | None,
+    *,
+    skipped: list[dict[str, str]] | None = None,
+) -> tuple[Path | None, dict[str, Any] | None]:
+    """Select one record from candidate files by the store's shared rule.
+
+    Every candidate file is read once. A named head keeps only a record whose
+    normalised head carries it — a stored record's head is compared to the named
+    one as a prefix in either direction, so a short sha names its full record
+    and a full sha names its short preservation copy. Without a named head the
+    newest file is returned. A file that cannot be read or does not parse — a
+    record a review worker is composing by hand can be met mid-write — is
+    skipped and named to the caller, because a truncated file would otherwise
+    read as "this run has no review". ``(None, None)`` means no readable record
+    among the candidates; the caller decides whether that settles the search or
+    falls through to another tree.
+    """
+    records: list[tuple[Path, Any, int]] = []
+    for path in paths:
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+            mtime_ns = path.stat().st_mtime_ns
+        except (OSError, ValueError) as error:
+            _note_skipped_record(path, error, into=skipped)
+            continue
+        records.append((path, record, mtime_ns))
+    if not records:
+        return None, None
+    if reviewed_head_sha is None:
+        path, record, _mtime_ns = max(records, key=lambda item: item[2])
+        return path, record
+    named = reviewed_head_sha.strip().lower()
+    for path, record, _mtime_ns in records:
+        _, _, carried_head, stored_head = carried_revision_pair(record)
+        if not carried_head or not stored_head:
+            continue
+        actual = stored_head.lower()
+        if actual.startswith(named) or named.startswith(actual):
+            return path, record
+    return None, None
+
+
 def stored_record(
     project: str,
     reviewed_run_id: str,
@@ -1928,13 +1972,24 @@ def stored_record(
     that re-derived its target from the record's own fields could land beside
     the file the reader reads and leave that file unchanged.
 
+    The project's committed reviews tree is read first — the durable committed
+    store where a promoted run's record lives — and the host staging store is
+    read only for a run not yet promoted. A record present in both trees is
+    answered from the committed copy, which is the one that travels with the
+    plan and the ledger; the staging copy is the same record before its
+    promotion. A committed run directory holding no record falls through to the
+    staging store, which is the state of a run whose record exists only where
+    its live review wrote it.
+
     A record sitting at one of the run's own paths — the bare path or one keyed
     by a revision — settles where this run's review is filed, so the search for
     a record another writer filed under a different run id does not run: a
     named head that matched none of them is a fact about the revision, not
     about the filing, and the caller that wants the newest record asks again
-    without a head. Only a run with none of its own files reaches the
-    store-wide search.
+    without a head. The committed tree settles the same way: once it carries a
+    record for this run, none of the run's staging files nor a store-wide search
+    can displace it. Only a run with none of its own files in either tree
+    reaches the store-wide search.
 
     A record file that cannot be read or does not parse — a review worker
     composing its record by hand can be met mid-write — is skipped rather than
@@ -1945,38 +2000,25 @@ def stored_record(
     no review at all. A read that names neither is nobody's finding and is
     dropped.
     """
+    committed = committed_review_root(project)
+    if committed is not None:
+        run_directory = committed / COMMITTED_RUN_DIRNAME / reviewed_run_id
+        committed_paths = (
+            sorted(run_directory.glob("*.json")) if run_directory.is_dir() else []
+        )
+        if committed_paths:
+            return _select_stored_record(
+                committed_paths, reviewed_head_sha, skipped=skipped
+            )
     directory = review_store_root(base_dir) / project
     candidates = [review_path(project, reviewed_run_id, base_dir)]
     if directory.is_dir():
         candidates.extend(directory.glob(f"{reviewed_run_id}.at-*.json"))
     existing = {path.resolve(): path for path in candidates if path.is_file()}
     if existing:
-        records: list[tuple[Path, Any, int]] = []
-        for path in existing.values():
-            try:
-                record = json.loads(path.read_text(encoding="utf-8"))
-                mtime_ns = path.stat().st_mtime_ns
-            except (OSError, ValueError) as error:
-                # A record caught mid-write is skipped, not raised: the reader
-                # still answers from the records it could read, and the file it
-                # could not is named to the caller that asked.
-                _note_skipped_record(path, error, into=skipped)
-                continue
-            records.append((path, record, mtime_ns))
-        if not records:
-            return None, None
-        if reviewed_head_sha is None:
-            path, record, _mtime_ns = max(records, key=lambda item: item[2])
-            return path, record
-        named = reviewed_head_sha.strip().lower()
-        for path, record, _mtime_ns in records:
-            _, _, carried_head, stored_head = carried_revision_pair(record)
-            if not carried_head or not stored_head:
-                continue
-            actual = stored_head.lower()
-            if actual.startswith(named) or named.startswith(actual):
-                return path, record
-        return None, None
+        return _select_stored_record(
+            list(existing.values()), reviewed_head_sha, skipped=skipped
+        )
     # No file of this run's own exists, so the store's records are searched for
     # one whose content names the run it reviews — the shape a hand-written
     # record takes when its worker keys the file on its own run id instead of
@@ -2055,7 +2097,14 @@ def _record_filed_elsewhere(
 # process, then reused while the directory's stat identity is unchanged, which
 # is exactly when its set of entries can have moved.
 
-_STORE_INDEXES: dict[Path, tuple[tuple[int, ...], dict[str, list[dict[str, Any]]]]] = {}
+_STORE_INDEXES: dict[
+    Path,
+    tuple[
+        tuple[int, ...],
+        dict[str, list[dict[str, Any]]],
+        dict[str, list[dict[str, Any]]],
+    ],
+] = {}
 
 
 def _store_directory_identity(directory: Path) -> tuple[int, ...] | None:
@@ -2073,9 +2122,19 @@ def _store_directory_identity(directory: Path) -> tuple[int, ...] | None:
     return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
 
-def _build_store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
-    """Read each record file once, keyed by the run its content reviews."""
-    index: dict[str, list[dict[str, Any]]] = {}
+def _build_store_indexes(
+    directory: Path,
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]]]:
+    """Read each record file once, keyed by the run it reviews and by its reviewer.
+
+    One scan serves both lookups: the misfiled lookup answers for the run a
+    record's content reviews, and the delivered-plan-review lookup answers for
+    the review run that produced the record. Each entry carries only the facts
+    its lookup selects on, never the whole record, because the file the index
+    selects is re-read from disk so a rewrite in place is answered current.
+    """
+    reviewed: dict[str, list[dict[str, Any]]] = {}
+    review_runs: dict[str, list[dict[str, Any]]] = {}
     for path in sorted(directory.glob("*.json")):
         if not path.is_file() or _INCOMPLETE_RECORD_MARK in path.name:
             continue
@@ -2087,7 +2146,7 @@ def _build_store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
         if not isinstance(record, Mapping):
             continue
         carried_head, head_sha = _first_carried_revision(record, HEAD_REVISION_FIELDS)
-        index.setdefault(str(record.get("reviewed_run_id") or ""), []).append(
+        reviewed.setdefault(str(record.get("reviewed_run_id") or ""), []).append(
             {
                 "path": path,
                 "mtime_ns": mtime_ns,
@@ -2095,21 +2154,81 @@ def _build_store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
                 "head_sha": head_sha,
             }
         )
-    return index
+        review_run = str(record.get("review_run_id") or "").strip()
+        if review_run:
+            review_runs.setdefault(review_run, []).append(
+                {"path": path, "mtime_ns": mtime_ns}
+            )
+    return reviewed, review_runs
 
 
-def _store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
-    """Return the store's record index, rebuilt only when the directory moves."""
+def _store_indexes(
+    directory: Path,
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]]]:
+    """Return the store's two indexes, rebuilt only when the directory moves.
+
+    Both indexes are built from one scan and cached under the directory's stat
+    identity, so a lookup by a record's reviewed run and a lookup by the review
+    run that produced it share the store's one pass and its one rebuild trigger.
+    """
     identity = _store_directory_identity(directory)
     if identity is None:
         _STORE_INDEXES.pop(directory, None)
-        return {}
+        return {}, {}
     cached = _STORE_INDEXES.get(directory)
     if cached is not None and cached[0] == identity:
-        return cached[1]
-    index = _build_store_index(directory)
-    _STORE_INDEXES[directory] = (identity, index)
-    return index
+        return cached[1], cached[2]
+    reviewed, review_runs = _build_store_indexes(directory)
+    _STORE_INDEXES[directory] = (identity, reviewed, review_runs)
+    return reviewed, review_runs
+
+
+def _store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
+    """Return the reviewed-run index, rebuilt only when the directory moves."""
+    return _store_indexes(directory)[0]
+
+
+def _review_run_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
+    """Return the review-run index, rebuilt only when the directory moves."""
+    return _store_indexes(directory)[1]
+
+
+def record_for_review_run(
+    project: str, review_run_id: str, *, base_dir: str | Path | None = None
+) -> tuple[Path, dict[str, Any]] | None:
+    """Return the newest staging record the named review run produced, or ``None``.
+
+    A plan review is stored by the plan-review store rather than as a scored run
+    review, so a lookup by the reviewed run does not find it; both kinds name the
+    review run that produced them, which is the one stable key they share. The
+    answer is served by the store's index rather than by walking the project
+    directory — a store of thousands of records makes a whole-store pass per
+    lookup the dominant cost of the lookup's per-turn reader — and the file the
+    index selects is re-read so a rewrite in place is returned current. A
+    project directory that does not exist, or one holding no record for the
+    named review run, yields ``None``.
+    """
+    name = str(review_run_id or "").strip()
+    if not name:
+        return None
+    directory = review_store_root(base_dir) / project
+    if not directory.is_dir():
+        return None
+    entries = _review_run_index(directory).get(name)
+    if not entries:
+        return None
+    for entry in sorted(entries, key=lambda item: item["mtime_ns"], reverse=True):
+        path = entry["path"]
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(record, Mapping):
+            continue
+        if str(record.get("review_run_id") or "").strip() != name:
+            continue
+        return path, dict(record)
+    return None
 
 
 def _indexed_head_matches(entry: Mapping[str, Any], named: str | None) -> bool:

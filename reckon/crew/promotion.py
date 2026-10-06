@@ -7972,23 +7972,12 @@ def _staging_review_record_by_run(project: str, run_id: str) -> dict[str, Any] |
     A plan review is stored by the plan-review store rather than as a scored run
     review, so the run-store lookup the run-review path uses does not find it.
     Both kinds name the review run that produced them, which is the one stable
-    key they share, so the staging store is scanned for that id and the newest
-    matching record is returned.
+    key they share, so the lookup is served by the review store's own index for
+    that key rather than by walking the project directory — a whole-store pass
+    per promotion is the cost the index removes.
     """
-    directory = review_module.review_store_root() / project
-    if not directory.is_dir():
-        return None
-    candidates: list[tuple[float, Path]] = []
-    for path in directory.glob("*.json"):
-        try:
-            candidates.append((path.stat().st_mtime, path))
-        except OSError:
-            continue
-    for _mtime, path in sorted(candidates, key=lambda item: item[0], reverse=True):
-        payload = _read_json_object(path)
-        if str(payload.get("review_run_id") or "").strip() == run_id:
-            return payload
-    return None
+    found = review_module.record_for_review_run(project, run_id)
+    return None if found is None else found[1]
 
 
 def _delivered_review_payload_for_commit(

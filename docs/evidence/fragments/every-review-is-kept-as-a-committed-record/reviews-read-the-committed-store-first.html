@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="The review readers read the committed store first">
+  <meta name="plan-summary" content="stored_record reads the project's committed reviews tree first and the staging store only for a promoted record's absence; plan_review._candidate_paths and list_plan_reviews search the committed plan tree beside staging, listing a record present in both trees once as the committed copy; the delivered-plan-review lookup is served by the review store's index for the review run id rather than a directory walk.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-06">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The review readers read the committed store first | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The review readers read the committed store first</h1>
+
+    <section id="reviews-read-the-committed-store-first-anchor">
+      <h2>What changed</h2>
+      <p><code>stored_record</code> in <code>reckon/crew/review.py</code> reads the
+        project's committed reviews tree first — resolving it through
+        <code>committed_review_root</code> and enumerating
+        <code>run/&lt;reviewed-run-id&gt;/*.json</code> — and falls back to the host
+        staging store only for a run the committed tree does not hold. A record
+        present in both trees is answered from the committed copy. The selection
+        rule (newest, or the record whose head carries a named revision) is
+        factored into <code>_select_stored_record</code>, shared by both trees.
+        <code>plan_review._candidate_paths</code> searches the committed
+        <code>plan/&lt;slug&gt;/</code> tree beside the staging root, with
+        <code>read_plan_review</code> applying a named version against the record's
+        own <code>plan_version</code>; <code>list_plan_reviews</code> lists committed
+        plan reviews beside staging ones, counting a review present in both trees
+        once as the committed copy. <code>promotion._staging_review_record_by_run</code>
+        now calls the review store's <code>record_for_review_run</code>, which is
+        answered by the store's index (built once per directory and cached by stat
+        identity, keyed by the review run id) rather than by walking the project
+        directory.</p>
+      <p>Gate: <code>tests/test_reviews_read_the_committed_store_first.py</code> with
+        five sibling files — 53 passed, 0 failed, EXIT=0. Declared negative control
+        (make <code>stored_record</code> read the staging store only) — see the
+        manifest for the red log path.</p>
+    </section>
+  </main>
+</body>
+</html>
