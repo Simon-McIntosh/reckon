@@ -4321,7 +4321,18 @@ def _crew(
                 "error": "missing_plan",
                 "detail": "plan-review needs project and plan",
             }
-        record = plan_review.read_plan_review(project, plan)
+        try:
+            plan_path = _resolve_html_file(project, plan, artifact_type="plan")
+            record = plan_review.read_plan_review(
+                project, plan, plan=plan_path if plan_path is not None else ""
+            )
+        except (OSError, ValueError) as exc:
+            return {
+                "ok": False,
+                "error": "crew_error",
+                "view": view,
+                "detail": str(exc),
+            }
         return {
             "record": record,
             "unanswered": plan_review.unanswered_findings(record) if record else [],

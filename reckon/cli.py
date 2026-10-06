@@ -2610,7 +2610,17 @@ def crew_review_plan(
         raise click.exceptions.Exit(1)
     try:
         if answer:
-            record = plan_review.read_plan_review(project, plan_slug)
+            from reckon._store import _resolve_html_file
+
+            # A review exists only as a delivered sidecar until something stores
+            # it, and the answer verb is often the first reader to touch the
+            # plan after its review lands, so it stores the delivery here rather
+            # than failing as though no review existed.
+            plan_review.store_delivered_reviews(project, plan_slug)
+            plan_path = _resolve_html_file(project, plan_slug, artifact_type="plan")
+            record = plan_review.read_plan_review(
+                project, plan_slug, plan=plan_path if plan_path is not None else ""
+            )
             if record is None:
                 _emit(
                     {
