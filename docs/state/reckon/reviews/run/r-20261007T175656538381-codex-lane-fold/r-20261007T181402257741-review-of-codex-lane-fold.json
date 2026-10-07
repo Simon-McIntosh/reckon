@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/flight.py:resolve",
+    "reckon/hooks/coordinator_obligations.py:480",
+    "reckon/crew/routing.py:1421",
+    "reckon/crew/recovery.py:2370",
+    "reckon/cli.py:963"
+  ],
+  "completed_at": "2026-10-07T18:22:07.537Z",
+  "dispatched_at": "2026-10-07T18:14:34Z",
+  "findings": [
+    {
+      "file": "docs/state/reckon/model-catalogue.yaml",
+      "line": "42",
+      "severity": "blocking",
+      "text": "blocking: removing backends.codex-astra and backends.codex-luna makes --backend codex-astra and codex-luna resolve with model=None, effort=None and alias=None against the live host, because the live host's lanes block declares no codex lane, so the committed catalogue regresses those backends unless the uncommitted flight.yaml that adds lanes.codex lands in the same breath."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit (5f971748c, fe7bde6f9) against base 4a7274f8; one file changed, 2 insertions and 11 deletions.",
+    "done_when": "read section 6's measure (\"the resolved flight is identical for every project in mounts.json\"); I resolved every scope against the live host (flight.before, sha256 7ce5d026...) plus the committed catalogue and found codex-astra and codex-luna with model=None, so the measure is not met by the landed half.",
+    "goal": "read the node brief (GOAL \"Fold codex-astra and codex-luna into one codex lane in the catalogue and a validated host flight\") and plan section 6; the committed diff (5f971748c, fe7bde6f9) removes the duplicate backends.codex-astra and backends.codex-luna blocks from docs/state/reckon/model-catalogue.yaml but leaves the host flight the goal also names uncommitted.",
+    "manifest": "read; it records the base and head suites at 109 passed EXIT=0, the 16/16 compare and 48/48 equivalence arms, the negative control, and states the coordinator must apply flight.yaml to dotfiles.",
+    "write_paths": "read the declared scope (catalogue, reports directory, evidence fragment, figures directory); git diff 4a7274f8..fe7bde6f9 touches only docs/state/reckon/model-catalogue.yaml, inside it."
+  },
+  "justifications": {
+    "durability": "no test was added and the 109-test gate passes with codex-astra unmodelled against the live host, so nothing reddens if this regression recurs; tests/test_catalogue_declares_lanes.py:146 only guards lane-model deletion.",
+    "evidence": "validate_flight.py compares flight.before.yaml against flight.yaml plus the head catalogue, so the recorded 48/48 equivalence describes a host file the commit did not land rather than the committed tree.",
+    "fit": "the comment added at docs/state/reckon/model-catalogue.yaml:42 names the mechanism and follows the file's existing comment style, with no forbidden identifiers.",
+    "goal_fidelity": "docs/state/reckon/model-catalogue.yaml:42 removes the only catalogue source of codex-astra/codex-luna model, effort and alias while the required host flight is left uncommitted, so the fold is half-landed.",
+    "reuse": "the change adds no definition; it retires duplicate backends entries and keeps the existing lanes.codex.models owner.",
+    "scope_discipline": "git diff --stat 4a7274f8..fe7bde6f9 changes only docs/state/reckon/model-catalogue.yaml, the declared write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node brief (GOAL \"Fold codex-astra and codex-luna into one codex lane in the catalogue and a validated host flight\") and plan section 6; the committed diff (5f971748c, fe7bde6f9) removes the duplicate backends.codex-astra and backends.codex-luna blocks from docs/state/reckon/model-catalogue.yaml but leaves the host flight the goal also names uncommitted.\nVERDICT done_when: read section 6's measure (\"the resolved flight is identical for every project in mounts.json\"); I resolved every scope against the live host (flight.before, sha256 7ce5d026...) plus the committed catalogue and found codex-astra and codex-luna with model=None, so the measure is not met by the landed half.\nVERDICT write_paths: read the declared scope (catalogue, reports directory, evidence fragment, figures directory); git diff 4a7274f8..fe7bde6f9 touches only docs/state/reckon/model-catalogue.yaml, inside it.\nVERDICT manifest: read; it records the base and head suites at 109 passed EXIT=0, the 16/16 compare and 48/48 equivalence arms, the negative control, and states the coordinator must apply flight.yaml to dotfiles.\nVERDICT diff: read commit by commit (5f971748c, fe7bde6f9) against base 4a7274f8; one file changed, 2 insertions and 11 deletions.\nCALL_SITES: reckon/flight.py:resolve, reckon/hooks/coordinator_obligations.py:480, reckon/crew/routing.py:1421, reckon/crew/recovery.py:2370, reckon/cli.py:963\nSCORE goal_fidelity: 9\nJUSTIFICATION goal_fidelity: docs/state/reckon/model-catalogue.yaml:42 removes the only catalogue source of codex-astra/codex-luna model, effort and alias while the required host flight is left uncommitted, so the fold is half-landed.\nSCORE evidence: 12\nJUSTIFICATION evidence: validate_flight.py compares flight.before.yaml against flight.yaml plus the head catalogue, so the recorded 48/48 equivalence describes a host file the commit did not land rather than the committed tree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 4a7274f8..fe7bde6f9 changes only docs/state/reckon/model-catalogue.yaml, the declared write path.\nSCORE durability: 8\nJUSTIFICATION durability: no test was added and the 109-test gate passes with codex-astra unmodelled against the live host, so nothing reddens if this regression recurs; tests/test_catalogue_declares_lanes.py:146 only guards lane-model deletion.\nSCORE fit: 18\nJUSTIFICATION fit: the comment added at docs/state/reckon/model-catalogue.yaml:42 names the mechanism and follows the file's existing comment style, with no forbidden identifiers.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it retires duplicate backends entries and keeps the existing lanes.codex.models owner.\nFINDING docs/state/reckon/model-catalogue.yaml:42 blocking: removing backends.codex-astra and backends.codex-luna makes --backend codex-astra and codex-luna resolve with model=None, effort=None and alias=None against the live host, because the live host's lanes block declares no codex lane, so the committed catalogue regresses those backends unless the uncommitted flight.yaml that adds lanes.codex lands in the same breath.",
+  "review_run_id": "r-20261007T181402257741-review-of-codex-lane-fold",
+  "reviewed_base_sha": "4a7274f85a87b45c76f61300b93617caa35352de",
+  "reviewed_head_sha": "fe7bde6f99a7d4897d9ade6c175e6783ccd3c985",
+  "reviewed_run_id": "r-20261007T175656538381-codex-lane-fold",
+  "rubric": "code_review",
+  "scores": {
+    "durability": 8,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 9,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T18:20:50.541691+00:00",
+  "total": 87
+}
