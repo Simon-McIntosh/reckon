@@ -1283,6 +1283,109 @@ def _catalogue_shadows(
     return sorted(shadows, key=lambda item: (item["backend"], item["key"]))
 
 
+# The model-level keys a lane model declaration carries onto the backend entry
+# expansion produces for it. Everything else in a lane block is lane-level and
+# applies to every entry the lane expands to.
+LANE_MODEL_KEYS = (
+    "model",
+    "effort",
+    "alias",
+    "input_rate_per_million",
+    "output_rate_per_million",
+    "as_of",
+    "time_budget",
+    "budget_group",
+)
+
+
+def _lane_entry(
+    lane_level: Mapping[str, Any],
+    model: Mapping[str, Any] | None,
+    lane_name: str,
+    model_key: str | None,
+    *,
+    derived_from: str | None = None,
+) -> dict[str, Any]:
+    """Build one backend entry from a lane and one of its models.
+
+    The lane block supplies the keys every entry shares (placement, launch,
+    command, the documents, the windows); the model supplies the keys that
+    differ between the lane's models (identifier, effort, alias, rates, and a
+    time budget that overrides the lane's). ``lane`` and ``model_key`` are
+    written on every entry so a reader of ``backends`` never re-derives the
+    pair, and ``derived_from`` marks an entry that exists only because a legacy
+    backend name still resolves through it.
+    """
+    entry = copy.deepcopy(dict(lane_level))
+    if isinstance(model, Mapping):
+        for key in LANE_MODEL_KEYS:
+            value = model.get(key)
+            if value is not None:
+                entry[key] = copy.deepcopy(value)
+    entry["lane"] = lane_name
+    if model_key is not None:
+        entry["model_key"] = model_key
+    if derived_from is not None:
+        entry["derived_from"] = derived_from
+    return entry
+
+
+def expand_lanes(merged: dict[str, Any]) -> None:
+    """Expand each declared ``lanes:`` block into ``backends:`` entries in place.
+
+    A lane becomes an entry named after the lane (carrying its default model),
+    and — for every model whose derived name ``<lane>-<key>`` is already a
+    declared backend name — a further entry under that name. The derivation is
+    the compatibility lever: while a legacy name is still declared it resolves
+    exactly as before, and the ``derived_from`` marker lets ``reckon flight``
+    count how many remain. A layer that declares no lanes leaves ``backends``
+    exactly as it found it, so nothing moves until a declaration does.
+    """
+    lanes = merged.get("lanes")
+    if not isinstance(lanes, Mapping) or not lanes:
+        return
+    backends = merged.get("backends")
+    if not isinstance(backends, dict):
+        backends = {}
+        merged["backends"] = backends
+    legacy_names = set(backends)
+    for lane_name, lane in lanes.items():
+        if not isinstance(lane, Mapping):
+            continue
+        lane_level = {
+            key: value
+            for key, value in lane.items()
+            if key not in ("models", "default_model")
+        }
+        models = lane.get("models")
+        models = models if isinstance(models, Mapping) else {}
+        default_key = lane.get("default_model")
+        default_model = models.get(default_key) if default_key else None
+        entries: list[tuple[str, Mapping[str, Any] | None, str | None, str | None]] = [
+            (lane_name, default_model, default_key or None, None)
+        ]
+        for key, model in models.items():
+            derived_name = f"{lane_name}-{key}"
+            if derived_name not in legacy_names:
+                continue
+            entries.append(
+                (
+                    derived_name,
+                    model if isinstance(model, Mapping) else None,
+                    key,
+                    f"lanes.{lane_name}.models.{key}",
+                )
+            )
+        for name, model, model_key, derived_from in entries:
+            entry = _lane_entry(
+                lane_level, model, lane_name, model_key, derived_from=derived_from
+            )
+            existing = backends.get(name)
+            if isinstance(existing, Mapping):
+                entry = deep_merge(copy.deepcopy(dict(existing)), entry)
+            backends[name] = entry
+
+
 def resolve(
     project: str | None = None,
     *,
@@ -1371,6 +1474,10 @@ def resolve(
         validate_layer(catalogue, catalogue_file)
         _apply_catalogue(merged, catalogue, provenance)
         contributing.append(str(catalogue_file))
+    # Lanes are expanded after every layer — catalogue included — has merged,
+    # so an override written on a lane key reaches the expansion rather than
+    # being dropped by it. A layer declaring no lanes leaves `backends` alone.
+    expand_lanes(merged)
     shadows = _catalogue_shadows(catalogue, layer_data)
 
     _validate_resolved(merged, " + ".join(contributing))

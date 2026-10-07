@@ -208,6 +208,7 @@ class FlightConfig(ConfiguredBaseModel):
     protected_paths: list[str] | None = Field(default=None, description="""Extra filesystem paths a host or project layer adds to the set a worker's fence seals read-only. The key is additive: the fence's shipped default set is today's built-in list — operator state, credentials, shared records and every main checkout, the worktree pool included — and a layer can add to it but never replace it, so a layer that omits a default here leaves that default protected rather than silently dropping it. Entries are home-relative or absolute and are resolved against the operator's home the same way the defaults are. The only way to remove a default is to name it under `unprotected_paths`.""")
     unprotected_paths: list[str] | None = Field(default=None, description="""Defaults the fence's protected set carries that a host or project layer leaves writable. A layer removes a default only by naming it here, so a reduction of the protected set is a deliberate, named act rather than a side effect of editing `protected_paths`. Each entry names a default as the fence would resolve it — home-relative or absolute — and an entry that names no default is ignored. Every run whose fence leaves out a named default carries the list on its run record.""")
     backends: dict[str, BackendConfig] | None = Field(default=None, description="""Available worker backends, keyed by a name chosen by whoever writes the configuration. The schema fixes no backend names.""")
+    lanes: dict[str, LaneConfig] | None = Field(default=None, description="""A lane is a subscription or host, and the models chosen inside it. Declaring a lane is an alternative to writing one backend block per model: resolution expands each lane back into the backend entries today's callers read, so a lane that declares its models and an equivalent set of backend blocks resolve to the same config. Absent means no lane is declared and resolution is unchanged.""")
     roles: dict[str, RoleConfig] | None = Field(default=None, description="""Per-role routing overlays, keyed by role name. A role overrides only the keys it names; everything else falls through to its backend.""")
     routing: RoutingConfig | None = Field(default=None, description="""How dispatch selects its worker backend.""")
     gates: GateConfig | None = Field(default=None)
@@ -324,6 +325,43 @@ class BackendConfig(ConfiguredBaseModel):
             err_msg = f"Invalid time_budget format: {v}"
             raise ValueError(err_msg)
         return v
+
+
+class LaneModelConfig(ConfiguredBaseModel):
+    """
+    One model inside a lane, and the routing knobs that apply to it alone. The model key is the short name a caller types; the identifier it launches is ``model``.
+    """
+    name: str | None = Field(default=None, description="""Map key for an inlined entry.""")
+    model: str | None = Field(default=None, description="""Model identifier passed to this model's launch. User data; free text so that no provider vocabulary is encoded here.""")
+    effort: str | None = Field(default=None, description="""Reasoning-effort level passed to this model. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.""")
+    alias: str | None = Field(default=None, description="""Display label rendered in the fleet pane in place of this model's identifier. The spelling belongs beside the model it shortens and is decided by whoever writes the configuration; the schema supplies none.""")
+    input_rate_per_million: float | None = Field(default=None, description="""Public input-token price per million tokens for this model, as published on its ``as_of`` date. Absence leaves the model explicitly unpriced.""", ge=0)
+    output_rate_per_million: float | None = Field(default=None, description="""Public output-token price per million tokens for this model, as published on its ``as_of`` date. Absence leaves the model explicitly unpriced.""", ge=0)
+    as_of: date | None = Field(default=None, description="""Date on which this model's per-million rates were published. A rate is priced only when dated.""")
+    budget_group: str | None = Field(default=None, description="""Name of the account quota this model draws on, overriding the lane's for this model. Absent means the model inherits the lane's budget_group.""")
+    time_budget: str | None = Field(default=None, description="""Wall-clock allowance for this model, written as an integer followed by a unit — `s`, `m` or `h`. Overrides the lane's allowance for this model alone.""")
+
+    @field_validator('time_budget')
+    def pattern_time_budget(cls, v):
+        pattern=re.compile(r"^[0-9]+[smh]$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid time_budget format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid time_budget format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
+class LaneConfig(BackendConfig):
+    """
+    One lane: a subscription or host, carrying the backend-block keys that apply to every model inside it, plus the models themselves and the default one a dispatch on the lane gets when it names none. Resolution expands a lane into backend entries, so a reader of ``backends`` sees one entry per lane and one per derived model name.
+    """
+    name: str | None = Field(default=None, description="""Map key for an inlined entry.""")
+    default_model: str | None = Field(default=None, description="""Model key a dispatch on this lane resolves to when it names no model. A lane declaring none has no default and only its derived model entries are reachable by name.""")
+    models: dict[str, LaneModelConfig] | None = Field(default=None, description="""The models this lane offers, keyed by the short name a caller types. A lane with no models expands to its own named entry alone.""")
 
 
 class PlacementConfig(ConfiguredBaseModel):
@@ -571,6 +609,8 @@ ReviewConfig.model_rebuild()
 ReviewSuite.model_rebuild()
 ReviewTiers.model_rebuild()
 BackendConfig.model_rebuild()
+LaneModelConfig.model_rebuild()
+LaneConfig.model_rebuild()
 PlacementConfig.model_rebuild()
 PlacementRequirement.model_rebuild()
 CatalogConfig.model_rebuild()

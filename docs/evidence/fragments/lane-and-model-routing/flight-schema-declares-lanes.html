@@ -1,0 +1,64 @@
+<article class="landed-report" data-run-id="r-20261007T150557843231-flight-schema-declares-lanes" data-node="flight-schema-declares-lanes">
+  <h3 id="flight-schema-declares-lanes-summary">flight-schema-declares-lanes — the flight schema declares lanes with models inside them and expands them into today's backends</h3>
+  <p id="flight-schema-declares-lanes-change">
+    The platform schema (<code>reckon/_flight_schema.py</code>) gains a
+    top-level <code>lanes:</code> key. A lane carries today's backend-block
+    keys plus <code>default_model</code> and <code>models.&lt;key&gt;</code>;
+    each model carries <code>model</code>, <code>effort</code>,
+    <code>alias</code>, optional dated rates, an optional
+    <code>budget_group</code> defaulting to the lane's, and an optional
+    <code>time_budget</code> overriding the lane's. Resolution
+    (<code>reckon/flight.py</code>, <code>expand_lanes</code>) expands each lane
+    into today's <code>backends:</code> entries: one named after the lane
+    (carrying its default model) and one named <code>&lt;lane&gt;-&lt;key&gt;</code>
+    for every model whose derived name is already a declared legacy backend.
+    Every expanded entry carries <code>lane</code> and <code>model_key</code>;
+    a derived entry also carries <code>derived_from</code> so
+    <code>reckon flight</code> can count the legacy names still live. The
+    override layer merges before expansion, so
+    <code>--set lanes.claude.models.opus.effort=xhigh</code> reaches the
+    expanded entry.
+  </p>
+  <p id="flight-schema-declares-lanes-measure">
+    <strong>Measure.</strong> Gate <code>tests/test_flight*.py</code>, run with
+    the main checkout's <code>.venv/bin/python -m pytest -p no:cacheprovider -n 8</code>.
+    Base arm at revision <code>b8a145f64ac4a3c44d8ad880cdb8e4b294529664</code>:
+    98 passed, 2 skipped (the two LinkML round-trip tests, skipped because
+    <code>gen-pydantic</code> is not on <code>PATH</code>), EXIT=0. Head arm:
+    101 passed, 2 skipped, EXIT=0 — a delta of +3, the three new lane cases, and
+    zero added failures. Logs <code>gate-base.log</code> and
+    <code>gate-head.log</code> under the run directory, each ending in an
+    <code>EXIT=</code> line.
+  </p>
+  <p id="flight-schema-declares-lanes-negative-control">
+    <strong>Negative control.</strong> Applying the override layer after lane
+    expansion instead of before, via
+    <code>RECKON_LANES_OVERRIDE_AFTER_EXPANSION=1</code>, reddens
+    <code>tests/test_flight_lanes.py::test_set_on_a_lane_model_reaches_the_expanded_entry</code>
+    (<code>assert 'high' == 'xhigh'</code>): 1 failed, 2 passed, EXIT=1, a test
+    the head arm does not fail. Log <code>negative-control.log</code> under the
+    run directory.
+  </p>
+  <p id="flight-schema-declares-lanes-no-value-moves">
+    <strong>No value moves.</strong> Resolving every project in
+    <code>~/.config/reckon/mounts.json</code> (15 projects) at base and at head
+    yields byte-identical configs — the only difference in the two collector
+    outputs is the recorded <code>module.__file__</code> path. Positive control:
+    both arms carry zero per-project errors and the same eight legacy backends
+    (<code>claude</code>, <code>claude-haiku</code>, <code>claude-opus</code>,
+    <code>clive</code>, <code>codex</code>, <code>codex-astra</code>,
+    <code>codex-luna</code>, <code>native</code>) with no <code>lanes</code>
+    key, so the identity is not identity of two empty results. Raw comparison in
+    <code>resolved-base.json</code> and <code>resolved-head.json</code> under the
+    run directory.
+  </p>
+  <p id="flight-schema-declares-lanes-note">
+    <strong>Caveat.</strong> <code>reckon/_flight_schema.py</code> is generated
+    from <code>reckon/schema/flight.yaml</code>, which sits outside this node's
+    write scope, so the LinkML source was not updated alongside it. The agent
+    read the generated module directly; the round-trip tests that would catch
+    the drift skip under the gate command (no <code>gen-pydantic</code> on
+    <code>PATH</code>) but would fail where the generator is installed — flagged
+    under follow-ons.
+  </p>
+</article>
