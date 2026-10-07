@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="The production pick passes the dispatch authority so Jev sees one context estimate">
+  <meta name="plan-summary" content="The picker threaded a dispatch authority through the request estimate and each candidate's context-fit verdict, but the production callers never supplied one, so the figure Jev weighed charged a node for its own dispatcher-granted landing fragment. dispatch_picker_selection now resolves the authority (or takes the dispatcher's) and passes it into both the estimate and picker.pick(), measured with the same harness-independent rule the candidate scan uses, so the request figure and every candidate block are one.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,picker,context,evidence">
+  <title>The dispatch pick passes the authority | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="dispatch-context-estimate-is-one-figure" data-reckon="landed" data-when="2026-10-07">
+  <h2>The production pick passes the dispatch authority so Jev sees one context estimate</h2>
+  <p>The picker already threaded a dispatch authority through
+  both the request-level estimate and each candidate's context-fit verdict, but no production caller
+  supplied one. A node with a dispatcher-granted landing fragment was therefore charged for its own
+  granted path in the figure Jev weighs, and the review that found this called the fix inert on every
+  production path. This node makes the production call hand the authority over.</p>
+
+  <h3 id="dispatch-context-estimate-is-one-figure-change">What changed</h3>
+  <ul>
+    <li><code>dispatch_picker_selection</code> takes an <code>authority</code> argument and resolves
+    the same one itself when a caller does not hold it — which is how the deferred shadow-pick and
+    the dry-run pick reach it, neither of which holds the dispatcher's resolved authority.</li>
+    <li>The request-level estimate is measured with that authority and the same
+    harness-independent rule the candidate scan uses for its once-per-pick figure, removing the
+    second divergence the review named (the request passed the local backend's settings while the
+    scan measured without one).</li>
+    <li>The authority travels into <code>picker.pick()</code>, so each candidate's context-fit
+    verdict exempts the granted fragment exactly as the request figure does.</li>
+    <li>The main <code>dispatch()</code> call site passes the authority it already resolved, so the
+    pick's figure and the dispatch's plan authority are the same object.</li>
+  </ul>
+
+  <h3 id="dispatch-context-estimate-is-one-figure-repro">The reproduction</h3>
+  <p>Before the change, driving <code>dispatch_picker_selection</code> for an implement node granted
+  its own landing fragment reported a request estimate that charged the fragment, while the
+  candidate blocks it rendered carried the exempt figure: two figures for one node. After the
+  change, a real <code>dispatch_picker_selection</code> call renders the same number everywhere —
+  the request figure and both candidate blocks all read <code>51535</code> tokens for a node whose
+  granted fragment is otherwise charged. The granted fragment is what moves the figure: measured
+  without the authority it is charged, and the estimate reads larger.</p>
+
+  <h3 id="dispatch-context-estimate-is-one-figure-negative-control">The check and its control</h3>
+  <p><code>tests/test_dispatch_context_estimate_is_one_figure.py</code> drives the real production
+  call with a stub picker client and asserts both that the request figure equals every offered
+  candidate's <code>context.estimated_tokens</code> and that the figure is the exemption-bearing
+  one — equality alone holds even when both sides are charged, so the exemption is pinned
+  separately. The declared negative control stops passing the authority from
+  <code>dispatch_picker_selection</code>; the production one-figure test then fails, with the
+  request estimate reading <code>53821</code> against the exempt <code>51535</code>. The run's
+  output is kept at <code>negative-control.log</code> in the node's run directory, ending in a
+  non-zero <code>EXIT=</code> line.</p>
+
+  <h3 id="dispatch-context-estimate-is-one-figure-gate">Gate</h3>
+  <p>Head at the node's tree: <strong>196 passed</strong> (EXIT=0) across the context-estimate,
+  picker and dispatch-speed suites. The same gate at the pre-change revision carried a single
+  pre-existing timing failure in <code>tests/test_picker_dispatch_pace.py</code> (an
+  elapsed-time assertion off by 1.6&nbsp;s), so head carries no added failure. The gate files are
+  <code>gate-head.log</code> and <code>gate-base.log</code> in the node's run directory.</p>
+</article>
+</body>
+</html>
