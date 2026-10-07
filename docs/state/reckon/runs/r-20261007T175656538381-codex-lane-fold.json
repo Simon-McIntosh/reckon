@@ -1,0 +1,674 @@
+{
+  "agent": {
+    "alias": "sol6",
+    "backend": "codex",
+    "effort": "high",
+    "launch": "cli",
+    "model": "gpt-6-sol",
+    "sandbox": "worktree-full"
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "codex",
+  "base_sha": "4a7274f85a87b45c76f61300b93617caa35352de",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "detail": "backend reports token usage but no headroom",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_write_input_tokens": 0,
+      "cache_write_input_tokens_cumulative": 0,
+      "cached_input_tokens": 6929664,
+      "cached_input_tokens_cumulative": 6929664,
+      "input_tokens": 7079271,
+      "input_tokens_cumulative": 7079271,
+      "output_tokens": 38252,
+      "output_tokens_cumulative": 38252,
+      "reasoning_output_tokens": 17686,
+      "reasoning_output_tokens_cumulative": 17686
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 2,
+    "files": 1,
+    "removed": 11
+  },
+  "clone_matches": [],
+  "commit_resolution": null,
+  "commits": [
+    "5f971748c3837da9f7ec7e3f7e587581730ceeb0",
+    "fe7bde6f99a7d4897d9ade6c175e6783ccd3c985"
+  ],
+  "completed_at": "2026-10-07T18:26:32Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-10-07T17:57:47Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest -p",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_catalogue_declares_lanes.py tests/test_flight.py tests/test_flight_lanes.py tests/test_flight_catalogue_layer.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T175656538381-codex-lane-fold/gate.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.34285714285714286,
+    "plan": "lane-and-model-routing",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "codex",
+    "burn_multiple": 1.322574296398347,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'codex' is projected to exhaust at 2026-10-12T15:22:21Z, which is after this node's 3000s horizon ending 2026-10-07T18:47:08.812062+00:00",
+    "horizon_ends_at": "2026-10-07T18:47:08.812062+00:00",
+    "horizon_seconds": 3000,
+    "metered": true,
+    "observed_at": "2026-10-07T17:57:07Z",
+    "precedes_horizon": false,
+    "projected_exhaustion_at": "2026-10-12T15:22:21Z",
+    "resets_at": "2026-10-14T05:14:59Z",
+    "seconds_until_reset": 559071,
+    "state": "quiet",
+    "utilisation_pct": 10.0
+  },
+  "lane_declaration": {
+    "backend": "codex",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-10-07T17:57:07Z",
+    "read_at": "2026-10-07T17:57:08Z",
+    "resolved_backend": "codex",
+    "utilisation_pct": 10.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "generating": "unknown",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "backend declares no lane document",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": "unknown"
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-07T18:26:32Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "missing_rollout",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T175656538381-codex-lane-fold/manifest.md",
+  "member": "disposable-r-20261007T175656538381-codex-lane-fold",
+  "negative_control": {
+    "reason": "node-writes-no-test-path",
+    "verdict": "exempt"
+  },
+  "no_commit": null,
+  "node": "codex-lane-fold",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2117,
+          "cached_input_tokens": 594861,
+          "input_tokens": 596980,
+          "output_tokens": 2288,
+          "reasoning_output_tokens": 552,
+          "total_tokens": 599268,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "2d0412cd-9d81-48d8-9d5c-32537d1c4e2b",
+      "session_id": "s25-picker"
+    },
+    "done_when": "Deliver §6 of docs/plans/lane-and-model-routing.html exactly as that section states, following the pattern §3 used for claude. §3's validated artifact and report are in ~/.config/reckon/crew/reports/reckon/claude-lane-collapse/, and the dotfiles host flight now carries lanes.claude. The plan and its locked decisions are the authority.\n\n1. Host flight, as a validated artifact. Do not edit the dotfiles repository. Copy the live /home/ITER/mcintos/Code/dotfiles/reckon/flight.yaml into your report directory as flight.before.yaml. Write flight.yaml beside it, moving codex-astra and codex-luna into lanes.codex.models with sol as the default model and retiring their backend blocks, exactly as §3 did for claude. Keep the names declared if §1's expansion needs them to derive the legacy entries. codex-terra stays retired; its alias resolves only for history. Keep every other block and comment byte-identical.\n2. Catalogue, in this worktree. In docs/state/reckon/model-catalogue.yaml, retire the codex-astra and codex-luna backends blocks wherever the lanes.codex declaration now carries them, with the same keep-the-name rule.\n3. Validate with the main checkout's reckon (/home/ITER/mcintos/Code/reckon/.venv/bin/python), passing host_path and catalogue_path to reckon.flight.resolve, or setting RECKON_FLIGHT_CONFIG for the host file. For the shipped scope and every project in ~/.config/reckon/mounts.json, the resolved config changes only by the lane annotations the expansion adds: lane, model_key, derived_from and the lanes block. Nothing else may be changed or removed. Keep a per-scope log ending in an EXIT line. --backend codex with model astra, or the derived codex-astra entry, resolves to the same model, effort and argv as the retired codex-astra block; check codex-luna the same way.\n4. Negative control: changing astra's effort in the lane declaration makes the codex-astra equivalence check fail.\n\nDeliver flight.before.yaml, flight.yaml, flight.diff, the logs and report.md in your report directory, and commit the catalogue change in this worktree with a conventional subject and a body. Gate: the scope comparison and equivalence logs, plus tests/test_catalogue_declares_lanes.py and every tests/test_flight*.py, run with PATH=/home/ITER/mcintos/Code/reckon/.venv/bin:$PATH /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 in the FOREGROUND, base and head, each log ending in an EXIT line, judged by delta.",
+    "estimated_hours": 1.5,
+    "goal": "Fold codex-astra and codex-luna into one codex lane in the catalogue and a validated host flight",
+    "id": "codex-lane-fold",
+    "lane_declaration": {
+      "backend": "codex",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-10-07T17:57:07Z",
+      "read_at": "2026-10-07T17:57:08Z",
+      "resolved_backend": "codex",
+      "utilisation_pct": 10.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "generating": "unknown",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "backend declares no lane document",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": "unknown"
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T175656538381-codex-lane-fold/manifest.md",
+    "negative_control": "change astra's effort in the codex lane declaration; the codex-astra equivalence check must fail",
+    "plan": "lane-and-model-routing",
+    "requested_backend": "codex",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§6",
+    "spec_level": "exact",
+    "time_budget": "50m",
+    "token_budget": null,
+    "write_paths": [
+      "docs/state/reckon/model-catalogue.yaml",
+      "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/codex-lane-fold",
+      "docs/evidence/fragments/lane-and-model-routing/codex-lane-fold.html",
+      "docs/figures/lane-and-model-routing/codex-lane-fold"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "pace": {
+    "allowance": {
+      "burn_multiple": 1.3222545934020735,
+      "derived": 0.08319124058928568,
+      "drain_hours": 168.0,
+      "effective_limit": 0.08319124058928568,
+      "elapsed_fraction": 0.07562840053571425,
+      "elapsed_hours": 12.705571289999995,
+      "group": "codex-sub",
+      "limited_by": "allowance",
+      "observed_at": "2026-10-07T17:57:19+00:00",
+      "pace_multiple": 1.1,
+      "provider_ceiling": null,
+      "reason": null,
+      "remaining_budget": 0.9,
+      "remaining_windows": null,
+      "resets_at": "2026-10-14T05:14:59Z",
+      "state": "observed",
+      "utilisation": 0.1,
+      "window_minutes": 10080
+    },
+    "bar": {
+      "bar": 0.028000000000000004,
+      "decided_by": "window",
+      "margin": 0.61575,
+      "name": "codex-lane-fold",
+      "score": 0.64375,
+      "state": "observed",
+      "verdict": "send-metered",
+      "window_fill": 0.1
+    },
+    "clocks": {
+      "five_hour": {
+        "age_seconds": 0.056644,
+        "observed_at": "2026-10-07T17:57:19+00:00",
+        "period": "primary",
+        "resets_at": "2026-10-14T05:14:59Z",
+        "state": "observed",
+        "utilisation": 0.1,
+        "window_minutes": 10080
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "not_published",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": "codex-sub",
+    "hold": null,
+    "lane": "codex",
+    "member": "codex",
+    "node": "codex-lane-fold",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": null,
+    "recorded_at": "2026-10-07T17:57:19.056644+00:00",
+    "score": 0.64375,
+    "source": "recorded",
+    "state": "observed"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "codex",
+    "comment": "",
+    "confidence": 0.45,
+    "decision_source": "jev",
+    "effort": "high",
+    "excluded": [
+      {
+        "availability": "not-probed",
+        "backend": "native",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "in-harness-backend"
+        ],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "codex",
+    "jev_latency_ms": 547.465,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 642.077,
+    "model": "gpt-6-sol",
+    "offered": [
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "budget_age_s": 473776.384703,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 51928,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-haiku",
+        "budget_age_s": 473776.384703,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 51928,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-opus",
+        "budget_age_s": 473776.384703,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 51928,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "clive",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "open",
+          "running": 1,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 0
+        },
+        "context": {
+          "estimated_tokens": 51928,
+          "headroom_pct": 77.4,
+          "peak_utilisation_p50_pct": 35.7,
+          "peak_utilisation_p90_pct": 82.6,
+          "peak_utilisation_runs": 960,
+          "window_tokens": 230144
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "outcomes": {
+          "failed": 18,
+          "not-run": 17,
+          "passed": 637,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": 35
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "budget_age_s": 68.388703,
+        "budget_reason": null,
+        "burn_multiple": 1.1906428962309084,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 51928,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.470869887696759,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "outcomes": {
+          "failed": 5,
+          "not-run": 0,
+          "passed": 35,
+          "unknown": 0
+        },
+        "pace_allowance": 0.08314835649999994,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 9.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-astra",
+        "budget_age_s": 68.388703,
+        "budget_reason": null,
+        "burn_multiple": 1.1906428962309084,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 51928,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.470869887696759,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 10,
+          "unknown": 0
+        },
+        "pace_allowance": 0.08314835649999994,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 9.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-luna",
+        "budget_age_s": 68.388703,
+        "budget_reason": null,
+        "burn_multiple": 1.1906428962309084,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 51928,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.470869887696759,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.08314835649999994,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 9.0,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "claude": 0,
+      "claude-haiku": 0,
+      "claude-opus": 0,
+      "clive": 0.45,
+      "codex": 0.52,
+      "codex-astra": 0,
+      "codex-luna": 0,
+      "hold": 0.03
+    },
+    "rendered_token_estimate": 2120,
+    "usage": {
+      "cost": 0.000207312,
+      "input_tokens": 4936,
+      "output_tokens": 89
+    }
+  },
+  "plan": "lane-and-model-routing",
+  "plan_impl_at_dispatch": 0.34285714285714286,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "fe7bde6f99a7d4897d9ade6c175e6783ccd3c985",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "4a7274f85a87b45c76f61300b93617caa35352de",
+    "reviewed_head_sha": "fe7bde6f99a7d4897d9ade6c175e6783ccd3c985",
+    "scores": {
+      "durability": 8,
+      "evidence": 12,
+      "fit": 18,
+      "goal_fidelity": 9,
+      "reuse": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 87
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "route_mode": "picker",
+  "run_id": "r-20261007T175656538381-codex-lane-fold",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§6",
+  "session": "s25-picker",
+  "session_harness": "codex",
+  "session_id": "01a11783-d15b-78e0-9448-4ce87b885c05",
+  "session_model": "gpt-6-sol",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 6929664,
+    "cumulative_input_tokens": 14008935,
+    "detail": "turn tokens recorded, but no span was supplied to rate them",
+    "generated_tokens": 55938
+  },
+  "time_budget": "50m",
+  "tool_steps": 126.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 1725,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-07T18:26:33Z",
+    "last_record_type": "turn.completed",
+    "launched_at": "2026-10-07T18:22:00Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261007T175656538381-codex-lane-fold",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 425,
+    "worker_pid": 1279469
+  },
+  "worker_seconds": 1725,
+  "worker_seconds_source": "wall_fallback",
+  "worktree_retention": null
+}
