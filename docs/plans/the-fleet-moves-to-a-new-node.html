@@ -23,7 +23,7 @@
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -526,7 +526,10 @@
     <div class="r-comment-body"><p>Run <code>r-20261007T065930311978-the-reservation-can-be-replaced</code> landed <code>reckon crew placement --replace JOB</code> at <code>6849fe5cd</code>. It refuses a pending job, another user's job and a job the scheduler does not know, each with its own message, and answers this cluster's <code>Invalid job id specified</code> as an unknown job. It reads the target's shape through <code>fleet_node.allocation_shape</code>, records the job it replaced and prints both. The first review scored 92 with reuse at 5; the fix attempt was re-reviewed at 114. Its remaining follow-on, no test of the shape fallback to declared defaults, is accepted as minor.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261007T065930311978-the-reservation-can-be-replaced" data-who="reckon-build" data-when="2026-10-07T08:16:09.646Z">
-    <div class="r-comment-body"><p>reckon crew placement gains --replace JOB, which repoints the published reservation at an explicitly named running job: it reads the target&#x27;s state and owner in one squeue query, composes fleet_node.allocation_shape for the target&#x27;s shape, refuses a pending job, another user&#x27;s job and a job the scheduler does not know (matching this cluster&#x27;s &quot;Invalid job id specified&quot; answer, kept apart from a scheduler that could not be asked) each with its own message, records the replaced id beside the new one and prints both; a dispatch composed afterwards resolves the new job in its step prefix; gate tests/test_crew_placement_reservation.py tests/test_ensure_holds_one_reservation.py exits 0 at 20 passed.</p></div>
+    <div class="r-comment-body"><p>reckon crew placement gains --replace JOB, which repoints the published reservation at an explicitly named running job: it reads the target's state and owner in one squeue query, composes fleet_node.allocation_shape for the target's shape, refuses a pending job, another user's job and a job the scheduler does not know (matching this cluster's "Invalid job id specified" answer, kept apart from a scheduler that could not be asked) each with its own message, records the replaced id beside the new one and prints both; a dispatch composed afterwards resolves the new job in its step prefix; gate tests/test_crew_placement_reservation.py tests/test_ensure_holds_one_reservation.py exits 0 at 20 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T081246992462-the-fleet-gate-holds-dispatch" data-who="reckon-build" data-when="2026-10-07T08:34:54Z">
+    <div class="r-comment-body"><p>A fleet-wide pause holds dispatch, resume and redispatch as LanePaused while backend gates and promotion continue; committed gate 28 passed, EXIT=0; bypass mutation 1 failed, EXIT=1.</p></div>
 </div>
 </section>
 </main>
