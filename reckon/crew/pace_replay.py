@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from reckon import budget as budget_module
 from reckon import ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import pace as pace_module
@@ -590,6 +591,25 @@ def _recomputed_allowance(
     elapsed_fraction = min(1.0, elapsed_hours / window_hours)
     multiple = evidence.pace_multiple
     utilisation = operative["utilisation"]
+    floor_reason = budget_module._burn_floor_reason(
+        float(utilisation) * 100.0, elapsed_fraction
+    )
+    if floor_reason is not None:
+        allowance = budget_module._unknown_allowance(
+            evidence.group, floor_reason, utilisation=float(utilisation)
+        )
+        allowance.update(
+            state=_OBSERVED,
+            elapsed_hours=elapsed_hours,
+            drain_hours=window_hours,
+            remaining_budget=max(0.0, 1.0 - float(utilisation)),
+            pace_multiple=float(multiple),
+            window_minutes=window_minutes,
+            elapsed_fraction=elapsed_fraction,
+            observed_at=operative["observed_at_text"],
+            resets_at=operative["resets_at_text"],
+        )
+        return allowance
     burn = None if elapsed_fraction <= 0 else float(utilisation) / elapsed_fraction
     if evidence.primary_only:
         derived = min(1.0, elapsed_fraction * float(multiple))
