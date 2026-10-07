@@ -1,0 +1,18 @@
+<section id="session-host-removes-its-fifo">
+  <h2>The session host and its entry point remove their FIFO when they stop</h2>
+  <p id="session-host-removes-its-fifo-landing">
+    <code>SessionHost.stop</code> in <code>reckon/crew/session_host.py</code> now
+    removes the request FIFO it was handed, resolving the path from its owner
+    pair through the dispatcher's own <code>SESSION_HOST_DIRECTORY</code> and
+    <code>_session_host_runtime_root</code> so the owner ending and a signal take
+    the same path; <code>plugins/crew-host/bin/crew-host</code> traps
+    <code>TERM</code>, <code>HUP</code> and <code>INT</code> to remove its FIFO
+    and exit, and the trap does not survive the <code>exec</code> into
+    <code>reckon crew host</code>. Gate <code>tests/test_session_host.py</code> +
+    <code>tests/test_session_host_plugin.py</code>: 18 passed,
+    <code>EXIT=0</code>; applying the declared mutation — deleting the removal
+    from <code>SessionHost.stop</code> and the trap — fails exactly
+    <code>test_the_host_removes_its_fifo_when_its_owner_exits</code> and
+    <code>test_a_signal_removes_its_fifo</code>, <code>EXIT=1</code>.
+  </p>
+</section>

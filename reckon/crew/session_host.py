@@ -196,6 +196,31 @@ def default_follower_argv() -> list[str]:
     return [_reckon_console_script(), "crew", "follow"]
 
 
+def _fifo_path(owner: Mapping[str, Any]) -> Path | None:
+    """The request FIFO the plugin entry point named for this host's owner.
+
+    The entry point creates the FIFO under the node-local runtime root, named
+    for the owner pid and its kernel start tick, and the host removes that same
+    path when it stops. The directory name and the runtime-root order are the
+    dispatcher's own -- the module that resolves the path to ask this host for
+    a follower -- and are imported here so one spelling of each serves both,
+    rather than two that agree only until one changes. The import is deferred
+    to call time because ``dispatch`` reaches back into this module lazily, and
+    a module-level import would close a cycle.
+    """
+    from reckon.crew.dispatch import (
+        SESSION_HOST_DIRECTORY,
+        _session_host_runtime_root,
+    )
+
+    root = _session_host_runtime_root()
+    pid = owner.get("pid")
+    if root is None or not pid:
+        return None
+    start = owner.get("start_time") or "0"
+    return root / SESSION_HOST_DIRECTORY / f"{pid}-{start}.fifo"
+
+
 def _set_parent_death_signal(expected_parent: int) -> None:
     """Runs between fork and exec: arm the kernel parent-death signal.
 
@@ -250,6 +275,7 @@ class SessionHost:
         self._stem = f"{self._owner['pid']}-{self._owner['start_time'] or '0'}"
         self._record_path = _state_dir(self._environ) / f"{self._stem}{RECORD_SUFFIX}"
         self._log_path = _log_dir(self._environ) / f"{self._stem}.log"
+        self._fifo_path = _fifo_path(self._owner)
 
     # -- identity -----------------------------------------------------------
 
@@ -431,10 +457,25 @@ class SessionHost:
         """
         if self._stopped:
             return
+        self._remove_fifo()
         self._stopped = True
         for child in list(self._children.values()):
             self._stop_child(child)
         self._write_record(force=True)
+
+    def _remove_fifo(self) -> None:
+        """Remove the request FIFO this host was handed, if it still exists.
+
+        An owner that ends and a signal both reach the stop path, so a session
+        that ends leaves no stale FIFO in the runtime directory for a later
+        session to inherit. Only this host's own FIFO -- the path named from its
+        owner pair -- is touched; a FIFO belonging to another session is never
+        removed.
+        """
+        if self._fifo_path is None:
+            return
+        with contextlib.suppress(OSError):
+            self._fifo_path.unlink(missing_ok=True)
 
     def _stop_child(self, child: _Child) -> None:
         """Signal one child by its recorded pid and wait for it to end."""
