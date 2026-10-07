@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="stale-reading-reaches-jev"><meta name="plan-title" content="A stale reading reaches Jev with its figures and age">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker"><meta name="plan-verifies" content="one-typesafe-model-picker#s6">
+<meta name="plan-recorded-at" content="2026-10-07"><meta name="plan-verdict" content="measurement">
+<title>A stale reading reaches Jev with its figures and age | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="stale-reading-reaches-jev" id="stale-reading-reaches-jev">
+<h1>A stale reading reaches Jev with its figures and age</h1>
+
+<p id="stale-reading-reaches-jev-summary">A budget reading past its shelf life is not an absent one. Nulling its
+burn and pace hides a lane's figures exactly when the account has been idle.
+The dispatch-path candidate now carries the stale reading's <code>utilisation_pct</code>,
+<code>burn_multiple</code>, <code>pace_allowance</code>, <code>days_to_reset</code> and
+<code>resets_at</code> beside a new <code>stale</code> flag and <code>budget_age_s</code>;
+only a genuinely absent reading still yields nulls with its <code>budget_reason</code>.
+No numeric age cut-off is added in code — the age and flag are handed to Jev to weigh.</p>
+
+<h2 id="stale-reading-reaches-jev-replay">Replay over a two-hour-old codex fixture, before and after</h2>
+<p id="stale-reading-reaches-jev-replay-note">The picker's candidate build is replayed over a fixture with one
+codex receipt observed two hours before the pick (age expected 7200 s). The before arm
+restores the shelf-life nulling of stale readings; the after arm is the change under test.</p>
+<table id="stale-reading-reaches-jev-replay-table">
+<thead><tr><th>Candidate field</th><th>Before (stale reading nulled)</th><th>After (stale reading carried)</th></tr></thead>
+<tbody>
+<tr><th>utilisation_pct</th><td>null</td><td>2.0</td></tr>
+<tr><th>burn_multiple</th><td>null</td><td>0.14</td></tr>
+<tr><th>pace_allowance</th><td>null</td><td>0.157</td></tr>
+<tr><th>days_to_reset</th><td>null</td><td>6.0</td></tr>
+<tr><th>resets_at</th><td>null</td><td>2026-10-13T02:38:22+00:00</td></tr>
+<tr><th>stale</th><td>null</td><td>true</td></tr>
+<tr><th>budget_age_s</th><td>null</td><td>7200.1</td></tr>
+<tr><th>budget_reason</th><td>recorded account-window reading is stale</td><td>null</td></tr>
+</tbody></table>
+<p id="stale-reading-reaches-jev-replay-paths">Replay outputs:
+<code>replay-before.json</code> and <code>replay-after.json</code> under the run directory
+below.</p>
+
+<h2 id="stale-reading-reaches-jev-live">One live pick over the published codex reading</h2>
+<p id="stale-reading-reaches-jev-live-note">A live <code>reckon crew pick</code> reads the publisher's
+paid-lanes document, whose codex rollout reading was about 81 minutes old at pick
+time. Every codex candidate now carries its figures with the stale flag rather than
+nulls, so Jev can weigh them.</p>
+<table id="stale-reading-reaches-jev-live-table">
+<thead><tr><th>Candidate</th><th>burn_multiple</th><th>pace_allowance</th><th>utilisation_pct</th><th>days_to_reset</th><th>stale</th><th>budget_age_s</th></tr></thead>
+<tbody>
+<tr><th>codex</th><td>1.406</td><td>0.665</td><td>85.0</td><td>2.77</td><td>true</td><td>4889.9</td></tr>
+<tr><th>codex-astra</th><td>1.406</td><td>0.665</td><td>85.0</td><td>2.77</td><td>true</td><td>4889.9</td></tr>
+<tr><th>codex-luna</th><td>1.406</td><td>0.665</td><td>85.0</td><td>2.77</td><td>true</td><td>4889.9</td></tr>
+</tbody></table>
+<p id="stale-reading-reaches-jev-live-answer">Action <code>route</code>; Jev answered
+(<code>typesafe/jev-1.13-20260917</code>) and the codex candidates were excluded on the
+serving probe's availability verdict alone, not on a nulled budget.</p>
+
+<h2 id="stale-reading-reaches-jev-gate">Gate and negative control</h2>
+<table id="stale-reading-reaches-jev-gate-table">
+<thead><tr><th>Measure</th><th>Result</th></tr></thead>
+<tbody>
+<tr><th>Base gate</th><td>254 passed; EXIT=0.</td></tr>
+<tr><th>Head gate</th><td>258 passed (four added tests); EXIT=0; zero added failures.</td></tr>
+<tr><th>Negative control</th><td>Restoring the shelf-life nulling failed two stale-reading tests; 2 failed, 2 passed; EXIT=1.</td></tr>
+<tr><th>Candidate schema</th><td>Added <code>stale</code> and <code>budget_age_s</code> to <code>BudgetCandidate</code>; Jev already receives source, age and stale via the return-times block, which the figures now join.</td></tr>
+</tbody></table>
+<p id="stale-reading-reaches-jev-logs">Logs and replay outputs:
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022329056429-stale-reading-reaches-jev/</code>
+(<code>base-arm.log</code>, <code>head-arm.log</code>, <code>negative-control.log</code>,
+<code>live-pick.json</code>, <code>replay-before.json</code>, <code>replay-after.json</code>).</p>
+</article></main></body></html>
