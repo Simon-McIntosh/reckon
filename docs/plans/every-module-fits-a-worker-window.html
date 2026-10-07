@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="every-module-fits-a-worker-window">
+  <meta name="plan-title" content="Every Module Fits A Worker Window">
+  <meta name="plan-summary" content="Split every module above a quarter of a 200k-token window by checked pure moves, so a node writing several modules fits the local lane.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="19.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-context" content="extended">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S21">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="No plan waits on this one as a whole: §6 of the-fleet-moves-to-a-new-node is held because its node does not fit the local lane, and it can run either on a larger-window lane or once §3 and §4 here land, so neither a blocks edge nor a gate on that section is true.">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
+  <title>Every Module Fits A Worker Window | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: four modules each fill most of a worker's window</h2>
+    <p>On 7 October the picker held §6 of
+      <a href="/reckon/plans/the-fleet-moves-to-a-new-node">the fleet moves to a new node</a>, the sprint's critical
+      path, with <code>context-window-exceeded</code>. Its node writes <code>reckon/crew/dispatch.py</code> and
+      <code>reckon/cli.py</code>. The context-fit check (<code>_context_fit_verdict</code> in
+      <code>reckon/crew/routing.py</code>) counts every write-path file whole at 3.5 bytes per token, on top of a
+      launch-context floor of 50,392 tokens. The local lane's window is 230,144 tokens. Those two files come to
+      253,906 tokens before any instruction is loaded, so the node cannot fit and no later edit to it can either.</p>
+    <p>The cause is module size, not the node. Measured on <code>origin/main</code> at <code>6891282e9</code>:</p>
+    <table>
+      <thead><tr><th>Module</th><th>Lines</th><th>Bytes</th><th>Estimated tokens</th><th>Share of the window after the floor</th></tr></thead>
+      <tbody>
+        <tr><td><code>reckon/crew/dispatch.py</code></td><td>12,791</td><td>536,150</td><td>153,186</td><td>85%</td></tr>
+        <tr><td><code>reckon/crew/recovery.py</code></td><td>11,611</td><td>522,325</td><td>149,236</td><td>83%</td></tr>
+        <tr><td><code>reckon/crew/promotion.py</code></td><td>9,137</td><td>405,118</td><td>115,748</td><td>64%</td></tr>
+        <tr><td><code>reckon/cli.py</code></td><td>8,854</td><td>352,520</td><td>100,720</td><td>56%</td></tr>
+        <tr><td><code>reckon/mcp.py</code></td><td>5,513</td><td>207,729</td><td>59,352</td><td>33%</td></tr>
+        <tr><td><code>reckon/crew/runs.py</code></td><td>4,447</td><td>183,411</td><td>52,404</td><td>29%</td></tr>
+        <tr><td><code>reckon/_backends.py</code></td><td>4,067</td><td>175,605</td><td>50,173</td><td>28%</td></tr>
+      </tbody>
+    </table>
+    <p>The four largest are also the four most-written files in the repository. Each is listed in
+      <code>docs/state/reckon/shared-write-paths.json</code> as co-claimable, because independent nodes keep editing
+      unrelated regions of the same file. That is the signature of a module holding several concerns, and it is why
+      nearly every node lands in at least one of them. A node writing any two of the four is refused on the local lane.
+      It is then routed to a metered lane or held, as §6 was.</p>
+
+    <h2 id="s2">§2 — The bound, its guard, and the move check</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>The bound.</strong> No Python file under <code>reckon/</code> or <code>tests/</code> exceeds 50,000
+      estimated tokens, measured by the context-fit check's own estimate (<code>_tokens_for_bytes</code>, 3.5 bytes per
+      token). That is a quarter of a 200k-token window. After the launch-context floor, three modules at the bound and
+      their tests fit the local lane together. A module produced by a split targets 40,000 so it has room to grow.</p>
+    <p><strong>Deliverable 1, the guard.</strong> <code>tests/test_every_module_fits_a_worker_window.py</code> measures
+      every Python file under <code>reckon/</code> and <code>tests/</code> through <code>_tokens_for_bytes</code> and
+      fails on any file above the bound that is not in an allowlist held in the test. The allowlist names the seven
+      modules in §1 and is a ratchet. The test also fails when an allowlisted file is now under the bound, so each
+      split must remove its own entry. A new oversize file, and an allowlisted file that has shrunk, both read red.</p>
+    <p><strong>Deliverable 2, the move check.</strong> <code>scripts/check_pure_move.py</code> takes a base revision,
+      the original module's path and the module paths a split produced, and parses each with <code>ast</code>. Every
+      top-level statement of the base module apart from its imports must appear with byte-identical source in exactly
+      one produced module. The script prints a JSON receipt listing each moved statement and where it went, every
+      statement in a produced module that did not come from the base, and the estimated tokens of each produced module.
+      It exits non-zero when a statement is lost, altered or duplicated. Only imports and re-export lines may be new.
+      This turns a review of a 150k-token diff into a review of its receipt and of the few lines that are not moves.
+      <code>tests/test_check_pure_move.py</code> holds the check to a fixture split that passes and to three that must
+      fail: a moved function with one changed line, a function dropped, and a function in two produced modules.</p>
+    <p><strong>Done when</strong> the guard passes at its head with exactly the seven allowlisted modules over the
+      bound; a fixture file over the bound outside the allowlist, and an allowlisted fixture under it, each turn the
+      guard red; <code>tests/test_check_pure_move.py</code> passes, with each of its three failing fixtures exiting
+      non-zero and naming the statement; and both new files add no ruff finding.</p>
+
+    <h2 id="s3">§3 — Split <code>reckon/crew/dispatch.py</code></h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-context="extended" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A split map, then the move it describes, as two nodes. The map is a read-only node
+      that writes <code>docs/evidence/fragments/every-module-fits-a-worker-window/dispatch-split-map.html</code>. It
+      groups the module's 320 top-level definitions by the concern each serves and names one sibling module per group
+      for what it does. For each group it lists every definition, the estimated tokens and the import edges between
+      groups, and it shows that no group imports another at module level in a cycle. Beside that it gives the external
+      census: every name some other file imports from <code>reckon.crew.dispatch</code>, every test that patches a
+      <code>dispatch</code> attribute, and every test that reads the file's text by path. The move node then carries out
+      the map exactly, with the produced modules as its declared write paths, under the contract in §8.</p>
+    <p><strong>Done when</strong> the map shows every definition placed once, every produced module at or under
+      40,000 estimated tokens, and no import cycle; <code>scripts/check_pure_move.py</code> exits 0 at the move's
+      head, with a receipt naming no altered, lost or duplicated statement; the guard passes with
+      <code>dispatch.py</code> removed from its allowlist; and the whole suite at the merged head shows no failure that
+      is absent at its base.</p>
+
+    <h2 id="s4">§4 — Split <code>reckon/cli.py</code></h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-context="extended" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The same two nodes as §3, for <code>reckon/cli.py</code>, with the map at
+      <code>docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.html</code>. A command group is the
+      natural unit. The click root and the console-script entry point stay where <code>pyproject.toml</code> names
+      them, and every subcommand stays registered on the same group under the same name.</p>
+    <p><strong>Done when</strong> the §3 conditions hold for <code>cli.py</code>, and the help text of every command,
+      captured by walking the click tree at base and at head, is byte-identical.</p>
+
+    <h2 id="s5">§5 — Split <code>reckon/crew/recovery.py</code></h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-context="extended" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The same two nodes as §3, for <code>reckon/crew/recovery.py</code>, with the map at
+      <code>docs/evidence/fragments/every-module-fits-a-worker-window/recovery-split-map.html</code>. Its four
+      banners mark seams already: interrupted-orchestrator recovery, the delivered-review turn end, the review reflex
+      and the classification memo.</p>
+    <p><strong>Done when</strong> the §3 conditions hold for <code>recovery.py</code>.</p>
+
+    <h2 id="s6">§6 — Split <code>reckon/crew/promotion.py</code></h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="3.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-context="extended" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The same two nodes as §3, for <code>reckon/crew/promotion.py</code>, with the map
+      at <code>docs/evidence/fragments/every-module-fits-a-worker-window/promotion-split-map.html</code>. Its banners
+      separate promotion itself, the re-executed gate command and cited arm directories.</p>
+    <p><strong>Done when</strong> the §3 conditions hold for <code>promotion.py</code>.</p>
+
+    <h2 id="s7">§7 — Split the three modules just over the bound</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon/mcp.py</code>, <code>reckon/crew/runs.py</code> and
+      <code>reckon/_backends.py</code> are each between 50,173 and 59,352 tokens, so each fits any lane whole and needs
+      no separate map node. Each is one node that moves out the one or two cohesive groups that bring it under 40,000,
+      with its map in the node's landing fragment, under the contract in §8. <code>mcp.py</code>'s tool functions stay
+      registered on the same server under the same names.</p>
+    <p><strong>Done when</strong> for each of the three modules, <code>scripts/check_pure_move.py</code> exits 0, the
+      module and every module it produced are at or under 40,000 estimated tokens, the guard passes with the module
+      removed from its allowlist and the allowlist then empty, and the whole suite at the merged head shows no failure
+      absent at its base.</p>
+
+    <h2 id="s8">§8 — How every split is done, and in what order</h2>
+    <p><strong>A split is a pure move.</strong> Every definition moves with its source unchanged. The only new lines
+      are imports, plus, in the original module, the imports that keep <code>from &lt;original&gt; import
+      &lt;name&gt;</code> working for every name some other file imports from it today. The original module stays as
+      that import surface and keeps whatever the map leaves in it. No signature, name, default or behaviour changes,
+      and no public name is added beyond the new module paths. A produced module never imports the original at module
+      level. An unavoidable back-reference uses the function-level import this codebase already uses for cycles.</p>
+    <p><strong>What a move must repoint.</strong> A test that patches a moved name on the original module patches
+      nothing once the caller lives elsewhere. A test that reads the original file's text by path reads the wrong file.
+      The map's census names both kinds, and the move node repoints each one to the module that now holds the name,
+      with its declared write paths covering those tests. A failure the census missed shows up in the suite measure,
+      not silently.</p>
+    <p><strong>Names.</strong> A produced module is a sibling of the original, named for the one concern it holds, as
+      the rest of the package is. A name never carries a part number, a version or the word <em>core</em>. When a
+      produced module holds one concern, the move also removes the original's entry from
+      <code>docs/state/reckon/shared-write-paths.json</code>, or narrows its reason to what stays in it.</p>
+    <p><strong>Peers.</strong> These are the files every concurrent session writes. A move is dispatched only when
+      <code>crew(view="scopes")</code> shows no live claim on the module, and it is reviewed, merged and pushed in one
+      sitting so the window in which a peer can start from the old layout is short. A peer whose worktree predates the
+      split gets a conflict on its edits to a moved definition, and it re-applies them to the definition's new home.
+      Its edits to code left in the original module merge as before.</p>
+    <p><strong>Verification.</strong> The worker's gate is the move check, the guard and the tests its census named.
+      The coordinator measures the whole suite at the base and at the merged head before pushing, because a moved name
+      can break an importer no census anticipated. The review reads the move check's receipt and every line that is not
+      a move. It does not re-read the moved bodies.</p>
+    <p><strong>Order.</strong> §2 goes first, since every split is checked by its instruments. §3 and §4 follow, because
+      together they bring §6 of the fleet move inside the local lane. Then §5 and §6, then §7. Two moves run at the same
+      time only when their maps name disjoint test files. The map nodes are read-only and can run ahead of their moves.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="module-bound" data-choice="50000" data-by="9cf43820, on the lead&#x27;s direction" data-when="2026-10-07">
+    <p class="r-dec-q">How large may a source module be, in the context-fit check's estimated tokens?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="40000">40,000</button>
+      <button class="r-opt chosen" data-value="50000">50,000, a quarter of a 200k window</button>
+      <button class="r-opt" data-value="60000">60,000</button>
+      </p>
+    <p class="r-dec-rat">The lead asked that a file too large for a 200k context be split. A quarter of that window is the largest bound under which a node writing three modules and their tests still fits the local lane after the 50,392-token launch floor. At 40,000, four more modules (the ledger, the server, routing and budget, all between 41,000 and 44,000) would need splitting for no measured hold. At 60,000, a node writing three modules at the bound is refused. Produced modules target 40,000 so the bound is not met again within weeks.</p>
+    </div>
+<div class="r-dec" data-key="split-surface" data-choice="keep-original" data-by="9cf43820, on the lead&#x27;s direction" data-when="2026-10-07">
+    <p class="r-dec-q">After a split, where do callers import moved names from?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="keep-original">The original module, which re-imports every name another file imports from it today</button>
+      <button class="r-opt" data-value="repoint-all">Each name's new module, with every importer repointed in the same commit</button>
+      </p>
+    <p class="r-dec-rat">Keep the original as the import surface. Four sessions are writing these files today, and code in their worktrees imports from the original paths. Repointing every importer would turn each split into a change to dozens of files that conflicts with all of them. Re-imports add no definition and no public name. Tests that patch a moved name still have to be repointed, because a patch on the import surface does not reach the module that calls the name. That cost is counted by each map's census.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-emfww-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the guard and the move check, then split dispatch.py and cli.py</h4>
+    <div class="r-fu-body"><p>§2 first. Then the dispatch and cli maps, which can run in parallel, then their moves, which together let §6 of the fleet move run on the local lane.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-module-fits-a-worker-window §2</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
