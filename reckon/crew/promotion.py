@@ -3678,12 +3678,15 @@ def _record_landing_comment(
             )
         except _store.VersionConflict:
             continue
+        # The status is reported only when this write flipped it, so a landing
+        # that left an authored status alone returns the result shape every
+        # caller already reads.
         return {
             "recorded": True,
             "comment_id": comment_id,
             "section": anchor,
             "already_recorded": False,
-            "status": payload.get("status"),
+            **({"status": "in-progress"} if started else {}),
         }
     raise CrewError(
         f"could not record landing comment for plan {plan!r}: "
