@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-follower-lives-as-long-as-its-session">
   <meta name="plan-title" content="A Follower Lives As Long As Its Session">
   <meta name="plan-summary" content="The Monitor tool ends every follower at 30 minutes; a plugin-declared monitor lives for the whole session, so dispatch arms the follower and nobody re-arms it.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="9.5">
   <meta name="plan-capability-version" content="1.0">
@@ -21,10 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
   <main class="plan-doc">
@@ -191,52 +193,50 @@
       ends; and <code>reckon doctor</code> clean for the link in every mounted project.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="arming-trigger" data-choice="always-silent" data-by="Simon McIntosh" data-when="2026-10-07">
-        <p class="r-dec-q">When does the plugin monitor start?</p>
-        <p class="r-dec-ctx">A plugin monitor can start at session start (<code>always</code>) or the first time a named
-          skill runs. Plan reviews dispatched from <code>/reckon-create</code> and <code>/reckon-edit</code> need a
-          follower as much as <code>/reckon-build</code> runs do.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="always-silent">At session start, silent until the first dispatch</button>
-          <button class="r-opt" data-value="on-reckon-build">When /reckon-build first runs</button>
-        </p>
-        <p class="r-dec-rat">The first dispatch is what needs a follower, whichever skill or tool makes it. A skill
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="arming-trigger" data-choice="always-silent" data-by="Simon McIntosh" data-when="2026-10-07">
+    <p class="r-dec-q">When does the plugin monitor start?</p>
+    <p class="r-dec-ctx">A plugin monitor can start at session start ( always ) or the first time a named
+          skill runs. Plan reviews dispatched from /reckon-create and /reckon-edit need a
+          follower as much as /reckon-build runs do.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="always-silent">At session start, silent until the first dispatch</button>
+      <button class="r-opt" data-value="on-reckon-build">When /reckon-build first runs</button>
+      </p>
+    <p class="r-dec-rat">The first dispatch is what needs a follower, whichever skill or tool makes it. A skill
           list would miss review workers and any dispatch made through the CLI or MCP. The cost is one idle shell per
           interactive session, waiting on a node-local FIFO.</p>
-      </div>
-      <div class="r-dec" data-key="pane-content" data-choice="ticker-only" data-by="Simon McIntosh" data-when="2026-10-07">
-        <p class="r-dec-q">What does the host print to the pane?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="ticker-only">Only the follower's ticker</button>
-          <button class="r-opt" data-value="host-status">Ticker plus host status lines</button>
-        </p>
-        <p class="r-dec-rat">The pane stays the ticker it is today. Host status goes to its log and record, never
+    </div>
+<div class="r-dec" data-key="pane-content" data-choice="ticker-only" data-by="Simon McIntosh" data-when="2026-10-07">
+    <p class="r-dec-q">What does the host print to the pane?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="ticker-only">Only the follower&#x27;s ticker</button>
+      <button class="r-opt" data-value="host-status">Ticker plus host status lines</button>
+      </p>
+    <p class="r-dec-rat">The pane stays the ticker it is today. Host status goes to its log and record, never
           to stdout, consistent with the rule that the stream carries worker transitions and fleet posture and
           nothing else.</p>
-      </div>
-      <div class="r-dec" data-key="fallback" data-choice="keep-monitor-fallback" data-by="Simon McIntosh" data-when="2026-10-07">
-        <p class="r-dec-q">What happens where no host is running?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="keep-monitor-fallback">Keep the Monitor tool with --lifetime 29m</button>
-          <button class="r-opt" data-value="require-host">Refuse dispatch without a host</button>
-        </p>
-        <p class="r-dec-rat">Codex sessions, <code>-p</code> sessions and sessions without the plugin have no plugin
+    </div>
+<div class="r-dec" data-key="fallback" data-choice="keep-monitor-fallback" data-by="Simon McIntosh" data-when="2026-10-07">
+    <p class="r-dec-q">What happens where no host is running?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="keep-monitor-fallback">Keep the Monitor tool with --lifetime 29m</button>
+      <button class="r-opt" data-value="require-host">Refuse dispatch without a host</button>
+      </p>
+    <p class="r-dec-rat">Codex sessions, -p sessions and sessions without the plugin have no plugin
           monitor, so the current mechanism stays for them unchanged.</p>
-      </div>
-    </section>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-afl-001" data-status="open" data-capability-version="1.0"
-               data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-07"
-               data-recommends-skill="/reckon-build a-follower-lives-as-long-as-its-session">
-        <h4 class="r-fu-title">Build the session-length follower host</h4>
-        <div class="r-fu-body"><p>Plan authored with the probe's measurements. Next: build §3 to §7, then prove it
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-afl-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build a-follower-lives-as-long-as-its-session" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the session-length follower host</h4>
+    <div class="r-fu-body"><p>Plan authored with the probe's measurements. Next: build §3 to §7, then prove it
           in a live session under §8.</p></div>
-        <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session</pre>
-      </article>
-    </section>
+    <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
