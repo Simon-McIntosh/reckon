@@ -1,0 +1,83 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:42:06.808Z",
+  "dispatched_at": "2026-10-04T17:33:09Z",
+  "findings": [
+    {
+      "anchor": "reckon/archive.py:64",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should say the sweep exists and cite the owner, turning M3 from \"build automation\" into \"schedule an existing command\", which is a different (much smaller) node.",
+      "text": "\u00a73.3/M3 \"archive waves\" \u2014 the plan calls the automated archive sweep \"still pending\", but `find_archive_candidates`/`apply_archive_candidates`/`run_archive_pass` already exist and are wired to `reckon archive` (reckon/cli.py:8076) with the same `done`/`superseded` + age-threshold policy the plan restates",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_schema.py:1425",
+      "id": "duplicate_owner-2",
+      "reason": "extending `validate_for_write` plus the existing doctor/warn half is the honest change; a fresh invariant module would fork the condition logic from the audit that already owns it.",
+      "text": "\u00a73.1 write-time lifecycle invariants propose a new enforcement path at the server write boundary, but the boundary already exists: `PlanState.validate_for_write` is the reject half of the locked \"reject-write-warn-doctor\" decision (_schema.py:42) and the same conditions (impl missing on shipped/done, stale active, stale research) are already derived by `reckon/doccheck.py::audit_lifecycle` (:488)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/project_state.py:2198",
+      "id": "duplicate_owner-3",
+      "reason": "a second close gate beside the existing one drifts; the plan should extend the owner and reuse its `ProjectStateError`/warnings shape.",
+      "text": "\u00a73.5 proposes a sprint-close gate refusing on unresolved followups / unset impl / uncollapsed sections, but `_close_sprint_with_carry_forward` already enforces closability (non-terminal items must be held) and returns `close_warnings`; the plan neither cites it nor says whether its new conditions join that function or a parallel gate",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp.py:3262",
+      "id": "duplicate_owner-4",
+      "reason": "the plan should extend the existing limit/`_DOS_DONTS` create guidance rather than add a second pre-flight, or state why that mechanism is insufficient.",
+      "text": "\u00a73.4 plan-creation diet proposes reckon-create gains a pre-flight bias against new plans, but `_pending_plan_limit` / `_pending_plans` already implement a declared pending-plan limit that warns on create (mcp.py:3625)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/doccheck.py:488",
+      "id": "reuse_search-1",
+      "reason": "naming the mechanism each node extends converts four build-from-scratch nodes into four extensions and exposes the nodes that are already implemented (M3).",
+      "text": "the review's reuse map: for every proposed mechanism an owner exists: `reckon/doccheck.py::audit_lifecycle` and `reckon audit` (reckon/cli.py:7977); a landed-summary (`section-landed`) vocabulary already in `reckon/doccheck.py:116`/`reckon/_plan_html.py`; `reckon/archive.py`; `reckon/mcp.py::_pending_plan_limit`; `reckon/agent_context.py`. The plan cites none by name",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/doccheck.py:488",
+      "id": "thin_wrapper-1",
+      "reason": "the plan should say why the existing command cannot simply be scheduled and where the schedule lives, instead of describing a wrapper that adds no new detection.",
+      "text": "\u00a73.2 \"audit cadence\" adds \"a scheduled reckon audit + staleness sweep\", but `reckon audit` already computes staleness (STALE/STALE_RCA in `audit_lifecycle`) and a scheduler/agent-context surface exists",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/lifecycle.py:1",
+      "id": "deep_module-1",
+      "reason": "the plan should state one module that owns the invariant set and have both `validate_for_write` and `audit_lifecycle` call it, which is what keeps the six nodes from becoming six shallow gates.",
+      "text": "the plan's six mechanisms each re-derive lifecycle conditions; there is no proposed single home (the repo already has `reckon/lifecycle.py` for derived lifecycle state and `reckon/doccheck.py::audit_lifecycle` for the checks), so the write boundary and the audit would each carry the condition logic",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d83e26fedd19f4f7e561f92f3d9bbc8ebc5e192ebf91bdd44daada3bea5e9dd8",
+  "plan_slug": "plan-lifecycle-hygiene",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T173256963116-plan-review-of-plan-lifecycle-hygiene",
+  "reviewed_blob_sha": "f51893071814db94a0dc2e1c3397737441991392",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the lifecycle conditions the plan enforces are already derived in two places (`reckon/doccheck.py::audit_lifecycle) with no single invariant table shared with the write boundary, and the plan does not name where the logic should live once.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements an archive sweep owned by `reckon/archive.py`, a creation diet owned by the pending-plan limit in `reckon/mcp.py`, and a sprint-close gate owned by `reckon/project_state.py`, rather than extending each owner.",
+    "reuse_search": "a finding \u2014 the plan proposes an archive sweep, a creation diet and a sprint-close gate that each already exist (`reckon/archive.py`, `reckon/mcp.py::_pending_..._limit`, `reckon/project_state.py::_close_sprint_with_carry_forward`) without citing them.",
+    "thin_wrapper": "a finding \u2014 the \"audit cadence\" mechanism schedules the existing `reckon audit` command (which already computes staleness) rather than extending an existing scheduler or its own staleness check, and gives no reason the existing command cannot be scheduled."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.088679+00:00"
+}

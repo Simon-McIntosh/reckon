@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T16:55:48.418Z",
+  "dispatched_at": "2026-10-04T16:43:22Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/routing.py:3098",
+      "id": "reuse_search-1",
+      "reason": "\u00a73's decision (what a mention costs) and its done-whens are moot at HEAD because a mention already costs zero (the decision's own \"nothing at all\" option), so the plan should either be retargeted at the residual gap (provenance in the refusal, \u00a74's opt-out) or withdrawn, and leaving it as written would ship a second, parallel notion of mention cost.",
+      "text": "\u00a71 asserts the estimator \"counts every resolvable repository path named anywhere in a node's brief at full file load\", and \u00a73 proposes to stop charging a mention at full load and charge it at a reference cost; but `_declared_input_files` (added in `318ec2b6a`, ancestor of the plan's own evidence revision `1135b00d9`) already charges a path only when its clause declares it an input and charges a mere mention at nothing, and `_paths_a_clause_charges` already withholds the paths a negation governs, so the \"brief prose is priced at full load\" premise and all of \u00a73 describe a defect that was removed before the plan was revised",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:3353",
+      "id": "reuse_search-2",
+      "reason": "the section is nearly complete in the tree; the honest node is one clause (name each contributor's provenance within the existing renderer), not the new reporting path \u00a72 specifies.",
+      "text": "\u00a72's premise that \"it reports only the total\" is false: `_context_refusal_detail` already renders \"largest contributing files: <path> (<n> tokens), \u2026\" into the refusal `detail`, built by `_context_contributors` from the same `write_paths`/`named_files` groups, so the \u00a72 done-when is already met except for the one clause that says whether the term arrived as a declared write path or a mention",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:3319",
+      "id": "duplicate_owner-1",
+      "reason": "a \u00a72/\u00a78 that names `_context_contributors` and `_context_refusal_detail` as the owner to extend is a one-clause change versus a new subsystem, and the plan's own \u00a78 already lives in routing.py where the owner sits.",
+      "text": "\u00a72/\u00a78 propose to compute and report a per-file term breakdown beside the total, but `_context_contributors` already builds exactly that ranked per-file list from `repository_files.write_paths` and `repository_files.named_files` (each record already carries `estimated_tokens` and a group that is the write-path/mention distinction), so a new breakdown forks the owner; the section-8 evidence grep (`per_file`/`per-file`) missed it only because the existing identifiers are `write_paths`/`named_files`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:1963",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a77 asks to add a plan-level figures directory the node does not need because it already holds a figures path under its own fragment; the real question is whether a node's own `<node-id>` figure directory satisfies the graphics mandate, which is the opposite of the change \u00a77 specifies \u2014 and \u00a77's asserted \"measured\" conflict must be re-checked against the per-node grant that exists at HEAD.",
+      "text": "\u00a77 states that `_grant_landing_write_paths` gives every node \"the cumulative evidence record and the plan file\" and that `docs/figures/<plan>/` is absent from the set; neither is the current design: `_grant_landing_write_paths` (reckon/crew/dispatch.py:2052) grants the node's own disjoint fragment `docs/evidence/fragments/<plan>/<node-id>.html` and `docs/figures/<plan>/<node-id>/` via `_landing_fragment_paths` (dispatch.py:2014), while the cumulative record, the plan file and the `docs/figures/<plan>` topic are owned by `_shared_landing_paths` (dispatch.py:1963), and the prompt (reckon/crew/prompts.py:167) already directs each worker to `docs/figures/<plan>/<node-id>/`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s2",
+      "id": "thin_wrapper-1",
+      "reason": "extending one renderer keeps one owner of the refusal text, where a second reporting path beside `_context_refusal_detail` is the drift the plan objects to elsewhere; the section should be rewritten as a one-clause extension of the owner.",
+      "text": "the section adds a report of the dominant term rather than extending `_context_refusal_detail`, which already renders the ranked contributors, and it gives no reason the existing renderer cannot carry the one missing fact (contributor provenance)",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "11860e47fee53875b3d6c897232f116fc6c4cd467bf7d107eff53efdbb243814",
+  "plan_slug": "a-brief-should-not-cost-what-it-names",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T164308576590-plan-review-of-a-brief-should-not-cost-what-it-names",
+  "reviewed_blob_sha": "90e0b84fab6d9ce9808b4862574214c8ce0e2a71",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no new module; it edits branches inside `reckon/crew/routing.py` and `reckon/crew/dispatch.py`, and its \u00a74/\u00a75 fields are carried on existing records rather than spread across new wrappers, so it does not add surface; the depth defect it does carry is reported under duplicate_owner, where it re-derives an existing breakdown.",
+    "duplicate_owner": "a finding \u2014 \u00a72/\u00a78 re-derive the per-file breakdown already owned by `_context_contributors` (reckon/crew/routing.py:3319) and already surfaced by `_context_refusal_detail`, and \u00a77 restates the landing placement already owned by `_shared_landing_paths`/`_landing_fragment_paths` (reckon/crew/dispatch.py:1963, :2014).",
+    "reuse_search": "a finding \u2014 the plan does not cite that `_declared_input_files` (reckon/crew/routing.py:3098) already stopped charging mere mentions at file load, nor that `_context_refusal_detail` (reckon/crew/routing.py:3353) already reports the dominant contributors, so the premise of \u00a71 and much of \u00a72/\u00a73 is already in the tree.",
+    "thin_wrapper": "a finding \u2014 \u00a72 proposes a new dominant-term report beside `_context_refusal_detail`, which already renders the largest contributing files with token figures, and the plan nowhere says why that existing renderer cannot be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T07:52:00.977270+00:00"
+}

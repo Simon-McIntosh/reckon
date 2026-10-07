@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:05:14.653Z",
+  "dispatched_at": "2026-10-05T01:56:21Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/section-contract-and-computed-impl.html#s2",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a72 should have said it extends `insert_section` in reckon/_store.py, not that it adds a parallel target, which is what the subsequent repair nodes were forced to reconcile.",
+      "text": "\u00a72 introduces `append target 'sections'` (now mcp.py:1704) as a new create/attach interface while the design text is silent on the pre-existing `insert_section` op (mcp.py:1712, reckon/_store.py:3110 `_apply_insert_section`), so the same section-creation behaviour is reached by two state routes and the plan gives no justification for a second route over extending the first \u2014 the landed history bears the cost out, since two later repair nodes (`e4be85c9`, `98c976c5`) were spent converging the two routes' validation and repairing cases that pinned the older op",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_plan_html.py:530",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should name the declaration map as the owner and have the record's status derive from it (or state why the two must be stored separately), instead of adding a second store for one fact.",
+      "text": "\u00a71 makes each section record carry `status` (SectionRecord.status, reckon/_schema.py:948, enum `SECTION_DECLARATION_ENUM`) mirroring the existing `plan-section-declarations` map, so a section's declared state now has two authoritative homes, and the design does not say which wins or that one is derived from the other \u2014 the landed \u00a78/\u00a79 follow-ons already had to make `derive_impl_from_sections` take the declarations as a second input to bridge the two",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/section-contract-and-computed-impl.html#s1",
+      "id": "interface_budget-1",
+      "reason": "each added section must, in its own text, either retire/merge the pre-existing route and finding it duplicates (e.g. the untyped `insert_section`) or state why the surface cannot be avoided.",
+      "text": "\u00a71/\u00a72 add public surface \u2014 the `SectionRecord` definition to the published schema (docs/_shared/plan.schema.json:459, +1 public definition), the `append target 'sections'` and the newly required `effort_hours`/`capability`/`links` fields on `insert_section` to the MCP op vocabulary (mcp.py:1704, :1712), and \u00a72/\u00a76/\u00a77 add refusal/finding families (`section-record-invalid`, `unwired-plan`, `plan-ref-could-be-section-ref`) \u2014 and none of these sections name what they retire or merge, or state why nothing can be, so the added surface (mcp_views 33, refusal_families 23) is unaccounted for in the section text",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7b4a3357299c75f45f8f428f077e6d12bc15178859a35575a6ef01646b7aee7d",
+  "plan_slug": "section-contract-and-computed-impl",
+  "plan_version": 93,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T015605019162-plan-review-of-section-contract-and-computed-impl",
+  "reviewed_blob_sha": "4df42128f192232ff270986b7e2f79727feb1239",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design lands behind existing owners rather than a new module family: the record is one `SectionRecord` in reckon/_schema.py:919, impl is one `derive_impl_from_sections` (reckon/_plan_html.py:318), and \u00a77's wiring rule is one `unwired_plan_finding` (reckon/doccheck.py:863) called by the audit, the create boundary and the roadmap rather than spelled three times.",
+    "duplicate_owner": "a finding \u2014 \u00a71's section record carries a `status` field that mirrors the `plan-section-declarations` map, so the same fact has two homes; the owner to extend is the declaration parser in reckon/_plan_html.py.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a71/\u00a72/\u00a75/\u00a77 add to the MCP op vocabulary and to the refusal/audit finding families without any section naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "pass \u2014 the plan searched the two codebases it names and cites the mechanisms it extends: `parse_plan_ref` (reckon/_schema.py:274), `depends_on`/`gated_sections` resolution, the `plan-section-declarations` map (reckon/_plan_html.py:530), and `CapabilityRequest` (reckon/_schema.py:891), with a recorded S22 reuse map over 14 sections and 55 verified citations; the landed `SectionRecord` reuses `CapabilityRequest` verbatim rather than authoring a parallel capability type.",
+    "thin_wrapper": "a finding \u2014 \u00a72 adds an `append` target `sections` as a second section-creation route beside the pre-existing `insert_section` state op, and its design text never names `insert_section` nor says why that op cannot be extended, leaving two live routes into the same machinery."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.190019+00:00"
+}

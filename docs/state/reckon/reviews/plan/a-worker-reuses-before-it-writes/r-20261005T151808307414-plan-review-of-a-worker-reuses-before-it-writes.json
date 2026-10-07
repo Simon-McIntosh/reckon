@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T15:23:38.237Z",
+  "dispatched_at": "2026-10-05T15:18:45Z",
+  "findings": [
+    {
+      "anchor": "reckon/clones.py:644",
+      "id": "reuse_search-1",
+      "reason": "the plan would either route the detector through the existing runner or name all copies, instead of inventing the keyword a third time while claiming velocity's git \"is extended rather than doubled\".",
+      "text": "the prior-art search covers only two git runners and misses reckon/crew/routing.py:473, whose `_git(*args, check=True) -> CompletedProcess` already carries the check-keyword/process-return shape \u00a712 proposes to add a third time to velocity.git (differing only in text-mode output and its CrewError type)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:473",
+      "id": "duplicate_owner-1",
+      "reason": "extending the existing owner removes the duplicate and keeps one runner; the plan as written forks a second one and its replacement census (`grep '\"archive\"' reckon/`) will still not see the routing/promotion copies.",
+      "text": "\u00a712 re-implements the process-returning git runner on velocity.git rather than extending the owner already at routing.py:473, which promotion.py imports (promotion.py:65) and drives with check=False at ten-plus call sites",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5e68e2f9d384d65a9a87a5721f878e438a8451910490bd39bd391fb9abf69129",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 127,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T151808307414-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "1be87c2ea68bb00c9f1edcb009eaa50400ad89ee",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the new velocity sources reader hides the ls-tree listing, the batched object read and the `.py` filter behind one path\u2192bytes call, and retires a private reader rather than adding a parallel module.",
+    "duplicate_owner": "a finding \u2014 the process-returning git runner already has an owner at reckon/crew/routing.py:473 whose `check` keyword the plan re-invents on velocity.git, and the plan leaves the capabilities.py:1148 and picker/lane_context.py:271 cache cascades unnamed while asserting the cascade \"gets one owner\".",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 names in its own text what it adds (two public definitions on velocity: the sources reader and cache_root) and what it retires (revised_python), net +1, and adds no CLI option, MCP view or refusal family.",
+    "reuse_search": "a finding \u2014 the plan names two git runners (velocity.git, clones._git) but reckon/crew/routing.py:473 already defines `_git(repo, *args, check=True)` returning a CompletedProcess, the exact mechanism \u00a712 proposes to add to velocity.git, and promotion.py already imports and consumes it.",
+    "thin_wrapper": "pass \u2014 \u00a712 extends velocity's existing git/read_blobs/cache_root instead of layering a parallel git-plumbing module, and states the consumers' differences; the defect it carries is a missed existing owner, not a wrapper over it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.654778+00:00"
+}

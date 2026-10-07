@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:43:26.523Z",
+  "dispatched_at": "2026-10-04T21:34:32Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/host.py:125",
+      "id": "reuse_search-1",
+      "reason": "the remaining \u00a72b node should consume `host.host_facts()` and the plan re-cite its search, instead of minting a second cgroup reader and a fresh one-shot measurement.",
+      "text": "the plan's \u00a72b (plan.html:353) asks \"one placed step prints /proc/self/cgroup\" to settle the containment premise, but `_inside_the_job` in `reckon/host.py` already reads the process's own cgroup line as the authority for whether it sits inside a job \u2014 plan.html:340 records the same inference the reader already implements",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:3803",
+      "id": "thin_wrapper-1",
+      "reason": "the plan should name one owner of \"ensure a durable shared resource exists\" and extend it, or state why the reservation is a genuinely separate resource and not a thin parallel.",
+      "text": "`ensure_placement_reservation` and its `placement_ensure_line` restate the durable-shared-resource ensure shape already owned by `ensure_wrapper_service`/`ensure_watcher_service` at reckon/crew/runs.py:3546 (safe-to-run-twice, held-once, publish the handle), so the plan adds a second ensure surface rather than saying why the existing ensure cannot host the reservation",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/placement.py:53",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a73/\u00a76 should extend `fleet_node.py` as the owner of the held allocation and its step placement and delete the parallel `salloc --no-shell` reservation and its second published record, rather than maintain two owners of the same job id.",
+      "text": "the plan's \u00a73 design makes `placement.py` a second owner of one-allocation-plus-overlap-steps: `RESERVATION_STEP_SCHEDULER = \"srun\"` (:53) and its own `RESERVATION_STATE_QUERY`/`RESERVATION_REASON_QUERY` (:71-72) and `publish_reservation` (:180) fork the hold/find/publish/place path that `reckon/crew/fleet_node.py` already implements (`submit` :164, `find_allocations` :222, `placement_argv` returning `[\"srun\",\"--overlap\",f\"--jobid={job}\",*command]` :326) and `reckon/crew/fleet_supervisor.py` already publishes (`publish_record` :305, `RECORD_NAME` :83); `placement.py` already imports `fleet_node` to *adopt* it (:514-527), which is the proof the two paths overlap",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "97a43092c06db5d49b0e3838f0e3c75d6b8afd323616c6329772a83a7cb554dc",
+  "plan_slug": "a-worker-is-charged-to-a-job",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T213417813342-plan-review-of-a-worker-is-charged-to-a-job",
+  "reviewed_blob_sha": "591ab43915c5432840b8e7a0b5d8607c6cf06c70",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the placement behaviour hides hold/query/publish/step behind `ensure_reservation` and `apply_backend_placement`, and \u00a72 funnels every liveness decision into the one accessor `record_process_alive`, so the interface is smaller than what it hides.",
+    "duplicate_owner": "a finding \u2014 the plan's \u00a73 makes `reckon/crew/placement.py` a second owner of allocation-holding and step-placement beside `reckon/crew/fleet_node.py`, which already holds an allocation, finds it from the queue, and places commands as `srun --overlap --jobid` steps.",
+    "reuse_search": "a finding \u2014 the plan's reuse_search is stale: it asserts no scheduler machinery exists (plan.html:56-57, \"a search ... returns nothing\"), but `reckon/crew/fleet_node.py`, `reckon/crew/fleet_supervisor.py`, `reckon/host.py` and `reckon/nested_launch.py` now own exactly the machinery the remaining sections add, and \u00a72b proposes a cgroup measurement `host.py` already owns.",
+    "thin_wrapper": "a finding \u2014 the plan adds `reckon crew placement --ensure` and `ensure_placement_reservation` as a parallel thin layer beside the existing durable-shared-resource ensure rather than extending it, and justifies it by \"mirroring\" rather than by why the owner cannot host a second resource."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.559305+00:00"
+}

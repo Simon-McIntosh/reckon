@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T15:05:56.866Z",
+  "dispatched_at": "2026-10-05T15:00:07Z",
+  "findings": [
+    {
+      "anchor": "reckon/clones.py:697",
+      "id": "reuse_search-1",
+      "reason": "the plan must give the reader a prefix set that reproduces the detector's current changed-file sources (e.g. all tracked `.py`, leaving `corpus_prefixes` to scope the match corpus), or record the narrowing as intended, otherwise the migration silently changes what promotion reports.",
+      "text": "the plan lists the detector's `reckon/` and `tests/` corpus as the prefixes for the shared reader, but in `clone_matches` those prefixes already scope only the match corpus (reckon/clones.py:563-602) while the detector's sources today come from `revised_python`'s `git archive` over every tracked `.py` (1169 files, 98 of them outside `reckon/` and `tests/`, e.g. `docs/figures/**`); a changed `.py` outside the prefixes is still parsed today and can be reported when it copies a respective `reckon/` function, so routing the sources through the two-prefix reader drops those changed files from the scan and contradicts \u00a712's \"each consumer keeps the scope it measures today\"",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:147",
+      "id": "thin_wrapper-1",
+      "reason": "the plan should state the new variant's timeout/contract and either extend `git` with a non-raising mode or record why a second public runner is preferred.",
+      "text": "velocity gains a public non-raising git variant beside `git` for a single private caller (clones.changed_paths and _repository_key), and the plan justifies only why `git` cannot be *used* (it raises and returns bytes) rather than why it cannot be *extended*; the two runners then diverge on an unstated axis, because `git` carries `timeout=180` while the detector's current `_git` (reckon/clones.py:644) has none, so a diff that runs long today would newly time out",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/clones.py:389",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend the owner (a leaf/env-var parameter on velocity.velocity_cache_root) or keep it as a named exception with a reason that is not \"different directory\", since the per-repository subdirectory layout is separate and unaffected.",
+      "text": "`_cache_root` re-implements the exact resolution cascade velocity owns (explicit argument \u2192 kind env var \u2192 `XDG_CACHE_HOME` \u2192 `RECKON_HOME` \u2192 `~/.cache`), differing from `velocity_cache_root` only in `RECKON_CLONE_CACHE` vs `RECKON_VELOCITY_CACHE` and the `clones` vs `velocity` leaf, and \u00a710 already retired the interface counter's private cache root in favour of velocity's; the plan keeps this one on the claim that a different directory means \"not a copy\", which is false of the resolution mechanism",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1d8f12d3fe03c654ff4fda629a4b5cefb715b677783a703a5a16580273696eee",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 123,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T145929482717-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "659c4b84c1749f1a39e75e90f6d567a025bba698",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the one new public sources reader on reckon/velocity.py hides the `ls-tree` listing, the batched `cat-file` object read and the missing-object handling behind a single `(repo, revision, prefixes)` call, which is the shape read_trees' listing-plus-bytes step already had.",
+    "duplicate_owner": "a finding \u2014 reckon/clones.py:389 `_cache_root` reproduces the resolution cascade that reckon/velocity.py:542 `velocity_cache_root` already owns, differing only in the env-var name and the leaf directory, while the plan asserts it \"is not a copy\".",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 adds two public definitions (the sources reader and the non-raising git variant) and retires `revised_python`, names the retirement, nets +1 in `public_definitions`, and adds to no CLI, MCP-view or refusal family.",
+    "reuse_search": "a finding \u2014 the plan does search and cites reckon/velocity.py's `git`, `read_blobs` and `velocity_cache_root` and reckon/interface_counts.py:441 `read_trees`, but routing the detector through the counter's prefixed reader narrows the detector's changed-file sources from every tracked `.py` to only `reckon/` and `tests/`.",
+    "thin_wrapper": "a finding \u2014 the plan adds a second public git runner to velocity for the detector's return-code need without saying why velocity's existing `git` (reckon/velocity.py:147) cannot carry a non-raising mode, and leaves the new variant's timeout unstated against that `git`'s `timeout=180`."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.659000+00:00"
+}

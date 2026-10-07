@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T09:29:54.265Z",
+  "dispatched_at": "2026-10-05T09:26:43Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:419",
+      "id": "reuse_search-1",
+      "reason": "the repair should promote the existing private primitive and route both forks through it, not describe an addition; this changes the node's file list and its surface accounting.",
+      "text": "\u00a78 says the owner \"gains a bytes-payload path\" so a call site staging non-JSON bytes need not keep its own replace, but `_write_through_sibling_temporary(path, render, *, fsync, mode, fsync_directory)` already performs exactly that: it writes any payload a caller's `render(handle)` callable produces through a unique sibling temporary, and `write_json_atomically` is itself only a thin adapter over it (`reckon/_store.py:511`)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/follow_checkpoint.py:242",
+      "id": "thin_wrapper-1",
+      "reason": "the honest move is to extend the owner (pass the line-log as a render callback) rather than keep a second writer beside it; the plan's \u00a78 currently leaves this fork.",
+      "text": "`_replace_atomically`'s docstring keeps it \"rather than moved onto the shared JSON writer\" because the pane history is a log of JSON lines one commit of the document-oriented writer cannot express; that reason is valid against `write_json_atomically` alone, but not against the owner's `_write_through_sibling_temporary`, which expresses the line-log directly, so the retained wrapper is justified against the wrong mechanism",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/project_state.py:156",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a78 declares a single durable-replace owner but its own check cannot see this fork; the done-when should also require that the directory-fsync be single-homed in the owner, or the same defect the section exists to close is left one level down.",
+      "text": "`_fsync_directory` here is a byte-for-byte second copy of `reckon/_store.py:367:_fsync_directory`, and \u00a78's done-when greps only `def _durable_replace\\|def _replace_atomically`, so this lower-level duplicate survives the repair even after `_durable_replace` is retired",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:1199",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a78's premise that two forks \"survived\" is an undercount visible in the owner module itself; the design should fold this third replace path in or name why it is exempt, otherwise the section's census-grep done-when passes while the mechanism is still copied, which is the same instrument blind spot \u00a78 was written to correct.",
+      "text": "the evidence-append path writes `path.with_suffix(\".html.tmp\")` then `tmp.replace(path)` inside `_store.py` itself, bypassing `_write_through_sibling_temporary`, so \"one atomic writer\" is false within the very module \u00a78 names as the owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-reuses-before-it-writes.html#s8",
+      "id": "interface_budget-1",
+      "reason": "the section's interface accounting is incorrect as written and must state the real delta (zero on retirement, and a surface addition if a new public entry point is introduced), which is the accounting rule \u00a75 exists to enforce.",
+      "text": "\u00a78 states \"the public_definitions family shrinks by the two retired forks\", but `_durable_replace` and `_replace_atomically` are underscore-private and `reckon/interface_counts.py:82-91` marks a definition public only when it and its enclosing classes are all non-underscore (verified directly: the counter reports `_durable_replace` public=False, and project_state.py reads 24 public / 47 non-public definitions), so retiring them moves public_definitions by nothing; if the owner instead gains a *public* bytes entry point the family grows by one",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e297334906354273c6484f8bd1dc4621df7da515af4e06bf4fba068bc7a799ae",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 83,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T092626040374-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "06f004663a27610210fcbbb8ddebdff2bee6276d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a77 and \u00a78 add no new module; the depth already lives in `reckon/_store.py`, and the repair preserves it if it promotes the existing private primitive rather than adding a second public adapter.",
+    "duplicate_owner": "a finding \u2014 `reckon/project_state.py:_fsync_directory` is a second copy of the owner's own `_fsync_directory`, invisible to \u00a78's own done-when grep, and `reckon/_store.py` contains a third replace path beside the primitive it names.",
+    "interface_budget": "a finding \u2014 public_definitions 1474, cli_options 317, mcp_views 33, refusal_families 23; \u00a78 claims the public_definitions family shrinks by the two retired forks, but both names are underscore-private and the counter counts only non-underscore definitions, so the family cannot move and the section's accounting is wrong as written.",
+    "reuse_search": "a finding \u2014 \u00a78 declares the owner will \"gain a bytes-payload path\", but `reckon/_store.py:_write_through_sibling_temporary` already is that generic payload path.",
+    "thin_wrapper": "a finding \u2014 `reckon/crew/follow_checkpoint.py:_replace_atomically` is retained with a justification that argues against `write_json_atomically` but not against the owner's render-callback primitive."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.755432+00:00"
+}

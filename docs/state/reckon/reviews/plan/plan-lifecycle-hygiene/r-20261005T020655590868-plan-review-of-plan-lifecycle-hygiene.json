@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:17:32.816Z",
+  "dispatched_at": "2026-10-05T02:07:18Z",
+  "findings": [
+    {
+      "anchor": "reckon/project_state.py:2198",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend that existing closability predicate (add unresolved-followup / unset-impl / uncollapsed-section conditions) rather than build a parallel gate.",
+      "text": "\u00a73.5 proposes a close-sprint refusal gate, but `_close_sprint_with_carry_forward` already makes a sprint closable only when every non-terminal item is held by a `held` blocker, else raising ProjectStateError naming the item, using a journal and carry-forward",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/plan-lifecycle-hygiene.html:86",
+      "id": "reuse_search-1",
+      "reason": "M3's remaining work is scheduling the existing pass, not building it; the plan's \"still pending\" line would have an implementer rebuild a landed mechanism.",
+      "text": "\u00a73.3 states the age-based archive sweep is pending while `reckon/archive.py (run_archive_pass/find_archive_candidates)` and the `reckon archive` CLI already apply exactly the quarterly-style pass over done/superseded docs older than a threshold",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/doccheck.py:863",
+      "id": "thin_wrapper-1",
+      "reason": "if the diet is to have teeth the honest change is extending the existing refusal; a prompt in a skill is the shallow form and adds surface with no enforcement.",
+      "text": "\u00a73.4's diet is a pre-flight question in the `reckon-create` skill, layered over the existing write-time refusal `unwired_plan_finding`/`_unwired_plan_refusal` that already blocks a new plan declaring no wire",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/plan-lifecycle-hygiene.html:73",
+      "id": "reuse_search-2",
+      "reason": "the plan should state the write-time guard consumes the doccheck predicates so the reject/warn severities cannot diverge from the audit's.",
+      "text": "\u00a73.1's write-time predicates (impl set on ship; landed card present; research-doc closure) restate audit-side checks already owned by `reckon/doccheck.py` \u2014 MISSING_IMPL at line 577, landed-card class `_LANDED_SECTION_CLASS` at line 116 \u2014 without naming that writes must reuse those predicates",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/plan-lifecycle-hygiene.html:83",
+      "id": "interface_budget-1",
+      "reason": "with cli_options at 317 the section must account for the surface it adds; the audit and archive commands landed as new options without any retirement argument.",
+      "text": "\u00a73.2 and \u00a73.3 add to cli_options (the `audit` and `archive` commands and their options) and neither section, and the rest of \u00a73, names a CLI option or command it retires or merges, or states why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "33c884c0e158599c8c3b67b981152b2e6cf150c2e75614484e51fe79bee6623b",
+  "plan_slug": "plan-lifecycle-hygiene",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T020655590868-plan-review-of-plan-lifecycle-hygiene",
+  "reviewed_blob_sha": "f51893071814db94a0dc2e1c3397737441991392",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan proposes no new module, and the lifecycle predicates it would add already live in non-shallow owners (`reckon/lifecycle.py` derived state, `reckon/doccheck.py` audit checks), so nothing is spread across a family of shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a73.5 would fork sprint closability that `_close_sprint_with_carry_forward` (`reckon/project_state.py:2198`) already enforces.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a73.2\u2013\u00a73.3 add the `audit` and `archive` command options to cli_options and no section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a73.3 (line 86) declares the archive sweep \"still pending\" and \u00a73.5 (line 94) proposes a new sprint-close gate, without citing that both mechanisms already exist in the repo it would extend.",
+    "thin_wrapper": "a finding \u2014 \u00a73.4 (line 90) adds a skill-level pre-flight question over the existing write-time plan-creation refusal `unwired_plan_finding` (`reckon/doccheck.py:863`) without saying why that check cannot carry the diet."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.078113+00:00"
+}

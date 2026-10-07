@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:03:54.086Z",
+  "dispatched_at": "2026-10-05T01:48:40Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:11289",
+      "id": "duplicate_owner-1",
+      "reason": "the node should extend or lift the existing predicate (and death_census.py, which owns terminal-shape classification) rather than fork a parallel detector.",
+      "text": "_session_too_large_to_continue already reads exactly \u00a79's shape-5 predicate (\"the run announced a compaction that never completed a boundary\", reading system/status compacting against system/compact_boundary) and _dispatch_session at dispatch.py:11489 already withholds that session so recovery starts fresh; \u00a79 instead proposes its own live classifier without naming that this owner exists, so one stream shape would acquire a second reader and a second notion of \"too large to continue\".",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html#s9",
+      "id": "thin_wrapper-1",
+      "reason": "naming the fresh-session half as already complete leaves \u00a79's prevention limited to the compaction threshold and bounded turns it actually still owes.",
+      "text": "\u00a79 offers \"a fresh session instead of an inherited one (\u00a78)\" as a prevention candidate, but \u00a78 already landed this: session reuse is keyed to the run's own task and dispatch withholds a session whose prior run ended too large, so the candidate restates landed behaviour and the section never says why the existing gate cannot carry whatever is left.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html#s9",
+      "id": "interface_budget-1",
+      "reason": "a section that adds an interface family must account for it in its own text, and here the classification belongs in an owner that already classifies terminal shapes.",
+      "text": "\u00a79 says dispatch should detect shape 5 \"and end the run as its own classification\" \u2014 a new terminal classification \u2014 without naming what in the existing vocabulary (the death_census completed/dead/running/unreadable set, or the D-numbered dispatch refusal families in reckon/crew/refusals.py) it retires, merges, or extends, while omnibus counts stand at public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23.",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html#s9",
+      "id": "reuse_search-1",
+      "reason": "an implementation brief built from \u00a79 as written would rebuild machinery the reader is never told exists.",
+      "text": "\u00a79's prevention half proposes a compaction classifier and a fresh-session rule as if new, but cites neither _session_too\u2026 (dispatch.py:11289) nor the landed session-freshness gate (\u00a78) that already implement both, so the node as written would search for prior art only after dispatch.",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "72799d74962afe51985355ef1a5d4178213112a482fcbfe91e658e09f4926c54",
+  "plan_slug": "a-review-dies-where-nobody-is-looking",
+  "plan_version": 99,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014822956276-plan-review-of-a-review-dies-where-nobody-is-looking",
+  "reviewed_blob_sha": "a2a537a19b5323c7df86cb2433c37c6d8ee37218",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan extends existing owners (reckon/crew/dispatch.py, reckon/crew/recovery.py, reckon/doccheck.py, reckon/_plan_html.py) rather than introducing a new module, so there is no new interface to judge for depth.",
+    "duplicate_owner": "a finding \u2014 the \u00a79 shape-5 prevention re-implements compaction-shape detection that reckon/crew/dispatch.py:11289 already owns.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a79 adds a run classification without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the landed sections cite their prior art extensively (classify_pointer, record_process_alive, _review_lane_candidates, context_budget, effective_input_window), but \u00a79's unlanded prevention half proposes a fresh-session and compaction classifier without citing the mechanism that already implements both.",
+    "thin_wrapper": "a finding \u2014 \u00a79's prevention candidate \"a fresh session instead of an inherited one (\u00a78)\" adds no behaviour the already-landed dispatch session gate lacks."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.450546+00:00"
+}

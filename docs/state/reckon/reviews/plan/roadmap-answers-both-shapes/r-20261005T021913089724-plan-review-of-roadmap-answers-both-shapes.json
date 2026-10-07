@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:24:06.521Z",
+  "dispatched_at": "2026-10-05T02:19:41Z",
+  "findings": [
+    {
+      "anchor": "reckon/roadmap.py:2508",
+      "id": "reuse_search-1",
+      "reason": "naming them makes the implementer extend the existing predicate and precedent instead of inventing a parallel notion of \"terminal non-shipped\" that can drift from lifecycle.py's vocabulary.",
+      "text": "\u00a74 introduces a \"member in a terminal non-shipped state\" denominator rule and invokes \"the way a deferred one does\" without citing either mechanism it must extend: the predicate already exists as `TERMINAL_STATUSES - COMPLETED_STATUSES` (reckon/lifecycle.py:15, applied at roadmap.py:2508) and deferred members already have a first-class treatment (`deferred_members` / `schedule_override`, roadmap.py:1894\u20131933)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:2101",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a74 must name both owners, or extend a single shared closure-completion helper, so the denominator repair cannot land on one surface and drift from the other.",
+      "text": "closure completion is computed twice, in `resolve_graph_target` (roadmap.py:1921, `completion` + `shipped_of_total`) and `_dependency_endpoints` (roadmap.py:2101, `completion` + `shipped_fraction`), and \u00a74's done-when names \"a completion figure\" in the singular and names neither owner, so a repair to the graph-target owner (the surface the \u00a71 measurement came from) leaves the `endpoints` array still capping below its total and the two figures free to disagree",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b30366be29c2dc8719a25538f9b31ef096b1945f9c3743e0c0fea195789aa0cf",
+  "plan_slug": "roadmap-answers-both-shapes",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T021913089724-plan-review-of-roadmap-answers-both-shapes",
+  "reviewed_blob_sha": "110eb6c8c7bb4cb2517cd35bb5d9b62ac5b7eac2",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is proposed; \u00a74 is an in-place change inside the two existing closure resolvers, so no interface is added over machinery that stays hidden.",
+    "duplicate_owner": "a finding \u2014 closure completion is computed by two owners, `resolve_graph_target` (roadmap.py:1921) and `_dependency_endpoints` (roadmap.py:2101), and \u00a74 names neither while speaking of \"a completion figure\" in the singular.",
+    "interface_budget": "pass \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; no section adds to any of the four (the \u00a72 finding code and \u00a73/\u00a74 payload fields belong to none of these families, and no section adds a CLI option, MCP view or public definition).",
+    "reuse_search": "a finding \u2014 \u00a74 introduces a \"terminal non-shipped\" denominator rule and the deferred-member precedent without citing either existing mechanism (the predicate `TERMINAL_STATUSES - COMPLETED_STATUSES` at roadmap.py:2508, and the deferred treatment at roadmap.py:1894).",
+    "thin_wrapper": "pass \u2014 no wrapper over existing machinery; \u00a72 extended the existing finding engine and \u00a73 extended the existing endpoint derivation, and \u00a74 repairs a value rather than layering a parallel reader."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.150035+00:00"
+}

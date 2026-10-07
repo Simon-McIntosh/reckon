@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-07T11:42:06.881978+00:00",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:116",
+      "id": "single_goal-1",
+      "reason": "splitting into two nodes changes dispatch granularity and lets each mechanism land and be reviewed independently, which the single section-level status does not allow.",
+      "text": "\u00a710 fixes two distinct mechanisms in one node: (1) promotion merges dimension_dispositions/responses/response_events from staging copies into the committed record (promotion.py), and (2) plan_review.record_response writes to the committed record and commits it through _commit_state_write (plan_review.py/review.py); the section carries one data-status and one done-when paragraph over both, so neither half can be closed on its own verdict \u2014 the same shape \u00a78 was split on.",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "75bb9ab06fbf42fa2434bcee35ec2ff094d83f9a1c1029f6dd54856ac55267fa",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 74,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "both halves write through the committed-record writer in reckon/crew/review.py, so two nodes would run in sequence on the same file; the done-when already gives each half its own test and its own failing control, so neither half's verdict is hidden inside the other",
+      "when": "2026-10-07T11:52:07.701978+00:00"
+    }
+  ],
+  "responses": {
+    "single_goal-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "both halves write through the committed-record writer in reckon/crew/review.py, so two nodes would run in sequence on the same file; the done-when already gives each half its own test and its own failing control, so neither half's verdict is hidden inside the other",
+      "when": "2026-10-07T11:52:07.701978+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v74.json",
+  "review_run_id": "r-20261007T114206881978-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "1458896b9ca4c6f1985c948a67843d0687ee35fd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a710 cites resolves in reckon/crew: review.stored_record (review.py:2188), review.record_dimension_disposition (review.py:2800), plan_review.record_response (plan_review.py:1302), store_plan_review (plan_review.py:570), read_plan_review (plan_review.py:964), list_plan_reviews (plan_review.py:1071), unanswered_findings (plan_review.py:1288), _commit_state_write (ledger.py:1693); no hrefs are cited.",
+    "done_when": "pass \u2014 each of \u00a710's three tests names a mutation that turns it red: revert promotion's field carry, revert record_response to a staging-only write, remove the disposition commit.",
+    "evidence_paths": "pass \u2014 \u00a710's evidence is the plan's own recorded measurement (run r-20261007T101030801011-names-arm-recall, 10:56:22Z/10:57Z), the same in-plan convention every landed section uses; its tests are gate logs named by the dispatch manifest.",
+    "naming": "pass \u2014 \u00a710 names mechanisms and files, carries no plan labels, ticket numbers or version tags into code, and its \"as now\" clause states a live behaviour rather than a changelog.",
+    "reasoning": "pass \u2014 the root cause matches the cited evidence, the mechanism produces the done-when, and the mechanism runs on the named caller (verified below).",
+    "single_goal": "a finding \u2014 \u00a710 declares \"One node\" yet lists two numbered deliverables that live in different modules and are closed by different tests.",
+    "wiring": "pass \u2014 \u00a710 declares no depends-on; its one node's write set (review.py, plan_review.py, promotion.py) is serialised against \u00a78/\u00a79 by the dispatch scope check on shared paths, the same disposition earlier reviews accepted."
+  },
+  "section_digests": {
+    "_document": "086f254416462520414f799a2806618f3ebd7fc5ed24bb00691aee0f91180e1f",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "0b7bbe590c321d86ff08104fff47ebf9df9025b041a8255f1dacfa47f9de17b6",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "a7fcc45c1a0d087b629ba0370de67f49444253b8bc50ca049cf5f402e4284625",
+    "s9": "3cf741abf98d7c12640ed6a8aef997dad41038c459798a46a8eefa6e8a3035ad"
+  },
+  "status": "ready",
+  "times_source": "run-id",
+  "timestamp": "2026-10-07T11:51:50.565385+00:00"
+}

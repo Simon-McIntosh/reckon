@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:19:35.539Z",
+  "dispatched_at": "2026-10-05T02:08:16Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/tests/spa_browser_harness.py:33",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a76's done-when claims the four reachable captures are the surface's real render, but the asset fork means the plan must name the authored-document owner and derive the set from it (as it already does for scripts via `authored_ui_module_paths`) rather than ship a parallel list that has already drifted.",
+      "text": "`_SPA_STYLESHEETS` is a hand-maintained 11-entry list whose owner is the authored document `docs/index.html` (12 `<link rel=\"stylesheet\">`, including `/_ui/home.css` at line 16); the harness copy never references `docs/ui/home.css`, so a `file:` capture renders the fleet-home surface with none of its styling while the served SPA loads it \u2014 a capture taken through this path is not the render the surface actually produces",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/serve.py:2247",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is an inline option on the renderer that already owns the document scaffold, which retires the parallel scaffold instead of letting it diverge; the plan's \u00a76 must state that choice or its reason.",
+      "text": "the plan's \u00a76 adds `write_file_spa_document` as a second SPA-document assembler beside `_render_spa_html`, which already renders the index the served SPA uses, and the plan justifies only why a second *harness* is avoided, never why the existing renderer cannot take an inline mode",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/rendered-evidence-on-this-host/r-20261005T020750417697-plan-review-of-rendered-evidence-on-this-host/plan.html#s6",
+      "id": "reuse_search-1",
+      "reason": "adding the two owner citations to \u00a76 turns a from-scratch document builder into an extension of the mechanisms that already own composition and rendering, which is the reuse the plan's \u00a75 method commits it to.",
+      "text": "\u00a76 says \"inline the composed project state and every script into one document\" without naming the mechanism that already composes state (`reckon/project_state.py::compose_project_state`) nor the renderer it re-scaffolds, so the plan's own reuse claim is narrower than the machinery its new path touches",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0dab48b03a3b21d72f93ec70b99b0114c2b4d00e4418e1a340ed7a0478021cdf",
+  "plan_slug": "rendered-evidence-on-this-host",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T020750417697-plan-review-of-rendered-evidence-on-this-host",
+  "reviewed_blob_sha": "a15cf9d9e44a7b6e0398e1f1b11c8099fb0fdf55",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 one context manager (`file_spa`, :614) hides document assembly, state inlining, runtime-asset and stylesheet inlining, JSX compilation and cleanup behind the same `ServedSpa` interface the served path already exposes.",
+    "duplicate_owner": "a finding \u2014 the new path hardcodes an 11-entry stylesheet list (`tests/spa_browser_harness.py:33`) that duplicates the authored asset set owned by `docs/index.html`, and the copy has already drifted (it omits `docs/ui/home.css`).",
+    "interface_budget": "pass \u2014 no section adds to any counted family; the file-URL path is test-only (`tests/spa_browser_harness.py`), so public_definitions 1470, cli_options 317, mcp_views 33 and refusal_families 23 are all untouched and nothing needs retiring or merging.",
+    "reuse_search": "a finding \u2014 the plan's reuse map names the harness and the skip classifier but never cites `reckon/serve.py::_render_spa_html` (:2247) or `docs/index.html`, the existing owner of authored SPA document assembly and its asset set, which \u00a76's new document path re-implements.",
+    "thin_wrapper": "a finding \u2014 the plan adds a second document assembler (`write_file_spa_document`, :557) over the SPA region `_render_spa_html` already renders, and \u00a76 states why a second harness is avoided but never why the existing renderer cannot gain an inline mode."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.122971+00:00"
+}

@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T08:15:27.023Z",
+  "dispatched_at": "2026-10-07T07:59:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-module-fits-a-worker-window.html:78",
+      "id": "reasoning-1",
+      "reason": "the split nodes must know whether the original is one of the compared targets or must be emptied, and implementing \u00a72 literally would either force every definition out of the original (contradicting \u00a78) or fail every split on a false \"lost\" report.",
+      "text": "\u00a72's move check requires every non-import top-level statement of the base module to appear byte-identically \"in exactly one produced module\", but \u00a78 (line 149) says the original module \"keeps whatever the map leaves in it\", and the script passes the original path separately from \"the module paths a split produced\"; a definition legitimately retained in the original therefore appears in no produced module and is reported lost, so a split done exactly as \u00a78 permits fails `check_pure_move` and \u00a73\u2013\u00a77's done-when",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b9727a2bc728326dc0b9eb56b402e6b32471bd2ddacb3dc8d709778626508deb",
+  "plan_slug": "every-module-fits-a-worker-window",
+  "plan_version": 3,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T08:18:30.312504+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T08:18:30.312504+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-module-fits-a-worker-window.v3.json",
+  "review_run_id": "r-20261007T075904919087-plan-review-of-every-module-fits-a-worker-window",
+  "reviewed_blob_sha": "c0b75c321523416f40fc1456e669abdfa6518f0a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 resolved against the worktree: `_context_fit_verdict` and `_tokens_for_bytes` (with `_CONTEXT_BYTES_PER_TOKEN = 3.5`, `_MEASURED_LAUNCH_CONTEXT_FLOOR_TOKENS = 50_392`) in `reckon/crew/routing.py`; `read_sources` in `reckon/velocity.py` with the cited `(repo, revision, *, prefix=...)` signature; `read_trees` in `reckon/interface_counts.py` built on `read_sources`; `definitions` lists only functions/classes; `_import_targets` in `reckon/served_code.py`; `docs/state/reckon/shared-write-paths.json` lists all four cited modules; `tests/test_staged_write_inventory.py` overlays working bytes over `read_trees` as cited; `/reckon/plans/the-fleet-moves-to-a-new-node` exists; the \u00a71 token table and the decision rationale's five files all reproduce at the cited revision `6891282e9` (dispatch 153,185; recovery 149,235; promotion 115,748; cli 100,720; mcp 59,351; runs 52,403; _backends 50,172; tests/test_crew 49,746; ledger 43,522; serve 43,373; routing 43,118; budget 41,496).",
+    "done_when": "pass \u2014 each section's done-when is measurable and names a control that can fail: \u00a72 requires a fixture file over the bound outside the allowlist and an allowlisted fixture under it each to turn the guard red, and three `check_pure_move` fixtures to exit non-zero; \u00a73\u2013\u00a77 measure the whole suite by delta against a base and the guard's ratchet; \u00a74 adds the byte-identical help-text comparison at base and head. No node's measure holds regardless of the code.",
+    "evidence_paths": "pass \u2014 every artifact path is durable and inside the repository: \u00a73\u2013\u00a76 maps under `docs/evidence/fragments/every-module-fits-a-worker-window/`, new test and script files under `tests/` and `scripts/`, and no gate log or receipt is written to a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the produced sibling modules are named for the concern each holds and \u00a78 forbids a part number, a version or the word *core*; the new files (`scripts/check_pure_move.py`, `tests/test_every_module_fits_a_worker_window.py`, `tests/test_check_pure_move.py`) carry no plan label, stage name or ticket number, and the plan-slug evidence directory is an output artifact, not a symbol.",
+    "reasoning": "a finding \u2014 \u00a72's move check and \u00a78 disagree on whether the original module may retain definitions; \u00a72 requires every non-import top-level statement of the base module to appear \"in exactly one produced module\", while \u00a78 says the original \"keeps whatever the map leaves in it\". The root cause (module size) matches the measured split of `_context_fit_verdict` into a launch floor plus whole-file write-path inputs, and each section's mechanism otherwise produces its done-when; but this one contradiction would send the move nodes down the wrong path.",
+    "single_goal": "pass \u2014 \u00a73\u2013\u00a77 name one deliverable each (a split (and, for \u00a73\u2013\u00a76, its map) as two nodes, a per-module move for \u00a77); \u00a72 carries two labelled deliverables, but they share one closeable done-when and one verdict (see note under reasoning), so the section closes on a single verdict rather than splitting its gate.",
+    "wiring": "pass \u2014 the plan declares `plan-standalone` with an explicit reason (no blocks edge or gate on the-fleet-moves-to-a-new-node \u00a76 is true, since that \u00a76 can run on a larger window or after \u00a73/\u00a74 land). No depends-on/informs/gates is missing: the cited fleet plan carries section-declarations only and no cross-plan edge on either side, and the absence of the edge is itself reasoned, not omitted."
+  },
+  "section_digests": {
+    "_document": "bf34e762364cc165682660798d7bf3d20f5ec0680e7d31365005a8e92b00ee86",
+    "s1": "b19a00becfaeb93129b092226ec7ac1b87063bba5bb603d21e705c49edd7e380",
+    "s2": "5d3cc0a1f28c1fdeb9d56e2a4ff2fa5797b8ece7af579bf17108ee9afb3d111e",
+    "s3": "6975a00d65bfacb82526fc2cc635ba0fbc2923b80ababdaf02c38435883da996",
+    "s4": "d6bb27c2901d1f2eed96b6215bafbcbe84df181db203e843904324c4b77c0755",
+    "s5": "aa9cdfb8d99577c174ee2e9465f22f9641d4a82f7b8b73dde429de8cf360e27f",
+    "s6": "41997e4908fcbd4839e6bcc1e88063b84d2d376bd741194f950b8b470def6c3b",
+    "s7": "eaac1924cb7806ccfd092761eddb1d4cad176ae5674d97651a9262b2bfe71462",
+    "s8": "09fb68ac509239cda4be6f9fefd549459cc0abb72771e5fe0b98c8cb3c4e1b0f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T08:17:42.011126+00:00"
+}

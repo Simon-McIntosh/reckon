@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T01:55:14.059Z",
+  "dispatched_at": "2026-10-05T01:47:33Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-can-be-reached.html#s4",
+      "id": "reuse_search-1",
+      "reason": "naming the existing channel turns \u00a74 from a new subsystem into a documented extension of one, which is the difference between adding surface and deepening it.",
+      "text": "\u00a74 proposes a new inbox and a new coordinator-side writer without naming the durable per-run channel it duplicates (reckon/crew/dispatch.py `peer_ask`/`peer_read`/`_channel_root`), whose endpoint is already `run_dir(run_id)/peer-channel` and already composed into every worker prompt at reckon/crew/prompts.py:619",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:3134",
+      "id": "duplicate_owner-1",
+      "reason": "the owner to extend is dispatch.py's channel; forking a parallel inbox-into-run-dir path gives two writers of the same run directory that will drift, which is the exact duplicate the rubric names.",
+      "text": "the plan adds a second durable per-run message writer/reader beside the channel already owned by `peer_ask`/`peer_read`/`_channel_root` in dispatch.py",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-can-be-reached.html#s4",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to relax peer_ask's sender/wiring gate or add a coordinator-sender path through it, so the plan should justify a new writer or drop it.",
+      "text": "the coordinator-side writer is `peer_ask` minus its adjacent-peer wiring requirement (peer_ask already persists a durable message into both run directories), and the plan does not state why peer_ask cannot be extended to admit a coordinator sender",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-can-be-reached.html#s4",
+      "id": "deep_module-1",
+      "reason": "consolidating the inbox onto the existing channel module keeps the new behaviour (a checkpoint read) behind the interface that already exists, rather than adding three shallow points of contact.",
+      "text": "\u00a74 spreads one capability across three surfaces \u2014 a prompt-contract edit in reckon/crew/prompts.py, a new coordinator-side writer in the CLI, and a new directory layout \u2014 where the existing channel is a single module hiding the store and the blocking read behind three functions",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-can-be-reached.html#s7",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the added interface surface in its own text, either by extending the existing `peer-*` client rather than adding an option, or by stating why nothing can be.",
+      "text": "the section adds a coordinator-side writer, which is a new CLI option on a surface already at cli_options 317, and names nothing it retires or merges",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b8cbd7acc3351542fdd9fb009172fe635fd959b554b2c9ddfe9dcfd4aedfcc62",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014719948005-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "42ba36a3c3727bd6d2ad2e6ab37678c007ef4b71",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the transport already hides the store and the blocking read behind peer_ask/peer_read; \u00a74 splits the same functionality across a prompt-contract edit, a new coordinator-side writer and a new directory instead of one module.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements the per-run durable channel owned by reckon/crew/dispatch.py rather than extending it.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a74/\u00a77 add a coordinator-side writer (a CLI option) and the section names nothing it retires or merges, nor why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a74 adds an \"inbox\" subsystem and, in its own text, cites no existing mechanism, though the durable per-run channel it most resembles already exists at reckon/crew/dispatch.py and is already in the worker prompt at reckon/crew/prompts.py:619.",
+    "thin_wrapper": "a finding \u2014 the coordinator-side writer \u00a77 names is peer_ask with its wiring requirement removed, and the plan nowhere says why peer_ask cannot be extended instead."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.409315+00:00"
+}

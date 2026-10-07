@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:17:27.693Z",
+  "dispatched_at": "2026-10-05T02:04:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/monitor-renders-what-it-is-given.html:430",
+      "id": "reuse_search-1",
+      "reason": "\u00a710's cell can consume the landed `flight.py` derivation now instead of waiting on a parallel `roadmap.py` re-derivation, and the plan should cite flight.py as the existing owner rather than gate itself on work that, for the critical path, is already present.",
+      "text": "\u00a710 states the critical-path coverage figure \"belongs to work-scheduling-surface \u00a73\" in `roadmap.py` and holds its cell closed on gate `g-coverage-figure-exists`, but `reckon/flight.py:_path_coverage` (called from `_portfolio_row`, `reckon/flight.py:2080`) already computes exactly that figure \u2014 coverage of the critical path's plans from live pointers whose `process_alive` is True rather than from transition events \u2014 and it is a plain function callable outside the HTTP handler, already exposed by `reckon flight --portfolio` (`reckon/cli.py:745`) and `crew(view=\"portfolio\")` (`reckon/mcp.py:4481`); commit `d4b581742` asserting it is an ancestor of HEAD and `tests/test_flight_portfolio.py` pins it.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/resumption.py:577",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to extract the launcher's guard sequence into one callable both the sweep and the dry run use, rather than add a wrapper whose parity rests on a test.",
+      "text": "`_launcher_refusal()` is a second guard surface that re-checks the launcher's conditions and adds no behaviour `resume_plan()` lacks, and the section text justifies comparing the two surfaces but never says why `resume_plan()` cannot be refactored to expose a guard-only path so both callers share one implementation.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:11838",
+      "id": "duplicate_owner-1",
+      "reason": "extending `resume_plan()` to expose its guards keeps one source of truth; with a fork a future edit to the launcher's guards leaves the dry run silently wrong.",
+      "text": "the \u00a76 repair forks `resume_plan()`'s four guards (`launch != \"cli\"`, live process, budget hold, `resume_window_refusal`) into `reckon/crew/resumption.py:577-620`; the owner of that guard sequence is `resume_plan()` in `reckon/crew/dispatch.py`, and the fork is held in step only by a parity test, which is the \"two implementations of one truth\" defect the project's own `AGENTS.md` forbids.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/monitor-renders-what-it-is-given.html:140",
+      "id": "interface_budget-1",
+      "reason": "the two helpers are internal to the renderer with no external caller, so the plan need only mark them private (or the section state that nothing is retired), which is a one-line tidy-up rather than a change to what \u00a710 will do.",
+      "text": "\u00a74 (landed in `4499ca35a`) added the two module-public predicates `declares_a_wait` and `probe_has_run` to `reckon/crew/ticker.py:1435,1453`, contributing to `public_definitions` 1470, and \u00a74's text names nothing it retires or merges and does not state that the two are renderer-local; a `grep` shows no caller outside `ticker.py`, so they are public only by naming convention.",
+      "type": "interface_budget",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "694bb20f5fe041b2f720be1dbcef28cf9f1de89d216e464972ed042c17d09c1e",
+  "plan_slug": "monitor-renders-what-it-is-given",
+  "plan_version": 29,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T020423798871-plan-review-of-monitor-renders-what-it-is-given",
+  "reviewed_blob_sha": "0f737d52466ff06829cf14ff5b6e6a22b0526dc8",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan introduces no new module; every section edits an existing deep module (`recovery.py`'s composer, `ticker.py`'s renderer, `resumption.py`'s sweep) and hides its changes behind those modules' existing interfaces.",
+    "duplicate_owner": "a finding \u2014 the \u00a76 fix duplicates the guard sequence owned by `reckon/crew/dispatch.py:resume_plan` into `reckon/crew/resumption.py` rather than extending the owner.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a74 landed two module-public predicates in `ticker.py` and names nothing it retires or merges, nor states why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a710 names only `work-scheduling-surface` \u00a73 / `roadmap.py` as the source of the coverage figure it consumes, and does not cite `reckon/flight.py:_path_coverage`, which already derives that figure.",
+    "thin_wrapper": "a finding \u2014 \u00a76 adds `_launcher_refusal()` as a second, thin guard surface beside the launcher's own guards without saying why `resume_plan()` cannot expose them instead."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.014580+00:00"
+}

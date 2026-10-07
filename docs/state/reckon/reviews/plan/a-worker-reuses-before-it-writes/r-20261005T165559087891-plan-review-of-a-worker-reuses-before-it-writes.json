@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T17:01:32.842Z",
+  "dispatched_at": "2026-10-05T16:56:16Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:147",
+      "id": "deep_module-1",
+      "reason": "the node's brief, scope and gate must name all 14 call sites and cover them in the tests, or the contract change lands half applied and the module imports but the report breaks.",
+      "text": "\u00a713 says \"its four callers inside velocity read .stdout from the returned process instead of a bare bytes value\", but git() is called at 13 sites in reckon/velocity.py (lines 308, 320, 639, 675, 696, 716, 728, 754, 795, 804, 835, 1168, 1185) and once more at reckon/interface_counts.py:448, and every one of those consumes the bare bytes return (`.decode()`, `json.loads(git(...))`, `raw = git(...)`); changing the return to a CompletedProcess rewrites 14 call sites, not four, so the section understates its own blast radius by more than 3x",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:128",
+      "id": "duplicate_owner-1",
+      "reason": "the author should extend _store.py's path helpers with cache_root, or state in the section why the cache concern cannot live beside the owner it already forks.",
+      "text": "\u00a713 places cache-path resolution in \"a small core module named for cache path resolution\" without naming reckon/_store.py, whose \"# \u2500\u2500 Path helpers \u2500\u2500\u2500\" section already owns _config_home \u2014 documented as \"the shared precedence used across reckon\" and already reused by run_store.store_path, ledger, crew/review, crew/dispatch, compliance, capabilities, metadata_index and flight. The five cache cascades each read os.environ[\"RECKON_HOME\"] themselves, so the new module forks a precedence the owner already states, and \u00a713 considers only the velocity feature module as the home it rejects",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:542",
+      "id": "thin_wrapper-1",
+      "reason": "velocity_cache_root is stable public API with existing tests and is already counted in the section's interface accounting, so retiring it is an optional follow-up rather than a defect in the design.",
+      "text": "\u00a713 says \"velocity_cache_root delegates to it\" but never says why velocity's callers (and interface_counts.py:35, which imports it) cannot call cache_root(\"velocity\") directly; the section therefore retains a public thin layer over the new owner without the justification the rule requires, and its net-zero interface accounting leans on retiring pick_input_cache_root instead",
+      "type": "thin_wrapper",
+      "would_change": false
+    },
+    {
+      "anchor": "a-worker-reuses-before-it-writes#s13",
+      "id": "interface_budget-1",
+      "reason": "the section must state the unknown-kind refusal's family code and whether it grows refusal_families, or state that it reuses an existing family and adds none.",
+      "text": "\u00a713 introduces a new refusal (\"a kind the table does not know is refused\") but its interface accounting names only public_definitions (\"grows by one, cache_root \u2026 and retires one, pick_input_cache_root, so the net is zero\"); refusal_families counts distinct literal codes passed to format_refusal, so a new code here would move refusal_families (23) and the section's accounting is silent on it",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5a7265ad18c40fa3304e0aa3d9237e27646be84d485de30e47e0893e7997a122",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 141,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T165559087891-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "530e9474d826be9074881955a785325e94d92c6f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a713 claims the widened velocity.git has \"four callers inside velocity\" that will read .stdout, but reckon/velocity.py calls it at 13 sites and reckon/interface_counts.py at one more, so the stated interface change is not the contained one the section describes.",
+    "duplicate_owner": "a finding \u2014 \u00a713 gives cache-path resolution to a new module without naming reckon/_store.py, whose path-helpers section already owns the documented RECKON_HOME precedence reused by run_store, ledger, review, dispatch, compliance, capabilities, metadata_index and flight.",
+    "interface_budget": "a finding \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 and \u00a713 both name the public definition each retires (revised_python; pick_input_cache_root, both net zero) but \u00a713 introduces a refusal (\"a kind the table does not know is refused\") without stating whether it adds a refusal_family.",
+    "reuse_search": "pass \u2014 \u00a712 and \u00a713 census the existing machinery by instrument (63 direct subprocess git invocations across 21 modules, nine named helpers, five cache cascades) and cite the owner each section extends: velocity.git, routing._git, service._run, velocity._plan_documents, read_blobs.",
+    "thin_wrapper": "a finding \u2014 \u00a713 keeps velocity_cache_root as a public delegate to the new cache_root without stating why its callers cannot call the owner directly."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.594688+00:00"
+}

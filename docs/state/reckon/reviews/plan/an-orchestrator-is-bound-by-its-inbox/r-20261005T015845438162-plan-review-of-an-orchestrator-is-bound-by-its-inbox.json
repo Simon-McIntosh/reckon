@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:12:05.707Z",
+  "dispatched_at": "2026-10-05T01:59:00Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html#s2",
+      "id": "reuse_search-1",
+      "reason": "the section must be collapsed as landed and its remaining node scoped to what is actually unbuilt, or a node will be cut to rebuild a shipped reflex.",
+      "text": "\u00a72 states the review dispatch \"returns it as a string for a person to read and retype\" and that \"the system ... prints it instead of running it\", but reckon/crew/recovery.py:2297 dispatch_review_for_run already launches it and reckon/crew/recovery.py:4070 dispatch_awaiting_reviews is already called from reckon/crew/resumption.py:1334, with tests/test_scoring_dispatches_its_review.py and tests/test_review_reflex_sweep.py pinning it, so the section's premise is false of the tree",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html#s3",
+      "id": "reuse_search-2",
+      "reason": "the section's premise (\"does not have today\") is its most load-bearing claim and it is wrong; the section must be rewritten against the owner rather than specified from scratch.",
+      "text": "\u00a73's enforcement comment says \"The plan resource gains review state, which it does not have today,\" but reckon/crew/plan_review.py:368 plan_fingerprint, :513 store_plan_review and :609 read_plan_review already store a per-plan review keyed by content fingerprint, reckon/crew/routing.py:2646 require_plan_reviewed already refuses at the dispatch preflight via reckon/crew/dispatch.py:5543, and reckon/cli.py:2591 already exposes crew review-plan",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:2646",
+      "id": "duplicate_owner-1",
+      "reason": "naming the owner turns \u00a73 from \"design a store\" into \"extend one function\", removes a duplicate review-state schema, and is the reuse the section is missing.",
+      "text": "the plan re-specifies per-plan review state and a dispatch refusal, but the owner is require_plan_reviewed in reckon/crew/routing.py:2646 backed by reckon/crew/plan_review.py:368 (the fingerprint store); the plan should extend that gate to launch the review through the existing crew review-plan path (reckon/cli.py:2591 \u2192 recovery.plan_review_subject \u2192 dispatch_review_for_run) rather than fork a second review-state record",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html#s7",
+      "id": "duplicate_owner-2",
+      "reason": "the plan would otherwise build a second notification edge beside the follower that drifts from it, and the section's core premise (\"no push edge at all\") is refuted by files the plan cites elsewhere.",
+      "text": "\u00a77 asserts \"the design has no push edge at all\", but reckon/cli.py:4751 crew follow already delivers every fleet transition per line (completion included) and reckon/crew/runs.py:1875 / :1896 already publish on state change; \u00a77 must name why that stream cannot carry the finishing classification instead of adding a parallel one",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html#s5",
+      "id": "deep_module-1",
+      "reason": "the plan argues one deep fix and then cuts nodes for six, so the node count and interface budget follow a design the section itself rejects; specifying the single field and rendering rule would collapse the surface.",
+      "text": "the plan's own \u00a75 synthesis (\"That is one field and one rendering rule, not six repairs\") identifies one deep mechanism \u2014 observation time carried beside every state \u2014 yet \u00a72, \u00a73, \u00a74, \u00a75 and \u00a77 each specify a separate shallow repair over the same machinery",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html#s7",
+      "id": "thin_wrapper-1",
+      "reason": "without that justification the honest change is an extension of crew follow, not a new dispatch-side wait surface, which changes the node scope and its interface budget.",
+      "text": "\"Give dispatch an optional completion signal the orchestrator can wait on\" is a thin wait layer over mechanics the follower already supplies, and the section gives no reason the existing follower cannot be extended to carry the finishing classification (it already carries it)",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html#s3",
+      "id": "interface_budget-1",
+      "reason": "with cli_options 317 and refusal_families 23 already large, each new family/option must be accounted for in the section that adds it; the decision comment argues only refuse-at-dispatch vs refuse-at-ship, never about the surface it adds.",
+      "text": "\u00a73 adds a refusal at the crew dispatch preflight (a new refusal family alongside the existing scope/member/follower/budget refusals) and \u00a77 adds a dispatch completion/wait option (a new CLI option), and neither section's text names what it retires, merges, or why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9c3d004ae3a61480a0c28dbba38b17849f33f8405e789834d86cfa41bbbe8d3e",
+  "plan_slug": "an-orchestrator-is-bound-by-its-inbox",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T015845438162-plan-review-of-an-orchestrator-is-bound-by-its-inbox",
+  "reviewed_blob_sha": "3b852a8fed35529866575a0a2226e05a36702c01",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the return half is spread across four shallow section-level repairs over the same run-state and notification machinery, while the plan's own \u00a75 argues they are one field and one rendering rule.",
+    "duplicate_owner": "a finding \u2014 \u00a73 proposes the plan resource \"gains review state\", duplicating reckon/crew/plan_review.py and the gate at reckon/crew/routing.py:2646.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds a dispatch refusal family and \u00a77 a dispatch completion option, and neither section's text names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan's \u00a72, \u00a73, \u00a75 and \u00a77 design sections propose as unbuilt machinery that already exists in reckon/crew/recovery.py, reckon/crew/plan_review.py, reckon/crew/routing.py and reckon/crew/runs.py.",
+    "thin_wrapper": "a finding \u2014 \u00a77 proposes an optional completion signal that wraps behaviour the existing follower already delivers, with no statement of why the follower cannot be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.822941+00:00"
+}

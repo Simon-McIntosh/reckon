@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:serve",
+    "reckon/crew/fleet_supervisor.py:DeclaredServices.reload",
+    "reckon/crew/host_lease.py:HostLease.claim"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-07T11:40:32Z",
+  "findings": [
+    {
+      "file": "tests/test_standby_promotion_claims_leases.py",
+      "line": "59",
+      "severity": "follow-on",
+      "text": "follow-on: the no-lease assertion is taken as soon as the requests FIFO appears, but the supervisor creates that FIFO before any service reload, so a regression that let a standby reader reload its declared services could claim just after the assertion and pass; this half of the guard has no negative control."
+    },
+    {
+      "file": "tests/test_standby_promotion_claims_leases.py",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: _wait_for and _request duplicate the same helpers in tests/test_fleet_supervisor_standby.py:15-30 instead of sharing them, so a change to the supervisor request protocol must be made in two files."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite is empty although a base arm was run (base-standby.log at 01406cea), so the added-failure count for this review cannot be measured."
+    }
+  ],
+  "head_log_revision": "4c6d6126b431f3e101245b47bb2323a0254d3327",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 01406cea; one new file with 77 inserted lines, all inside the declared test path.",
+    "done_when": "the done_when names the four-file pytest gate and its exit 0; the manifest records that command and its 16-passed result in committed-head-gate.log.",
+    "goal": "the node goal is to prove a standby supervisor claims no declared-service host lease until promotion and claims each service when promoted; tests/test_standby_promotion_claims_leases.py:59 asserts no holder before promotion and :63 that the post-promotion holder names this host, pid and job.",
+    "manifest": "read; it records commit 4c6d6126, the changed path, a 16-passed gate and a negative-control log, but its baseline_suite line is empty.",
+    "write_paths": "the manifest declares the test file, one evidence fragment and one figures directory; the diff touches only tests/test_standby_promotion_claims_leases.py, inside them."
+  },
+  "justifications": {
+    "durability": "the negative control (claim skipped) made tests/test_standby_promotion_claims_leases.py:62 fail, but the pre-promotion assertion at :59 races the supervisor's startup and is not negative-controlled.",
+    "evidence": "committed-head-gate.log records 16 passed EXIT=0 for the done_when's exact four-file command, but manifest.md:21 leaves baseline_suite empty so the added-failure count is unmeasured.",
+    "fit": "the file follows tests/test_fleet_supervisor_standby.py:15-30 idiom and names nothing forbidden, but duplicates that file's _wait_for and _request rather than sharing them.",
+    "goal_fidelity": "tests/test_standby_promotion_claims_leases.py:63 compares the holder tuple to the launched supervisor's own pid and host, covering the promotion half of the goal.",
+    "reuse": "the test drives the existing reckon/crew/host_lease.py:HostLease.claim and reckon/crew/fleet_supervisor.py:serve rather than adding a parallel mechanism, at the cost of a copied launch harness.",
+    "scope_discipline": "the diff adds only tests/test_standby_promotion_claims_leases.py, one of the three declared write paths, and the prompted small-node rule forbade the fragment and figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to prove a standby supervisor claims no declared-service host lease until promotion and claims each service when promoted; tests/test_standby_promotion_claims_leases.py:59 asserts no holder before promotion and :63 that the post-promotion holder names this host, pid and job.\nVERDICT done_when: the done_when names the four-file pytest gate and its exit 0; the manifest records that command and its 16-passed result in committed-head-gate.log.\nVERDICT write_paths: the manifest declares the test file, one evidence fragment and one figures directory; the diff touches only tests/test_standby_promotion_claims_leases.py, inside them.\nVERDICT manifest: read; it records commit 4c6d6126, the changed path, a 16-passed gate and a negative-control log, but its baseline_suite line is empty.\nVERDICT diff: read commit by commit against base 01406cea; one new file with 77 inserted lines, all inside the declared test path.\nCALL_SITES: reckon/crew/fleet_supervisor.py:serve, reckon/crew/fleet_supervisor.py:DeclaredServices.reload, reckon/crew/host_lease.py:HostLease.claim\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_standby_promotion_claims_leases.py:63 compares the holder tuple to the launched supervisor's own pid and host, covering the promotion half of the goal.\nSCORE evidence: 15\nJUSTIFICATION evidence: committed-head-gate.log records 16 passed EXIT=0 for the done_when's exact four-file command, but manifest.md:21 leaves baseline_suite empty so the added-failure count is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff adds only tests/test_standby_promotion_claims_leases.py, one of the three declared write paths, and the prompted small-node rule forbade the fragment and figure.\nSCORE durability: 16\nJUSTIFICATION durability: the negative control (claim skipped) made tests/test_standby_promotion_claims_leases.py:62 fail, but the pre-promotion assertion at :59 races the supervisor's startup and is not negative-controlled.\nSCORE fit: 17\nJUSTIFICATION fit: the file follows tests/test_fleet_supervisor_standby.py:15-30 idiom and names nothing forbidden, but duplicates that file's _wait_for and _request rather than sharing them.\nSCORE reuse: 17\nJUSTIFICATION reuse: the test drives the existing reckon/crew/host_lease.py:HostLease.claim and reckon/crew/fleet_supervisor.py:serve rather than adding a parallel mechanism, at the cost of a copied launch harness.\nFINDING tests/test_standby_promotion_claims_leases.py:59 follow-on: the no-lease assertion is taken as soon as the requests FIFO appears, but the supervisor creates that FIFO before any service reload, so a regression that let a standby reader reload its declared services could claim just after the assertion and pass; this half of the guard has no negative control.\nFINDING tests/test_standby_promotion_claims_leases.py:15 follow-on: _wait_for and _request duplicate the same helpers in tests/test_fleet_supervisor_standby.py:15-30 instead of sharing them, so a change to the supervisor request protocol must be made in two files.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases/manifest.md:21 follow-on: baseline_suite is empty although a base arm was run (base-standby.log at 01406cea), so the added-failure count for this review cannot be measured.\n",
+  "review_run_id": "r-20261007T114007513120-review-of-a-promoted-standby-supervisor-claims-its-service-leases",
+  "reviewed_base_sha": "01406ceaf5717ee05a6989b1f0fbab4ee6c5f2cd",
+  "reviewed_head_sha": "4c6d6126b431f3e101245b47bb2323a0254d3327",
+  "reviewed_run_id": "r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:49:13.420431+00:00",
+  "total": 104
+}

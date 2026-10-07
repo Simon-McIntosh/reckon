@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4be47395f722d2fe58e01ff060fc0069c7697541",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:serve",
+    "reckon/crew/fleet_supervisor.py:handle_line",
+    "reckon/crew/fleet_supervisor.py:_reexec",
+    "reckon/crew/fleet_node.py:generate_hold_script"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-07T11:33:20Z",
+  "findings": [],
+  "head_log_revision": "affb8e62242c991d0e1c276a76b8b71057d33a33",
+  "item_aggregate": 6,
+  "item_verdicts": "goal: the increment's own goal is to serve requests in standby without publishing the fleet record or starting declared services until a promote request; the diff implements the flag, the gating, the raw promote verb and the hold-script kwarg, and the head tests drive all four, so it does what its commit message states. done_when: the node's gate is the four-file pytest invocation exiting 0; gate-absolute.log records 70 passed, EXIT=0 at affb8e622, and the reviewed run's evidence fragment states the same figure. write_paths: the increment touches only the four declared paths. manifest: read; status repaired from blocked to complete (status-repair.json), and it records the changed paths, gate and negative-control logs, the after_suite entry, retry_failures, and the honest blocker that its base lacks host_lease.py; baseline_suite is left empty, so the base arm is readable only as the baseline.log file on disk. diff: read commits fc545e52d (implementation and tests), affb8e622 (evidence) and dd9d6369c (integration limit) -- 218 insertions, 19 deletions across four files. call_sites: verified the 4 call site(s) of the changed serve/handle_line/_reexec/generate_hold_script.",
+  "justifications": {
+    "durability": "the added tests are the guard: tests/test_fleet_supervisor_standby.py reddens without the change -- the base arm shows both test_standby_serves_then_promotes_record_and_declared_service and test_hold_script_can_start_the_supervisor_in_standby failing at 4be47395 -- and the declared mutation (publishing the record at standby start) reddens the no-record-before-promote assertion, so the behaviour is pinned by tests that fail the moment it is reverted.",
+    "evidence": "the reviewed run records a base arm at 4be47395 (baseline.log, 2 failed, EXIT=1 across tests/test_fleet_supervisor_standby.py) and a head arm at affb8e622 (gate-absolute.log, 70 passed, EXIT=0 over the four named test files), plus a negative control (negative-control.log, 1 failed, EXIT=1) whose declared mutation publishes the record at standby start. I reproduced the head arm in a scratch tree pointed at the reviewed revision with PYTHONPATH on the worktree (module resolved to a-new-fleet-supervisor-starts-in-standby/reckon/crew/fleet_supervisor.py) and got 3 passed, EXIT=0, so the instrument sees the present case. The evidence could have failed -- the base arm reddens and the mutation reddens -- so it is not a vacuous pass.",
+    "fit": "the change restores no reverted behaviour and adds the standby capability in the shape the module already uses: a request verb in the existing grammar, a bool threaded alongside the existing exec_/services parameters, and a kwarg on an existing generator. The code, tests and commit subjects carry no plan label, phase id, ticket reference or version token, and the new comments state the mechanism (the path is published only after its read end is held) rather than a plan item.",
+    "goal_fidelity": "the increment delivers exactly the standby behaviour its goal names: `--standby` in main dispatches to serve(standby=True) (fleet_supervisor.py:1422), serve skips publish_record and services.reload while standby (fleet_supervisor.py:1328-1340), a `promote` request runs a closure that publishes the record, flips is_standby and calls services.reload (fleet_supervisor.py:1346-1354), and generate_hold_script gains a standby kwarg that appends --standby to the hold script. The head arm proves the request FIFO is served and the record and declared service appear only after promote. The one caveat is in the goal's own words -- services start 'through their host leases' -- and the assigned base 4be47395 predates reckon/crew/host_lease.py, which the run declares as a blocker and a follow-on rather than disguising, so the mechanism is complete but its lease integration is honestly deferred.",
+    "reuse": "it reuses publish_record, DeclaredServices.reload and stop_all, the existing FIFO request loop and _reexec rather than adding a parallel path; the pending-FIFO create is a targeted hardening of the existing fifo creation (holding the read end before os.replace publishes the path) that removes a startup race for any client, not a second mechanism. The promote closure captures the existing runtime and environ instead of re-deriving them.",
+    "scope_discipline": "the diff touches reckon/crew/fleet_supervisor.py, reckon/crew/fleet_node.py, tests/test_fleet_supervisor_standby.py and the node's own evidence fragment, all inside the declared write paths, and nothing outside them. It also deletes three comment lines about the SIZED_CLIENT per-client tab-sizing workaround (fleet_supervisor.py:~109) that are unrelated to standby; the deletion is behaviour-neutral and lives in a declared file, but it is an unexplained out-of-scope edit inside an otherwise tightly scoped change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment's own goal is to serve requests in standby without publishing the fleet record or starting declared services until a promote request; the diff implements the flag, the gating, the promote verb and the hold-script kwarg, and the head tests drive all four, so it does what its commit message states.\nVERDICT done_when: the node's gate is the four-file pytest invocation exiting 0; gate-absolute.log records 70 passed, EXIT=0 at affb8e622.\nVERDICT write_paths: the increment touches only the four declared paths.\nVERDICT manifest: read; status repaired from blocked to complete, recording both gate logs, the negative control, and the base-lacks-leases blocker.\nVERDICT diff: read fc545e52d, affb8e622, dd9d6369c -- 218 insertions, 19 deletions across four files.\nCALL_SITES: reckon/crew/fleet_supervisor.py:serve, reckon/crew/fleet_supervisor.py:handle_line, reckon/crew/fleet_supervisor.py:_reexec, reckon/crew/fleet_node.py:generate_hold_script\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: --standby dispatches to serve(standby=True), serve skips publish_record and services.reload while standby, a promote request publishes the record, flips is_standby and reloads services, and generate_hold_script gained a standby kwarg; the head arm proves FIFO serving with no record or service until promote, and the goal's lease wording is honestly deferred because the base predates host_lease.py.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records a base arm (baseline.log, 2 failed, EXIT=1) and a head arm (gate-absolute.log, 70 passed, EXIT=0) plus a negative control (negative-control.log, 1 failed, EXIT=1); I reproduced the head arm in a scratch tree and got 3 passed, EXIT=0, so the instrument sees the present case and the evidence could have failed.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: the diff touches only the four declared paths, but also deletes three unrelated comment lines about the SIZED_CLIENT tab-sizing workaround -- behaviour-neutral, but an unexplained out-of-scope edit inside a declared file.\nSCORE durability: 18\nJUSTIFICATION durability: the added tests redden without the change (base arm fails both) and the declared mutation reddens the no-record-before-promote assertion, so the behaviour is pinned by tests that fail the moment it is reverted.\nSCORE fit: 18\nJUSTIFICATION fit: the standby capability is added in the module's existing shape (a request verb, a threaded bool, a kwarg on an existing generator) with no plan label, phase id, ticket or version token in code, tests or commits.\nSCORE reuse: 18\nJUSTIFICATION reuse: it reuses publish_record, DeclaredServices.reload/stop_all, the existing FIFO loop and _reexec, and the pending-FIFO create is a targeted hardening of the existing fifo creation rather than a parallel mechanism.",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T110009633596-a-new-fleet-supervisor-starts-in-standby.at-dd9d6369c337ad70a512a32f9066c51bbf1c4de2.json",
+  "review_run_id": "r-20261007T113256478981-review-of-a-new-fleet-supervisor-starts-in-standby",
+  "reviewed_base_sha": "4be47395f722d2fe58e01ff060fc0069c7697541",
+  "reviewed_head_sha": "dd9d6369c337ad70a512a32f9066c51bbf1c4de2",
+  "reviewed_run_id": "r-20261007T110009633596-a-new-fleet-supervisor-starts-in-standby",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.269317+00:00",
+  "total": 105
+}

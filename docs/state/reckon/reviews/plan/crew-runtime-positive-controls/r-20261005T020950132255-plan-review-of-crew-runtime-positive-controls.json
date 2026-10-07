@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:18:47.715Z",
+  "dispatched_at": "2026-10-05T02:10:12Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion.py:3134",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a745 claims a caller-enumerating test proves every liveness path reads the wide claim; these two readers would redden that test, so the plan must extend the owner over them or narrow \u00a745's claim.",
+      "text": "`_repository_tree_boundary_violations` still decides tree liveness through the phase-gated `_live_worktree_claims` rather than the wide `_live_pointer_worktrees` the plan's \u00a744/\u00a745/\u00a747 made the single owner (reckon/crew/routing.py:1021), and the same narrow reader is still called at reckon/crew/promotion.py:6044 in `_worktree_audit`, so a run parked on an external wait is dropped from both the boundary check and the audit while \u00a744 declares it live",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py",
+      "id": "deep_module-1",
+      "reason": "the plan should name one deep validation entry point (or a consolidation section) so the next fault extends the module rather than adding a twentieth predicate.",
+      "text": "the design grows promotion.py by one narrow predicate per fault (\u00a726 verdict-vs-exit-status, \u00a730 red-base completion, \u00a748 arm-keyed suite record, \u00a749 timeout replay) over the same shared machinery (`_recorded_exit_status`, the suite-arm readers, the completion path); each is a shallow wrapper with its own truth table, and 19 `_require_*` functions is the accumulated surface, not a module",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/crew-runtime-positive-controls.html#s3",
+      "id": "interface_budget-1",
+      "reason": "the rubric requires each section adding to an interface family to state in its own text what it retires or merges or why nothing can be, and these sections do not, so the plan would need retirement statements or a consolidation section.",
+      "text": "\u00a73 adds `crew watch --ensure`, \u00a77 adds `crew dispatch --negative-control`, \u00a744 adds `gc --run RUN_ID`, and none names an option it retires or merges; against cli_options 317 this is net-new surface with no accounting",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ba518c6d840bca86731fbabd9aa7ffe8a6fac58a3bb8ce6c0e066daf74cd1277",
+  "plan_slug": "crew-runtime-positive-controls",
+  "plan_version": 350,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T020950132255-plan-review-of-crew-runtime-positive-controls",
+  "reviewed_blob_sha": "6fb57b5371e784f9f9f154cf7c1bc336e1a43d79",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the design adds one single-purpose predicate per section to reckon/crew/promotion.py (19 `_require_*` functions today) and to reckon/crew/recovery.py (222 top-level defs), rather than hiding the shared validation machinery behind one deep entry point.",
+    "duplicate_owner": "a finding \u2014 the plan unifies worktree-removal paths onto the wide liveness reader (reckon/crew/routing.py::_live_pointer_worktrees) in \u00a744/\u00a745/\u00a747 but leaves two promotion readers on the phase-gated reckon/crew/runs.py::_live_worktree_claims, so \u00a745's \"every removal path reads the wide claim\" guarantee is still untrue.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 (`crew watch --ensure`), \u00a77 (`dispatch --negative-control`), \u00a744 (`gc --run RUN_ID`) and the \u00a721/\u00a722/\u00a726/\u00a730/\u00a748 refusal additions add to these families without naming what they retire or merge, or why nothing can be.",
+    "reuse_search": "pass \u2014 the plan cites the mechanism it extends in the one place a second reader was plausible: \u00a713 records that reckon/flight.py::_probe_serving and reckon/crew/picker/snapshot.py::_serving_observation already read endpoints_document, and the node that wrote reckon/crew/serving_origin.py gave a true distinction \u2014 a lane-level document cannot establish which origin a resolved launcher selects \u2014 and \u00a761/\u00a762/\u00a763 are themselves reuse findings folded from prior reviews.",
+    "thin_wrapper": "pass \u2014 the one new wrapper this plan adds, reckon/crew/serving_origin.check_serving_origin, states in its own docstring why flight's reader cannot be extended (the endpoints document is a lane-level publication, not the origin a particular launcher executable selects) \u2014 the rubric's required justification."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.886541+00:00"
+}

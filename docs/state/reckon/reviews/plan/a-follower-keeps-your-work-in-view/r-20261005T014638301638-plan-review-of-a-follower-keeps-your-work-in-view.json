@@ -1,0 +1,74 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T01:56:38.272Z",
+  "dispatched_at": "2026-10-05T01:46:56Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-follower-keeps-your-work-in-view.html#s2",
+      "id": "reuse_search-1",
+      "reason": "the plan should cite and extend the existing derivation rather than describe a new one.",
+      "text": "the plan adds a session-scoped needs-you list without citing that `obligations(project, session)` (reckon/crew/obligations.py:782) and `_needs_you_runs` (reckon/cli.py:3229) already derive exactly that list, aged and state-worded",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/obligations.py:782",
+      "id": "duplicate_owner-1",
+      "reason": "a second session-scoped duty projection drifts from `obligations()` and its MCP view, and the honest change is one line rendered from the existing owner, not a parallel composer.",
+      "text": "\u00a72 proposes to compose the needs-you list in Python \"beside the fleet partition in recovery.py\", duplicating the session-scoped duty projection that already exists as `obligations(project, session)` (reckon/crew/obligations.py:782) and as `_needs_you_runs` (reckon/cli.py:3229); the live MCP view that \"can return the same list\" is already the `crew` view `obligations` (reckon/mcp.py:4331)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:10380",
+      "id": "duplicate_owner-2",
+      "reason": "the forgotten list is the same projection with an age threshold and must extend `_fleet_counts`/`drain`, not fork the classification a second time.",
+      "text": "\u00a75 derives the forgotten-run list \"beside the fleet partition in recovery.py\", but the fleet partition that already classifies each pointer \u2014 `_fleet_counts` (reckon/crew/recovery.py:10380) over `_watch_snapshot` (reckon/crew/recovery.py:10309), with `FLEET_UNPROMOTED_STATES` and session scoping \u2014 is the owner that already answers terminal-and-unpromoted and owns-session; `runs.drain(project, session=)` (reckon/crew/runs.py:1516) already reports the session's outstanding runs",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-keeps-your-work-in-view.html#s6",
+      "id": "deep_module-1",
+      "reason": "collapsing the three composers onto one session-scoped duty projection removes the added surface and the drift between them.",
+      "text": "\u00a72, \u00a73 and \u00a75 add three separate composers (needs-you line, drain line, forgotten list) over the same `_watch_snapshot`/classification machinery, each a shallow wrapper adding surface without hiding anything; the one deep module that should hide the record shape, the store and the join is the duty projection that already exists at `reckon/crew/obligations.py:782`",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-keeps-your-work-in-view.html#s3",
+      "id": "thin_wrapper-1",
+      "reason": "the line should render `drain()`'s result, or state why the owner cannot be extended.",
+      "text": "\u00a73's drain line forwards to a drain condition already computed by `runs.drain(project, session=)` (reckon/crew/runs.py:1516) and surfaced as the `crew drain` command (reckon/cli.py:6043), without saying why that reader cannot carry the follower's line",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-follower-keeps-your-work-in-view.html#s2",
+      "id": "interface_budget-1",
+      "reason": "the sections must account for the interface surface they add against the retirement of the existing obligations view and needs-you line.",
+      "text": "with public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23, \u00a72 adds a `--remind` CLI option and a new MCP surface for the needs-you list, \u00a75 adds a `reckon crew forgotten` command with `--hours`, and no section names what it retires or merges (the `obligations` MCP view and `_follower_end_line` already cover much of this surface) or states why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2eb843dc23b6d372b63e6535b7dbefabc1b91875b0cd011f9e7fd7d4bf12bfb9",
+  "plan_slug": "a-follower-keeps-your-work-in-view",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014638301638-plan-review-of-a-follower-keeps-your-work-in-view",
+  "reviewed_blob_sha": "48eeff747edb21471590652f13afa097f09bef3c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a72, \u00a73 and \u00a75 each add a separate composer over the same `_watch_snapshot`/classification machinery instead of one module hiding the record shape, the store and the join.",
+    "duplicate_owner": "a finding \u2014 \u00a72 re-implements the session-scoped duty projection owned by `reckon/crew/obligations.py:782 obligations()` and already present as `_needs_you_runs` (`reckon/cli.py:3229`).",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a72 adds `--remind` and a needs-you list to the MCP surface, and \u00a75 adds `reckon crew forgotten`, none of which names what it retires.",
+    "reuse_search": "a finding \u2014 the plan adds needs-you, drain and forgotten machinery without citing the source that already derives each: obligations.py:782, cli.py:3229, runs.py:1516, or the obligations MCP view.",
+    "thin_wrapper": "a finding \u2014 \u00a73's drain line is a thin layer over `runs.drain(project, session=)` with no statement of why that reader cannot carry it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.383315+00:00"
+}

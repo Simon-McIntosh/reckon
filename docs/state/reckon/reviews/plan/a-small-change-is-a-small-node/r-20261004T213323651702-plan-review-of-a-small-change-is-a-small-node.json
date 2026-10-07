@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:46:52.307Z",
+  "dispatched_at": "2026-10-04T21:33:37Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/review.py:1786",
+      "id": "duplicate_owner-1",
+      "reason": "the plan's stated premise (\"no answer field\") is already false, so the honest design extends one existing answer owner rather than adding a third answer shape.",
+      "text": "\u00a72 states code reviews have \"a store but no answer field\" and proposes a new ledger-row answer record, but the review store already carries the answer field `dimension_dispositions` (closed set `folded`/`exempted`, written by `record_dimension_disposition` at reckon/crew/review.py:1894, read by `sub_floor_dimensions`), and `reckon/crew/plan_review.py` already owns the finding-level answer record (`RESPONSE_ACTIONS`, `record_response` at plan_review.py:587)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/review_tiers.py:72",
+      "id": "duplicate_owner-2",
+      "reason": "the plan should extend `review_tiers` to expose one size predicate, so the literal 50 in `prompts.py` SMALL_NODE_RULE and the \u00a76 measurement cannot drift from the review ceiling it was copied from.",
+      "text": "\u00a73 defines a small node as \"at most 50 changed lines (added plus deleted), or ... no product source or tests and at most 300 changed lines\", which is the payload of `review_tiers.review_tier`: it already decides from the changed-line count against a ceiling that is `flight.DEFAULT_LIGHT_CHANGED_LINES` = 50 (reckon/flight.py:91) and from `changes_runtime_source`/`path_class`, and the two classifications even disagree on a test-only diff (tier resolves `none`, \u00a73's first limb counts tests as product code under the 50-line bound)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/prompts.py:92",
+      "id": "thin_wrapper-1",
+      "reason": "a relay beside an owner drifts from the answer vocabulary; the plan should extend the owner or state why it cannot be.",
+      "text": "\u00a72's code-review answer record is a manifest-fields-to-ledger-row relay added beside existing answer owners and gives no reason why the answer cannot live where answers already live (`plan_review.record_response`'s `responses`, or the review store's own record)",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/repair.py:1",
+      "id": "reuse_search-1",
+      "reason": "the plan re-describes an implemented dispatch as new; citing it would show the only remaining \u00a72 work, and would have surfaced the existing answer vocabulary for free.",
+      "text": "\u00a72's statement that \"a finding from a stored review ... dispatches as a brief\" is already implemented by `reckon/crew/repair.py` (`compose_repair_for_run`, `blocking_findings`), whose module docstring states its brief \"lists every finding that blocks under a stable id\" and its manifest contract \"obliges the repair to answer every finding it declines with a reason\", with the test family `tests/test_review_findings_compose_a_repair.py` / `tests/test_repair_answers_only_blocking_findings.py`, and the plan cites only the brief carrier, not this module",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d1f1e6f2c936e8259f5dcfcb38a0b92d3fd50f0513becd7ac3f0f7808a820285",
+  "plan_slug": "a-small-change-is-a-small-node",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T213323651702-plan-review-of-a-small-change-is-a-small-node",
+  "reviewed_blob_sha": "4211e06b0985bcdec61ac60c341733343ae00e45",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan edits existing owners (the prompt contract, promotion's landing comment, the build skill) rather than introducing a new shallow wrapper family; the one predicate it does not give an owner is scored under duplicate_owner.",
+    "duplicate_owner": "a finding \u2014 \u00a73 re-defines \"small node\" as \u226450 changed lines / \u2264300 record-only lines, a second size-and-risk classification beside the one `reckon/review_tiers.py` already owns.",
+    "reuse_search": "a finding \u2014 \u00a72 adds \"an answer record for code reviews, which today have a store but no answer field\", but the code-review store already carries an answer field (`reckon/crew/review.py` `dimension_dispositions`, written by `record_dimension_disposition`), `reckon/crew/plan_review.py` already owns the finding-level act/decline record (`RESPONSE_ACTIONS`, `record_response`), and `reckon/crew/repair.py` already composes a stored finding into a repair node; none of the three is cited.",
+    "thin_wrapper": "a finding \u2014 \u00a72's answer record is a thin relay (manifest fields \u2192 a ledger-row field) over the existing answer machinery and does not say why that owner cannot be extended to carry a code review's answer."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.491876+00:00"
+}

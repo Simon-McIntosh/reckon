@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:22:03.151Z",
+  "dispatched_at": "2026-10-05T02:15:15Z",
+  "findings": [
+    {
+      "anchor": "reckon/metadata_index.py:123",
+      "id": "duplicate_owner-1",
+      "reason": "naming `reckon/file_memo.py` as the owner and extending it removes a duplicate parse cache the plan currently introduces silently.",
+      "text": "`parse_meta_shared` forks a second per-file parse memo (`_META_BY_DIGEST`, line 110) with its own 50 000-entry bound and `clear()`, beside the memo that already owns this job: `reckon/file_memo.memoized` (`reckon/file_memo.py:43`), used by `_plan_html.parse_meta` (`reckon/_plan_html.py:1561`). Two caches key the same parse and only one is dropped by the other's invalidation; the plan's \u00a73 text never mentions this second cache at all. The content-digest-vs-path distinction is a real need, so the honest change is a signature-source parameter on `file_memo.memoized`, not a parallel cache.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:2290",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a76 should extend `reckon/figures.py` with the thumbnail renderer or state in its own text why the figure owner cannot host it.",
+      "text": "\u00a76 places `_render_thumbnail`/`_thumbnail_bytes` in `serve.py`, the file that already carries the endpoint and cache-key plumbing, rather than in `reckon/figures.py`, the module whose docstring states it owns figure discovery and dimensions (and which deliberately reads PNG/SVG/GIF dimensions without an imaging dependency). \u00a76 justifies the Pillow dependency but not why figure inspection is split across two modules.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html#s3",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the public surface it adds in its own text, per the interface budget rule.",
+      "text": "\u00a73 adds a new module (`reckon/metadata_index.py`, ~9 public functions plus `IndexBuild`/`ROW_FIELDS`) and a new `/_index` route without naming anything \u00a72 to \u00a76 retires or merges, or stating why nothing can be; the pre-existing `/_discover` payload path and its in-process discovery cache survive unchanged beside it. \u00a76 likewise adds a route and an imaging dependency with no retirement named.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1a899d3d6fa62700fdd3e9b455649e0927e177c6a80be8f6d9a1011982b1818a",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 39,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T021456323335-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "8d2bf0c1c7630630032814d3b68886689eae6c6f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/metadata_index.py` hides the persisted store, the row shape, the stat/digest keying and the rebuild/diff behind `index_rows`/`build_index`/`plan_derivations`, a small interface over substantial behaviour.",
+    "duplicate_owner": "a finding \u2014 `reckon/metadata_index.py` adds a second in-process parse cache (`_META_BY_DIGEST`) beside the per-file memo that owns it, `reckon/file_memo.memoized` used by `_plan_html.parse_meta`; and \u00a76 puts thumbnail rendering in `reckon/serve.py` rather than in the module that owns figure inspection, `reckon/figures.py`.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds a new module's public surface and a new route, and \u00a76 adds a route and an imaging dependency, and neither section names anything it retires or merges, or states why nothing can be.",
+    "reuse_search": "pass \u2014 the plan names the mechanisms it extends (`_parse_meta_uncached`/`parse_meta`, the discovery cache, the git-history memo, `_write_project_event`, `discover_plans`) and builds explicitly on the landed `a-page-load-reads-each-file-once` repair; \u00a73's landed module reuses `reckon/file_memo.file_signature`, `_plan_html` and `figures`.",
+    "thin_wrapper": "pass \u2014 the new `/_index` route and the \u00a74 loader merge are splits of one payload for a stated reason (paint before derived), not thin layers over machinery the plan declined to extend; \u00a78 calls `metadata_index.index_rows` directly rather than wrapping it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.303108+00:00"
+}

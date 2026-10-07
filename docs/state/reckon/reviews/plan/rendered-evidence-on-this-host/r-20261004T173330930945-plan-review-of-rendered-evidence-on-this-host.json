@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:45:00.317Z",
+  "dispatched_at": "2026-10-04T17:33:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/rendered-evidence-on-this-host.html#s6",
+      "id": "reuse_search-1",
+      "reason": "the author should cite `reckon build` and either reuse its bundling (compile_jsx + client_runtime_assets + compose_project_state) or state why a harness-local assembly is required; the plan's silence hides the comparison.",
+      "text": "the plan adds a portable server-free document path without citing `reckon build` (reckon/cli.py:7650), whose own docstring says it \"writes local production runtimes and an index with relative asset paths, then writes complete project state so the SPA works without a running reckon server\" \u2014 the same server-free goal the new path restates",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/spa_browser_harness.py:557",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should name `reckon/serve.py` as the document/index owner to extend (e.g. an inline mode) rather than fork its assembly, so a head/title/module-order change cannot land in the server and silently miss the harness path.",
+      "text": "`write_file_spa_document` hand-assembles the document head/meta/title/styles and re-derives the ordered UI-module list via `authored_ui_module_paths` (`_IndexScriptParser` over docs/index.html), duplicating the same index-derived assembly and asset ordering owned by `reckon/serve.py:_render_spa_html` (reckon/serve.py:2221) and its `relative_assets` mode used by `reckon build`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/test_spa_owed_captures.py:50",
+      "id": "duplicate_owner-2",
+      "reason": "naming the source of composed state is what makes the capture evidence about the live composition rather than about the fixture.",
+      "text": "the captures feed a hand-rolled `_composed_state()` rather than the state-composition owner `compose_project_state` (reckon/project_state.py:1485) that `reckon build` uses, while \u00a76 claims the populated-graph capture's authorities \"resolve from composed state\" \u2014 the plan under-specifies where composed state comes from, so a capture can pass against synthetic state the real composer would never emit; the plan should take state through `compose_project_state` or state plainly in \u00a76 that the capture uses synthetic state",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5f492a74e6ce06c3b2cde07494d4753a57f9a9b3a4eb76743703fad99bce3371",
+  "plan_slug": "rendered-evidence-on-this-host",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T173330930945-plan-review-of-rendered-evidence-on-this-host",
+  "reviewed_blob_sha": "a15cf9d9e44a7b6e0398e1f1b11c8099fb0fdf55",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the delivery path hides script compilation, runtime bundling, stylesheet inlining and state injection behind one document writer and one context manager that reuse the existing `ServedSpa` probe interface (tests/spa_browser_harness.py:557,615), so the interface is smaller than what it hides.",
+    "duplicate_owner": "a finding \u2014 the document assembly the plan adds re-implements the SPA index/document renderer owned by `reckon/serve.py:_render_spa_html` rather than extending it, and nothing in the plan names that owner.",
+    "reuse_search": "a finding \u2014 \u00a76 proposes an inlined file: document without citing `reckon build` (reckon/cli.py:7650), which already bundles this SPA for the server-free case (compiled JSX, local runtimes, baked composed state), and the plan names no mechanism it searched beyond the host-side file:/data: probes.",
+    "thin_wrapper": "pass \u2014 \u00a76 states why the served path cannot simply be extended (it serves the SPA over http on an ephemeral port, the one thing this host's browser cannot reach), which is the justification the item asks for."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.132702+00:00"
+}

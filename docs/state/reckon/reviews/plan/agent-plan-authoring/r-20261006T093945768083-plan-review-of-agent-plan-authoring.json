@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T09:53:22.660Z",
+  "dispatched_at": "2026-10-06T09:40:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/agent-plan-authoring.html:85",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a73 is the design's statement of the contract, and as written it teaches a tag the writer deletes and omits ones the schema requires, so it must cite the schema owner or be corrected against it.",
+      "text": "\u00a73's head-scalar table forks the meta contract owned by `reckon/_schema.py:1175` and `docs/_shared/plan.schema.json`, and the fork has already drifted on three points, so an author following \u00a73 writes tags the code does not accept: (a) line 93 lists `plan-tier` as author-owned, but `reckon/_plan_html.py:1783` strips it on every write whenever `tier` is absent from state; (b) line 91 gives `plan-effort` with value `M`, while the owner emits `plan-effort-hours` (`reckon/_plan_html.py:1754`) and `_schema.py:1175` carries `effort_hours`; (c) it omits `plan-tags` (used by the `reckon-create` fast path and present in `plan.schema.json`) and the `plan-capability-*` metas.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/agent-plan-authoring.html:100",
+      "id": "duplicate_owner-2",
+      "reason": "the contract is meant to be exhaustive (\"every tag, and WHY\"), and a set that silently drops one of six owned sections misdirects the author it exists for.",
+      "text": "\u00a73's body-section list restates the six `data-reckon` section spellings but names only five, omitting `gates`; the owner `reckon/_plan_html.py:548` (`SECTION_IDS`) and `reckon/_plan_html.py:1640` (`_SECTION_RECOGNISED_SPELLING`, `'gates': '<div class=\"r-gate\" data-id=\"...\">'`) both carry it, so a section the parser recognises and the write-guard names is absent from the design's contract.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/agent-plan-authoring.html:139",
+      "id": "duplicate_owner-3",
+      "reason": "the plan's own \u00a79 argues for one exemplar over many restatements, so \u00a74 either defers to `docs/_exemplar-plan.html` or is the drift the plan is trying to prevent.",
+      "text": "\u00a74 re-derives copyable markup for a decision (`div.r-dec`, line 139) and a followup (`article.r-fu`, line 150) that `docs/_exemplar-plan.html` already owns as the canonical annotated source, and that `skills/reckon-create/SKILL.md:32-35` and `skills/reckon-edit/SKILL.md:26-31` point authors at for exactly this purpose; three owners of one spelling means the \u00a75 rule \"reuse the exact class/attr names from \u00a74\" can silently disagree with the others.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/agent-plan-authoring.html:243",
+      "id": "reuse_search-1",
+      "reason": "a recommendation that re-proposes landed machinery reads as open work and invites a duplicate re-implementation, so each \u00a79 bullet should cite the owner that already provides it or state what remains.",
+      "text": "\u00a79 recommends shipping \"a single canonical authoring prompt\" (line 243) and \"one self-describing exemplar in-repo `docs/_exemplar-plan.html`\" (line 247) as new work, but both already exist and are wired into the skills: `docs/_exemplar-plan.html` is present, and `skills/reckon-create/SKILL.md:32-35` and `skills/reckon-edit/SKILL.md:26-31` already declare it \"the canonical annotated exemplar \u2026 copy the matching specimen\"; the CI round-trip parity test \u00a79 recommends (line 252) already exists as `tests/test_schema.py::test_state_round_trip`.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/agent-plan-authoring.html:42",
+      "id": "reuse_search-2",
+      "reason": "the reframe (MCP optional, not mandatory) is a decision already locked at line 275 and does not turn on the exact tool count, so naming the file would sharpen the prose without changing the design.",
+      "text": "\u00a71/\u00a78 describe the \"~19 MCP tools\" surface and its costs from memory, and \u00a78 reframes them, but neither section opens `reckon/mcp.py` to name which tools actually exist or which the plan would retire, so the \"optional version-safe writer\" recommendation has no census of the surface it is judging.",
+      "type": "reuse_search",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a55214bd91942b550d7dff94335c858cf8bf5354a470b3e45ce6fb772eb0e63f",
+  "plan_slug": "agent-plan-authoring",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T093945768083-plan-review-of-agent-plan-authoring",
+  "reviewed_blob_sha": "367e2f26059a42bedd670d02021cb86dca8095f5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a79 concentrates the whole tag/template contract behind one prompt plus one exemplar (\"prompt-first, tool-second\"), a small interface over a large body of contract, rather than a spread of per-field wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a73 re-states the machine-readable contract owned by `reckon/_schema.py` plus `docs/_shared/plan.schema.json`, and \u00a74 re-derives markup owned by `docs/_exemplar-plan.html` and the section spellings owned by `reckon/_plan_html.py:1640`; the fork has already drifted.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families: 23; no section adds to any of the four families, and the one interface-shaped proposal (\u00a710 milestone tooling) resolved to `edit_plan(create=True, doc_type=\"milestone\")`, an extension of the existing typed-resource path that retires no CLI option or MCP view.",
+    "reuse_search": "a finding \u2014 the plan re-proposes the canonical authoring prompt and the in-repo exemplar as its own recommendations (\u00a79, lines 243-247) without citing `skills/reckon-create/SKILL.md:32-35`, `skills/reckon-edit/SKILL.md:26-31` or `docs/_exemplar-plan.html`, which already carry them.",
+    "thin_wrapper": "pass \u2014 the design removes a mandatory layer (the MCP as the only door) and adds no new wrapper over existing machinery, so there is no unjustified thin layer to challenge."
+  },
+  "section_digests": {
+    "_document": "629cca716778870f90dd591188373db420ec9556dc79ad0bd318708962138eab",
+    "s1": "2074d0102c9557a7d9a3d52ecf6197c345d59d3f57359af36c5d816e2cf85f6e",
+    "s10": "5b79f521d8e3da8e1a38dc60f06004f848206d7a39b2ce1968aa35af9ba0a8cc",
+    "s2": "5263fc3303f0923bb589b9a9ab830839f5d4795a64d838bccf273815c6a65a33",
+    "s3": "9f9ed7fdf77e040609ed0a0cda027313bd62dc27b2e60ccd3cabdf41a7866612",
+    "s4": "38971709405214e215782b6c73dd6f9666a9f78a18029eba3988da3074c64c9e",
+    "s5": "c1ec4885ac97c5af675f85881af9becdc4099fe2e688f8b058755b840c1a1dc0",
+    "s6": "419375e08ee2d617e2472b1cc622e3ee0b395c088a675d5d4bec3840b854b8df",
+    "s7": "7237549bbbd989c695268fc32b1fea160abac49169a1fd2c1924493da8a87e87",
+    "s8": "129d39d3b3669996630886c2546a5fec643b21e5786dd29f8ab57f1b6a29b7a7",
+    "s9": "03d89d3e51d4f49118d57c75913c17f74225b2cd9e33af3b5c6664e763fb56ce"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.785768+00:00"
+}

@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:58:57.166Z",
+  "dispatched_at": "2026-10-04T21:48:55Z",
+  "findings": [
+    {
+      "anchor": "docs/state/reckon/project.json:12",
+      "id": "reuse_search-1",
+      "reason": "\u00a72 should be narrowed to \"verify the landed declaration is returned by the restarted server (and that the already-labeled plans keep the scan clean)\" instead of leaving a reader to re-declare a direction set that is already present, which invites a redundant write and re-litigates landed work.",
+      "text": "\u00a72 is written as implementing the declaration of four directions, but all four are already declared in the distributed project resource (`docs/state/reckon/project.json:12-35`, ids `state-that-tells-the-truth`, `unattended-execution`, `legible-to-human-and-agent`, `portable-across-harnesses`, matching \u00a72's bullets verbatim), 57 plans already carry a resolving `plan-north-star` label across all four ids, and the undeclared-direction scan already exists (`reckon/roadmap.py:2339`), so the only work the tree leaves is the post-restart read \u2014 the declaration itself is not new",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:509",
+      "id": "duplicate_owner-1",
+      "reason": "naming `_north_star_rows` as the acceptance instrument turns \u00a72's coverage clause from \"build\" into \"read\", and keeps a single owner for per-direction rollup rather than adding a second copy of the same rule.",
+      "text": "\u00a72's clause \"each direction receives at least one plan\" is exactly what `_north_star_rows` already computes: it rolls up `plans`, `completed` and lifecycle counts per declared direction and is surfaced in the roadmap payload (`reckon/roadmap.py:3357`), so a \u00a72-local coverage check, or a \u00a72-local \"undeclared direction\" scan, forks an owner that already exists",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "81d4707fbad9d0e53e1dc5b8f8073cdb317843a66314191db1b9a70af302ac1b",
+  "plan_slug": "the-restarted-server-meets-its-shipped-measures",
+  "plan_version": 18,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T214841424284-plan-review-of-the-restarted-server-meets-its-shipped-measures",
+  "reviewed_blob_sha": "57ca14c12a65eded9a0dec68a3f7b62338897a51",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no production module; its own additions are a live measurement over `reckon/serve.py` plus a test pin, consuming the existing serve/recovery surface rather than hiding new behaviour behind a wider one.",
+    "duplicate_owner": "a finding \u2014 \u00a72's \"each direction receives at least one plan\" duplicates the per-direction rollup owned by `_north_star_rows` (`reckon/roadmap.py:509`).",
+    "reuse_search": "a finding \u2014 \u00a72's declaration is already present in the distributed project resource and its acceptance criteria are already computed by existing scans, so the section is scoped as \"declare\" when the tree shows only \"verify after restart\".",
+    "thin_wrapper": "pass \u2014 no wrapper over existing machinery is proposed; \u00a74 consumes the existing reader (`discover_plans`, `reckon/serve.py:1739`) and repairs it in place only if the re-measure fails, which is the extend-the-owner path, not a parallel one."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.329618+00:00"
+}

@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T07:22:27.845Z",
+  "dispatched_at": "2026-10-07T07:13:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/scripts/check_pure_move.py",
+      "id": "reuse_search-1",
+      "reason": "naming the reader it will extend changes the plan from \"add a git-reading script\" to \"call the existing revision reader\", a decision the author must make explicitly.",
+      "text": "the plan cites one existing mechanism (the routing token estimator at reckon/crew/routing.py:3158) but proposes two new ones \u2014 a base-revision source reader in `scripts/check_pure_move.py` (\u00a72) and a map-node census of \"every name some other file imports from `reckon.crew.dispatch`, every test that patches a `dispatch` attribute, and every test that reads the file's text by path\" (\u00a73) \u2014 without citing `reckon/velocity.py:424 read_sources`, `reckon/interface_counts.py:553 read_trees`, or `reckon/served_code.py`'s importer index, so the author cannot see that the reading half of the move check already exists to be extended",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/scripts/check_pure_move.py:1",
+      "id": "duplicate_owner-1",
+      "reason": "naming the owning reader turns a new git-parsing script and a hand-rolled census into an extension of `read_trees` / `_import_targets`, and prevents a second revision reader drifting from the first.",
+      "text": "`scripts/check_pure_move.py` re-implements machinery the repository already owns: reading a module's sources at an arbitrary revision out of git is `reckon/velocity.py:424 read_sources(repo, revision, *, prefix=\"\")`; reading parsed trees at a revision is `reckon/interface_counts.py:553 read_trees(reckon, revision)` (with `definitions(tree)` at reckon/interface_counts.py:74); and mapping names to the module that owns them, and to the names a module imports, is `reckon/served_code.py:213 _import_targets` with `reckon/served_code.py:405 _used_definitions` (with `_definition_nodes` at reckon/served_code.py:363 and the revision-aware `_git` reader at reckon/served_code.py:90). The \u00a73 map census (\"every name some other file imports from `reckon.crew.dispatch`\", \"every test that patches a `dispatch` attribute\", \"every test that reads the file's text by path\") is that importer index walked a second time. tests/test_staged_write_inventory.py:20-32 already shows the exact base-vs-head read the move check needs \u2014 layering working-tree bytes over `interface_counts.read_trees(ROOT, revision)`. Separately, the context-fit check itself already measures per-file token estimates over a node's write paths (`_context_file_inputs`, reckon/crew/routing.py:3262); \u00a72's guard could call it rather than walk the tree itself, though a whole-tree walk is arguably a different question",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8c143dedf1a857bbad65c871fd78c3c57d9f9625e18c35565f890f1265d2a0de",
+  "plan_slug": "every-module-fits-a-worker-window",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-07T07:29:38.052120+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-07T07:29:45.865774+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T07:29:45.865774+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T07:29:38.052120+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-module-fits-a-worker-window.v0.json",
+  "review_run_id": "r-20261007T071252793839-plan-review-of-every-module-fits-a-worker-window",
+  "reviewed_blob_sha": "670416808058df6aa30531e06beba313cc6fbbf7",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the split decomposes one oversize module into cohesive siblings, each holding one concern behind its own module interface; the original survives only as the import surface the split-surface decision justifies, so complexity is concentrated rather than spread across shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 `scripts/check_pure_move.py` reads a module at a base revision by shelling `git show` and `ast.parse`-ing it, and the \u00a73 map census scans every file for the names it imports and the tests that read it by path; both duplicate readers the repository already owns \u2014 `read_sources` at reckon/velocity.py:424, `read_trees` at reckon/interface_counts.py:553, and the importer index at reckon/served_code.py:213 (`_import_targets`) and reckon/served_code.py:405 (`_used_definitions`).",
+    "interface_budget": "pass \u2014 public_definitions 1528, cli_options 323, mcp_views 33, refusal_families 23. A pure move relocates each definition rather than adding one (\u00a78 states no public name is added beyond the new module paths, and re-export lines are imports the counter does not count), \u00a74 keeps every subcommand registered under the same name (no cli_options delta), and \u00a77 keeps every tool registered on the same server under the same name (no mcp_views delta), so no section adds to any of the four families.",
+    "reuse_search": "a finding \u2014 the plan reuses the context-fit token estimator (`_tokens_for_bytes`, reckon/crew/routing.py:3158) and its launch-context floor, but proposes `scripts/check_pure_move.py` reading a module at a base revision from git and a map-node census scanning every file for importers and text-by-path readers, without citing the revision-source reader or the module/importer index that already exist in this repository.",
+    "thin_wrapper": "pass \u2014 the only thin layer is the original module left as a re-export/import surface, and the plan states why callers cannot be repointed instead (peer worktrees import the original paths today); that is the justification the item asks for, recorded in decision `split-surface`."
+  },
+  "section_digests": {
+    "_document": "9a7252a11a7ab5b070832bb44a7d38fa8e012647b9bd8bef14f7a522fc7ea9da",
+    "s1": "b19a00becfaeb93129b092226ec7ac1b87063bba5bb603d21e705c49edd7e380",
+    "s2": "f8126d0d635d7f74d16f9c1fe7f2eb89a6e69bed6945b549a5eab336d63f7d3e",
+    "s3": "8ea081950de2dd11038223b74c5187ea138f4eca8f3888b3cb720acb09c7b56d",
+    "s4": "d6bb27c2901d1f2eed96b6215bafbcbe84df181db203e843904324c4b77c0755",
+    "s5": "aa9cdfb8d99577c174ee2e9465f22f9641d4a82f7b8b73dde429de8cf360e27f",
+    "s6": "41997e4908fcbd4839e6bcc1e88063b84d2d376bd741194f950b8b470def6c3b",
+    "s7": "8f89a36ece6c5aa7987a1a6ccab8fda42b6beaac259e3273826fa0323f01bcf5",
+    "s8": "09fb68ac509239cda4be6f9fefd549459cc0abb72771e5fe0b98c8cb3c4e1b0f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T07:28:05.029618+00:00"
+}

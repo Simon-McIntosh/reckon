@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T11:17:55.038Z",
+  "dispatched_at": "2026-10-07T11:08:57Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/one-typesafe-model-picker.html:694",
+      "id": "anchors_resolve-1",
+      "reason": "a hold keyed to an identifier no reader can resolve is unfalsifiable, so a later worker cannot know when the hold lifts and may either ignore it or wait forever.",
+      "text": "followup f-otmp-one-figure-follow-ons says \"Hold anything that writes reckon/crew/dispatch.py or reckon/cli.py until reckon-9d's module split lands\", but reckon-9d resolves to no plan, node or document (the module-split plan is every-module-fits-a-worker-window; reckon-9d appears nowhere else in the repository)",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/one-typesafe-model-picker.html:673",
+      "id": "reasoning-1",
+      "reason": "the plan carries an open question it has already answered and a false statement of present behaviour, so a later worker reading \u00a76's followups acts on a settled question and a stale premise.",
+      "text": "open followup f-otmp-review-follow-ons closes \"Lead decision still open: may Jev override an explicit --local ... Until that is answered, Jev only shadows in practice\", yet decisions local-is-authoritative (2026-10-06) and picker-chooses-the-lane (2026-10-07) answer exactly that question (a named lane stays authoritative; the picker routes only dispatches that name none) and \u00a71 line 44 records the narrowing, while routing.picker: route has been the default since 2026-10-03",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "70c43e4bdbe45dd29b0a51551ee3c909c126eb1d73ba13949929aad85d8be2ab",
+  "plan_slug": "one-typesafe-model-picker",
+  "plan_version": 190,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-07T11:19:56.072465+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T11:20:03.255548+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T11:19:56.072465+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T11:20:03.255548+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-one-typesafe-model-picker.v190.json",
+  "review_run_id": "r-20261007T110837904806-plan-review-of-one-typesafe-model-picker",
+  "reviewed_blob_sha": "a19000a53ebadf36dd937b2616b96b3ae6ffbcbd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the newly added followup f-otmp-one-figure-follow-ons keys its hold instruction to an identifier, reckon-9d, that resolves to no plan, node or document anywhere in the repository.",
+    "done_when": "pass \u2014 \u00a76's done-when is a measurable publication of named measures (success rate, spend, refused/logged-out-model count, latency, fallback rate, confidence), and its otherwise-branch (the plan records the negative result rather than switching) is the declared control against a switch that cannot fail.",
+    "evidence_paths": "pass \u2014 gate and landing anchors point under docs/evidence/ (docs/evidence/archive/one-typesafe-model-picker-landed.html#s6, docs/evidence/fragments/one-typesafe-model-picker/*) or the durable crew reports directory; the archive anchors and docs/state/reckon/runs/ all exist on disk.",
+    "naming": "pass \u2014 the followup and decisions name mechanisms and resolvable test/module symbols (dispatch_picker_selection, tests/test_member_friction.py::test_unnamed_dispatch_is_admitted_while_a_review_worker_is_alive, reckon/crew/dispatch.py).",
+    "reasoning": "a finding \u2014 the open followup f-otmp-review-follow-ons still states a lead question is open and that Jev only shadows, which the plan's own later decisions and the 2026-10-03 switch contradict.",
+    "single_goal": "pass \u2014 \u00a76 carries one goal (prototype, shadow and dogfood the router); each landed section \u00a72\u2013\u00a75 and \u00a77\u2013\u00a711 records one deliverable in its landed-summary.",
+    "wiring": "pass \u2014 plan-after (the-local-lane-is-the-default), plan-informs (a-window-paces-the-lane, the-local-lane-is-the-default, advise-the-lane-never-force-it) and both gates resolve to nodes/plans that exist; the informs list matches the three plans \u00a71 line 45 says this one absorbs, so the prior missing-informs finding is answered."
+  },
+  "section_digests": {
+    "_document": "4ff790911eb7def8867a2a90708b81de23ecf66a444366683e55c884a6a7aa08",
+    "s1": "3dd077bfa248eda6f6c24717a04df3458940aa1ce4b181140912e4be27342432",
+    "s10": "f8cea7db03e6ce1a59ee44f2b9bafe7cdd9ef466468807c3d5318193033ccbc9",
+    "s11": "1d394a8f1735f908f234eebae944b87de35bf29d61262044f141232459adc254",
+    "s2": "eacf32d1b5ac595aa7c3d40ee1b27dd2d2950ad725cff0f6d45bcd2ffe6f12bd",
+    "s3": "73993936e3a3367541ef63991298fd7d60aa3f241a9f1d68739b3cd180903ed2",
+    "s4": "3261b375216071d2db98d8de24e80697fd3d9d749a2e1fe7039eb2b09042d16f",
+    "s5": "bdd5ce075a9b03d3484f04421703d7210a276d0a6d8bd81ff277a411b0b6f6ac",
+    "s6": "1165482cbe98832408cc4d70e2324421e85cdc1d710cca0eff7ffa780d159838",
+    "s7": "6708dba8a743eb29f1233c04ff4d9cffe1b0db6f989cfa377622eb4ead6f8f65",
+    "s8": "02a3718052487fea0ed2e112ef68038773eae6a9ea8287e9dbd31e00b39bde71",
+    "s9": "9fdaa963d17c4033bdace1de49ee9b3f118e183f06473d4c47bf74e2c24cdbc1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:19:49.524957+00:00"
+}

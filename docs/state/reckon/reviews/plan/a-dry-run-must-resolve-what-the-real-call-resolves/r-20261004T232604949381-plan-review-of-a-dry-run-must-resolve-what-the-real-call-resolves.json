@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T23:29:34.518Z",
+  "dispatched_at": "2026-10-04T23:26:18Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:5247",
+      "id": "reuse_search-1",
+      "reason": "\u00a72's scope collapses from \"perform every resolution\" to \"resolve the mount on the dry-run entry, reusing the owner,\" and the plan should cite resolve_project_repository (dispatch.py:249) at the dispatch.py:6586 call site as the mechanism to reuse, or the author will re-derive a parallel resolver.",
+      "text": "\u00a72 says the dry run \"does not resolve the plan and section against the worktree base ref\" and that \"every one of them is skipped today,\" but the dry-run CLI (reckon/cli.py:2052) already calls `plan_dispatch`, which already runs `require_plan_section_visible` (dispatch.py:5529) and `require_plan_reviewed` (dispatch.py:5536). The sole divergence from the real path is that `dispatch()` resolves the project mount via `resolve_project_repository` at dispatch.py:6586 and passes `repo=repo_root` (dispatch.py:6653), while the dry-run CLI passes the raw `--repo` option through unresolved (reckon/cli.py:2058), so `plan_dispatch`'s guard `if verdict.ok and repo is not None` (dispatch.py:5486) skips the whole authority block. The plan describes rebuilding machinery that exists instead of naming the one owner (`resolve_project_repository`, dispatch.py:249) whose invocation must be extended on the dry-run entry",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:1746",
+      "id": "reuse_search-2",
+      "reason": "the decision `member-repository-requirement` can be locked to \"project alone\" now from the schema, and \u00a73's done-when narrows from an open investigation to asserting that a member resolves from the project alone and that the repository-requiring refusal is removed.",
+      "text": "\u00a73 leaves the decision \"is a roster member resolvable from the project alone, or does it require a repository?\" open, saying \"[t]he evidence for the decision is in the roster: if members can be registered against several repositories then the repository is genuinely needed.\" That evidence is already readable in the code: `register_member` (reckon/ledger.py:1746) stores only `id`, `harness`, `role`, `session_id` and session history \u2014 there is no repository field \u2014 and `members(project, root)` (reckon/ledger.py:1469) reads the roster from the project's own ledger, so a member is registered per-project and cannot belong to several repositories. The roster therefore already answers the plan's open decision (project-alone; the codex-b refusal naming `--repo` is the bug), yet the plan proposes to keep it unresolved and dispatch a test to discover it",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a613fedea0250902e6c630db4471f574293577a3f3325780b45654d4934b1932",
+  "plan_slug": "a-dry-run-must-resolve-what-the-real-call-resolves",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T232604949381-plan-review-of-a-dry-run-must-resolve-what-the-real-call-resolves",
+  "reviewed_blob_sha": "dfe8221355283616d636d3caef005971a6c8e136",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design edits the shared `plan_dispatch` in place (dispatch.py) and adds no new module, so there is no scaffolding of shallow wrappers to hide behind.",
+    "duplicate_owner": "pass \u2014 the plan's write path is the owning file `reckon/crew/dispatch.py` and its design reuses the shared resolution sequence rather than forking it.",
+    "reuse_search": "a finding \u2014 \u00a72 asks the dry run to perform resolutions that the shared `plan_dispatch` already performs; the only actual gap is that the dry-run entry passes an unresolved `--repo` while the real entry resolves the project mount, so the design over-states the work and names no owner.",
+    "thin_wrapper": "pass \u2014 no wrapper is proposed; \u00a72 makes the existing resolution path reachable rather than layering a second surface over it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.371190+00:00"
+}

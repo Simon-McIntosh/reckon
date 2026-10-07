@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T11:12:47.569Z",
+  "dispatched_at": "2026-10-07T11:05:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:116",
+      "id": "done_when-1",
+      "reason": "an unfalsifiable half leaves node (2)'s dispose test passing on the unfixed code, so the test measures nothing and must be re-aimed at the half that does change (the missing commit) or dropped.",
+      "text": "\u00a710's \"disposes after promotion\" test cannot show its guard fire: `crew dispose` already writes the committed record's own file, so there is no reverting mutation for its half and the declared control \"each fails when its half of the change is reverted\" cannot fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:116",
+      "id": "reasoning-1",
+      "reason": "node (2)'s dispose clause (\"written to that committed record through the committed-store writer\") is already satisfied by the existing writer, so only its commit-through-`_commit_state_write` half is missing, and the misstated root cause would misdirect the implementer and mis-aim the test.",
+      "text": "\u00a710's Why asserts `crew dispose` \"still write[s] staging only\" and that a post-promotion disposition \"never reaches a reader\", but `record_dimension_disposition` (reckon/crew/review.py:2800) writes the record back to the file `stored_record` selected (review.py:2188), and that reader takes the committed copy first; only `plan_review.record_response` (plan_review.py:1302) is staging-only, through `store_plan_review`/`_target_path`. The cited measurement (dispose at 10:56Z, promotion at 10:57Z) is a pre-promotion write into staging, which is what the writer does while the run is unpromoted, so it demonstrates node (1)'s promotion-copy gap and not the writer shadowing the Why states",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b70bb19092868ad0f4433a2ee2da97b07b85fc33b0c9d18885e27a41362bc075",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 70,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-07T11:14:02.379966+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T11:14:10.343092+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T11:14:02.379966+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T11:14:10.343092+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v70.json",
+  "review_run_id": "r-20261007T110500594797-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "1cfd31538ff232b8942b70c079c1bff7d993e96d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/review.py`, `reckon/crew/plan_review.py` and `reckon/crew/promotion.py` all exist, and `record_response`, `stored_record`, `unanswered_findings`, `read_plan_review`, `store_committed_review` and `_commit_state_write` (reckon/ledger.py:1693) each resolve.",
+    "done_when": "a finding \u2014 \u00a710's dispose-after-promotion test cannot fire its declared control.",
+    "evidence_paths": "pass \u2014 \u00a710 names only test files as evidence and cites its measurement by an imas-codex run id, not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a710's prose and the new `f-erkc-008` followup carry no plan labels, ticket numbers, version tags or changelog prose in symbols or comments.",
+    "reasoning": "a finding \u2014 the stated root cause for the `crew dispose` writer does not match the code it names.",
+    "single_goal": "pass \u2014 \u00a710's two numbered changes are two halves of one stated property (a disposition or answer survives promotion), each exercised by its own test, so the one node can still be closed on one verdict.",
+    "wiring": "pass \u2014 \u00a710 declares no depends-on edge, and the same-file concurrency it shares with \u00a78's node (1) (landed, 02f0134e8) and \u00a79's nodes (a)/(d) on `plan_review.py` is refused by the dispatch scope check rather than a plan edge, the basis on which the earlier wiring finding on \u00a79 was declined; its only real precondition, \u00a73's committed-first reader, has landed. The new followup `f-erkc-008` and the added `s10: implementable` declaration are both present and correctly wired to \u00a710."
+  },
+  "section_digests": {
+    "_document": "086f254416462520414f799a2806618f3ebd7fc5ed24bb00691aee0f91180e1f",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "de53452b6c430ace61d3732fd83654fb469b2c590db7b0d6d8a3cc0185686bca",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "a7fcc45c1a0d087b629ba0370de67f49444253b8bc50ca049cf5f402e4284625",
+    "s9": "3cf741abf98d7c12640ed6a8aef997dad41038c459798a46a8eefa6e8a3035ad"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:13:11.635967+00:00"
+}

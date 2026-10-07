@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:35:51.744Z",
+  "dispatched_at": "2026-10-05T16:31:12Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:147",
+      "id": "deep_module-1",
+      "reason": "the author would either relocate the runner to the core process/cache module or state why velocity is an acceptable home for git access but not for cache paths, resolving an inconsistency between \u00a713's two placement decisions that a reader cannot currently resolve from the text.",
+      "text": "\u00a713 places the package's core git process runner on `reckon/velocity.py`, a velocity-report module, while \u00a713 argues at length that the cache-path cascade must live in its own core module precisely because \"five unrelated consumers ... should not import a velocity report to find a cache directory\"; the runner's consumer set is larger \u2014 the git-access followup will route the 21 modules and 63 direct invocations through it \u2014 so the same principle that built the cache module is left unaddressed for git, and \u00a713's design concentrates the runner, the tree lister, the sources reader, `read_blobs`, `git`, `_is_ancestor` and `_blob_sha` on one feature module",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "259f7d0fdb31619020653d7188a13f3c3e9e06e3074a289ef7e847c0aaa199c3",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 137,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T163052900608-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "aa9410ce87e8e99b6b0f8c39bcf8d59308cafed7",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the cache cascade is correctly given one deep module (`cache_root(kind)` hiding a five-row ordering table), but the git process runner is parked on the velocity report module rather than a core process module, the asymmetry the plan's own cache rationale rules out.",
+    "duplicate_owner": "pass \u2014 the plan is itself a de-duplication; it names the owner it retires or delegates to for every fork (`pick_input_cache_root` retired, `velocity_cache_root` delegates, the detector's `_git`/`_cache_root` retired onto \u00a713's owners), and I found no shared mechanism it forks instead of extending. `_store._config_home` is not a cache-path owner and does not read `XDG_CACHE_HOME`.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 states its net is zero (public sources reader added, public `revised_python` retired) and \u00a713 states its net is one (process runner + `cache_root` added, public `pick_input_cache_root` retired), each accounting in its own text, so neither section adds surface without naming what it retires.",
+    "reuse_search": "pass \u2014 the plan searched the codebase and cites by name the mechanisms it extends, wraps or declines (`velocity.git`, `read_blobs`, `interface_counts.read_trees`, `_plan_documents`, `routing._git`, `service._run`, the detector's `_git`/`revised_python`/`_cache_root`, and five named cache cascades), each verified to exist at the stated lines.",
+    "thin_wrapper": "pass \u2014 every retained wrapper states its reason: `velocity.git` keeps its name so \"its four decoding callers are untouched\"; `routing._git` stays as \"error-domain translation and not a second runner\"; `service._run` is named and declined for the layering inversion. None is a wrapper with no stated justification."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.615558+00:00"
+}

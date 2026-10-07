@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:00:20.967Z",
+  "dispatched_at": "2026-10-04T16:44:33Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/obligations.py:782",
+      "id": "reuse_search-1",
+      "reason": "reading these mechanisms turns \u00a72/\u00a73 from \"add a new line kind in recovery.py\" into \"render the existing per-session obligations in the follower\", which changes the write paths, the test fixtures and the MCP clause.",
+      "text": "\u00a72's needs-you line (owning session's runs in a needs-action state, unpromoted, or needing help, each with its age) is already implemented by `obligations(project, session)`, which projects the recovery classification into per-session duties, carries `age_seconds` per item and `summary.oldest_age_seconds`, sorts oldest-first, and is already wired to the `obligations` MCP view at `reckon/mcp.py:4327`; \u00a73's \"fleet stopped working\" condition is already `_population_has_live_work(project, session)` at `cli.py:3253`, and its closure figure is `runs.drain(project, session=...)` at `runs.py:1516` \u2014 the plan cites none of these, so the author has not done the reuse search this item names",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/obligations.py:782",
+      "id": "duplicate_owner-1",
+      "reason": "it names `obligations.py` (and optionally the published snapshot) as the module to extend instead of adding a parallel composer, which is the point of this section.",
+      "text": "\u00a72 places the needs-you list \"beside the fleet partition in `reckon/crew/recovery.py`\", but the owner is `obligations()` in `obligations.py`, whose module docstring states its whole contract is \"derive the work one coordinator session still owes\" and whose result is already published per session by `obligation_snapshot.py` and consumed by `reckon/hooks/obligations.py:644`; composing a second per-session duty derivation in `recovery.py` forks a shared derivation that three callers already read",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/runs.py:1516",
+      "id": "duplicate_owner-2",
+      "reason": "`drain` already names a mechanism in this repo (the function and the MCP view), so a new drain line must extend or be clear of it, and the section's write paths change accordingly.",
+      "text": "\u00a73 states the drain line as new behaviour (\"when the owning session's working and queued runs reach zero, emit one drain line\"), but `runs.drain(project, session=...)` is the existing drain derivation and `cli._population_has_live_work(project, session=...)` is the existing \"does this session's fleet still hold non-terminal work\" predicate; the plan re-expresses both in a new line kind under an existing name",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/cli.py:3211",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to extend `_needs_you_runs` to carry the age and be callable on the cadence, rather than adding a second emitter beside it.",
+      "text": "\u00a72 adds an emission path in `_follow_watch_lines` for a needs-you population that `_needs_you_runs(project, session=...)` already computes for the same owning session and already drives the end-of-arming line at `cli.py:3280` (\"N runs need you: ...\"); the plan neither cites that helper nor says why it cannot be extended to serve the cadence and carry the run's time-in-state",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f381b75efde95764141383cbb8fdf64ee617490340e8b5b08aa17d92241ad5db",
+  "plan_slug": "a-follower-keeps-your-work-in-view",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T164420073994-plan-review-of-a-follower-keeps-your-work-in-view",
+  "reviewed_blob_sha": "48eeff747edb21471590652f13afa097f09bef3c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan introduces no new module; \u00a72 composes into `recovery.py`, \u00a74 filters in `resumption.py` and \u00a75 derives in `recovery.py`, so there is no new shallow facade to weigh; the placement of the \u00a72/\u00a73 derivation is charged under duplicate_owner rather than double-counted here.",
+    "duplicate_owner": "a finding \u2014 the per-session \"what this coordinator still owes\" derivation has an owner in `reckon/crew/obligations.py`, and \u00a72/\u00a73 would fork it into `recovery.py`.",
+    "reuse_search": "a finding \u2014 the plan proposes a needs-you line and a drain line in `reckon/crew/recovery.py` without citing `reckon/crew/obligations.py:obligations()`, the `obligations` MCP view, `runs.drain()`, `cli._needs_you_runs()` or `cli._population_has_live_work()`, all of which already derive per-session coordinator obligations.",
+    "thin_wrapper": "a finding \u2014 \u00a72 adds an emission wrapper over the already-present `_needs_you_runs` and its end-of-arming line without saying why those cannot be extended to carry the cadence and the ages the section describes."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.391441+00:00"
+}

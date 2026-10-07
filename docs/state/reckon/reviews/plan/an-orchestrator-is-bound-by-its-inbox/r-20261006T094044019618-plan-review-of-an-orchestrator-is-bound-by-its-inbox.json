@@ -1,0 +1,99 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T09:52:32.656Z",
+  "dispatched_at": "2026-10-06T09:41:05Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery.py:1156",
+      "id": "reuse_search-1",
+      "reason": "the section would become a short citation of the implementing module and function rather than a design to build.",
+      "text": "\u00a72's rule (\"a run entering scoring dispatches its own review\") is already implemented: the review reflex and its entry point exist at recovery.py:1156 (the comment \"the reflex below runs the command instead of printing it\"), recovery.py:2300 (`dispatch_review_for_run`) and recovery.py:4073 (`dispatch_awaiting_reviews`), so \u00a72's premise that the composed command is only \"printed instead of running\" and that \"Nothing creates it\" is false at this revision \u2014 the plan should cite the landed owner and record the section as landed rather than re-specifying it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:1",
+      "id": "reuse_search-2",
+      "reason": "the section should cite plan_review.py and routing.py:2601 as its owners, which changes what a reviewer reads the section to be for.",
+      "text": "\u00a73's rule (\"a plan is not released until something has read it back; an unreviewed plan is refused for execution at dispatch\") is already implemented: reckon/crew/plan_review.py owns the review record, its content fingerprint, the store and the finding-answer join, and reckon/crew/routing.py:2601 (`require_plan_reviewed`) is the dispatch preflight gate the posted decision \"refuse-at-dispatch\" describes, with landed answers already counted at plan_review.py:553 (`unanswered_findings`) \u2014 the plan does not name this module and presents the mechanism as new",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/obligation_snapshot.py:809",
+      "id": "reuse_search-3",
+      "reason": "\u00a74 should name obligation_snapshot.py:809 as the owner of the age and confine itself to the obligation the plan actually owns (\u00a76 already concedes the rendering elsewhere).",
+      "text": "\u00a74's rule (\"the actionable cells carry identity or age, not only a total\") is already derived: obligation_snapshot.py:809 computes `oldest_age_seconds` for the summary and obligations.py:864 does the same, with reckon/crew/ticker.py:1932 already naming \"how long the oldest member has waited\" \u2014 the plan re-specifies a derivation that exists",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py:4351",
+      "id": "reuse_search-4",
+      "reason": "\u00a75 should extend the existing freshness reader and state what remains unsound in each of the five measured signals rather than re-describing a landed remedy.",
+      "text": "\u00a75's \"liveness signal keyed on freshness rather than on change\" is already implemented: promotion.py:4351 (`_newest_stream_mtime`) and promotion.py:4360 (\"the stream's newest mtime is polled until it has not advanced\") is exactly a freshness-keyed liveness rule, with newest_stream at recovery.py:5947 and the process-liveness reader at claims.py:231 (`_worker_liveness`) behind it \u2014 the plan proposes the remedy without citing any of them",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:3185",
+      "id": "duplicate_owner-1",
+      "reason": "naming the existing inotify waiter and the supervisor's waitpid record turns \u00a77 from a new subsystem into a bounded extension of them.",
+      "text": "\u00a77 proposes \"an optional completion signal the orchestrator can wait on\" as new machinery, but a filesystem-event waiter already exists and is owned here: dispatch.py:3185 (`_inotify_descriptor`) and dispatch.py:3231 (`peer_read`, \"block on filesystem events until a reply arrives\") already implement \"block on a watched directory for events\", and the per-run supervisor already observes exit directly at dispatch.py:8138 (`os.waitpid(... WNOHANG)`) and dispatch.py:10151 (`_wait_status_record`) so the carrier for a finishing classification is already in flight \u2014 \u00a77 should extend `peer_read`/`_inotify_descriptor` rather than add a parallel signal path",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:3231",
+      "id": "thin_wrapper-1",
+      "reason": "the plan should either extend the existing waiter or state why its contract cannot carry a completion classification.",
+      "text": "\u00a77 adds a thin completion-signal layer over the existing event waiter with no justification for why that waiter cannot be extended, so the honest change (extend `peer_read` to carry a finishing classification, or have the supervisor write the classification it already computes) is not stated",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/obligation_snapshot.py:809",
+      "id": "duplicate_owner-2",
+      "reason": "the plan must name the owning module it extends or drop the derivation, otherwise two readers of the same fact drift.",
+      "text": "\u00a74 and \u00a75 both re-derive facts whose owners are named above (oldest-age at obligation_snapshot.py:809; freshness at promotion.py:4351) rather than extending them, and \u00a76 hand-waves the duplication to `monitor-renders-what-it-is-given` while \u00a74/\u00a75 are declared sections of this plan",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:1794",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the added CLI option and refusal family in its own text, or state why nothing can be retired.",
+      "text": "\u00a73 adds to two of the four interface families without naming a retirement: the CLI option `--allow-unreviewed-plan` at cli.py:1794 and the refusal family `plan-review-missing` at cli.py:2119, and \u00a77 proposes a further completion-signal option, while the section text names neither what these retire or merge",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8bbb7a1991be844f63b258dffce76cbd810fa5456b89e148ece81e5c51496d4b",
+  "plan_slug": "an-orchestrator-is-bound-by-its-inbox",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T094044019618-plan-review-of-an-orchestrator-is-bound-by-its-inbox",
+  "reviewed_blob_sha": "3b852a8fed35529866575a0a2226e05a36702c01",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a73's plan-review store (reckon/crew/plan_review.py) hides the record shape, the content fingerprint, the store, the join and the decline recurrence behind a small interface, and \u00a72 reuses the existing composer rather than wrapping it.",
+    "duplicate_owner": "a finding \u2014 \u00a77 re-implements a filesystem-event wait rather than extending the existing inotify waiter, and \u00a74/\u00a75 re-derive an age and a freshness that named owners already compute.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds a CLI option and a refusal family and \u00a77 adds a completion-signal option, and none of those sections names in its own text what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 four of the plan's five active mechanisms already exist at base (\u00a72 recovery.py review reflex, \u00a73 plan_review.py + routing.py gate, \u00a74 obligation_snapshot.py oldest-age, \u00a75 promotion.py/ recovery.py newest-stream freshness) and the plan presents each as still to be built.",
+    "thin_wrapper": "a finding \u2014 \u00a77 proposes an optional completion signal over machinery (the exchange that already blocks on filesystem events) without saying why that machinery cannot be extended instead."
+  },
+  "section_digests": {
+    "_document": "ca01fe700a67fae4821f3f521831b6f7d1b271e84e3df396f3b3fbcf82879b0d",
+    "s1": "09a98085765d215f2a2f1fb3e03b1d81736e3590885c3e3d447a0dc5d3de21f4",
+    "s2": "898ee0d917b219ddc83564e603e58820ec3e5ee2b1395b13e078a46a2d867a8f",
+    "s3": "10886a4ca0a4aab781c79716784d915f74420248e29d5175e282eedeff67e6ad",
+    "s4": "0fbf51448314edbc49f0fd1fea5133ebbb20609dadb0e99911dafeaab4120b80",
+    "s5": "6267f1be527ddbdc8c19b672e3708088332c4a4947d832fd012f726f8c41d9fb",
+    "s6": "d519981420c309368226658428fc780ce3a799a9ce59c4b30b342708764abed0",
+    "s7": "19190d49fac1ebe4d7877c15d282eaf628392f20f7f36d8be77214126809421c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.818401+00:00"
+}

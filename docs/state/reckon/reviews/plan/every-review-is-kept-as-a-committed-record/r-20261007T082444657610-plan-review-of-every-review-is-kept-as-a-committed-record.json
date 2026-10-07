@@ -1,0 +1,126 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T08:40:54.845Z",
+  "dispatched_at": "2026-10-07T08:25:10Z",
+  "findings": [
+    {
+      "anchor": "plan.html:180",
+      "id": "wiring-1",
+      "reason": "a coordinator working the plan from its \u00a77 build order and open followups never dispatches \u00a78, and nothing holds \u00a78 behind the store-function precondition it shares with its siblings, so it can start before the function it changes exists.",
+      "text": "the gate `g-erkc-1` gates `s3,s4,s5` but not `s8`; \u00a78 states its change \"belongs in `plan_review_path` and `store_plan_review`\", the same store function the gate's required-evidence measure protects, so \u00a78 depends on the same `store_delivered_reviews` precondition the gate enforces for \u00a73/\u00a74/\u00a75 and is outside it. No followup names \u00a78 either: `f-erkc-001`\u2026`f-erkc-005` cover \u00a72/\u00a73/\u00a75/\u00a74 and \u00a77 names only \u00a72/\u00a76/\u00a73/\u00a75/\u00a74.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:96",
+      "id": "done_when-1",
+      "reason": "a node closing \u00a74 on this done-when cannot show its guard fires; the raw-report retention pass and the lifecycle derivation could both be inert and the stated assertions still hold.",
+      "text": "\u00a74's done-when carries no negative control: it asserts the lifecycle is derived, a shift to landed is observed, `declined_recurrence` reads the archive, the summary reproduces \u00a71's figure, and retention prints removals, but names no mutation under which the suite must go red; every landed section in this plan (comments at plan.html:188, 194, 203, 209, 218) states one that failed `EXIT=1`.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:122",
+      "id": "single_goal-1",
+      "reason": "a node dispatched for change (1) cannot be closed on the combined done-when (the census-zero and second-pass-zero clauses belong to change (2)), so the section is neither reviewable nor closeable on one verdict.",
+      "text": "\u00a78 declares two deliverables \u2014 (1) a review-run-keyed store path and (2) an import of delivered reports no record carries \u2014 as \"Two changes, as two nodes\", yet the section carries one `data-status` and one done-when paragraph covering both changes.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:122",
+      "id": "reasoning-1",
+      "reason": "the mechanism as written breaks the reader it claims keeps working, sending a node to rename the store path without repointing the readers that enumerate it.",
+      "text": "\u00a78's change (1) renames the staging file to be keyed by review run (\"two reviews of one plan version never share a staging file\") and asserts \"Readers that key on the version still read the newest\", but the version-keyed reader `plan_review._candidate_paths` enumerates the staging tree only by the literal globs `plan-<slug>.v<N>.json` and `plan-<slug>.v<N>.at-*.json`, which a run-keyed staging filename does not match; the plan names no reader change to keep them reading, and the delivered reports \u00a78 targets are not committed until the import runs, so the staging reader is the one that must still see them.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6722081da4106c75bcd057db596565236f5f5428f1cd2213781502eb619045a0",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 55,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-07T08:59:40.335178+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "",
+      "when": "2026-10-07T08:59:48.479013+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T08:59:56.194718+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "each of section 4's nodes declared and recorded its own red negative control (lifecycle, retention, day summary, hot-set gate, all EXIT=1 logs); the section is closed by those nodes and a section-level control would change no build",
+      "when": "2026-10-07T09:00:04.016404+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "each of section 4's nodes declared and recorded its own red negative control (lifecycle, retention, day summary, hot-set gate, all EXIT=1 logs); the section is closed by those nodes and a section-level control would change no build",
+      "when": "2026-10-07T09:00:04.016404+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T08:59:56.194718+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T08:59:48.479013+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T08:59:40.335178+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v55.json",
+  "review_run_id": "r-20261007T082444657610-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "deb563888aff59d7f6018743ba7778ca1af442dd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited commit, file, symbol and href resolves, and the extensionless `full record` hrefs (`s2`, `s3`) name existing section ids in this document.",
+    "done_when": "a finding \u2014 \u00a74's done-when declares no negative control, the one section whose measure rests on a guard that could stay inert and still satisfy every stated assertion.",
+    "evidence_paths": "pass \u2014 landed sections cite commits and committed evidence fragments; \u00a71's supplementary scripts sit at `~/.cache/imas-ambix-plan-review-evidence/` on the host and the durable form of its measurement is the committed `docs/research/plan-review-cycles.html`, which exists.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach any cited symbol, path or comment; symbols are named by mechanism.",
+    "reasoning": "a finding \u2014 \u00a78's change (1) reassigns the staging filename to be keyed by review run while asserting \"Readers that key on the version still read the newest\", but the version-keyed reader enumerates staging by a `plan-<slug>.v<N>[.at-*].json` filename glob, which a run-keyed filename does not match.",
+    "single_goal": "a finding \u2014 \u00a78 states two deliverables (\"Two changes, as two nodes\") yet carries one section status and one combined done-when, so a node dispatched for change (1) is closed against change (2)'s census clause.",
+    "wiring": "a finding \u2014 \u00a78 changes the same store function the dependency gate guards and extends \u00a75's import script, but the gate's `data-gated-sections` is `s3,s4,s5` and omits `s8`, and no followup or \u00a77 build-order entry names \u00a78."
+  },
+  "section_digests": {
+    "_document": "ec6b06a5bc182310043764a87f7ca2fbc10ccc0c8989fcd3c6b1f68fd061333d",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "c6b40339524825df2f0358edb7238db04cd3560ce33a763f01adeb14675eadc3",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "4190cf8b392d050dc663f5c3847936e9c3d1c97c83a07b151b2e6c0f4debb7e9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T08:43:57.516197+00:00"
+}

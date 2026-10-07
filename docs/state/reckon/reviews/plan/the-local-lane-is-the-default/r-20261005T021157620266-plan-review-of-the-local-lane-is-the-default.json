@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:20:06.684Z",
+  "dispatched_at": "2026-10-05T02:12:18Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-local-lane-is-the-default.html#s2",
+      "id": "reuse_search-1",
+      "reason": "",
+      "text": "\u2014 \u00a72 introduces `crew dispatch --model` and a \"backends each listing its models\" shape without citing the model machinery that already resolves a per-backend `model` into launch argv, nor the schema's existing scalar `model` and `catalog` fields (reckon/_backends.py:1183,1526 expand `backend[\"model\"]` into `-m`/`--model`; reckon/_flight_schema.py:293 declares `model`, and `catalog` \u2014 which already matches a configured model against a backend's served list). The plan therefore does not say whether `--model` selects among a backend's declared members or reuses the existing field, and a reader cannot tell which resolution path it extends.",
+      "type": "reuse_search",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/the-local-lane-is-the-default.html#s6",
+      "id": "thin_wrapper-1",
+      "reason": "",
+      "text": "\u2014 \u00a76 says the graded open/pace/hold state is \"pushed to every follower as one line\", but names no emission point and never says why the follower's existing watch/transition stream \u2014 the ticker rows and per-run `to_state` transitions the follower already renders (reckon/crew/ticker.py; reckon/cli.py follower; reckon/crew/query.py:891 `state_changes`) \u2014 cannot carry it. A new push with no stated seam risks a second delivery path beside the one the follower already reads.",
+      "type": "thin_wrapper",
+      "would_change": null
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:2075",
+      "id": "duplicate_owner-1",
+      "reason": "",
+      "text": "\u2014 \u00a74 introduces an explicit `review_fallback` list (\"clive then codex on this host\") beside the mechanism that already owns review-lane ordering: `_ordered_review_lanes` (reckon/crew/recovery.py:2075) orders candidates as owning lane, then local, then a stable alphabetical tail, and `review_excluded_backends` (reckon/schema/flight.yaml:225, read via `recovery._review_excluded_backends`, recovery.py:2038) is the declared control that removes metered lanes. \u00a74's \"Done when `_review_lane_candidates` reads an ordered fallback list and has no alphabetical tail\" is a change to the owner, but the plan never names it \u2014 it proposes a second key governing the same ordering.",
+      "type": "duplicate_owner",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/the-local-lane-is-the-default.html#s3",
+      "id": "interface_budget-1",
+      "reason": "",
+      "text": "\u2014 against this week's figures (public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23), \u00a73 adds a `--permission \"<lead's words>\" gate on the claude backend, which is both a new cli_option and a new refusal family (\"a claude dispatch without a permission reason refuses\"), and states neither what it retires or merges nor why nothing can be. The plan's \u00a72 already retires per-model backend entries under the merge clause, so the vocabulary to account for added surface exists and \u00a73 does not use it.",
+      "type": "interface_budget",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/the-local-lane-is-the-default.html#s7",
+      "id": "interface_budget-2",
+      "reason": "",
+      "text": "\u2014 \u00a77 adds `crew follow --until-actionable`, a new cli_option (contributing to the cli_options 317 figure), without naming what it retires or merges or why nothing can be; the existing `crew follow` command already carries `--session`, `--observe-session`, `--run` and a deprecated `--attention` (reckon/cli.py:4693), so a merge candidate exists and is unaddressed.",
+      "type": "interface_budget",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "93fca7c14d7ec27718b24a42c5746dbfbd6d51185c76cd6e01241a37164d30cf",
+  "plan_slug": "the-local-lane-is-the-default",
+  "plan_version": 69,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T021157620266-plan-review-of-the-local-lane-is-the-default",
+  "reviewed_blob_sha": "46bd66eff909cc3b9e104e7e8d2c34dac35571c9",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a75's `paid_lanes.py` composes three recorded sources into one document behind a resolver and a single renderer, hiding source reconciliation, per-window recency and the staleness rule; the other sections extend existing modules (`dispatch.py`, `recovery.py`, `lane_document.py`) rather than adding shallow new ones.",
+    "duplicate_owner": "a finding \u2014 \u00a74's `review_fallback` is a second ordering key beside the existing ordered review-lane mechanism and its exclusion control.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds a CLI option and a refusal family without naming what it retires or merges, or why nothing can be, and \u00a77 adds a CLI option on the same terms.",
+    "reuse_search": "a finding \u2014 \u00a72 proposes `--model` and per-backend \"member models\" without citing the existing per-backend `model` expansion or the schema's `model`/`catalog` fields; \u00a74 likewise omits the existing ordered review-lane mechanism it would sit beside.",
+    "thin_wrapper": "a finding \u2014 \u00a76 adds a graded lane-state line pushed to every follower without naming the existing follower transition stream it should extend."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.253149+00:00"
+}

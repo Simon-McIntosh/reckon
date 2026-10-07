@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T11:44:28.761Z",
+  "dispatched_at": "2026-10-05T11:38:07Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:1721",
+      "id": "reuse_search-1",
+      "reason": "the runtime inventory test is the durable guard, not a one-off measurement, so a known blind spot on the exact shape it was built for lets a future worker re-introduce a parameter-taking staged-replace helper unnoticed; the plan should add a clause distinguishing a staging temporary (written-then-renamed, single directory) from a move-aside, or state why that shape cannot recur.",
+      "text": "\u00a79's inventory rule reports a staged write only when the rename's source is a name bound locally in the same function body, and it explicitly classifies \"a rename whose source is a parameter ... a move, not a fork\"; that single exclusion is required to spare the dispatch.py move-aside, but it also blinds the permanent runtime guard to a staged-replace helper that receives its temporary as a parameter (def _replace(tmp, dest): os.replace(tmp, dest)), which is the \"fork hidden inside a helper\" shape \u00a79 exists to catch",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "69197f8a3ecf70c9d287eaf3d991cb743cab7eed8ea665b5b5f209c81a8d4449",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 98,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T113749860143-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "c6b3a1a79234a8aeb25da98769a93bcf40f81dbd",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a79 hides the whole staged-write rule (local-binding analysis, os.replace/os.rename/.replace/.rename and bare-name matching, parity with the census) behind one function over the nodes definitions yields, and deletes ~20 private helper forks behind the one _store.py primitive rather than adding wrapper surface.",
+    "duplicate_owner": "pass \u2014 the plan does not fork a shared owner. It names the census as the frozen historical instrument that cannot be imported into the package (docs/research/data), names clones.functions_in as holding token windows and no call node, and promotes reckon/interface_counts.py as the runtime owner, reconciled by a parity assertion rather than a second divergent copy.",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a79 adds exactly one public definition (the ported inventory rule on reckon/interface_counts.py) and no CLI option, MCP view or refusal family, and states in its own text that the deleted helpers are private and uncounted, accounting for the net surface.",
+    "reuse_search": "pass \u2014 \u00a79 searched the codebase, cites the mechanism it extends (reckon/interface_counts.py read_trees/definitions), and names the frozen census predicate (docs/research/data/crew-pattern-review/code-depth/census.py:233 primitive_concepts) and reckon/clones.py functions_in as rejected alternatives with verifiable reasons; I confirmed each claim against the code.",
+    "thin_wrapper": "pass \u2014 the plan adds no wrapper layer: migrating sites become a direct call to the promoted primitive with their payload as the render callback and their private helper is deleted; the surviving paid_lanes.write_document_atomically is pre-existing and already delegates."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.708582+00:00"
+}

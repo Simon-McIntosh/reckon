@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:18:12.465Z",
+  "dispatched_at": "2026-10-06T10:08:40Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:1851",
+      "id": "reuse_search-1",
+      "reason": "\u00a77 should be re-scoped to the real gap it eventually landed (the `existing_item` payload and the same-id-twice tests) instead of asserting a defect that the cited revision already refutes.",
+      "text": "\u00a77's premise (\"The append op accepts a duplicate id\") is false at the revision the plan itself cites: the guard `_refuse_duplicate_id` landed at 6b043e3fe (2026-08-12) and is an ancestor of the plan's cited evidence revision 1135b00d9 (2026-10-02), and `append_to_list` calls it for any item carrying an id; id-minting for an append that supplies none is likewise pre-existing (\u00a77's \"the op mints the id when none is supplied\" asks for behaviour the store already has) \u2014 so \u00a77's proposed machinery rebuilds what exists, and \u00a77's own recorded review confirms \"the plan section's recorded defect does not reproduce at the base the node ran from\".",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp.py:2614",
+      "id": "reuse_search-2",
+      "reason": "naming the callee as the search target is what turns \u00a77 from \"add a check\" into \"extend the check that already exists\".",
+      "text": "\u00a77 reads `_append_followup` (cited by the plan as reckon/mcp.py:2592-2633 \"has no duplicate-id check\") and concludes no check exists, but its callee `append_to_list` (reckon/_store.py:1825) performs the duplicate-id refusal at reckon/_store.py:1851; the plan searched the wrapper and stopped one frame short of the guard, which is why the premise above survived authoring.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:2209",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should name `_refuse_duplicate_id` as the owner and either federate the six sites through it (a single pass) or state why the plan-write path alone justifies a second shape.",
+      "text": "the duplicate-id owner to extend is `_refuse_duplicate_id` (reckon/_store.py:2209), which centralizes the refusal with an `existing_item` description; the plan neither names it nor routes the other duplicate-id refusal sites through it: `insert_section`'s inline `section id ... already exists` (reckon/_store.py:816), the index `append sprints` inline check (reckon/_store.py:2550-2551), the `append milestones` inline check (reckon/_store.py:2597), the north-star duplicate check (reckon/_store.py:2139), the sprint-create refusal in the tool layer (reckon/mcp.py:2930) and the plan-create refusal (reckon/mcp.py:3621) \u2014 all raise or return their own duplicate message and never carry `existing_item`, so a caller sees two refusal shapes for one defect class.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp.py:668",
+      "id": "interface_budget-1",
+      "reason": "each section must account for the interface surface it adds in its own text, or the plan grows the definition and parameter families with no record of what it consolidates.",
+      "text": "\u00a77 adds the `existing_item` member to the `_op_error_response` payload (reckon/mcp.py:668-671) and \u00a710 adds the `replacements: list[dict[str,str]] | None` parameter threaded through `_edit_plan` (reckon/mcp.py:3353), `_edit_plan_prose` (reckon/mcp.py:3794) and `_edit_plan_tool` (reckon/mcp.py:3864); against public_definitions 1481 / cli_options 317 / mcp_views 33 / refusal_families 23, neither section states what it retires or consolidates or why nothing can be.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "96ef0ac02a682fe98707910331c9cf533e480fd0639c2e99ffc014563a913b60",
+  "plan_slug": "plan-writes-are-not-fenced",
+  "plan_version": 33,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T100821356666-plan-review-of-plan-writes-are-not-fenced",
+  "reviewed_blob_sha": "dfcb3a888f6bd6b8b734f3677c5276f7e46564ca",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the fence reuses the existing `_serialized_path_lock` (reckon/_store.py:315) and hides the version check, the replacement and the commutative union behind `_write_state` (reckon/_store.py:1109); the union is one function, `_plan_html.merge_comment_collections` (reckon/_plan_html.py:1447), behind a small interface rather than a spread of wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a77 treats duplicate-id refusal as new surface in the plan-write path and never names the existing owner to extend (`_refuse_duplicate_id`, reckon/_store.py:2209), which leaves the same mechanism forked across six other duplicate-id refusal sites that do not route through it.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a77 adds the `existing_item` member to the op_error payload and \u00a710 adds the `replacements` parameter to `edit_plan` text mode, and neither section names what it retires or consolidates, or states why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a77 proposes duplicate-id refusal and id-minting for the appends path, but both already exist: `_refuse_duplicate_id` (reckon/_store.py:2209), reached from `append_to_list` (reckon/_store.py:1851), refuses an append whose id already addresses an entry, and minting is the pre-existing behaviour of an append that supplies no id.",
+    "thin_wrapper": "pass \u2014 the plan proposes no thin layer over machinery it cannot extend; where the machinery already existed (\u00a711) the landed record is a guard test over the existing refusal path, not a parallel reimplementation, and \u00a73's `resolve_both.py` is explicitly declined rather than wrapped."
+  },
+  "section_digests": {
+    "_document": "bf6847ff6bd6410b38243cd1298a46fe3be115cf9c5309240eaa662c2bdc4d79",
+    "s1": "22b8a7e0cffc93308ac4e4dbf6e61b909c861680fa051032e7e5db48043699ba",
+    "s10": "9a001484bf72ce584f85e2937f67b4811c2d8512ef0ccd9b5b62150701230769",
+    "s11": "22b3cd5817bf0af8fee745f8366d83fe1602105f766af0fbcb8f921e13cf8f9e",
+    "s12": "5713b032b1e498d086952ee303c637eb8f9eed871c6fa62c8d51f7390dc077bf",
+    "s2": "017fdac994de20f78c2835dc51aebfb250b58719d9823e4a8c329d65220ce637",
+    "s3": "4a39ad2cea3a528f6276a4908b8c6a0043752d6ded551a9c870c3177c4dcf638",
+    "s4": "4c521743b964b6290fd534f6ee8cacd9e2aa421c0ef2cb9c29d527bb59f22106",
+    "s5": "baa066d97301b3580a386350497975fdc83b8f8dab6ac930cbcd49d4090c7efc",
+    "s6": "c69faee67727409693fb658cb74501ca5163c8d476a8159d35661623ea177be6",
+    "s7": "b41f3b3609776642756b0c1856f11d1c47f172a3b953a12977fa48ff550991c8",
+    "s8": "3b9abb988d010112415f0fbd104d99332c436937763e5295dea55af97dfad690",
+    "s9": "c263242c5e4c7caa5fd91c3df9cf78ddd1cb0d52049c1d01296112b6f9846ccf"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.092936+00:00"
+}

@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T09:35:40.616Z",
+  "dispatched_at": "2026-10-06T09:20:53Z",
+  "findings": [
+    {
+      "anchor": "tests/test_dry_run_reaches_admission.py:1",
+      "id": "reuse_search-1",
+      "reason": "the plan would build a parallel test file and a duplicated resolution step where the owner and its parity tests already exist. Named owner: `resolve_project_repository` (reckon/crew/dispatch.py:250) and the `dispatch()` prologue (reckon/crew/dispatch.py:6605). Note also that the plan's write paths omit `reckon/cli.py`, yet that is where the dry-run branch diverges from the launch branch (reckon/cli.py:2062-2087), so the change likely cannot land inside `dispatch.py` alone.",
+      "text": "the plan proposes two new test files, `tests/test_dry_run_resolves_the_real_call.py` and `tests/test_member_resolution_is_single_valued.py` (\u00a72, \u00a73 write paths), while the identical machinery and a precedent for exactly this defect already exist and should be extended: `tests/test_dry_run_reaches_admission.py` documents the same defect one gate over (\"the command's dry-run branch called plan_dispatch with no session and no watch_required, the gate was never evaluated\"), `tests/test_dry_run_predicts_the_launcher.py:1` already asserts dry-run/launcher parity end to end, and `tests/test_crew_dryrun.py`, `tests/test_dry_run_shows_each_set_override.py`, `tests/test_every_dry_run_refusal_carries_the_echo.py`, `tests/test_plan_review_dispatch.py` and `tests/test_plan_review_gate.py` all cover this surface. \u00a72's claim that the resolution \"calls already exist on the real path and are simply not reached when dry_run is set\" is also wrong: both paths reach `plan_dispatch` (`reckon/cli.py:2064` for dry-run, `reckon/crew/dispatch.py:6666` for the real call), and the divergence is only that the real caller resolves `repo_root` and `authority` first (`reckon/crew/dispatch.py:6605`, `6619`) and passes them in (`repo=repo_root`, `authority=authority`), while the dry-run caller passes the raw `--repo`. An implementer acting on the plan's wording would add new resolution inside the dry-run branch or inside `plan_dispatch` instead of routing both callers through the existing owner.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:5317",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must name the owner to extend (unify `plan_dispatch`'s member block with `dispatch()`'s roster lookup, or move both behind one call) and fix the root-cause attribution, or the fix will not be single-valued.",
+      "text": "\u00a73 asks to make member resolution single-valued but never names that member resolution has two independent sites: inside `plan_dispatch` at reckon/crew/dispatch.py:5317 (gated by `member and (local or backend_override is not None or default_backend_override is not None)`, reckon/crew/dispatch.py:5304-5306) and again inside `dispatch()` at reckon/crew/dispatch.py:7049 (gated by `named_member`). Because the `plan_dispatch` site is gated on the backend flags, a plain `--member X` dispatch never resolves the member there at all \u2014 which is the `--repo`-naming divergence \u00a71 measures \u2014 so \u00a73's stated decision (\"is a member resolvable from the project alone, or does it require a repository?\") is aimed at the wrong discriminator. Deciding the repository question without unifying the two sites leaves a third member able to acquire a third behaviour, which \u00a73's own done-when forbids.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:5242",
+      "id": "duplicate_owner-2",
+      "reason": "without naming the owning mechanism the plan will fork repository resolution a fourth time and drift from the mount semantics the real call relies on.",
+      "text": "\u00a72 proposes \"moving the line the dry run stops at\" so the dry run performs the repository resolution the real call performs, but `plan_dispatch` already resolves the repository at reckon/crew/dispatch.py:5242-5243 and again at reckon/crew/dispatch.py:5312-5313, and `dispatch()` resolves it a third time at reckon/crew/dispatch.py:6605 \u2014 three sites for one decision, owned by `resolve_project_repository` (reckon/crew/dispatch.py:250). The plan names none of them and does not say whether the fix extends `resolve_project_repository`/the `dispatch()` prologue (the honest change, since the divergence is the caller, not the function) or adds a fourth conditional inside `plan_dispatch`.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7063f4816dd177ef71ffef36ac3c618833ca2231990802b8b66e988a526703a4",
+  "plan_slug": "a-dry-run-must-resolve-what-the-real-call-resolves",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T092030756111-plan-review-of-a-dry-run-must-resolve-what-the-real-call-resolves",
+  "reviewed_blob_sha": "dfe8221355283616d636d3caef005971a6c8e136",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module; behaviour stays inside `reckon/crew/dispatch.py` behind the existing `plan_dispatch` interface, which already hides routing, authority, validation and admission behind one `as_dict()` result.",
+    "duplicate_owner": "a finding \u2014 \u00a73 asks for single-valued member resolution without naming that member resolution has two sites in `dispatch.py`, and \u00a72's \"move the stopping line\" would duplicate the repo/authority resolution that the `dispatch()` prologue already owns rather than extending it.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; the plan adds no CLI option, no MCP view, no public definition and no refusal family (the refusals it surfaces, `plan-unavailable` and `plan-review-missing`, already exist and are only reached earlier than they are today), so there is no added surface for the sections to retire or merge.",
+    "reuse_search": "a finding \u2014 the plan adds no new machinery, but it mis-describes the existing one: it claims the real call's resolution \"calls already exist on the real path and are simply not reached when dry_run is set\" (\u00a72), while in fact both paths call the same `plan_dispatch`, and the divergence is that `dispatch()` pre-resolves the repository and authority before the call, and the CLI dry-run branch does not; it also ignores an existing family of dry-run parity tests it should extend.",
+    "thin_wrapper": "pass \u2014 the plan adds no wrapper over existing machinery; it removes a false-`ok`, it does not forward to an existing reader."
+  },
+  "section_digests": {
+    "_document": "afdeddfc6c0ecdc021455fac22b6c1e427f5b267a88bd608e368eadefe982e8e",
+    "s1": "f8e0d544e14ed7e1f06a5fc1a47bf206fe4002813926b04e5f55365295b56fec",
+    "s2": "1331f1989eb7b5e9f24f9b5626790373d91b1b0d940e0da9e075028e41fc0dee",
+    "s3": "f17c9114b4fdad02b9796f97a8f2691b0b8f6e969a7156062828096d45fb4578",
+    "s4": "468bdcc6f249ffaa6641ea0e6d705ef6fc631b1e39dc1535cb487d67bf577b0f",
+    "s5": "c3414dcbec9bcc6188f8a581bc36fe2d2faa001f3e852ce65706d734330e0742",
+    "s6": "31609d2f58d169716df47f9a7e8e95d72bf8ceb1e7218b96337d184e9bf7e612",
+    "s7": "9879bc53396e245bd9f6b50b495fa933bc5e12a34b0899ccc2840a0c363c9d5b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.363481+00:00"
+}

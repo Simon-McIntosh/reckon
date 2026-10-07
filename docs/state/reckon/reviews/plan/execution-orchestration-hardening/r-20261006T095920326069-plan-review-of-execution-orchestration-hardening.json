@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:16:03.337Z",
+  "dispatched_at": "2026-10-06T09:59:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/execution-orchestration-hardening.html:84",
+      "id": "reuse_search-1",
+      "reason": "the section must name the promotion.py owners it extends, or a worker rebuilds landed machinery it was told not to repeat.",
+      "text": "`\u00a75` tells a worker to keep \"the still-open repairs that distinguish committed, merged and content-surviving outcomes\" but cites no mechanism and no owner, while that distinction is already implemented (committed at `reckon/crew/promotion.py:152`, merged at `:2746`, content-surviving at `:2641`, landed 2026-09-23, before `\u00a75`'s own evidence at `1135b00d9`)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/execution-orchestration-hardening.html:84",
+      "id": "reuse_search-2",
+      "reason": "an author who sees the census fixes all five in one pass; the section as written hands the worker a partial, reverse-engineered scope.",
+      "text": "census: `\u00a75` names none of the five repairs still open (they exist only in comment `c-20260826-promotion-scope-landed`), each with a site to extend \u2014 (2) orphaned verification edge: `reckon/crew/promotion.py:8237` reads `ledger.predecessor_run_id` (`reckon/ledger.py:483`) but asserts no producer-presence refusal; (3) retroactive gate rewrite: `reckon/crew/promotion.py:1131` `_require_gate_log_agrees` freezes nothing against the producer's own done-when; (4) static-audit promotion stored `not-run`: no command-shaped `gate_check` path; (5) legacy rows lacking persisted `node_definition.write_paths`: `reckon/crew/promotion.py:5260` backfills only when a manifest file survives; (6) `failure_classification` semantic consistency: `reckon/crew/promotion.py:7258` `_IMPL_MOVE_EXEMPT_CLASSIFICATIONS` checks membership, not consistency",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/execution-orchestration-hardening.html:84",
+      "id": "duplicate_owner-1",
+      "reason": "naming `reckon/crew/promotion.py` (and the `reckon/ledger.py` row schema) as the owner to extend is the non-forking route the section should state.",
+      "text": "`\u00a75` names no owner, so gate-verdict freezing, producer-edge checks and classification consistency can be built as a parallel vocabulary alongside the existing outcome fields `integrated_verdict`, `failure_classification` and `node_definition.write_paths` instead of extending them",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/execution-orchestration-hardening.html:31",
+      "id": "interface_budget-1",
+      "reason": "the section must state per added family what it retires or merges (for example the sprint ops replacing an existing index-mutation path) or why nothing can be, before the sprint-op surface is scheduled.",
+      "text": "`\u00a72` adds MCP and CLI surface without accounting for it (discovery projections/cursors, mounted checkout/branch/content-digest fields on reads and writes, and first-class sprint proposal/validate/close operations), naming only one retirement, the audit-response field rename (`reindexed`, `reckon/mcp.py:4810`)",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a54ac3c56a0ce59e6e0e0ed616f331283127042bd8cd742b23f567658de13459",
+  "plan_slug": "execution-orchestration-hardening",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T095920326069-plan-review-of-execution-orchestration-hardening",
+  "reviewed_blob_sha": "8a2e49b55d98940af6fdda907fec9a96d2c5d4bd",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is proposed; `\u00a75` asserts into the existing `reckon/crew/promotion.py` owner rather than adding a wrapper family.",
+    "duplicate_owner": "a finding \u2014 `\u00a75` names no owner, so the repairs risk a second outcome vocabulary beside `reckon/crew/promotion.py` and the ledger-row schema in `reckon/ledger.py`.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a72 at `docs/plans/execution-orchestration-hardening.html:31` adds discovery cursors, checkout/branch/digest response fields and first-class sprint proposal/validate/close views without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 `\u00a75` names a distinction (\"committed, merged and content-surviving\") that already lives in `reckon/crew/promotion.py` and cites no mechanism or owner it searched.",
+    "thin_wrapper": "pass \u2014 the proposed repairs assert on existing ledger-row and gate-verdict fields; no forwarder over the plan's own machinery is added."
+  },
+  "section_digests": {
+    "_document": "ca5345eee5f06cadaef23fa94988d54b97c80fd31b744cc679bd95d48952c120",
+    "s1": "049f1f79bc10d3bbec1e917e8614a63ff8e5a597244b11e9ffc6bb34eb0629a4",
+    "s2": "1b48703d0b11af072ab556a14e712ad1d9582fafec5c8c1c6485e011531232c4",
+    "s3": "ae8c6c4b7e9cdd4880af007502bc7ead88b18c8d0dcc2ff0ef3047c5e7b9b81a",
+    "s4": "129abff08c1bea94c6ccd7afea3f16f4549ccec09689bb36e2474c2d438bad23",
+    "s5": "9c548f888ef8324b6338af1337cb159a18c149ecb924b6111a01d00518219c5c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.960645+00:00"
+}

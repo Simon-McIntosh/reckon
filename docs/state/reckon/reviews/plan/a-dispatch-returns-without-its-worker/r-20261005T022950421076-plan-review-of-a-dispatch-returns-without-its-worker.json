@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:34:35.766Z",
+  "dispatched_at": "2026-10-05T02:30:12Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html#s16",
+      "id": "thin_wrapper-1",
+      "reason": "the body must cite `_stranded_launch` as the owner to extend (and that the plan branch returns before it), or the node reimplements the release the review exists to prevent.",
+      "text": "\u00a716's body (\"Find where a refusal can occur after the pointer is written, and remove the pointer on refusal, or order the checks so every refusal precedes the write\") describes adding/relocating a release, while the existing owner `_stranded_launch` (`reckon/crew/recovery.py:6613`) and `_discard_stranded_review` (`reckon/crew/recovery.py:1342`) already release a stranded pre-spawn claim; the required correction \u2014 \"route the plan branch through that same owner \u2026 it adds no new release rule\" \u2014 appears only in comment `c-20261005-s16-correction`, and the plan branch at `reckon/crew/recovery.py:2324` returns at line 2367 before the strand check at line 2402, so an implementer reading the body alone adds a second path",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html#s18",
+      "id": "duplicate_owner-1",
+      "reason": "implemented from the body alone, the two overrides are dropped and the two named tests fail; the body must name the single owner function and the three overrides it absorbs.",
+      "text": "\u00a718's body names `fleet_supervisor.state_directory` as the owner to call, but `state_directory` (`reckon/crew/fleet_supervisor.py:253`) resolves only `FLEET_STATE_DIR`, whereas `dispatch._fleet_record_path` (`reckon/crew/dispatch.py:9648`) also honours `RECKON_FLEET_RECORD` and `XDG_STATE_HOME`; `RECKON_FLEET_RECORD` is set by two existing tests (`tests/test_dispatch_spawns_through_the_fleet.py:226`, `tests/test_fleet_lane_carries_the_dispatch_environment.py:243`), and the plan's own comment `c-20261005-s18-overrides` requires the owner to resolve `RECKON_FLEET_RECORD` then `FLEET_STATE_DIR` then `XDG_STATE_HOME` \u2014 the body does not",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html#s17",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the surface it adds \u2014 either state that the moved names stay private so the public-definition count is unchanged, or name the surface the new module replaces.",
+      "text": "public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a717 introduces a new module (an importable public-definition surface) plus the launch helpers it absorbs, and its body states neither what public surface it retires or merges nor why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "80de420f09b21a1bed1a0ae193897b79352cc8c87dc2aa640c4356b19dffe76c",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 160,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T022950421076-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "eafe2152e61a745532274ae0d9441e4a77056841",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 is the deep-module fix and it is already in the plan: the per-run supervisor's behaviour (`_supervisor_command` plus its helpers in the 12,672-line `reckon/crew/dispatch.py`) is to move behind one module whose interface is the spec it reads and the run-directory records it writes, with `supervisor_main.py` kept as the single launch seam.",
+    "duplicate_owner": "a finding \u2014 \u00a718's body names only `fleet_supervisor.state_directory` (which resolves `FLEET_STATE_DIR`) as the owner to extend, and so would retire `dispatch._fleet_record_path`'s `RECKON_FLEET_RECORD` and `XDG_STATE_HOME` overrides rather than move them into the owner; the correction that keeps them lives only in a comment.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a717 creates a new module (an importable public-definition surface) and its body states neither what it retires or merges nor why nothing can be.",
+    "reuse_search": "pass \u2014 the plan cites the mechanism it extends for every new behaviour it proposes (`_stranded_launch` at `reckon/crew/recovery.py:6613` for \u00a716, `member_in_flight_verdict` at `reckon/crew/node.py:357` for \u00a711, `fleet_supervisor.state_directory` at `reckon/crew/fleet_supervisor.py:253` for \u00a718, the seven supervisor helpers in `reckon/crew/dispatch.py` for \u00a717), so no subsystem is added without a searched-for predecessor.",
+    "thin_wrapper": "a finding \u2014 \u00a716's section body adds a release-at-refusal behaviour over machinery that already owns stranded-launch release, and it does not name that owner, so as written it reads as a second release path rather than an extension."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.317222+00:00"
+}

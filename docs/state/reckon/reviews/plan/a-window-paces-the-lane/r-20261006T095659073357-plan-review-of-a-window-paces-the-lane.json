@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:08:04.863Z",
+  "dispatched_at": "2026-10-06T09:57:28Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/pace_replay.py:44",
+      "id": "duplicate_owner-1",
+      "reason": "the \u00a79 replay must resolve and enumerate its rows through the ledger owner, or the plan states why the ledger's reader cannot serve it; the same direct glob recurs at `reckon/mcp_views.py:1501`, so the owner and both sites should be named in one pass.",
+      "text": "\u00a79's `load_committed_rows` hardcodes `Path(root)/\"docs\"/\"state\"/<project>/\"runs\"` and `glob(\"*.json\")`, re-implementing the run-path resolution and enumeration that `reckon/ledger.py` owns (`ledger.run_path`, `ledger.ledger_path`, `read_records`); it also parses the raw JSON with the stdlib rather than through the ledger's record reader, so a change to the state-dir layout would silently starve the replay",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/budget_group.py:292",
+      "id": "duplicate_owner-2",
+      "reason": "a single owner for selecting the freshest dated reading removes four drifting copies; the sections should extend `window_reading` rather than each restating the competition.",
+      "text": "the \"newest dated reading wins\" selection is implemented independently here (`_freshest_member`), again inline in `group_position` (`budget_group.py:149`\u2013`160`), again in `reckon/crew/window_reading.py:107` (`_newest_reading`), and a fourth time in `reckon/budget.py:2934` (`recorded_windows`, the `max(candidates, key=_reading_stamp)` at `budget.py:3058`); the owner of reading selection is `reckon/crew/window_reading.py`, and the plan adds two more sites to a rule it never places there",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/window_reading.py:63",
+      "id": "deep_module-1",
+      "reason": "the plan should name one deep reader that hides dialect, age and selection behind one accessor, or state why the five types cannot be one, before the first node adds a sixth.",
+      "text": "the plan spreads one concept (a dated window figure with a dialect, an age and a serving state) across `window_reading.WindowReading`, `staleness.Reading`/`ReportedReading` (`staleness.py:36`,`52`), `budget._Reading` (`budget.py:279`), `rollout.QuotaReading` (`rollout.py:82`) and `pace.GroupReading` (`pace.py:72`); each is a small wrapper over the same fields and each carries its own conversion, so no single interface hides the dialect, the dating or the selection",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:1582",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the interface surface it adds in its own text, per the rubric's one rule for every family.",
+      "text": "\u00a76 adds the repeated CLI option `--ready NAME=GROUP:SCORE` to `crew preflight` and supplies the `budget` MCP view (`reckon/mcp.py:4292`) with the same source; the section says the MCP side reuses the existing `candidates` parameter but never says what the new CLI option retires, merges, or why nothing can be, for a family the brief hands over at 317 CLI options",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9f2f6ae3a0f7a782bff90b8d71d0f15badd25a5c94999a2e89428c2c711be2c0",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 120,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T095659073357-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "e441dfa26bf99c098ef07494e9c35e62e43f3bc5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the plan's window/reading complexity is spread across several shallow wrappers rather than hidden behind one deep reader: `WindowReading`, `staleness.Reading/ReportedReading`, `budget._Reading`, `rollout.QuotaReading` and `pace.GroupReading` are one concept (a dated window figure) split across five types, and the \"freshest dated reading wins\" selection is re-implemented in at least three modules.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements committed-run path resolution and enumeration owned by `reckon/ledger.py`, and re-implements the freshest-reading selection owned by `reckon/crew/window_reading.py`; both are named below with the owner to extend.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a76 adds the CLI option `--ready NAME=GROUP:SCORE`, which the section never names as retiring or merging anything, or stating why nothing can be.",
+    "reuse_search": "pass \u2014 the plan cites the machinery it extends rather than rebuilding it: the `budget_group` declared slot and the `quota_pool` guard from `burn-is-visible-before-it-bites` (\u00a75b), `reckon/crew/prescription.py` for the open-endedness score (\u00a73), `rollout_module.read_rollout_receipt` and `window_reading.read_windows` as the existing readers (\u00a76), and `budget.evidence_shelf_life_minutes` as the shelf-life key the fence already reads (\u00a75b.i).",
+    "thin_wrapper": "pass \u2014 the one layer that is genuinely thin, `staleness.resolve_configured_reading` over the reader plus the lane probe, is justified in \u00a75b.i (the shelf-life decision must live in one place), and the plan repairs in-plan the one wrapper that was not (`budget._run_observed_at` / `mcp_views._receipt_observed_at`, unified on the lower layer `budget.run_observed_stamp`)."
+  },
+  "section_digests": {
+    "_document": "ec0037ff0466aa36d9807ee4eb7e05278a2052910209dbabe3578b332d4cd478",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.501843+00:00"
+}

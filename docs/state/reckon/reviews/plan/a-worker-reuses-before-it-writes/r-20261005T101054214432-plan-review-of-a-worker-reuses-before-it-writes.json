@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T10:16:39.617Z",
+  "dispatched_at": "2026-10-05T10:11:11Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-reuses-before-it-writes.html#s9",
+      "id": "duplicate_owner-1",
+      "reason": "the author must decide the resources.py verdict and pin the expected set, or the AST inventory test cannot be written as a deterministic assertion.",
+      "text": "\u00a79's completion instrument asserts the inventory reports \"the promoted primitive in reckon/_store.py plus the directory rename in reckon/resources.py if its staged-source rule reaches it\"; the conditional makes the expected set undecidable, and \u00a79's own text already fixes reckon/resources.py:1117 `os.replace(staging / relative, destination)` as \"the one site that is not a file write\", where `staging` is bound from `tempfile.mkdtemp` and the source is a `/` join on that name rather than on a `.parent`, so the stated rule does not reach it",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-reuses-before-it-writes.html#s7",
+      "id": "duplicate_owner-2",
+      "reason": "the stated purpose is to end the divergence between the acceptance floor and the dimension set, and a stale \"five dimensions\" comment on the repaired constant (plus two in the promotion summary) re-introduces the same drift the repair removes.",
+      "text": "\u00a77 derives REVIEW_ACCEPTANCE_FLOOR from `len(REVIEW_DIMENSIONS)` at reckon/crew/recovery.py:3844 but leaves the count's prose copies in place: reckon/crew/recovery.py:3841 says \"five dimensions\" two lines above the repaired constant, and reckon/crew/promotion.py:5158 and :8319 both spell \"five dimensions\" in the promotion summary, while \u00a77's done-when greps only `REVIEW_MAX_SCORE` and therefore cannot see any of them",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c38e5f29ea0705fd64eace8f9a03d668815d476cac5ab7f209f25fc4bb27c0d8",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 91,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T101054214432-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "a9a5c263a7f2dd959f2a253be35e3ff7b9d6840e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 promoting reckon/_store.py:419 to one public `write_atomically(path, render, *, binary=False, ...)` hides temporary naming, unique-suffix creation, fsync, exact mode, directory fsync and binary mode behind a single render callback, and \u00a79 routes ~17 call sites through it; \u00a77 is a one-expression change and adds no module.",
+    "duplicate_owner": "a finding \u2014 \u00a79's inventory leaves the reckon/resources.py:1117 verdict conditional while calling it a retained exception, and \u00a77 leaves the dimension count's prose copies at recovery.py:3841 and promotion.py:5158/8319 unaddressed; the owner is named (reckon/_store.py primitive; reckon/crew/review.py REVIEW_DIMENSIONS) but the duplicate's disposition is not.",
+    "interface_budget": "pass \u2014 public_definitions 1474, cli_options 317, mcp_views 33, refusal_families 23; \u00a78 names its single addition (`write_atomically`, +1 public_definitions) and states the retired forks are underscore-private and uncounted; \u00a79 names its single addition (the ported inventory rule on reckon/interface_counts.py, +1 public_definitions) with the same reason; neither section adds a CLI option, MCP view or refusal family, and \u00a77 adds nothing to any family.",
+    "reuse_search": "pass \u2014 every mechanism the plan extends is cited and verified in code: the census call predicate `primitive_concepts` at docs/research/data/crew-pattern-review/code-depth/census.py:233 (nested under the JSON-encoding branch exactly as \u00a79 states, firing only when the function also calls json.dump/dumps), the write primitive `_write_through_sibling_temporary` at reckon/_store.py:419, the module reader `read_trees`/`definitions` at reckon/interface_counts.py, and the dimension tuple `REVIEW_DIMENSIONS` at reckon/crew/review.py:88; \u00a79's rejection of `clones.functions_in` is correct \u2014 it returns `_Function` token windows and holds no call node.",
+    "thin_wrapper": "pass \u2014 \u00a78 keeps `write_json_atomically` (reckon/_store.py:463) as the sole JSON serialiser and adds a `binary` keyword to the generic primitive so the byte publishers in serve.py (503, 567) and the ledger rebuild (ledger.py:1037) migrate rather than fork a second writer; the reason each cannot be merged is stated in the section."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.727702+00:00"
+}

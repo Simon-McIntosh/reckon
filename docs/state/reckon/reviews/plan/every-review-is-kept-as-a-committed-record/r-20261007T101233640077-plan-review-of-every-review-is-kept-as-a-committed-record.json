@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T10:26:44.491Z",
+  "dispatched_at": "2026-10-07T10:13:16Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:112",
+      "id": "reasoning-1",
+      "reason": "node (d) would be built to compute the wrong statistic, and \u00a72's re-measure, the stated purpose of \u00a79(d) (\"the recurrence \u00a72's re-measure needs\"), would be invalid without either adding the acted-on filter to the fold or restating which baseline it compares against.",
+      "text": "\u00a79(d) defines the fold as \"the share of findings that follow an earlier review of the same plan raising the same type\", which is \u00a71's same-type recurrence (that review measured \"83% of `duplicate_owner` findings follow a review that raised the same type\", line 63, and the retention decision calls it \"the 83% same-type recurrence\", line 131), yet \u00a79(d) asserts \"That is the figure \u00a72's one-week re-measure compares against 41.9%\"; \u00a72's baseline is a different denominator \u2014 the recurrence \"after an **acted** same-type finding \u2026 the 41.9% baseline for `duplicate_owner`\" (line 70 as collapsed; the pre-collapse \u00a72 done-when states the acted qualifier, recovered from commit 76ceee424). A fold that never checks whether the earlier same-type finding was answered/acted on reproduces the 83% figure, not the 41.9% one, so \u00a72's re-measure would compare a raised-based share against an acted-based baseline",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:112",
+      "id": "done_when-1",
+      "reason": "per the plan's own convention (each \u00a78 node and \u00a74 node declared and recorded a red control; the \u00a74 done-when finding was declined on exactly that ground), three of \u00a79's four nodes cannot show their guard fires, so their gates would pass on unfixed code and the plan should either add a declared control per node or say why none applies.",
+      "text": "\u00a79's nodes (a), (b) and (d) state a done-when but name no declared negative control: (a) says \"the fork is gone, and a test shows `read_blobs` returning a bare blob's bytes and `None` for a missing one\", (b) says \"no caller-unread value remains, checked by a search the node runs\", and (d) says a fixture \"gives the expected share per type\", none stating the mutation must fail \u2014 while (c) does declare one (\"the new test fails when the content branch's hot guard is removed\"",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d030a6e7edf93584de1ab4dc04ffd31dd16a6862525aa140e13b88cad3357579",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 64,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T10:27:54.651726+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-07T10:28:03.551560+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T10:28:03.551560+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T10:27:54.651726+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v64.json",
+  "review_run_id": "r-20261007T101233640077-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "d1c56d43bf7cf598bff149b34bccfc89f4ba6a88",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the four code anchors \u00a79 cites resolve to the named functions and describe what those functions do; \u00a72's 41.9% anchor is present.",
+    "done_when": "a finding \u2014 nodes (a), (b) and (d) of \u00a79 name no declared negative control.",
+    "evidence_paths": "pass \u2014 \u00a79 produces no gate log and points at no scratchpad; the recurrence figure it derives is recorded on the committed plan beside \u00a72's baseline.",
+    "naming": "pass \u2014 \u00a79 introduces no plan label, stage name, ticket number or version tag; the symbols it names are the real code symbols.",
+    "reasoning": "a finding \u2014 \u00a79(d)'s fold is defined as the same-type recurrence \u00a71 measured at 83%, but the plan claims it produces the figure \u00a72's re-measure compares against 41.9%, which \u00a72 defines with an \"acted\" qualifier the fold does not apply.",
+    "single_goal": "pass \u2014 each of \u00a79's four nodes names one deliverable with its own write scope and its own done-when clause, the structure \u00a78's two nodes use.",
+    "wiring": "pass \u2014 \u00a79 declares no gate of its own and needs none; its only external dependence (nodes (a) and (d) share `plan_review.py` with \u00a78's node 1) is recorded in followup f-erkc-007, and the store gate g-erkc-1 (s3,s4,s5) is untouched by \u00a79."
+  },
+  "section_digests": {
+    "_document": "a9aa58a9a976f30da28054e65eaf6e53de5c07e4ba93333d46f1428f61eb40fb",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "a7fcc45c1a0d087b629ba0370de67f49444253b8bc50ca049cf5f402e4284625",
+    "s9": "2c001d0f29a8fdfc4ac9be14b68f2e3a4abd98b33d977589ec441836a54f101f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T10:27:09.778640+00:00"
+}

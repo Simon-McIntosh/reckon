@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:46:50.708Z",
+  "dispatched_at": "2026-10-04T21:33:56Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/paid_lanes.py:510",
+      "id": "duplicate_owner-1",
+      "reason": "the plan would name `paid_lanes.py` as the owner of window-source reconciliation and contribute its rollout third-source and project filter there, deleting `recorded_windows` instead of shipping a parallel reader beside the one the pre-flight document already publishes.",
+      "text": "the plan's \u00a76 `recorded_windows` (reckon/budget.py:2934) builds a second reader over the same three recorded homes the owner `paid_lanes.gather_sources` already assembles \u2014 committed and live `lane_receipt`, the session rollout of an in-flight run, and the stream event \u2014 even sharing the same private helpers (`budget._receipt_reading`, `budget._read_rollout`, `budget._run_backend`, `budget._run_order`, `budget._run_observed_at`); the two readers are merged at two call sites (reckon/cli.py:1616 and reckon/crew/picker/snapshot.py:214 both call `recorded_windows` and then `paid_lanes.read_document`/`document_windows`)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/budget.py:2934",
+      "id": "thin_wrapper-1",
+      "reason": "routing \u00a76's reading through the owner's per-window reconciliation removes both the wrapper and the wholesale-blanking defect the plan is currently carrying as a followup.",
+      "text": "`recorded_windows` describes a per-member competition on `observed_at`, but it returns one reading per member chosen wholesale, discarding the per-window resolution `paid_lanes.account_entry` already implements (\"the reconciliation is per window \u2026 because the sources carry different windows\", paid_lanes.py:10-15); the plan itself records the consequence \u2014 \"a winning rollout reading can hide a clock\", leaving `five_hour` unknown where the displaced row carried a figure \u2014 and defers the fix to the lead rather than extending the owner",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/paid_lanes.py:62",
+      "id": "duplicate_owner-2",
+      "reason": "a freshness rule owned by three owners drifts, and the plan should route every horizon through the budget policy key it already names rather than leaving the \u00a75b followup open, because the disagreement already changes whether a reading is re-queried.",
+      "text": "a reading's freshness is judged against three independently defined horizons: the flight key `budget.evidence_shelf_life_minutes` (default 60 min) consumed by `staleness.configured_shelf_life_minutes` (reckon/crew/staleness.py:76), `paid_lanes.DEFAULT_STALE_SECONDS = 3600.0` for the published document, and the lane document's own `suggested_shelf_life_seconds` (reckon/crew/lane_document.py); the plan's \u00a75b landing records that the serving-state horizon is 47 minutes against a 60-minute shelf life, so a reading between the two is marked stale and never re-queried",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "68749d3c65353c1c5e061c567596d4104b3eea8cab1214117038e2ceb2e29e80",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 120,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T213340815444-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "e441dfa26bf99c098ef07494e9c35e62e43f3bc5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the new units hide substantial behaviour behind one call each: `pace.allowance_for_group` (a self-correcting weekly derivation), `bar.recommend` (a four-outcome lane verdict), `reserve.admit` (a role ceiling), `hold.Hold` (a hold that cannot be constructed without its evidence), and `budget_group.group_figures` (a one-wallet facade delegating to the three policy modules). Surface is not added for its own sake.",
+    "duplicate_owner": "a finding \u2014 the plan's \u00a76 re-implements the three-home provider-window assembly that `reckon/crew/paid_lanes.py` already owns and publishes as one document.",
+    "reuse_search": "pass \u2014 the plan explicitly extends the machinery it builds on: `reckon/crew/prescription.py` supplies \u00a73's open-endedness score, `budget_group` and the budget fence are named as existing owners in \u00a75b and \u00a77, and \u00a75b states the budget-group mechanism \"already exists and is simply unconfigured\". The search is real and cited rather than asserted.",
+    "thin_wrapper": "a finding \u2014 `budget.recorded_windows` is a lossy wrapper over the candidate set that the owner already reconciles per window."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.511808+00:00"
+}

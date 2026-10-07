@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:17:06.579Z",
+  "dispatched_at": "2026-10-05T16:12:03Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:306",
+      "id": "reuse_search-1",
+      "reason": "citing the two in-module/in-package mechanisms forces the plan to extend `_plan_documents` (a shared path lister both consumers call) and to place or extend the process runner knowingly instead of adding parallel ones.",
+      "text": "velocity.py:306 `_plan_documents` already performs the identical `git ls-tree -r --name-only <rev> -- <prefix>` listing the plan proposes to add as a new public sources reader on the same module, and reckon/service.py:206 `_run` already is a text-mode, never-raising, CompletedProcess-returning process runner of exactly the shape \u00a713 proposes; the plan's runner census counted only git-named runners and names neither",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:147",
+      "id": "thin_wrapper-1",
+      "reason": "the section must state the runner's byte/text mode and how each wrapper preserves its contract, or the \"one runner\" claim is false and two invocations survive.",
+      "text": "\u00a713's \"one process runner, with raising wrappers over it\" cannot hold: it fixes the base runner at text mode, so velocity.git, whose contract is bytes and whose call sites (velocity.py:308, 795, 804, 835) call `.decode()`, is not a wrapper but a re-implementation that re-encodes the runner's text; a single runner serving routing._git's text output and velocity.git's byte output needs a stated mode/encoding the section does not give",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "edde9bf3afcfe70fec5229e8fd674282b859cfcf1fa9a4c2bfe06ccce1fd5aaf",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 134,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T161144998033-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "2f82db2643ac50256f2768a11b974ea7f7d67df0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the \u00a712 sources reader hides the ls-tree invocation, the prefix scoping, the .py filter and the utf-8-sig decode behind one call, and \u00a713's cache_root(kind) hides a five-kind by two-ordering table plus the unknown-kind refusal behind a kind name.",
+    "duplicate_owner": "pass \u2014 the plan names velocity as the owner to extend for both the runner and the cascade and retires the forks into it (pick_input_cache_root public, clones._git, clones._cache_root, clones.revised_python), so the duplicates it touches are consolidated rather than forked.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 states its net public_definitions change (+1 sources reader, -1 revised_python = zero) and \u00a713 states its (+1 runner, +1 cache_root, -1 pick_input_cache_root = +1), and neither adds a CLI option, MCP view or refusal family.",
+    "reuse_search": "a finding \u2014 the plan searched git runners and cache cascades thoroughly and cites velocity.git/read_blobs/velocity_cache_root, routing._git, interface_counts.read_trees and the five cascade owners, but it proposes a revision-sources listing reader that duplicates the ls-tree pattern already at velocity.py:306 (_plan_documents) and a process runner whose shape already exists at service.py:206 (_run), neither cited.",
+    "thin_wrapper": "a finding \u2014 \u00a713 declares one text-mode runner and says velocity.git is \"expressed as a wrapper over that runner\", but velocity.git returns bytes (its callers at velocity.py:308, 795, 804, 835 call .decode()), which a text-mode CompletedProcess cannot supply."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.631846+00:00"
+}

@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:10:12.948Z",
+  "dispatched_at": "2026-10-05T16:06:39Z",
+  "findings": [
+    {
+      "anchor": "reckon/capabilities.py:1143",
+      "id": "duplicate_owner-1",
+      "reason": "the section must add this sixth cascade to its census, retire pick_input_cache_root onto the new owner (or exempt it with a reason), and correct the \"retired resolvers were private\" accounting, since leaving a home-first cascade unfound is the exact reuse gap the plan exists to close.",
+      "text": "\u00a713 measures \"five cache cascades in two deliberate orders\" but reckon/capabilities.py:1143 pick_input_cache_root is a sixth cascade, RECKON_HOME-then-XDG_CACHE_HOME (home first, lines 1158-1164), which is public and drives the ledger's sqlite path at reckon/ledger.py:791; a scenario this changes: \u00a713's done-when `grep -rn 'XDG_CACHE_HOME' reckon/` reports the cascade in exactly one function, which cannot be satisfied while this resolver keeps its own XDG_CACHE_HOME read, yet the section neither lists it among the five, counts its public definition, nor names it for consolidation",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py (proposed cache_root)",
+      "id": "deep_module-1",
+      "reason": "the section's goal is one home that hides the ordering; resolving home_step from a kind-keyed table inside cache_root removes the knob and makes the order a property of the kind rather than of the caller.",
+      "text": "the interface `cache_root(kind, *, home_step)` takes the cascade's ordering as a caller-supplied argument with three values (home before XDG, home after XDG, no home), but the section's own description fixes one order per kind (velocity and the detector after XDG, run-time-profile and lane-context before XDG, the served client cache with none), so home_step is a function of kind and every call site must restate it; a scenario this changes: a fifth kind added later copies whichever home_step a neighbour's call site happens to show rather than inheriting its kind's order, and nothing at the interface makes a wrong order visible",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "77043ed13125c2190423c36fb9133d3d28251ae7c83fc1f5b002d23e1c2d0122",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 133,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T160622215351-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "d7a9f7bcf47359e638a8688c97b0c32d28a5efde",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the proposed cache_root(kind, *, home_step) on reckon/velocity.py exports the cascade's internal ordering as a required call-site parameter, so five callers must each restate where the reckon home enters instead of the interface hiding it.",
+    "duplicate_owner": "a finding \u2014 the cascade census in \u00a713 is one short: reckon/capabilities.py:1143 pick_input_cache_root is a sixth cascade, public, home-first, and the owner to extend and the accounting to correct.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 states net zero (one public reader on velocity added, public revised_python retired) and \u00a713 states +2 (the process runner and cache_root), with no CLI option, MCP view or refusal family added, and the arithmetic is consistent with the supplied public_definitions count.",
+    "reuse_search": "pass \u2014 \u00a712/\u00a713 name and open the machinery they touch (velocity.git and read_blobs, routing._git, clones._git and revised_python, interface_counts.read_trees, and the capabilities/lane_context/serve cascades), and \u00a72\u2013\u00a711 each cite the census or owner they replace; the one mechanism the search missed is filed under duplicate_owner.",
+    "thin_wrapper": "pass \u2014 the two retained wrappers are each justified in the section text: velocity.git keeps its bytes-and-raise contract over the new runner, and routing._git stays as error-domain translation into CrewError rather than a second runner."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.636509+00:00"
+}

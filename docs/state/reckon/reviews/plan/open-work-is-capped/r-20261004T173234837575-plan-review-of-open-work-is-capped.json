@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:41:03.827Z",
+  "dispatched_at": "2026-10-04T17:32:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/open-work-is-capped.html#s3",
+      "id": "reuse_search-1",
+      "reason": "naming the owner would have the author reuse or extend it rather than commissioning a third pending definition.",
+      "text": "the plan adds a create-time pending-plan census and an impl-ranked \"three pending plans nearest to closing\" without citing the existing readers that already compute both (reckon/roadmap.py pending_work, whose rows carry progress_pct and are sorted at reckon/roadmap.py:3142; reckon/velocity.py:408 plan_census)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:408",
+      "id": "duplicate_owner-1",
+      "reason": "two owners of \"pending\" will drift, and the gate the plan closes \u00a73 by gates on the census the cap does not read.",
+      "text": "the plan's create-time count (reckon/mcp.py:3273 _pending_plans) re-derives \"pending\" by walking the working-tree inventory and importing only CLOSED_STATUSES, rather than consuming velocity.plan_census, the git-history census the plan's own gate g-owic-weekly-counts names as the source of pending; the two populations can disagree while the plan's done-when compares the cap against the velocity census",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:3142",
+      "id": "duplicate_owner-2",
+      "reason": "the nearest-to-closing ranking is owned by roadmap's pending-work report, so the plan should reuse its rows or justify a separate ranking.",
+      "text": "the \"three pending plans nearest to closing, ranked by impl\" (reckon/mcp.py:3294 _plans_nearest_to_closing) re-implements roadmap's pending_work rows, which already carry progress_pct per plan and are sorted by readiness/resulting priority; the plan names no owner to extend",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bf08a263189f2cfb99d9db445f84fdad0a814ae1775d5eab5223388d317acbf9",
+  "plan_slug": "open-work-is-capped",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T173234837575-plan-review-of-open-work-is-capped",
+  "reviewed_blob_sha": "43dccb12742da7e95698c3be68d8ddfdb7dfe487",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a73 hides the inventory walk, the closed-status definition and the impl ranking behind one project config key and one warning string, extending the create path rather than adding a plan-proposed module surface.",
+    "duplicate_owner": "a finding \u2014 the plan's pending-plan census and its nearest-to-closing ranking are a second implementation of machinery owned by reckon/velocity.py:408 (plan_census) and reckon/roadmap.py (pending_work rows).",
+    "reuse_search": "a finding \u2014 the plan names the velocity view and the *-currency-audit nodes, but for \u00a73's create-time pending-plan census and nearest-to-closing ranking (reckon/mcp.py:3273, reckon/mcp.py:3294) it re-derives machinery that reckon/roadmap.py already owns without citing it.",
+    "thin_wrapper": "pass \u2014 \u00a73 extends reckon/mcp.py's existing create path (_edit_plan, reckon/mcp.py:3625) instead of wrapping a reader in a parallel layer; the config key is the discoverable switch and no separate module is introduced."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.069846+00:00"
+}

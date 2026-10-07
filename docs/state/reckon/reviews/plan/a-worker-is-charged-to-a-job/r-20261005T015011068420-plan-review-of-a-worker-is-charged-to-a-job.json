@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:01:44.308Z",
+  "dispatched_at": "2026-10-05T01:50:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-is-charged-to-a-job.html:564",
+      "id": "duplicate_owner-1",
+      "reason": "the plan text asserts the code table is gone while one remains; the author must either carry the reservation's queries as a declaration (on its published record or a schema entry) or state why the reservation cannot, which is a change to \u00a73/\u00a74's own claim.",
+      "text": "\u00a73 and \u00a74 leave a second scheduler-query declaration in code: `reckon/crew/placement.py:71` defines `RESERVATION_STATE_QUERY`/`RESERVATION_REASON_QUERY` as literal `squeue` tuples and `_reservation_query_placement()` hands them to `runs.scheduler_job_state` as a synthesised placement, duplicating the mechanism `_scheduler_query_argv` (`reckon/crew/runs.py:4166`) owns, so a scheduler whose reporting verb changes is a configuration change for a backend but a code change for the reservation \u2014 the exact fork \u00a74 exists to remove",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-is-charged-to-a-job.html:564",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the added surface in its own text \u2014 either it extends the existing `--ensure` family and says so, or it states why a separate hold command cannot be folded in, either way a text change to \u00a73.",
+      "text": "\u00a73 adds the `reckon crew placement` subcommand with `--ensure` (cli_options now 317) and its reservation-hold surface, beside the existing `reckon crew watch --ensure`, without naming what it retires or merges or why nothing can be, unlike \u00a74 which does name a retirement (\"Those tables are gone\"), so the section grows the CLI family silently",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "781fe182ecd6212d61f722738bc6b9ed8f73141c5941aba79848d11a447cebb1",
+  "plan_slug": "a-worker-is-charged-to-a-job",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T015011068420-plan-review-of-a-worker-is-charged-to-a-job",
+  "reviewed_blob_sha": "591ab43915c5432840b8e7a0b5d8607c6cf06c70",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/crew/placement.py` hides a substantial body of behaviour (a cross-process advisory lock, the three-way scheduler state answer that keeps an unaskable query apart from a released job, host-wide roster accounting, and the `--overlap` step prefix) behind a small surface (`ensure_reservation`, `reservation_state`/`reservation_alive`, `roster_occupants`, `step_prefix`), and the wrap is one function over the existing `LaunchPlan` dataclass rather than a spread of wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a74 states the declaration \"replaces a table in code\" so adding a scheduler is configuration, but the reservation keeps its own hardcoded `squeue` argument vectors in `reckon/crew/placement.py:71-72`, a second scheduler-query declaration site beside the one that `_scheduler_query_argv` (`reckon/crew/runs.py:4166`, fed by `reckon/schema/flight.yaml` through `reckon/flight.py`) owns.",
+    "interface_budget": "a finding \u2014 the supplied figures are public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds the `reckon crew placement --ensure` CLI surface and its mirror of `reckon crew watch --ensure` without naming, in its own text, what it retires or merges, or stating why nothing can be.",
+    "reuse_search": "pass \u2014 \u00a70 records the search of the package and skills for `srun`/`sbatch`/`SLURM` and, before proposing new machinery, names the mechanisms it mirrors and extends: `reckon crew watch --ensure` and the served-model endpoint publish for the shared reservation, and the launch plan in `reckon/crew/dispatch.py` for the wrap, which is the existing launcher, and the shared `crew_home()` state resolver rather than a new one.",
+    "thin_wrapper": "pass \u2014 `apply_backend_placement` (`reckon/crew/dispatch.py:8851`) prefixes the already-resolved `_backends.LaunchPlan` and carries the absolute executable, environment and stream paths through unchanged, and the plan states why the launch mechanism is extended rather than forked; a backend declaring no placement returns the plan untouched, so no parallel launch path is added."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.554309+00:00"
+}

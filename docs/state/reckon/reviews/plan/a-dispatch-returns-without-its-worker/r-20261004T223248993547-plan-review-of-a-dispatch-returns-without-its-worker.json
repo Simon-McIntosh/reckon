@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T22:36:37.399Z",
+  "dispatched_at": "2026-10-04T22:33:03Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery.py:6585",
+      "id": "reuse_search-1",
+      "reason": "\u00a716's node should name the existing stranded-launch owner (and its reflex caller at dispatch_review_for_run, recovery.py:2374-2387) and either move the plan-review pointer write after admission or release through `_discard_stranded_review`, so one classifier decides \"never launched\" instead of a second path for plan-review runs alone.",
+      "text": "\u00a716 states its defect as \"the plan-review path through `dispatch_review_for_run` keeps a claim that a refused or abandoned launch should release\" and proposes new machinery to release it, without citing `_stranded_launch`, which already returns True for exactly \u00a716's pointer: phase `starting` (in `_PRE_SPAWN_PHASES`, recovery.py:6245), no pid, no worker record, no stream, no launch log, started past the 900 s bound \u2014 the \u00a716 example sat 49 minutes",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:1314",
+      "id": "duplicate_owner-1",
+      "reason": "naming the owner lets the fix land once, at the pre-admission pointer write, rather than forking the release and re-deriving the same bound for the plan-review lane.",
+      "text": "the release \u00a716 describes would be a second \"release a launch that never spawned\" path beside `_discard_stranded_review`, which the reflex already calls; the recovery module already owns detection (`_stranded_launch`) and release (`_discard_stranded_review`) of a pre-spawn pointer",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/node.py:357",
+      "id": "reuse_search-2",
+      "reason": "the landing already extended this exact owner (merge 1be48d1ff, recorded in the plan's own \u00a711 comments), so the design was right and only the body is stale; the plan should mark \u00a711 landed by pointer to that comment rather than re-open it.",
+      "text": "\u00a711's body proposes a launch-time \"held session\" detector and a stderr-reading observe without citing `member_in_flight_verdict`/`refuse_member_in_flight`, whose docstring already states \u00a711's defect almost verbatim: \"a dispatch launches onto a member whose session still has a live writer, where the backend's single-writer store then kills the launch before its first turn\"",
+      "type": "reuse_search",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/fleet_supervisor.py",
+      "id": "duplicate_owner-2",
+      "reason": "the plan already records the destination decision and the transitional inert state behind `RECKON_FLEET_SPAWN`, so naming the retirement would not change the design; it is a follow-on for the dotfiles half.",
+      "text": "the \u00a710 batch step is now implemented twice: the reader carried into reckon (`fleet_supervisor.py`, verb `spawn`) and dotfiles' `bin/fleet-supervisor`, which the \u00a710 landing records as \"unmodified, and so is every caller\"; the \u00a710 fleet-supervisor node names the lead's decision to move it into reckon but the plan never names dotfiles' copy as the owner to retire",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "d26b65eacc0f668a9e10eaa095abe22da32113a3bd5dcefd436d0f57b6fd0985",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 155,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T223248993547-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "6add62261e6a08e33e3310512b2f705f615cac8d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the per-run supervisor (\u00a73) and the fleet batch step (\u00a710) keep one launch behaviour behind a small interface: one shared argv vector (`_supervisor_argv`, reckon/crew/dispatch.py:9571), a serialized spec, and an acknowledgement file, so the batch step stays free of reckon knowledge rather than a spread of type-one wrappers. `reckon/crew/fleet_supervisor.py` (1355 lines) is a genuinely deep module hiding the FIFO loop, runtime directory and spawn handshake.",
+    "duplicate_owner": "a finding \u2014 \u00a716's plan-review pointer release duplicates the stranded-launch release owned by `reckon/crew/recovery.py` (`_stranded_launch` :6585, `_discard_stranded_review` :1314), and the batch-step protocol is carried twice (reckon `fleet_supervisor.py` beside dotfiles' `bin/fleet-supervisor`).",
+    "reuse_search": "a finding \u2014 the landed sections cite and extend their owners, but \u00a716 proposes releasing an abandoned plan-review pointer without citing `_stranded_launch` (reckon/crew/recovery.py:6585) and `_discard_stranded_review` (reckon/crew/recovery.py:1314), which already detect and release exactly that shape.",
+    "thin_wrapper": "pass \u2014 \u00a711's hold-or-divert extends `member_in_flight_verdict`/`refuse_member_in_flight` (reckon/crew/node.py:357, :391) and observe's `launch-failed` arm (reckon/crew/recovery.py:8764) rather than layering a second detector over them; the landed merge 1be48d1ff confirmed this. The section body is stale (still `implementable`) but the design is the right shape."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.333303+00:00"
+}

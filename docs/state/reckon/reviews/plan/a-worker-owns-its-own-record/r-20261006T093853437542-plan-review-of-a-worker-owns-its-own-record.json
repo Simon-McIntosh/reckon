@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T09:53:48.848Z",
+  "dispatched_at": "2026-10-06T09:39:14Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:2044",
+      "id": "reuse_search-1",
+      "reason": "a plan that adds a subsystem without citing what it searched will be built as a parallel mechanism beside the one that shipped three days after it was written.",
+      "text": "\u00a72 (\"crew dispatch adds three paths to every implement, test and investigate node without the coordinator declaring them: the node's own plan file, its cumulative evidence record, and a figures directory for the node\") does not cite the machinery that already does this. The census of missed prior art: `_grant_landing_write_paths` (dispatch.py:2044) and `_landing_fragment_paths` (dispatch.py:2006), which grant a per-node fragment by default; `_shared_landing_paths` (dispatch.py:1955), which documents the shared grant as removed; `PLAN_LANDING_CONTRACT`/`BRIEF_LANDING_CONTRACT` (reckon/crew/prompts.py:156,193), which already carry the plan landing contract text \u00a74 says it will add; the refusal registry `DISPATCH_REFUSAL_REMEDIES` (reckon/crew/refusals.py:18); and the landing-record owner `reckon/_store.py:924` / `reckon/evidence.py:503`. \u00a74 also cites `skills/reckon-ship`, which does not exist (skills are reckon-build, -create, -edit, -roadmap, -sprint, -status, -sync) \u2014 the contract text lives in `reckon/crew/prompts.py`.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:1955",
+      "id": "duplicate_owner-1",
+      "reason": "the section must extend the fragment default rather than fork the superseded shared grant, and must state which of the two incompatible figures semantics it means.",
+      "text": "\u00a72 reintroduces the shared plan-file-plus-evidence-record grant that `_shared_landing_paths` deliberately removed; its docstring states the fragment default exists precisely because \"a grant every node holds is exactly the merge conflict the per-node fragment default removes\". The owner to extend is `_landing_fragment_paths`/`_grant_landing_write_paths` (dispatch.py:2006,2044), landed in f6e41cc7d (2026-09-28). \u00a72 as written would for two of its three paths re-create the add/add conflict the fragment design eliminates, and its own 2026-09-18 comment (c-the-default-scope-makes-a-promotion-refusal-routine) already measured that exact collision. The plan's \"figures directory for the node\" is also already the fragment's `docs/figures/<plan>/<node-id>/`.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:2044",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is an extension of the fragment grant and the promotion gate, and saying so is what keeps \u00a73 from being a parallel check beside the existing commit gate.",
+      "text": "\u00a72's grant is a thin layer over the existing per-node fragment grant and \u00a73's \"commits touch neither the plan nor the evidence record\" is a thin layer over promotion's existing commit-vs-worktree machinery (`reckon/crew/promotion.py:2539`), with the landing record path owned at `reckon/_store.py:924`. The plan states no reason the existing grant and landing machinery cannot be extended; its \u00a73 escape, \u00a72's opt-out, and the refusal it adds are all expressed as new surface rather than extensions of the owners.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#s2",
+      "id": "interface_budget-1",
+      "reason": "the plan must account for the interface surface it adds \u2014 naming which family the two new refusals join and whether `--no-record` subsumes or parallels `--no-commit` \u2014 or drop the additions.",
+      "text": "against this week's figures (public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23), \u00a72 adds a `crew dispatch` refusal family (a brief whose text scopes the record out is refused) and \u00a73 adds the `--no-record REASON` CLI option plus a `crew complete` refusal and a figures warning; no section in the plan names anything it retires or merges, and none states why nothing can be. The existing registry at `reckon/crew/refusals.py:18` (D01\u2013D23) is where a new family must be registered, and the plan's \u00a73 deliberately mirrors the existing `--no-commit`.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "de3d2ba1d2c1ec5e1c690ee35aebe96536e74da7ac6b6e6e4dc21a1fdfd2ea2f",
+  "plan_slug": "a-worker-owns-its-own-record",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T093853437542-plan-review-of-a-worker-owns-its-own-record",
+  "reviewed_blob_sha": "6de94611cfd6dc10e7362ac464f6c4ff8dbf7d3d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no new module; it edits existing dispatch (scope resolution), promotion (gate) and view surfaces, so there is no new shallow wrapper over shared machinery.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements landing-path granting rather than extending its owner, and its new refusals, if added ad hoc, fork the refusal registry.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a72 adds a `crew dispatch` refusal family and \u00a73 adds a `--no-record REASON` CLI option plus a `crew complete` refusal, and neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a72 proposes a default grant of the plan file, evidence record and figures directory without citing `_grant_landing_write_paths`/`_landing_fragment_paths` (dispatch.py:2044/2006), which already grant each node its own landing fragment by default.",
+    "thin_wrapper": "a finding \u2014 \u00a72's three-path grant is a thin layer over the existing per-node fragment grant and \u00a73's record-touch check a thin layer over promotion's landing machinery, with no statement of why the existing grant cannot be extended."
+  },
+  "section_digests": {
+    "_document": "51a0558273ab1595501ac6c0679e6a52c7de9975988a33d8058bfea70f491ef9",
+    "s1": "5808e39c646787370170a25a5ce08bbc27b4eb8505db5f6cdfb572dfac62ca0b",
+    "s2": "4c267f838641a8fd9a7b69b2cbd08afb456e13220646acb7f58f0fc983c1eb4c",
+    "s3": "9dd9c6a53af0396d4bf0726ab64d79b6315783533fd92f5a7f931ec6a6a74f7d",
+    "s4": "126b25e5408b9a140bf43f82d0bfbd3877bdb80abb570bd045f8e23cd667d812",
+    "s5": "14e0ef2e2a8eb445ac3371f5a18980763ff64d90aeb6b770226204782d462811",
+    "s6": "5d03e1129d3d58d854029da51c97a8e063ce28a1eb0c2cee1332de74d3103236"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.569492+00:00"
+}

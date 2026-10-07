@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T22:25:20.777Z",
+  "dispatched_at": "2026-10-04T22:23:03Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/prompts.py:619",
+      "id": "thin_wrapper-1",
+      "reason": "folding the instruction into the existing block is a smaller, contract-consistent change than a parallel read obligation, and the plan's \u00a74/\u00a77 text would say so.",
+      "text": "\u00a74 adds a checkpoint read obligation beside the existing `PEER CHANNEL` block, which is already the contract's single run-directory read and already instructs the worker to list/read its durable channel; the design gives no reason the existing block cannot carry a coordinator-authored instruction. The honest change is to extend that block, so the worker keeps one read discipline rather than two that can drift.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:3027",
+      "id": "duplicate_owner-1",
+      "reason": "naming the owner converts \u00a74/\u00a77 from \"build an inbox and a writer\" into \"extend the peer channel for a non-run author\", which is the plan's whole remaining half and changes its deliverable and its contention analysis.",
+      "text": "the plan's \u00a74 inbox (\"a coordinator writes a message into the run's own directory\") and \u00a77's \"coordinator-side writer\" re-create, for the coordinator\u2192worker direction, the durable message store the peer channel already owns at `_channel_root`/`peer_ask`/`peer_list` (`run_dir/<run>/peer-channel/questions/*.json`); the plan never names that owner, so an implementer will fork a second run-directory message store. The real gap \u2014 a coordinator has no run id, so `peer_ask` cannot yet be its author \u2014 is exactly the justification the plan must state, and extending the owner (a coordinator-authored message kind plus the \u00a74 checkpoint read) is the change that gap calls for.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "895c2b6f7265c791556c1fd87e249f7d84abe3c18f6ad099faad7f69b6f73d9f",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T222251415436-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "42ba36a3c3727bd6d2ad2e6ab37678c007ef4b71",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the one new module the plan lands, `reckon/hooks/worker_message_guard.py`, hides the scope test, host-local identity resolution and refusal composition behind a single `decide(payload) -> (allowed, message)`; \u00a74's other half edits an existing contract and a CLI path rather than adding modules, so no surface is spread thin.",
+    "duplicate_owner": "a finding \u2014 the coordinator-side writer and the inbox store duplicate the per-run peer-channel owner in `reckon/crew/dispatch.py` (`_channel_root`, `peer_ask`, `peer_list`, endpoint `run_dir/<run>/peer-channel`) instead of extending it, and the plan names no owner.",
+    "reuse_search": "pass \u2014 the plan searched: \u00a73 reuses the native-agent guard's interception point (`reckon/hooks/native_agent_guard.py`) and the `reckon sync` hook-install wiring rather than inventing an interception, and its \u00a74 research comment names the existing peer-channel block as the one run-directory read the contract already performs.",
+    "thin_wrapper": "a finding \u2014 \u00a74 obliges the worker to read its run directory at checkpoints, but the prompt contract already carries exactly one run-directory read (the `PEER CHANNEL` block, `reckon/crew/prompts.py:619`) and the plan does not say why that block cannot be extended to carry the instruction."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.413236+00:00"
+}

@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T11:23:13.897Z",
+  "dispatched_at": "2026-10-07T11:15:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:116",
+      "id": "done_when-1",
+      "reason": "",
+      "text": "\u2014 \u00a710's answer test reads back through `read_plan_review`, which selects the newest candidate by mtime (`plan_review.py:1036`, `_candidate_paths` enumerates staging beside the committed tree at `plan_review.py:617-654`); a `record_response` that writes staging only leaves the staging file newer than the committed copy, so `read_plan_review` returns the staging record carrying the answer and `unanswered_findings` is empty \u2014 reproduced: with the committed record written first and a staging copy answered second (mtime 1791372032820189059 > 1791372032769186267), `read_plan_review(\"probe\",\"demo\",3)` returned `responses={'f1': {...}}` and `unanswered_findings([])`. The declared control \"it fails when `record_response` writes staging only\" therefore cannot turn the test red; the shadowing is real but only for the committed-first readers (`stored_record`, `list_plan_reviews`/`review_coverage`, which is what the dispatch gate reads), not for the reader the done-when names. WOULD_CHANGE_THE_PLAN: yes \u2014 the node would be briefed to prove its guard with a reader that cannot exhibit the defect, so the test would pass against the unfixed code or be silently redirected; the done-when must name a committed-first reader (the gate's `review_coverage` path) or the plan must state which reader is shadowed.",
+      "type": "done_when",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:114",
+      "id": "reasoning-1",
+      "reason": "",
+      "text": "\u2014 \u00a710's Why grounds the whole section on \"readers read a review's committed record before its staging copy, and two writers change a record after it was stored\", but that premise is false for `read_plan_review`, the reader \u00a710's done-when then relies on: `read_plan_review` returns the newest record by mtime, not the committed copy. The plan's root cause is right for the committed-first gate reader but its stated premise is stated unconditionally and is contradicted by its own named reader and cited code. WOULD_CHANGE_THE_PLAN: yes \u2014 naming which reader is shadowed (the committed-first gate reader) is what makes the done-when's test sound; leaving the premise unconditional is what produced the unmakable control above.",
+      "type": "reasoning",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "0383ccfbedd4013fcba53bf1778c9e71e9de33918f3fa28e61720f2bf08891a7",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 71,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-07T11:24:52.985611+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T11:25:01.932293+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T11:24:52.985611+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T11:25:01.932293+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v71.json",
+  "review_run_id": "r-20261007T111452948786-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "dab1b289afc15ecfc720e03394e11203111bf2d7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a710 cites resolves: `review.record_dimension_disposition` (reckon/crew/review.py:2800), `review.stored_record` (review.py:2188), `plan_review.record_response` (plan_review.py:1302), `store_plan_review` (plan_review.py:570), `unanswered_findings` (plan_review.py:1288), `read_plan_review` (plan_review.py:964), `_commit_state_write` (reckon/ledger.py:1693).",
+    "done_when": "a finding \u2014 \u00a710's answer test names `read_plan_review` as the reader that shows the shadowing, but `read_plan_review` returns the newest candidate by mtime (`reckon/crew/plan_review.py:1036`), so the staging-only answer it writes is the newest file and reads back fine; the declared control \"it fails when `record_response` writes staging only\" cannot fire.",
+    "evidence_paths": "pass \u2014 \u00a710 names no session scratchpad or node-local temporary path; its tests are run by the node it dispatches.",
+    "naming": "pass \u2014 \u00a710 carries no plan labels, stage names, ticket numbers or version tags into code, and its prose states the mechanism rather than a changelog.",
+    "reasoning": "a finding \u2014 \u00a710's Why asserts as a premise that \"readers read a review's committed record before its staging copy\", but that holds only for the committed-first readers (`stored_record`, `list_plan_reviews`, `review_coverage`); `read_plan_review`, the reader the done-when relies on, orders by file mtime and returns the staging copy. The section's own premise and its named reader disagree.",
+    "single_goal": "pass \u2014 \u00a710 names one node and states one goal, that a disposition or answer written around promotion is not shadowed; the three done-when tests are three faces of that one verdict.",
+    "wiring": "pass \u2014 \u00a710 declares no depends-on, and its shared write of `reckon/crew/plan_review.py` with \u00a78 node (1) and \u00a79 (a)/(d) is serialized by the dispatch scope check, so no plan-level edge is required (the same ground on which the earlier \u00a79 wiring finding was declined); its real dependency, \u00a73, is landed."
+  },
+  "section_digests": {
+    "_document": "086f254416462520414f799a2806618f3ebd7fc5ed24bb00691aee0f91180e1f",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "b95229e44544bec7bf39e752e8c152ecbcc204196d961b3cc846af1ccc27e4cd",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "a7fcc45c1a0d087b629ba0370de67f49444253b8bc50ca049cf5f402e4284625",
+    "s9": "3cf741abf98d7c12640ed6a8aef997dad41038c459798a46a8eefa6e8a3035ad"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:23:42.532634+00:00"
+}

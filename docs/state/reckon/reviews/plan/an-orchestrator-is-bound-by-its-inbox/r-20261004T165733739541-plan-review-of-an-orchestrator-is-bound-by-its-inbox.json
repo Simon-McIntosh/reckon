@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:12:18.431Z",
+  "dispatched_at": "2026-10-04T16:57:48Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html:302",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a73 must cite reckon/crew/plan_review.py and reckon/crew/routing.py:2629 and shrink to the one genuinely unbuilt half (the refusal launching the review rather than only raising), instead of re-specifying a record and gate that already exist.",
+      "text": "\u00a73's design comment proposes that \"the plan resource gains review state, which it does not have today\", a content-keyed staleness rule and a crew-dispatch preflight refusal, as new work; all three are already landed and owned elsewhere: reckon/crew/plan_review.py owns the content-fingerprinted plan-review record (its module docstring states exactly the version-vs-fingerprint rationale the comment re-derivation argues for), routing.py:2629 require_plan_reviewed implements the preflight refusal including its answer-every-finding and waiver paths, flight.plan_review_gate_enforces selects report-vs-enforce, and dispatch.py:5536 wires it",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html:288",
+      "id": "reuse_search-1",
+      "reason": "the open followup would dispatch a node to wire something already wired; the plan should record the landed caller and close or rescope it.",
+      "text": "the followup says dispatch_awaiting_reviews \"has no caller\" and asks that it be called from the watcher tick; the function is now reached from reckon/crew/resumption.py:1334, whose own comment records that \"the follower's cadence, the resume-ready surface and the MCP sweep action all reach sweep\", and head-keyed re-review, investigate-role skip and tier selection are pinned by tests/test_reflex_keys_on_reviewed_run_and_head.py, tests/test_reflex_skips_tier_none_reviews.py and tests/test_review_reflex_sweep.py",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html:82",
+      "id": "reuse_search-2",
+      "reason": "a reader taking \u00a72 at face value budgets a node to build a reflex the tree already carries.",
+      "text": "\u00a72's body still frames the reflex as \"Nothing creates it\", while recovery.py:2239 dispatch_review_for_run composes-and-launches and recovery.py:438 plan_review_subject composes the plan-review run id (this review node itself was produced by that machinery)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html:251",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a77 contradicts \u00a74 and justifies a parallel edge \u2014 reconciling the two or extending the follower is the smaller change.",
+      "text": "\u00a77 opens \"Run state is pull-only\u2026 nothing else happens\", but \u00a74 of the same plan states \"the follower emits on state change\", and reckon/crew/runs.py holds the follower delivery registry and its delivered artifacts, so a push edge already exists \u2014 yet \u00a77 adds a new optional completion signal to dispatch without naming the follower path or why it cannot carry the finishing classification",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html:222",
+      "id": "duplicate_owner-2",
+      "reason": "the rule is sound and the section's evidence is the plan's strength; the change is to cite staleness.py as the owner to extend so the rule lands once rather than as a new field per surface, which is a scoping note rather than a redesign.",
+      "text": "\u00a75's shared remedy, \"every state a reader acts on carries the time it was observed,\" duplicates the pattern already implemented in reckon/crew/staleness.py, whose Reading/ReportedReading carry observed_at and refuse to report a figure past its shelf life; \u00a75's freshness-keyed liveness also already exists in recovery.py (_run_stream_mtime, _manifest_freshness)",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a63062b6baedc905e3f646d2de59408fc9e16adea8fd440d1dd414755841fdd5",
+  "plan_slug": "an-orchestrator-is-bound-by-its-inbox",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T165733739541-plan-review-of-an-orchestrator-is-bound-by-its-inbox",
+  "reviewed_blob_sha": "3b852a8fed35529866575a0a2226e05a36702c01",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 every executable section extends one existing deep module (recovery.py, plan_review.py, runs.py) rather than adding a family of small wrappers over the same machinery.",
+    "duplicate_owner": "a finding \u2014 \u00a73's plan-review record, its content-keyed staleness rule and its dispatch-preflight refusal are already owned by reckon/crew/plan_review.py (gate at reckon/crew/routing.py:2629); \u00a75's \"observation time beside state\" duplicates the idiom already implemented in reckon/crew/staleness.py.",
+    "reuse_search": "a finding \u2014 the plan's \u00a72 and \u00a73 describe machinery that now exists in the tree (the review reflex and the plan-review record with its dispatch gate), and neither section names the owning code.",
+    "thin_wrapper": "a finding \u2014 \u00a77 adds a new completion-signal edge to dispatch without saying why the follower delivery path, which already emits on state change, cannot carry the finishing classification."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.831048+00:00"
+}

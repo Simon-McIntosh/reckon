@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:18:33.157Z",
+  "dispatched_at": "2026-10-05T02:06:18Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/picker/lane_context.py:262",
+      "id": "duplicate_owner-1",
+      "reason": "the \u00a78 design should route the persisted profile through capabilities.cached_pick_input_stamped (one named input per project) or state why the existing cache cannot carry it, instead of standing up a second root and schema; the plan's own followup f-otmp-dispatch-prebuild already names capabilities.cached_pick_input as the intended cache owner.",
+      "text": "the persisted profile cache re-implements the cache its owner already provides: capabilities.pick_input_cache_root at reckon/capabilities.py:1143 and cached_pick_input_stamped at reckon/capabilities.py:1246 already resolve a root (RECKON_PICK_CACHE then RECKON_HOME then XDG_CACHE_HOME then ~/.cache), name an entry, and read/write it atomically with a version guard and error swallowing, which _profile_cache_root/_profile_cache_path/_profile_key/_read_persisted_profile/_write_persisted_profile here do again; the fork already cost once, when its own root precedence made two cases non-hermetic (recorded at the plan's own review c-run-r-20261003T050302383578)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/paid_lanes.py:724",
+      "id": "duplicate_owner-2",
+      "reason": "the node should join on the backend's declared budget_group so the pace ruler reads one wallet per declared group, not one per name prefix.",
+      "text": "the codex pace reading joins a profile to a provider window by name prefix (name.startswith(\"codex\")), which the grouping owner reckon/crew/budget_group.py forbids in its own docstring (\"Grouping is read from resolved flight config \u2014 never inferred from a lane's name\") and already serves through declared_groups and _declared_group_by_backend, so the \u00a76 codex-pace node duplicates a decision the owner keeps a profile on",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/one-typesafe-model-picker.html#s6",
+      "id": "interface_budget-1",
+      "reason": "the sections adding crew pick and --route must name what of the absorbed routing options they fold in or replace, or why nothing can be, per the interface-budget rule.",
+      "text": "the plan introduces crew pick and its option set (--project --role --spec-level --goal --done-when --comment --estimated-context --capability --session --replay --outcomes --since --all-projects --checkout-path --pretty) plus dispatch's --route over routing.picker across \u00a75/\u00a78/\u00a79 and the \u00a76 measures, and while \u00a71 names the three plans it absorbs conceptually and \u00a711 names the 32 catalogue keys it merges, no section names a single CLI option or MCP view the new surface retires or merges, or says why none can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9acd974ed8e101726392a952c9cb3424a878d002b99349d98020c7065abfdb20",
+  "plan_slug": "one-typesafe-model-picker",
+  "plan_version": 148,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T020556518043-plan-review-of-one-typesafe-model-picker",
+  "reviewed_blob_sha": "3d183f862354eb17448ab3fb0576dfd944747353",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 pick() at reckon/crew/picker/__init__.py:47 hides the ledger read, budget view, candidate enumeration, state rendering, Jev call, answer validation and fallback behind one pick(request, config, *, repo) call, and the package's eight modules split by concern rather than nesting shallow wrappers over one another.",
+    "duplicate_owner": "a finding \u2014 reckon/crew/picker/lane_context.py re-implements the cross-process picker-input cache that reckon/capabilities.py already owns, and reckon/crew/paid_lanes.py joins codex profiles to provider windows by name prefix rather than through the declared budget_group owner.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; the plan adds the crew pick verb (with --outcomes, --replay, --since, --all-projects) and dispatch's --route, and no section names what any of that retires or merges, or states why nothing can be.",
+    "reuse_search": "pass \u2014 \u00a74 records a reuse map (node picker-reuse-map, 28 base-revision functions over 2,060 ledger rows) and the built picker adapts existing owners rather than rebuilding them: reckon/crew/picker/snapshot.py calls routing._competence_verdict, budget.preflight, lane_document.read_lane_document and dispatch._dispatch_lane_gate, and reckon/crew/picker/lane_context.py reuses run_time_profile.run_time_profile and local_lane_load.",
+    "thin_wrapper": "pass \u2014 the picker extends the dispatch path rather than wrapping it in a parallel layer (reckon/crew/dispatch.py imports dispatch_picker_selection and _attach_shadow_picker_selection), and \u00a74 keeps every hard constraint in code with Jev supplying only the semantic judgment."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T10:28:44.107555+00:00"
+}

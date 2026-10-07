@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:03:52.487Z",
+  "dispatched_at": "2026-10-05T01:49:47Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/hold.py:86",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should carry the four evidence fields onto budget's hold and delete the parallel module, or name the seam that justifies a second hold owner.",
+      "text": "crew/hold.py builds a second hold (`hold_from_position`, `MissingHoldEvidenceError`) while reckon/budget.py already owns the dispatch hold: `budget.pace_hold` (reckon/budget.py:2588) is the hold the preflight emits into `entry[\"pace_hold\"]`, `budget.withheld_reserves` (reckon/budget.py:238) names the reserve a hold rests on, and `record_hold_checks` (reckon/budget.py:1405) writes it; `crew/hold.py` has no caller anywhere in the tree.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/staleness.py:76",
+      "id": "duplicate_owner-2",
+      "reason": "the plan says the shelf life is shared \"so the two never disagree\" yet records a live disagreement; one owner must supply the horizon.",
+      "text": "the horizon that decides when a reading stops being a position is owned twice: `staleness.configured_shelf_life_minutes` reads budget.evidence_shelf_life_minutes, while `budget._published_fresh_windows` (reckon/budget.py:1493) ages each backend against `paid_lanes.DEFAULT_STALE_SECONDS` (reckon/crew/paid_lanes.py:62); the plan's own \u00a75b records that the two horizons disagree (47 min vs 60 min) and leaves the disagreement standing.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/hold.py:86",
+      "id": "thin_wrapper-1",
+      "reason": "an unwireable thin wrapper is the design either to fold into the fence's hold or to prescribe the wiring for; both are decisions the plan has not taken.",
+      "text": "`hold_from_position` forwards to `staleness.resolve_configured_*` and reads a `budget_group.GroupPosition`, contributing only a `used_percent >= ceiling` test and evidence-field checks over machinery `budget.pace_hold` already produces (allowance, utilisation, burn, resets); the plan gives no reason the fence's hold cannot be extended, and its own \u00a77 records that the module's `source` field means \"pool\" here while evidence rows mean \"provenance kind\", so a consumer passing a row straight through would refuse every real hold as borrowed.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/pace.py:1",
+      "id": "reuse_search-1",
+      "reason": "naming the owner forces the extend-or-fork decision the two modules currently leave implicit.",
+      "text": "the reuse map is good for the derived figures but the plan did not run it over the hold and staleness seams: \u00a77 built a hold module beside budget.pace_hold, and \u00a75b built a staleness module beside budget._published_fresh_windows, each without a sentence saying why the existing owner was not extended.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:1582",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the interface surface it adds, per the one-rule this item holds against all four families.",
+      "text": "\u00a76 adds a CLI option (`--ready NAME=GROUP:SCORE`) and \u00a77 adds a refusal family (`MissingHoldEvidenceError`), and neither the section text nor the landing records name an option or family retired or merged, or state why nothing can be.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "20c2ece2ebe5df41e5216123eac67e829b5fecd00e3450d9790df1b244e6cf39",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 120,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014932251014-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "e441dfa26bf99c098ef07494e9c35e62e43f3bc5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 one call hides the wallet's whole pace position: budget.group_pace and budget_group.group_figures delegate fill, allowance, bar and reserve to pace.py, bar.py and reserve.py behind a single group-keyed entry point, so a caller composes one interface, not six.",
+    "duplicate_owner": "a finding \u2014 crew/hold.py duplicates the dispatch hold whose owner is reckon/budget.py (pace_hold + withheld_reserves + record_hold_checks), and crew/staleness.py duplicates the freshness horizon whose owner is reckon/paid_lanes.py / reckon/budget.py.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a76 adds the `--ready NAME=GROUP:SCORE` CLI option (reckon/cli.py:1582) and \u00a77 adds the MissingHoldEvidenceError refusal family, and no section names anything retired or merged, or states why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites the owners it extends almost everywhere (prescription.py \u00a73, the budget_group slot \u00a75b, the budget fence \u00a77), but \u00a75b landed crew/staleness.py without citing the freshness logic budget._published_fresh_windows already owns, and \u00a77 landed crew/hold.py without citing budget.pace_hold, the hold the preflight already emits.",
+    "thin_wrapper": "a finding \u2014 crew/hold.py adds only a ceiling compare and evidence-field checks on top of staleness.resolve_configured_reading and budget_group.GroupPosition, and the plan never states why the fence's existing hold could not carry those four fields."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.506781+00:00"
+}

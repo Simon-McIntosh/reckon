@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:07:31.946Z",
+  "dispatched_at": "2026-10-06T09:56:53Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/repair.py:370",
+      "id": "reuse_search-1",
+      "reason": "\u00a72 should cite `repair.py` as the existing brief+id+answer mechanism and scope itself to the ledger-row answer record alone, which changes the section's deliverable from \"adds that answer record\" to extending a landed one.",
+      "text": "\u00a72 (\"A finding or a followup is a brief\") says it adds the finding-id-in-brief and the acted/declined answer for code reviews as if new, but `compose_repair_brief`/`compose_repair_node` (`reckon/crew/repair.py:370`,`:419`) already turn a stored review into one repair node whose brief lists every blocking finding under a minted stable id (`repair.py:85`), and `repair.py:22-23` already records that code-review findings are parsed without an id so the module mints one; the answer vocabulary is likewise shared, `ACTED_ACTION, DECLINED_ACTION = RESPONSE_ACTIONS` (`repair.py:67`) imported from the plan-review owner \u2014 the plan cites the brief *carrier* (`a-worker-can-take-a-brief`) but never cites `repair.py`, so its one genuinely new piece (promotion writing the answers onto the ledger row) is presented without naming the mechanism it extends.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:718",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must name `reckon/crew/plan_review.py` as the response owner and extend its record (as code-review findings get ids already) rather than add a parallel answer field to the ledger row.",
+      "text": "\u00a72 stores each finding's answer on the reviewed run's ledger row, but the answer record already has an owner: `plan_review.record_response` (`reckon/crew/plan_review.py:718`) persists a per-finding response keyed by finding id with exactly the acted/declined-with-reason shape, `unanswered_findings` (`:702`) is the reader that closes a finding, and `RESPONSE_ACTIONS` (`:150`) is the vocabulary `repair.py` imports; the ledger row already carries a reduced `review` block (`reckon/ledger.py:2079`; reduced by `reckon/crew/promotion.py:5104`), so a second answer store on the row forks the response owner from the store that mints ids (`repair.py:85`) and writes reasons.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "a-small-change-is-a-small-node#s2",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the interface it adds \u2014 most cheaply by merging the answer record onto `plan_review`'s existing `responses` record \u2014 rather than leave an unaccounted addition to three of the four families.",
+      "text": "with public_definitions 1481, cli_options 317, mcp_views 33 and refusal_families 23 supplied for the week, \u00a72 adds an answer record (a new stored per-finding answer shape and, read back, a new MCP/CLI surface) and \u00a73 adds the landing line, yet neither \u00a72 nor \u00a73 names anything it retires or merges, or states why nothing can be; \u00a72's answer record is the clear candidate to merge onto the existing `responses` record rather than add surface.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3c37327849a689f2fa5dc91632eab31a2d41408ad13be4e15cae5829054bc791",
+  "plan_slug": "a-small-change-is-a-small-node",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T095636690560-plan-review-of-a-small-change-is-a-small-node",
+  "reviewed_blob_sha": "4211e06b0985bcdec61ac60c341733343ae00e45",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a73's one-line landing record is hidden behind promotion's single owner (`_declared_manifest_landing`/`_record_landing_comment`, `reckon/crew/promotion.py:3499`,`:3548`), not spread across wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a72 writes finding answers onto \"the reviewed run's ledger row\", a second answer store beside the answer record owned by `reckon/crew/plan_review.py`.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a72 adds an answer record and \u00a73 a landing line, and no section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a72 asserts code reviews \"have a store but no answer field\" without naming `reckon/crew/repair.py`, which already composes a repair brief from a stored review's findings, mints each finding's id, and states the acted/declined answer contract.",
+    "thin_wrapper": "pass \u2014 no section proposes a wrapper over existing machinery without justifying extension; \u00a73 and \u00a74 extend owners in place."
+  },
+  "section_digests": {
+    "_document": "a748f4d06c2f4252b7d1db92e80e721b8761b5e6d9ebdbfbc2e25f190dca6547",
+    "s1": "1137de485d7c34fbfad7052e94a8e4bbd1b09d8c5ba52468ef2e513a4fff70ba",
+    "s2": "c5f1887e4b21db5873c634b228aa6994858f7b4fedf16614d6aa00bf2285a7f5",
+    "s3": "b80d519b23ca56d06dcd4bcb411d9101df143ff4a2a063045efc68e8185d061e",
+    "s4": "762e5207e2d58251d8c0c29434612facfc7fff2e001e7d7bd65f34364314a80d",
+    "s5": "b0856766d2be8da97731ee5739477d3b57d68454ca2ba11004260bb96a8a832d",
+    "s6": "0cbc3b2c1ff2af8544b77747580b9bedb31c5fdcb74d45621c2b44cc9621804c",
+    "s7": "19574507a8ca118b0f0297798ed0d0d99448b5248a7cef5d61d6371a1b8c8560"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.482315+00:00"
+}

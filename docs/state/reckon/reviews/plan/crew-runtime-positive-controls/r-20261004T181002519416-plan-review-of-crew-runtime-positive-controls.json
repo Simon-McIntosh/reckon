@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T18:13:01.929Z",
+  "dispatched_at": "2026-10-04T18:10:16Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/serving_origin.py:85",
+      "id": "reuse_search-1",
+      "reason": "the plan must name `reckon/flight.py` as the owner of the document read and record the reuse-or-extend decision, or the section ships a second endpoints reader beside the one its own note forbids.",
+      "text": "`check_serving_origin` gates on `backend.get(\"endpoints_document\")`, a second reader of the declaration whose established reader is `reckon/flight.py:_probe_serving` (flight.py:1518, entries carrying `serving`/`serving_detail`); \u00a713's prior-art note says \"the endpoints reader is not the thing that is missing\" and requires a node authoring new machinery to say why `flight.py`'s reader could not be reused, and the landed record does not carry that statement",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/serving_origin.py:31",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is an extension of the flight serving reader, and without the justification the plan leaves two surfaces answering \"is this lane able to serve\".",
+      "text": "the new module is a thin layer (declaration gate plus one bounded HTTP probe) over machinery `reckon/flight.py` already owns, and no landed summary says why flight.py's document reader could not be extended with the origin probe rather than a parallel module",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py:3113",
+      "id": "deep_module-1",
+      "reason": "the plan should make `_live_pointer_worktrees()` the single liveness owner and route every removal path through it, instead of three sections each chasing a door a reviewer must enumerate.",
+      "text": "the same phase-gated liveness read is repaired three times, once per door (gc \u00a744, `_remove_worktree` \u00a745, `_release_run_workspace` \u00a747), and `_live_worktree_claims()` is still called directly at promotion.py:3113 and promotion.py:6023, so the defect \u00a744 closed survives as reachable surface one layer over",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py:476",
+      "id": "duplicate_owner-1",
+      "reason": "name one owner for the resolution rule and have the other import it, rather than forking it \u2014 two readers of one rule with nothing reporting a difference is the defect this plan exists to remove.",
+      "text": "`_commit_resolves_in` is defined here and, with the same name and docstring, at `reckon/crew/reports.py:1524` (which resolves it inside `audit_manifest`, reports.py:1601, the path `check-manifest` already uses); \u00a718 lands the promotion guard and \u00a722 the check-manifest guard on the same rule, so one predicate now has two owners that can drift",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:3320",
+      "id": "duplicate_owner-2",
+      "reason": "a single owner parameterised by unit role is the honest change and removes the class of bug the test only detects, and the plan declines it without saying why the template cannot be extended.",
+      "text": "\u00a79 keeps two generators of the same systemd user-unit text, `WATCH_UNIT_TEMPLATE` here and `UNIT_TEMPLATE` at `reckon/service.py:24`, and answers the duplication with an enumerating test rather than one templating owner; the section itself calls the two copies \"its own defect\" but patches both in place",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9d38dff85eb5a68ac559b7ca21c70e7d24078413d1af83b508b5b8078e955c7a",
+  "plan_slug": "crew-runtime-positive-controls",
+  "plan_version": 329,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T181002519416-plan-review-of-crew-runtime-positive-controls",
+  "reviewed_blob_sha": "eb8afcdebe6c296fc3dca90845db39eb2445642c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the \"wide live claim\" liveness rule is added through three separate doors (\u00a744 `garbage_collect`, \u00a745 `_remove_worktree`, \u00a747 `_release_run_workspace`) rather than behind one owner every worktree-removal path calls.",
+    "duplicate_owner": "a finding \u2014 the commit-resolution predicate has two owners, `reckon/crew/promotion.py:476` and `reckon/crew/reports.py:1524`, and the plan lands a check on each rather than naming one.",
+    "reuse_search": "a finding \u2014 \u00a713's landed node added `reckon/crew/serving_origin.py` and reads the backend's `endpoints_document` declaration itself instead of reusing `reckon/flight.py:_probe_serving`, the reader that already owns that declaration.",
+    "thin_wrapper": "a finding \u2014 \u00a713 adds a new module over the endpoints-document machinery without stating why `reckon/flight.py`'s reader cannot be extended, which the plan's own \u00a713 note requires a node to do."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.929331+00:00"
+}

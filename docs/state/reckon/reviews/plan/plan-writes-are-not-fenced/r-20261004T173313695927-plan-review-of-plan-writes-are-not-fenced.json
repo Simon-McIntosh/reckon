@@ -1,0 +1,35 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:43:17.053Z",
+  "dispatched_at": "2026-10-04T17:33:26Z",
+  "findings": [
+    {
+      "anchor": "reckon/serve.py:3462",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a76 claims every writer that can race the landing write \"either commutes or refuses\", but the SPA/HTTP writer is a second implementation of the same contract and is neither fenced nor named, so the plan should route `serve.py:_handle_plan_write` through the store's fenced write path (or have it take the same `plans` lock/namespace) rather than fence only half the contract.",
+      "text": "`_handle_plan_write` performs its own read-check-replace (`serve.py:3519` read, `3542` check, `3610-3612` write to a fixed `.html.tmp`) without the store's `plans` lock, so a writer arriving by `POST /plan/<project>/<slug>` can pass its version check, move another writer's rendered file into place and be lost with the counter advanced \u2014 the \u00a71 defect and the \u00a75 fixed-`.tmp` collision, reproduced on the one plan-write path \u00a76 does not enumerate",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "21985cd6491fbf1a5a02273965b4083cf56b37bab22399d593a3b7f45512afe0",
+  "plan_slug": "plan-writes-are-not-fenced",
+  "plan_version": 33,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T173313695927-plan-review-of-plan-writes-are-not-fenced",
+  "reviewed_blob_sha": "dfcb3a888f6bd6b8b734f3677c5276f7e46564ca",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is added; the lock, the commutative merge and the refusal shape live inside `reckon/_store.py`, `reckon/_plan_html.py` and `reckon/mcp.py` behind their existing `edit_plan`/`write_plan` entry points, so the added behaviour sits behind an interface no larger than before.",
+    "duplicate_owner": "a finding \u2014 the plan fences `reckon/_store.py`'s plan write but leaves the second implementation of the same versioned plan-write contract in `reckon/serve.py:3462` unfenced, so the owner to extend is the store and the HTTP route is not routed through it.",
+    "reuse_search": "pass \u2014 the design extends the fence the store already holds (`reckon/_store.py:_serialized_path_lock`, reused under the \"plans\" namespace) and names its rival helpers \u2014 S13's `resolve_both.py` and the existing `edit_plan` version check it is not rebuilding.",
+    "thin_wrapper": "pass \u2014 the plan proposes no wrapper; each section extends an existing op (append, set, text mode, the conflict refusal helper `reckon/mcp.py:_conflict_response`) rather than layering a parallel call over it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.110129+00:00"
+}

@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T22:01:25.191Z",
+  "dispatched_at": "2026-10-04T21:48:01Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:4362",
+      "id": "duplicate_owner-1",
+      "reason": "the permission gate must key on the `serves_orchestrators` declaration (which already carries the record-the-dispatch behaviour \u00a73 wants), not on the literal name `claude`, or it forks the fence and misses an alias.",
+      "text": "\u00a73 gates the `claude` backend on its name, but the codebase already declares the orchestrator-carrying lane via `serves_orchestrators` and records such a dispatch through `_dispatch_orchestrator_lane_stop`; the schema says explicitly the orchestrator role is \"declared, never inferred from the backend's name\" because name-matching \"breaks the moment an orchestrator runs elsewhere\"",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/ticker.py:1070",
+      "id": "duplicate_owner-2",
+      "reason": "the plan must reuse the row class rather than ship a second actionable predicate that drifts from the fleet display, and it must reconcile the documented deliberate no-narrowing decision or the plan's exit condition contradicts the command it extends.",
+      "text": "\u00a77's `crew follow --until-actionable` adds a new predicate for a transition that \"needs the orchestrator\", but ticker.py already owns exactly that classification (`COORDINATOR_KINDS` and the row-class function returning `ROW_COORDINATOR...)`, and the `crew follow` docstring states \"there is deliberately no option to narrow to the action states\"",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/flight.py:56",
+      "id": "duplicate_owner-3",
+      "reason": "a backend's member-model vocabulary belongs in the catalogue owner (which already fills the model/effort/alias keys per backend), and putting a second list in the flight schema leaves two resolution orders for \"which model does this backend serve\".",
+      "text": "\u00a72 makes flight backends \"each listing their models\" without citing the existing model-catalogue layer, which docs/state/reckon/model-catalogue.yaml and CATALOGUE_LAYER already own and describe as \"the reckon decision layer for model selection ... family, model, alias, effort, budget group\"",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:2174",
+      "id": "thin_wrapper-1",
+      "reason": "three backend-ordering keys (review_fallback, backends[*].fallback, review_excluded_backends) drift apart; the plan should name the single owner that orders review lanes, or state why recovery cannot be extended.",
+      "text": "\u00a74 adds a new ordered `review_fallback` key and the plan never states why the existing per-backend `fallback` declaration (BackendConfig.fallback, documented as the backend to substitute when held) or the already-landed `review_excluded_backends` cannot carry the ordering",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-local-lane-is-the-default.html#s9",
+      "id": "duplicate_owner-4",
+      "reason": "the overlay may be an intentional skill-parsing surface distinct from the agent-facing AGENTS.md, so a reader should confirm the split rather than assume one owner; flagged so the author states which file owns a project's gates.",
+      "text": "\u00a79 proposes a per-project overlay (for example docs/state/<project>/build.md) for that project's gates and compute placement, but the repo AGENTS.md already carries project-specific gates (the global rules place test-visibility and compute-placement rules there) and is auto-loaded by every agent entering the repo",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "f2a01c8327aed515355103ec5655fb79f32341a928cc818bf28f35e7c06c70a7",
+  "plan_slug": "the-local-lane-is-the-default",
+  "plan_version": 69,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T214744558216-plan-review-of-the-local-lane-is-the-default",
+  "reviewed_blob_sha": "46bd66eff909cc3b9e104e7e8d2c34dac35571c9",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the remaining work extends modules that already hide substantial behaviour behind small interfaces (lane_document.read_lane_document, paid_lanes document composition, worker_digest.generate/verify); no new family of shallow wrappers is proposed.",
+    "duplicate_owner": "a finding \u2014 \u00a73 re-implements the orchestrator-lane fence by backend name, \u00a77 re-derives the \"needs the orchestrator\" predicate from the follower's own row classes, and \u00a72 re-homes a backend's model outside the catalogue that owns model selection.",
+    "reuse_search": "a finding \u2014 the plan searched the lane and review paths it names (lane.json, lane_document.py, paid_lanes.py, recovery._review_lane_candidates, crew-effort routing), but three of its proposed mechanisms land on owners it never cites: the model catalogue layer (reckon/flight.py:56, docs/state/reckon/model-catalogue.yaml), the orchestrator-lane declaration (dispatch.py:4362, `serves_orchestrators`), and the follower's row classes (ticker.py:1070, `COORDINATOR_KINDS`).",
+    "thin_wrapper": "a finding \u2014 \u00a74 adds an ordered `review_fallback` config key beside the existing per-backend `fallback` key (BackendConfig.fallback) and the already-landed `review_excluded_backends`, without saying why recovery._review_lane_candidates cannot be extended to read the existing declaration."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.259307+00:00"
+}

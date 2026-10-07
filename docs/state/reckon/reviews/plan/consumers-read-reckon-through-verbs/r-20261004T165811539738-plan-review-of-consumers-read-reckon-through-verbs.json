@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:08:48.003Z",
+  "dispatched_at": "2026-10-04T16:58:26Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/runs.py:1402",
+      "id": "duplicate_owner-1",
+      "reason": "the honest change is to extend `repair_manifest_status` with the check-manifest gate and the generalized `--set`, not to fork a second repair path that would drift from the `.asdelivered`/atomic-replace contract the existing one owns.",
+      "text": "\u00a74's `crew repair-manifest --run R --set field=value` duplicates `repair_manifest_status()`, which already retains `manifest.md.asdelivered`, writes the candidate to a temp path and `os.replace`s it atomically, and records `status-repair.json`; it is already exposed as the `crew repair-status` verb at reckon/cli.py:6518, and \u00a74 neither cites it nor names runs.py as an owner (its stated write paths are `reckon/cli.py`, \"the sync implementation\", and skills)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:819",
+      "id": "duplicate_owner-2",
+      "reason": "the verb must call `scope_claims()` rather than re-derive, or the plan must justify a second claim inventory, since two inventories over the same pointers answer one question two ways.",
+      "text": "\u00a73's `crew claims [--path P]` states it derives \"every claim from `node.write_paths`\", but `scope_claims()` and `_live_scope_claims()` already produce exactly that JSON registry (with `binding` and `disposition_reason` per claim) and already feed the MCP `scopes` view; \u00a73 names `reckon/crew/lane_document.py` as the implementation file it owns and never names `runs.py`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:5343",
+      "id": "thin_wrapper-1",
+      "reason": "a hardcoded four-name list beside query.py's registry will silently disagree the next time a field is added or renamed in the structured read.",
+      "text": "\u00a73's `crew list --field worktree|pid|phase|base_sha` hardcodes four field names that `crew list` already emits (`worktree`, `phase`) and that `reckon/crew/query.py` already registers (`base_sha` in `OPTIONAL_RUN_FIELDS`), so it is a scalar projection over an existing envelope with a duplicated field list; the plan neither cites query.py nor says why that registry cannot be reused",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:819",
+      "id": "reuse_search-1",
+      "reason": "citing those owners reclassifies \u00a73 and \u00a74 from new machinery into thin wrappers over existing readers, which changes their declared write paths, their tests, and their stated purpose.",
+      "text": "the plan's reuse search names the config-home resolver and the lane-document reader (both correct) but omits the two owners its new verbs most nearly resemble \u2014 `scope_claims()`/`repair_manifest_status()` in `reckon/crew/runs.py` \u2014 so \u00a73 and \u00a74 read as \"add a verb\" where the code has \"call the existing reader\"; a related shipped plan, `record:run-identity-query.html`, and the reuse plan `a-worker-reuses-before-it-writes` already assert this one-reader discipline",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4aef891e4bfe782f3e42ba64a11961aedbdb05ff8df8eee9e452588ae8632e82",
+  "plan_slug": "consumers-read-reckon-through-verbs",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T165811539738-plan-review-of-consumers-read-reckon-through-verbs",
+  "reviewed_blob_sha": "afa07c06d3e44c2d6eb9d48cc3a6cdd8bd41a234",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan deliberately adds thin CLI surfaces, not deep modules; \u00a76's single result-schema file hides five envelopes behind one contract, and each read verb is meant to delegate to one existing reader rather than re-implement it.",
+    "duplicate_owner": "a finding \u2014 \u00a74 re-implements manifest repair that `repair_manifest_status()` already provides and that is already wired as `crew repair-status`, and \u00a73 re-derives the claim inventory that `scope_claims()` already publishes.",
+    "reuse_search": "a finding \u2014 the plan cites `_config_home()`, `read_lane_document_file()` and `worktree_fleet.py`, but the two sections adding the most surface (\u00a73's `crew claims`, \u00a74's `crew repair-manifest`) cite none of the machinery that already does their job: `scope_claims()` in `reckon/crew/runs.py` and `repair_manifest_status()` in the same file.",
+    "thin_wrapper": "a finding \u2014 \u00a73's `crew list --field` hardcodes four scalar projections over fields `crew list` already emits and `reckon/crew/query.py` already registers, with no statement that it reads that registry."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.863548+00:00"
+}

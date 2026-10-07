@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:01:33.756Z",
+  "dispatched_at": "2026-10-05T01:48:19Z",
+  "findings": [
+    {
+      "anchor": "reckon/flight.py:1381",
+      "id": "duplicate_owner-1",
+      "reason": "the profile must be a modality requirement threaded through the existing selector, or the figure lane silently ignores the routing labels the rest of the fleet honours.",
+      "text": "`select_profile_backend` forks backend selection: it builds `ResolvedConfig(deep_merge(config, {\"default_backend\": candidate}))` exactly as `select_local_backend` (reckon/flight.py:1300) does, and never routes through `resolve_role` (reckon/crew/routing.py:149), which is the one place a role's `by_spec_level` and `by_capability_class` overlays are applied to a chosen lane. A figure profile therefore cannot compose with the role, spec-level or capability routing every other dispatch resolves through",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:2482",
+      "id": "duplicate_owner-2",
+      "reason": "choice of the review's lane already has an owner, and a second selector forks it so the figure review and the text review pick lanes by different rules and drift.",
+      "text": "\u00a74's \"selection by artifact, never by role\" re-describes a profile selector rather than extending `_dispatch_composed_review`, which already selects the review lane (`flight.select_local_backend` at line 2516, `_review_lane_candidates` at line 2549) and dispatches with `role=\"review\"`; the profile's lane must be chosen where the review's lane is already chosen, not in a parallel selector",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html#s4",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to extend the dispatch's lane selection with a required-modality argument, not to introduce a parallel profile selector for one caller.",
+      "text": "\u00a74 adds a second review profile over the existing review machinery without stating why that machinery cannot be extended with a modality requirement, and the plan's own \u00a71 note confirms `select_profile_backend` \"has no caller\" pending \u00a74",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html#s1",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the surface it adds in its own text, and the four-public-function shape is itself avoidable surface.",
+      "text": "public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a71 adds the `input_modalities` slot and four public functions (delta is +1 schema slot and +4 to public_definitions) yet names nothing it retires or merges and gives no reason nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/flight.py:1334",
+      "id": "deep_module-1",
+      "reason": "collapsing the helpers into the resolver is a tidy-up of landed code and does not change what the plan builds.",
+      "text": "the single closed rule \"a profile requires modalities, a lane declares modalities, a lane missing one is refused\" is expressed as a module dict plus four public functions and a generated enum, so the mechanism's interface is larger than the behaviour it hides",
+      "type": "deep_module",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "31f490ec080b7c820cea0487e5b69528444e1012bc902992e10f7ab8e98cc5dc",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014759402605-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "021b6c06eef56620e22359d33bef0cacebd839aa",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a71's modality rule is spread across `PROFILE_INPUT_MODALITIES`, `input_modalities_required`, `declared_input_modalities`, `missing_input_modalities` and `select_profile_backend` in reckon/flight.py, four public functions over one tuple membership test.",
+    "duplicate_owner": "a finding \u2014 `select_profile_backend` (reckon/flight.py:1381) is a second backend-selection path beside `select_local_backend` (reckon/flight.py:1300) that never calls the selection owner `resolve_role` (reckon/crew/routing.py:149), and \u00a74's artifact-selected profile duplicates the lane choice owned by `_dispatch_composed_review` (reckon/crew/recovery.py:2482).",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a71 adds an `input_modalities` schema slot and four public functions in reckon/flight.py and states no retirement, merge, or why nothing can be.",
+    "reuse_search": "pass \u2014 the plan cites the existing mechanisms it extends: `codex exec`'s `-i` at reckon/_backends.py:957, the LinkML `BackendConfig` schema, and \u00a72g of scoring-should-stop-a-promotion's artifact-based profile rule; the reuse work is done.",
+    "thin_wrapper": "a finding \u2014 \u00a74 adds a figure review profile selected by artifact without saying why the existing review dispatch cannot carry a modality requirement instead."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.435478+00:00"
+}

@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T20:06:45.845Z",
+  "dispatched_at": "2026-10-04T20:01:38Z",
+  "findings": [
+    {
+      "anchor": "docs/state/reckon/project.json:12",
+      "id": "reuse_search-1",
+      "reason": "\u00a72 is verification on the restarted server, not implementation, so it should collapse from an implementable node to a read-back check and stop claiming adoption work already delivered by `north-star-orientation`.",
+      "text": "the plan's \u00a72 done-when (\"the four directions are declared in reckon's project state and returned by a read of the project resource; all plans carry a label resolving to a declared id\") is already satisfied at the reviewed revision: `project.json` declares `state-that-tells-the-truth`, `unattended-execution`, `legible-to-human-and-agent` and `portable-across-harnesses`, `compose_project_state` returns them into the discovery payload, and 58 plan files carry `plan-north-star`; the plan's premise that the declaration \"was blocked only by stale server and MCP code\" is stale, and the same adoption is the remainder of `north-star-orientation` \u00a75",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:744",
+      "id": "duplicate_owner-1",
+      "reason": "if a pre-spawn label is renamed on the owner, serve's inlined set silently stops matching, the fast path no longer fires, and the \u00a71 defect (a launched run reading idle for 15\u201345 s) returns with no test failing; \u00a73 must name `_PRE_SPAWN_PHASES` (or a public accessor) as the single source it reads.",
+      "text": "\u00a73's phase fix reads the run phase from `crew.classify_pointer`, and the perf fast path that implements its second half selects the pre-spawn branch with an inline literal `{\"starting\", \"launching\", \"launcher\", \"dispatching\"}` in `reckon/serve.py`; that vocabulary is owned by `reckon/crew/recovery.py:6178 _PRE_SPAWN_PHASES` and is already copied once at `reckon/crew/dispatch.py:1414`, so this is a fourth spelling of the same set",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1277763e4e4a20029a3d9b6f93309ed4b7c378174db40123527a447f0bfdafd2",
+  "plan_slug": "the-restarted-server-meets-its-shipped-measures",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T200125253498-plan-review-of-the-restarted-server-meets-its-shipped-measures",
+  "reviewed_blob_sha": "006d92885d97024941342ed5a8d1efc5abdbf2d0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan introduces no module; \u00a73 edits `_crew_rows` in `reckon/serve.py` and \u00a74 relies on the existing `discover_plans` reader, so there is no spread of shallow wrappers to hide complexity in.",
+    "duplicate_owner": "a finding \u2014 \u00a73's phase handling re-encodes the pre-spawn phase vocabulary instead of reading its owner `reckon/crew/recovery.py::_PRE_SPAWN_PHASES`.",
+    "reuse_search": "a finding \u2014 \u00a72 re-proposes declaring the four north-star directions and labelling the plans, but the declaration already landed on `main` (commit 1d0e7b1cb, 2026-08-25) and 58 plan files already carry `plan-north-star` at the reviewed revision, so the plan did not run the reuse map on its own tree.",
+    "thin_wrapper": "pass \u2014 no wrapper is proposed; \u00a72 writes through the existing `edit_plan` project-state path and \u00a74 reads through `discover_plans`, both existing owners rather than layers over them."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.343978+00:00"
+}

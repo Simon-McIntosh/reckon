@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:11:45.785Z",
+  "dispatched_at": "2026-10-05T01:59:22Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion.py:4932",
+      "id": "duplicate_owner-1",
+      "reason": "the section should extend the existing `review_required`/waiver path and key its class rule to it, rather than introduce a parallel flag that can drift from the guard that already fires.",
+      "text": "\u00a72 proposes \"a review-required flag that crew complete honours by refusing promotion without a scored review from another lane\", but promotion.py already computes `review_required` (line 4932) and refuses an unreviewed promotion naming both revisions (promotion.py:5106), with `--waive-unreviewed-promotion REASON` (line 5149) as the override \u2014 the plan's new flag is a second owner of one decision",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/lane_document.py:30",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a72f's first done-when item is already satisfied by its owner; the section should record it as landed and narrow the node to the two items that remain (a member-in-flight refusal naming a free member, and `crew observe` not recommended without a run id).",
+      "text": "\u00a72f's done-when asks for \"a lane document reported field by field, each present value carried and each absent one marked absent \u2026 requiring headroom to read 4 rather than unknown\", but lane_document.py already resolves every field independently (\"a missing precondition costs its own field and never the whole document\", lane_document.py:6-10), and dispatch.py `_lane_reading_carry` (dispatch.py:3919) now collapses the carry only on a document-level defect (absent/unparseable `observed_at`, or a stale reading) while a null `binding_observed` costs only its own field \u2014 the defect \u00a72f quotes (`binding_observed: null` discarding headroom at dispatch.py:1890) no longer reproduces",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:3122",
+      "id": "duplicate_owner-3",
+      "reason": "the section's premise (any named path is charged at full size) is false in the current tree, so the node must be re-derived from a reproduced failure or dropped; only the \"refusal reports which inputs it counted and their sizes\" half may remain open.",
+      "text": "\u00a72g's done-when (\"a file named only in prose is not charged \u2026 a declared write path is still charged \u2026 dedup and directory behaviours pinned\") is already the contract of `_declared_input_files` (routing.py:3122), whose docstring states \"A path a brief merely names is not a read \u2026 A path counts only when the clause naming it also declares it an input\", with exclusion-verb handling `_GOVERNING_VERB` (routing.py:62) and dedup/`counted` bookkeeping in `_context_file_inputs` (routing.py:3165) \u2014 the plan even says these are \"already right, and should not be broken fixing this\"",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/schema/flight.yaml:275",
+      "id": "thin_wrapper-1",
+      "reason": "the section must justify a new axis or extend `resolve_role`/bar.py's overlay; a parallel routing layer over the same role+spec+class resolution drifts from the one `resolve_role` performs today.",
+      "text": "\u00a72 puts a per-class, per-lane rule in flight config; the config already carries two node-shape routing axes \u2014 role overlays by `by_spec_level` and `by_capability_class` (reckon/crew/routing.py:90,108; resolve_role routing.py:149) \u2014 and a lane recommendation already exists in bar.py (\"advise, never route\", bar.py:27) that turns node open-endedness into `send-local`/`send-metered`. The plan adds a third axis and does not say why the existing overlay mechanism or the bar cannot carry the class rule",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/background-agent-fitness-and-dispatch-scope.html#s2",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the added refusal family and override surface in its own text \u2014 either fold the class refusal into an existing family (the D17/D03 lane-selection family) or state why the ruling needs its own, and name the config key that carries the class\u2192lane rule so the interface budget is explicit.",
+      "text": "\u00a72's refusal \"names the class, the lane and the audit row that set the rule\" and a coordinator override \"lands on the ledger row\", so the section adds a refusal family to the registry (reckon/crew/refusals.py, 23 families D01\u2013D23) and a dispatch override option, and names nothing it retires or merges",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "38753ecf9cc9e2186d886637542ab8e819774c6438c158c0177a37c6ea8a2322",
+  "plan_slug": "background-agent-fitness-and-dispatch-scope",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T015904889507-plan-review-of-background-agent-fitness-and-dispatch-scope",
+  "reviewed_blob_sha": "a6d334a1e043f3f6bba076b29b20cbc9da9fe1de",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the landed prescription judgement (reckon/crew/prescription.py:130) is a genuine deep module: one public function hiding the five-property ruling, with the path helpers private.",
+    "duplicate_owner": "a finding \u2014 \u00a72, \u00a72f and \u00a72g each re-implement machinery with an existing owner: promotion.py's unreviewed-promotion guard, lane_document.py's per-field reader, and routing.py's declared-input extractor.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a72 adds a refusal family (a class-of-work routing refusal, and an override that lands on the ledger row) without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites plans (crew-effort-routing, effort-calibration, scoring-should-stop-a-promotion) but names no mechanism or file it extends, and two sections (\u00a72f, \u00a72g) propose behaviour the codebase already implements.",
+    "thin_wrapper": "a finding \u2014 \u00a72 adds a class-of-work routing axis in flight config beside the existing role overlays and the bar's lane recommendation without stating why they cannot be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.839714+00:00"
+}

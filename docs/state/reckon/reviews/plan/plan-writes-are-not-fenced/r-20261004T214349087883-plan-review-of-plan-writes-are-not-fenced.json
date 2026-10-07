@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:52:53.848Z",
+  "dispatched_at": "2026-10-04T21:44:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/plan-writes-are-not-fenced.html:168",
+      "id": "reuse_search-1",
+      "reason": "a prior-art pass at each base revision would have shrunk \u00a77/\u00a79/\u00a711 from \"add the check\" to \"measure what already holds and guard the one gap\", which is exactly what the shipped nodes ended up doing after the fact.",
+      "text": "\u00a79's done-when named `set section_declarations.<id>`, which already moved the typed record at its base (the plan's own landed comment `c-pwnf-s9-landed` records that the dotted form was the test's positive control and the refusal came only from the whole-map form); \u00a711's recorded escape likewise did not reproduce at main (`c-pwnf-s11-landed`: \"every op path of `_edit_plan` already returns the identical structured version-conflict refusal\"), and \u00a77's \"consider having the guard mint the id\" proposes machinery `_gen_id` already provides on every append path. Each section proposed a mechanism whose owner already existed, so the guard work must be scoped to the real delta \u2014 the whole-map declaration write (\u00a79) and the pre-existing uniform refusal (\u00a711) \u2014 not to a mechanism being rebuilt",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/_store.py:2342",
+      "id": "duplicate_owner-1",
+      "reason": "naming `_refuse_duplicate_id` as the single owner and having the north-star and sprint paths call it is a smaller, more honest change than shipping a third detector, and is the extension the plan's own \u00a77 evidence pointed at.",
+      "text": "\u00a77 adds `_refuse_duplicate_id` as the owner of \"refuse an append whose id already addresses an entry\", and applies it across sections/followups/research/questions/comments/decisions, but two other collections still enforce the same rule with their own code: `_check_north_star_ids` (`reckon/_store.py:2262`, raising `duplicate north-star id`) and `_create_sprint` (`reckon/mcp.py:2891`, `sprint ... already exists`). The design cites the sprint check as prior art (plan \u00a77, \"sprint add refuses duplicates (`mcp.py:2908`)\") and then leaves it beside the new helper instead of routing it through it, so the uniqueness rule now has three owners and drifts",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6b4823fa07c755e3da28841d392aa6b40c5ad62eee59837cbe1e88a63b1fd6ab",
+  "plan_slug": "plan-writes-are-not-fenced",
+  "plan_version": 33,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T214349087883-plan-review-of-plan-writes-are-not-fenced",
+  "reviewed_blob_sha": "dfcb3a888f6bd6b8b734f3677c5276f7e46564ca",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the result the plan exists to produce (version check, per-file lock and commutative comment merge as one step) hides behind the store's existing `write_plan` / `_write_state` entry point; the plan adds no parallel module surface, and \u00a76\u2013\u00a712 land tests and one shared helper rather than a spread of wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a77 ships `_refuse_duplicate_id` (`reckon/_store.py:2342`) as a third independent duplicate-id detector beside `_check_north_star_ids` and `_create_sprint`, rather than extending the rule's existing owners.",
+    "reuse_search": "a finding \u2014 \u00a79 and \u00a711 each propose a guard (or a done-when) for behaviour that already existed at the section's own base revision, so the plan did not search the owner before proposing the mechanism.",
+    "thin_wrapper": "pass \u2014 \u00a77's duplicate-id refusal and \u00a710's ordered-replacement batch add behaviour (a refusal, a one-version batch) rather than forwarding to an existing reader, and the collision payload (\u00a77 `existing_item`) is a structured field the writer acts on, not a restatement of the message."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.106128+00:00"
+}

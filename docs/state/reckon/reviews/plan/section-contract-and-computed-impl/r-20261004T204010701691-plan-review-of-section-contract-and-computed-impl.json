@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T20:44:31.688Z",
+  "dispatched_at": "2026-10-04T20:40:24Z",
+  "findings": [
+    {
+      "anchor": "reckon/mcp_views.py:2069",
+      "id": "duplicate_owner-1",
+      "reason": "one shared predicate and one heading locator should be extended in `reckon/_store.py`, and \u00a710's design should name that owner rather than add a soup-side copy.",
+      "text": "`_inside_structured_region` re-implements the \"Reckon structured region vs authored section wrapper\" predicate already owned by `_store._is_structural_boundary` (`reckon/_store.py:820`, same `data-reckon not in (None, \"section\")` rule, along with the two inline spellings at `reckon/_store.py:772` and `:859`); \u00a710's `_authored_section_headings` (`reckon/mcp_views.py:2080`) and `_store._wrapper_section_heading` (`reckon/_store.py:846`) then resolve the wrapper\u2192heading rule twice, once soup-based and once regex-based, and the two must agree on which wrappers qualify with no parity check between them",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:1707",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a710's done-when should cover every reader of \"where is this section's heading\", and the attach path re-exposes the bug \u00a710 closed.",
+      "text": "`_require_heading_for_section_records` locates a section's heading with `find_all(\"h2\", id=True)`, so a plan whose id sits on a wrapping `<section id=\"s2\"><h2>` (exactly the shape \u00a710 was raised for by nova's S21) is refused a record attach with \"no authored h2 heading with id 's2' although the heading is in the file\", even though \u00a710's collapse and section-read paths resolve that same id \u2014 the wrapper resolution now exists in three readers (`_store._section_heading`, `_store._wrapper_section_heading`, `mcp_views._authored_section_headings`) and this fourth did not receive the fix",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "499cd86104fc8b2abdfded062574726d696d354749c2de5ae21881a46c6cea69",
+  "plan_slug": "section-contract-and-computed-impl",
+  "plan_version": 93,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T204010701691-plan-review-of-section-contract-and-computed-impl",
+  "reviewed_blob_sha": "4df42128f192232ff270986b7e2f79727feb1239",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the typed section record is one shape parsed in `_plan_html.read_state`, regenerated in `write_state`, validated through one shared `SectionRecord` helper (`reckon/_store.py:1652`), and the impl coverage rule is owned once in `derive_impl_from_sections` (`reckon/_plan_html.py:318`) and imported by the store refusal (`reckon/_store.py:2513`), the writer gate (`_impl_is_carried_by_records`) and both read paths; the two attempt readers funnel through one `_group_section_attempts` (`reckon/mcp_views.py:1590`), the indexed path delegating to it (`:1760`) and on error (`:1753`).",
+    "duplicate_owner": "a finding \u2014 \u00a710 added a second reader for \"a section id carried on a wrapper\" and a second spelling of the structured-region predicate instead of extending the owners already in `reckon/_store.py`; and one heading-locator was left on the h2-only rule \u00a710 exists to fix.",
+    "reuse_search": "pass \u2014 the plan searched and cites the mechanisms it extends: `parse_plan_ref` and the existing `depends_on` grammar for refs (\u00a76), `gated_sections` on gates, the JSON Schema reckon already publishes (\u00a71), and the recorded S22 reuse map (comment c-run-r-20260924T203913190997-s22-reuse-map); \u00a714 unified four existing spellings of the executable-role set rather than adding a fifth.",
+    "thin_wrapper": "pass \u2014 the refusal, warning and derivation layers all delegate to shared helpers (`_new_section_record`, `_section_contract_refusal`, `derive_impl_from_sections`) rather than wrapping the same machinery in a parallel copy; \u00a713's cache adds measured behaviour (8s\u21921.5s) over the aggregation, not a pass-through."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:15:33.887663+00:00"
+}

@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:27:14.322Z",
+  "dispatched_at": "2026-10-04T17:15:26Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-is-sized-to-its-risk.html:161",
+      "id": "reuse_search-1",
+      "reason": "a prior-art search would have surfaced `gates.suite_command` and let \u00a76 extend it, the way \u00a72 extended `reckon/path_classes.py` after naming it.",
+      "text": "\u00a76 proposes the standing-suite subsystem without a reuse map or a citation of the project suite command the project already declares, while every earlier section cites the search it ran",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/schema/flight.yaml:810",
+      "id": "duplicate_owner-1",
+      "reason": "extend the gate's `suite_command` owner (or derive one key from the other) rather than fork the project's suite command into a parallel `review.suite.command`.",
+      "text": "\u00a76's `review.suite.command` is a second declaration of the project's test-suite command beside the existing `gates.suite_command` (`GateConfig.suite_command`, read at `reckon/crew/dispatch.py:7182` and validated against run suite arming at `reckon/crew/promotion.py:5806`), so a project declares its suite in two places and the two can drift",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "40e8cf7c12416469ac71ba993c068c82f806ef8fd40015f2be483e2bd4f34646",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 140,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T171511225734-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "76f13662bd151ba6c96d44fab218af0a8a0c10a6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/review_tiers.py` hides the three-tier precedence and the unreadable/over-ceiling fallback behind `review_tier()`, and `reckon/crew/standing_suite.py` hides run, record, hold and waiver behind four functions; both land behind interfaces smaller than the behaviour they carry.",
+    "duplicate_owner": "a finding \u2014 \u00a76 declares the project test-suite command a second time under `review.suite.command` beside the gate's existing `gates.suite_command`.",
+    "reuse_search": "a finding \u2014 \u00a76 adds a project standing-suite subsystem and a new `review.suite` flight block with no prior-art search, where \u00a72 cites `s25-reuse-map-review-and-velocity/reuse-map.md` and \u00a75 cites `s25-reuse-map-review-reflex/reuse-map.md` for \u00a73\u2013\u00a75.",
+    "thin_wrapper": "pass \u2014 the new modules add decision logic (tier precedence, collection-failure decided from evidence) rather than forwarding to existing machinery, and \u00a75's reviewed-head resolution consolidated onto one `_run_head_for_review` helper instead of a spread of per-caller wrappers."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.476791+00:00"
+}

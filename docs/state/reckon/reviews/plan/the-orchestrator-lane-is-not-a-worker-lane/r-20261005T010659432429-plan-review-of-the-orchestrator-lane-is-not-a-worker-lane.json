@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-05T01:10:37.693Z",
+  "dispatched_at": "2026-10-05T01:07:10Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/refusals.py:20",
+      "id": "reuse_search-1",
+      "reason": "naming the plan-review gate as prior art forces the plan to justify a fourth bespoke override field (`orchestrator_lane_override`) against the existing three, and to state the reason-string addition as the thing that makes this fence more than a copy.",
+      "text": "the plan rebuilds, for the orchestrator lane, the exact refusal-plus-explicit-override-plus-recorded-field shape the plan-review gate already ships (`D23` discharge in `refusals.py`; `--allow-unreviewed-plan`; `unreviewed_plan_override` recorded at `dispatch.py:6783` and `ledger.py`), and never cites it \u2014 only the sibling's *count* of such sites. The design should say whether it extends that shape (a shared recorded-override idiom) or is a deliberately separate fence, and should carry the reason-string difference as the stated distinction.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/refusals.py:97",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must name `refusals.py` as the discharge owner and budget the census-test change, or the refusal half of \u00a71 ships with an unregistered discharge and no census row.",
+      "text": "\u00a71's stated end state is a refusal that \"names the lane \u2026 and names a discharge\", but the implementation composes the discharge in two new inline helpers (`_orchestrator_lane_discharge_candidates`, `_dispatch_orchestrator_lane_stop` at `dispatch.py:4381-4475`) instead of registering a family in `DISPATCH_REFUSAL_REMEDIES` and rendering through `format_refusal`, the one owner every other dispatch refusal uses and the census test `tests/test_crew_refusal_visibility.py:82` pins as an exact set. As landed the stop is advisory, so nothing is broken yet; the moment \u00a74 flips the severity to `refused`, the plan produces a refusal site whose discharge lives outside the registry \u2014 exactly the \"refusal sites against discharges\" gap the plan cites in its own sibling. Extend `refusals.py`: add a `D24` family (updating the census's expected set) and render the discharge through `format_refusal`.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "91f11c9a662cc708bb44306420a158ed35de7906820ffbcc3d9a0e124917d84f",
+  "plan_slug": "the-orchestrator-lane-is-not-a-worker-lane",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T010659432429-plan-review-of-the-orchestrator-lane-is-not-a-worker-lane",
+  "reviewed_blob_sha": "b1cad325c5f79043b33c7ea29d7c9c6a127182f6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the fence's whole judgement is one function, `_dispatch_orchestrator_lane_stop`, returning a self-describing verdict; \u00a73's multi-surface spread is text parity, not a second implementation of the fact.",
+    "duplicate_owner": "a finding \u2014 the stop composes and renders its own discharge beside `reckon/crew/refusals.py`, the single owner of dispatch-refusal discharge text that the refusal-visibility census enumerates.",
+    "reuse_search": "a finding \u2014 the plan cites its sibling's discharge census and the flight-config key, but names none of the machinery it actually repeats: the plan-review gate's refusal-plus-override shape and `reckon/crew/refusals.py` as the discharge owner.",
+    "thin_wrapper": "pass \u2014 the declaration rides the existing declared-backend-property idiom (`metered`, `budget_group`, `fallback` all say \"declared, never inferred\"), the override rides the existing ledger override field, and \u00a74 states why the stop is advisory rather than a refusal and when it flips."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.275755+00:00"
+}
