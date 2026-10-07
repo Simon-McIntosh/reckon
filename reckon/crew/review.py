@@ -2112,43 +2112,43 @@ def store_committed_review(
 ) -> Path:
     """Persist one review record into the project's committed tree.
 
-        The record must name ``project`` and ``review_run_id`` — the run that
-        produced the review. ``project`` may be supplied by the caller instead,
-        which is how a promotion commits a record whose own body omits the project:
-        the promoting run knows the project it is landing into, so the committed
-        record takes that project rather than the write being refused. The review
-        run id keys the committed file and supplies the
-        dispatch and completion times through :func:`resolve_record_times`, so the
-        record carries when the review ran rather than when its file was stored; a
-        record carrying no review run id is refused rather than filed under the run
-        it reviews, because two review runs of one reviewed run would otherwise name
-        the same committed file. The times are resolved from the run records, the
-        record's own carried stamps, or the dispatch instant the review run id
-        encodes — in that order — and the stage used is recorded under
-        ``times_source``. The store clock is never substituted for a stamp: a
-        record whose times resolve from no source is committed with both stamps
-        empty and ``times_source`` ``"unknown"``, marking the absence rather than
-        defaulting it to the clock, because the record has no time to record and is
-        kept rather than lost.
+    The record must name ``project`` and ``review_run_id`` — the run that
+    produced the review. ``project`` may be supplied by the caller instead,
+    which is how a promotion commits a record whose own body omits the project:
+    the promoting run knows the project it is landing into, so the committed
+    record takes that project rather than the write being refused. The review
+    run id keys the committed file and supplies the
+    dispatch and completion times through :func:`resolve_record_times`, so the
+    record carries when the review ran rather than when its file was stored; a
+    record carrying no review run id is refused rather than filed under the run
+    it reviews, because two review runs of one reviewed run would otherwise name
+    the same committed file. The times are resolved from the run records, the
+    record's own carried stamps, or the dispatch instant the review run id
+    encodes — in that order — and the stage used is recorded under
+    ``times_source``. The store clock is never substituted for a stamp: a
+    record whose times resolve from no source is committed with both stamps
+    empty and ``times_source`` ``"unknown"``, marking the absence rather than
+    defaulting it to the clock, because the record has no time to record and is
+    kept rather than lost.
 
-        The body must be a review: it names the plan or the run it reviews (which
-        the ``plan_slug``/``reviewed_run_id`` checks above already require) and it
-        carries review material — findings, scores, a rubric or a reviewed
-        revision. A body carrying none of those is refused here, so the committed
-        store holds records only.
+    The body must be a review: it names the plan or the run it reviews (which
+    the ``plan_slug``/``reviewed_run_id`` checks above already require) and it
+    carries review material — findings, scores, a rubric or a reviewed
+    revision. A body carrying none of those is refused here, so the committed
+    store holds records only.
 
-        ``committed_root`` names the tree directly (a caller that already resolved
-        it, or a test); omitted, it resolves through :func:`committed_review_root`
+    ``committed_root`` names the tree directly (a caller that already resolved
+    it, or a test); omitted, it resolves through :func:`committed_review_root`
     against ``root``. A run review — one naming ``reviewed_run_id`` — is written
-        under ``run/<reviewed-run-id>/``, whatever ``plan_slug`` its body also
-        carries, because a run review records the plan its reviewed run was carried
-        under and that plan is not the review's subject. A plan review is written
-        under ``plan/<slug>/`` and is routed there only when the body names no
-        reviewed run and carries an integer ``plan_version``. A disposition or
-        answer recorded on any copy of this record — a staging sibling or the
-        committed file already at the target path — is merged into the committed
-        body, so a re-store of a round carries the answers rather than overwriting
-        them. The write is atomic and every other body field is preserved.
+    under ``run/<reviewed-run-id>/``, whatever ``plan_slug`` its body also
+    carries, because a run review records the plan its reviewed run was carried
+    under and that plan is not the review's subject. A plan review is written
+    under ``plan/<slug>/`` and is routed there only when the body names no
+    reviewed run and carries an integer ``plan_version``. A disposition or
+    answer recorded on any copy of this record — a staging sibling or the
+    committed file already at the target path — is merged into the committed
+    body, so a re-store of a round carries the answers rather than overwriting
+    them. The write is atomic and every other body field is preserved.
     """
     project = str(record.get("project") or "").strip() or str(project or "").strip()
     if not project:
