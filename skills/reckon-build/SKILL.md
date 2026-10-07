@@ -338,15 +338,32 @@ what changed, what remains and why.
 ## One producer for the project, one follower for your session
 
 A producer turns project pointer changes into transitions; a follower delivers
-this session's transitions. That producer is not your wake-up. Arm the payload's
-`attach_line` — `reckon crew follow --project P --session S` through the host's
-per-line primitive named in `references/orchestrator-harness/<harness>.md` — and
-confirm `session_attached`, not merely producer liveness. The follower produces
-lines, not an exit; a shell must never be used as a wake-up. Exactly one monitor
-per session. A session arms and attaches exactly ONE monitor, one per session. A
-second follower on the same session is a defect, not redundancy. To watch more
-than your own runs, name them on the one follower with `--observe-session`.
-Never arm a second follower. See `references/sprint-orchestration.md` §17.
+this session's transitions. That producer is not your wake-up.
+
+**Session-host delivery comes first; arming the follower by hand is the
+fallback.** Where a session host runs — on Claude Code, with the
+`reckon-crew-host` plugin linked — dispatch arms the follower for you: the
+payload's `watch.delivery` reads `host`, and **nothing re-arms it**, because the host
+holds the follower for the life of the session. A second arming there would
+double-deliver, so do not open one: confirm `session_attached`, not merely
+producer liveness, and let the host's delivery stand.
+
+**Where no session host delivers the follower, arm it yourself** — a Codex
+session, a Claude session without the plugin, and a `-p` session, in which the
+host starts no plugin monitors. Arm the payload's `attach_line` —
+`reckon crew follow --project P --session S` through the host's per-line
+primitive named in `references/orchestrator-harness/<harness>.md` — and re-arm
+when that primitive ends. The follower produces lines, not an exit; a shell must
+never be used as a wake-up. The fallback lifetime is `--lifetime 29m`, except in
+a `-p` session, where the primitive is ended at ten minutes and it is
+`--lifetime 9m`.
+
+`delivery` reading `monitor` is what tells you the host did not deliver the
+follower and the fallback is yours. Exactly one monitor per session. A session
+arms and attaches exactly ONE monitor, one per session. A second follower on the
+same session is a defect, not redundancy. To watch more than your own runs, name
+them on the one follower with `--observe-session`. Never arm a second follower.
+See `references/sprint-orchestration.md` §17.
 
 ## Concurrency — the roster is the whole authority
 

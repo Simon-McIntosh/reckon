@@ -969,6 +969,16 @@ CREW_VERBS_OUTSIDE_ORCHESTRATION = {
         "through the review workflow"
     ),
     ("crew", "repair-completion"): "ledger maintenance, not orchestration",
+    ("crew", "budget-reset"): (
+        "sets or clears a budget group's banked-reset flag, which preflight and "
+        "the picker read; an orchestrator reads budget state through the "
+        "preflight and budget views, never by flagging it itself"
+    ),
+    ("crew", "host"): (
+        "the session-host plugin's entry point, which attaches a session's "
+        "follower and supervises it; only the plugin runs it, and an "
+        "orchestrator never invokes it"
+    ),
     ("crew", "path"): (
         "prints one state path for a consumer repository to call; an "
         "orchestrator reads state through the crew views, never by path"
