@@ -139,3 +139,16 @@ class HostLease:
             return False
         self._inode = None
         return True
+
+    def release_holder(self, holder: LeaseHolder) -> bool:
+        """Clear an exact holder after an external seat lock proves it has exited."""
+        current, stat = self._read()
+        if current != holder or stat is None:
+            return False
+        try:
+            if self.path.stat().st_ino != stat.st_ino:
+                return False
+            self.path.unlink()
+        except FileNotFoundError:
+            return False
+        return True
