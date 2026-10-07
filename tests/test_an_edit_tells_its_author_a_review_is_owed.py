@@ -12,6 +12,7 @@ reads or writes the operator's crew home.
 
 from __future__ import annotations
 
+import importlib
 import json
 import shlex
 import subprocess
@@ -199,8 +200,15 @@ def test_a_done_when_edit_owes_a_review_of_its_section(sectioned):
     assert result["review_invocation"] == _INVOCATION
 
 
-def test_the_owed_invocation_is_one_the_verb_accepts(sectioned):
+def test_the_owed_invocation_is_one_the_verb_accepts(sectioned, monkeypatch):
     _, repo, path = sectioned
+    # The node-local scratch headroom is a fact about the host, not about the
+    # invocation under test, so its check is answered here.
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"),
+        "require_worker_scratch_headroom",
+        lambda config: {"free_bytes": 1, "floor_bytes": 0},
+    )
     _review(path)
     result = mcp._edit_plan_tool(
         "sample",

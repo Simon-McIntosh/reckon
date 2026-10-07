@@ -629,33 +629,37 @@ See `~/Code/reckon/PLAN-FORMAT.md` for the full reference. Quick shapes:
 
 **Comment:** `<div class="r-comment" data-section="s1" data-id="c1" data-who="…" data-when="…">` with `<div class="r-comment-body">`. Comments are created by text selection in the SPA — a "¶ Comment" button appears on hover; clicking it opens a popover. The comment anchors to the nearest `h2[id]`. Agents reading plans should check the `comments` section for human feedback left this way.
 
-### Step 4.5 — Rubber-duck the plan before it is released
+### Step 4.5 — Review the plan before it is released
 
 A new plan is written by you and executed by others, and nothing between those
 two moments checks that what you wrote says what you meant. Release it only
-after a read-only rubber-duck review has read it back, on the local lane:
+after a second reader has read it. When the authoring session's last write is
+done, compose one content review on the local lane — the rubber-duck read for
+wiring, measurable done-whens with negative controls, single goals, durable
+evidence paths, resolving anchors, naming and reasoning:
 
 ```bash
-reckon crew dispatch --project P --plan <slug> --section §N \
-  --role review --spec-level exact --node review-of-<slug> \
-  --goal "restate <slug> in your own words before it is released" \
-  --done-when "the report restates the plan's intent, every decision and every done-when, and lists every sentence with 2 or more readings" \
-  --write-path <config-home>/crew/reports/<project>/<session>/review-of-<slug> \
-  --time-budget 20m --session <session> --local
+reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session> --local
 ```
 
-The `review` role resolves to a **read-only sandbox** with no worktree and no
-execution capability, so the reviewer reads the document and writes nothing but
-its restatement; the node id is `review-of-<slug>`, the convention that makes a
-monitor row name its subject. Ask only for the read-back: the plan's intent,
-each decision and each done-when in the reviewer's own words, and every place
-two readings are possible — explicitly **not** a critique of the work. Read the
-restatement against what you meant and revise the divergent sentences before
-release. **Release is a loop, not a pass:** the revision you make in response is
-itself checkable, so dispatch a fresh read-back until the restatement matches
-the intent. What counts as material on a later revision — and the reviewed
-status of a plan you go on to change — is defined once in `reckon-edit`
-SKILL.md hard rule 9.
+It runs read-only, stores its findings against the plan's content, and its
+completion reaches your session's follower. Read it back with
+`crew(project, view="plan-review", plan=<slug>)` and answer every finding,
+acted on or declined with a one-line reason:
+
+```bash
+reckon crew review-plan --project <project> --plan <slug> --answer <finding> --acted
+reckon crew review-plan --project <project> --plan <slug> --answer <finding> --declined "<reason>"
+```
+
+Edit the plan only for a finding you act on. A later edit is judged for
+whether it needs a new review, and a re-review reads only what changed, so a
+burst of fixes earns at most one more, scoped review. The plan also owes one
+design review — the prior-art and depth search of the codebase — before its
+first implementation node; `reckon-build` composes it, and the dispatch gate
+refuses an implementation node until it exists and is answered. What counts as
+a material revision, and the reviewed status of a plan you go on to change, is
+defined once in `reckon-edit` SKILL.md hard rule 9.
 
 **The write tells you when a review is owed.** The `edit_plan(create=True)`
 call that registers the plan returns `review_owed` beside `review_invocation`:
@@ -663,10 +667,11 @@ the outstanding units the coverage predicate `plan_review.review_coverage`
 reports uncovered, each with its measured change where one exists. A **non-empty
 `review_owed` on the last write of this authoring session** — one review for a
 burst of edits, not one per edit — means compose it now and answer its findings
-before any build is dispatched:
+before any build is dispatched, with your session in place of the invocation's
+`<session>`:
 
 ```bash
-reckon crew review-plan --project <project> --plan <slug> --local
+reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session> --local
 ```
 
 The tool composes no review itself; the author decides when the session's

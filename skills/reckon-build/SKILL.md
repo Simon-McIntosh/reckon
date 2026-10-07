@@ -85,10 +85,30 @@ never zero. Audit plan currency against the code before cutting nodes. Read
 
 ## Review the design
 
-Before the first build node, review the design with the `crew review-plan`
-verb — `crew review-plan --project P --plan <slug> --session S --local` — and
-read it back with `crew(project, view="plan-review", plan=<slug>)`. Answer every
-finding. The reuse map is its output, and every node's brief cites it.
+A plan owes one design review — the prior-art and depth search of the codebase
+for machinery it could reuse — before its first implementation node, and the
+dispatch gate refuses an implementation node until one exists, at any version,
+with every finding answered. Compose it once per plan:
+
+```bash
+reckon crew review-plan --project <project> --plan <slug> --rubric design --session <session> --local
+```
+
+Read it back with `crew(project, view="plan-review", plan=<slug>)`. The reuse
+map is its output, and every node's brief cites it. The gate also needs a stored
+review covering the content about to be built. The author's content review
+usually supplies it, and a section edited since stays covered when the
+review-need judge finds its change needs no new review. A refusal names the
+exact command it is waiting for.
+
+Answer every finding before dispatching, acted on or declined with a reason:
+`reckon crew review-plan --project <project> --plan <slug> --answer <finding> --acted`,
+or `--declined "<reason>"` in place of `--acted`. **Answer rather than edit.**
+Edit the plan only for findings about the sections you are about to build;
+answer a finding an existing section already meets `--acted`, naming it, and
+one on a landed section `--declined` with the honest reason; then dispatch at
+once. A landed section keeps the coverage it had, so land a covered wave before
+composing the next review rather than interleaving landings and reviews.
 
 The plan is the passing surface: work that changes a plan's product carries its
 plan, and findings go record, commit, dispatch, in that order — a worker reads
@@ -175,7 +195,7 @@ reckon crew placement --ensure --session <session> --project <project>
 reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --reason <text>
 reckon crew repair-status --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
 reckon crew resume --run <id> --advice <text>    reckon crew resume-ready --project <project>
-reckon crew review-plan --project <project> --plan <slug> --session <session> --local
+reckon crew review-plan --project <project> --plan <slug> --rubric <rubric> --session <session> --local --answer <finding> --acted --declined <reason>
 reckon crew shadow    reckon crew stop    reckon crew unwatch --project <project>
 reckon crew verify-gate --project <project> --run <id> --checkout-path <path>
 reckon crew watch --project <project> --stall-window <duration>

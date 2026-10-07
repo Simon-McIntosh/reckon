@@ -110,43 +110,44 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    neither needs a review. What counts as covered — an overview of the rule the
    code enforces — is the coverage predicate `plan_review.review_coverage` in
    `reckon/crew/plan_review.py`, which decides per unit of a plan: a section, or
-   the document unit carrying its decisions, gates and dependencies. A unit
-   stays covered by a stored review that read it when its authored prose differs
-   from that review's snapshot of the unit by less than the declared fraction
-   `review.plan_change_threshold` (0.30) of its own words. Beside that
-   threshold the predicate treats three cases as material whatever their size: a
-   changed done-when (a one-word edit falls far under any fraction, so the
-   closing done-when paragraph is compared directly), a section that became
-   implementable since the review, and a unit absent from the review — a new
-   section above all. A decision, gate or dependency change moves the document
-   unit's digest, so it is never covered. The failure this catches is not a
-   typo — it is a
-   sentence that reads differently to the executor than to its author, and the
-   author cannot see it by re-reading, which is why the reader must be someone
-   else. Before the revised plan goes back to work, dispatch a read-only
-   rubber-duck review to the local lane:
+   the document unit carrying its decisions, gates and dependencies. A section
+   whose prose changed since a stored review read it is put to the review-need
+   judge in `reckon/crew/review_need.py`, which reads the diff, what the review
+   checks and the plan's goals. It keeps the section covered when the change
+   needs no new review — a rewording, a typo, an added citation — and uncovers
+   it when the change alters what the work does, decides or measures, a
+   done-when's measure included, at or above `review.review_need_threshold`
+   (0.5). When the judge cannot answer, the word share decides instead: covered
+   below `review.plan_change_threshold` (0.30) of the unit's words, and a changed
+   done-when always uncovered. A section that became implementable since the
+   review, a unit absent from the review — a new section above all — and a
+   decision, gate or dependency change, which moves the document unit's digest,
+   are never covered. The failure this catches is not a typo — it is a sentence
+   that reads differently to the executor than to its author, and the author
+   cannot see it by re-reading, which is why the reader must be someone else.
+   Before the revised plan goes back to work, once the session's writing is
+   done, compose one content review on the local lane:
 
    ```bash
-   reckon crew dispatch --project P --plan L --section §N \
-     --role review --spec-level exact --node review-of-<slug> \
-     --goal "restate <slug> in your own words before it is released" \
-     --done-when "the report restates the plan's intent, every decision and every done-when, and lists every sentence with 2 or more readings" \
-     --write-path <config-home>/crew/reports/<project>/<session>/review-of-<slug> \
-     --time-budget 20m --session <session> --local
+   reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session> --local
    ```
 
-   The `review` role resolves to a **read-only sandbox** with no worktree and no
-   execution capability, so the reviewer reads the document and writes nothing
-   but its restatement; the node id is `review-of-<slug>`, the convention that
-   makes a monitor row name its subject. Ask only for the read-back: the plan's
-   intent, each decision and each done-when in the reviewer's own words, and
-   every place two readings are possible — explicitly **not** a critique of the
-   work. Read the restatement against what you meant and revise the divergent
-   sentences before release. **Release is a loop, not a pass:** a revision that
-   moved a decision, a done-when, a section declaration or a gate is itself
-   material, so dispatch a fresh read-back until the restatement matches the
-   intent. `reckon-create` states the same step for a new plan and references
-   this definition rather than restating it.
+   A plan reviewed before is reviewed again only where it changed: the brief
+   names the uncovered units and the findings already answered, so the reviewer
+   reads those units and does not raise a settled finding a second time. Answer
+   every finding the review raises, acted on or declined with a one-line reason:
+
+   ```bash
+   reckon crew review-plan --project <project> --plan <slug> --answer <finding> --acted
+   reckon crew review-plan --project <project> --plan <slug> --answer <finding> --declined "<reason>"
+   ```
+
+   **Answering converges; editing for every finding does not.** Edit the plan
+   only for a finding about content you are about to release or build. Answer a
+   finding an existing section already meets `--acted`, naming that section, and
+   a finding on a landed section `--declined` with the honest reason. Then
+   release, before anything else edits the plan. `reckon-create` states the same
+   step for a new plan and references this definition rather than restating it.
 
 ```html
 <!-- ❌ WRONG — stub body -->
@@ -165,10 +166,10 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    measured change where one exists, and the one-line command that composes a
    review of them. A **non-empty `review_owed` on the last write of an authoring
    session** — not on each edit of a burst — means rule 9's read-back is owed.
-   Run the invocation once,
+   Run the invocation once, with your session in place of its `<session>`,
 
    ```bash
-   reckon crew review-plan --project <project> --plan <slug> --local
+   reckon crew review-plan --project <project> --plan <slug> --rubric content --session <session> --local
    ```
 
    and answer every finding it raises before a build is dispatched. The tool

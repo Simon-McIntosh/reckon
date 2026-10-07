@@ -1076,8 +1076,12 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "review-plan"): {
             "--project",
             "--plan",
+            "--rubric",
             "--session",
             "--local",
+            "--answer",
+            "--acted",
+            "--declined",
         },
         ("crew", "shadow"): set(),
         ("crew", "stop"): set(),
