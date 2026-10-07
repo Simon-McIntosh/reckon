@@ -1,0 +1,89 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T14:43:35.109Z",
+  "dispatched_at": "2026-10-07T14:37:16Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:137",
+      "id": "done_when-1",
+      "reason": "the section should name the named ids as a floor (\"finds the seven named above among the staging-only reviews it reports\") rather than a bare count, since node (1) lands first and further reviews accumulate before node (2)'s census.",
+      "text": "\u00a713 node (2)'s done-when requires the pre-import census to report \"reckon's seven staging-only plan reviews named above\", but that count has already grown: a re-run of the census against the host store and the committed tree today finds eight (the five named at v81/v82/v84/v88/v97 plus v100, dispatched 14:28:24 and still staging-only), and every plan review promoted before node (2) runs adds to it \u2014 so a node reading the expectation as fixed sees its own census read as wrong.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:115",
+      "id": "done_when-2",
+      "reason": "the node would either build a control narrower than the three it must cover or discover mid-flight that the stated test cannot be written; rewording to \"asserts each reader routes its lookup through the accessor\" makes the control buildable and still falsifiable.",
+      "text": "\u00a79(e)'s declared control \"patches the accessor to return a sentinel response and finds that sentinel in all three readers' results\" is not satisfiable with one sentinel: the three readers surface different things from a response \u2014 declined_recurrence returns type\u2192plan counts only when the response action is \"declined\", _acted_finding_types returns the finding's type set only when the action is \"acted\", and review_scope returns the action and reason text \u2014 so a single response cannot appear in all three results.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8b1e5a5d56865bd9e7f83268ffeafe1bd3db4cc2232dfb70e0275cdd9bb6fe3a",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 102,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-07T14:46:43.348666+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-2",
+      "reason": "",
+      "when": "2026-10-07T14:46:52.796840+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T14:46:43.348666+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T14:46:52.796840+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v102.json",
+  "review_run_id": "r-20261007T143654845748-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "c2eef2c2d13c82f5309ee235789e1f178fac34a7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited path resolves: measure_review_cycles.py:609\u2013614 (the prev_acted_types fold), routing.py:2788 and cli.py:2918 (both call store_delivered_reviews), promotion.py, scripts/import_host_reviews.py, and the three response lookups in plan_review.py:1241,1425,1583; the extensionless /reckon/research/plan-review-cycles resolves as .html.",
+    "done_when": "a finding \u2014 \u00a79(e)'s declared control cannot be built as written, and \u00a713 node (2)'s pre-import expectation is a fixed count that moves on its own.",
+    "evidence_paths": "pass \u2014 the censuses and gate evidence land on the run record and the projects' committed trees, not a scratchpad.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach the named symbols; the new section text states mechanisms (the consecutive-pair fold, the response accessor) rather than plan items.",
+    "reasoning": "pass \u2014 \u00a79(d)'s two shares match the cited evidence and \u00a79(e)'s reader set matches the code, and \u00a713's two facts match the code paths it names.",
+    "single_goal": "pass \u2014 each of \u00a79's five nodes and \u00a713's two nodes names one mechanism and one write scope.",
+    "wiring": "pass \u2014 \u00a79 and \u00a713 declare no depends-on, and the ordering they need is carried by f-erkc-012 (\u00a79(b),(e)) and f-erkc-011/010 (\u00a713, \u00a712); the dispatch scope check refuses concurrent claims on the shared files, so no plan-level edge is owed."
+  },
+  "section_digests": {
+    "_document": "174c47ab12adac8473fca0b101d9c17504f2f2366c9d630878f1bb67501944d8",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "b5aa75123d5613b32db4166d82dc04b7cad7af9e9ac64ab8dbc949dfd5ccca86",
+    "s13": "5c7b73cee76a641fa726cb640853c1e781d61b608a5470e0e55e15150617319b",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "5a785316b792b0c4e569b731ea1af1a0474ea4bef635ead9affde56a487e1c7d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T14:46:34.555924+00:00"
+}

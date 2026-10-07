@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T12:59:33.605Z",
+  "dispatched_at": "2026-10-07T12:53:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:126",
+      "id": "single_goal-1",
+      "reason": "the node must be split into a reckon code node and an imas-codex migration node, exactly as the earlier \u00a78 finding of this shape was answered, otherwise the worker cannot perform both writes in one worktree.",
+      "text": "\u00a711 is declared \"One node\" yet carries two deliverables with different write scopes and different repositories: (1) a code change to `store_committed_review` in the reckon tree, and (2) a move of two records \"in one commit in that repository\" (imas-codex), which a single reckon worktree cannot commit \u2014 so one verdict cannot close both halves and neither dispatch scope covers both",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a4c449a96370fb01051748d126331fbcdbc3d347f00198b7cedb4e6234c983a2",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 82,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "",
+      "when": "2026-10-07T13:01:02.771934+00:00"
+    }
+  ],
+  "responses": {
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T13:01:02.771934+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v82.json",
+  "review_run_id": "r-20261007T125324290812-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "6fff3580d77d57ebc1d5d46e95d18e0a4807a630",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `store_committed_review` (review.py:2068-2085), `review.names_a_review_subject` (review.py:1285) and both cited imas-codex plan-tree record paths resolve; the two files exist where cited.",
+    "done_when": "pass \u2014 the done-when names a negative control (\"the test fails when the plan branch is tested first again\") and closes the earlier arrival gap with the byte-identical run-path clause for each misfiled record.",
+    "evidence_paths": "pass \u2014 the evidence is the committed records under `docs/state/<project>/reviews/`, which are versioned and survive the run; no scratchpad path is named.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the symbols or text \u00a711 introduces.",
+    "reasoning": "pass \u2014 the stated root cause matches the code (`plan_slug` is tested before `reviewed_run_id` at review.py:2068) and the cited evidence (two plan-tree records carrying `reviewed_run_id` and a null `plan_version`), and the fix runs on the real code path reached by promotion.py:8765 and the import script.",
+    "single_goal": "a finding \u2014 \u00a711's one node carries two deliverables in two repositories: a routing change in `reckon/crew/review.py` and a data move committed in the imas-codex repository.",
+    "wiring": "pass \u2014 \u00a711 declares no depends-on and needs none: its code change is in `reckon/crew/review.py`, which \u00a79(b) also writes, and f-erkc-009 already orders \u00a711 before \u00a79, with the dispatch scope check refusing a concurrent claim on that file."
+  },
+  "section_digests": {
+    "_document": "178c24800ccaa383114e921949f94ab60f36a9a06eedb871109a84d29533a571",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "0befbc0cb2f85b1a403b994354452ef2b7f4b4a6f1829bf13126a37f8d3b99e2",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "3cf741abf98d7c12640ed6a8aef997dad41038c459798a46a8eefa6e8a3035ad"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T12:59:55.918046+00:00"
+}

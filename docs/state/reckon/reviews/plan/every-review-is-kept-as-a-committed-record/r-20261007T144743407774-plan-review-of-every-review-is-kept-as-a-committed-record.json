@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T14:55:02.036Z",
+  "dispatched_at": "2026-10-07T14:48:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/every-review-is-kept-as-a-committed-record/r-20261007T144743407774-plan-review-of-every-review-is-kept-as-a-committed-record/plan.html:114",
+      "id": "wiring-1",
+      "reason": "the dispatch scope check already refuses a concurrent claim on that path (the standing answer to the earlier review's wiring-1), and followups f-erkc-007 and f-erkc-012 carry the real ordering, so the false claim costs a refused dispatch rather than a wrong build.",
+      "text": "\u00a79 states its five nodes \"each with its own write scope\" but (a), (d) and (e) all write `reckon/crew/plan_review.py`, so the declaration is false and could lead a dispatcher to launch them concurrently",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "2576120ebeb209aed8de852c7bd0a589c2dbe10f2b4839844ee35c3c2a94be5a",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 106,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "Nodes (a) and (d) have landed (1123e4910, 5d7744751), so (e) is the only remaining writer of plan_review.py; followup f-erkc-012 records that (e) runs alone on that file, and dispatch refuses a second live claim on a declared path, so no concurrent launch can follow from the sentence.",
+      "when": "2026-10-07T14:56:10.602107+00:00"
+    }
+  ],
+  "responses": {
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "Nodes (a) and (d) have landed (1123e4910, 5d7744751), so (e) is the only remaining writer of plan_review.py; followup f-erkc-012 records that (e) runs alone on that file, and dispatch refuses a second live claim on a declared path, so no concurrent launch can follow from the sentence.",
+      "when": "2026-10-07T14:56:10.602107+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v106.json",
+  "review_run_id": "r-20261007T144743407774-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "759d116e9427f571a49356c4a0df921203ccdf05",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the `/reckon/research/plan-review-cycles` href resolves as `docs/research/plan-review-cycles.html`, `docs/figures/plan-review-cycles/measure_review_cycles.py` lines 609\u2013614 hold the `prev_acted_types` fold the text cites, and every named symbol (`read_blobs`, `_read_reviewed_blob_texts`, `_run_record_times_found`, `_acted_finding_types`, `declined_recurrence`, `review_scope`, `_staging_review_record_by_run`, `record_for_review_run`, `store_delivered_reviews`) exists in the tree.",
+    "done_when": "pass \u2014 every \u00a79 node names a control that can go red (bare-object entry reverted for (a); the dropped return value restored for (b); the content hot guard removed for (c); the stored action ignored for (d); the accessor patch not followed for (e)), and both \u00a713 nodes name controls (the record found when promotion no longer looks up by the promoting run's id alone; the census shown to find an uncommitted review before the import and to find none after).",
+    "evidence_paths": "pass \u2014 \u00a713 commits records into each project's committed review tree and reads the census at that tree's `origin/main`; \u00a79's gates are repository tests, none in a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches a symbol or filename in these units; the `v81`\u2013`v97` tokens name measured reviews in prose, not code.",
+    "reasoning": "pass \u2014 \u00a79(d)'s two shares match the cited data (`review-cycles-data.json` q4 gives duplicate_owner `after_acted` 113/270 = 41.9% and `after_present` 225/270 = 83%, and its separate q3 classification is 249/502); \u00a713's root cause matches the code (`review.record_for_review_run` keys its index on `review_run_id`, review.py:2784) and both mechanisms run on named callers (the fold from `review_day_summary`, plan_review.py:1799; the lookup from `_delivered_review_payloads_for_commit`, promotion.py:8099).",
+    "single_goal": "pass \u2014 each of \u00a79's five nodes carries one deliverable (one cat-file owner; one caller-read return value; one falsifiable hot guard; one recurrence fold; one response accessor) and each \u00a713 node one (promotion commits the record; the staging-only reviews are imported and censused).",
+    "wiring": "a finding \u2014 \u00a79's opening declares its five nodes \"each with its own write scope\", but nodes (a), (d) and (e) all write `reckon/crew/plan_review.py` (and (a) also `reckon/velocity.py`), a contention the plan's own followup `f-erkc-012` records when it says (e) \"runs alone on that file\"."
+  },
+  "section_digests": {
+    "_document": "174c47ab12adac8473fca0b101d9c17504f2f2366c9d630878f1bb67501944d8",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "d766b3ac056ff0e40058c869ad2a317b721f96eee361f8a2f17b68fdaffb9e96",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T14:56:03.959623+00:00"
+}
