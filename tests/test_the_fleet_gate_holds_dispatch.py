@@ -213,7 +213,9 @@ def test_redispatch_checks_the_shared_gate_before_stopping_the_source(
     assert held.value.gate["gate"] == "fleet"
 
 
-@pytest.mark.parametrize("starter", ["detached", "supervisor", "resumption"])
+@pytest.mark.parametrize(
+    "starter", ["detached", "supervisor", "resumption", "legacy-supervisor"]
+)
 def test_worker_spawn_boundaries_hold_and_admit(
     starter: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -247,7 +249,7 @@ def test_worker_spawn_boundaries_hold_and_admit(
 
         def start():
             return dispatch._start_supervisor(directory / "spec.json", directory, "run")
-    else:
+    elif starter == "resumption":
         monkeypatch.setattr(resumption, "read_pointer", lambda _run: {})
         monkeypatch.setattr(
             dispatch, "supervised_launch", lambda *_a, **_k: calls.append("spawn") or 42
@@ -260,6 +262,13 @@ def test_worker_spawn_boundaries_hold_and_admit(
                 stderr_path=directory / "resume-1.stderr.log",
                 prompt_path=directory / "prompt.txt",
             )
+    else:
+        monkeypatch.setattr(
+            dispatch, "_supervisor_command", lambda *_a: calls.append("spawn") or 42
+        )
+
+        def start():
+            return dispatch._peer_command([dispatch.SUPERVISOR_ENTRY, "--spec", "run"])
 
     _pause()
     with pytest.raises(dispatch.LanePaused) as held:
@@ -465,6 +474,259 @@ def test_completion_and_promotion_continue_during_a_pause(home, repo) -> None:
     assert result["pointer_removed"] is True
 
 
+def _call_name(call: ast.Call) -> str:
+    if isinstance(call.func, ast.Name):
+        return call.func.id
+    if isinstance(call.func, ast.Attribute):
+        return call.func.attr
+    return ""
+
+
+def _worker_argv_source(node: ast.AST, launch_names: set[str]) -> bool:
+    return any(
+        (
+            isinstance(part, ast.Attribute)
+            and part.attr == "argv"
+            and isinstance(part.value, ast.Name)
+            and part.value.id in launch_names
+        )
+        or (
+            isinstance(part, ast.Subscript)
+            and isinstance(part.value, ast.Name)
+            and part.value.id in launch_names
+            and isinstance(part.slice, ast.Constant)
+            and part.slice.value == "argv"
+        )
+        for part in ast.walk(node)
+    )
+
+
+def _worker_popen_calls(function: ast.FunctionDef) -> list[ast.Call]:
+    """Select processes fed a resolved worker argv, not tool or service argv."""
+    launch_names = {
+        argument.arg
+        for argument in (
+            *function.args.posonlyargs,
+            *function.args.args,
+            *function.args.kwonlyargs,
+        )
+        if argument.annotation is not None
+        and any(
+            isinstance(part, (ast.Name, ast.Attribute))
+            and (part.id if isinstance(part, ast.Name) else part.attr) == "LaunchPlan"
+            for part in ast.walk(argument.annotation)
+        )
+    }
+    if "plan" in {
+        argument.arg
+        for argument in (
+            *function.args.posonlyargs,
+            *function.args.args,
+            *function.args.kwonlyargs,
+        )
+    }:
+        launch_names.add("plan")
+    for node in ast.walk(function):
+        if (
+            isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Subscript)
+            and isinstance(node.value.slice, ast.Constant)
+            and node.value.slice.value == "plan"
+        ):
+            launch_names.update(
+                target.id for target in node.targets if isinstance(target, ast.Name)
+            )
+    worker_argv_names = {
+        target.id
+        for node in ast.walk(function)
+        if isinstance(node, ast.Assign)
+        and _worker_argv_source(node.value, launch_names)
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    }
+    selected = []
+    for node in ast.walk(function):
+        if not isinstance(node, ast.Call) or _call_name(node) != "Popen":
+            continue
+        command = next(
+            (keyword.value for keyword in node.keywords if keyword.arg == "args"),
+            node.args[0] if node.args else None,
+        )
+        environment = next(
+            (keyword.value for keyword in node.keywords if keyword.arg == "env"),
+            None,
+        )
+        worker_environment = environment is not None and any(
+            isinstance(part, ast.Call)
+            and _call_name(part) == "_worker_process_environment"
+            for part in ast.walk(environment)
+        )
+        if (
+            worker_environment
+            or (command is not None and _worker_argv_source(command, launch_names))
+            or (isinstance(command, ast.Name) and command.id in worker_argv_names)
+        ):
+            selected.append(node)
+    return selected
+
+
+def _direct_calls(function: ast.FunctionDef) -> list[ast.Call]:
+    """Calls in this function's own body, excluding nested function bodies."""
+    calls = []
+
+    def visit(node: ast.AST) -> None:
+        if node is not function and isinstance(
+            node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
+        ):
+            return
+        if isinstance(node, ast.Call):
+            calls.append(node)
+        for child in ast.iter_child_nodes(node):
+            visit(child)
+
+    visit(function)
+    return calls
+
+
+def _assert_primitive_launch_paths_reach_gate(root: Path) -> None:
+    functions: dict[tuple[str, str], ast.FunctionDef] = {}
+    for path in sorted((root / "reckon").rglob("*.py")):
+        relative = path.relative_to(root).as_posix()
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef):
+                functions[(relative, node.name)] = node
+            elif isinstance(node, ast.ClassDef):
+                for method in node.body:
+                    if isinstance(method, ast.FunctionDef):
+                        functions[(relative, f"{node.name}.{method.name}")] = method
+
+    by_name: dict[str, list[tuple[str, str]]] = {}
+    for key in functions:
+        by_name.setdefault(key[1].rsplit(".", 1)[-1], []).append(key)
+    callers: dict[tuple[str, str], list[tuple[tuple[str, str], ast.Call]]] = {}
+    for caller, function in functions.items():
+        for call in (node for node in ast.walk(function) if isinstance(node, ast.Call)):
+            name = _call_name(call)
+            local_method = (
+                caller[0],
+                f"{caller[1].split('.', 1)[0]}.{name}",
+            )
+            local_function = (caller[0], name)
+            same_class_call = isinstance(call.func, ast.Name) or (
+                isinstance(call.func, ast.Attribute)
+                and isinstance(call.func.value, ast.Name)
+                and call.func.value.id in {"self", "cls"}
+            )
+            target = (
+                local_method
+                if "." in caller[1] and same_class_call and local_method in functions
+                else None
+            )
+            if target is None and local_function in functions:
+                target = local_function
+            if target is None and len(by_name.get(name, ())) == 1:
+                target = by_name[name][0]
+            if target is not None:
+                callers.setdefault(target, []).append((caller, call))
+
+    def gate_precedes(function: ast.FunctionDef, call: ast.Call) -> bool:
+        return any(
+            _call_name(candidate) == "_require_fleet_gate_open"
+            and candidate.lineno < call.lineno
+            for candidate in _direct_calls(function)
+        )
+
+    # The supervisor is a fresh interpreter. Its normal entry is the argv
+    # written into the worker spec and launched by _start_supervisor; the
+    # direct module command remains a separately checked caller.
+    supervisor_argv = functions[("reckon/crew/dispatch.py", "_supervisor_argv")]
+    supervisor_spec = functions[("reckon/crew/dispatch.py", "_supervisor_spec")]
+    assert any(
+        isinstance(node, ast.Constant) and node.value == "reckon.crew.supervisor_main"
+        for node in ast.walk(supervisor_argv)
+    )
+    assert any(
+        _call_name(call) == "_supervisor_argv"
+        for call in ast.walk(supervisor_spec)
+        if isinstance(call, ast.Call)
+    )
+    launcher = ("reckon/crew/dispatch.py", "_start_supervisor")
+    launch_calls = [
+        call
+        for call in ast.walk(functions[launcher])
+        if isinstance(call, ast.Call)
+        and _call_name(call) in {"_spawn_through_fleet", "_spawn_detached_supervisor"}
+    ]
+    assert {_call_name(call) for call in launch_calls} == {
+        "_spawn_through_fleet",
+        "_spawn_detached_supervisor",
+    }
+    callers[("reckon/crew/supervisor_main.py", "main")] = [
+        *callers.get(("reckon/crew/supervisor_main.py", "main"), []),
+        *((launcher, call) for call in launch_calls),
+    ]
+
+    def require_guard(key: tuple[str, str], path: tuple[tuple[str, str], ...]) -> None:
+        assert key not in path, f"cyclic ungated launch path: {(*path, key)}"
+        incoming = callers.get(key, [])
+        assert incoming, f"ungated worker launch root: {key}; path: {path}"
+        for caller, call in incoming:
+            if not gate_precedes(functions[caller], call):
+                require_guard(caller, (*path, key))
+
+    worker_popens = {
+        key: calls
+        for key, function in functions.items()
+        if (calls := _worker_popen_calls(function))
+    }
+    assert worker_popens.keys() >= {
+        ("reckon/crew/dispatch.py", "_spawn_detached_worker"),
+        ("reckon/crew/dispatch.py", "_supervisor_spawn_worker"),
+    }
+    assert (
+        "reckon/crew/dispatch.py",
+        "_start_shadow_picker_selection",
+    ) not in worker_popens
+    assert (
+        "reckon/crew/fleet_supervisor.py",
+        "start_health_sampler",
+    ) not in worker_popens
+    direct_worker = ast.parse(
+        "def launch(plan: LaunchPlan):\n    subprocess.Popen(plan.argv)\n"
+    ).body[0]
+    tool_probe = ast.parse(
+        "def probe(probe: BudgetProbe):\n"
+        "    subprocess.Popen(['git', 'status'])\n"
+        "    subprocess.Popen(probe.argv)\n"
+    ).body[0]
+    assert len(_worker_popen_calls(direct_worker)) == 1
+    assert _worker_popen_calls(tool_probe) == []
+    for key, popens in worker_popens.items():
+        for call in popens:
+            if not gate_precedes(functions[key], call):
+                require_guard(key, ())
+    require_guard(("reckon/crew/dispatch.py", "_spawn_detached_supervisor"), ())
+    fleet_gateway = ("reckon/crew/dispatch.py", "_spawn_through_fleet")
+    fleet_calls = callers.get(fleet_gateway, [])
+    assert fleet_calls
+    watcher_calls = 0
+    for caller, call in fleet_calls:
+        request_id = call.args[1] if len(call.args) > 1 else None
+        watcher_request = (
+            isinstance(request_id, ast.JoinedStr)
+            and bool(request_id.values)
+            and isinstance(request_id.values[0], ast.Constant)
+            and str(request_id.values[0].value).startswith("watch-")
+        )
+        if watcher_request:
+            watcher_calls += 1
+            continue
+        if not gate_precedes(functions[caller], call):
+            require_guard(caller, (fleet_gateway,))
+    assert watcher_calls == 1
+
+
 def test_launch_callers_reach_the_shared_gate() -> None:
     """Search launch calls so a new worker entry must lead through a gate."""
     root = Path(__file__).parents[1]
@@ -525,3 +787,4 @@ def test_launch_callers_reach_the_shared_gate() -> None:
         ("reckon/cli.py", "crew_resume"),
         ("reckon/mcp.py", "_crew_recover"),
     }
+    _assert_primitive_launch_paths_reach_gate(root)

@@ -3475,6 +3475,7 @@ def _supervisor_command(argv: list[str]) -> int:
 def _peer_command(argv: list[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     if arguments and arguments[0] == SUPERVISOR_ENTRY:
+        _require_fleet_gate_open()
         return _supervisor_command(arguments[1:])
     parser = argparse.ArgumentParser(description="Use a durable crew peer channel.")
     actions = parser.add_subparsers(dest="action", required=True)
