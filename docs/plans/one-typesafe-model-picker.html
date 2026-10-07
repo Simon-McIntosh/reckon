@@ -24,7 +24,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="202">
+<meta name="plan-version" content="203">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
@@ -648,7 +648,10 @@
     <div class="r-comment-body"><p>Measurement names routing._estimated_hours (routing.py:3641, called at picker/snapshot.py:502) as the snapshot's dominant step (993 ms idle -&gt; 1,362 ms median under 32-process load, 93-95% of a ~1.04 s snapshot) and ledger.picker_runs / build_picker_inputs (dispatch.py:5176,5180,5184) as the largest dispatch-scope costs just outside the pick's bound; the 16-process arm showed no degradation on this 28-CPU node and is reported as a negative result.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T195244782822-review-of-snapshot-stall-under-load" data-who="reckon-build" data-when="2026-10-07T19:58:42.283Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261007T193552272335-snapshot-stall-under-load stored at the revision-keyed path; all six dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 18; total 110), reviewed_base_sha == reviewed_head_sha == 00e8e3f59202ecb512bbc53ed700c52680899ebd, with two non-blocking follow-on findings against the report&#x27;s per-step table and its missing loadgen pidfiles.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261007T193552272335-snapshot-stall-under-load stored at the revision-keyed path; all six dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 18; total 110), reviewed_base_sha == reviewed_head_sha == 00e8e3f59202ecb512bbc53ed700c52680899ebd, with two non-blocking follow-on findings against the report's per-step table and its missing loadgen pidfiles.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T195144635612-estimated-hours-reads-one-plan" data-who="reckon-build" data-when="2026-10-07T20:10:33.541Z">
+    <div class="r-comment-body"><p>pinpointed in reckon:one-typesafe-model-picker §6 — routing._estimated_hours now resolves the node&#x27;s plan through the cached_pick_input_stamped pattern (the one routing.context_census uses), stamping the docs directory listings a resolve reads plus the resolved plan file, so a repeated ask for an unchanged plan opens no directory and reads no metadata; live reckon docs tree, five calls each, median 177.9 ms -&gt; 0.5 ms and max 7022.6 ms -&gt; 4567.7 ms (both maxima are the first call&#x27;s cold GPFS read), returning the identical figure (16.5, plan-fallback) in both arms.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>
