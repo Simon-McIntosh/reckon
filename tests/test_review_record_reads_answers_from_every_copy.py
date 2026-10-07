@@ -6,10 +6,15 @@ writes its disposition back to whichever copy its reader selects, so the two
 writes can land on different files and the copy a by-head reader selects can
 carry none of what the other holds. These cases dispose on the plain staging
 file, then write the head-keyed sibling again directly as a worker finishing a
-record does — without the disposition — and read the disposition back through
-``stored_record`` and through the obligations reader, both of which select the
-sibling for that head. Each fails when ``stored_record`` returns the selected
-copy alone, which is the state before the answers were merged from every copy.
+record does — without the disposition, the response or the response event — and
+read them back through ``stored_record`` and through the obligations reader,
+both of which select the sibling for that head. Each fails when
+``stored_record`` returns the selected copy alone, which is the state before
+the answers were merged from every copy.
+
+One case reads through a named staging store and holds the merge to that store:
+a copy sitting only in the configured store is not pulled into a read resolved
+from another one.
 
 Every store, repository and live pointer resolves inside a temporary
 configuration home; nothing touches the operator's own store.
@@ -43,6 +48,19 @@ HEAD = "543d3a99d6b1c4a1c2d3e4f50617283940a1b2c3"
 SUB_FLOOR_SCORE = 5
 CLEAN_SCORE = 18
 FOLD_NODE = "repair-durability-node"
+
+ANSWERS_KEY = review_module.DIMENSION_DISPOSITIONS_KEY
+FINDING = "durability-1"
+RESPONSE_WHEN = "2026-10-07T10:30:00+00:00"
+# The shape a response writer stores: the latest-per-finding map entry and the
+# append-only event that keeps the history of what was answered.
+RESPONSE = {
+    "action": "acted",
+    "reason": "",
+    "by": "coordinator",
+    "when": RESPONSE_WHEN,
+}
+RESPONSE_EVENT = {"finding": FINDING, **RESPONSE}
 
 # The derivation is read at a fixed instant after the record's own timestamp, so
 # the duty's age is a function of the fixture rather than of the wall clock.
@@ -175,12 +193,19 @@ def copies(isolated_reckon_home: Path, tmp_path: Path, monkeypatch) -> Copies:
         review_module.review_path(PROJECT, REVIEWED), _record(head=None)
     )
     _dispose_run()
-    assert review_module.DIMENSION_DISPOSITIONS_KEY in json.loads(
-        plain.read_text(encoding="utf-8")
-    ), "premise: the disposition landed on the plain staging copy"
+    stored_plain = json.loads(plain.read_text(encoding="utf-8"))
+    assert review_module.DIMENSION_DISPOSITIONS_KEY in stored_plain, (
+        "premise: the disposition landed on the plain staging copy"
+    )
+
+    # A coordinator then records a response and its event on the plain copy the
+    # reader selected — the answer the delivered body carries none of.
+    stored_plain["responses"] = {FINDING: dict(RESPONSE)}
+    stored_plain["response_events"] = [dict(RESPONSE_EVENT)]
+    plain.write_text(json.dumps(stored_plain), encoding="utf-8")
 
     # The review worker then finishes and stores its head-keyed sibling built
-    # from the delivered body, which carries no disposition.
+    # from the delivered body, which carries no disposition and no answer.
     sibling = _write_staging(
         review_module.review_path(PROJECT, REVIEWED, reviewed_head_sha=head_sha),
         _record(head=head_sha),
@@ -220,13 +245,18 @@ def test_a_disposition_on_the_plain_copy_is_read_through_the_head_keyed_sibling(
     """The sibling the reader selects carries the disposition its sibling holds.
 
     The head-keyed reader selects the sibling, which was written without the
-    disposition; only the merge of every copy's answers puts it back. The
-    disposition is confirmed on the plain copy and absent from the sibling, so
-    the value the reader returns can only have come from the merge.
+    disposition, the response or the response event; only the merge of every
+    copy's answers puts each back. All three are confirmed on the plain copy and
+    absent from the sibling, so the values the reader returns can only have come
+    from the merge.
     """
-    assert review_module.DIMENSION_DISPOSITIONS_KEY not in json.loads(
-        copies.sibling.read_text(encoding="utf-8")
-    ), "the selected copy carries no disposition of its own"
+    sibling_raw = json.loads(copies.sibling.read_text(encoding="utf-8"))
+    assert review_module.DIMENSION_DISPOSITIONS_KEY not in sibling_raw, (
+        "the selected copy carries no disposition of its own"
+    )
+    assert not sibling_raw.get("responses") and not sibling_raw.get(
+        "response_events"
+    ), "the selected copy carries no response or response event of its own"
 
     path, record = review_module.stored_record(
         PROJECT, copies.reviewed, reviewed_head_sha=copies.head_sha
@@ -237,6 +267,52 @@ def test_a_disposition_on_the_plain_copy_is_read_through_the_head_keyed_sibling(
     disposition = record[review_module.DIMENSION_DISPOSITIONS_KEY]["durability"]
     assert disposition["kind"] == "folded"
     assert disposition["node"] == FOLD_NODE
+    # The response and the response event written only to the plain copy are
+    # read back through the sibling too.
+    assert record["responses"][FINDING]["action"] == "acted"
+    assert [event["finding"] for event in record["response_events"]] == [FINDING]
+
+
+def test_a_copy_only_in_the_configured_store_is_not_merged_into_a_named_store(
+    copies: Copies, tmp_path: Path
+) -> None:
+    """A read resolved from one store merges only that store's copies.
+
+    ``stored_record`` can be pointed at a named staging store through
+    ``base_dir``, and the merge must read the same store it selected from: a
+    copy that exists only in the configured store would otherwise be pulled
+    into a record selected from another one. The configured store's copy is
+    confirmed present and merged by a read that resolves there, so the absence
+    through the named store is a reading rather than an empty fixture.
+    """
+    named = tmp_path / "named-store"
+    selected = _write_staging(
+        review_module.review_path(
+            PROJECT, copies.reviewed, base_dir=named, reviewed_head_sha=copies.head_sha
+        ),
+        _record(head=copies.head_sha),
+    )
+
+    path, record = review_module.stored_record(
+        PROJECT,
+        copies.reviewed,
+        base_dir=named,
+        reviewed_head_sha=copies.head_sha,
+    )
+
+    assert path == selected, "selection was resolved from the named store"
+    assert record is not None
+    assert review_module.DIMENSION_DISPOSITIONS_KEY not in record
+    assert "responses" not in record and "response_events" not in record
+
+    # The configured store's copy is genuinely there: a read that resolves there
+    # merges its answers, so the named store's absence above is a real isolation.
+    _default_path, default_record = review_module.stored_record(
+        PROJECT, copies.reviewed, reviewed_head_sha=copies.head_sha
+    )
+    assert default_record is not None
+    assert review_module.DIMENSION_DISPOSITIONS_KEY in default_record
+    assert default_record["responses"][FINDING]["action"] == "acted"
 
 
 def test_the_obligations_reader_retires_the_duty_through_the_sibling(

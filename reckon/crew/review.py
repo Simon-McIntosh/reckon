@@ -2003,7 +2003,9 @@ def _answer_stamp(entry: Any) -> str:
 
 
 def _staging_copies_of_record(
-    project: str, record: Mapping[str, Any]
+    project: str,
+    record: Mapping[str, Any],
+    base_dir: str | Path | None = None,
 ) -> list[Mapping[str, Any]]:
     """Every staging file that is another copy of ``record``, oldest first.
 
@@ -2014,11 +2016,16 @@ def _staging_copies_of_record(
     Copies are the files keyed by the record's own review run — the one key
     every copy shares — so a record the store filed under a different subject
     name is still its own. A file that cannot be read is skipped.
+
+    ``base_dir`` names the staging store to read, so a reader that resolved its
+    selection from a specific store reads that store's copies rather than the
+    configured one; omitted, the root resolves through
+    :func:`review_store_root` as it always has.
     """
     review_run_id = str(record.get("review_run_id") or "").strip()
     if not review_run_id:
         return []
-    directory = review_store_root() / project
+    directory = review_store_root(base_dir) / project
     if not directory.is_dir():
         return []
     copies: list[Mapping[str, Any]] = []
@@ -2366,6 +2373,7 @@ def _record_with_merged_answers(
     selected: tuple[Path | None, dict[str, Any] | None],
     *,
     committed: Path | None,
+    base_dir: str | Path | None = None,
 ) -> tuple[Path | None, dict[str, Any] | None]:
     """Return the selected record carrying every copy's answers.
 
@@ -2388,7 +2396,7 @@ def _record_with_merged_answers(
         return path, record
     sources: list[Mapping[str, Any]] = [
         record,
-        *_staging_copies_of_record(project, record),
+        *_staging_copies_of_record(project, record, base_dir),
     ]
     review_run_id = str(record.get("review_run_id") or "").strip()
     if committed is not None and review_run_id and reviewed_run_id:
@@ -2495,6 +2503,7 @@ def stored_record(
                     reviewed_run_id,
                     committed_selected,
                     committed=committed,
+                    base_dir=base_dir,
                 )
     directory = review_store_root(base_dir) / project
     candidates = [review_path(project, reviewed_run_id, base_dir)]
@@ -2509,6 +2518,7 @@ def stored_record(
                 list(existing.values()), reviewed_head_sha, skipped=skipped
             ),
             committed=committed,
+            base_dir=base_dir,
         )
     if committed_selected is not None:
         # The committed tree holds records for this run and no staging file of
@@ -2519,6 +2529,7 @@ def stored_record(
             reviewed_run_id,
             committed_selected,
             committed=committed,
+            base_dir=base_dir,
         )
     # No file of this run's own exists, so the store's records are searched for
     # one whose content names the run it reviews — the shape a hand-written
@@ -2531,6 +2542,7 @@ def stored_record(
             directory, reviewed_run_id, reviewed_head_sha, skipped=skipped
         ),
         committed=committed,
+        base_dir=base_dir,
     )
 
 
