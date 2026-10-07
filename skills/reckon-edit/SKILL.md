@@ -395,7 +395,7 @@ adds a discovered section as a concrete section rather than a followup.
 | `resolve` | `target`, `id`, `by`, `outcome` or `resolution` | `followups` uses `outcome`; `questions` uses `resolution` |
 | `lock` | `key`, `choice`, `rationale`, `by` | Locks a decision (`data-choice` + by/when). |
 | `move` | `target="sprint_item"`, `slug`, `from`, `to` | Index only. Moves item between sprints. |
-| `collapse_section` | `section`, `summary`, `evidence_anchor` | Landing beat: replaces the authored body under the section's `h2` with the landed card, keeps the heading and its id, and sets its declaration to `done`, in one versioned write. |
+| `collapse_section` | `section`, `summary`, `evidence_anchor` | Landing beat: replaces the authored body under the section's `h2` with the landed card, keeps the heading and its id, and sets its declaration to `done`, in one versioned write. A bare `evidence_anchor` is the `append_evidence` anchor and links as `/<project>/evidence/archive/<plan>-landed.html#<anchor>`; one the record does not hold is refused. |
 | `append_evidence` | `plan`, `anchor`, `title`, `body` | Landing beat: appends one anchored `<section id=anchor>` to that plan's cumulative landing record, creating the record when absent and refusing a duplicate anchor. |
 | `insert_section` | `id`, `title`, `body`, `effort_hours`, `capability`, `links` | Writes a new `h2` with its typed section record. `capability` is the versioned request object; `effort_hours`, `capability` and `links` are required, not defaulted. |
 
@@ -408,12 +408,12 @@ Copyable landing-beat examples, one per op:
 <!-- landing-beat-examples -->
 ```json
 [
-  {"op": "collapse_section", "section": "s2",
-   "summary": "Landed <code>src/data_prep.py</code>; 11,237 shots encoded in 3h12m, eval MAE 0.04.",
-   "evidence_anchor": "s2"},
   {"op": "append_evidence", "plan": "my-plan", "anchor": "s2",
    "title": "§2 — data prep pipeline landed",
    "body": "<p>Built <code>src/data_prep.py</code>; 11,237 shots in 3h12m; eval MAE 0.04.</p>"},
+  {"op": "collapse_section", "section": "s2",
+   "summary": "Landed <code>src/data_prep.py</code>; 11,237 shots encoded in 3h12m, eval MAE 0.04.",
+   "evidence_anchor": "s2"},
   {"op": "insert_section", "id": "s3", "title": "§3 — checkpoint scoring",
    "body": "<p>Score the checkpoint on the held-out split and record the MAE.</p>",
    "effort_hours": 1.25,

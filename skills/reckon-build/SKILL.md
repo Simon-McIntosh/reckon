@@ -246,9 +246,13 @@ plan-modified meta lines: every worker touching them makes every merge conflict
 there. Dispatching an unrelated ready node is outside this freeze.
 
 The landing beat is three `edit_plan` ops, not a hand edit:
-`{op:'collapse_section', section, summary, evidence_anchor}`,
-`{op:'append_evidence', plan, anchor, title, body}` and
+`{op:'append_evidence', plan, anchor, title, body}`,
+`{op:'collapse_section', section, summary, evidence_anchor}` and
 `{op:'insert_section', id, title, body, effort_hours, capability, links}`.
+`evidence_anchor` is the `anchor` that `append_evidence` writes. The op links it
+as `/<project>/evidence/archive/<plan>-landed.html#<anchor>` and refuses an
+anchor the landing record does not hold, so append the evidence in the same call
+or an earlier one.
 
 ```python
 edit_plan(project="<project>", slug="<slug>", ops=[
@@ -273,12 +277,12 @@ and records the result, and `reckon crew suite waive --project <project>
 <!-- landing-beat-examples -->
 ```json
 [
-  {"op": "collapse_section", "section": "s2",
-   "summary": "Landed <code>src/data_prep.py</code>; 11,237 shots encoded in 3h12m, eval MAE 0.04.",
-   "evidence_anchor": "s2"},
   {"op": "append_evidence", "plan": "my-plan", "anchor": "s2",
    "title": "§2 — data prep pipeline landed",
    "body": "<p>Built <code>src/data_prep.py</code>; 11,237 shots in 3h12m; eval MAE 0.04.</p>"},
+  {"op": "collapse_section", "section": "s2",
+   "summary": "Landed <code>src/data_prep.py</code>; 11,237 shots encoded in 3h12m, eval MAE 0.04.",
+   "evidence_anchor": "s2"},
   {"op": "insert_section", "id": "s3", "title": "§3 — checkpoint scoring",
    "body": "<p>Score the checkpoint on the held-out split and record the MAE.</p>",
    "effort_hours": 1.25,

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>Landing: the times resolver returns only what its callers read | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: the times resolver returns only what its callers read</h1>
+    </header>
+
+    <section id="the-times-resolver-returns-what-is-read-landing-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li><code>reckon/crew/review.py</code> &mdash; the private <code>_run_record_times_found</code> is gone. <code>run_record_times</code> now resolves the committed per-run record, or the live pointer when no committed record exists, and returns only the <code>(dispatched_at, completed_at)</code> pair. Its public signature, return shape and behaviour are unchanged; its docstring states the current rule, that a record whose times resolve from no source is committed as <code>unknown</code> (both entries empty strings).</li>
+        <li><code>tests/test_run_record_times_returns_the_pair.py</code> (new) &mdash; holds the pair from the committed run record, from the live pointer before promotion, and empty strings when neither source carries a stamp; the pair is asserted whole, so a resolver returning a third value fails.</li>
+      </ul>
+    </section>
+
+    <section id="the-times-resolver-returns-what-is-read-landing-measure">
+      <h2>Measure</h2>
+      <ul>
+        <li>Gate, the two named files run in the foreground under <code>--basetemp</code> in this run's directory: <code>13 passed</code>, <code>EXIT=0</code>. Log: <code>gate/head.log</code>.</li>
+        <li>Negative control, the declared mutation (make the resolver return the found flag as a third value again): <code>4 failed</code>, <code>EXIT=1</code> &mdash; every case in the new file fails and the head arm does not. Log: <code>gate/negative_control.log</code>.</li>
+        <li>Completeness search across <code>reckon/</code>, <code>tests/</code> and <code>scripts/</code>: no <code>_run_record_times_found</code> and no unread found flag. Log: <code>gate/search.log</code>.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

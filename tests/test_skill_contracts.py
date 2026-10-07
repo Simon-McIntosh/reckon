@@ -1756,3 +1756,31 @@ def test_each_skills_documented_examples_apply(tmp_path: Path) -> None:
         for example in examples:
             result = _apply_example(checkout, example)
             assert result["ok"] is True, f"{name}: {example['op']} -> {result}"
+
+
+def test_each_skills_documented_landing_links_a_record_section(tmp_path: Path) -> None:
+    """The landed card the documented examples write links to evidence that exists.
+
+    Applying an example is not enough: a collapse whose link names no file, or a
+    file without the anchored section, still applies and leaves a reader a dead
+    link. So this follows the card's full-record href from the project root to a
+    file under the synthesised docs tree and requires the fragment's id there.
+    """
+    for name in ("reckon-build", "reckon-edit"):
+        text = (ROOT / "skills" / name / "SKILL.md").read_text()
+        checkout = tmp_path / name
+        _synthesized_checkout(checkout)
+        for example in _documented_examples(text):
+            assert _apply_example(checkout, example)["ok"] is True
+
+        plan_text = (checkout / "docs" / "plans" / "my-plan.html").read_text()
+        link = re.search(r'<a href="([^"]+)">full record</a>', plan_text)
+        assert link is not None, f"{name}: the collapse wrote no full-record link"
+        href = link.group(1)
+        path, _, fragment = href.partition("#")
+        assert path.startswith("/sample/") and fragment, f"{name}: {href}"
+        record = checkout / "docs" / path.removeprefix("/sample/")
+        assert record.is_file(), f"{name}: {href} names no file"
+        assert f'id="{fragment}"' in record.read_text(), (
+            f"{name}: {href} names no section of {record.name}"
+        )
