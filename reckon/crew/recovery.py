@@ -29,6 +29,7 @@ from reckon.crew import metering, plan_review, quota_weight, runs
 from reckon.crew import repair as repair_module
 from reckon.crew import review as review_module
 from reckon.crew import review_need
+from reckon.crew.host_lease import LEASE_RENEW_SECONDS
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     DEFAULT_WATCH_STALL_WINDOW,
@@ -9613,15 +9614,30 @@ def _watch_registration(project: str, stall_window: str):
         yield acquired, watcher
 
 
+UNWATCH_SEAT_WAIT_SECONDS = 2.0
+
+
 def unwatch(project: str) -> dict[str, Any]:
-    """Stop the registered watcher for one project and release its claim."""
+    """Stop the local watcher, refusing remote and unresponsive seat holders."""
     path = watch_lock_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
+    lease = runs.watch_host_lease(project)
+    holder = lease.holder()
+    if holder is not None and holder.host != socket.gethostname():
+        raise CrewError(
+            f"refusing to unwatch {project!r}: producer seat held by "
+            f"{holder.host} pid {holder.pid} job {holder.job or 'unknown'}"
+        )
     with path.open("a+b") as handle:
         try:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             watcher = _read_watch_record(handle)
+            if runs._seat_names_a_foreign_host(watcher):
+                raise CrewError(
+                    f"refusing to unwatch {project!r}: producer seat names "
+                    f"{watcher['host']} pid {watcher.get('pid')}"
+                ) from None
             registered_project = str(watcher.get("project") or "")
             if registered_project != project:
                 raise CrewError(
@@ -9666,8 +9682,22 @@ def unwatch(project: str) -> dict[str, Any]:
             # The watcher owns this lock until its process exits. Taking it
             # before clearing the record makes registration release observable
             # to a subsequent arming command, without replacing the lock inode.
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            deadline = time.monotonic() + UNWATCH_SEAT_WAIT_SECONDS
+            while True:
+                try:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() >= deadline:
+                        raise CrewError(
+                            f"refusing to unwatch {project!r}: producer seat held "
+                            f"by {watcher.get('host') or socket.gethostname()} "
+                            f"pid {pid} beyond {UNWATCH_SEAT_WAIT_SECONDS:g}s"
+                        ) from None
+                    time.sleep(0.05)
             _write_watch_record(handle, {})
+            if holder is not None:
+                lease.release_holder(holder)
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
             return {
                 "project": project,
@@ -9680,6 +9710,8 @@ def unwatch(project: str) -> dict[str, Any]:
 
         watcher = _read_watch_record(handle)
         _write_watch_record(handle, {})
+        if holder is not None:
+            lease.release_holder(holder)
         fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
         return {
             "project": project,
@@ -11294,14 +11326,22 @@ def watch_ticker(
 
     def _wait(interval: float) -> bool:
         """Sleep, bounded by the lease; report whether the seat has lapsed."""
+        left = interval
+        while True:
+            remaining = _lease_remaining()
+            if remaining is not None and remaining <= 0:
+                return True
+            step = min(left, LEASE_RENEW_SECONDS)
+            if remaining is not None:
+                step = min(step, remaining)
+            sleeper(max(0.0, step))
+            if not runs.renew_watch_host_lease(project):
+                return True
+            left -= step
+            if left <= 0:
+                break
         remaining = _lease_remaining()
-        if remaining is None:
-            sleeper(interval)
-            return False
-        if remaining <= 0:
-            return True
-        sleeper(max(0.0, min(interval, remaining)))
-        return _lease_remaining() is not None and _lease_remaining() <= 0
+        return remaining is not None and remaining <= 0
 
     with _watch_registration(project, stall_window) as (acquired, watcher):
         if not acquired:
@@ -11326,6 +11366,8 @@ def watch_ticker(
         # starting later can never be served an earlier watcher's reading.
         snapshot_cache: dict[str, tuple[str, dict[str, Any]]] = {}
         while True:
+            if not runs.renew_watch_host_lease(project):
+                return
             # An unlinked seat record is rewritten before anything else, so a
             # producer whose file was removed is findable by unwatch again, and
             # one superseded by a replacement producer ends here.
