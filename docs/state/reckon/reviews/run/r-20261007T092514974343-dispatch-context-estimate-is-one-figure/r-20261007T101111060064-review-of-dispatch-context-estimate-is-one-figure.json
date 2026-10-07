@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:6895 (dispatch)",
+    "reckon/crew/dispatch.py:5304 (_record_shadow_picker_selection)",
+    "reckon/cli.py:2251 (dry-run pick)",
+    "reckon/crew/picker/__init__.py:58 (pick",
+    "consumes the authority)"
+  ],
+  "completed_at": "2026-10-07T10:25:14.580Z",
+  "dispatched_at": "2026-10-07T10:12:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "5304",
+      "severity": "follow-on",
+      "text": "follow-on: the shadow-pick and the dry-run pick (reckon/cli.py:2251) do not pass the authority the done_when names; they reach it only through the resolution fallback at dispatch.py:5198-5201, which catches CrewError, PlanVisibilityError, OSError, KeyError and TypeError and leaves pick_authority None, so a resolution failure silently re-charges the granted fragment on those two paths."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "164",
+      "severity": "follow-on",
+      "text": "follow-on: the request estimate is now measured with backend_settings=None while each offered candidate's block renders the per-candidate context-fit estimate contexts[name][\"estimated_tokens\"] measured with that backend's settings (snapshot.py:305, 532), so the done_when's \"same backend-settings rule\" holds only where per-backend standing chains coincide, which the manifest's own evidence_inputs concedes as an authority-only divergence in this repository."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read revision by revision at 63976acb against 8c1fe22; dispatch_picker_selection gains an authority parameter and a resolution fallback, the request estimate drops backend_settings and takes authority, inputs carry authority into pick(), the main call site passes it, a 178-line test file is added and one fragment is corrected.",
+    "done_when": "the done_when names three production pick call sites, a new test driving a real dispatch_picker_selection, a corrected evidence fragment and a base/head gate; the main dispatch site passes the authority (dispatch.py:6895) while the shadow-pick (dispatch.py:5304) and dry-run (reckon/cli.py:2251) sites reach it only through the resolution fallback at dispatch.py:5198-5201, and the gate logs record 195 passed base / 196 passed head at EXIT=0.",
+    "goal": "the node goal asks the production pick to hand the dispatch authority to the picker so Jev weighs one context figure; reckon/crew/dispatch.py:6895 passes authority=authority into dispatch_picker_selection and dispatch.py:5213 measures the request estimate with it.",
+    "manifest": "read; it records head 63976acb at base 8c1fe22, both gate logs with 0 failures, the red negative-control log, and the flake retired in retry_failures.",
+    "write_paths": "the manifest declares seven paths and the diff at 63976acb touches exactly four of them - reckon/crew/dispatch.py, tests/test_dispatch_context_estimate_is_one_figure.py and the two docs/evidence/fragments/one-typesafe-model-picker fragments - with nothing else changed."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_context_estimate_is_one_figure.py:178 asserts request_estimate == with_authority against an independent direct measurement, and the declared mutation (stop passing the authority at dispatch.py:6895) reddens it at 53821 against 51535.",
+    "evidence": "the manifest records gate-base.log (195 passed, EXIT=0, revision 8c1fe22) and gate-head.log (196 passed, EXIT=0, revision 63976acb) and the negative control at negative-control.log reddens test_request_estimate_and_candidate_blocks_are_one_figure at EXIT=1.",
+    "fit": "the authority parameter and its resolution fallback follow the existing authority= call sites in dispatch.py:5613-5718 and carry no plan or stage label.",
+    "goal_fidelity": "dispatch.py:6912 passes the dispatcher's resolved authority into dispatch_picker_selection and dispatch.py:5213 threads it into both the estimate and pick(), so the production pick no longer leaves the granted fragment charged.",
+    "reuse": "the change extends the existing resolve_dispatch_authority owner (reckon/crew/routing.py:2851) and the picker's existing authority threading rather than adding a parallel mechanism.",
+    "scope_discipline": "git show --stat over 63976acb lists only reckon/crew/dispatch.py, tests/test_dispatch_context_estimate_is_one_figure.py and the two evidence fragments, all inside the manifest's seven declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal asks the production pick to hand the dispatch authority to the picker so Jev weighs one context figure; reckon/crew/dispatch.py:6895 passes authority=authority into dispatch_picker_selection and dispatch.py:5213 measures the request estimate with it.\nVERDICT done_when: the done_when names three production pick call sites, a new test driving a real dispatch_picker_selection, a corrected evidence fragment and a base/head gate; the main dispatch site passes the authority (dispatch.py:6895) while the shadow-pick (dispatch.py:5304) and dry-run (reckon/cli.py:2251) sites reach it only through the resolution fallback at dispatch.py:5198-5201, and the gate logs record 195 passed base / 196 passed head at EXIT=0.\nVERDICT write_paths: the manifest declares seven paths and the diff at 63976acb touches exactly four of them - reckon/crew/dispatch.py, tests/test_dispatch_context_estimate_is_one_figure.py and the two docs/evidence/fragments/one-typesafe-model-picker fragments - with nothing else changed.\nVERDICT manifest: read; it records head 63976acb at base 8c1fe22, both gate logs with 0 failures, the red negative-control log, and the flake retired in retry_failures.\nVERDICT diff: read revision by revision at 63976acb against 8c1fe22; dispatch_picker_selection gains an authority parameter and a resolution fallback, the request estimate drops backend_settings and takes authority, inputs carry authority into pick(), the main call site passes it, a 178-line test file is added and one fragment is corrected.\nCALL_SITES: reckon/crew/dispatch.py:6895 (dispatch), reckon/crew/dispatch.py:5304 (_record_shadow_picker_selection), reckon/cli.py:2251 (dry-run pick), reckon/crew/picker/__init__.py:58 (pick, consumes the authority)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: dispatch.py:6912 passes the dispatcher's resolved authority into dispatch_picker_selection and dispatch.py:5213 threads it into both the estimate and pick(), so the production pick no longer leaves the granted fragment charged.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records gate-base.log (195 passed, EXIT=0, revision 8c1fe22) and gate-head.log (196 passed, EXIT=0, revision 63976acb) and the negative control at negative-control.log reddens test_request_estimate_and_candidate_blocks_are_one_figure at EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat over 63976acb lists only reckon/crew/dispatch.py, tests/test_dispatch_context_estimate_is_one_figure.py and the two evidence fragments, all inside the manifest's seven declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispatch_context_estimate_is_one_figure.py:178 asserts request_estimate == with_authority against an independent direct measurement, and the declared mutation (stop passing the authority at dispatch.py:6895) reddens it at 53821 against 51535.\nSCORE fit: 19\nJUSTIFICATION fit: the authority parameter and its resolution fallback follow the existing authority= call sites in dispatch.py:5613-5718 and carry no plan or stage label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the existing resolve_dispatch_authority owner (reckon/crew/routing.py:2851) and the picker's existing authority threading rather than adding a parallel mechanism.\nFINDING reckon/crew/dispatch.py:5304 follow-on: the shadow-pick and the dry-run pick (reckon/cli.py:2251) do not pass the authority the done_when names; they reach it only through the resolution fallback at dispatch.py:5198-5201, which catches CrewError, PlanVisibilityError, OSError, KeyError and TypeError and leaves pick_authority None, so a resolution failure silently re-charges the granted fragment on those two paths.\nFINDING reckon/crew/picker/snapshot.py:164 follow-on: the request estimate is now measured with backend_settings=None while each offered candidate's block renders the per-candidate context-fit estimate contexts[name][\"estimated_tokens\"] measured with that backend's settings (snapshot.py:305, 532), so the done_when's \"same backend-settings rule\" holds only where per-backend standing chains coincide, which the manifest's own evidence_inputs concedes as an authority-only divergence in this repository.\nreviewed_base_sha: 8c1fe22f02881a3c6deae6470df18b1776971021\nreviewed_head_sha: 63976acbaa544b743471a3b021cff9c8b44cac8c\n",
+  "review_run_id": "r-20261007T101111060064-review-of-dispatch-context-estimate-is-one-figure",
+  "reviewed_base_sha": "8c1fe22f02881a3c6deae6470df18b1776971021",
+  "reviewed_head_sha": "63976acbaa544b743471a3b021cff9c8b44cac8c",
+  "reviewed_run_id": "r-20261007T092514974343-dispatch-context-estimate-is-one-figure",
+  "reviewer_node": "review-of-dispatch-context-estimate-is-one-figure",
+  "reviewer_run_id": "r-20261007T101111060064-review-of-dispatch-context-estimate-is-one-figure",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T10:24:15.457201+00:00",
+  "total": 111
+}
