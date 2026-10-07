@@ -25,7 +25,7 @@
   <title>Every Module Fits A Worker Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -138,9 +138,9 @@
       with its map in the node's landing fragment, under the contract in §8. <code>mcp.py</code>'s tool functions stay
       registered on the same server under the same names.</p>
     <p><strong>Done when</strong> for each of the three modules, <code>scripts/check_pure_move.py</code> exits 0, the
-      module and every module it produced are at or under 40,000 estimated tokens, the guard passes with the module
-      removed from its allowlist and the allowlist then empty, and the whole suite at the merged head shows no failure
-      absent at its base.</p>
+      module and every module it produced are at or under 40,000 estimated tokens, the guard passes with that module no
+      longer in its allowlist, and the whole suite at the merged head shows no failure absent at its base. The plan
+      closes when the last of §3–§7 lands and the guard's allowlist is empty.</p>
 
     <h2 id="s8">§8 — How every split is done, and in what order</h2>
     <p><strong>A split is a pure move.</strong> Every definition moves with its source unchanged. The only new lines
@@ -180,7 +180,7 @@
       <button class="r-opt chosen" data-value="50000">50,000, a quarter of a 200k window</button>
       <button class="r-opt" data-value="60000">60,000</button>
       </p>
-    <p class="r-dec-rat">The lead asked that a file too large for a 200k context be split. A quarter of that window is the largest bound under which a node writing three modules and their tests still fits the local lane after the 50,392-token launch floor. At 40,000, four more modules (the ledger, the server, routing and budget, all between 41,000 and 44,000) would need splitting for no measured hold. At 60,000, a node writing three modules at the bound is refused. Produced modules target 40,000 so the bound is not met again within weeks.</p>
+    <p class="r-dec-rat">The lead asked that a file too large for a 200k context be split. A quarter of that window is the largest bound under which a node writing three modules and their tests still fits the local lane after the 50,392-token launch floor. At 40,000, five more files would need splitting for no measured hold: tests/test_crew.py at 49,747, and the ledger, the server, routing and budget, between 41,000 and 44,000. At 60,000, a node writing three modules at the bound is refused. Produced modules target 40,000 so the bound is not met again within weeks.</p>
     </div>
 <div class="r-dec" data-key="split-surface" data-choice="keep-original" data-by="9cf43820, on the lead&#x27;s direction" data-when="2026-10-07">
     <p class="r-dec-q">After a split, where do callers import moved names from?</p>
