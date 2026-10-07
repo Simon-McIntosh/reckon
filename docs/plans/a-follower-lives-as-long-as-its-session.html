@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="22">
+<meta name="plan-impl" content="0.67">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -111,17 +111,11 @@
   <p class="landed-summary">Landed in <code>reckon/crew/dispatch.py</code>: an unattached session's dispatch writes <code>{project, session}</code> to the calling Claude process's host FIFO through <code>_write_fleet_request</code> with no wait, waits up to <code>WATCHER_LOAD_BOUND_SECONDS</code> for attachment, and records <code>delivery</code> as <code>host</code> or <code>monitor</code>; the refusal is unchanged without a host. Review 109/120 at <code>8775e225</code>. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/dispatch-asks-the-session-host.html">full record</a></p>
 </section>
 
-    <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§6 — <code>reckon-sync</code> links the plugin; <code>reckon doctor</code> checks it</h2>
-    <p><strong>Deliverable.</strong> <code>reckon-sync</code> links <code>plugins/crew-host</code> from the main
-      checkout as <code>~/.claude/skills/reckon-crew-host</code>, alongside the skill links it already makes, and
-      refuses to link from a worker worktree, for the same reason the hooks installer refuses: a reclaimed worktree
-      would leave the link resolving to nothing. <code>reckon doctor</code> reports whether the link exists, resolves,
-      points at the main checkout, and passes <code>claude plugin validate</code>. The link is user-level, so one link
-      serves every repository that runs reckon. Each running session picks it up at its next start or after
-      <code>/reload-plugins</code>.</p>
-    <p><strong>Done when</strong> <code>reckon-sync</code> run twice leaves exactly one link, <code>claude plugin
-      list</code> shows <code>reckon-crew-host@skills-dir</code> as loaded, and <code>reckon doctor</code> flags a link
-      that points into a worktree.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="">§6 — <code>reckon-sync</code> links the plugin; <code>reckon doctor</code> checks it</h2></header>
+  <p class="landed-summary">Landed: <code>reckon sync</code> links the main checkout's <code>plugins/crew-host</code> as <code>~/.claude/skills/reckon-crew-host</code> and refuses from a worktree; <code>reckon doctor</code> reports the link as missing, dangling, worktree, elsewhere or valid and loads it with <code>claude plugin validate</code>. Both resolve the skills directory through <code>RECKON_CLAUDE_SKILLS_DIR</code>, which the test session sets for fixtures of every scope. Reviews 112, 118 and 118 of 120. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/sync-links-the-session-host-plugin.html">full record</a></p>
+</section>
 
     <h2 id="s7" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§7 — The skills say what the session host now does</h2>
     <p><strong>Deliverable.</strong> <code>skills/reckon-build/SKILL.md</code> (the producer-and-follower section),
@@ -248,7 +242,7 @@
     <div class="r-comment-body"><p>session-host meets the help and cache contracts: crew host gains a STATE_PHRASES row and a first help line naming the condition it runs under, and session_host._log_dir resolves through reckon._store.cache_root with a new session-host cache kind instead of reading XDG_CACHE_HOME itself; gate (tests/test_crew_help_names_its_state.py, tests/test_one_cache_cascade_serves_every_kind.py, tests/test_session_host.py) ends EXIT=0 with 58 passed</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261007T063655560974-review-of-session-host-meets-the-help-and-cache-contracts" data-who="reckon-build" data-when="2026-10-07T06:54:50.807Z">
-    <div class="r-comment-body"><p>independent review of r-20261007T055410270060-session-host-meets-the-help-and-cache-contracts stored: parsed record, six dimensions scored 20/19/20/20/20/20 (total 119), reviewed_base_sha aa728ca09259f543da1a2880737121e5b6c3a343, reviewed_head_sha fd46f4c5e46950076286145d68538a9c7203f08c, no findings; the node&#x27;s gate re-ran at the reviewed head to 58 passed EXIT=0</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261007T055410270060-session-host-meets-the-help-and-cache-contracts stored: parsed record, six dimensions scored 20/19/20/20/20/20 (total 119), reviewed_base_sha aa728ca09259f543da1a2880737121e5b6c3a343, reviewed_head_sha fd46f4c5e46950076286145d68538a9c7203f08c, no findings; the node's gate re-ran at the reviewed head to 58 passed EXIT=0</p></div>
 </div>
 </section>
 </main>
