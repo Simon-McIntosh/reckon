@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/routing.py:_estimated_hours (3641",
+    "called at reckon/crew/picker/snapshot.py:502)",
+    "reckon/crew/dispatch.py:_picker_ledger_rows (5176)",
+    "reckon/crew/dispatch.py:_picker_verdict_inputs (5180)",
+    "reckon/crew/dispatch.py:_picker_budget_snapshot (5184)"
+  ],
+  "completed_at": "2026-10-07T19:58:42.283Z",
+  "dispatched_at": "2026-10-07T19:53:08Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/snapshot-stall-under-load/report.md",
+      "line": "64",
+      "severity": "follow-on",
+      "text": "follow-on: the loaded16 column for out_budget_preflight and out_budget_recorded_windows carries the loaded32 figure (243.0 and 96.7) where timings.json records the loaded16 medians 216.4 and 81.9, so two cells of the per-step table do not reconcile with the cited log."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/snapshot-stall-under-load/report.md",
+      "line": "52",
+      "severity": "follow-on",
+      "text": "follow-on: the report claims the load generator was recorded in logs/loadgen.pids and logs/loadgen2.pids, but neither file exists in logs/, so the stop-by-pid claim is not auditable from the durable record (the end state is verifiable and I confirmed no loadgen or driver process survives)."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "the manifest records commits: none and no repository file changed, which the reviewed worktree's unchanged head 00e8e3f59202ecb512bbc53ed700c52680899ebd and empty status digest confirm; there is no code diff, so I read the delivered artifacts (report.md, timings.json, step-timings.svg, logs/, scratch/) instead.",
+    "done_when": "the done-when is timing every snapshot step per backend in a scratch copy, an idle arm and a controlled-load arm with pids stopped, named growing steps with call paths and proposals, and a 1 s-sleep negative control; the gate is the four-arm driver in scratch/driver.py and its results are recorded in logs/idle.json, logs/loaded.json, logs/heavy.json and logs/injected.json (snapshot_ms medians 1041.8 idle, 865.2 loaded16, 1428.2 loaded32, 1919.7 injected), which I read out of timings.json.",
+    "goal": "the node's goal is to find which step of snapshot.candidates stalls a pick under node load without changing a repository file; the delivered report names routing._estimated_hours (reckon/crew/routing.py:3641, called from reckon/crew/picker/snapshot.py:502) as the dominant step, and I opened both lines and confirmed the def and the call site there.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T193552272335-snapshot-stall-under-load/manifest.md; it reads status complete, names the four-arm gate and its result, lists test_logs for the four probe and four arm files, and its headline medians reconcile with the report and timings.json.",
+    "write_paths": "the declared exclusive write path is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/snapshot-stall-under-load; every artifact (report.md, timings.json, step-timings.svg, logs/, scratch/) sits under it, and the reviewed worktree's tree-snapshot shows head 00e8e3f59202ecb512bbc53ed700c52680899ebd with an empty status digest, so no repository file was changed."
+  },
+  "justifications": {
+    "durability": "the node lands no code, so no regression test applies; the watchable guard is the negative control at scratch/driver.py, which reinjects a 1 s sleep and shows it attributed to the injected step alone (timings.json injected candidates_scan 1011.4 ms), falsifying the instrument's attribution.",
+    "evidence": "the four-arm medians and both negative-control limbs reconcile with reports/reckon/snapshot-stall-under-load/timings.json (candidates_scan 8.97 -> 1011.40 ms with estimated_hours and out_records holding their arm level), but report.md:64-65 mis-transcribe the loaded16 column.",
+    "fit": "the figure follows the house data-ink mandate and the helper names describe mechanism (scratch/loadgen.py, scratch/reckon/crew/picker/_step_probe.py), with no plan or ticket identifier and no author attribution in the artifacts.",
+    "goal_fidelity": "the node answers its goal directly and adds a 32-process arm beyond the named 16, keeping the 16-process arm and reporting it as a negative result (reports/reckon/snapshot-stall-under-load/report.md:21) rather than discarding it.",
+    "reuse": "scratch/driver.py mirrors the production sequence at reckon/crew/dispatch.py:7009-7040 rather than forking it, and proposal #1 points at the existing stamp owner reckon/crew/routing.py:context_census (3430) instead of inventing a cache.",
+    "scope_discipline": "the reviewed worktree tree-snapshot shows head 00e8e3f59202ecb512bbc53ed700c52680899ebd unchanged with an empty status digest, and every written path is inside the declared reports/reckon/snapshot-stall-under-load directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to find which step of snapshot.candidates stalls a pick under node load without changing a repository file; the delivered report names routing._estimated_hours (reckon/crew/routing.py:3641, called from reckon/crew/picker/snapshot.py:502) as the dominant step, and I opened both lines and confirmed the def and the call site there.\nVERDICT done_when: the done-when is timing every snapshot step per backend in a scratch copy, an idle arm and a controlled-load arm with pids stopped, named growing steps with call paths and proposals, and a 1 s-sleep negative control; the gate is the four-arm driver in scratch/driver.py and its results are recorded in logs/idle.json, logs/loaded.json, logs/heavy.json and logs/injected.json (snapshot_ms medians 1041.8 idle, 865.2 loaded16, 1428.2 loaded32, 1919.7 injected), which I read out of timings.json.\nVERDICT write_paths: the declared exclusive write path is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/snapshot-stall-under-load; every artifact (report.md, timings.json, step-timings.svg, logs/, scratch/) sits under it, and the reviewed worktree's tree-snapshot shows head 00e8e3f59202ecb512bbc53ed700c52680899ebd with an empty status digest, so no repository file was changed.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T193552272335-snapshot-stall-under-load/manifest.md; it reads status complete, names the four-arm gate and its result, lists test_logs for the four probe and four arm files, and its headline medians reconcile with the report and timings.json.\nVERDICT diff: the manifest records commits: none and no repository file changed, which the reviewed worktree's unchanged head 00e8e3f59202ecb512bbc53ed700c52680899ebd and empty status digest confirm; there is no code diff, so I read the delivered artifacts (report.md, timings.json, step-timings.svg, logs/, scratch/) instead.\nCALL_SITES: reckon/crew/routing.py:_estimated_hours (3641, called at reckon/crew/picker/snapshot.py:502), reckon/crew/dispatch.py:_picker_ledger_rows (5176), reckon/crew/dispatch.py:_picker_verdict_inputs (5180), reckon/crew/dispatch.py:_picker_budget_snapshot (5184)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the node answers its goal directly and adds a 32-process arm beyond the named 16, keeping the 16-process arm and reporting it as a negative result (reports/reckon/snapshot-stall-under-load/report.md:21) rather than discarding it.\nSCORE evidence: 17\nJUSTIFICATION evidence: the four-arm medians and both negative-control limbs reconcile with reports/reckon/snapshot-stall-under-load/timings.json (candidates_scan 8.97 -> 1011.40 ms with estimated_hours and out_records holding their arm level), but report.md:64-65 mis-transcribe the loaded16 column.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree tree-snapshot shows head 00e8e3f59202ecb512bbc53ed700c52680899ebd unchanged with an empty status digest, and every written path is inside the declared reports/reckon/snapshot-stall-under-load directory.\nSCORE durability: 17\nJUSTIFICATION durability: the node lands no code, so no regression test applies; the watchable guard is the negative control at scratch/driver.py, which reinjects a 1 s sleep and shows it attributed to the injected step alone (timings.json injected candidates_scan 1011.4 ms), falsifying the instrument's attribution.\nSCORE fit: 19\nJUSTIFICATION fit: the figure follows the house data-ink mandate and the helper names describe mechanism (scratch/loadgen.py, scratch/reckon/crew/picker/_step_probe.py), with no plan or ticket identifier and no author attribution in the artifacts.\nSCORE reuse: 18\nJUSTIFICATION reuse: scratch/driver.py mirrors the production sequence at reckon/crew/dispatch.py:7009-7040 rather than forking it, and proposal #1 points at the existing stamp owner reckon/crew/routing.py:context_census (3430) instead of inventing a cache.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/snapshot-stall-under-load/report.md:64 follow-on: the loaded16 column for out_budget_preflight and out_budget_recorded_windows carries the loaded32 figure (243.0 and 96.7) where timings.json records the loaded16 medians 216.4 and 81.9, so two cells of the per-step table do not reconcile with the cited log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/snapshot-stall-under-load/report.md:52 follow-on: the report claims the load generator was recorded in logs/loadgen.pids and logs/loadgen2.pids, but neither file exists in logs/, so the stop-by-pid claim is not auditable from the durable record (the end state is verifiable and I confirmed no loadgen or driver process survives).\n",
+  "review_run_id": "r-20261007T195244782822-review-of-snapshot-stall-under-load",
+  "reviewed_base_sha": "00e8e3f59202ecb512bbc53ed700c52680899ebd",
+  "reviewed_head_sha": "00e8e3f59202ecb512bbc53ed700c52680899ebd",
+  "reviewed_run_id": "r-20261007T193552272335-snapshot-stall-under-load",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T19:57:35.347024+00:00",
+  "total": 110
+}

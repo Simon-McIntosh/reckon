@@ -24,7 +24,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="201">
+<meta name="plan-version" content="202">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
@@ -645,7 +645,10 @@
     <div class="r-comment-body"><p>docs/evidence/fragments/one-typesafe-model-picker/pick-records-its-stage-times.html — every production pick appends one JSON line to pick-timings.jsonl under the crew home timing five stages (candidates snapshot, estimated-context figure, state render, questions render, Jev request) with node id, session, start timestamp, whole-pick latency and a within-bound flag read from dispatch.PICKER_DISPATCH_TIMEOUT_SECONDS; gate base 103594b76 155 passed EXIT=0 to head 7500c95a2 159 passed EXIT=0 with zero added failures, declared negative control (drop the line from a pick past the bound) EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T193552272335-snapshot-stall-under-load" data-who="reckon-build" data-when="2026-10-07T19:50:45.749Z">
-    <div class="r-comment-body"><p>Measurement names routing._estimated_hours (routing.py:3641, called at picker/snapshot.py:502) as the snapshot&#x27;s dominant step (993 ms idle -&gt; 1,362 ms median under 32-process load, 93-95% of a ~1.04 s snapshot) and ledger.picker_runs / build_picker_inputs (dispatch.py:5176,5180,5184) as the largest dispatch-scope costs just outside the pick&#x27;s bound; the 16-process arm showed no degradation on this 28-CPU node and is reported as a negative result.</p></div>
+    <div class="r-comment-body"><p>Measurement names routing._estimated_hours (routing.py:3641, called at picker/snapshot.py:502) as the snapshot's dominant step (993 ms idle -&gt; 1,362 ms median under 32-process load, 93-95% of a ~1.04 s snapshot) and ledger.picker_runs / build_picker_inputs (dispatch.py:5176,5180,5184) as the largest dispatch-scope costs just outside the pick's bound; the 16-process arm showed no degradation on this 28-CPU node and is reported as a negative result.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T195244782822-review-of-snapshot-stall-under-load" data-who="reckon-build" data-when="2026-10-07T19:58:42.283Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261007T193552272335-snapshot-stall-under-load stored at the revision-keyed path; all six dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 18; total 110), reviewed_base_sha == reviewed_head_sha == 00e8e3f59202ecb512bbc53ed700c52680899ebd, with two non-blocking follow-on findings against the report&#x27;s per-step table and its missing loadgen pidfiles.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>
