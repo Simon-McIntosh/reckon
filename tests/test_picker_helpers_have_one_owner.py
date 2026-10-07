@@ -3,8 +3,13 @@
 Two design-review findings asked that duplicated picker helpers and the
 run-time-profile cache have a single owner. The helpers live once in
 :mod:`reckon.crew.run_time_profile` and are imported everywhere else; the
-profile cache goes through :func:`reckon.capabilities.cached_pick_input`. These
-tests pin both, and pin that the refactor changed no rendered byte.
+profile cache goes through :func:`reckon.capabilities.cached_pick_input`. One
+owner must not mean one behaviour: merging three copies of ``_number`` also
+merged their return types, and the picker state renders the float cast as
+``300.0`` where the base rendered ``300``. So the rendered state is pinned
+against the base revision's own bytes, not against a second render of the new
+code -- a check that renders the code twice moves with the code it is meant to
+hold still.
 """
 
 from __future__ import annotations
@@ -20,6 +25,15 @@ from reckon.crew.picker.types import Candidate
 
 NOW = datetime(2026, 10, 2, 2, 1, 0, tzinfo=UTC)
 
+#: The picker state rendered by the reviewed run's base revision (``4e2f6823c``)
+#: for the fixture built below, committed verbatim as a test fixture. The head
+#: must reproduce these bytes exactly, so a single owner whose ``_number``
+#: changed an integer figure into ``300.0`` is caught rather than followed. The
+#: bytes were produced by running the base tree's own code over the same frozen
+#: fixture (ledger rows, profile-cache directory, lane document and live-worker
+#: list all fixed), never transcribed by hand.
+GOLDEN_STATE = r"""{"node":{"role":"implement","spec_level":"guided","capability":{},"goal":"g","done_when":"d","estimated_context":0,"estimated_hours":null,"attempts":0,"write_path_count":0,"negative_control_declared":false},"orchestrator_comment":"one owner","candidates":{"clive":{"backend":"clive","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null},"amine":{"backend":"amine","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null}},"return_times":{"clive":{"p50_s":300,"p90_s":500,"runs":3,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"amine":{"p50_s":null,"p90_s":null,"runs":null,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false}},"local_lane":{"admission":"admitting","expected_wait_s":null,"running":2,"waiting":0,"headroom":14,"worker_slots":53,"tokens_per_second":89.425,"read_at":"2026-10-02T02:01:00+00:00"}}"""
+
 #: Helper names that must not be re-defined inside the picker package, each
 #: mapped to the one function in run_time_profile that owns its behaviour.
 OWNER_OF = {
@@ -31,6 +45,33 @@ OWNER_OF = {
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _PICKER_DIR = _REPO_ROOT / "reckon" / "crew" / "picker"
 _RUN_TIME_PROFILE = _REPO_ROOT / "reckon" / "crew" / "run_time_profile.py"
+
+#: The lane document the fixture freezes, so the local-lane block is identical
+#: on every run rather than reading whatever the serving lane last published.
+_LANE_DOCUMENT = {
+    "state": "measured",
+    "running": 2,
+    "waiting": 0,
+    "headroom": 14,
+    "concurrent_requests": 6,
+    "mean_context": 12345,
+    "observed_at": NOW.isoformat(),
+    "suggested_shelf_life_seconds": 300,
+    "router_generation_gate": {"width": 16, "in_flight": 2, "waiting": 0},
+}
+
+_FIXED_LOAD = {
+    "read_at": NOW.isoformat(),
+    "document": _LANE_DOCUMENT,
+    "observed_at": NOW.isoformat(),
+    "state": "measured",
+    "running": 2,
+    "waiting": 0,
+    "headroom": 14,
+    "worker_slots": 53,
+    "mean_tokens_per_second": 89.425,
+    "detail": "",
+}
 
 
 def _defined_names(path: Path) -> list[str]:
@@ -114,7 +155,33 @@ def _candidate(backend):
     )
 
 
-def _render():
+def _freeze(tmp_path, monkeypatch):
+    """Fix everything the render reads, so only the code under test can vary."""
+
+    rows_path = tmp_path / "ledger-reckon.json"
+    rows_path.write_text(
+        json.dumps({"completed": _rows("clive", [100, 300, 500])}), encoding="utf-8"
+    )
+    lane_path = tmp_path / "lane.json"
+    lane_path.write_text(json.dumps(_LANE_DOCUMENT), encoding="utf-8")
+    monkeypatch.setattr(
+        "reckon.crew.run_time_profile.ledger.runs",
+        lambda *a, **k: json.loads(rows_path.read_text(encoding="utf-8"))["completed"],
+    )
+    monkeypatch.setenv("RECKON_RUN_TIME_PROFILE_CACHE", str(tmp_path / "profile-cache"))
+    monkeypatch.setattr(lane_context, "_ledger_stamp", lambda _project: ["ledger", 1])
+    lane_context._PROFILE_CACHE.clear()
+    monkeypatch.setattr(lane_context, "list_live", list)
+    monkeypatch.setattr(lane_context, "local_lane_load", lambda: _FIXED_LOAD)
+    # The base's reader resolves the lane document through a path; the head
+    # reuses the one local_lane_load returned. Freeze both seams to one document.
+    monkeypatch.setattr(
+        lane_context, "local_lane_path", lambda: lane_path, raising=False
+    )
+
+
+def _render(tmp_path, monkeypatch):
+    _freeze(tmp_path, monkeypatch)
     return prompts.render(
         "state.jinja",
         node=_node(time_budget="45m"),
@@ -129,69 +196,53 @@ def _render():
     )
 
 
-def test_rendered_state_is_byte_identical_cold_and_warm(tmp_path, monkeypatch):
-    """The persisted profile yields exactly the bytes the computed profile did.
+def test_rendered_state_matches_the_base_revision_bytes(tmp_path, monkeypatch):
+    """The head renders exactly the bytes the base revision rendered.
 
-    The state is rendered twice from one fixture. The first render is a cache
-    miss: the profile is computed from the ledger and persisted. The second
-    clears the in-process memo, so it can only come from the persisted copy
-    through ``cached_pick_input``. The ledger loader must run once, and the two
-    renders must be byte-identical -- the cached and the computed profile cannot
-    disagree.
+    The golden bytes were produced by the base tree's own code over this same
+    frozen fixture, so the comparison is a real before/after check: it fails if
+    any picker figure changes -- here, an integer wall-second figure rendering
+    as a float -- rather than only if the new code disagrees with itself.
     """
 
-    # A ledger whose rows the profile groups: same backend, two wall times.
-    rows_path = tmp_path / "ledger-reckon.json"
-    rows_path.write_text(
-        json.dumps({"completed": _rows("clive", [100, 300])}), encoding="utf-8"
+    rendered = _render(tmp_path, monkeypatch)
+    assert rendered == GOLDEN_STATE, (
+        "the rendered picker state changed from the base revision's bytes"
     )
-    monkeypatch.setattr(
-        "reckon.crew.run_time_profile.ledger.runs",
-        lambda *a, **k: json.loads(rows_path.read_text(encoding="utf-8"))["completed"],
-    )
-    # Isolate the persisted profile and hold the stamp fixed, so the two renders
-    # differ only in whether the profile came from the cache.
-    monkeypatch.setenv("RECKON_RUN_TIME_PROFILE_CACHE", str(tmp_path / "profile-cache"))
-    monkeypatch.setattr(lane_context, "_ledger_stamp", lambda _project: ["ledger", 1])
-    lane_context._PROFILE_CACHE.clear()
+    payload = json.loads(rendered)
+    block = payload["return_times"]["clive"]
+    # The figures the base rendered as integers stay integers.
+    assert block["p50_s"] == 300 and isinstance(block["p50_s"], int)
+    assert block["p90_s"] == 500 and isinstance(block["p90_s"], int)
+    assert block["runs"] == 3
+    assert block["size_bucket"] == "30m_to_60m"
 
-    # No live local workers, so the expected-wait figure is deterministic.
-    monkeypatch.setattr(lane_context, "list_live", list)
 
-    # The lane document is read for real, but its read stamp is frozen: the
-    # render embeds it, and an unfrozen stamp would differ between the renders.
-    real_load = lane_context.local_lane_load
+def test_an_unsafe_project_name_never_forms_a_cache_path(tmp_path, monkeypatch):
+    """A project id that is not a safe file name is never cached.
 
-    def frozen_load():
-        load = dict(real_load())
-        load["read_at"] = NOW.isoformat()
-        return load
-
-    monkeypatch.setattr(lane_context, "local_lane_load", frozen_load)
+    A guard must not be dropped when the reader and writer that carried it are
+    deleted: the profile cache file name is built from the project string, and an
+    unsafe string must never form a path. The profile is then read without being
+    cached, exactly as before.
+    """
 
     calls: list[str] = []
-    real_profile = lane_context.run_time_profile
 
-    def counting_profile(project, **kwargs):
+    def profile(project, **kwargs):
         calls.append(project)
-        return real_profile(project, **kwargs)
+        return {"groups": []}
 
-    monkeypatch.setattr(lane_context, "run_time_profile", counting_profile)
-
-    first = _render()
-    assert calls == ["reckon"], "the cold render must read the ledger once"
-
-    # Drop the in-process memo, so the warm render can only use the persisted
-    # profile: the second read must not touch the ledger.
+    cache = tmp_path / "profile-cache"
+    monkeypatch.setenv("RECKON_RUN_TIME_PROFILE_CACHE", str(cache))
+    monkeypatch.setattr(lane_context, "_ledger_stamp", lambda _project: ["ledger", 1])
+    monkeypatch.setattr(lane_context, "run_time_profile", profile)
     lane_context._PROFILE_CACHE.clear()
-    second = _render()
 
-    assert calls == ["reckon"], "the warm render must not read the ledger again"
-    assert first == second, "the cached profile changed the rendered bytes"
+    for _ in range(2):
+        assert lane_context._cached_run_time_profile("../escape", now=NOW) == {
+            "groups": []
+        }
 
-    payload = json.loads(first)
-    block = payload["return_times"]["clive"]
-    assert block["size_bucket"] == "30m_to_60m"
-    assert block["p50_s"] == 200.0
-    assert block["p90_s"] == 300.0
-    assert block["runs"] == 2
+    assert calls == ["../escape", "../escape"], "an unsafe name was cached"
+    assert not list(cache.rglob("*")), "an unsafe name formed a cache path"

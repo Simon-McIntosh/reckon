@@ -211,6 +211,20 @@ def _profile_cache_root() -> Path:
     return _store.cache_root("run-time-profile")
 
 
+def _profile_filename(project: str) -> str:
+    """One persisted profile per project, named by the project's own id.
+
+    The project string becomes a file name under the cache root, so it is
+    checked against the ledger's safe-identifier pattern first: an unchecked
+    project could carry a path separator or traversal out of the cache
+    directory.
+    """
+
+    if not ledger._SAFE_ID.fullmatch(str(project)):
+        raise ValueError(f"project {project!r} is not a usable cache filename")
+    return f"{project}.json"
+
+
 def _ledger_stamp(project: str) -> list[Any] | None:
     """The ledger change stamp the profile cache is keyed on, or ``None``.
 
@@ -274,13 +288,19 @@ def _cached_run_time_profile(project: str, *, now: datetime) -> Mapping[str, Any
     cached = _PROFILE_CACHE.get(project)
     if cached is not None and cached[0] == key:
         return cached[1]
+    try:
+        filename = _profile_filename(project)
+    except ValueError:
+        # An unsafe project id must never form a cache path, and a pick must
+        # not fail over one: the profile is read without being cached.
+        return run_time_profile(project, now=now)
     profile = capabilities.cached_pick_input_rekeyed(
         project,
         lambda: _profile_stamp(project, now),
         _profile_stamp_may_cache,
         lambda: run_time_profile(project, now=now),
         root=_profile_cache_root(),
-        filename=f"{project}.json",
+        filename=filename,
     )
     # A profile built while the source was still settling is not cached at all,
     # so it is memoized only when the key did not move across the build.

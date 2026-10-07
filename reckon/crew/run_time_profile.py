@@ -76,19 +76,23 @@ _MINUTES_RE = re.compile(
 )
 
 
-def _number(value: object) -> float | None:
-    """Return ``value`` as a float when it is a real number, else ``None``.
+def _number(value: object) -> int | float | None:
+    """Return ``value`` when it is a real number, else ``None``.
 
+    The input's own type is preserved: an ``int`` stays an ``int`` and a
+    ``float`` stays a ``float``, so a figure an integer ledger row carried as
+    ``300`` is not widened to ``300.0`` on the way to the rendered state.
     ``bool`` is a numeric subclass and is rejected, so a JSON ``true`` never
-    counts as the number one, and a non-finite float (``NaN`` or an infinity) is
-    rejected too, because a router weighing lanes must never divide by or weigh
-    a figure that has no magnitude.
+    counts as the number one. A non-finite float loses its magnitude and is
+    rejected too, while an ``int`` is returned unchanged because an integer has
+    no non-finite value and testing one as a float could overflow.
     """
 
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
-    number = float(value)
-    return number if math.isfinite(number) else None
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
 
 
 def _text(value: object) -> str | None:
