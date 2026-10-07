@@ -1,0 +1,700 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "1d6e2f158d67f26e4806b482db14472593426a3e",
+  "boundary_waiver": null,
+  "brief": {
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T092106957618-plan-review-rounds-keep-their-own-file/brief.md",
+    "sha256": "3721d3690c730ce7de71ca7ddfebff1531ba08d6083b3c021c2b8f204d3546ae"
+  },
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 12303049,
+      "input_tokens_cumulative": 12303049,
+      "output_tokens": 52908,
+      "output_tokens_cumulative": 52908,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 252,
+    "files": 2,
+    "removed": 18
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 1362,
+        "name": "review_path",
+        "path": "reckon/crew/review.py"
+      },
+      "run_function": {
+        "line": 386,
+        "name": "plan_review_path",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 393
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "02f0134e8106efd04a116e29f764c0821af53334"
+  ],
+  "completed_at": "2026-10-07T09:46:24.019Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-07T09:21:49Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_plan_review_rounds_keep_their_own_file.py tests/test_plan_review_store.py tests/test_every_review_round_is_committed.py tests/test_reviews_read_the_committed_store_first.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T092106957618-plan-review-rounds-keep-their-own-file/gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.79,
+    "at_dispatch": 0.87,
+    "plan": "every-review-is-kept-as-a-committed-record",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-07T10:21:16.382358+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-07T09:21:16Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 21,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 7,
+    "headroom": 8,
+    "mean_context": 125714,
+    "observed_at": "2026-10-07T09:20:55Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 21,
+      "aggregate_tokens_per_second": 255.579,
+      "detail": "",
+      "mean_tokens_per_second": 34.538,
+      "observed_at": "2026-10-07T09:20:55Z",
+      "runs": 7.4,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-07T09:46:24.019Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T092106957618-plan-review-rounds-keep-their-own-file/manifest.md",
+  "member": "disposable-r-20261007T092106957618-plan-review-rounds-keep-their-own-file",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_plan_review_rounds_keep_their_own_file.py::test_re_storing_one_run_rewrites_only_its_own_file",
+      "tests/test_plan_review_rounds_keep_their_own_file.py::test_the_newest_round_reads_through_the_version_keyed_reader",
+      "tests/test_plan_review_rounds_keep_their_own_file.py::test_two_review_runs_of_one_version_keep_their_own_file"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "baseline_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_plan_review_rounds_keep_their_own_file.py::test_re_storing_one_run_rewrites_only_its_own_file",
+      "tests/test_plan_review_rounds_keep_their_own_file.py::test_the_newest_round_reads_through_the_version_keyed_reader",
+      "tests/test_plan_review_rounds_keep_their_own_file.py::test_two_review_runs_of_one_version_keep_their_own_file"
+    ],
+    "declaration": "write the second review run's record to the version's plain path",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T092106957618-plan-review-rounds-keep-their-own-file/gate-negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T092106957618-plan-review-rounds-keep-their-own-file/gate-negative-control.log",
+    "test_paths": [
+      "tests/test_plan_review_rounds_keep_their_own_file.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "plan-review-rounds-keep-their-own-file",
+  "node_definition": {
+    "brief": "/tmp/claude-39486/-home-ITER-mcintos-Code-reckon/9cf43820-9600-4137-b31b-52b9ae2d1d2b/scratchpad/brief-s8-staging-key.md",
+    "brief_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T092106957618-plan-review-rounds-keep-their-own-file/brief.md",
+    "brief_sha256": "3721d3690c730ce7de71ca7ddfebff1531ba08d6083b3c021c2b8f204d3546ae",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2077,
+          "cached_input_tokens": 626260,
+          "input_tokens": 628339,
+          "output_tokens": 1388,
+          "reasoning_output_tokens": 613,
+          "total_tokens": 629727,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "9cf43820-9600-4137-b31b-52b9ae2d1d2b",
+      "session_id": "9cf43820"
+    },
+    "done_when": "tests/test_plan_review_rounds_keep_their_own_file.py stores two delivered reviews of one plan version with identical plan bytes from two review runs, reads both back by review run id, and finds both through _candidate_paths, while a re-store of one run rewrites only its own file; the gate runs that file with tests/test_plan_review_store.py tests/test_every_review_round_is_committed.py tests/test_reviews_read_the_committed_store_first.py in the foreground with --basetemp under this run's directory, recording EXIT=0 on the manifest tests line; the declared negative control records a FAILED test with a non-zero EXIT",
+    "estimated_hours": 1.0,
+    "goal": "a delivered plan review whose plan version and bytes match an earlier review run's is stored under its own .at- sibling instead of overwriting it",
+    "id": "plan-review-rounds-keep-their-own-file",
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-07T09:21:16Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 21,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 7,
+      "headroom": 8,
+      "mean_context": 125714,
+      "observed_at": "2026-10-07T09:20:55Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 21,
+        "aggregate_tokens_per_second": 255.579,
+        "detail": "",
+        "mean_tokens_per_second": 34.538,
+        "observed_at": "2026-10-07T09:20:55Z",
+        "runs": 7.4,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T092106957618-plan-review-rounds-keep-their-own-file/manifest.md",
+    "negative_control": "write the second review run's record to the version's plain path",
+    "plan": "every-review-is-kept-as-a-committed-record",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§8",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/plan_review.py",
+      "tests/test_plan_review_rounds_keep_their_own_file.py",
+      "docs/evidence/fragments/every-review-is-kept-as-a-committed-record/plan-review-rounds-keep-their-own-file.html",
+      "docs/figures/every-review-is-kept-as-a-committed-record/plan-review-rounds-keep-their-own-file"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 2446109.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "plan-review-rounds-keep-their-own-file",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-07T09:21:26.934101+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "clive",
+    "comment": "",
+    "confidence": 0.63,
+    "decision_source": "jev",
+    "effort": "high",
+    "excluded": [
+      {
+        "availability": "not-probed",
+        "backend": "native",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "in-harness-backend"
+        ],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "local",
+    "jev_latency_ms": 400.021,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 563.472,
+    "model": "deepseek-v4.1-flash",
+    "offered": [
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 73452,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-haiku",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 73452,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-opus",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 73452,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "clive",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "open",
+          "running": 7,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 0
+        },
+        "context": {
+          "estimated_tokens": 73452,
+          "headroom_pct": 68.1,
+          "peak_utilisation_p50_pct": 34.7,
+          "peak_utilisation_p90_pct": 81.6,
+          "peak_utilisation_runs": 953,
+          "window_tokens": 230144
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "outcomes": {
+          "failed": 19,
+          "not-run": 17,
+          "passed": 624,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": 5
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "budget_age_s": 176.654255,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 73452,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.829081675289352,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "outcomes": {
+          "failed": 5,
+          "not-run": 0,
+          "passed": 25,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 5.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-astra",
+        "budget_age_s": 176.654255,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 73452,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.829081675289352,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 10,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 5.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-luna",
+        "budget_age_s": 176.654255,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 73452,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.829081675289352,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 5.0,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "claude": 0,
+      "claude-haiku": 0,
+      "claude-opus": 0,
+      "clive": 0.68,
+      "codex": 0.19,
+      "codex-astra": 0.06,
+      "codex-luna": 0.01,
+      "hold": 0.06
+    },
+    "rendered_token_estimate": 1617,
+    "usage": {
+      "cost": 0.00017724,
+      "input_tokens": 4220,
+      "output_tokens": 89
+    }
+  },
+  "plan": null,
+  "plan_impl_at_dispatch": 0.87,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "02f0134e8106efd04a116e29f764c0821af53334",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "1d6e2f158d67f26e4806b482db14472593426a3e",
+    "reviewed_head_sha": "02f0134e8106efd04a116e29f764c0821af53334",
+    "scores": {
+      "durability": 20,
+      "evidence": 19,
+      "fit": 19,
+      "goal_fidelity": 20,
+      "reuse": 18,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 116
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "picker",
+  "run_id": "r-20261007T092106957618-plan-review-rounds-keep-their-own-file",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§8",
+  "session": "9cf43820",
+  "session_harness": "claude",
+  "session_id": "d30635ae-6d3c-4772-88e8-770a79656626",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 1,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 12303049,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 1460.091,
+    "generated_tokens": 52908,
+    "generation_seconds": 1337.211,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 85.5,
+    "machine_seconds": 122.88,
+    "peak_input_tokens": 196877,
+    "tokens_per_second": 39.57,
+    "wall_tokens_per_second": 36.24
+  },
+  "time_budget": "60m",
+  "tool_steps": 79.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 1475,
+  "watch_override": {
+    "arming_line": "reckon crew watch --project reckon",
+    "attach_line": "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon crew follow --project reckon --session 9cf43820",
+    "requested": true,
+    "session_attached": true,
+    "watcher_live": true
+  },
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-07T09:46:26Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-07T09:21:58Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261007T092106957618-plan-review-rounds-keep-their-own-file",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 9572,
+    "worker_pid": 476964
+  },
+  "worker_seconds": 1443,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
