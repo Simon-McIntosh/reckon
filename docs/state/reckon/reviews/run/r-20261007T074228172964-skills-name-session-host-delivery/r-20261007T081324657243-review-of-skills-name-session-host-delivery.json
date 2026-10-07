@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1488 _watcher_delivery_admission",
+    "reckon/crew/dispatch.py:7829 watch.delivery=\"host\" sets arming_line=\"\"",
+    "reckon/crew/session_host.py:1 the session host that arms the follower"
+  ],
+  "completed_at": "2026-10-07T08:24:24.150Z",
+  "dispatched_at": "2026-10-07T08:14:06Z",
+  "findings": [
+    {
+      "file": "docs/plans/a-follower-lives-as-long-as-its-session.html",
+      "line": "129",
+      "severity": "follow-on",
+      "text": "follow-on: \u00a77's done-when requires the user-global ~/.agents/AGENTS.md rule on stopping a follower before re-arming it to gain the session-host qualification, and that file is unchanged, so a coordinator reading the global rule still re-arms on a host-delivered session."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "977",
+      "severity": "follow-on",
+      "text": "follow-on: adding ('crew','host') to CREW_VERBS_OUTSIDE_ORCHESTRATION makes test_every_registered_crew_verb_is_documented_or_exempt assert the literal phrase 'reckon crew host' is absent from SKILL.md, so \u00a77's own deliverable may describe the plugin but never name the verb a reader would search for."
+    },
+    {
+      "file": "skills/reckon-build/SKILL.md",
+      "line": "343",
+      "severity": "follow-on",
+      "text": "follow-on: the session-host-first ordering is prose with no assertion behind it; nothing reddens if a future edit restores a re-arm instruction on a host-delivered session."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 8362b726d against 9cf1c0ef5: the three skill files gain the session-host-first/Monitor-fallback qualification with the -p lifetime, tests/test_skill_contracts.py gains ('crew','host') and ('crew','budget-reset') exemptions, and one evidence fragment is added; 5 files, 118 insertions, 27 deletions.",
+    "done_when": "\u00a77's done-when names the three skill files AND the user-global ~/.agents/AGENTS.md rule, and requires that no sentence still tells a host-delivered coordinator to re-arm every 29 minutes; the three files are qualified (SKILL.md:357, claude-code.md:81, sprint-orchestration.md:823) but the global rule is unchanged and recorded as an out-of-scope follow-on, and the gate the worker ran (tests/test_skill_contracts.py + tests/test_crew_help_names_its_state.py) does not assert the prose done-when at all.",
+    "goal": "\u00a77's goal is that the three skill files name session-host delivery first and the Monitor fallback second with its -p lifetime; the diff adds exactly that to skills/reckon-build/SKILL.md:344, skills/reckon-build/references/orchestrator-harness/claude-code.md:26 and skills/reckon-build/references/sprint-orchestration.md:814.",
+    "manifest": "read; it records commit 8362b726d, the gate 1 failed/64 passed EXIT=1 against base 2 failed/63 passed, a readable negative control at EXIT=1, and names both the residual budget-reset failure and the unqualified global rule.",
+    "write_paths": "the manifest declares skills/reckon-build/SKILL.md, references/orchestrator-harness/claude-code.md, references/sprint-orchestration.md, tests/test_skill_contracts.py and the evidence fragment; every path in 9cf1c0ef5..8362b726d is inside them."
+  },
+  "justifications": {
+    "durability": "no assertion in tests/test_skill_contracts.py:977 fails if the session-host-first prose in skills/reckon-build/SKILL.md:343 is reverted to a re-arm instruction, so the deliverable itself is unguarded; the exemption entry is guarded only by the test's own use of it.",
+    "evidence": "the worker's gate at tests/test_skill_contracts.py ran at head 8362b726d (logs/head-gate.log header names it) and my re-run reproduced 1 failed/64 passed EXIT=1, but no test in the gate asserts the prose the done-when names.",
+    "fit": "the new prose follows the surrounding section idiom of skills/reckon-build/references/orchestrator-harness/claude-code.md:26 and uses the watch.delivery/arming_line vocabulary that reckon/crew/dispatch.py:7829 defines.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:343 and skills/reckon-build/references/sprint-orchestration.md:814 name session-host delivery first, but the plan's \u00a77 done-when also names the user-global ~/.agents/AGENTS.md rule, which the diff leaves unchanged.",
+    "reuse": "the diff adds no definition that forks a capability; it extends the existing CREW_VERBS_OUTSIDE_ORCHESTRATION owner at tests/test_skill_contracts.py:906 and points readers at the harness reference rather than copying it.",
+    "scope_discipline": "every path in 9cf1c0ef5..8362b726d is inside the manifest's declared write paths, though the ('crew','budget-reset') exemption at tests/test_skill_contracts.py:971 is a drive-by the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a77's goal is that the three skill files name session-host delivery first and the Monitor fallback second with its -p lifetime; the diff adds exactly that to skills/reckon-build/SKILL.md:344, skills/reckon-build/references/orchestrator-harness/claude-code.md:26 and skills/reckon-build/references/sprint-orchestration.md:814.\nVERDICT done_when: \u00a77's done-when names the three skill files AND the user-global ~/.agents/AGENTS.md rule, and requires that no sentence still tells a host-delivered coordinator to re-arm every 29 minutes; the three files are qualified (SKILL.md:357, claude-code.md:81, sprint-orchestration.md:823) but the global rule is unchanged and recorded as an out-of-scope follow-on, and the gate the worker ran (tests/test_skill_contracts.py + tests/test_crew_help_names_its_state.py) does not assert the prose done-when at all.\nVERDICT write_paths: the manifest declares skills/reckon-build/SKILL.md, references/orchestrator-harness/claude-code.md, references/sprint-orchestration.md, tests/test_skill_contracts.py and the evidence fragment; every path in 9cf1c0ef5..8362b726d is inside them.\nVERDICT manifest: read; it records commit 8362b726d, the gate 1 failed/64 passed EXIT=1 against base 2 failed/63 passed, a readable negative control at EXIT=1, and names both the residual budget-reset failure and the unqualified global rule.\nVERDICT diff: read commit 8362b726d against 9cf1c0ef5: the three skill files gain the session-host-first/Monitor-fallback qualification with the -p lifetime, tests/test_skill_contracts.py gains ('crew','host') and ('crew','budget-reset') exemptions, and one evidence fragment is added; 5 files, 118 insertions, 27 deletions.\nCALL_SITES: reckon/crew/dispatch.py:1488 _watcher_delivery_admission, reckon/crew/dispatch.py:7829 watch.delivery=\"host\" sets arming_line=\"\", reckon/crew/session_host.py:1 the session host that arms the follower\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:343 and skills/reckon-build/references/sprint-orchestration.md:814 name session-host delivery first, but the plan's \u00a77 done-when also names the user-global ~/.agents/AGENTS.md rule, which the diff leaves unchanged.\nSCORE evidence: 17\nJUSTIFICATION evidence: the worker's gate at tests/test_skill_contracts.py ran at head 8362b726d (logs/head-gate.log header names it) and my re-run reproduced 1 failed/64 passed EXIT=1, but no test in the gate asserts the prose the done-when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 9cf1c0ef5..8362b726d is inside the manifest's declared write paths, though the ('crew','budget-reset') exemption at tests/test_skill_contracts.py:971 is a drive-by the goal does not imply.\nSCORE durability: 15\nJUSTIFICATION durability: no assertion in tests/test_skill_contracts.py:977 fails if the session-host-first prose in skills/reckon-build/SKILL.md:343 is reverted to a re-arm instruction, so the deliverable itself is unguarded; the exemption entry is guarded only by the test's own use of it.\nSCORE fit: 19\nJUSTIFICATION fit: the new prose follows the surrounding section idiom of skills/reckon-build/references/orchestrator-harness/claude-code.md:26 and uses the watch.delivery/arming_line vocabulary that reckon/crew/dispatch.py:7829 defines.\nSCORE reuse: 19\nJUSTIFICATION reuse: the diff adds no definition that forks a capability; it extends the existing CREW_VERBS_OUTSIDE_ORCHESTRATION owner at tests/test_skill_contracts.py:906 and points readers at the harness reference rather than copying it.\nFINDING docs/plans/a-follower-lives-as-long-as-its-session.html:129 follow-on: \u00a77's done-when requires the user-global ~/.agents/AGENTS.md rule on stopping a follower before re-arming it to gain the session-host qualification, and that file is unchanged, so a coordinator reading the global rule still re-arms on a host-delivered session.\nFINDING tests/test_skill_contracts.py:977 follow-on: adding ('crew','host') to CREW_VERBS_OUTSIDE_ORCHESTRATION makes test_every_registered_crew_verb_is_documented_or_exempt assert the literal phrase 'reckon crew host' is absent from SKILL.md, so \u00a77's own deliverable may describe the plugin but never name the verb a reader would search for.\nFINDING skills/reckon-build/SKILL.md:343 follow-on: the session-host-first ordering is prose with no assertion behind it; nothing reddens if a future edit restores a re-arm instruction on a host-delivered session.\nREVISION: 8362b726d0644f108185f311db49fa30b6151b14\nreviewed_base: 9cf1c0ef5fb152f9dc5716ee8e25fe2621b9cd57",
+  "review_run_id": "r-20261007T081324657243-review-of-skills-name-session-host-delivery",
+  "reviewed_base_sha": "9cf1c0ef5fb152f9dc5716ee8e25fe2621b9cd57",
+  "reviewed_head_sha": "8362b726d0644f108185f311db49fa30b6151b14",
+  "reviewed_run_id": "r-20261007T074228172964-skills-name-session-host-delivery",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T08:23:04.747592+00:00",
+  "total": 105
+}
