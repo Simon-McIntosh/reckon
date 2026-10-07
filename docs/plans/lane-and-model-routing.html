@@ -19,11 +19,11 @@
   <meta name="plan-sprint" content="S25">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -46,10 +46,11 @@
   <p class="landed-summary">Lanes are declared in the LinkML flight schema, and resolution expands each one into today's backends entries (a default-named entry plus derived legacy names carrying <code>lane</code>, <code>model_key</code> and <code>derived_from</code>). Nothing declares lanes yet, and every project resolves byte-identically. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s1">full record</a></p>
 </section>
 
-    <h2 id="s2" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links="">§2 — The model catalogue declares lanes</h2>
-    <p>Regroup the catalogue's eight backend entries under <code>lanes.&lt;lane&gt;.models</code> with a <code>default_model</code> per lane: <code>claude</code> holds sonnet, opus and haiku; <code>codex</code> holds sol, astra and luna; <code>clive</code> holds its local model. Keep the existing <code>backends:</code> blocks, so the resolution can be compared with the old one directly. Add the alias table §7 reads: <code>claude-opus</code>, <code>claude-haiku</code>, <code>codex-astra</code>, <code>codex-luna</code>, <code>codex-terra</code>, <code>codex-spark</code> and <code>clive-glm</code>, each mapped to a lane and a model key.</p>
-    <p><strong>Write paths:</strong> <code>docs/state/reckon/model-catalogue.yaml</code>, <code>tests/test_catalogue_declares_lanes.py</code>.</p>
-    <p><strong>Done when:</strong> <code>reckon flight --project reckon</code> output is identical to base, the catalogue provenance shows the same leaves it showed before, and a test asserts every alias resolves to a declared lane and model. Negative control: deleting one model entry makes the identity check fail.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s2" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links="">§2 — The model catalogue declares lanes</h2></header>
+  <p class="landed-summary">The catalogue declares claude, codex and clive lanes with default models, and an alias table maps the seven legacy names to lane-and-model pairs. The resolved flight is unchanged. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s2">full record</a></p>
+</section>
 
     <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§3 — The host flight collapses the claude blocks, retiring claude-opus</h2>
     <p>One <code>lanes.claude</code> block in the host flight (<code>~/Code/dotfiles/reckon/flight.yaml</code>) replaces <code>backends.claude</code>, <code>backends.claude-opus</code> and <code>backends.claude-haiku</code>. The one real difference, the 40-minute time budget, becomes a per-model override on opus. This is the section that retires the <code>claude-opus</code> backend block. The file lives in the dotfiles repository, so this section's commit lands there; reckon's schema and catalogue changes (§1, §2) must be on main first.</p>
@@ -147,10 +148,16 @@
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §1</pre>
     <p class="r-fu-outcome"><p>§1 landed at <code>3a9d3e9b4</code> after the three decisions were locked; see the <a href="/reckon/evidence/archive/lane-and-model-routing-landed#s1">s1 evidence</a>.</p></p>
     </article>
-<article class="r-fu" data-id="f-lmr-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-07" data-recommends-skill="/reckon-build lane-and-model-routing §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-lmr-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-07" data-recommends-skill="/reckon-build lane-and-model-routing §2" data-resolved-at="2026-10-07T17:14:47+00:00" data-resolved-by="s25-picker">
     <h4 class="r-fu-title">Build §2: the model catalogue declares lanes and the alias table</h4>
     <div class="r-fu-body"><p>§1 is on main, so the catalogue can declare lanes. §2 regroups the catalogue under lanes with a default model for each lane and adds the alias table that §7 reads. Then §3 and §7 can run in parallel.</p><p>One non-blocking follow-on from §1's review: <code>LANE_MODEL_KEYS</code> in <code>reckon/flight.py</code> hand-copies <code>LaneModelConfig</code>'s field list, and no test ties the two. Derive the keys from the generated model, or add a test asserting they match.</p><p>§4 writes <code>reckon/cli.py</code> and <code>reckon/crew/dispatch.py</code>. Dispatch it only after <code>every-module-fits-a-worker-window</code> §3 and §4 have landed.</p></div>
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §2</pre>
+    <p class="r-fu-outcome"><p>§2 landed at <code>bb9a94e23</code>, together with §1's <code>LANE_MODEL_KEYS</code> follow-on; see the <a href="/reckon/evidence/archive/lane-and-model-routing-landed#s2">s2 evidence</a>.</p></p>
+    </article>
+<article class="r-fu" data-id="f-lmr-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-07" data-recommends-skill="/reckon-build lane-and-model-routing §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §3 and §7: collapse the claude blocks and add one read-side resolver</h4>
+    <div class="r-fu-body"><p>§1 and §2 are on main, so §3 and §7 can run in parallel:</p><ul><li>§3 collapses the host flight's claude blocks into one lane. Its commit lands in the dotfiles repository.</li><li>§7 adds <code>resolve_name</code> over the catalogue's alias table.</li></ul><p>§6 follows §3's pattern for codex. §5 needs lanes declared. §4 waits for <code>every-module-fits-a-worker-window</code> §3 and §4.</p></div>
+    <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §3</pre>
     </article>
 </section>
   <section data-reckon="gates" id="gates" class="r-gates">
