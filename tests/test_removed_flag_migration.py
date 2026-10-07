@@ -429,8 +429,17 @@ def test_the_delivery_path_itself_carries_no_state_filter(home) -> None:
         stop.set()
         thread.join(timeout=2)
 
-    assert sorted(event["to_state"] for event in received) == [
-        "completed_unpromoted",
+    # A run's arrival at ``dispatched`` is held for the noise window and, when
+    # its first transition lands inside it, prints as that row's left side
+    # rather than as a row of its own. Either way the state reaches the reader,
+    # so the assertion reads both sides of every row rather than counting rows,
+    # which would depend on whether the window expired first.
+    delivered = {event["to_state"] for event in received} | {
+        event["from_state"] for event in received if event.get("from_state")
+    }
+    assert delivered == {"completed_unpromoted", "dispatched", "working"}
+    last_of_one = [event for event in received if event.get("run_id") == "r-one"][-1]
+    assert (last_of_one["from_state"], last_of_one["to_state"]) == (
         "dispatched",
-        "working",
-    ]
+        "completed_unpromoted",
+    )
