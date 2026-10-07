@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="codex-banked-reset"><meta name="plan-title" content="Banked codex reset adds one window of allowance">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker"><meta name="plan-verifies" content="one-typesafe-model-picker#s6">
+<meta name="plan-recorded-at" content="2026-10-07"><meta name="plan-verdict" content="measurement">
+<title>Banked codex reset adds one window of allowance | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="codex-banked-reset" id="codex-banked-reset">
+<h1>Banked codex reset adds one window of allowance</h1>
+<table id="codex-banked-reset-measures"><thead><tr><th>Measure</th><th>Result</th></tr></thead><tbody>
+<tr id="codex-banked-reset-flag"><th>Durable flag</th><td>One record per budget group under the crew state home (<code>budget-resets.json</code>), written through the store's atomic writer, carrying <code>available</code>, <code>set_at</code> and <code>set_by</code>.</td></tr>
+<tr id="codex-banked-reset-cli"><th>Command surface</th><td><code>reckon crew budget-reset ... </code> — <code>--group codex-sub --available</code> flags one (idempotent, reports <code>changed:false</code> without stacking), <code>--used</code> clears it, and no action flag prints the state.</td></tr>
+<tr id="codex-banked-reset-pace"><th>Pace with the flag</th><td>Same reading, measured without then with the flag for <code>codex-sub</code>: <code>derived</code> <code>0.4714</code> to <code>0.9429</code>, <code>burn_multiple</code> <code>0.07</code> to <code>0.035</code>, and the allowance carries <code>reset_available: true</code>. One extra full window is counted, capped at +1.</td></tr>
+<tr id="codex-banked-reset-detection"><th>Automatic use detection</th><td>A boundary that jumps forward to about one window length ahead of the observation (<code>2030-01-07T06:00:00Z</code> for a fresh 10,080-minute window observed at <code>2030-01-03T06:00:00Z</code>) while the boundary last seen (<code>2030-01-07T00:00:00Z</code>) had not yet arrived clears the flag and records the event with both readings.</td></tr>
+<tr id="codex-banked-reset-natural"><th>Natural reset</th><td>A boundary reached on schedule (previous boundary <code>2030-01-04T00:00:00Z</code> already behind an observation at <code>2030-01-04T02:00:00Z</code>) leaves the flag available.</td></tr>
+<tr id="codex-banked-reset-gate"><th>Gate (base/head)</th><td>Base 152 passed; head 158 passed; zero added failures, six added tests. Files: <code>tests/test_budget*.py</code>, <code>tests/test_picker_pressure.py</code>, <code>tests/test_burn_admission.py</code>, <code>tests/test_codex_banked_reset.py</code>.</td></tr>
+<tr id="codex-banked-reset-control"><th>Negative control</th><td>Ignoring the flag in the pace computation (<code>credit = 0.0</code>) fails <code>test_pace_counts_a_banked_reset_from_the_same_reading</code>; EXIT=1.</td></tr>
+<tr id="codex-banked-reset-logs"><th>Logs</th><td>base <code>gate-base.log</code>, head <code>gate-head.log</code>, control <code>negative-control.log</code>, under run <code>r-20261007T022200354849-codex-banked-reset</code>.</td></tr>
+</tbody></table>
+<h2 id="codex-banked-reset-followons">Follow-ons</h2>
+<p id="codex-banked-reset-followon-1">The picker's <code>BudgetCandidate</code> reads <code>pace_allowance</code> from the group allowance's <code>effective_limit</code> and its <code>burn_multiple</code> from the allowance the budget view copies onto the verdict state, so both reflect the flag. The allowance dict now also carries <code>reset_available</code>, but <code>reckon/crew/picker/snapshot.py</code> does not copy that field onto the candidate; surfacing it to Jev is a follow-on owned by that file's write scope.</p>
+</article></main></body></html>
