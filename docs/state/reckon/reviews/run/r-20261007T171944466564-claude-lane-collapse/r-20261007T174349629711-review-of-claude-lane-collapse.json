@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "bdfb159260bf28417d160653d14bf2defeaf1940",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/flight.py:1352 (expand_lanes derives <lane>-<key> only for names still declared in backends)",
+    "reckon/flight.py:1408 (resolve merges layers then expands lanes)",
+    "reckon/cli.py:976 (flight_report renders lanes and backends)"
+  ],
+  "completed_at": "2026-10-07T17:53:29.946Z",
+  "dispatched_at": "2026-10-07T17:44:23Z",
+  "findings": [
+    {
+      "file": "report.md",
+      "line": "78",
+      "severity": "follow-on",
+      "text": "follow-on: the Reproduce section names build_final.py and validate_flight.py \"paths in the manifest\", but neither script is in the manifest's changed_paths nor anywhere in the durable report directory; both exist only under node-local /tmp/reckon-crew-scratch/r-20261007T171944466564-claude-lane-collapse/clc-JcTG/, so the reproduction path does not survive the run and only the arm logs are durable."
+    },
+    {
+      "file": "report.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the prose says pure removal drops the two names for \"12 of the 15 in mounts.json\" and line 17 says \"differing 15\", but the run's own pure-removal.log records \"differing: 14\" and independent resolution finds 14 of 15 (only reckon declares a claude backend in its project layer); the log is correct and the two report figures are not."
+    },
+    {
+      "file": "reckon/flight.py",
+      "line": "1340",
+      "severity": "follow-on",
+      "text": "follow-on: after the collapse the per-key provenance for a derived entry is lost \u2014 provenance[\"backends.claude-opus.time_budget\"] is None where it was \"host\" before this change \u2014 because expanded entries are built by _lane_entry rather than declared at a layer; the derivations still resolve, but a reader asking which layer set a derived key now gets no answer, which the \u00a77 resolver or the expansion should reinstate."
+    }
+  ],
+  "head_log_revision": "bdfb159260bf28417d160653d14bf2defeaf1940",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read flight.diff against flight.before.yaml (which is byte-identical to the live ~/Code/dotfiles/reckon/flight.yaml); it contains only the lanes.claude block added, the three backend blocks removed, the two empty name declarations, and one comment; every pre-existing line is byte-identical.",
+    "done_when": "all four done-when items verified independently at the reviewed head \u2014 (1) resolved config identical for 15/15 mounted projects once the new lanes block and the additive lane/model_key/derived_from keys are excluded (my own resolve-and-compare reproduces 15/15 SAME); (2) reckon flight reports three entries under lane claude, claude/claude-opus/claude-haiku, of which claude-opus and claude-haiku are derived; (3) derived claude-opus resolves model=claude-opus-5-5 effort=high time_budget=40m, identical to the retired block; (4) dropping opus's time_budget override resolves 25m and the equivalence check fails 16/16, EXIT=1.",
+    "goal": "the node goal is \u00a73 of lane-and-model-routing \u2014 one lanes.claude block in the host flight replacing backends.claude, backends.claude-opus and backends.claude-haiku, with opus's 40-minute fence kept as a per-model override; delivered as a drop-in flight.yaml in the report dir (the coordinator applies it to dotfiles); the collapse is exact and the one real difference is preserved.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T171944466564-claude-lane-collapse/manifest.md; status complete, commits none, baseline_suite and after_suite both recorded as not run (no pytest surface is touched), negative_control_log names negative-control.log.",
+    "write_paths": "the reviewed run's grants were the report directory reports/reckon/claude-lane-collapse; every changed path the manifest declares (flight.yaml, flight.before.yaml, flight.diff, flight.negative.yaml, flight.pure-removal.yaml, report.md) is inside it, and no reckon or dotfiles repository file was edited (the deliverable is an unapplied drop-in)."
+  },
+  "justifications": {
+    "durability": "the negative control is load-bearing (removing opus's override reddens the equivalence check, and I reproduced 40m -> 25m), but the equivalence and compare checks are bespoke scripts with no committed test surface, and the report's Reproduce section points at build_final.py and validate_flight.py that are neither in the manifest nor in the durable report directory.",
+    "evidence": "the arms are on disk with proper gate-log headers (revision, module, cwd, command) and the negative control fires; deductions are two prose figures in report.md that contradict the run's own logs \u2014 line 12 says pure removal applies to \"12 of the 15\" projects while pure-removal.log line 5 and my resolution both give 14, and line 17 says \"differing 15\" while the log says 14.",
+    "fit": "the file is a drop-in replacement that preserves every pre-existing comment and block byte-identically, and the lanes.claude shape with a per-model time_budget override follows the \u00a71/\u00a72 landed design.",
+    "goal_fidelity": "the collapse is exact and all four done-when items are independently reproduced; the design chose to keep claude-opus and claude-haiku as empty name declarations because expand_lanes derives an entry only for a declared name, which done-when item 2 requires (reckon flight reporting three entries, two derived) and which pure removal drops for 14 of 15 projects \u2014 a documented judgment call resolving the tension between \u00a73's wording and its measured done-when.",
+    "reuse": "the change adds no code \u2014 it reuses expand_lanes' declared-name derivation (reckon/flight.py:1388) rather than forking resolution, which is why the empty name declarations keep the legacy names resolving.",
+    "scope_discipline": "every changed path sits inside the manifest's declared report-dir grant and no repository, plan or index file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \u00a73 of lane-and-model-routing \u2014 one lanes.claude block in the host flight replacing backends.claude, backends.claude-opus and backends.claude-haiku, with opus's 40-minute fence kept as a per-model override; delivered as a drop-in flight.yaml in the report dir (the coordinator applies it to dotfiles); the collapse is exact and the one real difference is preserved.\nVERDICT done_when: all four done-when items verified independently at the reviewed head \u2014 (1) resolved config identical for 15/15 mounted projects once the new lanes block and the additive lane/model_key/derived_from keys are excluded (my own resolve-and-compare reproduces 15/15 SAME); (2) reckon flight reports three entries under lane claude, claude/claude-opus/claude-haiku, of which claude-opus and claude-haiku are derived; (3) derived claude-opus resolves model=claude-opus-5-5 effort=high time_budget=40m, identical to the retired block; (4) dropping opus's time_budget override resolves 25m and the equivalence check fails 16/16, EXIT=1.\nVERDICT write_paths: the reviewed run's grants were the report directory reports/reckon/claude-lane-collapse; every changed path the manifest declares (flight.yaml, flight.before.yaml, flight.diff, flight.negative.yaml, flight.pure-removal.yaml, report.md) is inside it, and no reckon or dotfiles repository file was edited (the deliverable is an unapplied drop-in).\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T171944466564-claude-lane-collapse/manifest.md; status complete, commits none, baseline_suite and after_suite both recorded as not run (no pytest surface is touched), negative_control_log names negative-control.log.\nVERDICT diff: read flight.diff against flight.before.yaml (which is byte-identical to the live ~/Code/dotfiles/reckon/flight.yaml); it contains only the lanes.claude block added, the three backend blocks removed, the two empty name declarations, and one comment; every pre-existing line is byte-identical.\nCALL_SITES: reckon/flight.py:1352 (expand_lanes derives <lane>-<key> only for names still declared in backends), reckon/flight.py:1408 (resolve merges layers then expands lanes), reckon/cli.py:976 (flight_report renders lanes and backends)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the collapse is exact and all four done-when items are independently reproduced; the design chose to keep claude-opus and claude-haiku as empty name declarations because expand_lanes derives an entry only for a declared name, which done-when item 2 requires (reckon flight reporting three entries, two derived) and which pure removal drops for 14 of 15 projects \u2014 a documented judgment call resolving the tension between \u00a73's wording and its measured done-when.\nSCORE evidence: 17\nJUSTIFICATION evidence: the arms are on disk with proper gate-log headers (revision, module, cwd, command) and the negative control fires; deductions are two prose figures in report.md that contradict the run's own logs \u2014 line 12 says pure removal applies to \"12 of the 15\" projects while pure-removal.log line 5 and my resolution both give 14, and line 17 says \"differing 15\" while the log says 14.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path sits inside the manifest's declared report-dir grant and no repository, plan or index file is touched.\nSCORE durability: 15\nJUSTIFICATION durability: the negative control is load-bearing (removing opus's override reddens the equivalence check, and I reproduced 40m -> 25m), but the equivalence and compare checks are bespoke scripts with no committed test surface, and the report's Reproduce section points at build_final.py and validate_flight.py that are neither in the manifest nor in the durable report directory.\nSCORE fit: 18\nJUSTIFICATION fit: the file is a drop-in replacement that preserves every pre-existing comment and block byte-identically, and the lanes.claude shape with a per-model time_budget override follows the \u00a71/\u00a72 landed design.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change adds no code \u2014 it reuses expand_lanes' declared-name derivation (reckon/flight.py:1388) rather than forking resolution, which is why the empty name declarations keep the legacy names resolving.\nFINDING report.md:78 follow-on: the Reproduce section names build_final.py and validate_flight.py \"paths in the manifest\", but neither script is in the manifest's changed_paths nor anywhere in the durable report directory; both exist only under node-local /tmp/reckon-crew-scratch/r-20261007T171944466564-claude-lane-collapse/clc-JcTG/, so the reproduction path does not survive the run and only the arm logs are durable.\nFINDING report.md:12 follow-on: the prose says pure removal drops the two names for \"12 of the 15 in mounts.json\" and line 17 says \"differing 15\", but the run's own pure-removal.log records \"differing: 14\" and independent resolution finds 14 of 15 (only reckon declares a claude backend in its project layer); the log is correct and the two report figures are not.\nFINDING reckon/flight.py:1340 follow-on: after the collapse the per-key provenance for a derived entry is lost \u2014 provenance[\"backends.claude-opus.time_budget\"] is None where it was \"host\" before this change \u2014 because expanded entries are built by _lane_entry rather than declared at a layer; the derivations still resolve, but a reader asking which layer set a derived key now gets no answer, which the \u00a77 resolver or the expansion should reinstate.",
+  "review_run_id": "r-20261007T174349629711-review-of-claude-lane-collapse",
+  "reviewed_base_sha": "bdfb159260bf28417d160653d14bf2defeaf1940",
+  "reviewed_head_sha": "bdfb159260bf28417d160653d14bf2defeaf1940",
+  "reviewed_run_id": "r-20261007T171944466564-claude-lane-collapse",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T17:52:25.317580+00:00",
+  "total": 107
+}
