@@ -374,27 +374,16 @@ def _send_supervisor(job: Mapping[str, str], line: str) -> None:
 
 def _local_request(line: str) -> None:
     """Send a bounded request to the supervisor on this allocation's node."""
-    import errno
+    from reckon.crew.dispatch import _write_fleet_request
+    from reckon.crew.runs import CrewError
 
     if not line or "\n" in line:
         raise MigrationError("supervisor request must be one nonempty line")
     fifo = runtime_directory() / REQUEST_FIFO_NAME
-    deadline = time.monotonic() + 10
-    while True:
-        try:
-            descriptor = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
-            break
-        except OSError as exc:
-            if exc.errno in {errno.ENOENT, errno.ENXIO} and time.monotonic() < deadline:
-                time.sleep(0.05)
-                continue
-            raise MigrationError(
-                f"supervisor request FIFO {fifo} is unavailable: {exc}"
-            ) from exc
     try:
-        os.write(descriptor, (line + "\n").encode())
-    finally:
-        os.close(descriptor)
+        _write_fleet_request(fifo, (line + "\n").encode(), time.monotonic() + 10)
+    except CrewError as exc:
+        raise MigrationError(str(exc)) from exc
 
 
 def _running_job(

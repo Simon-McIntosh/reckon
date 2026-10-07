@@ -39,6 +39,7 @@ from reckon.crew import bar as bar_module
 from reckon.crew import lane_document as _lane_document
 from reckon.crew import prescription as prescription_module
 from reckon.crew import summary
+from reckon.crew.fleet_supervisor import REQUEST_FIFO_NAME
 from reckon.crew.node import (
     _SAFE_ID,
     _TERMINAL_RUN_PHASES,
@@ -9952,7 +9953,7 @@ def _supervisor_argv(*, spec_path: Path) -> list[str]:
 # exactly as a forked supervisor's pid would be.
 FLEET_RECORD_PATH_ENV = "RECKON_FLEET_RECORD"
 FLEET_SPAWN_ENV = "RECKON_FLEET_SPAWN"
-FLEET_FIFO_NAME = "requests"
+FLEET_FIFO_NAME = REQUEST_FIFO_NAME
 FLEET_SPAWN_ACK_NAME = "spawned.json"
 FLEET_SPAWN_ACK_BOUND_SECONDS = 10.0
 FLEET_REQUEST_POLL_SECONDS = 0.02
@@ -10040,7 +10041,7 @@ def _write_fleet_request(fifo: Path, line: bytes, deadline: float) -> None:
         try:
             descriptor = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
         except OSError as exc:
-            if exc.errno == errno.ENXIO and time.monotonic() < deadline:
+            if exc.errno in {errno.ENOENT, errno.ENXIO} and time.monotonic() < deadline:
                 time.sleep(FLEET_REQUEST_POLL_SECONDS)
                 continue
             raise CrewError(
@@ -10050,7 +10051,7 @@ def _write_fleet_request(fifo: Path, line: bytes, deadline: float) -> None:
             os.write(descriptor, line)
         except OSError as exc:
             raise CrewError(
-                f"the fleet's request FIFO {fifo} refused the spawn request: {exc}"
+                f"the fleet's request FIFO {fifo} refused the request: {exc}"
             ) from exc
         finally:
             os.close(descriptor)

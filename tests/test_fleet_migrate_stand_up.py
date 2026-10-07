@@ -1,12 +1,17 @@
 """A migration advances from standby allocation to published fleet ownership."""
 
+import errno
 import json
+import os
 import subprocess
+import time
+from importlib import import_module
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
-from reckon.crew import fleet_migrate
+from reckon.crew import fleet_migrate, fleet_supervisor
 
 
 def _ledger(state: Path) -> Path:
@@ -197,6 +202,47 @@ def test_promote_retry_preserves_records_from_before_the_first_attempt(setup):
     assert 'reservation before: {"job_id": "old"}' in result
     assert json.loads(path.read_text())["next_step"] == "cutover"
     assert actions.calls.count("submit") == 1
+
+
+def test_local_supervisor_request_uses_the_shared_fifo_writer(tmp_path, monkeypatch):
+    dispatch_module = import_module("reckon.crew.dispatch")
+    calls = []
+    monkeypatch.setenv("FLEET_RUNTIME_DIR", str(tmp_path))
+    monkeypatch.setattr(
+        dispatch_module,
+        "_write_fleet_request",
+        lambda fifo, line, deadline: calls.append((fifo, line, deadline)),
+    )
+    fleet_migrate._local_request("ready " + "a" * 32)
+    assert dispatch_module.FLEET_FIFO_NAME == fleet_supervisor.REQUEST_FIFO_NAME
+    assert calls[0][0] == tmp_path / dispatch_module.FLEET_FIFO_NAME
+    assert calls[0][1] == b"ready " + b"a" * 32 + b"\n"
+    assert calls[0][2] > time.monotonic()
+
+
+def test_shared_fifo_writer_retries_until_the_fifo_exists(tmp_path, monkeypatch):
+    dispatch_module = import_module("reckon.crew.dispatch")
+    opened = []
+    written = []
+
+    def open_fifo(path, flags):
+        opened.append((path, flags))
+        if len(opened) == 1:
+            raise OSError(errno.ENOENT, "FIFO not created yet")
+        return 42
+
+    fake_os = SimpleNamespace(
+        O_WRONLY=os.O_WRONLY,
+        O_NONBLOCK=os.O_NONBLOCK,
+        open=open_fifo,
+        write=lambda descriptor, line: written.append((descriptor, line)),
+        close=lambda descriptor: written.append((descriptor, b"closed")),
+    )
+    monkeypatch.setattr(dispatch_module, "os", fake_os)
+    fifo = tmp_path / "requests"
+    dispatch_module._write_fleet_request(fifo, b"ready token\n", time.monotonic() + 1)
+    assert len(opened) == 2
+    assert written == [(42, b"ready token\n"), (42, b"closed")]
 
 
 @pytest.mark.parametrize("step", ["stand-up", "promote"])
