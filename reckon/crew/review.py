@@ -2003,7 +2003,9 @@ def _answer_stamp(entry: Any) -> str:
 
 
 def _staging_copies_of_record(
-    project: str, record: Mapping[str, Any]
+    project: str,
+    record: Mapping[str, Any],
+    base_dir: str | Path | None = None,
 ) -> list[Mapping[str, Any]]:
     """Every staging file that is another copy of ``record``, oldest first.
 
@@ -2014,11 +2016,16 @@ def _staging_copies_of_record(
     Copies are the files keyed by the record's own review run — the one key
     every copy shares — so a record the store filed under a different subject
     name is still its own. A file that cannot be read is skipped.
+
+    ``base_dir`` names the staging store to read, so a reader that resolved its
+    selection from a specific store reads that store's copies rather than the
+    configured one; omitted, the root resolves through
+    :func:`review_store_root` as it always has.
     """
     review_run_id = str(record.get("review_run_id") or "").strip()
     if not review_run_id:
         return []
-    directory = review_store_root() / project
+    directory = review_store_root(base_dir) / project
     if not directory.is_dir():
         return []
     copies: list[Mapping[str, Any]] = []
@@ -2360,6 +2367,54 @@ def _select_stored_record(
     return None, None
 
 
+def _record_with_merged_answers(
+    project: str,
+    reviewed_run_id: str,
+    selected: tuple[Path | None, dict[str, Any] | None],
+    *,
+    committed: Path | None,
+    base_dir: str | Path | None = None,
+) -> tuple[Path | None, dict[str, Any] | None]:
+    """Return the selected record carrying every copy's answers.
+
+    A review worker writes its record by hand, as JSON, to whichever paths its
+    dispatch grants — the plain staging file and the head-keyed sibling — so no
+    writer in reckon's code runs on that path and the record it writes carries
+    no disposition recorded on another copy. The invariant that holds whatever
+    wrote the file is read-side: the selected record carries the
+    ``dimension_dispositions``, ``responses`` and ``response_events`` held by
+    every copy of the same review run, staging and committed, unioned by the
+    rules :func:`_merge_record_answers` applies. The selection itself — which
+    copy is chosen for a head — is unchanged; only the answer fields are merged
+    onto the chosen record, and nothing is written. The committed record at the
+    path this review run is filed under is merged last, so a committed answer
+    wins a tie against a staging sibling's copy of it, the order a re-store
+    merges its own merge sources in.
+    """
+    path, record = selected
+    if record is None:
+        return path, record
+    sources: list[Mapping[str, Any]] = [
+        record,
+        *_staging_copies_of_record(project, record, base_dir),
+    ]
+    review_run_id = str(record.get("review_run_id") or "").strip()
+    if committed is not None and review_run_id and reviewed_run_id:
+        committed_record = _committed_record_at(
+            review_path(
+                project,
+                reviewed_run_id,
+                committed_root=committed,
+                review_run_id=review_run_id,
+            )
+        )
+        if committed_record is not None:
+            sources.append(committed_record)
+    merged = dict(record)
+    merged.update(_merge_record_answers(sources))
+    return path, merged
+
+
 def stored_record(
     project: str,
     reviewed_run_id: str,
@@ -2378,9 +2433,11 @@ def stored_record(
     compatibility with callers that have not yet learned to state the revision
     they need.
 
-    The record returned is the file's own content, never the read-time
-    annotation :func:`read_review` adds, so a caller that writes the record
-    back does not persist a derived view. One exception is a record found away
+    The record returned is the selected file's own content with the answer
+    fields unioned from every copy of the same review run — see
+    :func:`_record_with_merged_answers` — and never the read-time annotation
+    :func:`read_review` adds, so a caller that writes the record back persists
+    the answers the reader was shown rather than a derived view. One exception is a record found away
     from the paths its own run id names: it carries :data:`MISFILED_KEY`, a fact
     about where the file sits rather than a derivation from other data, and a
     writer that writes the record back writes that fact where it took the
@@ -2441,27 +2498,51 @@ def stored_record(
             # for one rather than the committed tree returning an absence the
             # staging store could fill.
             if committed_selected[1] is not None or reviewed_head_sha is None:
-                return committed_selected
+                return _record_with_merged_answers(
+                    project,
+                    reviewed_run_id,
+                    committed_selected,
+                    committed=committed,
+                    base_dir=base_dir,
+                )
     directory = review_store_root(base_dir) / project
     candidates = [review_path(project, reviewed_run_id, base_dir)]
     if directory.is_dir():
         candidates.extend(directory.glob(f"{reviewed_run_id}.at-*.json"))
     existing = {path.resolve(): path for path in candidates if path.is_file()}
     if existing:
-        return _select_stored_record(
-            list(existing.values()), reviewed_head_sha, skipped=skipped
+        return _record_with_merged_answers(
+            project,
+            reviewed_run_id,
+            _select_stored_record(
+                list(existing.values()), reviewed_head_sha, skipped=skipped
+            ),
+            committed=committed,
+            base_dir=base_dir,
         )
     if committed_selected is not None:
         # The committed tree holds records for this run and no staging file of
         # its own exists, so the committed tree settles the search: a record
         # already committed to this run is not displaced by a store-wide search.
-        return committed_selected
+        return _record_with_merged_answers(
+            project,
+            reviewed_run_id,
+            committed_selected,
+            committed=committed,
+            base_dir=base_dir,
+        )
     # No file of this run's own exists, so the store's records are searched for
     # one whose content names the run it reviews — the shape a hand-written
     # record takes when its worker keys the file on its own run id instead of
     # the reviewed one.
-    return _record_filed_elsewhere(
-        directory, reviewed_run_id, reviewed_head_sha, skipped=skipped
+    return _record_with_merged_answers(
+        project,
+        reviewed_run_id,
+        _record_filed_elsewhere(
+            directory, reviewed_run_id, reviewed_head_sha, skipped=skipped
+        ),
+        committed=committed,
+        base_dir=base_dir,
     )
 
 
