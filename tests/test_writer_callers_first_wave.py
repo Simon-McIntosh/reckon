@@ -43,9 +43,11 @@ CANONICAL_TEXT = (
 
 PLAN_REVIEW_TEXT = (
     "{\n"
+    '  "findings": [],\n'
     '  "plan_slug": "slug",\n'
     '  "plan_version": 3,\n'
     '  "project": "proj",\n'
+    '  "rubric": "design",\n'
     '  "score": 88,\n'
     '  "status": "passed",\n'
     '  "timestamp": "2026-01-02T03:04:05+00:00"\n'
@@ -63,6 +65,8 @@ REVIEW_RECORD = {
     "timestamp": "2026-01-02T03:04:05+00:00",
     "status": "passed",
     "score": 88,
+    "rubric": "design",
+    "findings": [],
 }
 
 

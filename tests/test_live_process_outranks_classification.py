@@ -325,12 +325,12 @@ def test_a_killed_run_whose_review_does_not_parse_is_not_abandoned(
     # waiting on a repair rather than inviting a redispatch over it.
     run_id = "r-killed-bad-review"
     pointer = _pointer(tmp_path, run_id, pid=_absent_pid(), case="complete")
+    # What the parser returns for a reply that carries no review: an unparsed
+    # record holding empty scores and findings and the text it could not read.
+    unparsed = review.parse_review("the reviewer replied in prose with no verdict")
+    assert unparsed["status"] == "unparsed"
     review.store_review(
-        {
-            "project": pointer["project"],
-            "reviewed_run_id": run_id,
-            "status": "unparsed",
-        }
+        {**unparsed, "project": pointer["project"], "reviewed_run_id": run_id}
     )
 
     row = recovery.classify_pointer(pointer, now_seconds=time.time())

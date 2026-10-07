@@ -1891,7 +1891,8 @@ def _plan_review_crew_run_id(project: str, plan_slug: str, review_run_id: str) -
     """Return the crew run a plan review's report directory names, or ``""``.
 
     A plan review's review run id is the composed id its report directory is
-    named for (``r-<stamp>-plan-review-of-<slug>``), which is not a crew run and
+    named for (``r-<stamp>-`` followed by ``recovery.PLAN_REVIEW_NODE_PREFIX``
+    and the plan slug), which is not a crew run and
     has no run record of its own. The crew run that actually ran the review
     carries a different id, recorded in the directory's ``dispatch.json``
     sidecar, so resolving that sidecar is what lets a plan review's committed
