@@ -1,11 +1,13 @@
 """Publish each account's metered headroom as one document a pre-flight reads.
 
-Headroom for a paid backend is read only when someone runs pre-flight or
-dispatch, from sources that can disagree and can be a day old. The local lane
-already publishes its own position in ``lane.json``; this module gives the
-metered accounts the same treatment: one document, refreshed on its own clock,
-carrying every window's utilisation, reset time, burn multiple, projected
-exhaustion, the source it was read from and when it was observed.
+Headroom for a paid backend can come from records that disagree and age while
+the backend is idle. The local lane already publishes its own position in
+``lane.json``; this module gives the metered accounts the same treatment: one
+document, refreshed on its own clock, carrying each window's utilisation,
+reset time, burn multiple, projected exhaustion, source and observation time.
+An old subscription reading triggers the existing account probe. Its attempt
+is published before the probe runs, so a restart cannot repeatedly spend the
+same account read inside the staleness horizon.
 
 **One document, one entry per account.** Each entry reconciles the sources that
 reported for that account by recency, per window, and names the source it used.
@@ -32,6 +34,7 @@ it is half-written would read a truncated account list as a real absence:
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import shlex
@@ -132,8 +135,8 @@ usage: python -m reckon.crew.paid_lanes [--once] [--path PATH]
        [--project PROJECT] [--checkout-path PATH] [--install-timer]
 
 Compose the metered-backend headroom document, one entry per account, and
-write it atomically. The document is what the pre-flight reads between
-dispatches rather than only at a refusal.
+write it atomically. Stale subscription readings are refreshed from the
+existing account probe. The document is what pre-flight reads between dispatches.
 
 options:
   --once                 publish the document one time and exit (the default)
@@ -503,6 +506,176 @@ def write_document_atomically(
         create_parents=True,
     )
     return resolved
+
+
+def _previous_probe_candidates(
+    previous: Mapping[str, Any] | None,
+) -> dict[str, list[Candidate]]:
+    """Keep successful account observations when old rollouts are republished."""
+    readings = document_windows(previous)
+    accounts = previous.get("accounts", {}) if isinstance(previous, Mapping) else {}
+    retained: dict[str, list[Candidate]] = {}
+    for account, reading in readings.items():
+        entry = accounts.get(account, {})
+        blocks = entry.get("windows", {}) if isinstance(entry, Mapping) else {}
+        figures = tuple(
+            figure
+            for figure in reading.figures
+            if isinstance(blocks.get(figure.period), Mapping)
+            and blocks[figure.period].get("source") == "probe"
+        )
+        if figures:
+            retained[account] = [
+                Candidate("probe", window_reading.WindowReading(figures=figures))
+            ]
+    return retained
+
+
+def _probe_reading(
+    block: Mapping[str, Any], moment: datetime
+) -> window_reading.WindowReading:
+    """Translate the existing account probe's measured windows for publication."""
+    if block.get("headroom") != "known":
+        return window_reading.WindowReading(
+            reason=str(block.get("detail") or "probe failed")
+        )
+    raw = block.get("quota_windows")
+    rows = raw.values() if isinstance(raw, Mapping) else ()
+    if not raw:
+        rows = (block,)
+    figures = []
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        minutes = row.get("window_minutes", row.get("rate_limit_period_minutes"))
+        used = row.get("used_percent", row.get("utilisation_pct"))
+        if (
+            isinstance(minutes, bool)
+            or not isinstance(minutes, (int, float))
+            or not float(minutes).is_integer()
+            or isinstance(used, bool)
+            or not isinstance(used, (int, float))
+        ):
+            continue
+        period = {300: "five_hour", 10080: "seven_day"}.get(int(minutes), "primary")
+        figures.append(
+            window_reading.WindowFigure(
+                period=period,
+                utilisation=float(used) / 100.0,
+                observed_at=moment,
+                age_seconds=0.0,
+                resets_at=row.get("resets_at"),
+                window_minutes=int(minutes),
+            )
+        )
+    return window_reading.WindowReading(
+        figures=tuple(figures),
+        observed_at=moment if figures else None,
+        reason="" if figures else "account probe returned no usable window",
+    )
+
+
+def publish_document(
+    config: Mapping[str, Any],
+    sources: Mapping[str, Iterable[Candidate]],
+    *,
+    path: str | Path | None = None,
+    moment: datetime | None = None,
+    probe_runner: Callable[[Any], Mapping[str, Any] | None] | None = None,
+    local_lane: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Publish recorded readings, probing stale subscription accounts once per horizon."""
+    from reckon import _backends
+
+    now = moment or datetime.now(tz=UTC)
+    backends = config.get("backends") or {}
+    target = document_path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.with_name(target.name + ".lock").open("a+") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        previous = read_document(target)
+        retained = _previous_probe_candidates(previous)
+        gathered = {
+            name: [*sources.get(name, ()), *retained.get(name, ())] for name in backends
+        }
+        document = compose_document(
+            backends,
+            sources=gathered,
+            moment=now,
+            local_lane=local_lane
+            if local_lane is not None
+            else read_local_lane(moment=now),
+        )
+        old_entries = (
+            previous.get("accounts", {}) if isinstance(previous, Mapping) else {}
+        )
+        groups: dict[str, list[str]] = {}
+        for name, settings in backends.items():
+            if isinstance(settings, Mapping) and settings.get("budget_check"):
+                group = str(settings.get("budget_group") or name)
+                groups.setdefault(group, []).append(name)
+        for members in groups.values():
+            stale = any(
+                block.get("stale")
+                for name in members
+                for block in document["accounts"][name]["windows"].values()
+            )
+            attempts = [
+                _parse_stamp(
+                    old_entries.get(name, {}).get("probe", {}).get("attempted_at")
+                )
+                for name in members
+                if isinstance(old_entries.get(name), Mapping)
+            ]
+            recent = any(
+                stamp is not None
+                and (now - stamp).total_seconds() < DEFAULT_STALE_SECONDS
+                for stamp in attempts
+            )
+            prior = next(
+                (
+                    old_entries[name]["probe"]
+                    for name in members
+                    if isinstance(old_entries.get(name), Mapping)
+                    and isinstance(old_entries[name].get("probe"), Mapping)
+                ),
+                None,
+            )
+            if not stale or recent:
+                if prior is not None:
+                    for name in members:
+                        document["accounts"][name]["probe"] = dict(prior)
+                continue
+            claim = {
+                "attempted_at": now.isoformat(),
+                "failure": "probe interrupted before a reading was published",
+            }
+            for name in members:
+                document["accounts"][name]["probe"] = dict(claim)
+            write_document_atomically(document, target)
+            name = members[0]
+            block = _backends.probe_budget(
+                backend_name=name,
+                backend=backends[name],
+                runner=probe_runner,
+                now=now,
+            )
+            reading = _probe_reading(block, now)
+            if reading.known:
+                for member in members:
+                    gathered[member].append(Candidate("probe", reading))
+                    document["accounts"][member] = account_entry(
+                        member, gathered[member], moment=now
+                    )
+                    document["accounts"][member]["probe"] = {
+                        "attempted_at": now.isoformat(),
+                        "failure": None,
+                    }
+            else:
+                for member in members:
+                    document["accounts"][member]["probe"]["failure"] = reading.reason
+        write_document_atomically(document, target)
+    return document
 
 
 def gather_sources(
@@ -902,13 +1075,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         if accounts
         else {}
     )
-    document = compose_document(
-        accounts,
-        sources=sources,
-        moment=moment,
-        local_lane=read_local_lane(moment=moment),
-    )
-    written = write_document_atomically(document, path)
+    document = publish_document(config, sources, path=path, moment=moment)
+    written = document_path(path)
     print(f"wrote {written}: {len(document['accounts'])} account(s)")
     return 0
 
