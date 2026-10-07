@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T16:59:22.871Z",
+  "dispatched_at": "2026-10-07T16:52:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:144",
+      "id": "done_when-1",
+      "reason": "with no case pinning a `detail`/`title` finding's id to its raw-text-key value, a node can derive the id from the normalised text and silently invalidate every stored acknowledgement, and nothing in the gate goes red.",
+      "text": "\u00a714's done-when case 3, \"finds the id of an existing `text` finding unchanged\", tests the only shape whose id cannot move, while the deliverable's normalisation (\"a mapping takes its text from the first non-empty claim field\") invites deriving the id from the synthesised text \u2014 which for the 24 real `detail`/`title` findings, whose `text` key is empty today, changes the id and breaks the \"an id already acknowledged or resumed keeps resolving\" invariant the same paragraph asserts",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:144",
+      "id": "reasoning-1",
+      "reason": "the refusal is transient (the reason is surfaced, the record stays recoverable in the host store and the \u00a75/\u00a78 import still commits it), so the author can leave the rule as written without the plan losing the guarantee.",
+      "text": "\u00a714 refuses promotion of a review run whose record carries a claimless finding, which for the run-review path is the route by which \u00a73/\u00a74 commit an every-round record, so taken literally it withholds the \"every review is kept as a committed record\" guarantee \u00a71 states",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "b144bda78f76f60afb40b9fe5cba422e2c4d27c643dd6b23d58b8c3719a36bf5",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 120,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261007T165220884844-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "0bf5614ecfb0c4585c250e9f67c7df143f1ee665",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited path resolves (`promotion.py:7990`, `review.py:1872/2766`, `routing.py:2788`, `cli.py:2918`, `repair.py` 103\u2013137, `plan_review.py:2054/1919`, `scripts/import_host_reviews.py`), and \u00a714's cited legacy record exists with the exact findings shape it attributes to it.",
+    "done_when": "a finding \u2014 \u00a714's id-stability case exercises only an existing `text` finding, the one shape whose normalised text does not move, so it cannot fail on the population at risk.",
+    "evidence_paths": "pass \u2014 \u00a713's census is run in the review/build run and recorded on that run's evidence, \u00a714's census names its directories and counting rule, and neither writes a session scratchpad or node-local path.",
+    "naming": "pass \u2014 \u00a713 and \u00a714 name symbols by mechanism (`_staging_review_record_by_run`, `review_findings`, `_finding_kind`); no plan, sprint or ticket identifier and no changelog prose reaches a symbol or comment.",
+    "reasoning": "pass \u2014 the stated root cause (a claimless mapping read through a `text`-only normaliser becomes a blocking finding with an empty text and a bogus write path) is the one \u00a714's cited record shows, the predicate-and-normaliser mechanism can produce the done-when, and its caller is named: the repair reflex reads findings only through `repair.review_findings` (recovery.py:3425).",
+    "single_goal": "pass \u2014 each \u00a713 node carries one deliverable and \u00a714 is one node in `repair.py` and `review.py`; node (2)'s census is the measure of its own import, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a713's three nodes and \u00a714's one node carry disjoint write scopes (`promotion.py`; `scripts/import_host_reviews.py`; `repair.py`+`review.py`), each stated where it is relied on, and followup f-erkc-015 names the \u00a713-node-(3)/\u00a714 pair as concurrent; no declared dependency points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "65ca1da17a46bbd1e01ba270ed9d874cbe6db92066a9a933a0162b43bfe321bc",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "4e45c5a7861b9a62c39cd39f8b587b83eadb1985c0cc364c8a9ca47a9173f90a",
+    "s14": "1132ce53ef60e57662689fcc0db3e2e8fc13c607122618d329458cdc3b57adae",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T17:00:20.924196+00:00"
+}
