@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-follower-lives-as-long-as-its-session">
+  <meta name="plan-title" content="A Follower Lives As Long As Its Session">
+  <meta name="plan-summary" content="The Monitor tool ends every follower at 30 minutes; a plugin-declared monitor lives for the whole session, so dispatch arms the follower and nobody re-arms it.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="9.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
+  <meta name="plan-north-star" content="unattended-execution">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;}">
+  <title>A Follower Lives As Long As Its Session | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: the cap belongs to the host, and every re-arm costs a turn</h2>
+    <p>A coordinator's follower runs inside the Monitor tool, and the Monitor tool ends every watch at thirty
+      minutes. Claude Code 2.1.271 made that deliberate: its changelog reads <em>"Changed Monitor watches to always
+      have a deadline (at most 30 minutes; 10 in single-prompt <code>-p</code> runs) and notify Claude to re-arm,
+      replacing the no-timeout <code>persistent</code> option"</em>. In the installed binary the cap is a server-side
+      flag rather than a setting, so nothing reckon passes can lift it.</p>
+    <p>The shipped plan <a href="/reckon/a-follower-outlives-its-monitor">a-follower-outlives-its-monitor</a>
+      made the expiry survivable. The follower arms with <code>--lifetime 29m</code>, announces its own end one minute
+      before the host does, names the attach line in that final row, and replays the runs that changed during the
+      gap when it re-attaches. Its census found 620 of 719 armed followers ending at the host's expiry. What is left
+      is the re-arm itself: every 29 minutes the coordinator spends a turn arming the same command again, and a
+      coordinator that misses the end row learns of it from a <code>watcher-required</code> refusal on its next
+      dispatch.</p>
+    <p>The same gap affects review workers. <code>/reckon-create</code> dispatches a read-back review of each new plan
+      and <code>/reckon-edit</code> leads to <code>crew review-plan</code>, so a session that only authors plans still
+      dispatches runs whose results it must hear. A trigger tied to <code>/reckon-build</code> would miss them; the
+      trigger this plan adopts is the first dispatch, from whichever skill or tool makes it.</p>
+
+    <h2 id="s2">§2 — What the host offers instead: a monitor that lives for the session</h2>
+    <p>Claude Code lets a plugin declare monitors in its manifest. The plugin documentation says such a monitor
+      <em>"runs in the background for the whole session"</em>, and the binary agrees: it launches the plugin's
+      command with no deadline and stops it only when the session ends. Three constraints come with it, all read
+      from the 2.1.289 binary and the plugin reference:</p>
+    <ul>
+      <li><strong>The host never restarts a plugin monitor that exits.</strong> Whatever it runs must stay alive
+        for the session and supervise its own children.</li>
+      <li><strong>Plugin monitors load only from personal scope.</strong> A plugin directory under
+        <code>~/.claude/skills/</code> loads in place as <code>&lt;name&gt;@skills-dir</code> with no install step,
+        and a symlink there is followed; a project's <code>.claude/skills/</code> loads the plugin but skips its
+        monitors.</li>
+      <li><strong>A burst above the host's rate is suppressed, not delivered.</strong> Lines arriving within
+        200&nbsp;ms are batched into one notification, so the follower's baseline replay arrives as one batch.</li>
+    </ul>
+    <p>A throwaway probe plugin, linked as <code>~/.claude/skills/reckon-monitor-probe</code> and loaded with
+      <code>/reload-plugins</code>, measured the rest in a live session on 2026-10-07:</p>
+    <table>
+      <thead><tr><th>Question</th><th>Measured</th></tr></thead>
+      <tbody>
+        <tr><td>Does a skill trigger match a user-level skill?</td>
+          <td>Yes: <code>when: "on-skill-invoke:reckon-create"</code> armed when <code>/reckon-create</code> ran.</td></tr>
+        <tr><td>Does the monitor know its Claude session?</td>
+          <td>Yes: <code>CLAUDE_PID</code> and <code>CLAUDE_CODE_SESSION_ID</code> are set and match
+            <code>~/.claude/sessions/&lt;pid&gt;.json</code>.</td></tr>
+        <tr><td>Does reckon count its output as delivering?</td>
+          <td>Yes: stdout is a socket, which <code>delivery_mode_of</code> classifies as <code>stream</code>.</td></tr>
+        <tr><td>Does it outlive the Monitor tool's 30-minute cap?</td>
+          <td>Pending: heartbeats at 10, 20, 31 and 40 minutes, then a deliberate exit at 45.</td></tr>
+        <tr><td>What happens in other sessions?</td>
+          <td>It armed in two peer sessions that ran <code>/reckon-create</code>; each printed one line and exited.</td></tr>
+      </tbody>
+    </table>
+    <p>The probe's diagnostic lines exist only to answer these questions. The monitor this plan builds prints
+      nothing of its own: a reader sees the follower's ticker and nothing else, exactly as the follower prints it
+      today.</p>
+
+    <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§3 — A host process starts with every session and stays silent until asked</h2>
+    <p><strong>Deliverable.</strong> A plugin at <code>plugins/crew-host/</code> in this repository, holding
+      <code>.claude-plugin/plugin.json</code>, <code>monitors/monitors.json</code> and one shell entry point,
+      <code>bin/crew-host</code>. The manifest declares one monitor with <code>when: "always"</code>, whose command
+      runs that entry point. The entry point:</p>
+    <ul>
+      <li>identifies its owner as the Claude process named by <code>CLAUDE_PID</code> together with that process's
+        start time from <code>/proc</code>. The pair stays the same across <code>/clear</code>, whereas the session id
+        does not;</li>
+      <li>creates a FIFO named after that pair in the runtime directory (<code>$XDG_RUNTIME_DIR</code>, then
+        <code>/run/user/&lt;uid&gt;</code>, then <code>$TMPDIR</code>), all of which are node-local, so waiting on it
+        costs nothing on GPFS;</li>
+      <li>waits on the FIFO, checking once a minute that its owner is alive, and prints nothing;</li>
+      <li>on the first request, replaces itself with <code>reckon crew host</code> (same pid and same stdout),
+        resolving the interpreter from its own symlink-resolved location, so it runs the checkout that holds the
+        plugin and never a bare <code>reckon</code> from <code>PATH</code>;</li>
+      <li>exits silently when its owner is gone.</li>
+    </ul>
+    <figure>
+      <img src="/reckon/figures/a-follower-lives-as-long-as-its-session/host-topology.svg"
+           alt="The Claude session starts the plugin monitor, which becomes reckon crew host on the first request a dispatch writes to its node-local FIFO; the host runs one crew follow per project and session, and their ticker lines return to the session on the shared stdout.">
+      <figcaption>The host is the session's one monitor. Dispatch writes a request to the host's FIFO, the host runs
+        one follower per project and session, and the followers' ticker lines reach the session on the stdout they
+        share with the host.</figcaption>
+    </figure>
+    <p><strong>Done when</strong> a fresh interactive session with the plugin linked shows one idle shell process
+      for that session and no output in its pane, and that process exits within a minute of the session ending.</p>
+
+    <h2 id="s4" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§4 — <code>reckon crew host</code> supervises the session's followers</h2>
+    <p><strong>Deliverable.</strong> A <code>crew host</code> command that, once exec'd by the entry point, reads one
+      JSON request per line from the FIFO. Each request names a project, a session, and optionally observed sessions
+      and a theme. For each request it runs <code>reckon crew follow --project P --session S</code>, with the request's
+      <code>--observe-session</code> and <code>--theme</code> flags and no <code>--lifetime</code>, under these rules:</p>
+    <ul>
+      <li><strong>Output.</strong> Children inherit the host's stdout, so their lines reach the pane exactly as the
+        follower prints them and their registrations read as delivering. Child stderr goes to a log under the run
+        cache, never to the pane. The host itself writes nothing to stdout, at start, on a request, or on a restart.</li>
+      <li><strong>One child per project and session.</strong> A repeated request is a no-op. A request adding observed
+        sessions restarts that child with the union of observed sessions, and the follower's own replay covers the
+        restart.</li>
+      <li><strong>Restarts.</strong> A child that exits while its owner lives is restarted with backoff from 1 to 60
+        seconds. The host stands down for a project and session only when a live follower it did not start already
+        holds that registration, so it never contends with a coordinator who armed one by hand.</li>
+      <li><strong>The host never exits on its own,</strong> because the plugin host would not restart it. It ends
+        only when its owner is gone or it receives a signal.</li>
+      <li><strong>Children end with the host.</strong> Every child is started with a parent-death signal. The host
+        checks every few seconds that its owner is alive, and on its owner's end or on SIGTERM or SIGHUP it stops
+        every child and then exits.</li>
+      <li><strong>Record.</strong> The host records its pid, owner and children in one file under the crew config
+        home, written on change only, so a census can attribute every <code>crew follow</code> it started.</li>
+    </ul>
+    <p><strong>Done when</strong> unit tests drive the host with a fake follower command and show: one child per
+      project and session; a killed child restarted; a hand-armed live follower left alone; no stdout from the host
+      itself; and no child surviving the host's SIGTERM or its owner's exit.</p>
+
+    <h2 id="s5" data-reckon="section" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§5 — Dispatch asks the host before it refuses</h2>
+    <p><strong>Deliverable.</strong> In <code>reckon/crew/dispatch.py</code>, between
+      <code>_ensure_watch_producer</code> and <code>_watcher_delivery_admission</code>: when the launch kind is
+      <code>cli</code>, a session is named, that session is not attached, and the calling Claude process (resolved
+      the way <code>_coordinator_runtime</code> already resolves it) has a live host, dispatch writes a request to
+      that host's FIFO and waits, within the existing watcher load bound, until the session reads as attached. Then it
+      reads the watch state again and admits as it does today. Without a host, or when the host does not attach the
+      session within the bound, dispatch behaves exactly as it does now, with the attach line and the refusal. The
+      dispatch payload gains <code>delivery: "host"</code> or <code>delivery: "monitor"</code>, so a coordinator can
+      tell which one carried the run, and it carries no arming instruction when the host did. A
+      <code>reckon crew host request</code> subcommand sends the same request by hand, which is how a coordinator adds
+      an observed session.</p>
+    <p><strong>Done when</strong> a test with a stub host shows a dispatch from an unattached session admitted with
+      <code>delivery: "host"</code> and no refusal, and the same dispatch with no host still refused with the same
+      refusal text as before this change.</p>
+
+    <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§6 — <code>reckon-sync</code> links the plugin; <code>reckon doctor</code> checks it</h2>
+    <p><strong>Deliverable.</strong> <code>reckon-sync</code> links <code>plugins/crew-host</code> from the main
+      checkout as <code>~/.claude/skills/reckon-crew-host</code>, alongside the skill links it already makes, and
+      refuses to link from a worker worktree, for the same reason the hooks installer refuses: a reclaimed worktree
+      would leave the link resolving to nothing. <code>reckon doctor</code> reports whether the link exists, resolves,
+      points at the main checkout, and passes <code>claude plugin validate</code>. The link is user-level, so one link
+      serves every repository that runs reckon. Each running session picks it up at its next start or after
+      <code>/reload-plugins</code>.</p>
+    <p><strong>Done when</strong> <code>reckon-sync</code> run twice leaves exactly one link, <code>claude plugin
+      list</code> shows <code>reckon-crew-host@skills-dir</code> as loaded, and <code>reckon doctor</code> flags a link
+      that points into a worktree.</p>
+
+    <h2 id="s7" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§7 — The skills say what the host now does</h2>
+    <p><strong>Deliverable.</strong> <code>skills/reckon-build/SKILL.md</code> (the producer-and-follower section),
+      <code>references/orchestrator-harness/claude-code.md</code> (arming the fleet watch, and what a session owns)
+      and <code>references/sprint-orchestration.md</code> §15 and §17 say that on Claude Code with the plugin linked,
+      dispatch arms the follower and nothing re-arms it. The Monitor tool with <code>--lifetime 29m</code> remains the
+      fallback where there is no host: Codex sessions, <code>-p</code> sessions, and sessions without the plugin.
+      The re-arm guidance moves under that fallback rather than being deleted, because those sessions still need it.
+      The user-global <code>~/.agents/AGENTS.md</code> rule on stopping a follower before re-arming it gets the same
+      qualification.</p>
+    <p><strong>Done when</strong> the three skill files and the global rule name host delivery first and the
+      Monitor fallback second, and no sentence still tells a coordinator on a host-delivered session to re-arm every
+      29 minutes.</p>
+
+    <h2 id="s8" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§8 — Prove it in a live session, then link it everywhere</h2>
+    <p><strong>Deliverable.</strong> One live coordinator session in this repository with the plugin linked:
+      dispatch a node without calling the Monitor tool, watch its rows arrive, keep the session for more than an
+      hour, then end it. Record the evidence in
+      <code>docs/evidence/archive/a-follower-lives-as-long-as-its-session-landed.html</code>. Once that holds, run
+      <code>reckon-sync</code> for every mounted project and remove the probe link.</p>
+    <p><strong>Done when</strong> the evidence shows: the dispatched run's rows in the pane with no Monitor call
+      and only ticker lines; rows still arriving more than 60 minutes after the first dispatch, with no re-arm; no
+      <code>crew host</code> or <code>crew follow</code> process attributable to the session one minute after it
+      ends; and <code>reckon doctor</code> clean for the link in every mounted project.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="arming-trigger" data-choice="always-silent" data-by="Simon McIntosh" data-when="2026-10-07">
+        <p class="r-dec-q">When does the plugin monitor start?</p>
+        <p class="r-dec-ctx">A plugin monitor can start at session start (<code>always</code>) or the first time a named
+          skill runs. Plan reviews dispatched from <code>/reckon-create</code> and <code>/reckon-edit</code> need a
+          follower as much as <code>/reckon-build</code> runs do.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="always-silent">At session start, silent until the first dispatch</button>
+          <button class="r-opt" data-value="on-reckon-build">When /reckon-build first runs</button>
+        </p>
+        <p class="r-dec-rat">The first dispatch is what needs a follower, whichever skill or tool makes it. A skill
+          list would miss review workers and any dispatch made through the CLI or MCP. The cost is one idle shell per
+          interactive session, waiting on a node-local FIFO.</p>
+      </div>
+      <div class="r-dec" data-key="pane-content" data-choice="ticker-only" data-by="Simon McIntosh" data-when="2026-10-07">
+        <p class="r-dec-q">What does the host print to the pane?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="ticker-only">Only the follower's ticker</button>
+          <button class="r-opt" data-value="host-status">Ticker plus host status lines</button>
+        </p>
+        <p class="r-dec-rat">The pane stays the ticker it is today. Host status goes to its log and record, never
+          to stdout, consistent with the rule that the stream carries worker transitions and fleet posture and
+          nothing else.</p>
+      </div>
+      <div class="r-dec" data-key="fallback" data-choice="keep-monitor-fallback" data-by="Simon McIntosh" data-when="2026-10-07">
+        <p class="r-dec-q">What happens where no host is running?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="keep-monitor-fallback">Keep the Monitor tool with --lifetime 29m</button>
+          <button class="r-opt" data-value="require-host">Refuse dispatch without a host</button>
+        </p>
+        <p class="r-dec-rat">Codex sessions, <code>-p</code> sessions and sessions without the plugin have no plugin
+          monitor, so the current mechanism stays for them unchanged.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-afl-001" data-status="open" data-capability-version="1.0"
+               data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-07"
+               data-recommends-skill="/reckon-build a-follower-lives-as-long-as-its-session">
+        <h4 class="r-fu-title">Build the session-length follower host</h4>
+        <div class="r-fu-body"><p>Plan authored with the probe's measurements. Next: build §3 to §7, then prove it
+          in a live session under §8.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
