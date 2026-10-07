@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "01406ceaf5717ee05a6989b1f0fbab4ee6c5f2cd",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:serve",
+    "reckon/crew/fleet_supervisor.py:DeclaredServices.reload",
+    "reckon/crew/host_lease.py:HostLease.claim"
+  ],
+  "completed_at": "2026-10-07T12:16:16.847Z",
+  "dispatched_at": "2026-10-07T12:07:37Z",
+  "findings": [
+    {
+      "file": "tests/test_standby_promotion_claims_leases.py",
+      "line": "62",
+      "severity": "follow-on",
+      "text": "follow-on: the barrier waits for the supervisor's own log prose 'unknown request: standby-ready-probe', so a reworded log line in fleet_supervisor.handle_line would make the wait time out and the test fail for a reason unrelated to lease behaviour; readiness is signalled by log text rather than by a protocol."
+    },
+    {
+      "file": "tests/test_standby_promotion_claims_leases.py",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: _wait_for and _request still duplicate the helpers in tests/test_fleet_supervisor_standby.py:15-30, so a change to the supervisor request protocol must be made in two files."
+    }
+  ],
+  "head_log_revision": "7ebe719f0e91a8c14c43c7149b259bb1889f80b4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 7ebe719f against base 4c6d6126: one file, +17/-8, adding a request-response barrier and redirecting supervisor stdout to a log the barrier reads.",
+    "done_when": "the done_when's four-file gate is unchanged; the reviewed manifest records it as 16 passed EXIT=0 in barrier-committed-head-gate.log, and the same command reproduced 16 passed EXIT=0 in this review.",
+    "goal": "the delta strengthens the pre-promotion half of the node goal (a standby claims no declared-service lease until promotion) by reading the supervisor's own read-loop log line before asserting lease.holder() is None.",
+    "manifest": "read; baseline_suite and after_suite are now populated (base 01406cea and head 7ebe719f, both exit 0 with no failures), which lets the added-failure count be measured; the prior review found baseline_suite empty.",
+    "write_paths": "the gained commit touches only tests/test_standby_promotion_claims_leases.py, one of the manifest's three declared write paths."
+  },
+  "justifications": {
+    "durability": "the barrier closes the exact race the prior review named and the negative-control pair demonstrates the guard fires; residual: the readiness signal is a log string, and the assertion is a one-shot check taken after the barrier.",
+    "evidence": "this review re-ran the four-file gate at 7ebe719f: 16 passed EXIT=0; the run's own logs show the old test passing the startup-reload mutation (1 passed, EXIT=0) while the revised test fails it (1 failed, EXIT=1), and this review reproduced that pair independently; baseline_suite and after_suite are both populated so added_failure_count is measured as 0, though the after_suite arm is single-file rather than the four-file gate.",
+    "fit": "the barrier follows the file's existing _wait_for idiom, but couples the test to the exact log prose 'unknown request: ...' and still duplicates the sibling test's _wait_for and _request.",
+    "goal_fidelity": "tests/test_standby_promotion_claims_leases.py:62-67 now waits for the supervisor's read loop (the 'unknown request: standby-ready-probe' line logged by fleet_supervisor.handle_line) before line 68 asserts no lease holder, so the pre-promotion assertion measures a settled standby rather than a startup race.",
+    "reuse": "the test drives the existing reckon/crew/host_lease.py:HostLease.claim and reckon/crew/fleet_supervisor.py:serve with no parallel mechanism, at the cost of re-implementing readiness by log scraping rather than a shared request-and-ack helper.",
+    "scope_discipline": "the gained commit changes only tests/test_standby_promotion_claims_leases.py, within the manifest's declared write paths, and names no plan, sprint or ticket identifier."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta strengthens the pre-promotion half of the node goal (a standby claims no declared-service lease until promotion) by reading the supervisor's own read-loop log line before asserting lease.holder() is None.\nVERDICT done_when: the done_when's four-file gate is unchanged; the reviewed manifest records it as 16 passed EXIT=0 in barrier-committed-head-gate.log, and the same command reproduced 16 passed EXIT=0 in this review.\nVERDICT write_paths: the gained commit touches only tests/test_standby_promotion_claims_leases.py, one of the manifest's three declared write paths.\nVERDICT manifest: read; baseline_suite and after_suite are now populated (base 01406cea and head 7ebe719f, both exit 0 with no failures), which lets the added-failure count be measured; the prior review found baseline_suite empty.\nVERDICT diff: read commit 7ebe719f against base 4c6d6126: one file, +17/-8, adding a request-response barrier and redirecting supervisor stdout to a log the barrier reads.\nCALL_SITES: reckon/crew/fleet_supervisor.py:serve, reckon/crew/fleet_supervisor.py:DeclaredServices.reload, reckon/crew/host_lease.py:HostLease.claim\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_standby_promotion_claims_leases.py:62-67 now waits for the supervisor's read loop (the 'unknown request: standby-ready-probe' line logged by fleet_supervisor.handle_line) before line 68 asserts no lease holder, so the pre-promotion assertion measures a settled standby rather than a startup race.\nSCORE evidence: 18\nJUSTIFICATION evidence: this review re-ran the four-file gate at 7ebe719f: 16 passed EXIT=0; the run's own logs show the old test passing the startup-reload mutation (1 passed, EXIT=0) while the revised test fails it (1 failed, EXIT=1), and this review reproduced that pair independently; baseline_suite and after_suite are both populated so added_failure_count is measured as 0, though the after_suite arm is single-file rather than the four-file gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commit changes only tests/test_standby_promotion_claims_leases.py, within the manifest's declared write paths, and names no plan, sprint or ticket identifier.\nSCORE durability: 18\nJUSTIFICATION durability: the barrier closes the exact race the prior review named and the negative-control pair demonstrates the guard fires; residual: the readiness signal is a log string, and the assertion is a one-shot check taken after the barrier.\nSCORE fit: 16\nJUSTIFICATION fit: the barrier follows the file's existing _wait_for idiom, but couples the test to the exact log prose 'unknown request: ...' and still duplicates the sibling test's _wait_for and _request.\nSCORE reuse: 16\nJUSTIFICATION reuse: the test drives the existing reckon/crew/host_lease.py:HostLease.claim and reckon/crew/fleet_supervisor.py:serve with no parallel mechanism, at the cost of re-implementing readiness by log scraping rather than a shared request-and-ack helper.\nREVIEWED_BASE_SHA: 4c6d6126b431f3e101245b47bb2323a0254d3327\nREVIEWED_HEAD_SHA: 7ebe719f0e91a8c14c43c7149b259bb1889f80b4\nFINDING tests/test_standby_promotion_claims_leases.py:62 follow-on: the barrier waits for the supervisor's own log prose 'unknown request: standby-ready-probe', so a reworded log line in fleet_supervisor.handle_line would make the wait time out and the test fail for a reason unrelated to lease behaviour; readiness is signalled by log text rather than by a protocol.\nFINDING tests/test_standby_promotion_claims_leases.py:15 follow-on: _wait_for and _request still duplicate the helpers in tests/test_fleet_supervisor_standby.py:15-30, so a change to the supervisor request protocol must be made in two files.\n",
+  "review_run_id": "r-20261007T120715736243-review-of-a-promoted-standby-supervisor-claims-its-service-leases",
+  "reviewed_base_sha": "4c6d6126b431f3e101245b47bb2323a0254d3327",
+  "reviewed_head_sha": "7ebe719f0e91a8c14c43c7149b259bb1889f80b4",
+  "reviewed_run_id": "r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T12:13:25.516845+00:00",
+  "total": 107
+}
