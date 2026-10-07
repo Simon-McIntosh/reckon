@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5342 (dispatch)",
+    "reckon/cli.py:1794 (dry-run pick)",
+    "reckon/crew/picker/__init__.py:92 (pick renders state.jinja through lane_context.build)",
+    "reckon/crew/picker/__init__.py:119 (pick renders questions.jinja)"
+  ],
+  "completed_at": "2026-10-07T18:41:00.559Z",
+  "dispatched_at": "2026-10-07T18:34:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/prompts.py",
+      "line": "203",
+      "severity": "blocking",
+      "text": "blocking: build_questions still keys the route criteria by candidate.backend, and pick() resolves the choice by backend at reckon/crew/picker/__init__.py:23 and :128, so the options Jev is offered are backend names, not the <lane>:<model> pairs the section's item 1 requires; questions.jinja now instructs Jev to choose an offered lane-and-model pair while the keys it is given remain backends, and the brief directed a pair-key change needing pick() to stop with status blocked rather than ship complete and record a follow-on."
+    },
+    {
+      "file": "reckon/crew/picker/lane_context.py",
+      "line": "233",
+      "severity": "follow-on",
+      "text": "follow-on: _groups_by_backend rebuilds the member-to-group index already built at reckon/crew/picker/snapshot.py:523 from the same preflight report shape; a shared owner on the snapshot would remove the second copy. Non-blocking."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit at 83e2c2fde against 1b98398; 564 insertions / 18 deletions over six files - lane_context.py (+155), prompts.py (+10), questions.jinja (one line), tests/test_picker_lanes.py (+325), the golden fixture in test_picker_helpers_have_one_owner.py (regenerated), and the evidence fragment.",
+    "done_when": "tests/test_picker_lanes.py covers the once-per-lane, hostile-JSON and 60-dispatch replay items of the done-when and the manifest records 155 passed base / 158 passed head at EXIT=0; the first done-when item, candidates offered as lane:model pairs, is asserted by no test.",
+    "goal": "the node goal is that Jev picks a lane and a model together with each lane's pressure stated once; reckon/crew/picker/lane_context.py:302 adds a lanes() block keyed by candidate.family and reckon/crew/picker/prompts.py:187 lifts it, but the offered options remain keyed by backend (prompts.py:203), so the pair half of the goal is not delivered.",
+    "manifest": "read; status complete, head 83e2c2fde at base 1b98398, gate-base.log 155 passed EXIT=0 and gate-head.log 158 passed EXIT=0, negative-control.log 1 failed EXIT=1; it concedes under follow_ons that the rendered candidates stay keyed by backend name.",
+    "write_paths": "the manifest declares ten paths; the diff touches six files, every one of them inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_picker_lanes.py:115 reddens when the lanes block is keyed lane:model (the declared negative control), and the replay test asserts refused_model_picks==0 beside jev_calls==60 and no_selection_count==0 so an all-fallback replay cannot fake the zero.",
+    "evidence": "the manifest's gate-base.log (155 passed, EXIT=0) and gate-head.log (158 passed, EXIT=0) and negative-control.log (1 failed, EXIT=1) record the measure, and I independently re-ran tests/test_picker_lanes.py to 3 passed; no arm measures the missing pair keying.",
+    "fit": "reckon/crew/picker/lane_context.py:302 follows the module's own builder idiom - build() composes return_times and local_lane the same way - and adds no plan, sprint or stage label.",
+    "goal_fidelity": "the lanes block (reckon/crew/picker/lane_context.py:302) and its lift (reckon/crew/picker/prompts.py:187) deliver the once-per-lane half, but reckon/crew/picker/prompts.py:203 still keys the offered options by candidate.backend, so the lane:model pair keying of the section's item 1 is absent.",
+    "reuse": "reckon/crew/picker/lane_context.py:302 reads the account figures from the composed budget snapshot rather than recomputing a pace or a burn, but its _groups_by_backend (lane_context.py:233) rebuilds the member-to-group index already built at reckon/crew/picker/snapshot.py:523 from the same report shape.",
+    "scope_discipline": "git show --stat over 83e2c2fde lists six files, every one inside the node's declared write paths, and reckon/crew/picker/__init__.py, reckon/crew/dispatch.py and reckon/cli.py are untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that Jev picks a lane and a model together with each lane's pressure stated once; reckon/crew/picker/lane_context.py:302 adds a lanes() block keyed by candidate.family and reckon/crew/picker/prompts.py:187 lifts it, but the offered options remain keyed by backend (prompts.py:203), so the pair half of the goal is not delivered.\nVERDICT done_when: tests/test_picker_lanes.py covers the once-per-lane, hostile-JSON and 60-dispatch replay items of the done-when and the manifest records 155 passed base / 158 passed head at EXIT=0; the first done-when item, candidates offered as lane:model pairs, is asserted by no test.\nVERDICT write_paths: the manifest declares ten paths; the diff touches six files, every one of them inside the fence.\nVERDICT manifest: read; status complete, head 83e2c2fde at base 1b98398, gate-base.log 155 passed EXIT=0 and gate-head.log 158 passed EXIT=0, negative-control.log 1 failed EXIT=1; it concedes under follow_ons that the rendered candidates stay keyed by backend name.\nVERDICT diff: read commit by commit at 83e2c2fde against 1b98398; 564 insertions / 18 deletions over six files - lane_context.py (+155), prompts.py (+10), questions.jinja (one line), tests/test_picker_lanes.py (+325), the golden fixture in test_picker_helpers_have_one_owner.py (regenerated), and the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:5342 (dispatch), reckon/cli.py:1794 (dry-run pick), reckon/crew/picker/__init__.py:92 (pick renders state.jinja through lane_context.build), reckon/crew/picker/__init__.py:119 (pick renders questions.jinja)\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: the lanes block (reckon/crew/picker/lane_context.py:302) and its lift (reckon/crew/picker/prompts.py:187) deliver the once-per-lane half, but reckon/crew/picker/prompts.py:203 still keys the offered options by candidate.backend, so the lane:model pair keying of the section's item 1 is absent.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's gate-base.log (155 passed, EXIT=0) and gate-head.log (158 passed, EXIT=0) and negative-control.log (1 failed, EXIT=1) record the measure, and I independently re-ran tests/test_picker_lanes.py to 3 passed; no arm measures the missing pair keying.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat over 83e2c2fde lists six files, every one inside the node's declared write paths, and reckon/crew/picker/__init__.py, reckon/crew/dispatch.py and reckon/cli.py are untouched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_picker_lanes.py:115 reddens when the lanes block is keyed lane:model (the declared negative control), and the replay test asserts refused_model_picks==0 beside jev_calls==60 and no_selection_count==0 so an all-fallback replay cannot fake the zero.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/picker/lane_context.py:302 follows the module's own builder idiom - build() composes return_times and local_lane the same way - and adds no plan, sprint or stage label.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/picker/lane_context.py:302 reads the account figures from the composed budget snapshot rather than recomputing a pace or a burn, but its _groups_by_backend (lane_context.py:233) rebuilds the member-to-group index already built at reckon/crew/picker/snapshot.py:523 from the same report shape.\nFINDING reckon/crew/picker/prompts.py:203 blocking: build_questions still keys the route criteria by candidate.backend, and pick() resolves the choice by backend at reckon/crew/picker/__init__.py:23 and :128, so the options Jev is offered are backend names, not the <lane>:<model> pairs the section's item 1 requires; questions.jinja now instructs Jev to choose an offered lane-and-model pair while the keys it is given remain backends, and the brief directed a pair-key change needing pick() to stop with status blocked rather than ship complete and record a follow-on.\nFINDING reckon/crew/picker/lane_context.py:233 follow-on: _groups_by_backend rebuilds the member-to-group index already built at reckon/crew/picker/snapshot.py:523 from the same preflight report shape; a shared owner on the snapshot would remove the second copy. Non-blocking.",
+  "review_run_id": "r-20261007T183422619647-review-of-jev-offers-lane-model-pairs",
+  "reviewed_base_sha": "1b98398693513aceaac6bd8fd3f23d1ae939c62a",
+  "reviewed_head_sha": "83e2c2fde6d1402764d4e8b591dcc7f0cf626ee2",
+  "reviewed_run_id": "r-20261007T181806743618-jev-offers-lane-model-pairs",
+  "reviewer_node": "review-of-jev-offers-lane-model-pairs",
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 11,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T18:39:47.275764+00:00",
+  "total": 98
+}
