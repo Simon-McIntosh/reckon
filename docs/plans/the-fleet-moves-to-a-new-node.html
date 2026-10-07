@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-fleet-moves-to-a-new-node">
+  <meta name="plan-title" content="The Fleet Moves To A New Node">
+  <meta name="plan-summary" content="Fix what loaded the drained fleet node, build a migrate command, then move every session into the same tabs on a new node with coordinators resumed">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="19.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-sprint" content="S21">
+  <meta name="plan-section-declarations" content="{&quot;s2&quot;: &quot;implementable&quot;, &quot;s3&quot;: &quot;implementable&quot;, &quot;s4&quot;: &quot;implementable&quot;, &quot;s5&quot;: &quot;implementable&quot;, &quot;s6&quot;: &quot;implementable&quot;, &quot;s7&quot;: &quot;implementable&quot;, &quot;s8&quot;: &quot;implementable&quot;, &quot;s9&quot;: &quot;implementable&quot;, &quot;s10&quot;: &quot;implementable&quot;, &quot;s11&quot;: &quot;implementable&quot;, &quot;s12&quot;: &quot;implementable&quot;, &quot;s13&quot;: &quot;implementable&quot;}">
+  <title>The Fleet Moves To A New Node | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">reckon &middot; fleet node operation</p>
+      <h1>The fleet moves to a new node</h1>
+      <p class="lead">
+        The fleet allocation, job 1277272, runs on 98dci4-clu-2018, which Slurm has
+        drained since 3 October 15:54 UTC with the reason <code>Kill task failed</code>.
+        The job has no wall clock and a drain does not end it, so nothing forces the
+        move today. But the node leaves service the moment the job ends, an
+        administrator may end it to service the node, and the causes of its load would
+        follow the fleet to any new node. This plan first fixes what loaded the node,
+        then builds the tooling a move needs, then moves every session into the same
+        tabs on a new node and resumes the coordinators where they stopped.
+      </p>
+    </header>
+
+    <h2 id="s1">&sect;1 &mdash; What is moving, and what was decided</h2>
+    <p>
+      The evidence is in
+      <a href="/reckon/what-loaded-the-fleet-node">what-loaded-the-fleet-node</a>. A
+      census taken on 7 October at 03:54 UTC
+      (<code>~/.local/state/fleet/migration/census-20261007T035424Z/</code>) lists what
+      the move must carry:
+    </p>
+    <ul>
+      <li>
+        Five zellij sessions with 13 Claude panes: <code>ambix-fleet</code> (tabs
+        <code>ids</code>, <code>map</code>, <code>alembic</code>), <code>codex-fleet</code>
+        (<code>jt-60sa</code>, <code>map-jev</code>), <code>efit-fleet</code>
+        (<code>recon</code> and a shell tab), <code>nova-fleet</code> (a shell tab
+        <code>plan</code>, then <code>S22</code>, <code>S21</code>) and
+        <code>reckon-fleet</code> (<code>Jev</code>, <code>lane-unpub</code>,
+        <code>depth</code>, <code>hooks</code>, <code>plan review</code>). Every pane's
+        conversation transcript is on shared storage, so every pane can be resumed by
+        its id.
+      </li>
+      <li>
+        The crew runs live at the time of the move. Each runs as a step of job 1277272,
+        launched from a supervisor process inside its coordinator's pane tree.
+      </li>
+      <li>
+        Two declared services under the fleet supervisor, <code>imas-ambix agent
+        ingest</code> and <code>imas-ambix agent publish-watch</code>, plus the health
+        sampler. Followers and per-project watch processes belong to their sessions and
+        restart with them.
+      </li>
+    </ul>
+    <p>
+      The model-serving lane, its router, the embedding service and the graph
+      database run as their own jobs on GPU nodes. They are not on the fleet node and
+      are not touched by anything here.
+    </p>
+    <p>
+      Four choices were made by the lead on 7 October and are locked below: fix first
+      and then migrate; halt the coordinators as late as possible, letting background
+      work run until the cutover; restart each session in the same tabs on the new
+      node; and drive the move from a login node, never from the node being vacated.
+    </p>
+
+    <h2 id="s2">&sect;2 &mdash; The sampler names what stalled the node</h2>
+    <section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      <code>reckon/bin/fleet-health</code> saves a process table only when this user's
+      thread count, its Python process count or available memory crosses a threshold.
+      The failed kill that drained the node and the D-state storm two hours later
+      crossed none of them, and are therefore unattributable. The sampler gains two
+      triggers, the node-wide D-state count and the one-minute load, each with a
+      threshold overridable by environment variable like the existing three. The table
+      it saves gains, per process, its thread count and its wait channel, and the
+      processes in D state are listed whoever owns them, because a stall is often in
+      another user's process or a kernel thread. A snapshot stays rate-limited to one
+      per ten minutes.
+    </p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>
+        A test drives one sampling pass against fixture readings for each new trigger
+        and finds a snapshot written with the thread-count and wait-channel columns
+        present; a pass below every threshold writes none.
+      </li>
+      <li>
+        The three existing triggers fire exactly as before, shown by the same fixture
+        harness.
+      </li>
+      <li>No test reads the real <code>/proc</code> or writes under the real state directory.</li>
+    </ul>
+
+    <h2 id="s3">&sect;3 &mdash; A fleet process gets a bounded thread pool</h2>
+    <section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      Every heavy Python process on the node opened a thread pool as wide as its 28
+      cores: an <code>imas-codex serve</code> process holds 57 threads, a pytest process
+      55 to 61. The allocation's environment therefore sets
+      <code>OMP_NUM_THREADS</code>, <code>OPENBLAS_NUM_THREADS</code>,
+      <code>MKL_NUM_THREADS</code>, <code>NUMEXPR_NUM_THREADS</code> and
+      <code>VECLIB_MAXIMUM_THREADS</code> to one declared default, chosen in the
+      <code>thread-cap</code> decision, unless the variable is already set. The setting
+      goes where every process on the node inherits it: the batch script that
+      <code>fleet_node.generate_hold_script</code> writes, which is what starts the
+      supervisor, the zellij servers, the panes and every worker, and
+      <code>reckon/bin/fleet-claude</code> for a pane started some other way. A process
+      that needs more threads raises its own variable.
+    </p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>The generated hold script exports each variable with the declared default, and keeps a value already set in the submitting environment; tests assert both.</li>
+      <li><code>fleet-claude</code> exports the same defaults without overriding a value already set; a test runs it with a stub <code>claude</code> and reads the environment the stub received.</li>
+      <li>One recorded measurement on the new node, after &sect;10, shows a numpy import holding fewer threads than the 28-wide pool measured on clu-2018.</li>
+    </ul>
+
+    <h2 id="s4">&sect;4 &mdash; The supervisor collects every child</h2>
+    <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      <code>fleet_supervisor._reap_finished_children</code> runs only between FIFO
+      requests, and requests are rare, so an exited child can stay defunct for days:
+      an <code>imas-ambix</code> service child started on 2 October is still a zombie
+      under the supervisor. Collection must not depend on a request arriving. The
+      supervisor collects exited children on a bounded interval, or on
+      <code>SIGCHLD</code>, while still never racing the synchronous wait that the
+      session start performs on its own child.
+    </p>
+    <p>
+      <strong>Hazard for the worker:</strong> <code>tests/test_fleet_supervisor.py</code>
+      has been measured starting the operator's declared imas-ambix services and
+      leaking them. The gate for this section runs with the services configuration
+      pointed at a temporary directory, and the worker scans its own processes for
+      leaked services after the run.
+    </p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A test starts a short-lived child under the serving loop with no request arriving, and finds it collected within the bound.</li>
+      <li>The existing session-start tests still pass, showing the synchronous wait is not raced.</li>
+    </ul>
+
+    <h2 id="s5">&sect;5 &mdash; A declared service runs once across nodes</h2>
+    <section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      A declared service is kept to one copy by a lock in the supervisor's runtime
+      directory, which is node-local <code>/tmp</code>. During a move two supervisors
+      run on two nodes, and the second would start a second
+      <code>imas-ambix agent ingest</code> and <code>publish-watch</code> writing the
+      same shared outputs. The supervisor gains a lease on shared storage beside the
+      fleet record: a service's lease names the host, the pid and the job that hold
+      it, and the holder renews it on a short interval. A supervisor on another host
+      starts the service only when no lease is held or the lease has gone stale past a
+      bound several times the renewal interval. Releasing a service, on stop or on
+      shutdown, removes its own lease and never another host's. The node-local lock
+      stays, because it is what guards one node against two copies.
+    </p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A test with two supervisor instances, two runtime directories, two host names and one shared state directory starts one copy of a declared service, and the second instance reports the holder.</li>
+      <li>A stale lease is taken over, and a fresh one is not; the staleness bound is a named constant.</li>
+      <li>The test points the services configuration at a temporary directory and starts no real service.</li>
+    </ul>
+
+    <h2 id="s6">&sect;6 &mdash; Every launch can be frozen at once</h2>
+    <section data-reckon="section" data-id="s6" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      The quiesce in &sect;11 needs launches to stop everywhere, not only where a
+      coordinator agrees to stop. Today <code>crew drain</code> only reports, and
+      reflex reviews, repair resumes, <code>crew recover</code> and plan reviews launch
+      on their own. A freeze is one record in the crew state on shared storage, naming
+      who froze it, when, and why. While it is present every path that starts a worker
+      refuses with a message naming the freeze and how to lift it: dispatch, resume,
+      redispatch, the review and repair reflexes, recover, and plan review.
+      <code>reckon crew freeze --reason TEXT</code> writes it and <code>reckon crew
+      thaw</code> removes it; both print the record they acted on. Reads, follows,
+      completion and promotion are not launches and keep working, so finished runs can
+      still land during the freeze.
+    </p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>One test per launching path finds it refused under a freeze with the freeze named in the refusal, and a control finds the same call admitted once thawed.</li>
+      <li>The set of launching paths is found by a search the test runs over the code, not by a hand list, so a launch path added later without the check fails the test.</li>
+      <li>Completion and promotion under a freeze still succeed.</li>
+    </ul>
+
+    <h2 id="s7">&sect;7 &mdash; The worker reservation can be moved</h2>
+    <section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      Workers are placed by the shared reservation record, which names the job every
+      worker step joins. <code>ensure_reservation</code> replaces that record only when
+      its job has left the queue, so it cannot be pointed at a new allocation while the
+      old one still runs. A replacement names its target job explicitly, refuses a job
+      that is not running or is not this user's, records the job it replaced, and
+      prints both. Steps already running in the old job are untouched; every later
+      dispatch and resume places into the new one.
+    </p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>A test with a fake scheduler replaces a live record, and a dispatch composed afterwards names the new job in its step prefix.</li>
+      <li>Replacement refuses a pending job, a job of another user, and a job id the scheduler does not know, each with its own message.</li>
+    </ul>
+
+    <h2 id="s8">&sect;8 &mdash; One command carries the move</h2>
+    <section data-reckon="section" data-id="s8" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      <code>reckon fleet-node migrate</code> gathers the move's steps so that each is
+      run, checked and recorded the same way every time. Every subcommand writes what
+      it did into a migration ledger under
+      <code>~/.local/state/fleet/migration/&lt;started-at&gt;/</code> on shared storage,
+      and every subcommand that acts takes a dry run first.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Subcommand</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>census</code></td>
+          <td>
+            Runs on the old node through a step or ssh from the login node. Records
+            every zellij session with its layout dump, every Claude pane with its
+            conversation id, peer name, tab, pane and working directory, every live crew
+            run with its resume path, and every declared service. It confirms each
+            conversation's transcript exists, and changes nothing.
+          </td>
+        </tr>
+        <tr>
+          <td><code>layout</code></td>
+          <td>
+            Writes one zellij layout per session from the census:
+            <code>~/.config/zellij/layouts/migrate-&lt;session&gt;.kdl</code>. Tabs keep
+            their names and order. Each Claude pane runs <code>fleet-claude --resume
+            &lt;id&gt;</code> in its working directory, followed by the continue prompt
+            the ledger holds for it, if any. A tab holding only a shell comes back as a
+            shell, without the saved scrollback reference the dump carries.
+          </td>
+        </tr>
+        <tr>
+          <td><code>stand-up</code></td>
+          <td>
+            Holds the new allocation with its supervisor in standby (&sect;10), waits
+            until it runs, confirms the supervisor is serving requests, and runs one
+            step inside it.
+          </td>
+        </tr>
+        <tr>
+          <td><code>promote</code></td>
+          <td>
+            Points the worker reservation at the new job (&sect;7), has the standby
+            supervisor publish the fleet record, and moves the declared services to it
+            through their leases (&sect;5). Prints the records before and after.
+          </td>
+        </tr>
+        <tr>
+          <td><code>cutover &lt;session&gt;</code></td>
+          <td>
+            Ends that zellij session on the old node, asks the new supervisor to start it
+            from its migration layout, and checks each pane: a Claude process running on
+            the new node with the expected conversation id.
+          </td>
+        </tr>
+        <tr>
+          <td><code>retire</code></td>
+          <td>
+            Confirms the old job holds no worker steps and no panes, then prints the
+            cancel command for that job id. It cancels only with an explicit
+            confirmation flag, and prints what the scheduler answered.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The ledger is the resume path for the whole move: if the driving session is lost,
+      a new session reads the ledger and continues from the last recorded step.
+    </p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>Against the 7 October census, <code>layout</code> reproduces each of the five sessions' tab names in order, and each Claude pane's conversation id and working directory, with zero differences; a test holds that census as a fixture.</li>
+      <li>Every acting subcommand's dry run prints the actions it would take and changes nothing, asserted by a test.</li>
+      <li><code>retire</code> without its confirmation flag cancels nothing, and with it names the one job id it cancels.</li>
+    </ul>
+
+    <h2 id="s9">&sect;9 &mdash; A rehearsal on a probe session</h2>
+    <section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      Before any real session moves, the tooling moves a throwaway one. On the current
+      node, a probe zellij session with two tabs, one holding a short Claude
+      conversation and one a shell, is taken through <code>census</code>,
+      <code>layout</code> and <code>cutover</code> back onto the same node. A second
+      probe is cut over onto the new allocation once &sect;10 has held it, before any
+      real session moves.
+    </p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>The probe returns with the same tab names in the same order, its Claude pane resumed under the same conversation id, and its transcript growing after a prompt.</li>
+      <li>The rehearsal's ledger is kept and linked from the landed evidence.</li>
+    </ul>
+
+    <h2 id="s10">&sect;10 &mdash; Stand the new node up in standby</h2>
+    <section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      The new allocation is held before anything stops, so the halt in &sect;11 is as
+      short as possible. A supervisor publishes the fleet record when it starts, and
+      <code>cx</code> attaches wherever that record points, so a new supervisor that
+      published at once would send the next attach to a node with no sessions on it.
+      <code>migrate stand-up</code> therefore starts the new supervisor in standby: it
+      serves requests, but publishes no fleet record and starts no declared service
+      until the migrate command promotes it at cutover. Until then every attach still
+      reaches the old node. The second rehearsal of &sect;9 runs on the standby node.
+    </p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>The new allocation is running on a rigel node other than clu-2018, its standby supervisor answers a request, and one step runs inside it.</li>
+      <li>The fleet record and the reservation record still name job 1277272, read after the stand-up.</li>
+      <li>The second probe rehearsal passes on the new node.</li>
+    </ul>
+
+    <h2 id="s11">&sect;11 &mdash; Quiesce, as late as possible</h2>
+    <section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      Coordinators keep working, and their workers keep running, until the cutover is
+      ready to start. Then, in order:
+    </p>
+    <ol>
+      <li>Freeze every launch with <code>reckon crew freeze</code> (&sect;6), giving the move as the reason.</li>
+      <li>Message every coordinator pane: reach a checkpoint, launch nothing, record your state in your plan, and reply with your live runs and whether you stopped mid-task. Panes are interactive sessions, which receive peer messages; workers are not, and are never messaged.</li>
+      <li>Let running workers finish and land. A run that cannot finish within the halt window is recorded in the ledger with its resume path and left unpromoted, because promoting an unfinished run destroys its resume path.</li>
+      <li>Take the final census. For each pane the ledger records whether it was halted mid-task, and the continue prompt it will receive.</li>
+    </ol>
+    <p>
+      A resumed conversation still shows its earlier background tasks and monitors as
+      running, but their processes ended with the old node. The continue prompt says so,
+      names the new node, and asks the coordinator to re-arm what it needs before it
+      continues from its plan.
+    </p>
+    <p><strong>Done when:</strong> the freeze is recorded, every coordinator pane has replied or is recorded as idle, no worker step of job 1277272 is running except those recorded as parked, and the final census is in the ledger.</p>
+
+    <h2 id="s12">&sect;12 &mdash; Cut over each session into its own tabs</h2>
+    <section data-reckon="section" data-id="s12" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <ol>
+      <li>Run <code>migrate promote</code>: the worker reservation now names the new job, the standby supervisor publishes the fleet record, and it takes the service leases as the old supervisor stops its two services.</li>
+      <li>Run <code>migrate cutover</code> for each of the five sessions in turn, from the login node, checking each before the next.</li>
+      <li>Confirm each pane from outside it: a Claude process on the new node under the expected conversation id, the session visible as a peer, and its transcript growing after its continue prompt.</li>
+    </ol>
+    <p><strong>Done when:</strong> all 13 panes run on the new node in tabs whose names and order match the final census exactly, every halted coordinator has acknowledged its continue prompt, and both imas-ambix services run once, on the new node.</p>
+
+    <h2 id="s13">&sect;13 &mdash; Retire the old allocation and resume the work</h2>
+    <section data-reckon="section" data-id="s13" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <ol>
+      <li>Lift the freeze with <code>reckon crew thaw</code>.</li>
+      <li>Resume every parked run with <code>crew resume</code>; each now places into the new job.</li>
+      <li>Run <code>migrate retire</code>, which confirms job 1277272 holds no steps and no panes before it cancels that job id, and read what the scheduler answered.</li>
+      <li>Ask SDCC to inspect clu-2018 and return it to service; the drain reason and the step it matched are in the research record.</li>
+      <li>Record the landed evidence, and close the plan.</li>
+    </ol>
+    <p><strong>Done when:</strong> job 1277272 has left the queue, the freeze is lifted, every parked run has resumed or been closed with a reason, and the health sampler is writing on the new node.</p>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+      <h2><span class="sec">&sect;</span> Evidence gates</h2>
+      <div class="r-gate" data-id="g-tfmtann-rehearsal" data-section="s9"
+           data-gated-sections="s11,s12,s13" data-status="open" data-verdict="">
+        <h4 class="r-gate-measure">A probe session returns in the same tabs, its Claude pane resumed by conversation id, on the current node and on the new node</h4>
+        <p class="r-gate-required-evidence">
+          The rehearsal ledgers from &sect;9 and &sect;10, with tab lists and conversation ids before and after.
+        </p>
+      </div>
+    </section>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">&sect;</span> Decisions</h2>
+      <div class="r-dec" data-key="order" data-choice="fix-then-migrate" data-by="Simon McIntosh" data-when="2026-10-07">
+        <p class="r-dec-q">Fix the defects and build the tooling first, or move now by hand?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="fix-then-migrate">Fix, build, then migrate</button>
+          <button class="r-opt" data-value="migrate-now">Migrate now by hand</button>
+        </p>
+        <p class="r-dec-rat">The node is stable and the job has no wall clock, so the move can wait for tooling that makes it repeatable, and the new node should not inherit the old one's load.</p>
+      </div>
+      <div class="r-dec" data-key="halt-timing" data-choice="as-late-as-possible" data-by="Simon McIntosh" data-when="2026-10-07">
+        <p class="r-dec-q">When are coordinators halted?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="as-late-as-possible">As late as possible</button>
+          <button class="r-opt" data-value="at-start">At the start of the move</button>
+        </p>
+        <p class="r-dec-rat">Work continues until the cutover is ready; the new node is stood up and rehearsed before anything stops.</p>
+      </div>
+      <div class="r-dec" data-key="tab-fidelity" data-choice="same-tabs" data-by="Simon McIntosh" data-when="2026-10-07">
+        <p class="r-dec-q">How are sessions restored on the new node?</p>
+        <p class="r-dec-rat">Each session restarts in the same tabs, in the same order, each Claude pane resumed by its conversation id. Tabs closed before the final census are not restored.</p>
+      </div>
+      <div class="r-dec" data-key="driver" data-choice="login-node" data-by="Simon McIntosh" data-when="2026-10-07">
+        <p class="r-dec-q">Where does the session driving the move run?</p>
+        <p class="r-dec-rat">On a login node, because every pane on the old node ends at its cutover, a driver there included.</p>
+      </div>
+      <div class="r-dec" data-key="cutover-mechanism" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Move by a second allocation with a per-session cutover, or by requeueing job 1277272?</p>
+        <p class="r-dec-ctx">The job is requeueable and has already been requeued twice after node failures (clu-2058, then clu-2020), each time resurrecting its panes on the next node. A planned requeue keeps the job id, so the fleet and reservation records stay valid, but every session and worker stops at once and there is no way back. A second allocation lets sessions move one at a time and keeps the old node until the last one has moved.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="second-allocation">Second allocation, per-session cutover</button>
+          <button class="r-opt" data-value="planned-requeue">Planned requeue of 1277272</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="thread-cap" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What default caps a fleet process's compute-library thread pool?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="4">4 threads</button>
+          <button class="r-opt" data-value="8">8 threads</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="new-node-size" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What size is the new allocation?</p>
+        <p class="r-dec-ctx">The current job holds 28 cores and 120 GB. The hold command's defaults are 26 cores and 96 GB, which leave two cores and GPFS headroom to the system so slurmd keeps answering under load.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="defaults">26 cores, 96 GB</button>
+          <button class="r-opt" data-value="as-now">28 cores, 120 GB</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">&sect;</span> Followups</h2>
+      <article class="r-fu" data-id="f-tfmtann-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build the-fleet-moves-to-a-new-node">
+        <h4 class="r-fu-title">Land the fixes and the migrate tooling, then rehearse</h4>
+        <div class="r-fu-body"><p>&sect;2 to &sect;8 are implementation; &sect;3, &sect;4, &sect;5 and the standby half of &sect;10 share <code>fleet_supervisor.py</code> or <code>fleet_node.py</code> and are sequenced. &sect;9 follows them. The operational sections wait on the rehearsal gate and on the open decisions.</p></div>
+        <pre class="r-fu-prompt">/reckon-build the-fleet-moves-to-a-new-node</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="what-loaded-the-fleet-node">
+  <meta name="plan-title" content="What loaded the fleet node">
+  <meta name="plan-summary" content="Fleet node pressure was test and compute work multiplied by full-width thread pools; the drain and a D-state storm left no process table">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="the-fleet-moves-to-a-new-node">
+  <meta name="plan-source" content="fleet-health samples and alert snapshots, sacct, scontrol, a census of the node">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-10-07">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <title>What loaded the fleet node | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Root cause analysis &middot; fleet node 98dci4-clu-2018, job 1277272</p>
+      <h1>What loaded the fleet node</h1>
+      <p class="lead">
+        The fleet node was never leaking processes. It was carrying test suites and
+        compute jobs whose every Python process opened a thread pool as wide as the
+        node, so a few dozen processes became four to six thousand threads. Two events
+        that matter most &mdash; the failed kill that drained the node on 3 October and a
+        D-state storm two hours later &mdash; left no process table, because the sampler
+        only photographs the node on task count, Python count and memory.
+      </p>
+    </header>
+
+    <section id="method">
+      <h2>Method</h2>
+      <p>
+        The evidence is what the fleet already writes to shared storage, read from the
+        login node after the fact:
+      </p>
+      <ul>
+        <li>
+          <code>~/.local/state/fleet/health/1277272-98dci4-clu-2018.tsv</code>: one
+          <code>fleet-health</code> sample a minute since 28 September, 12,789 rows when
+          read. Columns used: load, the user's thread count (<code>ps -L -u $USER</code>),
+          the node-wide count of processes in D state, available memory, and a timed
+          <code>stat</code> of the home directory.
+        </li>
+        <li>
+          The eight process-table snapshots the sampler wrote beside it on 5 and 6
+          October, each written when an alert threshold was crossed.
+        </li>
+        <li>
+          <code>sacct</code> for the job's steps and <code>scontrol show node</code> for
+          the drain reason and its timestamp.
+        </li>
+        <li>
+          A census of every Claude pane, crew run and service on the node, taken on
+          7 October and kept under <code>~/.local/state/fleet/migration/</code>.
+        </li>
+      </ul>
+      <p>
+        Two counts in the samples are easy to misread. The task column counts
+        <em>threads</em> of this user, which is what the fleet's soft
+        <code>RLIMIT_NPROC</code> of 6,000 also counts. The D-state column counts
+        <em>processes</em> of every user on the node, kernel threads included, so it is
+        not the same population as the task column.
+      </p>
+    </section>
+
+    <section id="the-note">
+      <h2>Where the "under pressure" note comes from</h2>
+      <p>
+        <code>fleet-health</code> raises an alert when the user's thread count exceeds
+        4,000, Python processes exceed 1,000, or available memory falls below 12,000 MB.
+        It writes the alert to <code>alerts.log</code>, saves a process table, and puts
+        the same line in <code>~/.local/state/fleet/notice</code>.
+        <code>fleet-attach</code> prints that notice once, on the next attach, and moves
+        it to <code>notice.seen</code>. So the note seen when attaching is the most recent
+        alert, which may be hours old: the last one before this analysis was written at
+        6 October 08:04 UTC, reading 4,035 tasks.
+      </p>
+    </section>
+
+    <section id="timeline">
+      <h2>Timeline</h2>
+      <figure>
+        <img src="/reckon/figures/what-loaded-the-fleet-node/fleet-node-pressure.svg"
+             alt="Thread count, one-minute load and processes in D state on the fleet node from 2 to 7 October">
+        <figcaption>
+          The fleet node from 2 to 7 October, one sample a minute. Top: this user's
+          thread count against the 4,000 alert threshold and the 6,000 soft ceiling.
+          Bottom: one-minute load and the node-wide count of processes in D state; the
+          node has 28 cores. The dotted vertical line is the drain, 3 October 15:54:13
+          UTC.
+        </figcaption>
+      </figure>
+      <table>
+        <thead>
+          <tr><th>When (UTC)</th><th>Peak</th><th>Process table</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>3 Oct 15:54</td>
+            <td>node drained, reason <code>Kill task failed</code></td>
+            <td>none: 3,532 tasks that hour, below every trigger</td>
+          </tr>
+          <tr>
+            <td>3 Oct 17:29&ndash;17:33</td>
+            <td>468 processes in D state, load 459</td>
+            <td>none: no trigger watches D state or load</td>
+          </tr>
+          <tr>
+            <td>5 Oct 10:00&ndash;12:00</td>
+            <td>load 176, 5,542 tasks</td>
+            <td>three snapshots, 10:53, 11:03 and 11:13</td>
+          </tr>
+          <tr>
+            <td>6 Oct 02:00&ndash;09:00</td>
+            <td>5,731 tasks, 269 below the ceiling; 12.9 GB available at 07:00</td>
+            <td>four snapshots, 03:47 to 08:04</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Smaller excursions run through 2 and 3 October: load above 100 with up to 71
+        processes in D state on 2 October at 06:00, and two home-directory stalls on
+        3 October of 2.1 s at 07:00 and 3.6 s at 19:00, against a usual 7 to 10 ms.
+      </p>
+    </section>
+
+    <section id="composition">
+      <h2>What the pressure was made of</h2>
+      <p>
+        Every snapshot shows between 227 and 271 processes, so the thread count did
+        not grow by spawning. It grew because each heavy Python process carries a thread
+        pool sized to the node's 28 cores. Measured on 7 October, an
+        <code>imas-codex serve</code> process holds 57 threads and an imas-codex pytest
+        process 55 to 61. Thirty such processes are about 1,700 threads before anything
+        else on the node is counted, and they compete for 28 cores.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Snapshot (UTC)</th><th>Processes</th><th>Largest groups</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>5 Oct 11:03</td>
+            <td>228</td>
+            <td>24 imas-ambix pytest-xdist workers holding 37.3 GB; 11 multiprocessing resource trackers</td>
+          </tr>
+          <tr>
+            <td>6 Oct 03:57</td>
+            <td>271</td>
+            <td>6 nova pytest-xdist workers holding 14.7 GB; 16 nova multiprocessing workers holding 10.7 GB</td>
+          </tr>
+          <tr>
+            <td>6 Oct 08:04</td>
+            <td>227</td>
+            <td>4 nova pytest processes holding 22.7 GB; 8 imas-ambix pytest-xdist workers holding 7.0 GB; 14 nova jax probe processes</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        The snapshot records no thread count per process, so the per-process share of
+        the 4,000 to 5,700 threads has to be inferred from the processes measured
+        afterwards rather than read from the table.
+      </p>
+    </section>
+
+    <section id="drain">
+      <h2>The drain</h2>
+      <p>
+        Slurm drained the node at 15:54:13 on 3 October with the reason
+        <code>Kill task failed</code>: a cancelled step's processes did not exit within
+        the kill timeout. The only step of job 1277272 that ended near that moment is
+        <code>1277272.1549</code>, a sandboxed crew worker cancelled by this user and
+        recorded as ending at 15:54:15. The match is by timing; the node's own slurmd log
+        is not readable from here. Processes that cannot be killed are usually in
+        uninterruptible sleep, and by 5 October none remained.
+      </p>
+      <p>
+        A drain does not end a running job. It stops the scheduler placing new jobs on
+        the node, so the fleet has kept working, and steps 1560 onwards have started
+        inside the allocation since. The node leaves service when job 1277272 ends, and
+        returns only when an administrator resumes it.
+      </p>
+    </section>
+
+    <section id="storm">
+      <h2>The D-state storm</h2>
+      <p>
+        From 17:29 to 17:33 on 3 October the node-wide D-state count rose from 79 to
+        468 and load reached 459. During the same minutes the kernel's count of
+        processes blocked on I/O stayed at 2 to 3 and a stat of the home directory took
+        7 ms, so this was not a GPFS stall of the ordinary kind. It cleared by 17:34. No
+        process table exists for it, so neither the processes nor their wait channels
+        are known. It is recorded here as unattributed, not as explained.
+      </p>
+    </section>
+
+    <section id="not-the-cause">
+      <h2>What it was not</h2>
+      <ul>
+        <li>
+          <strong>Not a spawn leak.</strong> The two leaks previously measured on this
+          fleet each reached about 7,500 Python processes. These episodes never exceeded
+          271 processes of any kind.
+        </li>
+        <li>
+          <strong>Not a lost node.</strong> The controller answered all 7,406 pings
+          from 2 October on, and slurmd never took longer than 912 ms to answer.
+        </li>
+        <li>
+          <strong>Not memory exhaustion</strong>, with one near miss: available memory
+          fell to 12.9 GB on 6 October at 07:00 against a job limit of 120 GB on a
+          128 GB node.
+        </li>
+      </ul>
+    </section>
+
+    <section id="defects">
+      <h2>Defects found</h2>
+      <table>
+        <thead>
+          <tr><th>Defect</th><th>Mechanism</th><th>Consequence</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>The sampler cannot name a stall</td>
+            <td><code>fleet-health</code> saves a process table only on threads, Python processes or memory, and the table it saves has no thread count or wait channel</td>
+            <td>The drain and the D-state storm are unattributable</td>
+          </tr>
+          <tr>
+            <td>Thread pools are as wide as the node</td>
+            <td>Nothing in the fleet environment caps OpenMP, BLAS, numexpr or XLA threads, and nothing bounds how many heavy test runs share the node</td>
+            <td>Load to 176 on 28 cores; 5,731 of the 6,000 threads after which every new process of this user on the node fails to start</td>
+          </tr>
+          <tr>
+            <td>The supervisor leaves zombies</td>
+            <td><code>fleet_supervisor</code> collects exited children only between FIFO requests, and requests are rare</td>
+            <td>An <code>imas-ambix</code> service child started on 2 October has been left defunct under the supervisor</td>
+          </tr>
+          <tr>
+            <td>A service lock is node-local</td>
+            <td>The lock that keeps one copy of a declared service lives in the runtime directory under <code>/tmp</code></td>
+            <td>A second supervisor on another node would start a second <code>imas-ambix agent ingest</code> and <code>publish-watch</code></td>
+          </tr>
+          <tr>
+            <td>Dispatch cannot be paused</td>
+            <td><code>crew drain</code> only reports; reflex reviews, repairs and <code>crew recover</code> launch on their own</td>
+            <td>Asking coordinators to stop does not stop every launch</td>
+          </tr>
+          <tr>
+            <td>The worker reservation cannot be moved</td>
+            <td><code>ensure_reservation</code> replaces the record only when its job has left the queue</td>
+            <td>Workers cannot be pointed at a new allocation while the old one runs</td>
+          </tr>
+          <tr>
+            <td>The status warning reads backwards</td>
+            <td><code>fleet-node status</code> says the allocation ends when the drain completes</td>
+            <td>The drain completes when the allocation ends, so the warning overstates the urgency</td>
+          </tr>
+          <tr>
+            <td>Node-local scratch is unbounded</td>
+            <td>Workers leave scratch files at the top of <code>/tmp</code></td>
+            <td>8,111 top-level entries of this user, plus 645 MB under <code>/tmp/claude-39486</code>, all lost when the node is left</td>
+          </tr>
+          <tr>
+            <td>A login-node timer runs on the fleet node</td>
+            <td>An ssh login starts the user's systemd on the compute node, which starts <code>reckon-paid-lanes.timer</code>; <code>reckon.service</code> correctly refuses through its host condition</td>
+            <td>Probably a second publisher of the metered-lane document; the login node's copy was not checked</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        The first four, together with the tooling the move needs, are the fix sections
+        of <a href="/reckon/the-fleet-moves-to-a-new-node">the-fleet-moves-to-a-new-node</a>.
+      </p>
+    </section>
+
+    <section id="state">
+      <h2>State when this was written</h2>
+      <p>
+        At 04:13 on 7 October the node was calm: load 6.5 on 28 cores, about 1,400
+        threads, no processes in D state, 87 GB available. The node remained
+        <code>ALLOCATED+DRAIN</code> with job 1277272 running and no wall clock.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
