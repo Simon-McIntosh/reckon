@@ -1174,11 +1174,21 @@ def load_capabilities(path: str | Path | None = None) -> dict[str, Any]:
 PICK_INPUT_CACHE_VERSION = 2
 
 
-def pick_input_cache_path(name: str, *, root: str | Path | None = None) -> Path:
-    """One cache file per named picker input."""
+def pick_input_cache_path(
+    name: str,
+    *,
+    root: str | Path | None = None,
+    filename: str | None = None,
+) -> Path:
+    """One cache file per named picker input.
+
+    ``filename`` overrides the default leaf, so an input whose directory is
+    resolved by its own kind owner can still keep the file name other readers
+    expect; it defaults to ``picker-<name>.json``.
+    """
 
     base = _store.cache_root("pick-input", override=root)
-    return base / f"picker-{name}.json"
+    return base / (filename if filename is not None else f"picker-{name}.json")
 
 
 def file_stamp(path: str | Path) -> list[int] | None:
@@ -1231,6 +1241,7 @@ def cached_pick_input(
     build: Callable[[], Any],
     *,
     root: str | Path | None = None,
+    filename: str | None = None,
 ) -> Any:
     """Return the cached value for ``stamp``, or rebuild and store it.
 
@@ -1238,10 +1249,12 @@ def cached_pick_input(
     from the files the input reads, and ``build`` must not consult anything
     that has to be live. When the stored key differs from ``stamp`` the input
     is recomputed, which is how a changed file, a first process and a corrupt
-    cache all converge on a fresh value.
+    cache all converge on a fresh value. ``root`` and ``filename`` select the
+    cache directory and leaf, so an input with its own cache kind reuses this
+    one implementation rather than forking it.
     """
 
-    path = pick_input_cache_path(name, root=root)
+    path = pick_input_cache_path(name, root=root, filename=filename)
     key = pick_input_stamp_key(stamp)
     entry = _read_pick_entry(path)
     if entry is not None and entry.get("key") == key:

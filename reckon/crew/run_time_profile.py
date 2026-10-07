@@ -76,16 +76,19 @@ _MINUTES_RE = re.compile(
 )
 
 
-def _number(value: object) -> int | float | None:
-    """Return ``value`` when it is a real number, else ``None``.
+def _number(value: object) -> float | None:
+    """Return ``value`` as a float when it is a real number, else ``None``.
 
     ``bool`` is a numeric subclass and is rejected, so a JSON ``true`` never
-    counts as the number one.
+    counts as the number one, and a non-finite float (``NaN`` or an infinity) is
+    rejected too, because a router weighing lanes must never divide by or weigh
+    a figure that has no magnitude.
     """
 
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
-    return value
+    number = float(value)
+    return number if math.isfinite(number) else None
 
 
 def _text(value: object) -> str | None:
@@ -435,6 +438,7 @@ def local_lane_load() -> dict[str, Any]:
     )
     return {
         "read_at": read_at.isoformat(),
+        "document": document,
         "observed_at": _known(reading.get("observed_at")),
         "state": _known(reading.get("state")),
         "running": _known(reading.get("running")),

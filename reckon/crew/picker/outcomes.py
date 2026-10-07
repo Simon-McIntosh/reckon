@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import fcntl
 import json
-import math
 import os
 import re
 from collections import Counter, defaultdict
@@ -24,7 +23,7 @@ from typing import Any
 
 from reckon import flight, ledger
 from reckon._timestamps import parse_utc
-from reckon.crew.run_time_profile import run_time_profile
+from reckon.crew.run_time_profile import _number, _percentile, run_time_profile
 
 REVIEW_SUCCESS_SCORE = 80
 SUCCESS_RULE = (
@@ -34,20 +33,6 @@ SUCCESS_RULE = (
 )
 BUCKETS = ("below_0.5", "0.5_to_0.7", "0.7_to_0.85", "0.85_and_above")
 BURN_LEVELS = ("below_1", "1_to_2", "2_to_4", "4_and_above", "unknown")
-
-
-def _number(value: object) -> float | None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    number = float(value)
-    return number if math.isfinite(number) else None
-
-
-def _percentile(values: list[float], fraction: float) -> float | None:
-    if not values:
-        return None
-    ordered = sorted(values)
-    return ordered[math.ceil(fraction * len(ordered)) - 1]
 
 
 def _success(row: Mapping[str, Any]) -> bool | None:
