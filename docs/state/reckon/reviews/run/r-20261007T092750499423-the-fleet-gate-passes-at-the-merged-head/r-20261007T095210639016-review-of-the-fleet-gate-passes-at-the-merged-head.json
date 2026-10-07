@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate arms. baseline-suite.log (revision 50cd404b) reports 2 failed, 41 passed, EXIT=1 with failing ids test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition and test_dispatch_counts_worker_slots.py::test_a_lane_change_resolves_under_the_runs_coordinator_session. after-suite.log (revision 9b9d4fa) reports 43 passed, EXIT=0 with no FAILED/ERROR id. Head failing ids minus base failing ids is empty, so added_failure_count 0, added_failure_ids [].",
+  "base_log_revision": "50cd404bd2f5a01fead70f1962fab7de45c949a4",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:1169 crew_gate (the help line the census reads)",
+    "reckon/crew/dispatch.py:12529 change_lane (the changed function)",
+    "reckon/cli.py:6901 crew_redispatch",
+    "reckon/cli.py:6787 crew_resume"
+  ],
+  "completed_at": "2026-10-07T10:10:20.984Z",
+  "dispatched_at": "2026-10-07T09:52:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "12596",
+      "severity": "follow-on",
+      "text": "follow-on: the fallback is unreachable from production \u2014 plan_dispatch always sets lane_gate to the dict from _dispatch_lane_gate (reckon/crew/dispatch.py:5908, 5962), so getattr(resolution, \"lane_gate\", None) is never None and the branch runs only for the two test doubles whose SimpleNamespace omits the field (tests/test_dispatch_counts_worker_slots.py:461, tests/test_the_fleet_gate_holds_dispatch.py:201). It is harmless because re-reading is stricter than the old or-empty-dict, but supplying lane_gate on those doubles would keep production free of a branch no runtime input reaches."
+    }
+  ],
+  "head_log_revision": "9b9d4fa4068f6914a84b47bab1c4658c37960629",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 50cd404b; 99b7323df carries a two-line change to reckon/cli.py and tests/test_crew_help_names_its_state.py and 9b9d4fa40 a four-line change to reckon/crew/dispatch.py and tests/test_the_fleet_gate_holds_dispatch.py, every path inside the fence.",
+    "done_when": "the declared gate is the four-file pytest run; baseline-suite.log (revision 50cd404b) records 2 failed, 41 passed, EXIT=1 and after-suite.log (revision 9b9d4fa) records 43 passed, EXIT=0, and all three named tests live in those four files.",
+    "goal": "the node goal is to make the fleet gate change pass the three tests it reddened on merge; the diff registers the new gate verb in the help census (tests/test_crew_help_names_its_state.py:28), retargets the verb's first help line (reckon/cli.py:1170) and makes change_lane read a gate when its resolution omits lane_gate (reckon/crew/dispatch.py:12596).",
+    "manifest": "read; status complete, base 50cd404b, head 9b9d4fa, baseline_suite and after_suite both present and naming their logs, negative_control_log declared, a landing line present, and both commit bodies present and conventional.",
+    "write_paths": "read the manifest and the run pointer; the resumed advice granted tests/test_crew_help_names_its_state.py, and all four changed paths sit inside the six write paths the pointer records."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows reverting the dispatch.py fallback reddens tests/test_dispatch_counts_worker_slots.py::test_a_lane_change_resolves_under_the_runs_coordinator_session at EXIT=1, and the census reddens if reckon/cli.py:1170 loses the phrase it asserts.",
+    "evidence": "both gate arms are on disk and named by revision \u2014 baseline-suite.log (50cd404b, 2 failed, 41 passed, EXIT=1) and after-suite.log (9b9d4fa, 43 passed, EXIT=0) \u2014 so the result is recorded, not claimed.",
+    "fit": "reckon/crew/dispatch.py:12596 follows the gate re-read idiom at reckon/crew/dispatch.py:7183, but its is-None guard leaves the new branch inert for the production resolver (see finding).",
+    "goal_fidelity": "reckon/crew/dispatch.py:12596 and reckon/cli.py:1170 turn the three named tests green, and tests/test_crew_help_names_its_state.py:28 registers the new verb while the inventory assertion at tests/test_crew_help_names_its_state.py:120 stays intact.",
+    "reuse": "nothing is defined; the fallback reuses the existing owner _dispatch_lane_gate (reckon/crew/dispatch.py:4487), and the search over reckon/ found no second fleet-gate reader to fork.",
+    "scope_discipline": "the two commits touch exactly reckon/cli.py, reckon/crew/dispatch.py, tests/test_crew_help_names_its_state.py and tests/test_the_fleet_gate_holds_dispatch.py, each inside the six write paths the pointer records."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the fleet gate change pass the three tests it reddened on merge; the diff registers the new gate verb in the help census (tests/test_crew_help_names_its_state.py:28), retargets the verb's first help line (reckon/cli.py:1170) and makes change_lane read a gate when its resolution omits lane_gate (reckon/crew/dispatch.py:12596).\nVERDICT done_when: the declared gate is the four-file pytest run; baseline-suite.log (revision 50cd404b) records 2 failed, 41 passed, EXIT=1 and after-suite.log (revision 9b9d4fa) records 43 passed, EXIT=0, and all three named tests live in those four files.\nVERDICT write_paths: read the manifest and the run pointer; the resumed advice granted tests/test_crew_help_names_its_state.py, and all four changed paths sit inside the six write paths the pointer records.\nVERDICT manifest: read; status complete, base 50cd404b, head 9b9d4fa, baseline_suite and after_suite both present and naming their logs, negative_control_log declared, a landing line present, and both commit bodies present and conventional.\nVERDICT diff: read commit by commit against base 50cd404b; 99b7323df carries a two-line change to reckon/cli.py and tests/test_crew_help_names_its_state.py and 9b9d4fa40 a four-line change to reckon/crew/dispatch.py and tests/test_the_fleet_gate_holds_dispatch.py, every path inside the fence.\nCALL_SITES: reckon/cli.py:1169 crew_gate (the help line the census reads), reckon/crew/dispatch.py:12529 change_lane (the changed function), reckon/cli.py:6901 crew_redispatch, reckon/cli.py:6787 crew_resume\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:12596 and reckon/cli.py:1170 turn the three named tests green, and tests/test_crew_help_names_its_state.py:28 registers the new verb while the inventory assertion at tests/test_crew_help_names_its_state.py:120 stays intact.\nSCORE evidence: 18\nJUSTIFICATION evidence: both gate arms are on disk and named by revision \u2014 baseline-suite.log (50cd404b, 2 failed, 41 passed, EXIT=1) and after-suite.log (9b9d4fa, 43 passed, EXIT=0) \u2014 so the result is recorded, not claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch exactly reckon/cli.py, reckon/crew/dispatch.py, tests/test_crew_help_names_its_state.py and tests/test_the_fleet_gate_holds_dispatch.py, each inside the six write paths the pointer records.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows reverting the dispatch.py fallback reddens tests/test_dispatch_counts_worker_slots.py::test_a_lane_change_resolves_under_the_runs_coordinator_session at EXIT=1, and the census reddens if reckon/cli.py:1170 loses the phrase it asserts.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/dispatch.py:12596 follows the gate re-read idiom at reckon/crew/dispatch.py:7183, but its is-None guard leaves the new branch inert for the production resolver (see finding).\nSCORE reuse: 20\nJUSTIFICATION reuse: nothing is defined; the fallback reuses the existing owner _dispatch_lane_gate (reckon/crew/dispatch.py:4487), and the search over reckon/ found no second fleet-gate reader to fork.\nFINDING reckon/crew/dispatch.py:12596 follow-on: the fallback is unreachable from production \u2014 plan_dispatch always sets lane_gate to the dict from _dispatch_lane_gate (reckon/crew/dispatch.py:5908, 5962), so getattr(resolution, \"lane_gate\", None) is never None and the branch runs only for the two test doubles whose SimpleNamespace omits the field (tests/test_dispatch_counts_worker_slots.py:461, tests/test_the_fleet_gate_holds_dispatch.py:201). It is harmless because re-reading is stricter than the old or-empty-dict, but supplying lane_gate on those doubles would keep production free of a branch no runtime input reaches.",
+  "review_run_id": "r-20261007T095210639016-review-of-the-fleet-gate-passes-at-the-merged-head",
+  "reviewed_base_sha": "50cd404bd2f5a01fead70f1962fab7de45c949a4",
+  "reviewed_head_sha": "9b9d4fa4068f6914a84b47bab1c4658c37960629",
+  "reviewed_run_id": "r-20261007T092750499423-the-fleet-gate-passes-at-the-merged-head",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T10:08:07.475430+00:00",
+  "total": 112
+}
