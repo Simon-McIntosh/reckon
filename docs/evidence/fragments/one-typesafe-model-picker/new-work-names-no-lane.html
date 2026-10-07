@@ -1,0 +1,23 @@
+<article class="r-evidence" id="new-work-names-no-lane" data-plan="one-typesafe-model-picker" data-node="new-work-names-no-lane" data-reckon="landed" data-when="2026-10-07">
+  <h3>Composed new-work dispatches leave the lane to the picker</h3>
+  <p>The obligations hook no longer rewrites a printed remedy's <code>--backend</code>
+  into <code>--local</code>. A remedy that dispatches new work — <code>dispatch</code>,
+  <code>review-plan</code>, <code>shadow</code> — has its lane flags removed, so the
+  picker routes the node or holds it; a remedy that continues a run (<code>resume</code>,
+  <code>redispatch</code>, repair) is left as composed, keeping the lane the run was
+  carried on. The build, create and edit skills now state the same default: the lane is
+  the picker's to choose, naming a lane is the exception, and an unnamed review runs
+  locally or holds through <code>review_excluded_backends</code>.</p>
+
+  <h3>Measure</h3>
+  <p>Gate (tests/test_coordinator_obligations_hook.py, tests/test_skill_contracts.py,
+  tests/test_an_edit_tells_its_author_a_review_is_owed.py, tests/test_crew.py,
+  tests/test_new_work_names_no_lane.py) ran with
+  <code>-p no:cacheprovider -n 8</code> under a GPFS scratch <code>TMPDIR</code> on
+  2026-10-07. Head: <strong>294 passed, EXIT=0</strong>. Base
+  <code>494df0b11</code>: <strong>292 passed, EXIT=0</strong> (four files; the new file
+  does not exist at base). Delta: <strong>two added tests, zero added failures</strong>.
+  The declared negative control — restoring the hook's <code>--backend</code> to
+  <code>--local</code> rewrite for a missing-review remedy — fails the new file
+  (<code>1 failed, 1 passed</code>, <code>EXIT=1</code>).</p>
+</article>
