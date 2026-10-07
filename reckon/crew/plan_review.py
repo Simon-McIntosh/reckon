@@ -1291,6 +1291,285 @@ def declined_recurrence(
     return recurrence
 
 
+# ── The per-day review summary ──────────────────────────────────────────────
+# The look-back surface a reader opens to ask what a day of reviewing cost and
+# what the per-section rule would have spared. It is a fold over the committed
+# records: the reviews run and their rubrics, and, for each re-review, the
+# authored-prose change behind it measured with the module's own prose reader
+# and edit-share rule rather than a second tokeniser or a second diff.
+
+
+def _instant(value: Any) -> datetime | None:
+    """Parse a window bound or a dispatch stamp into an aware UTC moment."""
+    if isinstance(value, datetime):
+        return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+    from reckon._timestamps import parse_utc
+
+    return parse_utc(value)
+
+
+def _record_dispatch_instant(record: Mapping[str, Any]) -> datetime | None:
+    """The moment a review was dispatched, from its stamp or its run id.
+
+    A committed record carries the dispatch stamp resolved from the run that
+    produced it; a record that carries none — an imported one, or one whose run
+    resolved no time — still names the instant its own review run id encodes.
+    Both are the dispatch, never the completion, so a window is an arrival
+    window. A record resolving neither has no instant and cannot be placed in a
+    window.
+    """
+    stamp = str(record.get("dispatched_at") or "").strip()
+    if stamp:
+        parsed = _instant(stamp)
+        if parsed is not None:
+            return parsed
+    encoded = _review_store.run_id_dispatch_time(
+        str(record.get("review_run_id") or "").strip()
+    )
+    return _instant(encoded) if encoded else None
+
+
+def _project_repo_root(project: str) -> Path | None:
+    """The project's checkout, whose object store holds its reviewed plan bytes."""
+    from reckon._store import _docs_dir_for_project
+
+    docs = _docs_dir_for_project(project)
+    return None if docs is None else docs.parent
+
+
+def _read_reviewed_blob_texts(
+    project: str,
+    records: Iterable[Mapping[str, Any]],
+) -> dict[str, str | None]:
+    """Read each record's reviewed plan bytes from the project's object store.
+
+    ``reviewed_blob_sha`` names the bytes a reviewer read, written to the
+    repository object store when the review was dispatched, so the text a
+    review was taken against survives the plan being written past it. One
+    ``git cat-file --batch`` process answers every blob in a single pass — the
+    batching :func:`reckon.velocity.read_blobs` uses — rather than one
+    subprocess per record. The mapping is keyed by the normalised blob sha; a
+    value of ``None`` means git reports the object missing, which the caller
+    falls back from rather than reading as absent content. A project with no
+    resolvable checkout, or a git invocation that fails outright, yields an
+    empty mapping and every review is measured from its snapshot instead.
+    """
+    shas = [
+        str(record.get("reviewed_blob_sha") or "").strip().lower()
+        for record in records
+        if str(record.get("reviewed_blob_sha") or "").strip()
+    ]
+    unique = list(dict.fromkeys(shas))
+    if not unique:
+        return {}
+    repo = _project_repo_root(project)
+    if repo is None:
+        return {}
+    from reckon.velocity import run_git
+
+    payload = "".join(f"{sha}\n" for sha in unique).encode("ascii")
+    try:
+        result = run_git(repo, "cat-file", "--batch", input=payload)
+    except OSError:
+        return {}
+    if result.returncode != 0:
+        return {}
+    data, position, texts = result.stdout, 0, {}
+    for sha in unique:
+        newline = data.find(b"\n", position)
+        if newline < 0:
+            break
+        header = data[position:newline].decode("ascii", "replace")
+        position = newline + 1
+        if header.strip().endswith("missing"):
+            texts[sha] = None
+            continue
+        try:
+            size = int(header.split()[2])
+        except (IndexError, ValueError):
+            break
+        texts[sha] = data[position : position + size].decode("utf-8", "replace")
+        position += size + 1
+    return texts
+
+
+def _review_prose(
+    project: str,
+    plan_slug: str,
+    record: Mapping[str, Any],
+    blob_texts: Mapping[str, str | None],
+) -> dict[str, str] | None:
+    """A review's authored prose, from its object bytes then its snapshot.
+
+    The reviewed bytes are preferred because they are the content the review
+    read; when the object is missing the snapshot the review composed for,
+    which :func:`_snapshot_evidence` already reads, is the fallback. ``None``
+    means neither resolves, so the caller lists the review as unmeasured rather
+    than reading a missing comparison as a zero change.
+    """
+    blob = str(record.get("reviewed_blob_sha") or "").strip().lower()
+    if blob:
+        text = blob_texts.get(blob)
+        if text is not None:
+            return _prose_texts(text)
+    evidence = _snapshot_evidence(project, plan_slug, record)
+    return None if evidence is None else dict(evidence[1])
+
+
+def review_day_summary(
+    project: str,
+    *,
+    since: str | datetime,
+    until: str | datetime,
+    plan: str | None = None,
+    base_dir: str | Path | None = None,
+) -> dict[str, Any]:
+    """Summarise the plan reviews dispatched in a window, per plan.
+
+    The window is inclusive of ``since`` and exclusive of ``until``, taken over
+    each review's dispatch instant — the stamp the committed record carries, or
+    the instant its review run id encodes. A review is placed by its dispatch,
+    never its completion, so a window is an arrival window. ``plan`` narrows
+    the fold to one plan slug.
+
+    For each plan with a review in the window the summary reports the reviews
+    run split by rubric, and, for every re-review — a review that has any
+    earlier review of the same plan, under any rubric, at any time — the
+    previous review it is compared with, the sections new since it, the largest
+    share any existing section changed, and whether the per-section rule fires:
+    a new section, or any section changed by at least the project's
+    ``plan_change_threshold``. The per-section totals are re-reviews, re-reviews
+    with a new section, firings, and re-reviews whose change could not be
+    measured because neither their bytes nor their snapshot resolve. A review
+    the rule would not have fired on is reported, never refused or rewritten.
+    """
+    from reckon import flight
+
+    start = _instant(since)
+    if start is None:
+        raise ValueError(f"since names no instant: {since!r}")
+    end = _instant(until)
+    if end is None:
+        raise ValueError(f"until names no instant: {until!r}")
+
+    records = [
+        record
+        for record in list_plan_reviews(project, base_dir=base_dir)
+        if plan is None or str(record.get("plan_slug") or "") == plan
+    ]
+    # Each plan's whole review history, ordered by dispatch instant, so a
+    # re-review's predecessor is resolved over every review of the plan and not
+    # only those inside the window.
+    history: dict[str, list[tuple[datetime, Mapping[str, Any]]]] = {}
+    for record in records:
+        instant = _record_dispatch_instant(record)
+        if instant is None:
+            continue
+        slug = str(record.get("plan_slug") or "")
+        history.setdefault(slug, []).append((instant, record))
+    for entries in history.values():
+        entries.sort(
+            key=lambda item: (
+                item[0],
+                str(item[1].get("review_run_id") or ""),
+            )
+        )
+
+    # Only the window's reviews and the predecessors they are compared with are
+    # read, so the summary's object-store pass lists exactly the blobs it folds.
+    read_records: list[Mapping[str, Any]] = []
+    for entries in history.values():
+        for index, (instant, record) in enumerate(entries):
+            if start <= instant < end:
+                read_records.append(record)
+                if index > 0:
+                    read_records.append(entries[index - 1][1])
+    blob_texts = _read_reviewed_blob_texts(project, read_records)
+
+    threshold = flight.plan_review_change_threshold(
+        flight.resolve(project=project).config
+    )
+    plans: list[dict[str, Any]] = []
+    totals = {
+        "re_reviews": 0,
+        "re_reviews_with_new_section": 0,
+        "firings": 0,
+        "unmeasured": 0,
+    }
+    for slug in sorted(history):
+        entries = history[slug]
+        reviews: list[dict[str, Any]] = []
+        plan_totals = dict.fromkeys(totals, 0)
+        for index, (instant, record) in enumerate(entries):
+            if not (start <= instant < end):
+                continue
+            entry: dict[str, Any] = {
+                "review_run_id": str(record.get("review_run_id") or ""),
+                "rubric": str(record.get("rubric") or ""),
+                "design": is_design_review(record),
+                "at": instant.isoformat(),
+                "re_review": index > 0,
+                "previous_run_id": None,
+                "new_sections": [],
+                "max_section_change": None,
+                "fires": None,
+                "measured": False,
+            }
+            if index > 0:
+                previous = entries[index - 1][1]
+                entry["previous_run_id"] = str(
+                    previous.get("review_run_id") or ""
+                )
+                plan_totals["re_reviews"] += 1
+                current_prose = _review_prose(project, slug, record, blob_texts)
+                previous_prose = _review_prose(project, slug, previous, blob_texts)
+                if current_prose is None or previous_prose is None:
+                    plan_totals["unmeasured"] += 1
+                else:
+                    new_sections = sorted(
+                        identity
+                        for identity in current_prose
+                        if identity != DOCUMENT_UNIT and identity not in previous_prose
+                    )
+                    shares = [
+                        _edit_share(previous_prose[identity], current_prose[identity])
+                        for identity in current_prose
+                        if identity in previous_prose
+                    ]
+                    largest = max(shares) if shares else 0.0
+                    fires = bool(new_sections) or largest >= threshold
+                    entry["new_sections"] = new_sections
+                    entry["max_section_change"] = largest
+                    entry["fires"] = fires
+                    entry["measured"] = True
+                    if new_sections:
+                        plan_totals["re_reviews_with_new_section"] += 1
+                    if fires:
+                        plan_totals["firings"] += 1
+            reviews.append(entry)
+        design = sum(1 for entry in reviews if entry["design"])
+        plans.append(
+            {
+                "plan_slug": slug,
+                "reviews_run": len(reviews),
+                "by_rubric": {"design": design, "content": len(reviews) - design},
+                "reviews": reviews,
+                "totals": plan_totals,
+            }
+        )
+        for key in totals:
+            totals[key] += plan_totals[key]
+    return {
+        "project": project,
+        "plan": plan,
+        "since": start.isoformat(),
+        "until": end.isoformat(),
+        "threshold": threshold,
+        "plans": plans,
+        "totals": totals,
+    }
+
+
 # ── Delivered review reports ────────────────────────────────────────────────
 # A plan review is dispatched as a run that emits its RUBRIC and FINDING lines
 # into a report file, with a sidecar beside it naming the plan content it
