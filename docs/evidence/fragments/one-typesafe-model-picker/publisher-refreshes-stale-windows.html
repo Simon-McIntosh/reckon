@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="Stale subscription windows refresh from the account probe">
+  <meta name="plan-summary" content="The publisher claims stale account probes durably, publishes successful readings, and keeps aged readings with a failure reason when a probe fails.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <title>Stale subscription windows refresh from the account probe | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="publisher-refreshes-stale-windows-reading" class="r-note" data-node="publisher-refreshes-stale-windows" data-reckon="landed" data-when="2026-10-07">
+  <h2>Live account probe with a stale recorded input</h2>
+  <table id="publisher-refreshes-stale-windows-live-probe">
+    <caption>The 05:44 run-local document supplied the actual recorded rollout. At 06:57 it was 4,363 s old; newer ambient rollouts were intentionally omitted. The publisher used the real Codex account probe with no stub.</caption>
+    <thead><tr><th>Account</th><th>Recorded seven-day use</th><th>Recorded source and age</th><th>Published seven-day use</th><th>Published source and age</th><th>Published observation</th><th>Reset at</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">codex</th><td>1%</td><td>rollout, 4,362.716 s</td><td>2%</td><td>probe, 0 s</td><td>2026-10-07T06:57:04.269693Z</td><td>2026-10-14T05:14:59Z</td></tr>
+      <tr><th scope="row">codex-astra</th><td>1%</td><td>rollout, 4,362.716 s</td><td>2%</td><td>probe, 0 s</td><td>2026-10-07T06:57:04.269693Z</td><td>2026-10-14T05:14:59Z</td></tr>
+      <tr><th scope="row">codex-luna</th><td>1%</td><td>rollout, 4,362.716 s</td><td>2%</td><td>probe, 0 s</td><td>2026-10-07T06:57:04.269693Z</td><td>2026-10-14T05:14:59Z</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <caption>Budget document merge immediately after the probe</caption>
+    <thead><tr><th>Account</th><th>Recorded use</th><th>Merged use</th><th>Selected source</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">codex</th><td>1%</td><td>2%</td><td>document</td></tr>
+      <tr><th scope="row">codex-astra</th><td>1%</td><td>2%</td><td>document</td></tr>
+      <tr><th scope="row">codex-luna</th><td>1%</td><td>2%</td><td>document</td></tr>
+    </tbody>
+  </table>
+  <h2>Ambient publisher reading</h2>
+  <table>
+    <caption>Run-local publication, 2026-10-07T05:44:21.857475Z</caption>
+    <thead><tr><th>Account</th><th>Seven-day used</th><th>Source</th><th>Age at publication</th><th>Observed at</th><th>Reset at</th><th>Stale</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">codex</th><td>1%</td><td>rollout</td><td>0.303 s</td><td>2026-10-07T05:44:21.554Z</td><td>2026-10-14T05:14:59Z</td><td>no</td></tr>
+      <tr><th scope="row">codex-astra</th><td>1%</td><td>rollout</td><td>0.303 s</td><td>2026-10-07T05:44:21.554Z</td><td>2026-10-14T05:14:59Z</td><td>no</td></tr>
+      <tr><th scope="row">codex-luna</th><td>1%</td><td>rollout</td><td>0.303 s</td><td>2026-10-07T05:44:21.554Z</td><td>2026-10-14T05:14:59Z</td><td>no</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <caption>Stale account after a failed probe</caption>
+    <thead><tr><th>Account</th><th>Seven-day used</th><th>Source</th><th>Age</th><th>Stale</th><th>Probe attempt</th><th>Failure</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">claude-opus</th><td>69%</td><td>stream</td><td>79,184 s</td><td>yes</td><td>2026-10-07T05:37:45.599Z</td><td>HTTP 403 Forbidden</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <caption>Publisher execution paths</caption>
+    <thead><tr><th>Destination</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Default public document</th><td>Worker fence refused lock-file creation: read-only file system.</td></tr>
+      <tr><th scope="row">Run-local document</th><td>Eight accounts written; EXIT=0.</td></tr>
+    </tbody>
+  </table>
+</article>
+</body>
+</html>
