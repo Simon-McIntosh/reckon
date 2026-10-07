@@ -1328,14 +1328,11 @@ def serve(
     if not standby:
         publish_record(runtime, environ)
     fifo = runtime / REQUEST_FIFO_NAME
-    pending_fifo = runtime / f".{REQUEST_FIFO_NAME}.pending"
     with suppress(FileNotFoundError):
-        pending_fifo.unlink()
-    os.mkfifo(pending_fifo, 0o600)
-    # Publish the path only after holding its read end. A nonblocking writer
-    # that sees the path can then open it immediately, even during startup.
-    descriptor = os.open(pending_fifo, os.O_RDWR)
-    os.replace(pending_fifo, fifo)
+        fifo.unlink()
+    os.mkfifo(fifo, 0o600)
+    # Open the read end immediately so writers can connect during startup.
+    descriptor = os.open(fifo, os.O_RDWR)
     log(
         f"fleet supervisor on {_short_hostname()}, "
         f"job {environ.get('SLURM_JOB_ID') or '?'}, runtime {runtime}"
