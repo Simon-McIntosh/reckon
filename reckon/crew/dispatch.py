@@ -1325,6 +1325,30 @@ def _session_host_fifo() -> Path | None:
     return root / SESSION_HOST_DIRECTORY / f"{pid}-{start}.fifo"
 
 
+def _session_host_waiting() -> bool:
+    """Whether the calling session's host is waiting on its FIFO to be asked.
+
+    A dry run must report the delivery a real dispatch would reach without
+    writing to the FIFO, because a write starts a follower and a validating
+    caller starts nothing. A host publishes that it is waiting by holding its
+    FIFO's descriptor open across the wait, so the liveness read here is the
+    same non-blocking open the real request uses, closed without a byte: an
+    open succeeds only while a reader holds the other end, and a FIFO with no
+    reader is a host that has gone. A real dispatch writes that reader and the
+    host attaches; with no reader it falls through to the Monitor path, and the
+    prediction reports the delivery the launch would reach either way.
+    """
+    fifo = _session_host_fifo()
+    if fifo is None:
+        return False
+    try:
+        descriptor = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
+    except OSError:
+        return False
+    os.close(descriptor)
+    return True
+
+
 # The host writes its census of running children to a directory the host module
 # owns, one record per session, named for the Claude process and its kernel
 # start tick. Dispatch reads that record to tell a follower the host runs from
@@ -3578,6 +3602,7 @@ class DispatchPlan:
     picker_selection: dict[str, Any] | None = None
     route: str = "shadow"
     route_override: str | None = None
+    watch: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         agent = _stamp_agent_display(
@@ -3660,6 +3685,8 @@ class DispatchPlan:
             payload["directory_claim_acceptances"] = [
                 dict(item) for item in self.directory_claim_acceptances
             ]
+        if self.watch is not None:
+            payload["watch"] = dict(self.watch)
         return payload
 
 
@@ -6125,14 +6152,33 @@ def plan_dispatch(
         # the real dispatch may still arm one, so a validating caller leaves the
         # verdict to the launch rather than reporting a refusal it cannot know.
         if preview["watcher_live"]:
+            delivery = "monitor"
+            attached = bool(preview["session_attached"])
+            # A waiting session host attaches the session on a real dispatch, so
+            # the delivery it would reach is read from the host's own liveness
+            # rather than by asking it: the request that starts the follower is
+            # the one write a dry run must never make. The prediction stands in
+            # for the attachment a live host would have confirmed, so the
+            # admission below names no unmet follower condition for it.
+            if not attached and _session_host_waiting():
+                delivery = "host"
+                attached = True
             admission = _watcher_delivery_admission(
                 project,
-                preview,
+                {**dict(preview), "session_attached": attached},
                 session=session,
                 launch_kind=str(launch_kind),
+                delivery=delivery,
             )
             if admission:
                 resolution.warnings.append(admission)
+            resolution.watch = {
+                "delivery": delivery,
+                "predicted": True,
+                "watcher_live": True,
+                "session": session,
+                "session_attached": attached,
+            }
     return resolution
 
 
