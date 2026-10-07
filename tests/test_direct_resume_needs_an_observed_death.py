@@ -301,6 +301,7 @@ def _stub_destination(monkeypatch: pytest.MonkeyPatch) -> None:
         backend="beta",
         launch="in-harness",
         backend_settings={},
+        lane_gate={"state": "open", "paused": False, "reason": None, "detail": ""},
         validation=SimpleNamespace(ok=True, findings=[]),
         competence={"allowed": True},
         authority="a-ledger-authority",
