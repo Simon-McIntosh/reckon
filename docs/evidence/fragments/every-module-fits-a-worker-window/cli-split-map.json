@@ -1,0 +1,3933 @@
+{
+  "base": "2b8510dd2d3e47915192f68472acb04aea8c52d1",
+  "module": "reckon/cli.py",
+  "modules": [
+    {
+      "path": "reckon/cli_entry.py",
+      "concern": "Click root and shared package/installation helpers",
+      "members": [
+        "_asset_root",
+        "_skills_source",
+        "CREW_HOST_PLUGIN_NAME",
+        "_CREW_HOST_PLUGIN_REL",
+        "CREW_HOST_MISSING",
+        "CREW_HOST_DANGLING",
+        "CREW_HOST_WORKTREE",
+        "CREW_HOST_ELSEWHERE",
+        "CREW_HOST_VALID",
+        "CrewHostLink",
+        "_reckon_checkout",
+        "_git_capture",
+        "_main_checkout",
+        "_in_linked_worktree",
+        "CLAUDE_SKILLS_DIR_ENV",
+        "_personal_skills_dir",
+        "crew_host_link_state",
+        "link_crew_host_plugin",
+        "_sync_crew_host_plugin",
+        "_claude_plugin_validate",
+        "_crew_guard_path",
+        "_native_agent_guard_path",
+        "_is_native_agent_guard_group",
+        "_worker_message_guard_path",
+        "_is_worker_message_guard_group",
+        "_worker_git_guard_path",
+        "_is_worker_git_guard_group",
+        "_write_json_atomically",
+        "_configure_crew_guards",
+        "_crew_state_exists",
+        "_copied_where_linked",
+        "_copy_asset_directory",
+        "_merge_records_by_id",
+        "_project_docs_root",
+        "main"
+      ],
+      "estimated_tokens": 6228,
+      "source_bytes": 21174,
+      "import_estimate_bytes": 621
+    },
+    {
+      "path": "reckon/project_setup_commands.py",
+      "concern": "project setup, fleet and tag command groups",
+      "members": [
+        "agent_context",
+        "agent_context_doctor",
+        "serve",
+        "mcp",
+        "fleet",
+        "fleet_node_group",
+        "fleet_node_hold",
+        "fleet_node_status",
+        "fleet_node_place",
+        "paste_command",
+        "badge_command",
+        "flight",
+        "capabilities_command",
+        "probe_held_blocker",
+        "tag",
+        "tag_rename",
+        "tag_backfill"
+      ],
+      "estimated_tokens": 5120,
+      "source_bytes": 17166,
+      "import_estimate_bytes": 751
+    },
+    {
+      "path": "reckon/crew_dispatch_commands.py",
+      "concern": "crew admission, dispatch, review planning and observation",
+      "members": [
+        "crew",
+        "_crew_modules",
+        "_OneDocumentStdout",
+        "_single_document_stdout",
+        "_holds_stdout_for_one_document",
+        "_emit",
+        "_crew_result_ok",
+        "_emit_crew_result",
+        "_emit_dry_run_request_error",
+        "_validation_detail",
+        "_lane_paused_detail",
+        "_resolved_flight",
+        "_dispatch_resolved_flight",
+        "_flight_default_backend_override",
+        "_with_resolved_overrides",
+        "_config_value_at",
+        "_layer_flight_config",
+        "_require_configured_override_paths",
+        "_require_configured_override_path",
+        "_dispatch_override_resolution",
+        "_picker_routed_backend",
+        "_model_availability_refusal",
+        "_repo_root",
+        "_resolved_gc_repo",
+        "_peer_scopes",
+        "_parse_ready_node",
+        "crew_pick",
+        "crew_preflight",
+        "crew_dispatch",
+        "crew_shadow",
+        "crew_review_plan",
+        "crew_attach",
+        "_resolved_session",
+        "crew_observe"
+      ],
+      "estimated_tokens": 19673,
+      "source_bytes": 68198,
+      "import_estimate_bytes": 655
+    },
+    {
+      "path": "reckon/crew_follow_commands.py",
+      "concern": "crew follower, ticker, replay and watch delivery",
+      "members": [
+        "_follow_selects",
+        "_follow_render_event",
+        "_sweep_lapsed_holds",
+        "_FOLLOWER_CHECKPOINT_ENV",
+        "_FOLLOWER_LIFETIME_ENV",
+        "_carried_lifetime_deadline",
+        "_take_follower_checkpoint",
+        "_import_root",
+        "_FOLLOWER_RELOAD_PROBE",
+        "_FollowerReloader",
+        "_StampPoll",
+        "FOLLOWER_END_EVENT",
+        "FOLLOWER_RESUME_EVENT",
+        "FOLLOWER_FORMAT_EVENT",
+        "FOLLOWER_STALE_PRODUCER_EVENT",
+        "FOLLOWER_REATTACH_EVENT",
+        "_snapshot_module",
+        "_SNAPSHOT_READER",
+        "_FOLLOWER_RELOAD_PROBE_TIMEOUT",
+        "PRODUCER_POLL_INTERVAL_CAP_SECONDS",
+        "PRODUCER_RELOAD_WINDOW_SECONDS",
+        "FOLLOWER_PRODUCER_RELOADING_EVENT",
+        "FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT",
+        "FOLLOWER_PRODUCER_STOPPED_EVENT",
+        "_logged_producer_stop",
+        "_ticker_layout_signature",
+        "_needs_you_runs",
+        "_population_has_live_work",
+        "_follower_end_line",
+        "_follower_end_event",
+        "_follow_resume_plan",
+        "follower_row_path",
+        "_follow_boundary",
+        "_stream_events_upto",
+        "_recorded_fleet_times",
+        "_fleet_replay",
+        "_FOLLOW_REATTACH_FRAME",
+        "_follow_reattach_line",
+        "_follow_gap_rows",
+        "_follow_watch_lines",
+        "_echo_follow_line",
+        "HISTORY_DIM",
+        "HISTORY_RESET",
+        "_short_code_stamp",
+        "_dim_history_line",
+        "_follow_history_caps",
+        "_follow_row_stamp",
+        "_follow_replay_visible",
+        "_HISTORY_FRAME",
+        "_follow_history_burst",
+        "TICKER_THEMES",
+        "_row_is_stale_inventory",
+        "_ticker_grid",
+        "_seed_ticker_memory",
+        "_ticker_options",
+        "_ATTENTION_REMOVED_AFTER",
+        "_ATTENTION_DEPRECATION",
+        "crew_host",
+        "crew_follow",
+        "crew_watch"
+      ],
+      "estimated_tokens": 32748,
+      "source_bytes": 113833,
+      "import_estimate_bytes": 784
+    },
+    {
+      "path": "reckon/crew_run_commands.py",
+      "concern": "crew run, lifecycle, review, suite and ledger operations",
+      "members": [
+        "crew_resume_ready",
+        "crew_unwatch",
+        "crew_placement",
+        "crew_list",
+        "crew_directory",
+        "_PATH_KINDS",
+        "crew_path",
+        "_reviewed_head_from_run_records",
+        "crew_dispose",
+        "crew_check_manifest",
+        "WIDENABLE_PHASE",
+        "WIDEN_REFUSING_MANIFEST_STATUSES",
+        "WIDEN_RULE",
+        "_manifest_reported_status",
+        "_widen_eligibility",
+        "_widen_running_worker",
+        "_widen_refusal",
+        "crew_widen",
+        "crew_drain",
+        "crew_ack",
+        "crew_suite",
+        "_suite_project_root",
+        "crew_suite_run",
+        "crew_suite_waive",
+        "crew_gc",
+        "crew_resume",
+        "crew_redispatch",
+        "crew_stop",
+        "crew_discard",
+        "crew_repair_status",
+        "_ledger_module",
+        "crew_complete",
+        "crew_verify_gate",
+        "crew_recover",
+        "crew_member",
+        "crew_member_add",
+        "crew_member_list",
+        "crew_ledger",
+        "crew_velocity",
+        "crew_budget_reset",
+        "crew_split_runs",
+        "crew_repair_completion"
+      ],
+      "estimated_tokens": 21797,
+      "source_bytes": 75277,
+      "import_estimate_bytes": 1011
+    },
+    {
+      "path": "reckon/project_maintenance_commands.py",
+      "concern": "service, docs and project maintenance commands",
+      "members": [
+        "service",
+        "_service_module",
+        "_service_call",
+        "service_install",
+        "service_restart",
+        "service_start",
+        "service_stop",
+        "service_status",
+        "_served_code_line",
+        "service_logs",
+        "service_uninstall",
+        "sync",
+        "_CI_WORKFLOW_TEMPLATE",
+        "build",
+        "stamp_superseded_state",
+        "migrate_layout",
+        "_project_environment_drift",
+        "doctor",
+        "audit",
+        "_echo_render_contract_failures",
+        "_echo_lifecycle_findings",
+        "archive",
+        "evidence",
+        "synthesize_evidence",
+        "_print_roadmap_report",
+        "roadmap",
+        "audit_doc",
+        "install_skills",
+        "hooks",
+        "hooks_install"
+      ],
+      "estimated_tokens": 15086,
+      "source_bytes": 51274,
+      "import_estimate_bytes": 1525
+    },
+    {
+      "path": "reckon/cli.py",
+      "concern": "stable import surface and console-script target",
+      "members": [],
+      "estimated_tokens": 3744,
+      "source_bytes": 0,
+      "import_estimate_bytes": 13102
+    }
+  ],
+  "edges": {
+    "reckon/cli_entry.py": {
+      "module_level": [],
+      "function_level": []
+    },
+    "reckon/project_setup_commands.py": {
+      "module_level": [
+        {
+          "path": "reckon/cli_entry.py",
+          "names": [
+            "main"
+          ]
+        }
+      ],
+      "function_level": [
+        {
+          "path": "reckon/crew_dispatch_commands.py",
+          "names": [
+            "_emit"
+          ]
+        },
+        {
+          "path": "reckon/cli_entry.py",
+          "names": [
+            "_project_docs_root"
+          ]
+        }
+      ]
+    },
+    "reckon/crew_dispatch_commands.py": {
+      "module_level": [
+        {
+          "path": "reckon/cli_entry.py",
+          "names": [
+            "main"
+          ]
+        }
+      ],
+      "function_level": []
+    },
+    "reckon/crew_follow_commands.py": {
+      "module_level": [
+        {
+          "path": "reckon/crew_dispatch_commands.py",
+          "names": [
+            "crew"
+          ]
+        }
+      ],
+      "function_level": [
+        {
+          "path": "reckon/crew_dispatch_commands.py",
+          "names": [
+            "_crew_modules",
+            "_emit_crew_result"
+          ]
+        }
+      ]
+    },
+    "reckon/crew_run_commands.py": {
+      "module_level": [
+        {
+          "path": "reckon/crew_dispatch_commands.py",
+          "names": [
+            "crew"
+          ]
+        }
+      ],
+      "function_level": [
+        {
+          "path": "reckon/crew_dispatch_commands.py",
+          "names": [
+            "_crew_modules",
+            "_emit",
+            "_emit_crew_result",
+            "_resolved_flight",
+            "_resolved_gc_repo",
+            "_resolved_session"
+          ]
+        }
+      ]
+    },
+    "reckon/project_maintenance_commands.py": {
+      "module_level": [
+        {
+          "path": "reckon/cli_entry.py",
+          "names": [
+            "main"
+          ]
+        }
+      ],
+      "function_level": [
+        {
+          "path": "reckon/crew_dispatch_commands.py",
+          "names": [
+            "_emit"
+          ]
+        },
+        {
+          "path": "reckon/cli_entry.py",
+          "names": [
+            "CREW_HOST_MISSING",
+            "CREW_HOST_PLUGIN_NAME",
+            "CREW_HOST_VALID",
+            "_asset_root",
+            "_claude_plugin_validate",
+            "_configure_crew_guards",
+            "_copied_where_linked",
+            "_copy_asset_directory",
+            "_crew_state_exists",
+            "_main_checkout",
+            "_merge_records_by_id",
+            "_personal_skills_dir",
+            "_project_docs_root",
+            "_reckon_checkout",
+            "_skills_source",
+            "_sync_crew_host_plugin",
+            "crew_host_link_state"
+          ]
+        }
+      ]
+    }
+  },
+  "census": {
+    "imports": {
+      "CLAUDE_SKILLS_DIR_ENV": [
+        {
+          "file": "tests/conftest.py",
+          "line": 33,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_doctor.py",
+          "line": 9,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 203,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 338,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_sync_isolation_covers_module_fixtures.py",
+          "line": 21,
+          "kind": "from-import"
+        }
+      ],
+      "CREW_HOST_DANGLING": [
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 22,
+          "kind": "from-import"
+        }
+      ],
+      "CREW_HOST_MISSING": [
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 22,
+          "kind": "from-import"
+        }
+      ],
+      "CREW_HOST_VALID": [
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 22,
+          "kind": "from-import"
+        }
+      ],
+      "CREW_HOST_WORKTREE": [
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 22,
+          "kind": "from-import"
+        }
+      ],
+      "FOLLOWER_END_EVENT": [
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 249,
+          "kind": "attribute"
+        }
+      ],
+      "FOLLOWER_FORMAT_EVENT": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1592,
+          "kind": "attribute"
+        }
+      ],
+      "FOLLOWER_PRODUCER_RELOADING_EVENT": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1696,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1703,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1727,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 153,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 160,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 182,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 184,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 204,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 206,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 246,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 337,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 360,
+          "kind": "attribute"
+        }
+      ],
+      "FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT": [
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 197,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_survives_its_reload.py",
+          "line": 76,
+          "kind": "attribute"
+        }
+      ],
+      "FOLLOWER_PRODUCER_STOPPED_EVENT": [
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 135,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 167,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 179,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 196,
+          "kind": "attribute"
+        }
+      ],
+      "FOLLOWER_STALE_PRODUCER_EVENT": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1697,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1723,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1734,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_takes_new_code.py",
+          "line": 606,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_takes_new_code.py",
+          "line": 692,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_takes_new_code.py",
+          "line": 742,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 154,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 183,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 185,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 205,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 247,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 338,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 359,
+          "kind": "attribute"
+        }
+      ],
+      "HISTORY_DIM": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1401,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1409,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_survives_a_config_change.py",
+          "line": 214,
+          "kind": "attribute"
+        }
+      ],
+      "HISTORY_RESET": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1402,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1409,
+          "kind": "attribute"
+        }
+      ],
+      "PRODUCER_POLL_INTERVAL_CAP_SECONDS": [
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 225,
+          "kind": "attribute"
+        }
+      ],
+      "PRODUCER_RELOAD_WINDOW_SECONDS": [
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 228,
+          "kind": "attribute"
+        }
+      ],
+      "TICKER_THEMES": [
+        {
+          "file": "tests/test_crew_ticker_layout.py",
+          "line": 538,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker_layout.py",
+          "line": 539,
+          "kind": "attribute"
+        }
+      ],
+      "_ATTENTION_DEPRECATION": [
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 34,
+          "kind": "attribute"
+        }
+      ],
+      "_FOLLOWER_CHECKPOINT_ENV": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1213,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1217,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_freshness.py",
+          "line": 324,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_keeps_memory.py",
+          "line": 109,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_keeps_memory.py",
+          "line": 113,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 332,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 333,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 356,
+          "kind": "attribute"
+        }
+      ],
+      "_FOLLOWER_LIFETIME_ENV": [
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 470,
+          "kind": "attribute"
+        }
+      ],
+      "_FOLLOWER_RELOAD_PROBE_TIMEOUT": [
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 222,
+          "kind": "attribute"
+        }
+      ],
+      "_FollowerReloader": [
+        {
+          "file": "tests/test_a_reexec_keeps_its_children.py",
+          "line": 394,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_freshness.py",
+          "line": 316,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 264,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 269,
+          "kind": "attribute"
+        }
+      ],
+      "_HISTORY_FRAME": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1089,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1137,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_rearm_shows_nothing_twice.py",
+          "line": 509,
+          "kind": "attribute"
+        }
+      ],
+      "_StampPoll": [
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 203,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 204,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 219,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 220,
+          "kind": "attribute"
+        }
+      ],
+      "__file__": [
+        {
+          "file": "tests/test_a_crew_verb_ok_reads_its_outcome.py",
+          "line": 59,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_lifetime.py",
+          "line": 42,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_lifetime_survives_reload.py",
+          "line": 44,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_lifetime_survives_reload.py",
+          "line": 45,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 963,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 68,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 69,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_checks_its_owner.py",
+          "line": 71,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_checks_its_owner.py",
+          "line": 72,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_freshness.py",
+          "line": 170,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_rearm_shows_nothing_twice.py",
+          "line": 251,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_reload_is_safe.py",
+          "line": 186,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_manifest_check_command.py",
+          "line": 378,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_orphaned_follower_releases.py",
+          "line": 48,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_loop_survives_a_config_change.py",
+          "line": 65,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 27,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 69,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_takes_new_code.py",
+          "line": 157,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_takes_new_code.py",
+          "line": 200,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_sync_canonical_checkout.py",
+          "line": 129,
+          "kind": "attribute"
+        }
+      ],
+      "_claude_plugin_validate": [
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 296,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 306,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 314,
+          "kind": "attribute"
+        }
+      ],
+      "_configure_crew_guards": [
+        {
+          "file": "tests/test_worker_git_guard.py",
+          "line": 417,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_worker_git_guard.py",
+          "line": 423,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_worker_git_guard.py",
+          "line": 444,
+          "kind": "attribute"
+        }
+      ],
+      "_crew_result_ok": [
+        {
+          "file": "tests/test_a_crew_verb_ok_reads_its_outcome.py",
+          "line": 46,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_a_crew_verb_ok_reads_its_outcome.py",
+          "line": 51,
+          "kind": "attribute"
+        }
+      ],
+      "_dim_history_line": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1403,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1407,
+          "kind": "attribute"
+        }
+      ],
+      "_echo_follow_line": [
+        {
+          "file": "tests/test_crew_monitor_output.py",
+          "line": 147,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 442,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1032,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_rearm_shows_nothing_twice.py",
+          "line": 320,
+          "kind": "attribute"
+        }
+      ],
+      "_follow_boundary": [
+        {
+          "file": "tests/test_follow_reads_whole_lines.py",
+          "line": 214,
+          "kind": "attribute"
+        }
+      ],
+      "_follow_history_burst": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1311,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1370,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1406,
+          "kind": "attribute"
+        }
+      ],
+      "_follow_history_caps": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1382,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1388,
+          "kind": "attribute"
+        }
+      ],
+      "_follow_render_event": [
+        {
+          "file": "tests/test_follow_observes_other_sessions.py",
+          "line": 312,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_observes_other_sessions.py",
+          "line": 347,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_observes_other_sessions.py",
+          "line": 350,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_observes_other_sessions.py",
+          "line": 391,
+          "kind": "attribute"
+        }
+      ],
+      "_follow_replay_visible": [
+        {
+          "file": "tests/test_follower_rearm_shows_nothing_twice.py",
+          "line": 530,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_rearm_shows_nothing_twice.py",
+          "line": 532,
+          "kind": "attribute"
+        }
+      ],
+      "_follow_row_stamp": [
+        {
+          "file": "tests/test_timestamp_callers_batch_d.py",
+          "line": 209,
+          "kind": "attribute"
+        }
+      ],
+      "_follow_selects": [
+        {
+          "file": "tests/test_follow_sweep_cadence.py",
+          "line": 76,
+          "kind": "attribute"
+        }
+      ],
+      "_follow_watch_lines": [
+        {
+          "file": "tests/test_attach_shows_each_live_run.py",
+          "line": 93,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_monitor_output.py",
+          "line": 79,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_recover.py",
+          "line": 464,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_session_delivery.py",
+          "line": 172,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_session_delivery.py",
+          "line": 204,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_session_delivery.py",
+          "line": 311,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_session_delivery.py",
+          "line": 351,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_session_delivery.py",
+          "line": 384,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_observes_other_sessions.py",
+          "line": 112,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_observes_other_sessions.py",
+          "line": 201,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_reads_whole_lines.py",
+          "line": 106,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 123,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1571,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1662,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_sweep_cadence.py",
+          "line": 152,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 208,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 459,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_keeps_memory.py",
+          "line": 169,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_keeps_memory.py",
+          "line": 216,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_prints_only_policy_rows.py",
+          "line": 88,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_rearm_shows_nothing_twice.py",
+          "line": 333,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_survives_a_config_change.py",
+          "line": 112,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_survives_a_host_change.py",
+          "line": 85,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 127,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 154,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_survives_its_reload.py",
+          "line": 75,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_takes_new_code.py",
+          "line": 575,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 410,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 120,
+          "kind": "attribute"
+        }
+      ],
+      "_native_agent_guard_path": [
+        {
+          "file": "tests/test_guard_install.py",
+          "line": 121,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_guard_install.py",
+          "line": 177,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_sync_hook_wiring.py",
+          "line": 110,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_sync_hook_wiring.py",
+          "line": 165,
+          "kind": "attribute"
+        }
+      ],
+      "_skills_source": [
+        {
+          "file": "tests/test_doctor.py",
+          "line": 9,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 169,
+          "kind": "attribute"
+        }
+      ],
+      "_snapshot_module": [
+        {
+          "file": "tests/test_snapshot_loader_keeps_one_instance.py",
+          "line": 27,
+          "kind": "from-import"
+        }
+      ],
+      "_stream_events_upto": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 622,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 709,
+          "kind": "attribute"
+        }
+      ],
+      "_ticker_layout_signature": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 1608,
+          "kind": "attribute"
+        }
+      ],
+      "_worker_git_guard_path": [
+        {
+          "file": "tests/test_worker_git_guard.py",
+          "line": 440,
+          "kind": "attribute"
+        }
+      ],
+      "_worker_message_guard_path": [
+        {
+          "file": "tests/test_guard_install.py",
+          "line": 122,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_guard_install.py",
+          "line": 178,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_sync_hook_wiring.py",
+          "line": 111,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_sync_hook_wiring.py",
+          "line": 168,
+          "kind": "attribute"
+        }
+      ],
+      "_write_json_atomically": [
+        {
+          "file": "tests/test_cli_settings_writer_reuses_the_store.py",
+          "line": 116,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_cli_settings_writer_reuses_the_store.py",
+          "line": 133,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_cli_settings_writer_reuses_the_store.py",
+          "line": 147,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_cli_settings_writer_reuses_the_store.py",
+          "line": 163,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_cli_settings_writer_reuses_the_store.py",
+          "line": 178,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_cli_settings_writer_reuses_the_store.py",
+          "line": 195,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_cli_settings_writer_reuses_the_store.py",
+          "line": 210,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_cli_settings_writer_reuses_the_store.py",
+          "line": 223,
+          "kind": "attribute"
+        }
+      ],
+      "click": [
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 115,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 123,
+          "kind": "attribute"
+        }
+      ],
+      "crew": [
+        {
+          "file": "tests/test_attach_shows_each_live_run.py",
+          "line": 203,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_help_names_its_state.py",
+          "line": 104,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_help_names_its_state.py",
+          "line": 124,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_help_names_its_state.py",
+          "line": 136,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_help_names_its_state.py",
+          "line": 144,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_help_names_its_state.py",
+          "line": 151,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follow_replays_the_gap.py",
+          "line": 122,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 339,
+          "kind": "attribute"
+        }
+      ],
+      "crew_host_link_state": [
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 22,
+          "kind": "from-import"
+        }
+      ],
+      "follower_row_path": [
+        {
+          "file": "tests/test_follower_prints_only_policy_rows.py",
+          "line": 339,
+          "kind": "attribute"
+        }
+      ],
+      "link_crew_host_plugin": [
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 22,
+          "kind": "from-import"
+        }
+      ],
+      "main": [
+        {
+          "file": "tests/test_a_brief_points_rather_than_quotes.py",
+          "line": 141,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_a_control_log_is_judged_at_write.py",
+          "line": 22,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_a_crew_verb_ok_reads_its_outcome.py",
+          "line": 90,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_a_crew_verb_ok_reads_its_outcome.py",
+          "line": 95,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_a_crew_verb_ok_reads_its_outcome.py",
+          "line": 119,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_a_held_member_is_read.py",
+          "line": 272,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_a_review_manifest_passes_its_own_check.py",
+          "line": 26,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_a_review_promotes_what_it_passed.py",
+          "line": 36,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_a_review_records_shas_resolve.py",
+          "line": 28,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_a_runs_scratch_ends_with_the_run.py",
+          "line": 199,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_a_runs_scratch_ends_with_the_run.py",
+          "line": 210,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_a_short_commit_list_is_reported.py",
+          "line": 33,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_a_timed_out_replay_is_not_ok.py",
+          "line": 32,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_agent_context.py",
+          "line": 8,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_an_edit_tells_its_author_a_review_is_owed.py",
+          "line": 222,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_an_unchanged_run_needs_no_suite_pair.py",
+          "line": 20,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_archive.py",
+          "line": 10,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_audit.py",
+          "line": 12,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_backend_availability.py",
+          "line": 81,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_badge.py",
+          "line": 8,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_bookkeeping_follows_the_run.py",
+          "line": 302,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_brief_beside_a_plan_section.py",
+          "line": 367,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_brief_dispatch.py",
+          "line": 166,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_budget.py",
+          "line": 37,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_build.py",
+          "line": 49,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_build.py",
+          "line": 147,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_build.py",
+          "line": 332,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_build.py",
+          "line": 420,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_build.py",
+          "line": 667,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_build.py",
+          "line": 908,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_capabilities.py",
+          "line": 508,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_capabilities.py",
+          "line": 509,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_capabilities.py",
+          "line": 549,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_capabilities.py",
+          "line": 591,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_capabilities.py",
+          "line": 595,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_capabilities.py",
+          "line": 611,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_capabilities.py",
+          "line": 625,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_capabilities.py",
+          "line": 634,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_check_manifest_reads_the_commitless_roles.py",
+          "line": 25,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_check_manifest_resolves_named_commits.py",
+          "line": 25,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_cited_identifier_resolves.py",
+          "line": 40,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_codex_banked_reset.py",
+          "line": 22,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_congested_local_lane_still_reaches_the_picker.py",
+          "line": 59,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_control_gate_repairs.py",
+          "line": 27,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 646,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 701,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 744,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 888,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 930,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 978,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 1211,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 1299,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 1302,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 1305,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 1768,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 2013,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 2077,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 2214,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 2382,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 2383,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 2398,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 2469,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 3492,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 3625,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 3647,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 3905,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 4419,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 4476,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 4747,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ack.py",
+          "line": 165,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ack.py",
+          "line": 184,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_cli_repository.py",
+          "line": 154,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_directory.py",
+          "line": 12,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_crew_drain_by_coordinator.py",
+          "line": 148,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_drain_by_coordinator.py",
+          "line": 175,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_drain_by_coordinator.py",
+          "line": 200,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_dryrun.py",
+          "line": 158,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_dryrun.py",
+          "line": 192,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_dryrun.py",
+          "line": 244,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_dryrun.py",
+          "line": 274,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_dryrun.py",
+          "line": 300,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gate_command_is_runnable.py",
+          "line": 22,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_crew_gate_log_agrees.py",
+          "line": 20,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 205,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 243,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 268,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 308,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 332,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 360,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 389,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 418,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 447,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 470,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 507,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 576,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 595,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 615,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 643,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_gc.py",
+          "line": 668,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_help_names_its_state.py",
+          "line": 94,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_lane_change.py",
+          "line": 159,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_lane_change.py",
+          "line": 222,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_lane_change.py",
+          "line": 261,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_lane_change.py",
+          "line": 313,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_lane_change.py",
+          "line": 357,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_lane_change.py",
+          "line": 373,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_negative_control_interface.py",
+          "line": 59,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_node.py",
+          "line": 130,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_path_prints_the_resolved_home.py",
+          "line": 24,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_crew_promotion.py",
+          "line": 13,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_crew_promotion_requires_review.py",
+          "line": 13,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_crew_promotion_scope.py",
+          "line": 14,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_crew_recover.py",
+          "line": 519,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_recover.py",
+          "line": 525,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_recover.py",
+          "line": 529,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_recover.py",
+          "line": 556,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_recover.py",
+          "line": 561,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_recover.py",
+          "line": 587,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_recover.py",
+          "line": 588,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_recover.py",
+          "line": 589,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_recover.py",
+          "line": 665,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_recover.py",
+          "line": 688,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_recovery.py",
+          "line": 385,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_refusal_visibility.py",
+          "line": 224,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_refusal_visibility.py",
+          "line": 256,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_refusal_visibility.py",
+          "line": 269,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_refusal_visibility.py",
+          "line": 285,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_refusal_visibility.py",
+          "line": 318,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_refusal_visibility.py",
+          "line": 360,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_routes.py",
+          "line": 494,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_routes.py",
+          "line": 495,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_routing_visibility.py",
+          "line": 133,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_routing_visibility.py",
+          "line": 220,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_runs_view.py",
+          "line": 328,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_runs_view.py",
+          "line": 488,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_shadow_paths.py",
+          "line": 324,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_surface_parity.py",
+          "line": 65,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_surface_parity.py",
+          "line": 113,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_surface_parity.py",
+          "line": 147,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_surface_parity.py",
+          "line": 159,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_surface_parity.py",
+          "line": 197,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 338,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 366,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 389,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 417,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 460,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 484,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 504,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 530,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 555,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 741,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 750,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 765,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 1079,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_ticker_layout.py",
+          "line": 1556,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_velocity_cli.py",
+          "line": 29,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_crew_watch_visibility.py",
+          "line": 38,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_crew_watchlife.py",
+          "line": 71,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_derived_figures_reach_a_reader.py",
+          "line": 116,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_directory_claim_asks_first.py",
+          "line": 184,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_directory_row_reads_the_derived_phase.py",
+          "line": 33,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_dispatch_counts_worker_slots.py",
+          "line": 381,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dispatch_holds_while_the_lane_is_paused.py",
+          "line": 123,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dispatch_lane_disagreement.py",
+          "line": 42,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dispatch_names_its_backend.py",
+          "line": 152,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dispatch_refuses_without_tmp_headroom.py",
+          "line": 79,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dispatch_result_matches_launch.py",
+          "line": 441,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dispatch_stdout_is_one_document.py",
+          "line": 147,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_doctor.py",
+          "line": 9,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 22,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_done_when_lints.py",
+          "line": 73,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dry_run_reaches_admission.py",
+          "line": 176,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dry_run_reaches_admission.py",
+          "line": 202,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dry_run_shows_each_set_override.py",
+          "line": 169,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dry_run_shows_each_set_override.py",
+          "line": 192,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dry_run_shows_each_set_override.py",
+          "line": 208,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dry_run_shows_each_set_override.py",
+          "line": 238,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dry_run_shows_each_set_override.py",
+          "line": 245,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dry_run_shows_each_set_override.py",
+          "line": 255,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dry_run_shows_each_set_override.py",
+          "line": 290,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_dry_run_shows_each_set_override.py",
+          "line": 319,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_edit_plan_append_evidence.py",
+          "line": 15,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_edit_plan_collapse_section.py",
+          "line": 13,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_edit_plan_section_writes.py",
+          "line": 12,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_every_attempt_is_supervised.py",
+          "line": 211,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_every_attempt_is_supervised.py",
+          "line": 255,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_every_dry_run_refusal_carries_the_echo.py",
+          "line": 166,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_every_dry_run_refusal_carries_the_echo.py",
+          "line": 182,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_every_dry_run_refusal_carries_the_echo.py",
+          "line": 217,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_every_resume_door_states_its_deadline.py",
+          "line": 163,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_evidence_synthesis.py",
+          "line": 9,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_execution_fit.py",
+          "line": 115,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_execution_fit.py",
+          "line": 132,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_execution_fit.py",
+          "line": 160,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_expired_acknowledgement_is_swept.py",
+          "line": 29,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_fence_widening.py",
+          "line": 30,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_fleet_node.py",
+          "line": 18,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_fleet_rollup_surfaces.py",
+          "line": 98,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_fleet_rollup_surfaces.py",
+          "line": 118,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_flight.py",
+          "line": 31,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_follow_counts_its_session.py",
+          "line": 116,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 473,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 842,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 896,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_fragment_ids_are_checked.py",
+          "line": 31,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_gate_evidence.py",
+          "line": 29,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_gc_applies_past_a_vanished_worktree.py",
+          "line": 111,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_gc_pin_flag.py",
+          "line": 67,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_gc_reports_what_it_already_did.py",
+          "line": 125,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_gc_reports_what_it_already_did.py",
+          "line": 182,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_gc_spares_a_live_pointers_worktree.py",
+          "line": 173,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_gc_spares_a_live_pointers_worktree.py",
+          "line": 195,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_gc_sweeps_orphan_scratch.py",
+          "line": 123,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_gc_vanished_mid_sweep.py",
+          "line": 102,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_granted_path_is_a_claim.py",
+          "line": 140,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_granted_path_is_a_claim.py",
+          "line": 148,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_granted_path_is_a_claim.py",
+          "line": 196,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_guard_install.py",
+          "line": 70,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_held_blocker_probe.py",
+          "line": 10,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_hooks_install_cli.py",
+          "line": 25,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_lane_advisory_on_dispatch.py",
+          "line": 149,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_lane_reading_at_dispatch.py",
+          "line": 44,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_lane_reading_carries_counts.py",
+          "line": 68,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_ledger.py",
+          "line": 27,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_manifest_check_command.py",
+          "line": 31,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_negative_control_waiver.py",
+          "line": 9,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_nothing_sweeps_old_plans.py",
+          "line": 101,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_one_review_head_resolver.py",
+          "line": 28,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_orchestrator_lane_fence.py",
+          "line": 59,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_pages.py",
+          "line": 87,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_pages.py",
+          "line": 255,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_pages_publication_guard.py",
+          "line": 94,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_passed_verdict_needs_exit_zero.py",
+          "line": 35,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_picker.py",
+          "line": 13,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_picker_in_dispatch.py",
+          "line": 135,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_picker_outcomes.py",
+          "line": 318,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_picker_outcomes.py",
+          "line": 333,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_picker_refusal_falls_back_to_deterministic.py",
+          "line": 172,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_picker_route_keeps_availability_refusal.py",
+          "line": 236,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_picker_route_keeps_availability_refusal.py",
+          "line": 255,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_picker_route_keeps_availability_refusal.py",
+          "line": 274,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_picker_route_keeps_availability_refusal.py",
+          "line": 290,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_picker_route_keeps_availability_refusal.py",
+          "line": 319,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_picker_route_keeps_availability_refusal.py",
+          "line": 349,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_picker_route_keeps_availability_refusal.py",
+          "line": 376,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_plan_review_gate.py",
+          "line": 369,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_plan_review_gate.py",
+          "line": 424,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_plan_review_gate.py",
+          "line": 466,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_plan_review_gate.py",
+          "line": 669,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_preflight_pace.py",
+          "line": 30,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_preflight_reads_the_published_document.py",
+          "line": 281,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 211,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 227,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 252,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_producer_takes_new_code.py",
+          "line": 568,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_project_state.py",
+          "line": 666,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_project_state.py",
+          "line": 1290,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_project_state.py",
+          "line": 1304,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_project_state_native_creation.py",
+          "line": 16,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_promotion_never_amends_its_commit.py",
+          "line": 14,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_promotion_picks_the_descendant_commit.py",
+          "line": 28,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_promotion_records_a_brief_runs_owner.py",
+          "line": 196,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_promotion_requires_impl_move.py",
+          "line": 505,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_promotion_stages_its_one_run_file.py",
+          "line": 16,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_recover_launches_only_what_it_is_asked.py",
+          "line": 94,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_recover_launches_only_what_it_is_asked.py",
+          "line": 102,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 163,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 210,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 212,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 325,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 329,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_replay_bound_follows_the_gate.py",
+          "line": 32,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_review_gate_coverage.py",
+          "line": 19,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_review_plan_command.py",
+          "line": 229,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_review_plan_command.py",
+          "line": 266,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_review_plan_command.py",
+          "line": 295,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_review_plan_command.py",
+          "line": 332,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_review_plan_command.py",
+          "line": 363,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_review_plan_command.py",
+          "line": 390,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_roster_write_commits.py",
+          "line": 10,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_routing_explicit_lane_implies_deterministic.py",
+          "line": 58,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_routing_picker_key.py",
+          "line": 57,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_run_state_reads_what_the_worker_reached.py",
+          "line": 194,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_scope_refusal_names_its_claimant.py",
+          "line": 198,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_section_id_on_its_wrapper_resolves.py",
+          "line": 21,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_service.py",
+          "line": 196,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_service.py",
+          "line": 247,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_skill_contracts.py",
+          "line": 12,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_spa_crew_stylesheet.py",
+          "line": 58,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_spa_crew_stylesheet.py",
+          "line": 72,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_split_existing_runs.py",
+          "line": 27,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 295,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_standing_suite_holds_promotion.py",
+          "line": 28,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_sub_floor_disposition_has_a_writer.py",
+          "line": 35,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_suite_arms_use_the_armed_command.py",
+          "line": 21,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_suite_never_calls_live_jev.py",
+          "line": 81,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_sync_canonical_checkout.py",
+          "line": 43,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_sync_hook_wiring.py",
+          "line": 71,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_sync_isolation_covers_module_fixtures.py",
+          "line": 21,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_tag_backfill.py",
+          "line": 9,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_tag_rename_cli.py",
+          "line": 13,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_test_watchers_are_reaped.py",
+          "line": 137,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_the_lane_override_is_explicit_and_recorded.py",
+          "line": 41,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_the_lane_rule_reaches_its_surfaces.py",
+          "line": 20,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_the_offered_promotion_command_promotes.py",
+          "line": 268,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_the_protected_set_is_declared.py",
+          "line": 229,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_the_surfaces_pass_the_plan.py",
+          "line": 183,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_the_surfaces_pass_the_plan.py",
+          "line": 219,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_the_surfaces_pass_the_plan.py",
+          "line": 270,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_typed_resources.py",
+          "line": 18,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_unmeasured_horizon_never_refuses.py",
+          "line": 359,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_verify_gate_command_option.py",
+          "line": 14,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_verify_gate_replay_is_diagnosable.py",
+          "line": 31,
+          "kind": "from-import"
+        },
+        {
+          "file": "tests/test_widen_reaches_a_blocked_run.py",
+          "line": 47,
+          "kind": "from-import"
+        }
+      ],
+      "os": [
+        {
+          "file": "tests/test_a_reexec_keeps_its_children.py",
+          "line": 402,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_freshness.py",
+          "line": 299,
+          "kind": "attribute"
+        }
+      ],
+      "sys": [
+        {
+          "file": "tests/test_follower_rearm_shows_nothing_twice.py",
+          "line": 529,
+          "kind": "attribute"
+        },
+        {
+          "file": "tests/test_follower_rearm_shows_nothing_twice.py",
+          "line": 531,
+          "kind": "attribute"
+        }
+      ]
+    },
+    "patches": {
+      "_FollowerReloader._replacement_imports": [
+        {
+          "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+          "line": 263,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_StampPoll.start": [
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 203,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 219,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_StampPoll.stop": [
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 204,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_producer_says_why_it_stops.py",
+          "line": 220,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "__file__": [
+        {
+          "file": "tests/test_build.py",
+          "line": 886,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_asset_root": [
+        {
+          "file": "tests/test_sync_canonical_checkout.py",
+          "line": 63,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_claude_plugin_validate": [
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 209,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_dispatch_resolved_flight": [
+        {
+          "file": "tests/test_a_crew_verb_ok_reads_its_outcome.py",
+          "line": 84,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 3618,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_refuses_without_tmp_headroom.py",
+          "line": 76,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_picker.py",
+          "line": 424,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_echo_follow_line": [
+        {
+          "file": "tests/test_attach_shows_each_live_run.py",
+          "line": 62,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_follow_replays_the_gap.py",
+          "line": 79,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_follower_keeps_memory.py",
+          "line": 56,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_follow_watch_lines": [
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 734,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 761,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_ticker.py",
+          "line": 1071,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_ticker_layout.py",
+          "line": 1550,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_follow_counts_its_session.py",
+          "line": 111,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 466,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 160,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 207,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 322,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_layer_flight_config": [
+        {
+          "file": "tests/test_routing_explicit_lane_implies_deterministic.py",
+          "line": 67,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_model_availability_refusal": [
+        {
+          "file": "tests/test_a_brief_points_rather_than_quotes.py",
+          "line": 137,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_brief_beside_a_plan_section.py",
+          "line": 362,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_brief_dispatch.py",
+          "line": 163,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_congested_local_lane_still_reaches_the_picker.py",
+          "line": 40,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_negative_control_interface.py",
+          "line": 55,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_counts_worker_slots.py",
+          "line": 376,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_holds_while_the_lane_is_paused.py",
+          "line": 119,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_lane_disagreement.py",
+          "line": 38,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_names_its_backend.py",
+          "line": 148,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_refuses_without_tmp_headroom.py",
+          "line": 77,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_stdout_is_one_document.py",
+          "line": 130,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_stdout_is_one_document.py",
+          "line": 137,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_every_dry_run_refusal_carries_the_echo.py",
+          "line": 200,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_lane_advisory_on_dispatch.py",
+          "line": 135,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_lane_reading_at_dispatch.py",
+          "line": 40,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_lane_reading_carries_counts.py",
+          "line": 64,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_orchestrator_lane_fence.py",
+          "line": 55,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_picker_in_dispatch.py",
+          "line": 72,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_picker_outcomes.py",
+          "line": 276,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_the_lane_override_is_explicit_and_recorded.py",
+          "line": 37,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_project_environment_drift": [
+        {
+          "file": "tests/test_doctor.py",
+          "line": 112,
+          "kind": "mock.patch"
+        },
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 205,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_reckon_checkout": [
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 204,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_doctor_session_host_link.py",
+          "line": 341,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_sync_isolation_covers_module_fixtures.py",
+          "line": 58,
+          "kind": "patch.setattr"
+        }
+      ],
+      "_resolved_flight": [
+        {
+          "file": "tests/test_a_brief_points_rather_than_quotes.py",
+          "line": 136,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_backend_availability.py",
+          "line": 44,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_brief_beside_a_plan_section.py",
+          "line": 359,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_brief_dispatch.py",
+          "line": 162,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_congested_local_lane_still_reaches_the_picker.py",
+          "line": 39,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 641,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 697,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 740,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 884,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 926,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 974,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 1765,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 2010,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 2066,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 2207,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 2349,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 2466,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 3901,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 4417,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew.py",
+          "line": 4474,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_cli_repository.py",
+          "line": 93,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_drain_by_coordinator.py",
+          "line": 197,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_dryrun.py",
+          "line": 81,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_lane_change.py",
+          "line": 130,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_negative_control_interface.py",
+          "line": 54,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_node.py",
+          "line": 125,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_refusal_visibility.py",
+          "line": 182,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_routes.py",
+          "line": 448,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_crew_routing_visibility.py",
+          "line": 130,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_directory_claim_asks_first.py",
+          "line": 152,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_counts_worker_slots.py",
+          "line": 373,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_holds_while_the_lane_is_paused.py",
+          "line": 118,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_lane_disagreement.py",
+          "line": 37,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_names_its_backend.py",
+          "line": 147,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_result_matches_launch.py",
+          "line": 413,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dispatch_stdout_is_one_document.py",
+          "line": 129,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_done_when_lints.py",
+          "line": 67,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_dry_run_reaches_admission.py",
+          "line": 108,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_every_attempt_is_supervised.py",
+          "line": 204,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_every_attempt_is_supervised.py",
+          "line": 248,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_every_resume_door_states_its_deadline.py",
+          "line": 101,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_execution_fit.py",
+          "line": 38,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 780,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 881,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_granted_path_is_a_claim.py",
+          "line": 105,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_lane_advisory_on_dispatch.py",
+          "line": 132,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_lane_reading_at_dispatch.py",
+          "line": 37,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_lane_reading_carries_counts.py",
+          "line": 61,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_orchestrator_lane_fence.py",
+          "line": 54,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_picker_in_dispatch.py",
+          "line": 71,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_picker_outcomes.py",
+          "line": 275,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_plan_review_gate.py",
+          "line": 362,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_plan_review_gate.py",
+          "line": 417,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_plan_review_gate.py",
+          "line": 463,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_routing_explicit_lane_implies_deterministic.py",
+          "line": 66,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_routing_picker_key.py",
+          "line": 77,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_routing_picker_key.py",
+          "line": 164,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_routing_picker_key.py",
+          "line": 211,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_scope_refusal_names_its_claimant.py",
+          "line": 196,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_suite_never_calls_live_jev.py",
+          "line": 46,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_test_watchers_are_reaped.py",
+          "line": 126,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_the_lane_override_is_explicit_and_recorded.py",
+          "line": 36,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_skills_source": [
+        {
+          "file": "tests/test_doctor.py",
+          "line": 213,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_doctor.py",
+          "line": 242,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_doctor.py",
+          "line": 287,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_stream_events_upto": [
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 646,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_follow_rearm_continues.py",
+          "line": 724,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "_suite_project_root": [
+        {
+          "file": "tests/test_a_crew_verb_ok_reads_its_outcome.py",
+          "line": 101,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "click.echo": [
+        {
+          "file": "tests/test_removed_flag_migration.py",
+          "line": 123,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "os.execve": [
+        {
+          "file": "tests/test_a_reexec_keeps_its_children.py",
+          "line": 402,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_follower_freshness.py",
+          "line": 298,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "sys.stdout": [
+        {
+          "file": "tests/test_follower_rearm_shows_nothing_twice.py",
+          "line": 529,
+          "kind": "monkeypatch.setattr"
+        },
+        {
+          "file": "tests/test_follower_rearm_shows_nothing_twice.py",
+          "line": 531,
+          "kind": "monkeypatch.setattr"
+        }
+      ],
+      "time": [
+        {
+          "file": "tests/test_follower_bounds_its_lifetime.py",
+          "line": 467,
+          "kind": "monkeypatch.setattr"
+        }
+      ]
+    },
+    "source_reads": [
+      {
+        "file": "reckon/crew/obligation_snapshot.py",
+        "line": 322,
+        "detail": "source_code_stamp hashes cli.py content; include moved sources"
+      },
+      {
+        "file": "reckon/crew/runs.py",
+        "line": 191,
+        "detail": "follower_code_stamp hashes cli.py content; include moved sources"
+      },
+      {
+        "file": "tests/test_a_crew_verb_ok_reads_its_outcome.py",
+        "line": 59,
+        "detail": "AST parses Path(cli.__file__).read_text() for crew emit sites"
+      },
+      {
+        "file": "tests/test_follow_lifetime_survives_reload.py",
+        "line": 377,
+        "detail": "FOLLOWER_SOURCE from cli.__file__ is read and touched to test reload"
+      },
+      {
+        "file": "tests/test_follower_bounds_its_lifetime.py",
+        "line": 422,
+        "detail": "FOLLOWER_SOURCE from cli.__file__ is read and touched to test reload"
+      },
+      {
+        "file": "tests/test_follower_checks_its_owner.py",
+        "line": 699,
+        "detail": "FOLLOWER_SOURCE from cli.__file__ is read and touched to test reload"
+      },
+      {
+        "file": "tests/test_skill_contracts.py",
+        "line": 1387,
+        "detail": "reads cli.py text for dispatch exit table"
+      },
+      {
+        "file": "tests/test_skill_contracts.py",
+        "line": 1460,
+        "detail": "reads cli.py text for dispatch-refused branch"
+      }
+    ],
+    "module_state": {
+      "main": {
+        "kind": "Click command registry",
+        "owner": "reckon/cli_entry.py",
+        "writers": [
+          "agent_context",
+          "serve",
+          "mcp",
+          "fleet",
+          "fleet_node_group",
+          "paste_command",
+          "badge_command",
+          "flight",
+          "capabilities_command",
+          "probe_held_blocker",
+          "tag",
+          "crew",
+          "service",
+          "sync",
+          "build",
+          "stamp_superseded_state",
+          "migrate_layout",
+          "doctor",
+          "audit",
+          "archive",
+          "evidence",
+          "roadmap",
+          "audit_doc",
+          "install_skills",
+          "hooks"
+        ],
+        "readers": [
+          "_in_linked_worktree",
+          "_sync_crew_host_plugin"
+        ]
+      },
+      "crew": {
+        "kind": "Click command registry",
+        "owner": "reckon/crew_dispatch_commands.py",
+        "writers": [
+          "crew_pick",
+          "crew_preflight",
+          "crew_dispatch",
+          "crew_shadow",
+          "crew_review_plan",
+          "crew_attach",
+          "crew_observe",
+          "crew_host",
+          "crew_follow",
+          "crew_watch",
+          "crew_resume_ready",
+          "crew_unwatch",
+          "crew_placement",
+          "crew_list",
+          "crew_directory",
+          "crew_path",
+          "crew_dispose",
+          "crew_check_manifest",
+          "crew_widen",
+          "crew_drain",
+          "crew_ack",
+          "crew_suite",
+          "crew_gc",
+          "crew_resume",
+          "crew_redispatch",
+          "crew_stop",
+          "crew_discard",
+          "crew_repair_status",
+          "crew_complete",
+          "crew_verify_gate",
+          "crew_recover",
+          "crew_member",
+          "crew_ledger",
+          "crew_velocity",
+          "crew_budget_reset",
+          "crew_split_runs",
+          "crew_repair_completion"
+        ],
+        "readers": []
+      },
+      "agent_context": {
+        "kind": "Click command registry",
+        "owner": "reckon/project_setup_commands.py",
+        "writers": [
+          "agent_context_doctor"
+        ],
+        "readers": []
+      },
+      "tag": {
+        "kind": "Click command registry",
+        "owner": "reckon/project_setup_commands.py",
+        "writers": [
+          "tag_rename",
+          "tag_backfill"
+        ],
+        "readers": []
+      },
+      "fleet_node_group": {
+        "kind": "Click command registry",
+        "owner": "reckon/project_setup_commands.py",
+        "writers": [
+          "fleet_node_hold",
+          "fleet_node_status",
+          "fleet_node_place"
+        ],
+        "readers": []
+      },
+      "service": {
+        "kind": "Click command registry",
+        "owner": "reckon/project_maintenance_commands.py",
+        "writers": [
+          "service_install",
+          "service_restart",
+          "service_start",
+          "service_stop",
+          "service_status",
+          "service_logs",
+          "service_uninstall"
+        ],
+        "readers": []
+      },
+      "evidence": {
+        "kind": "Click command registry",
+        "owner": "reckon/project_maintenance_commands.py",
+        "writers": [
+          "synthesize_evidence"
+        ],
+        "readers": []
+      },
+      "hooks": {
+        "kind": "Click command registry",
+        "owner": "reckon/project_maintenance_commands.py",
+        "writers": [
+          "hooks_install"
+        ],
+        "readers": [
+          "_is_native_agent_guard_group",
+          "_is_worker_message_guard_group",
+          "_is_worker_git_guard_group",
+          "_configure_crew_guards"
+        ]
+      },
+      "crew_suite": {
+        "kind": "Click command registry",
+        "owner": "reckon/crew_run_commands.py",
+        "writers": [
+          "crew_suite_run",
+          "crew_suite_waive"
+        ],
+        "readers": []
+      },
+      "crew_member": {
+        "kind": "Click command registry",
+        "owner": "reckon/crew_run_commands.py",
+        "writers": [
+          "crew_member_add",
+          "crew_member_list"
+        ],
+        "readers": []
+      },
+      "_SNAPSHOT_READER": {
+        "kind": "imported module object",
+        "owner": "reckon/crew_follow_commands.py",
+        "writers": [
+          "_SNAPSHOT_READER"
+        ],
+        "readers": [
+          "_FOLLOWER_RELOAD_PROBE_TIMEOUT",
+          "PRODUCER_POLL_INTERVAL_CAP_SECONDS",
+          "PRODUCER_RELOAD_WINDOW_SECONDS"
+        ]
+      }
+    }
+  },
+  "commands": {
+    "imports": "git grep -n -E '(^from reckon\\.cli import|^import reckon\\.cli|^from reckon import cli|reckon\\.cli\\.|cli\\.)' -- reckon tests scripts",
+    "patches": [
+      "git grep -n -E '(monkeypatch\\.setattr|mock\\.patch|patch\\().*(reckon\\.cli|cli_module|cli,|cli\\.)' -- 'tests/*.py' 'tests/**/*.py' 'reckon/*.py' 'reckon/**/*.py' 'scripts/*.py'",
+      "git grep -n -E '[A-Za-z_]+\\.setattr\\((cli|cli_module)' -- 'tests/*.py' 'tests/**/*.py' 'reckon/*.py' 'reckon/**/*.py' 'scripts/*.py' | rg -v 'monkeypatch\\.setattr'"
+    ],
+    "source_reads": [
+      "git grep -n -E 'cli\\.py|cli\\.__file__|cli_module\\.__file__|FOLLOWER_SOURCE|inspect\\.getsource' -- 'tests/*.py' 'tests/**/*.py' 'reckon/*.py' 'reckon/**/*.py' 'scripts/*.py' | rg 'read_text|read_bytes|open\\(|getsource|cli\\.py|FOLLOWER_SOURCE'",
+      "git grep -n 'getsource(' -- 'reckon/*.py' 'reckon/**/*.py' 'tests/*.py' 'tests/**/*.py' 'scripts/*.py'"
+    ],
+    "module_state": "rg -n \"^(def|class|[A-Z_][A-Z0-9_]*[[:space:]]*=)|^@|global |setattr\\(|globals\\(\" reckon/cli.py"
+  },
+  "statement_count": 218,
+  "counting_rule": "Each non-import AST top-level node appears once; decorator lines are included with functions; source bytes exclude comments between statements; import estimate includes original imports, cross-module references, and a reserve.",
+  "census_method": "The listed searches locate candidates. Python ast resolves reckon.cli import aliases, member attribute loads, and patch calls; direct source-path reads and Click registry writers are then checked against the cited lines. The worker run transcript contains the classification command."
+}

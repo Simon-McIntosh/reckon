@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:every-module-fits-a-worker-window">
+  <meta name="plan-verifies" content="reckon:every-module-fits-a-worker-window#s4">
+  <meta name="evidence-verdict" content="mapped">
+  <meta name="evidence-date" content="2026-10-07">
+  <title>CLI split map | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="cli-split-map">
+  <h2>CLI split map</h2>
+  <p>Base <code>2b8510dd2d3e47915192f68472acb04aea8c52d1</code> has <strong>218</strong> non-import top-level statements. The
+  <a href="/reckon/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.json">machine-readable map</a> assigns each statement once. Estimates use
+  <code>ceil((member source bytes + import estimate bytes) / 3.5)</code>; all six produced modules and the
+  <code>cli.py</code> remainder are below 40,000 estimated tokens.</p>
+  <table>
+    <thead><tr><th>module</th><th>concern</th><th>members</th><th>estimated tokens</th></tr></thead>
+    <tbody>
+      <tr><td><code>reckon/cli_entry.py</code></td><td>Click root and shared package/installation helpers</td><td>35</td><td>6,228</td></tr>
+      <tr><td><code>reckon/project_setup_commands.py</code></td><td>project setup, fleet and tag command groups</td><td>17</td><td>5,120</td></tr>
+      <tr><td><code>reckon/crew_dispatch_commands.py</code></td><td>crew admission, dispatch, review planning and observation</td><td>34</td><td>19,673</td></tr>
+      <tr><td><code>reckon/crew_follow_commands.py</code></td><td>crew follower, ticker, replay and watch delivery</td><td>60</td><td>32,748</td></tr>
+      <tr><td><code>reckon/crew_run_commands.py</code></td><td>crew run, lifecycle, review, suite and ledger operations</td><td>42</td><td>21,797</td></tr>
+      <tr><td><code>reckon/project_maintenance_commands.py</code></td><td>service, docs and project maintenance commands</td><td>30</td><td>15,086</td></tr>
+      <tr><td><code>reckon/cli.py</code></td><td>stable import surface and console-script target</td><td>0</td><td>3,744</td></tr>
+    </tbody>
+  </table>
+  <p><code>cli_entry.py</code> owns the Click root and the installation helpers used by multiple
+  commands. <code>project_setup_commands.py</code> keeps the root commands and nested groups that
+  precede <code>crew</code> in the base source. <code>crew_dispatch_commands.py</code> owns the
+  <code>crew</code> group, admission, dispatch and review planning. <code>crew_follow_commands.py</code>
+  keeps the follower loop, replay, ticker, and watch commands with their snapshot reader and
+  constants. <code>crew_run_commands.py</code> contains run lifecycle and ledger verbs, including
+  their nested suite and member groups. <code>project_maintenance_commands.py</code> keeps service,
+  document and maintenance commands that follow <code>crew</code> in the base. The original
+  <code>cli.py</code> has no retained statement; it imports and re-exports the six groups so
+  <code>reckon.cli:main</code> remains the console-script target and existing imports resolve.</p>
+  <h3>Imports and registration order</h3>
+  <p>The five module-level edges are
+  <code>project_setup_commands.py → cli_entry.py</code>,
+  <code>crew_dispatch_commands.py → cli_entry.py</code>,
+  <code>crew_follow_commands.py → crew_dispatch_commands.py</code>,
+  <code>crew_run_commands.py → crew_dispatch_commands.py</code>, and
+  <code>project_maintenance_commands.py → cli_entry.py</code>. Each edge imports its Click group for
+  a decorator. There is no module-level cycle and no produced module imports <code>cli.py</code>.
+  The facade imports entry, setup, dispatch, follow, run operations and maintenance in that order,
+  retaining both root command order and crew subcommand order. At the move head, walk the Click
+  tree and compare every command's help text byte for byte with the base.</p>
+  <p><code>project_setup_commands.py</code> uses dispatch's <code>_emit</code> in function bodies,
+  while dispatch imports entry at module level; this is a function-level import after registration.
+  Follower, run operations and maintenance likewise use the function-level helper imports listed
+  in the JSON edges. No member imports the original facade: all former back-references resolve
+  to the owning produced module, and lazy imports break any reverse dependency.</p>
+  <h3>Mutable state finding</h3>
+  <p>The Click roots are mutable command registries. The JSON census names each group and every
+  decorator that registers a command. Keeping <code>crew</code> with all its decorated commands
+  exceeds the 40,000-token bound; the map therefore keeps its registry owner in
+  <code>crew_dispatch_commands.py</code> and registers follower and run commands when the facade
+  imports those modules. The <code>main</code> registry is similarly owned by
+  <code>cli_entry.py</code>. This preserves Click's existing decorator mechanism, but it is a
+  literal exception to colocating each registry with every registering definition. The move
+  owner should confirm the seam against the pure-move rule before editing code. The other mutable
+  module-level object found, <code>_SNAPSHOT_READER</code>, stays with its derived constants in
+  the follower module.</p>
+  <h3>Repoint scope for the move</h3>
+  <p>The import census records 53 referenced names and
+  504 direct imports or alias attribute reads. Re-exports
+  preserve those reads, including imported module aliases such as <code>cli.os</code> and
+  <code>cli.time</code>. The patch census has 124 patch sites
+  across 64 test files; patches of moved globals must target their owner module.
+  In particular, <code>cli.__file__</code> patches cannot steer a moved helper's own
+  <code>__file__</code>. The source-read census includes three follower tests that read and touch
+  <code>cli.__file__</code>, two tests that parse <code>cli.py</code> for command text, and two
+  production code-stamp readers in <code>reckon/crew/obligation_snapshot.py</code> and
+  <code>reckon/crew/runs.py</code>; these readers must include the new sources. The exact patch
+  targets, lines and source-read details are in the JSON.</p>
+  <p>The following test paths are the move node's declared repoint scope, derived as the union of
+  patch and source-read files (67 paths):</p>
+  <details><summary>Test write paths for the move</summary>
+    <ul>
+        <li><code>tests/test_a_brief_points_rather_than_quotes.py</code></li>
+        <li><code>tests/test_a_crew_verb_ok_reads_its_outcome.py</code></li>
+        <li><code>tests/test_a_reexec_keeps_its_children.py</code></li>
+        <li><code>tests/test_attach_shows_each_live_run.py</code></li>
+        <li><code>tests/test_backend_availability.py</code></li>
+        <li><code>tests/test_brief_beside_a_plan_section.py</code></li>
+        <li><code>tests/test_brief_dispatch.py</code></li>
+        <li><code>tests/test_build.py</code></li>
+        <li><code>tests/test_congested_local_lane_still_reaches_the_picker.py</code></li>
+        <li><code>tests/test_crew.py</code></li>
+        <li><code>tests/test_crew_cli_repository.py</code></li>
+        <li><code>tests/test_crew_drain_by_coordinator.py</code></li>
+        <li><code>tests/test_crew_dryrun.py</code></li>
+        <li><code>tests/test_crew_lane_change.py</code></li>
+        <li><code>tests/test_crew_negative_control_interface.py</code></li>
+        <li><code>tests/test_crew_node.py</code></li>
+        <li><code>tests/test_crew_refusal_visibility.py</code></li>
+        <li><code>tests/test_crew_routes.py</code></li>
+        <li><code>tests/test_crew_routing_visibility.py</code></li>
+        <li><code>tests/test_crew_ticker.py</code></li>
+        <li><code>tests/test_crew_ticker_layout.py</code></li>
+        <li><code>tests/test_directory_claim_asks_first.py</code></li>
+        <li><code>tests/test_dispatch_counts_worker_slots.py</code></li>
+        <li><code>tests/test_dispatch_holds_while_the_lane_is_paused.py</code></li>
+        <li><code>tests/test_dispatch_lane_disagreement.py</code></li>
+        <li><code>tests/test_dispatch_names_its_backend.py</code></li>
+        <li><code>tests/test_dispatch_refuses_without_tmp_headroom.py</code></li>
+        <li><code>tests/test_dispatch_result_matches_launch.py</code></li>
+        <li><code>tests/test_dispatch_stdout_is_one_document.py</code></li>
+        <li><code>tests/test_doctor.py</code></li>
+        <li><code>tests/test_doctor_session_host_link.py</code></li>
+        <li><code>tests/test_done_when_lints.py</code></li>
+        <li><code>tests/test_dry_run_reaches_admission.py</code></li>
+        <li><code>tests/test_every_attempt_is_supervised.py</code></li>
+        <li><code>tests/test_every_dry_run_refusal_carries_the_echo.py</code></li>
+        <li><code>tests/test_every_resume_door_states_its_deadline.py</code></li>
+        <li><code>tests/test_execution_fit.py</code></li>
+        <li><code>tests/test_follow_counts_its_session.py</code></li>
+        <li><code>tests/test_follow_lifetime_survives_reload.py</code></li>
+        <li><code>tests/test_follow_rearm_continues.py</code></li>
+        <li><code>tests/test_follow_replays_the_gap.py</code></li>
+        <li><code>tests/test_follower_bounds_its_lifetime.py</code></li>
+        <li><code>tests/test_follower_checks_its_owner.py</code></li>
+        <li><code>tests/test_follower_freshness.py</code></li>
+        <li><code>tests/test_follower_keeps_memory.py</code></li>
+        <li><code>tests/test_follower_rearm_shows_nothing_twice.py</code></li>
+        <li><code>tests/test_granted_path_is_a_claim.py</code></li>
+        <li><code>tests/test_lane_advisory_on_dispatch.py</code></li>
+        <li><code>tests/test_lane_reading_at_dispatch.py</code></li>
+        <li><code>tests/test_lane_reading_carries_counts.py</code></li>
+        <li><code>tests/test_orchestrator_lane_fence.py</code></li>
+        <li><code>tests/test_picker.py</code></li>
+        <li><code>tests/test_picker_in_dispatch.py</code></li>
+        <li><code>tests/test_picker_outcomes.py</code></li>
+        <li><code>tests/test_plan_review_gate.py</code></li>
+        <li><code>tests/test_producer_says_why_it_stops.py</code></li>
+        <li><code>tests/test_removed_flag_migration.py</code></li>
+        <li><code>tests/test_routing_explicit_lane_implies_deterministic.py</code></li>
+        <li><code>tests/test_routing_picker_key.py</code></li>
+        <li><code>tests/test_scope_refusal_names_its_claimant.py</code></li>
+        <li><code>tests/test_skill_contracts.py</code></li>
+        <li><code>tests/test_stale_producer_warning_waits_for_its_reload.py</code></li>
+        <li><code>tests/test_suite_never_calls_live_jev.py</code></li>
+        <li><code>tests/test_sync_canonical_checkout.py</code></li>
+        <li><code>tests/test_sync_isolation_covers_module_fixtures.py</code></li>
+        <li><code>tests/test_test_watchers_are_reaped.py</code></li>
+        <li><code>tests/test_the_lane_override_is_explicit_and_recorded.py</code></li>
+    </ul>
+  </details>
+</section>
+</main>
+</body>
+</html>
