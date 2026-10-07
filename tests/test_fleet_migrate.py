@@ -91,6 +91,32 @@ def test_recorded_layouts_keep_tab_order_and_pane_identity(tmp_path: Path) -> No
         )
 
 
+@pytest.mark.parametrize(
+    ("name", "focused_tab"),
+    [("ambix-fleet", "ids"), ("nova-fleet", "S22")],
+)
+def test_rendered_layout_keeps_zellij_chrome_and_focus(
+    tmp_path: Path, name: str, focused_tab: str
+) -> None:
+    source = _source(tmp_path)
+    session = next(
+        item
+        for item in fleet_migrate.build_census(source)["sessions"]
+        if item["name"] == name
+    )
+    rendered = fleet_migrate.render_layout(session)
+    original = source["layouts"][name]
+    tab_count = len(session["tabs"])
+    assert original.count('plugin location="zellij:tab-bar"') == tab_count + 1
+    assert rendered.count('plugin location="zellij:tab-bar"') == original.count(
+        'plugin location="zellij:tab-bar"'
+    )
+    assert rendered.count("pane size=1 borderless=true {") >= tab_count
+    assert original[original.index("    new_tab_template {") :] in rendered
+    assert f'tab name="{focused_tab}" focus=true' in rendered
+    assert 'pane command="fleet-claude" focus=true' in rendered
+
+
 def test_resume_table_matches_layout_panes(tmp_path: Path) -> None:
     census = fleet_migrate.build_census(_source(tmp_path))
     rows = list(csv.DictReader((FIXTURE / "resume.tsv").open(), delimiter="\t"))

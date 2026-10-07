@@ -23,10 +23,11 @@ class MigrationError(RuntimeError):
 
 _TAB = re.compile(r'^\s*tab name="([^"]+)"')
 _CWD = re.compile(r'\bcwd(?:=| )"([^"]+)"')
-_PANE = re.compile(r"^\s*pane(?:\s|\{)")
+_PANE = re.compile(r"^\s*pane(?:\s|\{|$)")
 _COMMAND = re.compile(r'\bcommand="([^"]+)"')
 _ARGS = re.compile(r'^\s*args(?:\s+"[^"]*")+')
 _QUOTED = re.compile(r'"((?:\\.|[^"\\])*)"')
+_CONTENTS_FILE = re.compile(r'\s+contents_file="(?:\\.|[^"\\])*"')
 
 
 def parse_layout(source: str) -> list[dict[str, Any]]:
@@ -207,7 +208,7 @@ def build_census(
                 pane["conversation"] = record["conversation"]
                 pane["cwd"] = record["cwd"]
                 pane.pop("args", None)
-        sessions.append({"name": name, "tabs": tabs})
+        sessions.append({"name": name, "tabs": tabs, "source_layout": source})
     starts = "\n".join(observation.get("starts", []))
     missing_starts = [
         pane["conversation"]
@@ -222,31 +223,81 @@ def build_census(
 def render_layout(
     session: Mapping[str, Any], prompts: Mapping[str, str] | None = None
 ) -> str:
-    """Write runnable panes in their recorded tab order, omitting scrollback."""
+    """Keep zellij's layout and replace only pane state needed for resumption."""
     prompts = prompts or {}
-    lines = ["layout {"]
-    for tab in session["tabs"]:
-        lines.append(f"    tab name={json.dumps(tab['name'])} {{")
-        for pane in tab["panes"]:
-            if pane.get("conversation"):
-                lines.append(
-                    f'        pane command="fleet-claude" cwd={json.dumps(pane["cwd"])} {{'
+    source = session.get("source_layout")
+    if not isinstance(source, str) or not source:
+        raise MigrationError(f"{session['name']}: census has no source layout dump")
+    lines: list[str] = []
+    depth = 0
+    tab_depth = 0
+    pane_depth = 0
+    tab_index = 0
+    tab: Mapping[str, Any] | None = None
+    pane: Mapping[str, Any] | None = None
+    claude_panes: Any = iter(())
+    for original_line in source.splitlines(keepends=True):
+        line = original_line
+        structure = _QUOTED.sub('""', line)
+        opened = structure.count("{")
+        closed = structure.count("}")
+        if match := _TAB.match(line):
+            if tab_index >= len(session["tabs"]):
+                raise MigrationError(
+                    f"{session['name']}: source gained an unrecorded tab"
                 )
-                prompt = prompts.get(pane["conversation"])
-                args = f'            args "--resume" {json.dumps(pane["conversation"])}'
-                if prompt:
-                    args += f" {json.dumps(prompt)}"
-                lines.append(args)
-                lines.append("        }")
-            elif pane.get("command"):
-                lines.append(
-                    f"        pane command={json.dumps(pane['command'])} cwd={json.dumps(pane['cwd'])}"
+            tab = session["tabs"][tab_index]
+            tab_index += 1
+            if tab["name"] != match.group(1):
+                raise MigrationError(
+                    f"{session['name']}: tab order changed since census"
                 )
+            claude_panes = iter(
+                item for item in tab["panes"] if item.get("conversation")
+            )
+            tab_depth = depth + opened
+        elif tab is not None and _PANE.match(line):
+            command = _COMMAND.search(line)
+            pane = (
+                next(claude_panes, None)
+                if command and command.group(1) == "fleet-claude"
+                else None
+            )
+            pane_depth = depth + opened
+            if pane is not None:
+                line = _COMMAND.sub('command="fleet-claude"', line, count=1)
+                cwd = f"cwd={json.dumps(pane['cwd'])}"
+                if match := _CWD.search(line):
+                    line = line[: match.start()] + cwd + line[match.end() :]
+                else:
+                    brace = line.find("{")
+                    if brace < 0:
+                        raise MigrationError(
+                            f"{session['name']}: Claude pane has no body"
+                        )
+                    line = line[:brace].rstrip() + f" {cwd} " + line[brace:]
             else:
-                lines.append(f"        pane cwd={json.dumps(pane['cwd'])}")
-        lines.append("    }")
-    lines.append("}")
-    return "\n".join(lines) + "\n"
+                line = _CONTENTS_FILE.sub("", line)
+        elif pane is not None:
+            if _ARGS.match(line):
+                indent = line[: len(line) - len(line.lstrip())]
+                line = f'{indent}args "--resume" {json.dumps(pane["conversation"])}'
+                if prompt := prompts.get(pane["conversation"]):
+                    line += f" {json.dumps(prompt)}"
+                line += "\n"
+            elif line.lstrip().startswith("start_suspended "):
+                line = ""
+        if _CONTENTS_FILE.search(line):
+            line = _CONTENTS_FILE.sub("", line)
+        lines.append(line)
+        depth += opened - closed
+        if pane is not None and depth < pane_depth:
+            pane = None
+        if tab is not None and depth < tab_depth:
+            tab = None
+    if tab_index != len(session["tabs"]):
+        raise MigrationError(f"{session['name']}: source lost a recorded tab")
+    return "".join(lines)
 
 
 def _ledger_root(state: Path) -> Path:
