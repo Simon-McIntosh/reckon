@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery.py:unwatch",
+    "reckon/crew/dispatch.py:_ensure_watch_producer",
+    "reckon/crew/runs.py:watch",
+    "reckon/crew/runs.py:producer_live",
+    "reckon/crew/runs.py:project_watch_visibility"
+  ],
+  "completed_at": "2026-10-07T12:03:00.389Z",
+  "dispatched_at": "2026-10-07T11:54:37Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T112749535190-the-producer-seat-holds-across-hosts/negative-control.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the log's header records revision=4b55e8626, but the test it runs (tests/test_producer_seat_across_hosts.py) is added by 35fbe7a7c and does not exist at that revision, so the header misidentifies the tree the mutation was applied to."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T112749535190-the-producer-seat-holds-across-hosts/gate-final.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate measured revision 35fbe7a7c, one commit before the reviewed head d7d280288, so the recorded pass does not cover the exact reviewed head (the delta commit is docs-only, so the risk is low)."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 4b55e8626 \u2014 35fbe7a7c holds the feature (host_lease.release_holder, lease-claiming claim context, unwatch refusals, renewal loops) and d7d280288 adds only the 18-line evidence fragment.",
+    "done_when": "the done_when names the six-file pytest gate and its exit 0; the manifest records that exact command and gate-final.log records 34 passed EXIT=0.",
+    "goal": "read the node goal (make a project's producer seat a host lease on shared storage so a dispatch on another host defers to a fresh producer instead of unwatching it); reckon/crew/runs.py:2598 _project_watch_claim claims the HostLease before the local flock, so a second host reads the shared holder and defers.",
+    "manifest": "read; it records commit d7d280288 as head, the changed paths, the 34-passed gate and a negative-control log, but its baseline_suite and after_suite lines are empty so no arm delta is recorded.",
+    "write_paths": "the manifest declares six paths; the diff touches reckon/crew/runs.py, reckon/crew/recovery.py, reckon/crew/host_lease.py, tests/test_producer_seat_across_hosts.py and the evidence fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_producer_seat_across_hosts.py:55 asserts stops == [] and the declared mutation (letting host two unwatch a fresh producer) reddens exactly that assertion in negative-control.log (negative-control.log, 1 failed, EXIT=1).",
+    "evidence": "gate-final.log records 34 passed EXIT=0 for the done_when's exact six-file command, but at revision 35fbe7a7c rather than the reviewed head d7d280288, and the manifest's baseline_suite and after_suite are empty.",
+    "fit": "reckon/crew/runs.py:220 reuses the existing _WATCH_SEAT_HANDLES module-global idiom for _WATCH_HOST_LEASES and host_lease.py:143 release_holder mirrors release()'s inode check, but the negative-control log's header names a revision at which its test does not exist.",
+    "goal_fidelity": "reckon/crew/runs.py:2598 _project_watch_claim takes the HostLease before the flock and reckon/crew/runs.py:3213 watch_state reads the shared holder, so a second host defers to a fresh producer.",
+    "reuse": "reckon/crew/host_lease.py:143 release_holder extends the existing HostLease owner and runs.py:147 watch_host_lease wraps it, adding no second lease mechanism; the search over reckon/crew found HostLease already owning the capability.",
+    "scope_discipline": "every path in the diff (reckon/crew/runs.py, reckon/crew/recovery.py, reckon/crew/host_lease.py, tests/test_producer_seat_across_hosts.py, the evidence fragment) is inside the declared write paths, and the done-when names no artifact so no figure was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (make a project's producer seat a host lease on shared storage so a dispatch on another host defers to a fresh producer instead of unwatching it); reckon/crew/runs.py:2598 _project_watch_claim claims the HostLease before the local flock, so a second host reads the shared holder and defers.\nVERDICT done_when: the done_when names the six-file pytest gate and its exit 0; the manifest records that exact command and gate-final.log records 34 passed EXIT=0.\nVERDICT write_paths: the manifest declares six paths; the diff touches reckon/crew/runs.py, reckon/crew/recovery.py, reckon/crew/host_lease.py, tests/test_producer_seat_across_hosts.py and the evidence fragment, all inside them.\nVERDICT manifest: read; it records commit d7d280288 as head, the changed paths, the 34-passed gate and a negative-control log, but its baseline_suite and after_suite lines are empty so no arm delta is recorded.\nVERDICT diff: read commit by commit against base 4b55e8626 \u2014 35fbe7a7c holds the feature (host_lease.release_holder, lease-claiming claim context, unwatch refusals, renewal loops) and d7d280288 adds only the 18-line evidence fragment.\nCALL_SITES: reckon/crew/recovery.py:unwatch, reckon/crew/dispatch.py:_ensure_watch_producer, reckon/crew/runs.py:watch, reckon/crew/runs.py:producer_live, reckon/crew/runs.py:project_watch_visibility\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2598 _project_watch_claim takes the HostLease before the flock and reckon/crew/runs.py:3213 watch_state reads the shared holder, so a second host defers to a fresh producer.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-final.log records 34 passed EXIT=0 for the done_when's exact six-file command, but at revision 35fbe7a7c rather than the reviewed head d7d280288, and the manifest's baseline_suite and after_suite are empty.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/runs.py, reckon/crew/recovery.py, reckon/crew/host_lease.py, tests/test_producer_seat_across_hosts.py, the evidence fragment) is inside the declared write paths, and the done-when names no artifact so no figure was written.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_producer_seat_across_hosts.py:55 asserts stops == [] and the declared mutation (letting host two unwatch a fresh producer) reddens exactly that assertion in negative-control.log (negative-control.log, 1 failed, EXIT=1).\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/runs.py:220 reuses the existing _WATCH_SEAT_HANDLES module-global idiom for _WATCH_HOST_LEASES and host_lease.py:143 release_holder mirrors release()'s inode check, but the negative-control log's header names a revision at which its test does not exist.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/host_lease.py:143 release_holder extends the existing HostLease owner and runs.py:147 watch_host_lease wraps it, adding no second lease mechanism; the search over reckon/crew found HostLease already owning the capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T112749535190-the-producer-seat-holds-across-hosts/negative-control.log:1 follow-on: the log's header records revision=4b55e8626, but the test it runs (tests/test_producer_seat_across_hosts.py) is added by 35fbe7a7c and does not exist at that revision, so the header misidentifies the tree the mutation was applied to.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T112749535190-the-producer-seat-holds-across-hosts/gate-final.log:1 follow-on: the gate measured revision 35fbe7a7c, one commit before the reviewed head d7d280288, so the recorded pass does not cover the exact reviewed head (the delta commit is docs-only, so the risk is low).",
+  "review_run_id": "r-20261007T115412517943-review-of-the-producer-seat-holds-across-hosts",
+  "reviewed_base_sha": "4b55e8626d49285e44ba2dcb25c3da77518a6ccc",
+  "reviewed_head_sha": "d7d2802880b6252e748dd40d4b3cb291cdd9ad99",
+  "reviewed_run_id": "r-20261007T112749535190-the-producer-seat-holds-across-hosts",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T12:02:07.903343+00:00",
+  "total": 107
+}
