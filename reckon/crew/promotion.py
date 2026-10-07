@@ -8038,36 +8038,29 @@ def _plan_review_record_for_promoting_run(
     plan_slug = node_id[len(prefix) :]
     if not plan_slug:
         return None
+    matched: Mapping[str, Any] | None = None
     for sidecar in plan_review.delivered_reports(project, plan_slug):
-        directory = Path(str(sidecar.get("report_path") or "")).parent
-        if not _report_dispatch_names_run(directory, run_id):
+        composed = str(sidecar.get("review_run_id") or "")
+        if (
+            review_module._plan_review_crew_run_id(project, plan_slug, composed)
+            != run_id
+        ):
             continue
-        if not sidecar.get("stored"):
-            plan_review._store_delivered_report(sidecar)
-        found = review_module.record_for_review_run(
-            project, str(sidecar.get("review_run_id") or "")
-        )
-        return found[1] if found is not None else None
-    return None
-
-
-def _report_dispatch_names_run(directory: Path, run_id: str) -> bool:
-    """Whether a plan-review report's dispatch sidecar names ``run_id``.
-
-    A plan-review report directory is named for the composed review run id; the
-    crew run that actually ran the review carries a different id, written into
-    the directory's ``dispatch.json``. A directory or sidecar that is absent, or
-    one naming no run, is not a match.
-    """
-    try:
-        dispatch = json.loads(
-            (directory / review_module.REVIEW_DISPATCH_FILE_NAME).read_text(
-                encoding="utf-8"
-            )
-        )
-    except (OSError, ValueError):
-        return False
-    return isinstance(dispatch, Mapping) and str(dispatch.get("run_id") or "") == run_id
+        matched = sidecar
+        break
+    if matched is None:
+        return None
+    if not matched.get("stored"):
+        # Store through the refusal-recording reader, so a delivery the store
+        # refuses — a composed-but-undelivered report carrying no RUBRIC or
+        # FINDING line — records its reason on the sidecar and leaves promotion
+        # running with nothing committed for that round, rather than aborting
+        # the landing with an unhandled exception.
+        plan_review.store_delivered_reviews(project, plan_slug)
+    found = review_module.record_for_review_run(
+        project, str(matched.get("review_run_id") or "")
+    )
+    return found[1] if found is not None else None
 
 
 def _delivered_review_payloads_for_commit(

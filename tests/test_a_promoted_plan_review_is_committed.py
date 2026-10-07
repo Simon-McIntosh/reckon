@@ -249,3 +249,34 @@ def test_promotion_stores_an_unstored_delivered_report_first(
     assert len(after) == 1 and after[0]["stored"] is True
     stored = review_module.record_for_review_run(PROJECT, COMPOSED_RUN_ID)
     assert stored is not None and stored[1]["review_run_id"] == COMPOSED_RUN_ID
+
+
+# ── (3) A refused delivery leaves promotion running, not aborted ─────────────
+
+
+def test_a_refused_delivery_leaves_promotion_running(
+    repository: Path, tmp_path: Path
+) -> None:
+    # A composed-but-undelivered report: the file exists beside its sidecar but
+    # carries no RUBRIC or FINDING line, so the store refuses it.
+    report_path = _write_delivered_report()
+    report_path.write_text(
+        "the reviewer wrote prose but emitted no RUBRIC or FINDING line.\n",
+        encoding="utf-8",
+    )
+    _plan_review_pointer(repository, tmp_path)
+
+    crew.complete(PROMOTING_RUN_ID, gate="passed", root=repository)
+
+    # Promotion completed and recorded its row; nothing was committed for the
+    # round the store refused.
+    [row] = ledger.runs(PROJECT, root=repository)
+    assert row["run_id"] == PROMOTING_RUN_ID
+    assert not _committed_plan_review(repository).exists()
+
+    # The refusal reason landed on the next reader's sidecar.
+    sidecar_path = (
+        plan_review.review_report_directory(PROJECT, PLAN_SLUG, COMPOSED_RUN_ID)
+        / "plan-review.json"
+    )
+    assert _read(sidecar_path).get("store_error")
