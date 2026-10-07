@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-lives-as-long-as-its-session">
+  <meta name="plan-evidence-for" content="a-follower-lives-as-long-as-its-session">
+  <title>The session host plugin waits silently on a node-local FIFO | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="session-host-plugin-waits-silently">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>The session host plugin waits silently on a node-local FIFO</h2>
+      </header>
+      <p id="session-host-plugin-waits-silently-landing">
+        <code>plugins/crew-host</code> holds <code>.claude-plugin/plugin.json</code>,
+        <code>monitors/monitors.json</code> declaring one monitor with
+        <code>when: "always"</code>, and the <code>bin/crew-host</code> entry point. The
+        entry point creates the FIFO at <code>RUNTIME/reckon-session-host/PID-START.fifo</code>,
+        waits silently, exits within one interval of its owner's end, and execs the
+        checkout's <code>.venv/bin/reckon crew host</code> on the first request line with the
+        FIFO descriptor still open. <code>tests/test_session_host_plugin.py</code> passes
+        4 tests with a bare <code>EXIT=0</code>.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
