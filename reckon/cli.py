@@ -1167,7 +1167,7 @@ def crew():
 @click.option("--open", "open_gate", is_flag=True)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_gate(pause, open_gate, pretty):
-    """Pause or open launches across every backend in the shared crew state."""
+    """Pause or open shared crew gate state across every backend."""
     from reckon.crew.dispatch import _dispatch_fleet_gate, fleet_gate_path
 
     if (pause is None and not open_gate) or (pause is not None and open_gate):
