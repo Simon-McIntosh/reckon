@@ -111,6 +111,7 @@ def _live_claude_records(
     process_root: Path,
     *,
     skip_invalid: bool = False,
+    coerce_pid: bool = False,
 ) -> dict[str, dict[str, Any]]:
     """Join session records to live processes by pid and process start."""
     records = {}
@@ -123,12 +124,21 @@ def _live_claude_records(
             raise
         try:
             conversation = record.get("sessionId")
-            pid = record.get("pid")
+            raw_pid = record.get("pid")
         except AttributeError:
             if skip_invalid:
                 continue
             raise
-        if not conversation or not isinstance(pid, int):
+        if coerce_pid:
+            try:
+                pid = int(raw_pid)
+            except (TypeError, ValueError):
+                continue
+        elif isinstance(raw_pid, int):
+            pid = raw_pid
+        else:
+            continue
+        if not conversation:
             continue
         try:
             start = (
@@ -447,6 +457,7 @@ def _local_session_processes(
         claude_sessions or Path.home() / ".claude" / "sessions",
         process_root,
         skip_invalid=True,
+        coerce_pid=True,
     )
     for conversation, record in list(records.items()):
         try:
