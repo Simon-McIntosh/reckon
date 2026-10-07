@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>Landing: a review record is read with the answers every copy holds | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: a review record is read with the answers every copy holds</h1>
+    </header>
+
+    <section id="a-review-record-is-read-with-every-copys-answers-landing-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li><code>reckon/crew/review.py</code> &mdash; <code>stored_record</code> now returns the copy it selects carrying the <code>dimension_dispositions</code>, <code>responses</code> and <code>response_events</code> held by every copy of the same review run. The selection rule (which copy is chosen for a head) is unchanged; only the answer fields are merged, through the existing <code>_merge_record_answers</code>, <code>_staging_copies_of_record</code> and <code>_committed_record_at</code> helpers, and nothing is written on read. A run review a worker writes by hand to its plain and head-keyed files can now be read with a disposition recorded on either.</li>
+        <li><code>tests/test_review_record_reads_answers_from_every_copy.py</code> (new; two cases: the disposition read back through <code>stored_record</code> at the head, and the sub-floor duty retired through the obligations reader in the same scenario).</li>
+      </ul>
+    </section>
+
+    <section id="a-review-record-is-read-with-every-copys-answers-landing-measure">
+      <h2>Measure</h2>
+      <ul>
+        <li>Gate, the declared three files run in the foreground under <code>--basetemp</code> in this run's directory: <code>8 passed</code>, <code>EXIT=0</code>. Log: <code>gate-head.log</code>.</li>
+        <li>Negative control, the declared mutation (return the selected record from <code>stored_record</code> without merging answers from other copies): <code>2 failed</code>, <code>EXIT=1</code> &mdash; both cases in the new file fail and the head arm does not. Log: <code>negative-control.log</code>.</li>
+        <li>Wider review-store surface (52 tests across seven store/obligation modules) after the change: <code>52 passed</code>, <code>EXIT=0</code>. Log: <code>gate-wide.log</code>.</li>
+      </ul>
+    </section>
+
+    <section id="a-review-record-is-read-with-every-copys-answers-landing-records">
+      <h2>Records</h2>
+      <p>Logs are under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T135219424618-a-review-record-is-read-with-every-copys-answers/</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
