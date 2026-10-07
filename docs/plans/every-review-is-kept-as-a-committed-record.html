@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.6">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -284,6 +284,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261007T032825749037-promotion-keeps-every-round" data-who="reckon-build" data-when="2026-10-07T04:03:44.850Z">
     <div class="r-comment-body"><p>A promotion now files a stored round that carries no review_run_id under review.derived_legacy_review_run_id of its bytes, marked review_run_id_source: derived, instead of skipping it; the subject rule has one spelling through names_a_review_subject (store_review, store_committed_review, plan_review.store_plan_review); resolve_record_times keeps a completion the run records supplied when the dispatch falls through to the record or the run id. Gate 30 passed, EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261007T050508320887-a-review-without-times-is-still-kept" data-who="reckon-build" data-when="2026-10-07T05:37:22.468Z">
+    <div class="r-comment-body"><p>store_committed_review now commits a review whose review run has no record anywhere and whose id encodes no dispatch instant, writing empty dispatched_at and completed_at with times_source &quot;unknown&quot; (never the store clock), while a review run whose own record exists but carries no dispatch stamp is still refused naming the run; gate 29 passed EXIT=0, negative control 1 failed EXIT=1.</p></div>
 </div>
 </section>
 </main>
