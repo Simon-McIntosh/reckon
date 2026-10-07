@@ -5,6 +5,8 @@ from __future__ import annotations
 import ast
 import importlib
 import json
+import os
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -12,8 +14,10 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli, crew, mcp
+from tests import test_a_repair_hold_names_its_cause as repair_tests
 from tests import test_dispatch_holds_while_the_lane_is_paused as lane_tests
 from tests import test_ledger as ledger_tests
+from tests import test_review_plan_command as review_plan_tests
 
 pytest_plugins = (
     "tests.test_dispatch_names_its_backend",
@@ -21,6 +25,7 @@ pytest_plugins = (
 )
 
 dispatch = importlib.import_module("reckon.crew.dispatch")
+recovery = importlib.import_module("reckon.crew.recovery")
 resumption = importlib.import_module("reckon.crew.resumption")
 REASON = "move workers to another allocation"
 
@@ -359,6 +364,89 @@ def test_automatic_resumption_checks_the_gate_before_its_launcher(
     _command("--open")
     assert resumption._resume("run", {}, config={}, launcher=launch)["pid"] == 42
     assert starts == ["spawn"]
+
+
+def test_review_reflex_holds_and_admits_under_the_fleet_gate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_home, repo, worktrees = lane_tests.isolated_project.__wrapped__(
+        tmp_path, monkeypatch
+    )
+    held_record = lane_tests._scoring_pointer(config_home, repo, "r-held-review")
+    _pause()
+    held = recovery.dispatch_review_for_run(
+        held_record,
+        config=lane_tests._review_config(None),
+        launcher=lambda *_a, **_k: os.getpid(),
+    )
+    assert held["error"] == "lane-paused"
+    assert held["lane_gate"]["gate"] == "fleet"
+    assert REASON in held["reason"]
+    assert worktrees == []
+    _command("--open")
+    open_record = lane_tests._scoring_pointer(config_home, repo, "r-open-review")
+    admitted = recovery.dispatch_review_for_run(
+        open_record,
+        config=lane_tests._review_config(None),
+        launcher=lambda *_a, **_k: os.getpid(),
+    )
+    assert admitted["dispatched"] is True
+    assert worktrees
+
+
+def test_repair_reflex_keeps_a_fleet_hold_pending_then_resumes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_home, repo, head = repair_tests.isolated_project.__wrapped__(
+        tmp_path, monkeypatch
+    )
+    record = repair_tests._reviewed_pointer(config_home, repo, backend="alpha")
+    repair_tests._store_review(head, repair_tests.FINDINGS)
+    monkeypatch.setattr(
+        resumption,
+        "resume_plan",
+        lambda *_a, **_k: SimpleNamespace(stdin_text="continue"),
+    )
+    monkeypatch.setattr(resumption, "record_resumption", lambda *_a, **_k: None)
+    _pause()
+    held = repair_tests._dispatch_repair(record, repair_tests.CONFIG_WITH_A_LANE)
+    assert held["error"] == "lane-paused"
+    assert held["lane_gate"]["gate"] == "fleet"
+    assert REASON in held["reason"]
+    stored = crew.read_pointer(repair_tests.RUN_ID)[recovery.REPAIR_DISPATCH_FIELD]
+    assert stored["status"] == "lane-paused"
+    _command("--open")
+    admitted = repair_tests._dispatch_repair(
+        crew.read_pointer(repair_tests.RUN_ID), repair_tests.CONFIG_WITH_A_LANE
+    )
+    assert admitted["resumed"] is True
+
+
+def test_plan_review_waits_for_the_fleet_gate_and_then_launches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, repo, _ = review_plan_tests.project.__wrapped__(tmp_path, monkeypatch)
+    subject = review_plan_tests._subject()
+    _pause()
+    held = recovery.dispatch_review_for_run(subject, config=review_plan_tests.CONFIG)
+    assert held["error"] == "lane-paused"
+    assert held["lane_gate"]["gate"] == "fleet"
+    assert REASON in held["reason"]
+    _command("--open")
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=repo, text=True
+    ).strip()
+
+    def prepare(*_args):
+        path = tmp_path / "review-worktree"
+        path.mkdir()
+        return {"path": str(path), "base": "HEAD", "base_sha": head}
+
+    monkeypatch.setattr(dispatch, "_create_worktree", prepare)
+    admitted = recovery.dispatch_review_for_run(
+        subject, config=review_plan_tests.CONFIG
+    )
+    assert admitted["dispatched"] is True
 
 
 def test_completion_and_promotion_continue_during_a_pause(home, repo) -> None:

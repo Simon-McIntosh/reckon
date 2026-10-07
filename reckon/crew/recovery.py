@@ -3677,7 +3677,7 @@ def dispatch_repair_for_run(
     # durable record, so an entry-time mapping cannot stale-hold it.
     if not _repair_launch_refusal(run_id, project):
         from reckon.crew import resumption as resumption_module
-        from reckon.crew.dispatch import BudgetHold
+        from reckon.crew.dispatch import BudgetHold, LanePaused
 
         durable = read_pointer(run_id) or {}
         recorded = durable.get(REPAIR_DISPATCH_FIELD)
@@ -3744,6 +3744,29 @@ def dispatch_repair_for_run(
             resumed = resumption_module._resume(
                 run_id, record, config=config, launcher=launcher, advice=advice
             )
+        except LanePaused as exc:
+            gate = dict(exc.gate)
+            reason = (
+                str(gate.get("detail") or "").strip()
+                or str(gate.get("reason") or "").strip()
+                or f"the {backend} lane gate is {gate.get('state')!r}"
+            )
+            _record_repair_dispatch(
+                run_id,
+                status="lane-paused",
+                reason=reason,
+                round_id=round_id,
+                node_id=node_id,
+                backend=backend,
+            )
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "error": "lane-paused",
+                "backend": backend,
+                "lane_gate": gate,
+                "reason": reason,
+            }
         except (BudgetHold, CrewError, OSError) as exc:
             reason = f"the reviewed run could not be resumed: {exc}"
             _record_repair_dispatch(
