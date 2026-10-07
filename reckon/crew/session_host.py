@@ -95,6 +95,10 @@ _REQUEST_ENDED_REASON = "request stream ended"
 # stops with its own reason first, so this names the stop only in the guard's
 # own path -- a supervise that raised before it could stop.
 _EXITED_REASON = "host exited"
+# The supervise loop left by raising rather than by a named break or a requested
+# stop: an OSError from select or read, say. The exception still propagates; the
+# reason exists so the final census bounds the end rather than leaving it null.
+_FAILED_REASON = "host failed"
 
 
 def _state_dir(environ: Mapping[str, str] | None = None) -> Path:
@@ -474,12 +478,16 @@ class SessionHost:
         no-op, leaving child teardown resting on the parent-death signal alone.
 
         ``reason`` is required, and is why the host is stopping -- its owner
-        ended, it was signalled, its request stream ended, or its entry point is
-        finishing -- so the final record always carries a non-null stop reason.
-        It, with the stop time, is carried in the final record. The time is
-        taken here, at the start of the stop, so it reflects when the host
-        noticed rather than when the last child happened to end.
+        ended, it was signalled, its request stream ended, its entry point is
+        finishing, or its read loop failed -- so the final record always carries
+        a non-null stop reason. A reason that is not a non-empty string is
+        refused before any state changes, so a null or empty reason cannot reach
+        the record. It, with the stop time, is carried in the final record. The
+        time is taken here, at the start of the stop, so it reflects when the
+        host noticed rather than when the last child happened to end.
         """
+        if not isinstance(reason, str) or not reason:
+            raise ValueError("a stop reason must be a non-empty string")
         if self._stopped:
             return
         self._remove_fifo()
@@ -574,11 +582,14 @@ class SessionHost:
                     break
                 self.tick()
         finally:
-            # Every break above names its own reason; the one exit that does not
-            # is the loop condition seeing a bare request_stop() with no
-            # wake-pipe write. The fallback names that signalled stop so the
-            # final record is never null whichever path ended the loop.
-            self.stop(reason if reason is not None else _SIGNALLED_REASON)
+            # A named break sets its own reason; the loop condition seeing a
+            # bare request_stop() with no wake-pipe write leaves it null with
+            # ``_stopping`` set, and an exception escaping the loop leaves it
+            # null with ``_stopping`` clear. Name each so the final record is
+            # never null, and let the exception propagate afterwards.
+            if reason is None:
+                reason = _SIGNALLED_REASON if self._stopping else _FAILED_REASON
+            self.stop(reason)
         return 0
 
 

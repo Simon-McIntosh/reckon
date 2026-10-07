@@ -19,15 +19,18 @@
         <h2>A stopped host names its reason</h2>
       </header>
       <p id="a-stopped-host-names-its-reason-landing">
-        <code>SessionHost.stop</code> takes its reason as a required argument, and the two
-        paths that previously left the final census's <code>stop_reason</code> null now name
-        one: the request descriptor reaching end-of-file records
-        <code>request stream ended</code>, and the entry point's <code>finally</code> records
-        <code>host exited</code>. The bare <code>request_stop()</code> fallback keeps the
-        signalled reason. <code>tests/test_session_host.py</code> and
-        <code>tests/test_dispatch_session_host.py</code> pass 24 tests with a bare
-        <code>EXIT=0</code>; the two new tests fail with <code>stop_reason: None</code> when
-        the end-of-file reason and the signalled fallback are removed.
+        <code>SessionHost.stop</code> takes its reason as a required argument and refuses a
+        reason that is not a non-empty string with a <code>ValueError</code> before any state
+        changes, so neither a null nor an empty reason can reach the record. Every stop path
+        names its reason: the request descriptor reaching end-of-file records
+        <code>request stream ended</code>, the entry point's <code>finally</code> records
+        <code>host exited</code>, a bare <code>request_stop()</code> records the signalled
+        reason, and an exception escaping the read loop records <code>host failed</code> and
+        still propagates. <code>tests/test_session_host.py</code> and
+        <code>tests/test_dispatch_session_host.py</code> pass 26 tests with a bare
+        <code>EXIT=0</code>; the four new tests fail when the reason their path records is
+        removed, and the read-loop test fails when the fallback is made signalled for every
+        exit, not only a requested stop.
       </p>
     </section>
   </main>

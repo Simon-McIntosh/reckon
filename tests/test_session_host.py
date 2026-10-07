@@ -741,6 +741,51 @@ def test_an_end_of_file_records_a_reason(tmp_path: Path) -> None:
         os.close(wake_write)
 
 
+def test_a_raised_loop_records_a_reason_and_propagates(tmp_path: Path) -> None:
+    """An exception escaping the loop records a reason and still propagates.
+
+    A read or select that raises leaves the loop neither by a named break nor by
+    a requested stop, so it must not be recorded as a signalled stop, and it
+    must not be swallowed: the final record names the failure and the exception
+    reaches the caller. The tick is made to raise so the loop's own exit is the
+    exception rather than a stop request.
+    """
+    host = _in_process_host(tmp_path)
+    read_fd, write_fd = os.pipe()
+    requests = os.fdopen(read_fd, "rb")
+    wake_read, wake_write = os.pipe()
+    os.set_blocking(wake_read, False)
+
+    def boom() -> None:
+        raise RuntimeError("the supervision tick raised")
+
+    host.tick = boom
+    try:
+        with pytest.raises(RuntimeError):
+            host.supervise(requests, wake_read)
+        record = json.loads(host.record_path.read_text(encoding="utf-8"))
+        assert record["stop_reason"] == "host failed", record
+        assert record["stopped_at"] is not None, record
+    finally:
+        requests.close()
+        os.close(write_fd)
+        os.close(wake_read)
+        os.close(wake_write)
+
+
+def test_stop_refuses_a_reason_that_is_not_a_non_empty_string(
+    tmp_path: Path,
+) -> None:
+    """A null or empty stop reason is refused before any state changes."""
+    host = _in_process_host(tmp_path)
+    for bad in (None, ""):
+        with pytest.raises(ValueError):
+            host.stop(bad)
+    assert host._stopped is False
+    assert host._stopped_at is None
+    assert not host.record_path.exists(), "a refused stop wrote a record"
+
+
 def test_both_readers_name_one_fifo_for_the_same_owner(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
