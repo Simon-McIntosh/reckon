@@ -165,6 +165,15 @@ def run_pass(env: dict) -> subprocess.CompletedProcess:
     return subprocess.run(["bash", str(SCRIPT), "--once"], env=env, capture_output=True, text=True)
 
 
+def run_passes(env: dict, count: int) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["bash", str(SCRIPT), "--passes", str(count)],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+
 # Thresholds pinned in each case so a case states the boundary it drives rather
 # than relying on a default that may move.
 BASE = {
@@ -262,11 +271,30 @@ def test_existing_triggers_still_fire(tmp_path: Path, kwargs: dict, marker: str)
     assert marker in box.alerts()
 
 
-def test_the_snapshot_is_rate_limited_to_one_per_process(tmp_path: Path) -> None:
-    # A second pass in the same process cannot be driven by this harness (each
-    # invocation is one pass), so the rate limit is asserted where it is
-    # observable: within one triggering pass exactly one snapshot is written.
-    box = sandbox(tmp_path, dstate_procs=60, extra_env=BASE)
-    assert run_pass(box.env).returncode == 0
+def test_two_crossing_passes_within_the_bound_write_one_snapshot(tmp_path: Path) -> None:
+    # Two passes each cross the D-state threshold two seconds apart, inside a
+    # three-second bound, so only the first writes a snapshot.
+    box = sandbox(
+        tmp_path,
+        dstate_procs=60,
+        extra_env={**BASE, "FLEET_SNAPSHOT_INTERVAL": "3", "FLEET_SLEEP_SECONDS": "2"},
+    )
+    result = run_passes(box.env, 2)
+    assert result.returncode == 0, result.stderr
+    assert len(box.samples()[0].read_text().splitlines()) >= 3, "both passes wrote a sample line"
     assert len(box.snapshots()) == 1
     assert len(box.alerts().splitlines()) == 1
+
+
+def test_a_pass_after_the_bound_writes_a_second_snapshot(tmp_path: Path) -> None:
+    # Three passes two seconds apart against a three-second bound: the second
+    # is inside it and writes nothing, the third is past it and writes again.
+    box = sandbox(
+        tmp_path,
+        dstate_procs=60,
+        extra_env={**BASE, "FLEET_SNAPSHOT_INTERVAL": "3", "FLEET_SLEEP_SECONDS": "2"},
+    )
+    result = run_passes(box.env, 3)
+    assert result.returncode == 0, result.stderr
+    assert len(box.snapshots()) == 2
+    assert len(box.alerts().splitlines()) == 2

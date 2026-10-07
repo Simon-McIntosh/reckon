@@ -31,7 +31,13 @@
 set -uo pipefail
 
 once=0
-[ "${1:-}" = "--once" ] && once=1
+passes=0
+case "${1:-}" in
+    --once) once=1 ;;
+    --passes) passes="${2:-0}" ;;
+esac
+sleep_secs="${FLEET_SLEEP_SECONDS:-60}"
+snapshot_interval="${FLEET_SNAPSHOT_INTERVAL:-600}"
 
 : "${SLURM_JOB_ID:?fleet-health runs inside the fleet allocation}"
 node=$(hostname -s)
@@ -75,6 +81,7 @@ fi
 [ -s "$out" ] || printf '%s\n' "$header" > "$out"
 
 last_snapshot=0
+count=0
 while :; do
     read -r load1 load5 _ < "$procdir/loadavg"
     running=$(awk '/^procs_running/ {print $2}' "$procdir/stat")
@@ -104,7 +111,7 @@ while :; do
     [ "${avail:-0}" -lt "$MEM_AVAIL_ALERT_MB" ] && reason="${reason:+$reason, }${avail} MB available"
     [ "${dstate:-0}" -gt "$DSTATE_ALERT" ] && reason="${reason:+$reason, }$dstate D-state processes"
     over_load "${load1:-0}" "$LOAD_ALERT" && reason="${reason:+$reason, }load $load1"
-    if [ -n "$reason" ] && [ $(( $(date +%s) - last_snapshot )) -ge 600 ]; then
+    if [ -n "$reason" ] && [ $(( $(date +%s) - last_snapshot )) -ge "$snapshot_interval" ]; then
         last_snapshot=$(date +%s)
         snap="$dir/${SLURM_JOB_ID}-${node}-$(date -u +%Y%m%dT%H%M%SZ).ps"
         {
@@ -118,6 +125,8 @@ while :; do
         printf '%s\n' "$msg" >> "$state/alerts.log"
         printf '%s\n' "$msg" > "$state/notice"
     fi
+    count=$((count + 1))
     [ "$once" -eq 1 ] && break
-    sleep 60
+    [ "$passes" -gt 0 ] && [ "$count" -ge "$passes" ] && break
+    sleep "$sleep_secs"
 done
