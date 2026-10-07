@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_fleet_health.py::test_two_crossing_passes_within_the_bound_write_one_snapshot"
+  ],
+  "added_failures_note": "the reviewed manifest declares baseline_suite and after_suite absent, so I ran the gate myself at the base revision (660b2e36: 9 passed, EXIT=0) and at the reviewed head (6a411e5b, clean extraction: ten cases). Across 27 head runs 5 failed, every one the same added case, so added_failure_count 1 names an intermittent failure the base cannot have and the run's single reported run missed.",
+  "base_log_revision": "660b2e3660a0f342930b77cd94447f2fb66b5a92",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:170 DEFAULT_HEALTH_SAMPLER"
+  ],
+  "completed_at": "2026-10-07T09:31:59.692Z",
+  "dispatched_at": "2026-10-07T09:07:45Z",
+  "findings": [
+    {
+      "file": "tests/test_fleet_health.py",
+      "line": "285",
+      "severity": "blocking",
+      "text": "blocking: the added rate-limit case test_two_crossing_passes_within_the_bound_write_one_snapshot fails intermittently. In my runs of the reviewed head (6a411e5b, clean git-archive extraction) 5 of 27 full-file runs failed with '1 failed, 9 passed', always this case, while the base revision 660b2e36 passed 9 of 9. FLEET_SNAPSHOT_INTERVAL=3 with FLEET_SLEEP_SECONDS=2 leaves a one-second margin and bin/fleet-health rate-limits on second-resolution date +%s, so loop overhead plus second-boundary rounding lets the second pass cross the bound and write a second snapshot, failing 'assert len(box.snapshots()) == 1' with 'assert 2 == 1'. The run's manifest and fragment report 10 passed EXIT=0 from a single run and do not observe it, so the gate the section rests on is not reproducible."
+    },
+    {
+      "file": "tests/test_fleet_health.py",
+      "line": "289",
+      "severity": "follow-on",
+      "text": "follow-on: test_a_pass_after_the_bound_writes_a_second_snapshot is built the same way (interval 3, sleep 2, three passes) and asserts exactly 2 snapshots; the same timing margin can make the middle pass cross the bound and write a third, so it carries the identical flake hazard even though it passed in all of my runs."
+    },
+    {
+      "file": "tests/test_fleet_health.py",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the module docstring still states 'Every case drives exactly one sampling pass (--once) against fixture readings', which the added cases falsify: two cases drive two and three passes through --passes, so the stated invariant no longer holds for the file."
+    },
+    {
+      "file": "tests/test_fleet_health.py",
+      "line": "300",
+      "severity": "follow-on",
+      "text": "follow-on: the second half of the prior review's file-hygiene follow-on is unfixed: tests/test_fleet_health.py still ends without a trailing newline at head (last byte 0x32), while commit 2a500dca8 restored only bin/fleet-health's newline (last byte 0x0a)."
+    }
+  ],
+  "head_log_revision": "6a411e5bd49c732247ce9148dbba00b0057dbce1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit over 660b2e36..6a411e5b: 2a500dca8 adds --passes, FLEET_SLEEP_SECONDS and FLEET_SNAPSHOT_INTERVAL to bin/fleet-health, replaces the single rate-limit stub case with two multi-pass cases, and restores the script's trailing newline; 6a411e5b updates the fragment's summary and landed-commit meta.",
+    "done_when": "the section's done-when names a test per new trigger; this range's own target is the rate-limit follow-on, whose two cases are present and do fail when the D-state trigger is removed (4 failed, 6 passed, EXIT=1, reproduced), but one of them does not pass reliably, so the gate it belongs to is not reproducible.",
+    "goal": "the reviewed range (commits 2a500dca8 and 6a411e5b) exists to close the prior review's two follow-ons; bin/fleet-health gains --passes and FLEET_SNAPSHOT_INTERVAL/FLEET_SLEEP_SECONDS overrides and tests/test_fleet_health.py gains two multi-pass rate-limit cases, but tests/test_fleet_health.py keeps its missing trailing newline and its docstring keeps the one-pass claim the new cases break.",
+    "manifest": "read; it records base 3befbf4f0e, head 6a411e5b, gate '10 passed EXIT=0' and negative control '4 failed EXIT=1', and declares baseline_suite/after_suite absent. Its test_logs cite gate-head.log, whose header names rev 660b2e3660 but whose body collected 10 items, where 660b2e36's committed tests file collects only 9: the cited log was produced in a working tree carrying the uncommitted new cases and does not evidence the head revision it is cited for.",
+    "write_paths": "the manifest declares bin/fleet-health, tests/test_fleet_health.py and the node's evidence fragment; git diff --stat 660b2e36..6a411e5b lists exactly those three and nothing else."
+  },
+  "justifications": {
+    "durability": "the range adds a test whose assertion cannot hold reliably: the rate-limit case depends on second-resolution timing and 5 of 27 head runs failed on it, so the guard it was added to provide passes only sometimes and the gate fails open on the runs it happens to pass.",
+    "evidence": "the gate is flaky at the reviewed head (5 of 27 runs failed, 1 failed 9 passed, clean extraction), and the run's own gate-head.log names rev 660b2e3660 while collecting 10 items, a revision whose committed tests file collects 9, so the log cited as the head-arm log does not evidence the head. The base arm (660b2e36) I ran reads 9 passed EXIT=0.",
+    "fit": "the env-override idiom and the tests' sandbox fixture style are followed, but the module docstring is left stating a one-pass-per-case rule the new cases break, and bin/fleet-health now carries a --passes flag whose only caller is its own test file.",
+    "goal_fidelity": "the additions are on-goal for the section and target the prior rate-limit follow-on, but that follow-on is only partly closed: the tests-file trailing newline remains unfixed and one added case does not pass reliably, so the range does not leave the section's gate dependable.",
+    "reuse": "the additions reuse the existing FLEET_* env-override idiom and the script's own rate-limit mechanism rather than adding a parallel one, and introduce no new production call site; the only new caller is the test module.",
+    "scope_discipline": "git diff --stat 660b2e36..6a411e5b lists only bin/fleet-health, tests/test_fleet_health.py and the node's evidence fragment, all inside the manifest's declared write paths; no figure was written because the done-when names none."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed range (commits 2a500dca8 and 6a411e5b) exists to close the prior review's two follow-ons; bin/fleet-health gains --passes and FLEET_SNAPSHOT_INTERVAL/FLEET_SLEEP_SECONDS overrides and tests/test_fleet_health.py gains two multi-pass rate-limit cases, but tests/test_fleet_health.py keeps its missing trailing newline and its docstring keeps the one-pass claim the new cases break.\nVERDICT done_when: the section's done-when names a test per new trigger; this range's own target is the rate-limit follow-on, whose two cases are present and do fail when the D-state trigger is removed (4 failed, 6 passed, EXIT=1, reproduced), but one of them does not pass reliably, so the gate it belongs to is not reproducible.\nVERDICT write_paths: the manifest declares bin/fleet-health, tests/test_fleet_health.py and the node's evidence fragment; git diff --stat 660b2e36..6a411e5b lists exactly those three and nothing else.\nVERDICT manifest: read; it records base 3befbf4f0e, head 6a411e5b, gate '10 passed EXIT=0' and negative control '4 failed EXIT=1', and declares baseline_suite/after_suite absent. Its test_logs cite gate-head.log, whose header names rev 660b2e3660 but whose body collected 10 items, where 660b2e36's committed tests file collects only 9: the cited log was produced in a working tree carrying the uncommitted new cases and does not evidence the head revision it is cited for.\nVERDICT diff: read commit by commit over 660b2e36..6a411e5b: 2a500dca8 adds --passes, FLEET_SLEEP_SECONDS and FLEET_SNAPSHOT_INTERVAL to bin/fleet-health, replaces the single rate-limit stub case with two multi-pass cases, and restores the script's trailing newline; 6a411e5b updates the fragment's summary and landed-commit meta.\nreviewed_base_sha: 660b2e3660a0f342930b77cd94447f2fb66b5a92\nreviewed_head_sha: 6a411e5bd49c732247ce9148dbba00b0057dbce1\nCALL_SITES: reckon/crew/fleet_supervisor.py:170 DEFAULT_HEALTH_SAMPLER\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the additions are on-goal for the section and target the prior rate-limit follow-on, but that follow-on is only partly closed: the tests-file trailing newline remains unfixed and one added case does not pass reliably, so the range does not leave the section's gate dependable.\nSCORE evidence: 11\nJUSTIFICATION evidence: the gate is flaky at the reviewed head (5 of 27 runs failed, 1 failed 9 passed, clean extraction), and the run's own gate-head.log names rev 660b2e3660 while collecting 10 items, a revision whose committed tests file collects 9, so the log cited as the head-arm log does not evidence the head. The base arm (660b2e36) I ran reads 9 passed EXIT=0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 660b2e36..6a411e5b lists only bin/fleet-health, tests/test_fleet_health.py and the node's evidence fragment, all inside the manifest's declared write paths; no figure was written because the done-when names none.\nSCORE durability: 9\nJUSTIFICATION durability: the range adds a test whose assertion cannot hold reliably: the rate-limit case depends on second-resolution timing and 5 of 27 head runs failed on it, so the guard it was added to provide passes only sometimes and the gate fails open on the runs it happens to pass.\nSCORE fit: 15\nJUSTIFICATION fit: the env-override idiom and the tests' sandbox fixture style are followed, but the env-override idiom is left stating a one-pass-per-case rule the new cases break, and bin/fleet-health now carries a --passes flag whose only caller is its own test file.\nSCORE reuse: 18\nJUSTIFICATION reuse: the additions reuse the existing FLEET_* env-override idiom and the script's own rate-limit mechanism rather than adding a parallel one, and introduce no new production call site; the only new caller is the test module.\nFINDING tests/test_fleet_health.py:285 blocking: the added rate-limit case test_two_crossing_passes_within_the_bound_write_one_snapshot fails intermittently; in my runs of the reviewed head (6a411e5b, clean extraction) 5 of 27 full-file runs failed with 1 failed, 9 passed, always this case, while base 660b2e36 passed 9 of 9; FLEET_SNAPSHOT_INTERVAL=3 with FLEET_SLEEP_SECONDS=2 leaves a one-second margin and bin/fleet-health rate-limits on second-resolution date +%s, so loop overhead and second-boundary rounding let the second pass cross the bound and write a second snapshot.\nFINDING tests/test_fleet_health.py:289 follow-on: test_a_pass_after_the_bound_writes_a_second_snapshot is built the same way (interval 3, sleep 2, three passes) and asserts exactly 2 snapshots; the same timing margin can make the middle pass cross the bound and write a third.\nFINDING tests/test_fleet_health.py:12 follow-on: the module docstring still says every case drives exactly one sampling pass (--once), which the added --passes cases falsify.\nFINDING tests/test_fleet_health.py:300 follow-on: tests/test_fleet_health.py still ends without a trailing newline at head (last byte 0x32), while commit 2a500dca8 restored only bin/fleet-health's newline (last byte 0x0a).",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T065615607875-fleet-health-names-a-stall.at-6a411e5bd49c732247ce9148dbba00b0057dbce1.json",
+  "review_run_id": "r-20261007T090713811233-review-of-fleet-health-names-a-stall",
+  "reviewed_base_sha": "660b2e3660a0f342930b77cd94447f2fb66b5a92",
+  "reviewed_head_sha": "6a411e5bd49c732247ce9148dbba00b0057dbce1",
+  "reviewed_run_id": "r-20261007T065615607875-fleet-health-names-a-stall",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 9,
+    "evidence": 11,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T09:25:30.000000+00:00",
+  "total": 89
+}
