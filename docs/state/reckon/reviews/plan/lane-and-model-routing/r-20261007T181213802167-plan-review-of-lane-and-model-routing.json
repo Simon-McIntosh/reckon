@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T18:16:01.530Z",
+  "dispatched_at": "2026-10-07T18:12:33Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:163",
+      "id": "anchors_resolve-1",
+      "reason": "the gate is the record that unblocks \u00a75, and its evidence must be a resolvable target (e.g. the `one-typesafe-model-picker#s6-jev-chooses-the-lane` reference) rather than prose, or the closure cannot be verified by a later reader.",
+      "text": "gate `g-lmr-1`'s evidence anchor writes a prose sentence (\"jev-prompt-carries-what-it-weighs merged on main at 5b60f4c91 (2026-10-07): state.jinja renders {{ state|tojson }} \u2026 Evidence: one-typesafe-model-picker#s6-jev-chooses-the-lane.\") into the `href` attribute, and `_plan_html.py:1095` reads `.r-gate-evidence`'s href verbatim as the gate's `evidence` value while `docs/ui/plan.jsx:112` renders it as `<a href={gate.evidence}>` \u2014 so the evidence link opens a relative URL of the prose sentence rather than the cited evidence, and the gate that closes \u00a75 carries no openable pointer",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:152",
+      "id": "wiring-1",
+      "reason": "a dispatcher reading the roadmap would run the \u00a73 prompt a second time against already-landed work; the followup should be narrowed to the remaining \u00a77 work (or resolved and replaced), and \u00a73 landing is now a fact the followup contradicts.",
+      "text": "followup `f-lmr-003` is `data-status=\"open\"` with `data-recommends-skill=\"/reckon-build lane-and-model-routing \u00a73\"` and prompt `/reckon-build lane-and-model-routing \u00a73`, but \u00a73 now carries `data-status=\"done\"` with a landed summary (line 57) and its host-flight collapse is recorded, so the plan's own open followup points at work the same document declares complete",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c0f3768548e56bee99365d3abd1dc4b4bdcbc5949933ad7d3580febaad6ed144",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 18,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "The gate schema stores evidence as prose and the gate is closed; rendering that text as an href is a surface defect in docs/ui/plan.jsx, recorded as a follow-on, not plan content.",
+      "when": "2026-10-07T18:16:58.683625+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "f-lmr-003 carries \u00a73 and \u00a77 together and resolves when \u00a77 lands, with the next followup written then; rewriting it now would only re-open the document review.",
+      "when": "2026-10-07T18:17:05.468388+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "The gate schema stores evidence as prose and the gate is closed; rendering that text as an href is a surface defect in docs/ui/plan.jsx, recorded as a follow-on, not plan content.",
+      "when": "2026-10-07T18:16:58.683625+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "f-lmr-003 carries \u00a73 and \u00a77 together and resolves when \u00a77 lands, with the next followup written then; rewriting it now would only re-open the document review.",
+      "when": "2026-10-07T18:17:05.468388+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v18.json",
+  "review_run_id": "r-20261007T181213802167-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "c36218ddfd418475af6cda67a2447fd2acd77536",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the closed gate `g-lmr-1`'s evidence anchor carries prose in its `href`, so the link a reader clicks resolves to nothing.",
+    "done_when": "pass \u2014 \u00a74, \u00a75, \u00a76 and \u00a77 each name a declared negative control (\u00a74 line 64, \u00a75 line 82, \u00a76 line 88, \u00a77 line 99); the \u00a75 replay bullet was declined by lead ruling and is not re-raised.",
+    "evidence_paths": "pass \u2014 gate records and fragments sit under the in-repo `docs/evidence/archive/` and `docs/evidence/fragments/` trees, not a scratchpad or node-local path.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, file or comment; the `\u00a7n` ids and commit shas live in plan/scenario prose only.",
+    "reasoning": "pass \u2014 the \u00a75 mechanism now names `build_state` in `reckon/crew/picker/prompts.py`, which the plan shows lifts `return_times` and `local_lane` by name (verified at `prompts.py` return mapping), so the lanes block has a real render path; the gate's cited merge `5b60f4c91` resolves to \"Merge jev-prompt-carries-what-it-weighs\".",
+    "single_goal": "pass \u2014 each of \u00a74\u2013\u00a77 names one deliverable; \u00a75's six write paths serve one goal (offering lane-and-model pairs).",
+    "wiring": "a finding \u2014 the open followup `f-lmr-003` still recommends \u00a73, which the same document marks landed."
+  },
+  "section_digests": {
+    "_document": "8e5984650925c053cde542471acc6253230685dd189134bdeddaedfdb0ae2da5",
+    "s0": "b5d63387ffd64f95a18edf11d7ea37dfa445cd4813908d577f25210d053a6e3d",
+    "s1": "6760f63ebdb0d0db10c3c004f30d4f4253bfb7582bc7a0e4054fed73e017a02d",
+    "s2": "0c6488cdae0f23d0600410d02191390e773858e9bc75008234f71cc66f01889b",
+    "s3": "6cb602347e0232fe459028eff2010884381d987053d550c4565f581c23032095",
+    "s4": "a9149501a3d5192976bf2036a74780936250f3edc562efa9c5ae06f1927e955c",
+    "s5": "735788e097ac60b1d52ce681caa12b5eb96359be13e390391315108b9b9b45a9",
+    "s6": "7a36f0fd1ecc81ff2694c8de4ed32db5c93a0aaf2a2e85920e68d06fb01dc5ac",
+    "s7": "96001795da5782242afc40deda206a6fd51d8a9132dca0c4358f3106d27c9e58"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T18:16:45.496147+00:00"
+}
