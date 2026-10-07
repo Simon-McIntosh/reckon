@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/prompts.py:218 (build_questions keys each criteria entry by option_key)",
+    "reckon/crew/picker/__init__.py:24 (_answer validates choice and distribution against option_key set plus hold)",
+    "reckon/crew/picker/__init__.py:129 (pick resolves a chosen pair to the candidate whose option_key matches)"
+  ],
+  "completed_at": "2026-10-07T19:10:00.862Z",
+  "dispatched_at": "2026-10-07T19:02:42Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/prompts.py",
+      "line": "192",
+      "severity": "follow-on",
+      "text": "follow-on: option_key returns '<family>:<model>', which is not guaranteed unique across offered candidates - two configured backends sharing the same harness command (hence the same family) and the same model value collapse to one key. Because build_questions stores criteria_entries in a dict keyed by option_key and pick() resolves with next(c for c in offered if option_key(c) == choice), the second such backend is silently dropped from the offered options and can never be selected. The docstring's claim that the fallback 'keeps every offered key distinct' holds only when the models differ, and the new test cannot detect the collision because it builds `{option_key(c): c.backend for c in offered}`, which collapses duplicate keys before comparing. Non-blocking provided no live flight config declares two backends with the same command and model; if such a config exists the pair-key contract loses a backend. If it ever becomes one, keying by backend (which is what dispatch launches) would keep both."
+    },
+    {
+      "file": "reckon/crew/picker/templates/questions.jinja",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the questions instructions now tell Jev that 'each option's key names its lane and its model joined with a colon', but option_key substitutes the backend name for the second part when a candidate names no model, so a modelless candidate's offered key names its backend rather than a model. The wording is a closer match to the delivered contract than before, but it overstates it for the fallback case. Non-blocking; the key still parses as '<lane>:<something>'."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites of the new option_key (its definitions in build_questions, _answer and pick)",
+    "diff": "read commit by commit at 81c7a6cb1 against 83e2c2fde; 184 insertions / 42 deletions over eight files - prompts.py (+32/-?), __init__.py (+5/-?), questions.jinja (one line), tests/test_picker_lanes.py (+74), tests/test_picker.py, tests/test_picker_pressure.py, tests/test_jev_prompt_carries_what_it_weighs.py (backend-keyed expectations moved onto pair keys), and the evidence fragment. The second commit 81c7a6cb1 is docs-only (fragment measure refreshed).",
+    "done_when": "the repair round's manifest records gate-base 164 passed EXIT=0 and gate-head 168 passed EXIT=0; I independently re-ran the same gate at head and got 168 passed EXIT=0. The section's item 1 (options offered as lane:model pairs) now has a dedicated case, tests/test_picker_lanes.py::test_offered_keys_are_lane_model_pairs_that_map_back_to_a_backend, which the negative control reddens. The lanes once-per-lane, hostile-JSON and 60-dispatch replay items were verified by the prior review and their tests are unchanged.",
+    "goal": "the previous blocking finding is resolved: build_questions keys each option by prompts.option_key (reckon/crew/picker/prompts.py:218), _answer validates the choice and distribution against the same key set (reckon/crew/picker/__init__.py:24), and pick resolves the chosen pair back to the one candidate whose option_key matches (reckon/crew/picker/__init__.py:129); dispatch still receives the backend name it launched before. The offered options are now lane:model pairs, matching the section's item 1.",
+    "manifest": "read; status complete, head 81c7a6cb1 at base 83e2c2fde, gate-base.log 164 passed EXIT=0 and gate-head.log 168 passed EXIT=0, negative controls negative-control.log (pair keys) and negative-control-lanes.log both 1 failed EXIT=1; the manifest discloses under follow_ons that three gate files and the picker __init__.py were edited outside the originally declared fence with coordinator authorisation.",
+    "write_paths": "the reviewed run's manifest declares the original fence plus a coordinator-widened effective set (reckon/crew/picker/__init__.py and tests/test_picker.py, tests/test_picker_pressure.py, tests/test_jev_prompt_carries_what_it_weighs.py); the repair diff touches exactly those widened paths and the evidence fragment, all inside the effective set. The widening is disclosed, not silent."
+  },
+  "justifications": {
+    "durability": "the pair-key contract has a real negative control: reverting the option keys to candidate.backend reddens tests/test_picker_lanes.py::test_offered_keys_are_lane_model_pairs_that_map_back_to_a_backend (negative-control-pair-keys.log, 1 failed EXIT=1), and the lanes control reddens the once-per-lane test (negative-control-lanes.log). The pair-key test asserts each offered key maps back to a backend and that the pick returns that backend with decision_source 'jev', so an all-fallback answer cannot fake it. Docked because the test builds a dict keyed by option_key and so cannot see a duplicate-key collapse.",
+    "evidence": "the reviewed run's baseline_suite (revision 1b9839869, 164 passed, EXIT=0, failure_ids []) and after_suite (revision 81c7a6cb1, 168 passed, EXIT=0, failure_ids []) both ran to their summary line, and I independently re-ran the head gate to 168 passed EXIT=0. Both negative controls reproduce with attributed ids. Logs: gate-base.log, gate-head.log, negative-control-pair-keys.log (= negative-control.log), negative-control-lanes.log.",
+    "fit": "option_key is a single builder (reckon/crew/picker/prompts.py:192) with a clear docstring, named by mechanism and carrying no plan, sprint or stage label; the offered key and the resolution both come from it so they cannot drift. The questions.jinja change is one instruction line naming the key form. The template's 'executes this lane and model pair' meaning text matches the section's framing.",
+    "goal_fidelity": "the section's item 1 - candidates offered as lane:model pairs - is now delivered and asserted: options are keyed '<family>:<model>' plus hold, validated in _answer and resolved back to a backend in pick, and the committed pre-repair expectations in three gate files were moved onto the pair keys. Docked from full because the key discards a backend when two configured backends share the same command and model (see finding), so the pair identity is not injective onto backends.",
+    "reuse": "no duplicated derivation was introduced: option_key is defined once and reused by build_questions, _answer and pick; the pair's parts and its backend are carried in the criteria entry so a chosen pair resolves without a second lookup. The pre-existing duplication of the member-to-group index between lane_context._groups_by_backend and snapshot.py remains from the prior round and is out of this diff's scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the previous blocking finding is resolved - build_questions keys each option by prompts.option_key (lane:model), _answer validates the choice and distribution against that key set, and pick resolves the chosen pair back to the one matching candidate, so dispatch receives the same backend name; the offered options are now lane:model pairs, matching the section's item 1.\nVERDICT done_when: the manifest records base 164 passed EXIT=0 and head 168 passed EXIT=0; I independently re-ran the head gate to 168 passed EXIT=0. The section's item 1 has a dedicated case (tests/test_picker_lanes.py::test_offered_keys_are_lane_model_pairs_that_map_back_to_a_backend) that the negative control reddens; the lanes, hostile-JSON and 60-dispatch replay items were verified by the prior review and their tests are unchanged.\nVERDICT write_paths: the diff touches the originally declared paths plus the coordinator-widened effective set (picker __init__.py and tests/test_picker.py, tests/test_picker_pressure.py, tests/test_jev_prompt_carries_what_it_weighs.py) and the evidence fragment; the widening is disclosed in the manifest, not silent.\nVERDICT manifest: status complete, head 81c7a6cb1 at base 83e2c2fde, gate-base.log 164 passed EXIT=0 and gate-head.log 168 passed EXIT=0, both negative controls 1 failed EXIT=1.\nVERDICT diff: read commit by commit at 81c7a6cb1 against 83e2c2fde; 184 insertions / 42 deletions over eight files - prompts.py, __init__.py, questions.jinja (one line), four test files, and the evidence fragment; 81c7a6cb1 is docs-only.\nCALL_SITES: reckon/crew/picker/prompts.py:218 (build_questions), reckon/crew/picker/__init__.py:24 (_answer), reckon/crew/picker/__init__.py:129 (pick resolution)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: item 1 is delivered and asserted; docked because option_key discards a backend when two configured backends share the same command and model.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms ran to their summary line (164 / 168 passed EXIT=0), I independently re-ran the head gate to 168 passed EXIT=0, and both negative controls reproduce with attributed ids.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: three gate files and picker __init__.py were edited outside the originally declared fence, but the widening is disclosed in the manifest and each test edit is the minimal move onto the pair keys needed to keep the gate green.\nSCORE durability: 17\nJUSTIFICATION durability: reverting the keys to candidate.backend reddens the new pair-key test (negative-control-pair-keys.log, EXIT=1) and the lanes control reddens the once-per-lane test; the test asserts resolution back to a backend with decision_source 'jev', but cannot see a duplicate-key collapse.\nSCORE fit: 18\nJUSTIFICATION fit: option_key is one builder carrying no plan or stage label; offered key and resolution come from it so they cannot drift; the template change is one instruction line.\nSCORE reuse: 18\nJUSTIFICATION reuse: option_key is defined once and reused by build_questions, _answer and pick; the pair's parts and backend are carried in the criteria entry so resolution needs no second lookup.\nFINDING reckon/crew/picker/prompts.py:192 follow-on: option_key returns '<family>:<model>', which is not injective across offered candidates - two configured backends sharing the same harness command (same family) and the same model collapse to one key, so build_questions' dict drops one from the offered options and pick can never select it; the new test cannot detect this because it builds a dict keyed by option_key. Non-blocking while no live config declares two backends with the same command and model.\nFINDING reckon/crew/picker/templates/questions.jinja:1 follow-on: the instructions say each option's key names its lane and its model, but option_key substitutes the backend name when a candidate names no model, so a modelless candidate's key names its backend rather than a model. Non-blocking.",
+  "review_run_id": "r-20261007T190212520930-review-of-jev-offers-lane-model-pairs",
+  "reviewed_base_sha": "83e2c2fde6d1402764d4e8b591dcc7f0cf626ee2",
+  "reviewed_head_sha": "81c7a6cb1076cb51a782c8f1a2a90792cf64844e",
+  "reviewed_run_id": "r-20261007T181806743618-jev-offers-lane-model-pairs",
+  "reviewer_node": "review-of-jev-offers-lane-model-pairs",
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T19:16:00+00:00",
+  "total": 105
+}
