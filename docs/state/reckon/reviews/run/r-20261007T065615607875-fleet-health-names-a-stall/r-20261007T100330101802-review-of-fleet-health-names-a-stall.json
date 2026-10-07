@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest declares baseline_suite and after_suite absent, so I ran both arms myself. At the reviewed base 6a411e5b the full file passed 10 passed EXIT=0 three times (base-gate.log), but the named case alone, in isolation, failed 3 of 30 runs (base-flake-repro.log), reproducing the intermittent failure the delta exists to repair. At the reviewed head 27435b89 the full file passed 10 passed EXIT=0 (head-gate.log) and the two rate-limit cases passed 30 of 30 (head-stability.log). No failure is present at head that the base does not have, so added_failure_count is 0.",
+  "base_log_revision": "6a411e5bd49c732247ce9148dbba00b0057dbce1",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:181 DEFAULT_HEALTH_SAMPLER"
+  ],
+  "completed_at": "2026-10-07T10:24:30.541Z",
+  "dispatched_at": "2026-10-07T10:04:07Z",
+  "findings": [
+    {
+      "file": "tests/test_fleet_health.py",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the module docstring still states 'Every case drives exactly one sampling pass (--once) against fixture readings', which the two multi-pass rate-limit cases falsify: they drive two passes through --passes. The prior review raised this and the delta does not fix it, so the file's stated invariant still disagrees with what two of its cases do."
+    }
+  ],
+  "head_log_revision": "27435b894d72a152f7af9edc3d68ff931c1db17c",
+  "item_aggregate": 113,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s): reckon/crew/fleet_supervisor.py:181 DEFAULT_HEALTH_SAMPLER = 'fleet-health' (line drifted from the prior review's :170; bin/fleet-health is unchanged in the delta)",
+    "diff": "read commit by commit over 6a411e5b..27435b89: c1bd6ec40 widens both rate-limit cases' margins (within-bound case now 60s bound against 1s spacing, mirror 1s bound against 3s spacing in two passes rather than three) and restores the test file's trailing newline; 27435b894 records the repair, the two measurements and the repair's own negative control in the sampler fragment. git diff --stat lists only tests/test_fleet_health.py and the fragment.",
+    "done_when": "the plan's section 2 done-when has three clauses (a test per new trigger writing a snapshot with the thread-count and wait-channel columns and a below-threshold pass writing none; the three existing triggers firing as before; no test reading the real /proc). Those were satisfied by the earlier commits and this delta changes none of them. This range's own target is the prior review's blocking finding \u2014 the rate-limit case that failed intermittently, which made the section's gate unreproducible. It is repaired: 0 of 30 runs at head against 3 of 30 at base for the same case in isolation, and the gate reads 10 passed EXIT=0.",
+    "goal": "the reviewed range (commits c1bd6ec40 and 27435b894) exists to close the prior review's blocking finding on the intermittent snapshot-bound case and to record the repair; it does both, and also closes the prior trailing-newline follow-on, but leaves the prior docstring follow-on open.",
+    "manifest": "read; it records base 3befbf4f0e, head 27435b894d and cites gate-repair.log, negative-control.log, repro-flake.log, stability-repaired.log and negative-control-repair.log. The manifest declares baseline_suite/after_suite absent, so I ran the arms myself; gate-repair.log's body collects 10 items and passes, consistent with the head revision carrying the new cases.",
+    "write_paths": "the manifest declares bin/fleet-health, tests/test_fleet_health.py and the node's evidence fragment; git diff --stat 6a411e5b..27435b89 lists exactly tests/test_fleet_health.py and the fragment, both inside the declared paths; bin/fleet-health is byte-identical across the delta and needs no change for a test-margin repair."
+  },
+  "justifications": {
+    "durability": "the delta repairs the guard rather than adding a new one: the two rate-limit cases now carry margins far from the loop spacing (59s and 2s of slack), so they measure the rate limit and not the second boundary. Verified 0 failures in 30 head runs where the base failed 3 in 30; the test file's trailing newline is also restored.",
+    "evidence": "the repair's claim is reproduced independently: the base case fails 3 of 30 in isolation and 0 of 30 at head, the head gate reads 10 passed EXIT=0, and the declared trigger-removal negative control is reproduced (4 failed, 6 passed, EXIT=1). The run's own logs are consistent with these; gate-repair.log names no revision in a first line but collects 10 items, which only the head revision's test file has.",
+    "fit": "the repair keeps the existing FLEET_SNAPSHOT_INTERVAL/FLEET_SLEEP_SECONDS override idiom and the file's comment style, and its comments state the mechanism (second-resolution date +%s and per-pass overhead) rather than the incident. bin/fleet-health is untouched.",
+    "goal_fidelity": "the delta is on-goal: it closes the prior blocking finding and the trailing-newline follow-on and records the repair in the fragment, but it does not close the prior docstring follow-on, so one of the range's three carried-over hygiene items remains open.",
+    "reuse": "the delta adds no abstraction and no new call site; it adjusts two existing cases' fixtures and points the fragment's measurement line at the new gate log, reusing the run's existing logs and mechanism.",
+    "scope_discipline": "git diff --stat 6a411e5b..27435b89 lists only tests/test_fleet_health.py and the node's evidence fragment, both inside the manifest's declared write paths; no source file, figure, plan or shared state was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed range (commits c1bd6ec40 and 27435b894) exists to close the prior review's blocking finding on the intermittent snapshot-bound case and to record the repair; it does both, and also closes the prior trailing-newline follow-on, but leaves the prior docstring follow-on open.\nVERDICT done_when: this range's own target is the prior review's blocking finding \u2014 the rate-limit case that failed intermittently. It now passes reliably: 0 of 30 runs at head against 3 of 30 at base for the same case in isolation, and the gate reads 10 passed EXIT=0. The section's gate is reproducible again.\nVERDICT write_paths: the manifest declares bin/fleet-health, tests/test_fleet_health.py and the node's evidence fragment; git diff --stat 6a411e5b..27435b89 lists exactly tests/test_fleet_health.py and the fragment, both inside the declared paths; bin/fleet-health is byte-identical across the delta and needs no change for a test-margin repair.\nVERDICT manifest: read; it records base 3befbf4f0e, head 27435b894d and cites gate-repair.log, negative-control.log, repro-flake.log, stability-repaired.log and negative-control-repair.log. The manifest declares baseline_suite/after_suite absent, so I ran the arms myself; gate-repair.log's body collects 10 items and passes, consistent with the head revision carrying the new cases.\nVERDICT diff: read commit by commit over 6a411e5b..27435b89: c1bd6ec40 widens both rate-limit cases' margins (within-bound case now 60s bound against 1s spacing, mirror 1s bound against 3s spacing in two passes rather than three) and restores the test file's trailing newline; 27435b894 records the repair, the two measurements and the repair's own negative control in the sampler fragment. git diff --stat lists only tests/test_fleet_health.py and the fragment.\nreviewed_base_sha: 6a411e5bd49c732247ce9148dbba00b0057dbce1\nreviewed_head_sha: 27435b894d72a152f7af9edc3d68ff931c1db17c\nCALL_SITES: reckon/crew/fleet_supervisor.py:181 DEFAULT_HEALTH_SAMPLER\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the delta is on-goal: it closes the prior blocking finding and the trailing-newline follow-on and records the repair in the fragment, but it does not close the prior docstring follow-on, so one of the range's three carried-over hygiene items remains open.\nSCORE evidence: 18\nJUSTIFICATION evidence: the repair's claim is reproduced independently: the base case fails 3 of 30 in isolation and 0 of 30 at head, the head gate reads 10 passed EXIT=0, and the declared trigger-removal negative control is reproduced (4 failed, 6 passed, EXIT=1). The run's own logs are consistent with these; gate-repair.log names no revision in a first line but collects 10 items, which only the head revision's test file has.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 6a411e5b..27435b89 lists only tests/test_fleet_health.py and the node's evidence fragment, both inside the manifest's declared write paths; no source file, figure, plan or shared state was touched.\nSCORE durability: 18\nJUSTIFICATION durability: the delta repairs the guard rather than adding a new one: the two rate-limit cases now carry margins far from the loop spacing (59s and 2s of slack), so they measure the rate limit and not the second boundary. Verified 0 failures in 30 head runs where the base failed 3 in 30; the test file's trailing newline is also restored.\nSCORE fit: 19\nJUSTIFICATION fit: the repair keeps the existing FLEET_SNAPSHOT_INTERVAL/FLEET_SLEEP_SECONDS override idiom and the file's comment style, and its comments state the mechanism (second-resolution date +%s and per-pass overhead) rather than the incident. bin/fleet-health is untouched.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no abstraction and no new call site; it adjusts two existing cases' fixtures and points the fragment's measurement line at the new gate log, reuses the run's existing logs and mechanism.\nFINDING tests/test_fleet_health.py:12 follow-on: the module docstring still states every case drives exactly one sampling pass (--once), which the two multi-pass rate-limit cases falsify; the prior review raised this and the delta does not fix it.",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T065615607875-fleet-health-names-a-stall.at-27435b894d72a152f7af9edc3d68ff931c1db17c.json",
+  "review_run_id": "r-20261007T100330101802-review-of-fleet-health-names-a-stall",
+  "reviewed_base_sha": "6a411e5bd49c732247ce9148dbba00b0057dbce1",
+  "reviewed_head_sha": "27435b894d72a152f7af9edc3d68ff931c1db17c",
+  "reviewed_run_id": "r-20261007T065615607875-fleet-health-names-a-stall",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T10:21:34.000000+00:00",
+  "total": 113
+}
