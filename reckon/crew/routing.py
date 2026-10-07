@@ -3638,10 +3638,50 @@ def _context_refusal_detail(context_fit: Mapping[str, Any]) -> str:
     )
 
 
+def _docs_scan_directories(docs: Path) -> list[str]:
+    """Return the docs-relative directories a resource scan reads.
+
+    A scan walks every directory below the docs root before it identifies a
+    file, so the listing of each directory a resource can be resolved from is
+    part of the scan's input. The subtrees the resolver never identifies from
+    -- the infra directories and the evidence fragment store -- are pruned
+    rather than tracked, and every remaining directory is returned, so a stamp
+    over them sees a resource added, moved or removed wherever one could be
+    found.
+    """
+
+    from pathlib import PurePosixPath
+
+    from reckon import resources
+
+    directories: list[str] = []
+    for current, subdirs, _files in os.walk(docs):
+        relative = PurePosixPath(Path(current).relative_to(docs).as_posix())
+        parts = relative.parts
+        if parts[:2] == resources.EVIDENCE_FRAGMENTS_SUBTREE or any(
+            part in resources.INFRA_DIRS for part in parts
+        ):
+            subdirs[:] = []
+            continue
+        directories.append(relative.as_posix())
+        subdirs[:] = [name for name in subdirs if name not in resources.INFRA_DIRS]
+    return sorted(directories)
+
+
 def _estimated_hours(
     repo: Path, project: str, node: TaskNode
 ) -> tuple[float | None, str]:
-    """Return neutral hours and whether the node or plan supplied them."""
+    """Return neutral hours and whether the node or plan supplied them.
+
+    The figure is a pure function of the node's own estimate and the one plan
+    the node names, so a repeated call for an unchanged plan reads neither the
+    plan's metadata nor the docs tree: the directory listings a resolve would
+    read and the resolved plan file carry the stamps the cached figure was
+    built from, and the resolve runs again only when one of those stamps has
+    moved. A plan named by a node is resolved once however often the pick asks
+    for its estimate, and its source is unchanged whether the node, the plan or
+    neither supplied the figure.
+    """
 
     try:
         node_hours = float(node.estimated_hours)
@@ -3653,56 +3693,49 @@ def _estimated_hours(
     if not node.plan.strip():
         return None, "unavailable"
 
-    from concurrent.futures import ThreadPoolExecutor
-    from pathlib import PurePosixPath
-
     from reckon import resources
 
     docs = repo / "docs"
-    paths = []
-    for path in docs.rglob("*.html"):
-        relative = PurePosixPath(path.relative_to(docs).as_posix())
-        if (
-            resources._is_evidence_fragment(relative)
-            or path.name in resources.NON_RESOURCE_FILES
-            or any(part in resources.INFRA_DIRS for part in relative.parts[:-1])
-        ):
-            continue
-        try:
-            kind, archived, _legacy = resources._path_context(relative)
-        except resources.ResourceCollision:
-            continue
-        if not archived and kind in {None, "plan"}:
-            paths.append(path)
-    paths.sort()
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        stamps = list(pool.map(ledger._file_identity, paths))
-    stamp = [
-        (str(path), identity) for path, identity in zip(paths, stamps, strict=True)
-    ]
     identity = hashlib.sha256(
         f"{repo.resolve()}:{project}:{node.plan}".encode()
     ).hexdigest()
 
-    def build() -> list[Any]:
+    def build() -> dict[str, Any]:
+        directories = _docs_scan_directories(docs)
         resource = resources.resolve_resource(
             docs, project, node.plan, "plan", include_archived=False
         )
-        if resource is None:
-            return [None, "unavailable"]
-        value = _plan_html.parse_meta(resource.path).get("effort_hours")
-        try:
-            hours = float(value)
-        except (TypeError, ValueError):
-            return [None, "unavailable"]
-        return (
-            [hours, "plan-fallback"]
-            if math.isfinite(hours) and hours > 0
-            else [None, "unavailable"]
-        )
+        hours: float | None = None
+        source = "unavailable"
+        if resource is not None:
+            value = _plan_html.parse_meta(resource.path).get("effort_hours")
+            try:
+                parsed = float(value)
+            except (TypeError, ValueError):
+                parsed = 0.0
+            if math.isfinite(parsed) and parsed > 0:
+                hours, source = parsed, "plan-fallback"
+        return {
+            "hours": hours,
+            "source": source,
+            "path": str(resource.path) if resource is not None else None,
+            "directories": directories,
+        }
 
-    value = capabilities.cached_pick_input(f"plan-estimate-{identity}", stamp, build)
-    return value[0], value[1]
+    def stamp_of(value: Mapping[str, Any]) -> list[Any]:
+        stamp: list[Any] = [
+            [relative, capabilities.file_stamp(docs / relative)]
+            for relative in value["directories"]
+        ]
+        path = value.get("path")
+        if path:
+            stamp.append([path, ledger._file_identity(Path(path))])
+        return stamp
+
+    value = capabilities.cached_pick_input_stamped(
+        f"plan-estimate-{identity}", identity, stamp_of, build
+    )
+    return value["hours"], value["source"]
 
 
 def _measured_horizon_hours(value: Any) -> float | None:
