@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.89">
-<meta name="plan-version" content="47">
+<meta name="plan-version" content="48">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -158,6 +158,11 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 <section data-reckon="section" data-id="s11" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> When <code>reckon crew host</code> stops, its final record write carries the time it stopped and why: its owner ended, or it was signalled. Measured 2026-10-07: the only on-disk trace of the proof session's host stopping was an <code>updated_at</code> with <code>children: []</code>. Its stop line went to stderr, which the ending session took, so the gap between owner end and child stop could not be bounded from disk.</p>
 <p><strong>Done when</strong> a test in <code>tests/test_session_host.py</code> ends a fake owner and finds the record's stop reason reading owner ended, with a stop time no later than one poll interval after the owner exited. A second test signals the host and finds the reason reading signalled. Both fail on the current code, which writes neither field, and that is their negative control.</p>
+
+    <h2 id="s12">§12 — One spelling of the session host&#x27;s FIFO path</h2>
+<section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> One Python function names a session host's request FIFO from its owner pair, and both readers call it. Today <code>reckon/crew/session_host.py</code> (<code>_fifo_path</code>, added under §9) and <code>reckon/crew/dispatch.py</code> (<code>_session_host_fifo</code>) each compose <code>&lt;runtime&gt;/reckon-session-host/&lt;pid&gt;-&lt;start&gt;.fifo</code>. The two agree only until one changes, and a disagreement would leave the host removing a different file from the one dispatch writes to. The §9 review raised it as a follow-on. The bash entry point keeps its own spelling, because it cannot import Python.</p>
+<p><strong>Done when</strong> a test resolves the FIFO path for one owner pair through the host and through dispatch and finds them equal. The filename format <code>{pid}-{start}.fifo</code> appears once in <code>reckon/</code>. <code>tests/test_session_host.py</code> and <code>tests/test_dispatch_session_host.py</code> pass. The equality test fails when one side's format is changed alone, and that is its negative control.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
