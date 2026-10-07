@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:2341",
+    "reckon/crew/dispatch.py:6175"
+  ],
+  "completed_at": "2026-10-07T15:54:47.371Z",
+  "dispatched_at": "2026-10-07T15:43:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1345",
+      "severity": "follow-on",
+      "text": "follow-on: _session_host_waiting reads reader-presence as host liveness, so a host that holds its FIFO descriptor open while not serving is predicted host, whereas the real dispatch _ask_session_host_for_follower (dispatch.py:1387) writes and waits WATCHER_LOAD_BOUND_SECONDS before falling back to monitor; the dry run can overstate delivery for a wedged host."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1328",
+      "severity": "follow-on",
+      "text": "follow-on: the non-blocking O_WRONLY | O_NONBLOCK open duplicates the idiom _write_fleet_request owns at dispatch.py:10099, leaving the FIFO reconnect-or-fall-back spelling in two places that can drift."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against a78d1cf; one commit 413c5a025 adds _session_host_waiting, the dry-run prediction block, the DispatchPlan.watch field with its as_dict surfacing, two tests and the fragment, 156 insertions and 1 deletion across three files.",
+    "done_when": "the done_when names a test in tests/test_dispatch_session_host.py that runs a dry-run dispatch for an unattached session with a waiting host FIFO, finds no watcher-required refusal, a predicted delivery of host, and no byte written; tests/test_dispatch_session_host.py:376 test_dry_run_predicts_host_delivery_without_writing_the_fifo asserts exactly those, and the manifest records it green at head.",
+    "goal": "the node goal is that a dry-run dispatch predicts the host's delivery without writing the FIFO; reckon/crew/dispatch.py:6159 adds a prediction in plan_dispatch's dry-run watcher block that reads the host's liveness at dispatch.py:1328 and records watch.delivery=host, and dispatch.py:1345 opens the FIFO non-blocking and closes it without a byte, so nothing is written.",
+    "manifest": "read; it records tests/test_dispatch_session_host.py 6 passed EXIT=0, names gate-head.log and gate-negative.log, carries the declared negative control, and its landing line states the predicted delivery.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/dispatch.py, tests/test_dispatch_session_host.py, the fragment, and the figure dir); the diff's three files are all inside them, and no figure was written because the small-node rule named none."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_session_host.py:394 asserts resolution.watch[\"delivery\"] == \"host\" and tests/test_dispatch_session_host.py:397 asserts the bytes read from the FIFO are empty, both read from the code's output and an independent channel, and the manifest's mutation run reddens the first with watcher-required.",
+    "evidence": "tests/test_dispatch_session_host.py:376 asserts delivery host, predicted True and zero bytes read back off the FIFO, and gate-head.log records 6 passed EXIT=0 at rev 413c5a025 with gate-negative.log red at EXIT=1.",
+    "fit": "reckon/crew/dispatch.py:1328 follows the module's docstring-and-type-hint idiom and reuses _session_host_fifo(); no name carries a plan label, ticket number or version tag.",
+    "goal_fidelity": "reckon/crew/dispatch.py:6163 predicts delivery host from the host's own liveness and dispatch.py:1345 closes the FIFO without writing, so the goal's two halves \u2014 a host prediction and no FIFO write \u2014 are both present at head.",
+    "reuse": "reckon/crew/dispatch.py:1328 adds a capability (_probe for a live FIFO reader) the repository did not own, but its non-blocking O_WRONLY open repeats the idiom dispatch.py:10099 _write_fleet_request already owns.",
+    "scope_discipline": "the diff a78d1cf..413c5a025 touches exactly reckon/crew/dispatch.py, tests/test_dispatch_session_host.py and the one evidence fragment, all declared paths, 156 insertions and 1 deletion."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a dry-run dispatch predicts the host's delivery without writing the FIFO; reckon/crew/dispatch.py:6159 adds a prediction in plan_dispatch's dry-run watcher block that reads the host's liveness at dispatch.py:1328 and records watch.delivery=host, and dispatch.py:1345 opens the FIFO non-blocking and closes it without a byte, so nothing is written.\nVERDICT done_when: the done_when names a test in tests/test_dispatch_session_host.py that runs a dry-run dispatch for an unattached session with a waiting host FIFO, finds no watcher-required refusal, a predicted delivery of host, and no byte written; tests/test_dispatch_session_host.py:376 test_dry_run_predicts_host_delivery_without_writing_the_fifo asserts exactly those, and the manifest records it green at head.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/dispatch.py, tests/test_dispatch_session_host.py, the fragment, and the figure dir); the diff's three files are all inside them, and no figure was written because the small-node rule named none.\nVERDICT manifest: read; it records tests/test_dispatch_session_host.py 6 passed EXIT=0, names gate-head.log and gate-negative.log, carries the declared negative control, and its landing line states the predicted delivery.\nVERDICT diff: read commit by commit against a78d1cf; one commit 413c5a025 adds _session_host_waiting, the dry-run prediction block, the DispatchPlan.watch field with its as_dict surfacing, two tests and the fragment, 156 insertions and 1 deletion across three files.\nCALL_SITES: reckon/cli.py:2341, reckon/crew/dispatch.py:6175\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:6163 predicts delivery host from the host's own liveness and dispatch.py:1345 closes the FIFO without writing, so the goal's two halves \u2014 a host prediction and no FIFO write \u2014 are both present at head.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_dispatch_session_host.py:376 asserts delivery host, predicted True and zero bytes read back off the FIFO, and gate-head.log records 6 passed EXIT=0 at rev 413c5a025 with gate-negative.log red at EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff a78d1cf..413c5a025 touches exactly reckon/crew/dispatch.py, tests/test_dispatch_session_host.py and the one evidence fragment, all declared paths, 156 insertions and 1 deletion.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_dispatch_session_host.py:394 asserts resolution.watch[\"delivery\"] == \"host\" and tests/test_dispatch_session_host.py:397 asserts the bytes read from the FIFO are empty, both read from the code's output and an independent channel, and the manifest's mutation run reddens the first with watcher-required.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:1328 follows the module's docstring-and-type-hint idiom and reuses _session_host_fifo(); no name carries a plan label, ticket number or version tag.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/dispatch.py:1328 adds a capability (_probe for a live FIFO reader) the repository did not own, but its non-blocking O_WRONLY open repeats the idiom dispatch.py:10099 _write_fleet_request already owns.\nFINDING reckon/crew/dispatch.py:1345 follow-on: _session_host_waiting reads reader-presence as host liveness, so a host that holds its FIFO descriptor open while not serving is predicted host, whereas the real dispatch _ask_session_host_for_follower (dispatch.py:1387) writes and waits WATCHER_LOAD_BOUND_SECONDS before falling back to monitor; the dry run can overstate delivery for a wedged host.\nFINDING reckon/crew/dispatch.py:1328 follow-on: the non-blocking O_WRONLY | O_NONBLOCK open duplicates the idiom _write_fleet_request owns at dispatch.py:10099, leaving the FIFO reconnect-or-fall-back spelling in two places that can drift.",
+  "review_run_id": "r-20261007T154246101688-review-of-a-dry-run-predicts-host-delivery",
+  "reviewed_base_sha": "a78d1cf027fe8904f89277217c503706acefccd1",
+  "reviewed_head_sha": "413c5a02589e0f2dd76581801483bc2ff0076a79",
+  "reviewed_run_id": "r-20261007T151956577480-a-dry-run-predicts-host-delivery",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261007T154246101688-review-of-a-dry-run-predicts-host-delivery",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T15:55:51.091959+00:00",
+  "total": 110
+}
