@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.8">
-<meta name="plan-version" content="74">
+<meta name="plan-version" content="75">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -358,6 +358,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261007T111536722689-review-of-delivered-reports-are-imported" data-who="reckon-build" data-when="2026-10-07T11:30:52.645Z">
     <div class="r-comment-body"><p>Independent review of r-20261007T110303639272-delivered-reports-are-imported stored a parsed six-dimension record at both granted paths (total 107: goal_fidelity 19, evidence 18, scope_discipline 17, durability 18, fit 18, reuse 17; two follow-on findings) recording reviewed_base_sha 4b9d124dd7dab2c9ae9b070e26aa379d9e4c371c and reviewed_head_sha b2edd1e752b2c574888e8115651d656357894dc1; the reviewed manifest names no baseline_suite or after_suite arm, so added_failure_count is unmeasured (null) with added_failure_ids []. The landed change imports delivered plan-review reports no record carries, keyed by the report directory's run id or by (plan_slug, plan_fingerprint, rubric); the two follow-ons are a silent swallow in the candidate loop and an empty evidence fragment.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261007T110303639272-delivered-reports-are-imported" data-who="reckon-build" data-when="2026-10-07T11:33:34.167Z">
+    <div class="r-comment-body"><p>scripts/import_host_reviews.py imports every delivered plan-review report no committed record carries, matched by review run id or by (plan_slug, plan_fingerprint, rubric) and committed via review.store_committed_review keyed by the report directory&#x27;s name; a report that is a review but whose record cannot be built is now listed and counted as refused and its reason written to its sidecar under store_error; dry run prints &quot;delivered reports without a record: N, refused: M&quot;; gate tests/test_import_host_reviews.py + tests/test_plan_review_store.py + tests/test_plan_review_rounds_keep_their_own_file.py: 24 passed, EXIT=0; declared negative control red (2 failed, EXIT=1) and the swallowed-refusal mutation red (1 failed, EXIT=1)</p></div>
 </div>
 </section>
 </main>
