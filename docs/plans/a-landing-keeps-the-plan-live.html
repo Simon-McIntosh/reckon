@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="a-landing-keeps-the-plan-live">
+<meta name="reckon-type" content="plan">
+<title>a-landing-keeps-the-plan-live</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-standalone" content="Two bookkeeping corrections in the review digest and the promotion write; no plan waits on them and they consume no other plan&#x27;s evidence.">
+<meta name="plan-title" content="A Landing Keeps the Plan Live">
+<meta name="plan-summary" content="A landing&#x27;s bookkeeping writes leave the design review standing, and a plan&#x27;s first landing marks it in progress">
+<meta name="plan-status" content="draft">
+<meta name="plan-roi" content="high">
+<meta name="plan-sprint" content="S25">
+<meta name="plan-owner" content="Simon McIntosh">
+<meta name="plan-effort-hours" content="1.5">
+<meta name="plan-capability-version" content="1.0">
+<meta name="plan-capability-class" content="general">
+<meta name="plan-capability-reasoning" content="standard">
+<meta name="plan-capability-verification" content="strict">
+<meta name="plan-capability-risk" content="low">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-07">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="s1">§1 — A landing&#x27;s commits write leaves the design review standing</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><code>reckon/crew/plan_review.py</code> digests each plan unit for the design-review gate and drops the scalars in <code>PLAN_METADATA_SCALARS</code> (version, modified, impl, status, roi, effort_hours, owner, sprint, tags, archived), so bookkeeping writes do not re-stale a review. <code>commits</code> is not in that list, and the reckon-build landing beat sets it on every landing. So every landing makes the next <code>crew dispatch</code> refuse with <code>plan-review-missing</code> and the uncovered unit <code>_document</code>. Measured on imas-ambix <code>jt60sa-machine-map</code> on 2026-10-06 and 07: several of that night's design-review cycles were caused by landing beats alone, each costing a local-lane review of about five minutes before the next node could go out.</p><p><code>commits</code> records which commits landed the plan. It is provenance, not authored design, so it joins <code>PLAN_METADATA_SCALARS</code>. Any key the parser derives from it is excluded the same way, as the derived-field exclusions below that list already do for the other scalars.</p><p>Done-when: a test sets <code>commits</code> on a plan with a stored review and asserts that its <code>_document</code> digest and every section digest are unchanged and that <code>review_coverage</code> still reports the review as covering. The same test with an authored prose edit reports the unit uncovered, so the exclusion is shown not to swallow real edits.</p>
+
+<h2 id="s2">§2 — A plan&#x27;s first landing marks it in progress</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p>A plan's <code>status</code> is set by hand, and nothing moves it when work starts. Measured on imas-ambix on 2026-10-07: <code>jt60sa-machine-map</code> read <code>draft</code> through 50 landed nodes over two days, while the SPA's in-flight list showed its live runs. Promotion already does a versioned read-modify-write of the plan in <code>reckon/crew/promotion.py</code> <code>_record_landing_comment</code> to append the landing comment.</p><p>In that same write, a plan whose status is <code>draft</code> or <code>pending</code> becomes <code>in-progress</code>. Every other status is left alone, so <code>active</code>, <code>blocked</code>, <code>shipped</code> and the other terminal states never move. <code>status</code> is in <code>PLAN_METADATA_SCALARS</code>, so the flip never re-stales a design review. The flip happens at the first landing rather than at dispatch because promotion already owns a committed plan write and dispatch does not; until the first landing, the SPA's in-flight list already shows the running nodes.</p><p>Done-when: a test promotes a run against a <code>draft</code> plan and reads back <code>in-progress</code> together with the landing comment in the same plan version. A test against an <code>active</code> plan and one against a <code>shipped</code> plan read back the status unchanged. The existing promotion tests that exercise <code>_record_landing_comment</code> pass unchanged.</p>
+
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-alkpl-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build a-landing-keeps-the-plan-live §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §1: commits leaves the review standing</h4>
+    <div class="r-fu-body"><p>§1 edits <code>reckon/crew/plan_review.py</code> with its own test.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-keeps-the-plan-live §1</pre>
+    </article>
+<article class="r-fu" data-id="f-alkpl-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build a-landing-keeps-the-plan-live §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2: the first landing marks the plan in progress</h4>
+    <div class="r-fu-body"><p>§2 edits <code>reckon/crew/promotion.py</code> with its own test.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-keeps-the-plan-live §2</pre>
+    </article>
+</section>
+</main>
+</body>
+</html>
