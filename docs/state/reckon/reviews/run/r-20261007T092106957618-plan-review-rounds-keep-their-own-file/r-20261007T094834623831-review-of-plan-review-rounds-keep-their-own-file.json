@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/plan_review.py:store_plan_review",
+    "reckon/crew/plan_review.py:read_plan_review",
+    "reckon/mcp.py:443"
+  ],
+  "completed_at": "2026-10-07T10:03:52.197Z",
+  "dispatched_at": "2026-10-07T09:49:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "372",
+      "severity": "follow-on",
+      "text": "follow-on: _review_run_tail re-states the re.sub token-sanitising idiom already inline at reckon/crew/runs.py:141, :210, :230, :446 and :3789; no owner function exists so this is not a fork, but the sixth copy is where a different helper would earn its keep."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 1d6e2f15; the change adds _review_run_tail, _record_run_id, _stored_record, _holds_run, _holds_other_run, extends plan_review_path with a run tail and rewrites _target_path, plus a three-case test file.",
+    "done_when": "the node's done_when names tests/test_plan_review_rounds_keep_their_own_file.py; the manifest records the run green (EXIT=0, 25 passed) and I re-ran the named file at the head (3 passed, EXIT=0).",
+    "goal": "the node goal is that a delivered plan review is stored under a path its own review run owns; reckon/crew/plan_review.py:505 _target_path returns the .at-<blob8>-<review-run-tail> sibling when the plain path or the blob sibling already holds a different review run's record.",
+    "manifest": "read; status complete, one commit 02f0134e, tests recorded EXIT=0, and a negative control EXIT=1 with three failing done-when cases.",
+    "write_paths": "the manifest declares reckon/crew/plan_review.py and tests/test_plan_review_rounds_keep_their_own_file.py; git diff --name-only 1d6e2f15..02f0134e lists exactly those two, both inside the declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_review_rounds_keep_their_own_file.py:73 asserts first != second, which reddens when _target_path reuses the plain path, the regression the reviewed negative control reproduces (3 failed, EXIT=1).",
+    "evidence": "the done-when is a prove-by-test measure; the gate at tests/test_plan_review_rounds_keep_their_own_file.py is green (25 passed, EXIT=0) with a negative control that reddens the three cases, and I re-ran the named file at 02f0134e (3 passed, EXIT=0).",
+    "fit": "the added helpers follow the module's _record_/_stored_ private-helper idiom and carry no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/plan_review.py:505 _target_path allocates a .at-<blob8>-<review-run-tail> sibling when a different run holds the plain path or the blob sibling, so two runs of identical bytes at one version no longer share a file.",
+    "reuse": "the run-owned sibling reuses the existing _candidate_paths glob (reckon/crew/plan_review.py:617) rather than adding a reader and adds no second store; the one duplication is the token sanitiser.",
+    "scope_discipline": "git diff --name-only 1d6e2f15..02f0134e lists only reckon/crew/plan_review.py and tests/test_plan_review_rounds_keep_their_own_file.py, exactly the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 1d6e2f158d67f26e4806b482db14472593426a3e\nreviewed_head_sha: 02f0134e8106efd04a116e29f764c0821af53334\nVERDICT goal: the node goal is that a delivered plan review is stored under a path its own review run owns; reckon/crew/plan_review.py:505 _target_path returns the .at-<blob8>-<review-run-tail> sibling when the plain path or the blob sibling already holds a different review run's record.\nVERDICT done_when: the node's done_when names tests/test_plan_review_rounds_keep_their_own_file.py; the manifest records the run green (EXIT=0, 25 passed) and I re-ran the named file at the head (3 passed, EXIT=0).\nVERDICT write_paths: the manifest declares reckon/crew/plan_review.py and tests/test_plan_review_rounds_keep_their_own_file.py; git diff --name-only 1d6e2f15..02f0134e lists exactly those two, both inside the declaration.\nVERDICT manifest: read; status complete, one commit 02f0134e, tests recorded EXIT=0, and a negative control EXIT=1 with three failing done-when cases.\nVERDICT diff: read commit by commit against 1d6e2f15; the change adds _review_run_tail, _record_run_id, _stored_record, _holds_run, _holds_other_run, extends plan_review_path with a run tail and rewrites _target_path, plus a three-case test file.\nCALL_SITES: reckon/crew/plan_review.py:store_plan_review, reckon/crew/plan_review.py:read_plan_review, reckon/mcp.py:443\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:505 _target_path allocates a .at-<blob8>-<review-run-tail> sibling when a different run holds the plain path or the blob sibling, so two runs of identical bytes at one version no longer share a file.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done-when is a prove-by-test measure; the gate at tests/test_plan_review_rounds_keep_their_own_file.py is green (25 passed, EXIT=0) with a negative control that reddens the three cases, and I re-ran the named file at 02f0134e (3 passed, EXIT=0).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 1d6e2f15..02f0134e lists only reckon/crew/plan_review.py and tests/test_plan_review_rounds_keep_their_own_file.py, exactly the declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_plan_review_rounds_keep_their_own_file.py:73 asserts first != second, which reddens when _target_path reuses the plain path, the regression the reviewed negative control reproduces (3 failed, EXIT=1).\nSCORE fit: 19\nJUSTIFICATION fit: the added helpers follow the module's _record_/_stored_ private-helper idiom and carry no plan, sprint or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: the run-owned sibling reuses the existing _candidate_paths glob (reckon/crew/plan_review.py:617) rather than adding a reader and adds no second store; the one duplication is the token sanitiser.\nFINDING reckon/crew/plan_review.py:372 follow-on: _review_run_tail re-states the re.sub token-sanitising idiom already inline at reckon/crew/runs.py:141, :210, :230, :446 and :3789; no owner function exists so this is not a fork, but the sixth copy is where a different helper would earn its keep.",
+  "review_run_id": "r-20261007T094834623831-review-of-plan-review-rounds-keep-their-own-file",
+  "reviewed_base_sha": "1d6e2f158d67f26e4806b482db14472593426a3e",
+  "reviewed_head_sha": "02f0134e8106efd04a116e29f764c0821af53334",
+  "reviewed_run_id": "r-20261007T092106957618-plan-review-rounds-keep-their-own-file",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T09:59:40.379756+00:00",
+  "total": 116
+}
