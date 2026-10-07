@@ -355,19 +355,42 @@ def _commit(
     return review_store.store_committed_review(stored, project=project, root=root)
 
 
+def _actionable_records(
+    plan: dict[str, Any],
+) -> list[tuple[Path, Mapping[str, Any], Path, str, str, bool, str]]:
+    """The recognised records whose committed path is absent.
+
+    This is one decision both paths take: the dry run lists exactly these
+    records and :func:`_import_records` writes exactly these, so the listed set
+    and the written set cannot drift. A record whose committed path already
+    holds a file is not actionable.
+    """
+    return [record for record in plan["records"] if not record[2].is_file()]
+
+
+def _print_actionable(
+    records: list[tuple[Path, Any, Path, str, str, bool, str]],
+) -> None:
+    """List each record an import would commit, by review run id, subject and version."""
+    print(f"records to import: {len(records)}")
+    for _src, body, _committed, subject, review_run_id, _derived, kind in records:
+        if kind == "plan":
+            subject_line = f"plan {subject} v{int(body['plan_version'])}"
+        else:
+            subject_line = f"run {subject}"
+        print(f"  importable\t{review_run_id}\t{subject_line}")
+
+
 def _import_records(
     project: str,
     plan: dict[str, Any],
     root: str | None,
 ) -> dict[str, int]:
-    """Commit recognised records; a path already committed is not imported again."""
+    """Commit the actionable records; a path already committed is not imported again."""
+    actionable = _actionable_records(plan)
     imported = 0
-    already_present = 0
     refused: list[str] = []
-    for _src, body, committed, subject, review_run_id, derived, kind in plan["records"]:
-        if committed.is_file():
-            already_present += 1
-            continue
+    for _src, body, committed, subject, review_run_id, derived, kind in actionable:
         try:
             _commit(project, body, kind, subject, review_run_id, derived, root)
         except (OSError, ValueError) as exc:
@@ -378,7 +401,7 @@ def _import_records(
         print(f"refused: {message}")
     return {
         "imported": imported,
-        "already_present": already_present,
+        "already_present": len(plan["records"]) - len(actionable),
         "duplicates": len(plan["duplicates"]),
         "refused": len(refused),
     }
@@ -560,6 +583,7 @@ def main(argv: list[str] | None = None) -> int:
     _print_delivered(delivered, delivered_refused)
 
     if not args.write:
+        _print_actionable(_actionable_records(plan))
         print("dry run: nothing written")
         return 0
 
