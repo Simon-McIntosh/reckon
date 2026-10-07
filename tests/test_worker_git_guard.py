@@ -390,8 +390,11 @@ def test_the_installer_emits_the_guard_entry_without_writing_settings() -> None:
 
     commands = _pre_tool_use_bash_commands(json.loads(buffer.getvalue()))
     assert commands == _pre_tool_use_bash_commands(result.document)
-    assert commands == [str(installer.worker_git_guard_script_path())]
-    assert Path(commands[0]).name == "worker_git_guard.py"
+    interpreter = Path(__file__).resolve().parents[1] / ".venv" / "bin" / "python"
+    script = installer.worker_git_guard_script_path()
+    assert commands == [shlex.join([str(interpreter), str(script)])]
+    assert shlex.split(commands[0]) == [str(interpreter), str(script)]
+    assert script.name == "worker_git_guard.py"
     assert installer.worker_git_guard_script_path().is_file()
     after = real_settings.read_bytes() if real_settings.is_file() else None
     assert after == before
@@ -486,7 +489,12 @@ def test_the_composed_guard_command_points_into_a_reckon_checkout() -> None:
     )
     assert len(commands) == 1
 
-    script = Path(commands[0]).resolve()
+    interpreter, script_path = map(Path, shlex.split(commands[0]))
+    assert (
+        interpreter == Path(__file__).resolve().parents[1] / ".venv" / "bin" / "python"
+    )
+    assert interpreter.is_file()
+    script = script_path.resolve()
     assert script.name == "worker_git_guard.py"
     assert script.is_file()
 
