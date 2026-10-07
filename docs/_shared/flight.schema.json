@@ -952,6 +952,23 @@
                         }
                     ]
                 },
+                "lanes": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/LaneConfig__identifier_optional"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "A lane is a subscription or host, and the models chosen inside it. Declaring a lane is an alternative to writing one backend block per model: resolution expands each lane back into the backend entries today's callers read, so a lane that declares its models and an equivalent set of backend blocks resolve to the same config. Absent means no lane is declared and resolution is unchanged.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
                 "local_backend": {
                     "description": "Name of the locally served backend selected by `reckon crew dispatch --local`. Must name a key of `backends` once every layer has been merged. Absent means this host has no declared local worker route.",
                     "type": [
@@ -1148,6 +1165,724 @@
             ],
             "title": "InputModality",
             "type": "string"
+        },
+        "LaneConfig": {
+            "additionalProperties": false,
+            "description": "One lane: a subscription or host, carrying the backend-block keys that apply to every model inside it, plus the models themselves and the default one a dispatch on the lane gets when it declares none. Resolution expands a lane into backend entries, so a reader of `backends` sees one entry per lane and one per derived model name.",
+            "properties": {
+                "alias": {
+                    "description": "Display label rendered in the fleet pane in place of this backend's model identifier. The spelling belongs beside the model it shortens and is decided by whoever writes the configuration; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "as_of": {
+                    "description": "Date on which this backend's per-million rates were published. A rate is priced only when dated: one whose `as_of` is older than the declared staleness horizon is returned with its age attached rather than silently priced as current. Optional operator data; a backend declaring rates without a date stays explicitly unpriced.",
+                    "format": "date",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "auth_check": {
+                    "description": "Argument vector run to test whether this backend is authenticated, as an exit status. Optional, and user data: it is how a provider-specific credential check reaches reckon without reckon knowing any provider. Availability probing reports the result and never acts on it.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "budget_check": {
+                    "description": "Whether a pre-flight may read this backend's own account-limit surface instead of relying on what earlier runs recorded. Off by default, because a read that has to be asked for cannot happen by accident, and because a backend exposing no such surface reports unknown rather than a guess. It is never a model call and consumes no worker budget.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "budget_group": {
+                    "description": "Name shared by backends that draw on the same account quota. A pool is declared, never inferred: identical probe readings or reset times are evidence only that two backends were observed the same way, never that they share a budget, so a backend with no declared group stays ungrouped however alike its siblings read. Optional operator data naming the owner's own pool; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "catalog": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/CatalogConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Optional declaration for asking a backend command which models it serves. Availability probing runs the declared argument vector and matches the configured model against its output; the declaration remains provider-neutral."
+                },
+                "command": {
+                    "description": "Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "default_model": {
+                    "description": "Model key a dispatch on this lane resolves to when it names no model. A lane declaring none has no default, and only its derived model entries are reachable by name.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "effective_input_window": {
+                    "description": "Lowest input size this backend's endpoint is recorded as refusing, so that dispatch gates on the boundary that kills rather than on the declared window alone. Measured from what the lane's own endpoint refused, never declared by the configuration: a run whose last result is an error carrying the endpoint's prompt-too-long text reports the input size it was refused at, and the boundary is the smallest such input recorded for this backend's own model \u2014 a census pooled across models answers with the narrowest neighbour's figure instead. Dispatch refuses an estimate that exceeds either this figure or usable_input_window, naming both, so a node sized inside the band is refused before a worktree is created rather than by the endpoint after three records and no deliverable. Absence means the effective boundary is undeclared, never zero: only the declared window gates such a lane.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "effort": {
+                    "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "effort_spelling": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/EffortSpelling__identifier_optional"
+                            },
+                            {
+                                "description": "The display suffix rendered for an effort level's word.",
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Display suffixes for this backend's effort levels, keyed by the effort word. A declared spelling replaces the derived two-character suffix; an effort with no entry renders its first two characters lowercased. User data; the schema enumerates no effort ladder.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "endpoints_document": {
+                    "description": "Optional path to a document publishing the endpoints this backend's lane is currently serving, as JSON with an `endpoints` list. Availability probing reads it to report whether the lane can serve rather than only that its launcher exists: a document listing at least one endpoint reports serving, one listing none reports not-serving, and an absent declaration or an unreadable or unparsable document reports unknown. User data naming one host's own publication; the schema supplies no path, and the probe never reads it over the network.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "environment": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/EnvironmentVariable__identifier_optional"
+                            },
+                            {
+                                "description": "Value associated with an environment-variable name.",
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Environment variables added when this backend's worker is spawned, keyed by variable name. Values are strings and may reference a variable from the dispatcher's environment using `${NAME}`.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "fallback": {
+                    "description": "Backend to substitute when this one is held on budget. Declared, never inferred: a backend naming no fallback still refuses a held dispatch exactly as one would with this key absent. The substitution is recorded on the run \u2014 the backend asked for, the backend used and the hold that caused it \u2014 so a calibration slice never attributes a fallback run to the backend the caller named. A fallback that is itself held still refuses; this key does not chain into a search across backends.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "gate_document": {
+                    "description": "Optional absolute path to the JSON gate file that decides whether a serving lane will admit work, as the router resolves it: a `paused` boolean and an optional `reason` string. A dispatch whose resolved backend declares this path reads it before creating a pointer or a worktree, and waits rather than launching while `paused` is true or the gate cannot be answered; the declared path is also checked against the lane document's published `router_generation_gate.config_path`, and a mismatch waits. User data naming one host's own gate; the schema supplies no path, and the read never goes over the network.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "input_modalities": {
+                    "description": "Input modalities this backend's model actually receives. Absent means undeclared, never \"every modality\": a lane that does not say it reads images is treated as not reading them, so a profile requiring an image is refused by name rather than routed here and answered from the filename. User data naming the lane's own measured path to the model; the schema supplies no value, and a declaration is a claim about the delivered input rather than about what the attachment flag accepts.",
+                    "items": {
+                        "$ref": "#/$defs/InputModality"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "input_rate_per_million": {
+                    "description": "Public input-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the output price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "lane_document": {
+                    "description": "Optional path to a document a serving lane publishes, carrying the lane's measured state, its remaining headroom, whether a worker binding was observed, the stamp the reading was taken at, and the shelf life the lane itself suggests the reading stays fresh for. Availability probing reads it to report the lane observation beside the serving verdict: a reading older than its own suggested shelf life reports unknown while keeping the figure and its age, and an absent, unreadable or unparsable document reports unknown with a reason and never raises. User data naming one host's own publication; the schema supplies no path, and the probe never reads it over the network.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "launch": {
+                    "$ref": "#/$defs/LaunchMode",
+                    "description": "How this backend's workers are started."
+                },
+                "max_concurrent_runs": {
+                    "description": "Retired and ignored. Reckon enforces no numeric worker cap: a session holds its runs for as long as it needs them, and engine load is bounded by the router's admission gate rather than by a declared ceiling. The slot stays declared only so an existing host file that sets it keeps loading; a value here changes no behaviour. Absent or null is treated exactly as a declared value.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "metered": {
+                    "description": "Whether using this backend consumes a metered provider allowance. Optional operator data; absence leaves the backend's meteredness undeclared rather than inferring it from the backend name or another routing property.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "model": {
+                    "description": "Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "models": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/LaneModelConfig__identifier_optional"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "The models this lane offers, keyed by the short name a caller types. A lane with no models expands to its own named entry alone.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "output_rate_per_million": {
+                    "description": "Public output-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the input price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "placement": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/PlacementConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Optional scheduler placement for this backend's workers. A declared placement wraps the launch in the scheduler invocation rather than replacing it, so the resolved command, its environment and its stream paths are the ones that run. Absent means the login-node launch, which is what keeps every backend that declares none behaving exactly as before."
+                },
+                "sandbox": {
+                    "$ref": "#/$defs/SandboxMode",
+                    "description": "Filesystem blast radius granted to workers of this backend."
+                },
+                "serves_orchestrators": {
+                    "description": "Whether this backend's lane carries this deployment's orchestrators. Declared, never inferred from the backend's name: the orchestrator role is a property of the deployment, so an alias or a backend that renames must both reach a fence that reads this key, and a rule matching on a name breaks the moment an orchestrator runs somewhere else. Absent means the lane declares nothing and is dispatchable as before. A lane declaring true is one whose capacity background work spends against the sessions that dispatch, merge, promote and record, so a lane saturated there stops every session rather than one node.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "session_reuse": {
+                    "description": "Whether a finished worker session can be resumed rather than respawned.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "time_budget": {
+                    "description": "Wall-clock allowance, written as an integer followed by a unit \u2014 `s`, `m` or `h`. It remains the ceiling that bounds a hang: a process that has stopped producing is only caught by elapsed wall clock, never by a token count.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "token_budget": {
+                    "description": "Worker allowance denominated in generated output tokens \u2014 the quantity the same task needs regardless of what else the lane is doing, so a slow lane inside its token budget is not an overrun however long it took. Written as a bare integer of output tokens. Cannot bound a hang, so the wall-clock `time_budget` ceiling stays under its own name.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "usable_input_window": {
+                    "description": "Maximum input tokens this backend can hold after any output reservation has already been removed. Dispatch compares this declared window with a deterministic estimate of the node's standing instructions and named repository files before creating a worktree. Absence means unbounded, never zero: an unknown ceiling cannot justify refusing work.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "LaneConfig",
+            "type": "object"
+        },
+        "LaneConfig__identifier_optional": {
+            "additionalProperties": false,
+            "description": "One lane: a subscription or host, carrying the backend-block keys that apply to every model inside it, plus the models themselves and the default one a dispatch on the lane gets when it declares none. Resolution expands a lane into backend entries, so a reader of `backends` sees one entry per lane and one per derived model name.",
+            "properties": {
+                "alias": {
+                    "description": "Display label rendered in the fleet pane in place of this backend's model identifier. The spelling belongs beside the model it shortens and is decided by whoever writes the configuration; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "as_of": {
+                    "description": "Date on which this backend's per-million rates were published. A rate is priced only when dated: one whose `as_of` is older than the declared staleness horizon is returned with its age attached rather than silently priced as current. Optional operator data; a backend declaring rates without a date stays explicitly unpriced.",
+                    "format": "date",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "auth_check": {
+                    "description": "Argument vector run to test whether this backend is authenticated, as an exit status. Optional, and user data: it is how a provider-specific credential check reaches reckon without reckon knowing any provider. Availability probing reports the result and never acts on it.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "budget_check": {
+                    "description": "Whether a pre-flight may read this backend's own account-limit surface instead of relying on what earlier runs recorded. Off by default, because a read that has to be asked for cannot happen by accident, and because a backend exposing no such surface reports unknown rather than a guess. It is never a model call and consumes no worker budget.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "budget_group": {
+                    "description": "Name shared by backends that draw on the same account quota. A pool is declared, never inferred: identical probe readings or reset times are evidence only that two backends were observed the same way, never that they share a budget, so a backend with no declared group stays ungrouped however alike its siblings read. Optional operator data naming the owner's own pool; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "catalog": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/CatalogConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Optional declaration for asking a backend command which models it serves. Availability probing runs the declared argument vector and matches the configured model against its output; the declaration remains provider-neutral."
+                },
+                "command": {
+                    "description": "Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "default_model": {
+                    "description": "Model key a dispatch on this lane resolves to when it names no model. A lane declaring none has no default, and only its derived model entries are reachable by name.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "effective_input_window": {
+                    "description": "Lowest input size this backend's endpoint is recorded as refusing, so that dispatch gates on the boundary that kills rather than on the declared window alone. Measured from what the lane's own endpoint refused, never declared by the configuration: a run whose last result is an error carrying the endpoint's prompt-too-long text reports the input size it was refused at, and the boundary is the smallest such input recorded for this backend's own model \u2014 a census pooled across models answers with the narrowest neighbour's figure instead. Dispatch refuses an estimate that exceeds either this figure or usable_input_window, naming both, so a node sized inside the band is refused before a worktree is created rather than by the endpoint after three records and no deliverable. Absence means the effective boundary is undeclared, never zero: only the declared window gates such a lane.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "effort": {
+                    "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "effort_spelling": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/EffortSpelling__identifier_optional"
+                            },
+                            {
+                                "description": "The display suffix rendered for an effort level's word.",
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Display suffixes for this backend's effort levels, keyed by the effort word. A declared spelling replaces the derived two-character suffix; an effort with no entry renders its first two characters lowercased. User data; the schema enumerates no effort ladder.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "endpoints_document": {
+                    "description": "Optional path to a document publishing the endpoints this backend's lane is currently serving, as JSON with an `endpoints` list. Availability probing reads it to report whether the lane can serve rather than only that its launcher exists: a document listing at least one endpoint reports serving, one listing none reports not-serving, and an absent declaration or an unreadable or unparsable document reports unknown. User data naming one host's own publication; the schema supplies no path, and the probe never reads it over the network.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "environment": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/EnvironmentVariable__identifier_optional"
+                            },
+                            {
+                                "description": "Value associated with an environment-variable name.",
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Environment variables added when this backend's worker is spawned, keyed by variable name. Values are strings and may reference a variable from the dispatcher's environment using `${NAME}`.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "fallback": {
+                    "description": "Backend to substitute when this one is held on budget. Declared, never inferred: a backend naming no fallback still refuses a held dispatch exactly as one would with this key absent. The substitution is recorded on the run \u2014 the backend asked for, the backend used and the hold that caused it \u2014 so a calibration slice never attributes a fallback run to the backend the caller named. A fallback that is itself held still refuses; this key does not chain into a search across backends.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "gate_document": {
+                    "description": "Optional absolute path to the JSON gate file that decides whether a serving lane will admit work, as the router resolves it: a `paused` boolean and an optional `reason` string. A dispatch whose resolved backend declares this path reads it before creating a pointer or a worktree, and waits rather than launching while `paused` is true or the gate cannot be answered; the declared path is also checked against the lane document's published `router_generation_gate.config_path`, and a mismatch waits. User data naming one host's own gate; the schema supplies no path, and the read never goes over the network.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "input_modalities": {
+                    "description": "Input modalities this backend's model actually receives. Absent means undeclared, never \"every modality\": a lane that does not say it reads images is treated as not reading them, so a profile requiring an image is refused by name rather than routed here and answered from the filename. User data naming the lane's own measured path to the model; the schema supplies no value, and a declaration is a claim about the delivered input rather than about what the attachment flag accepts.",
+                    "items": {
+                        "$ref": "#/$defs/InputModality"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "input_rate_per_million": {
+                    "description": "Public input-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the output price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "lane_document": {
+                    "description": "Optional path to a document a serving lane publishes, carrying the lane's measured state, its remaining headroom, whether a worker binding was observed, the stamp the reading was taken at, and the shelf life the lane itself suggests the reading stays fresh for. Availability probing reads it to report the lane observation beside the serving verdict: a reading older than its own suggested shelf life reports unknown while keeping the figure and its age, and an absent, unreadable or unparsable document reports unknown with a reason and never raises. User data naming one host's own publication; the schema supplies no path, and the probe never reads it over the network.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "launch": {
+                    "$ref": "#/$defs/LaunchMode",
+                    "description": "How this backend's workers are started."
+                },
+                "max_concurrent_runs": {
+                    "description": "Retired and ignored. Reckon enforces no numeric worker cap: a session holds its runs for as long as it needs them, and engine load is bounded by the router's admission gate rather than by a declared ceiling. The slot stays declared only so an existing host file that sets it keeps loading; a value here changes no behaviour. Absent or null is treated exactly as a declared value.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "metered": {
+                    "description": "Whether using this backend consumes a metered provider allowance. Optional operator data; absence leaves the backend's meteredness undeclared rather than inferring it from the backend name or another routing property.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "model": {
+                    "description": "Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "models": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/LaneModelConfig__identifier_optional"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "The models this lane offers, keyed by the short name a caller types. A lane with no models expands to its own named entry alone.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "output_rate_per_million": {
+                    "description": "Public output-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the input price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "placement": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/PlacementConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Optional scheduler placement for this backend's workers. A declared placement wraps the launch in the scheduler invocation rather than replacing it, so the resolved command, its environment and its stream paths are the ones that run. Absent means the login-node launch, which is what keeps every backend that declares none behaving exactly as before."
+                },
+                "sandbox": {
+                    "$ref": "#/$defs/SandboxMode",
+                    "description": "Filesystem blast radius granted to workers of this backend."
+                },
+                "serves_orchestrators": {
+                    "description": "Whether this backend's lane carries this deployment's orchestrators. Declared, never inferred from the backend's name: the orchestrator role is a property of the deployment, so an alias or a backend that renames must both reach a fence that reads this key, and a rule matching on a name breaks the moment an orchestrator runs somewhere else. Absent means the lane declares nothing and is dispatchable as before. A lane declaring true is one whose capacity background work spends against the sessions that dispatch, merge, promote and record, so a lane saturated there stops every session rather than one node.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "session_reuse": {
+                    "description": "Whether a finished worker session can be resumed rather than respawned.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "time_budget": {
+                    "description": "Wall-clock allowance, written as an integer followed by a unit \u2014 `s`, `m` or `h`. It remains the ceiling that bounds a hang: a process that has stopped producing is only caught by elapsed wall clock, never by a token count.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "token_budget": {
+                    "description": "Worker allowance denominated in generated output tokens \u2014 the quantity the same task needs regardless of what else the lane is doing, so a slow lane inside its token budget is not an overrun however long it took. Written as a bare integer of output tokens. Cannot bound a hang, so the wall-clock `time_budget` ceiling stays under its own name.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "usable_input_window": {
+                    "description": "Maximum input tokens this backend can hold after any output reservation has already been removed. Dispatch compares this declared window with a deterministic estimate of the node's standing instructions and named repository files before creating a worktree. Absence means unbounded, never zero: an unknown ceiling cannot justify refusing work.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                }
+            },
+            "required": [],
+            "title": "LaneConfig",
+            "type": "object"
+        },
+        "LaneModelConfig": {
+            "additionalProperties": false,
+            "description": "One model inside a lane, and the routing knobs that apply to it alone. The model key is the short name a caller types; the identifier it launches is `model`.",
+            "properties": {
+                "alias": {
+                    "description": "Display label rendered in the fleet pane in place of this backend's model identifier. The spelling belongs beside the model it shortens and is decided by whoever writes the configuration; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "as_of": {
+                    "description": "Date on which this backend's per-million rates were published. A rate is priced only when dated: one whose `as_of` is older than the declared staleness horizon is returned with its age attached rather than silently priced as current. Optional operator data; a backend declaring rates without a date stays explicitly unpriced.",
+                    "format": "date",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "budget_group": {
+                    "description": "Name shared by backends that draw on the same account quota. A pool is declared, never inferred: identical probe readings or reset times are evidence only that two backends were observed the same way, never that they share a budget, so a backend with no declared group stays ungrouped however alike its siblings read. Optional operator data naming the owner's own pool; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "effort": {
+                    "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "input_rate_per_million": {
+                    "description": "Public input-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the output price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "model": {
+                    "description": "Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "output_rate_per_million": {
+                    "description": "Public output-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the input price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "time_budget": {
+                    "description": "Wall-clock allowance, written as an integer followed by a unit \u2014 `s`, `m` or `h`. It remains the ceiling that bounds a hang: a process that has stopped producing is only caught by elapsed wall clock, never by a token count.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "LaneModelConfig",
+            "type": "object"
+        },
+        "LaneModelConfig__identifier_optional": {
+            "additionalProperties": false,
+            "description": "One model inside a lane, and the routing knobs that apply to it alone. The model key is the short name a caller types; the identifier it launches is `model`.",
+            "properties": {
+                "alias": {
+                    "description": "Display label rendered in the fleet pane in place of this backend's model identifier. The spelling belongs beside the model it shortens and is decided by whoever writes the configuration; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "as_of": {
+                    "description": "Date on which this backend's per-million rates were published. A rate is priced only when dated: one whose `as_of` is older than the declared staleness horizon is returned with its age attached rather than silently priced as current. Optional operator data; a backend declaring rates without a date stays explicitly unpriced.",
+                    "format": "date",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "budget_group": {
+                    "description": "Name shared by backends that draw on the same account quota. A pool is declared, never inferred: identical probe readings or reset times are evidence only that two backends were observed the same way, never that they share a budget, so a backend with no declared group stays ungrouped however alike its siblings read. Optional operator data naming the owner's own pool; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "effort": {
+                    "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "input_rate_per_million": {
+                    "description": "Public input-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the output price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "model": {
+                    "description": "Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "output_rate_per_million": {
+                    "description": "Public output-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the input price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "time_budget": {
+                    "description": "Wall-clock allowance, written as an integer followed by a unit \u2014 `s`, `m` or `h`. It remains the ceiling that bounds a hang: a process that has stopped producing is only caught by elapsed wall clock, never by a token count.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [],
+            "title": "LaneModelConfig",
+            "type": "object"
         },
         "LaunchMode": {
             "description": "How a worker process for a backend is started.",
@@ -1817,6 +2552,23 @@
                 {
                     "type": "null"
                 }
+            ]
+        },
+        "lanes": {
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "$ref": "#/$defs/LaneConfig__identifier_optional"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ]
+            },
+            "description": "A lane is a subscription or host, and the models chosen inside it. Declaring a lane is an alternative to writing one backend block per model: resolution expands each lane back into the backend entries today's callers read, so a lane that declares its models and an equivalent set of backend blocks resolve to the same config. Absent means no lane is declared and resolution is unchanged.",
+            "type": [
+                "object",
+                "null"
             ]
         },
         "local_backend": {
