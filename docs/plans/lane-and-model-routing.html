@@ -19,11 +19,11 @@
   <meta name="plan-sprint" content="S25">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -82,22 +82,17 @@
       <li>a negative control that repeats pressure per model makes the once-per-lane test fail.</li>
     </ul>
 
-    <h2 id="s6" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links="">§6 — The codex models fold into one lane</h2>
-    <p>Move <code>codex-astra</code> and <code>codex-luna</code> into <code>lanes.codex.models</code> in the host flight and the catalogue, retiring their backend blocks exactly as §3 does for claude. <code>codex-terra</code> stays retired; its alias resolves only for history.</p>
-    <p><strong>Write paths:</strong> <code>~/Code/dotfiles/reckon/flight.yaml</code>, <code>docs/state/reckon/model-catalogue.yaml</code>.</p>
-    <p><strong>Done when:</strong> the resolved flight is identical for every project in <code>mounts.json</code>, and <code>--backend codex --model astra</code> resolves to the same model, effort and argv as the retired <code>codex-astra</code>. Negative control: changing astra's effort in the lane declaration makes that equivalence check fail, so an edit that moves nothing cannot pass it.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s6" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links="">§6 — The codex models fold into one lane</h2></header>
+  <p class="landed-summary">The host flight declares one <code>lanes.codex</code> with sol, astra and luna, and the catalogue's duplicate codex entries are retired; the host change landed first, so no scope regressed in between. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s6">full record</a></p>
+</section>
 
-    <h2 id="s7" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§7 — One read-side resolver for old names</h2>
-    <p>One resolver, <code>resolve_name(name) -&gt; (lane, model_key)</code>, reads the catalogue's alias table and is used by the ledger, run records, reviews, <code>review_excluded_backends</code> and the crew views. It accepts backend names, model ids and aliases, because stored reviews already mix those vocabularies. No committed row is rewritten. <code>review_excluded_backends</code> keeps working verbatim and may later be written as lanes.</p>
-    <p><strong>Write paths:</strong> <code>reckon/crew/recovery.py</code>, <code>reckon/ledger.py</code>, <code>reckon/mcp_views.py</code>, <code>reckon/crew/reports.py</code>, <code>tests/test_old_names_resolve.py</code>.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>fixture rows written as <code>claude-opus</code>, and as <code>claude</code> with <code>opus</code>, normalise identically;</li>
-      <li>all seven legacy names are exercised;</li>
-      <li><code>reckon crew ledger</code> and <code>runs</code> report the pair for old rows;</li>
-      <li>the existing check that no routing identifier leaks into <code>reckon/</code> or <code>skills/</code> still passes;</li>
-      <li>a negative control that removes one alias from the table makes that name's fixture row fail to normalise.</li>
-    </ul>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s7" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links="">§7 — One read-side resolver for old names</h2></header>
+  <p class="landed-summary"><code>resolve_name</code> maps backend names, model ids and aliases to a lane-and-model pair across the ledger, run records, reviews and crew views, and no committed row is rewritten. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s7">full record</a></p>
+</section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -149,10 +144,16 @@
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §2</pre>
     <p class="r-fu-outcome"><p>§2 landed at <code>bb9a94e23</code>, together with §1's <code>LANE_MODEL_KEYS</code> follow-on; see the <a href="/reckon/evidence/archive/lane-and-model-routing-landed#s2">s2 evidence</a>.</p></p>
     </article>
-<article class="r-fu" data-id="f-lmr-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-07" data-recommends-skill="/reckon-build lane-and-model-routing §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-lmr-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-07" data-recommends-skill="/reckon-build lane-and-model-routing §3" data-resolved-at="2026-10-07T19:17:58+00:00" data-resolved-by="s25-picker">
     <h4 class="r-fu-title">Build §3 and §7: collapse the claude blocks and add one read-side resolver</h4>
     <div class="r-fu-body"><p>§1 and §2 are on main, so §3 and §7 can run in parallel:</p><ul><li>§3 collapses the host flight's claude blocks into one lane. Its commit lands in the dotfiles repository.</li><li>§7 adds <code>resolve_name</code> over the catalogue's alias table.</li></ul><p>§6 follows §3's pattern for codex. §5 needs lanes declared. §4 waits for <code>every-module-fits-a-worker-window</code> §3 and §4.</p></div>
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §3</pre>
+    <p class="r-fu-outcome"><p>§3 landed in dotfiles <code>c6590f7</code> and §7 at <code>af12dbd54</code>; §6 followed at <code>9ce7876d3</code> with dotfiles <code>6d1f742</code>.</p></p>
+    </article>
+<article class="r-fu" data-id="f-lmr-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-07" data-recommends-skill="/reckon-build lane-and-model-routing §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §5&#x27;s lane-and-model pairs, then build §4</h4>
+    <div class="r-fu-body"><p>§5 is reviewed (105) and merged with main in a scratch worktree; the conflict in <code>pick()</code> was resolved there. Two stage-timing tests still answer Jev by backend name, so node <code>stage-time-tests-answer-by-pair</code> fixes them from that merge. §5 lands with it.</p><p>§4 adds <code>--model</code> to dispatch and writes <code>reckon/cli.py</code> and <code>reckon/crew/dispatch.py</code>. Dispatch it after <code>every-module-fits-a-worker-window</code> §3 and §4.</p><p>Follow-ons from the reviews:</p><ul><li><code>option_key</code> can collide for two backends that share a family and a model.</li><li>The questions overstate the key for a candidate with no model.</li><li>Derived entries carry no per-key provenance.</li><li><code>crew dispatch --repo</code> with a foreign repository raises a traceback instead of a refusal.</li></ul></div>
+    <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §4</pre>
     </article>
 </section>
   <section data-reckon="gates" id="gates" class="r-gates">
@@ -201,7 +202,7 @@
     <div class="r-comment-body"><p>review of run r-20261007T181806743618-jev-offers-lane-model-pairs (head 83e2c2fde, base 1b98398) stored: parsed, six dimensions scored 0..20 (goal_fidelity 11, evidence 17, scope_discipline 19, durability 17, fit 18, reuse 16; total 98), added_failure_count 0; one blocking finding (the rendered options are still keyed by backend name, not the lane:model pairs the section's item 1 requires) and one follow-on (a member-to-group index duplicated from snapshot.py).</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261007T190212520930-review-of-jev-offers-lane-model-pairs" data-who="reckon-build" data-when="2026-10-07T19:10:00.862Z">
-    <div class="r-comment-body"><p>review of run r-20261007T181806743618-jev-offers-lane-model-pairs gained commits (base 83e2c2fde, head 81c7a6cb1) stored to both record paths: parsed, six dimensions 0..20 (goal_fidelity 17, evidence 18, scope_discipline 17, durability 17, fit 18, reuse 18; total 105), added_failure_count 0, added_failure_ids []; the prior blocking finding (options keyed by backend instead of lane:model) is resolved and asserted, two non-blocking follow-on findings recorded (option_key is not injective across backends sharing a command and model; the template&#x27;s key wording overstates the fallback).</p></div>
+    <div class="r-comment-body"><p>review of run r-20261007T181806743618-jev-offers-lane-model-pairs gained commits (base 83e2c2fde, head 81c7a6cb1) stored to both record paths: parsed, six dimensions 0..20 (goal_fidelity 17, evidence 18, scope_discipline 17, durability 17, fit 18, reuse 18; total 105), added_failure_count 0, added_failure_ids []; the prior blocking finding (options keyed by backend instead of lane:model) is resolved and asserted, two non-blocking follow-on findings recorded (option_key is not injective across backends sharing a command and model; the template's key wording overstates the fallback).</p></div>
 </div>
 </section>
 </main>
