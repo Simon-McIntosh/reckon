@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-module-fits-a-worker-window-landed">
+  <meta name="plan-title" content="Every Module Fits A Worker Window — landed record">
+  <meta name="plan-summary" content="Closure synthesis for Every Module Fits A Worker Window: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="every-module-fits-a-worker-window">
+  <meta name="plan-verdict" content="qualified">
+  <title>Every Module Fits A Worker Window — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Every Module Fits A Worker Window — landed record</h1>
+  <p>Closure synthesis for Every Module Fits A Worker Window: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2">
+    <h2>§2 — the module-size guard and the pure-move check</h2>
+    <p>Node <code>module-size-guard-and-move-check</code> (head <code>f0c65f85a</code>, reviewed 112/120) landed three files. <code>tests/test_every_module_fits_a_worker_window.py</code> scans every Python file under <code>reckon/</code> and <code>tests/</code> through <code>_tokens_for_bytes</code> and allowlists exactly the seven modules over 50,000 tokens. Its fixture cases fail on an unlisted file over the bound and on a listed file under it. <code>scripts/check_pure_move.py</code> proves that every non-import top-level statement moved byte-identically into exactly one resulting module, the original's remainder included. <code>tests/test_check_pure_move.py</code> holds it to a correct split and three dirty ones. The gate passed 57 at a scratch merge onto main. Its negative control (ignore a changed line inside a moved function) failed 1 of 4, EXIT=1.</p>
+  </section>
+
+</main>
+</body>
+</html>

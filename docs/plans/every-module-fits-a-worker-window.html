@@ -21,11 +21,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="No plan waits on this one as a whole: §6 of the-fleet-moves-to-a-new-node is held because its node does not fit the local lane, and it can run either on a larger-window lane or once §3 and §4 here land, so neither a blocks edge nor a gate on that section is true.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;}">
   <title>Every Module Fits A Worker Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
+<meta name="plan-impl" content="0.25">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -57,36 +58,12 @@
       nearly every node lands in at least one of them. A node writing any two of the four is refused on the local lane.
       It is then routed to a metered lane or held, as §6 was.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
     <h2 id="s2">§2 — The bound, its guard, and the move check</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>The bound.</strong> No Python file under <code>reckon/</code> or <code>tests/</code> exceeds 50,000
-      estimated tokens, measured by the context-fit check's own estimate (<code>_tokens_for_bytes</code>, 3.5 bytes per
-      token). That is a quarter of a 200k-token window. After the launch-context floor, three modules at the bound and
-      their tests fit the local lane together. A module produced by a split targets 40,000 so it has room to grow.</p>
-    <p><strong>Deliverable 1, the guard.</strong> <code>tests/test_every_module_fits_a_worker_window.py</code> measures
-      every Python file under <code>reckon/</code> and <code>tests/</code> through <code>_tokens_for_bytes</code> and
-      fails on any file above the bound that is not in an allowlist held in the test. The allowlist names the seven
-      modules in §1 and is a ratchet. The test also fails when an allowlisted file is now under the bound, so each
-      split must remove its own entry. A new oversize file, and an allowlisted file that has shrunk, both read red.</p>
-    <p><strong>Deliverable 2, the move check.</strong> <code>scripts/check_pure_move.py</code> takes a base revision,
-      the original module's path and the module paths a split produced. It reads the base module through the
-      repository's one revision reader, <code>reckon.velocity.read_sources(repo, revision, prefix=...)</code>, the reader
-      <code>interface_counts.read_trees</code> is built on. It reads the produced modules from the working tree the way
-      <code>tests/test_staged_write_inventory.py</code> layers working bytes over that reader, and adds no git reader of
-      its own. It walks each module body itself, because <code>interface_counts.definitions</code> lists only functions
-      and classes and a move also carries assignments. Every
-      top-level statement of the base module apart from its imports must appear with byte-identical source in exactly
-      one resulting module, where the resulting modules are the produced ones plus what remains in the original at the
-      head. The script prints a JSON receipt listing each moved statement and where it went, every
-      statement in a produced module that did not come from the base, and the estimated tokens of each produced module.
-      It exits non-zero when a statement is lost, altered or duplicated. Only imports and re-export lines may be new.
-      This turns a review of a 150k-token diff into a review of its receipt and of the few lines that are not moves.
-      <code>tests/test_check_pure_move.py</code> holds the check to a fixture split that passes and to three that must
-      fail: a moved function with one changed line, a function dropped, and a function in two produced modules.</p>
-    <p><strong>Done when</strong> the guard passes at its head with exactly the seven allowlisted modules over the
-      bound; a fixture file over the bound outside the allowlist, and an allowlisted fixture under it, each turn the
-      guard red; <code>tests/test_check_pure_move.py</code> passes, with each of its three failing fixtures exiting
-      non-zero and naming the statement; and both new files add no ruff finding.</p>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">A ratchet test bounds every Python module at 50,000 estimated tokens with the seven oversize modules allowlisted, and scripts/check_pure_move.py proves a split moved every statement unchanged. <a href="s2">full record</a></p>
+</section>
 
     <h2 id="s3">§3 — Split <code>reckon/crew/dispatch.py</code></h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-context="extended" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -195,10 +172,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-emfww-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-emfww-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="2026-10-07T09:43:03+00:00" data-resolved-by="9cf43820">
     <h4 class="r-fu-title">Build the guard and the move check, then split dispatch.py and cli.py</h4>
     <div class="r-fu-body"><p>§2 first. Then the dispatch and cli maps, which can run in parallel, then their moves, which together let §6 of the fleet move run on the local lane.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-module-fits-a-worker-window §2</pre>
+    <p class="r-fu-outcome">Section 2 landed (the guard and the move check) and both the dispatch.py and cli.py maps are merged. The two moves wait for a window with no live claim on their module.</p>
+    </article>
+<article class="r-fu" data-id="f-emfww-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Move dispatch.py, then cli.py, each in a window with no live claim on the module</h4>
+    <div class="r-fu-body"><p>Both maps are on main. Dispatch each move only when <code>crew(view="scopes")</code> shows no live claim on the module, then review, merge and push it in one sitting.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-module-fits-a-worker-window §3</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -208,17 +191,23 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261007T091654541187-review-of-dispatch-split-map" data-who="reckon-build" data-when="2026-10-07T09:31:47.604Z">
     <div class="r-comment-body"><p>Attached a parsed review to run r-20261007T084916687254-dispatch-split-map at head f55383af4: scores durability 18, evidence 19, fit 19, goal_fidelity 19, reuse 18, scope_discipline 20, total 113; added_failure_count 0; two follow-on findings; no blockers.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-20261007-dispatch-map" data-who="reckon-build" data-when="2026-10-07T09:45:00Z">
+    <div class="r-comment-body"><p>Map node <code>dispatch-split-map</code> landed (head <code>f55383af4</code>, reviewed 113/120): <code>docs/evidence/fragments/every-module-fits-a-worker-window/dispatch-split-map.json</code>. It places all 396 non-import top-level statements across eleven sibling modules (309 functions, 12 classes, 74 assignments and one <code>__main__</code> guard). This section's "320 definitions" was counted at an earlier base. The largest module is 34,535 tokens, and there is no module-level edge among the produced modules. The census lists 182 imported names, 82 patched names and 2 source-reading tests, for 102 test files to repoint. The move waits for a window with no live claim on <code>dispatch.py</code>: at 09:45Z four runs from two sessions held one.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T085017765660-cli-split-map" data-who="reckon-build" data-when="2026-10-07T09:10:43Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.html#cli-split-map — 218/218 base statements assigned once; seven module entries at or below 40,000 estimated tokens; five module-level edges with no cycle; 67 test repoint paths.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T091736485313-review-of-cli-split-map" data-who="reckon-build" data-when="2026-10-07T09:38:53.055Z">
     <div class="r-comment-body"><p>independent review stored for r-20261007T085017765660-cli-split-map (cli-split-map, plan every-module-fits-a-worker-window section 4): parsed record, all six dimensions scored 0..20, total 103 (goal_fidelity 18, evidence 15, scope_discipline 20, durability 14, fit 18, reuse 18), reviewed_base_sha 2b8510dd2d3e47915192f68472acb04aea8c52d1, reviewed_head_sha 4ba1e93fb71de1f5ff55be3f124503dfc7b856e9, three follow-on findings and none blocking.</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-20261007-cli-map" data-who="reckon-build" data-when="2026-10-07T09:45:00Z">
+    <div class="r-comment-body"><p>Map node <code>cli-split-map</code> landed (head <code>4ba1e93fb</code>, reviewed 103/120): <code>docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.json</code>. It places all 218 statements across six sibling modules, plus <code>cli.py</code> as the import surface. The largest module is 32,748 tokens. The <code>crew</code> Click group stays in <code>crew_dispatch_commands.py</code> and the follower and run commands register on import. The move must also extend the code-stamp readers in <code>reckon/crew/obligation_snapshot.py</code> and <code>reckon/crew/runs.py</code> to the new sources, and repoint 69 test files. It shares 21 of those with the <code>dispatch.py</code> move, so the two moves run in sequence. The review's follow-ons go to the move brief: re-derive the census at the move's base, and confirm the help text byte for byte.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261007T085632171178-module-size-guard-and-move-check" data-who="reckon-build" data-when="2026-10-07T09:15:33.129Z">
     <div class="r-comment-body"><p>added tests/test_every_module_fits_a_worker_window.py (ratchet: 1,130 files scanned, exactly 7 allowlisted over 50,000 estimated tokens) and scripts/check_pure_move.py + tests/test_check_pure_move.py (receipt proves each non-import statement moved byte-identically; three dirty fixtures exit 1); gate 57 passed EXIT=0.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261007T092208961361-review-of-module-size-guard-and-move-check" data-who="reckon-build" data-when="2026-10-07T09:41:21.671Z">
-    <div class="r-comment-body"><p>review record stored for reviewed run r-20261007T085632171178-module-size-guard-and-move-check at base c60c34573f96f671712a280741166432c232dc20 and head f0c65f85a6f4f205597d988eaff3d239ca24a524; scores goal_fidelity 20, evidence 16, fit 19, reuse 19, scope_discipline 19, durability 19, total 112; §2 done-when independently verified (1,130 modules scanned, exactly the seven allowlisted over the 50,000 bound; guard and move-check negative controls reproduced; ruff clean); two follow-on findings on the reviewed run&#x27;s log headers.</p></div>
+    <div class="r-comment-body"><p>review record stored for reviewed run r-20261007T085632171178-module-size-guard-and-move-check at base c60c34573f96f671712a280741166432c232dc20 and head f0c65f85a6f4f205597d988eaff3d239ca24a524; scores goal_fidelity 20, evidence 16, fit 19, reuse 19, scope_discipline 19, durability 19, total 112; §2 done-when independently verified (1,130 modules scanned, exactly the seven allowlisted over the 50,000 bound; guard and move-check negative controls reproduced; ruff clean); two follow-on findings on the reviewed run's log headers.</p></div>
 </div>
 </section>
 </main>
