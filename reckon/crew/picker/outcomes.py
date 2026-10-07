@@ -361,6 +361,13 @@ def summarize(
             "p90_ms": _percentile(values, 0.9),
         }
 
+    subscription_backends = sorted(
+        {
+            backend
+            for (_project, backend, _role, _spec, _risk, _attribution) in groups
+            if ledger.is_subscription_backend(backend)
+        }
+    )
     return {
         "rules": {
             "success": SUCCESS_RULE,
@@ -408,6 +415,14 @@ def summarize(
         },
         "metered_spend": {
             "codex_runs": codex_runs,
+            "billing": {
+                "subscription_backends": subscription_backends,
+                "rule": (
+                    "a lane whose catalogue budget group is subscription-billed "
+                    "is reported as subscription, not as metered spend; codex_runs "
+                    "carries its burn figures, which are ratios, not dollars"
+                ),
+            },
             "offered_codex_by_burn": {
                 name: {
                     "count": len(burn[name]),

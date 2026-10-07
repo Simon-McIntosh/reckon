@@ -96,6 +96,14 @@ _MAX_RETRY_DELAY_SECONDS = 0.05
 # flight.yaml's local_backend documentation for the concrete host mapping.
 UNMETERED_BACKENDS = frozenset({"clive", "clive-glm"})
 
+# The suffix that marks a catalogue-declared budget group as billed a flat
+# subscription rather than metered per token. The flight schema fixes no
+# separate billing key, so the group name carries it: the catalogue declares
+# ``claude-sub`` and ``codex-sub`` on the backends that draw on them, and a
+# group whose name carries this suffix is subscription-billed, so its lanes'
+# harness cost is not spend.
+SUBSCRIPTION_GROUP_SUFFIX = "-sub"
+
 # Declared schema for completed ledger rows; tests ensure every key a promoted row
 # writes is declared here before merging new measurements.
 RECORD_FIELDS = (
@@ -1997,6 +2005,90 @@ def is_unmetered_backend(backend: str) -> bool:
     return str(backend or "").strip() in UNMETERED_BACKENDS
 
 
+_RESOLVED_FLIGHT_CACHE: dict[tuple[Any, ...], Mapping[str, Any]] = {}
+
+
+def _flight_layer_key() -> tuple[Any, ...]:
+    """A cache key naming the flight layer files and their content identity.
+
+    Keyed on the paths and their mtimes rather than on the resolved object, so
+    a catalogue or host layer rewritten between reads is re-resolved while the
+    repeated lookups within one promotion are cheap. A layer that cannot be
+    stat'd contributes its path alone, which stays stable across those reads —
+    the cache then holds the empty config a missing layer resolves to.
+    """
+    from reckon import flight
+
+    parts: list[Any] = []
+    for path in (
+        flight.shipped_defaults_path(),
+        flight.host_config_path(),
+        flight.model_catalogue_path(),
+    ):
+        resolved = str(path)
+        try:
+            stat = os.stat(path)
+        except OSError:
+            parts.append((resolved, None, None))
+        else:
+            parts.append((resolved, stat.st_mtime_ns, stat.st_size))
+    return tuple(parts)
+
+
+def _resolved_flight_config() -> Mapping[str, Any]:
+    """The flight config reckon runs under, or ``{}`` when it cannot be read.
+
+    Read lazily and defensively: the config is versioned data in the checkout,
+    so a wheel install carries none, and a malformed layer must not turn every
+    ledger write into an error. ``FlightConfigError`` covers a layer that does
+    not parse — a duplicate key or a schema refusal — and falls back to an
+    empty config, which declares no budget group and so leaves every lane
+    metered. Resolving the layers rather than reading the catalogue file alone
+    is what lets a host, project or override value for a backend's
+    ``budget_group`` reach this reader, so which lanes are subscription-billed
+    is a routing decision a project or host can change without editing code.
+    """
+    from reckon import flight
+
+    key = _flight_layer_key()
+    cached = _RESOLVED_FLIGHT_CACHE.get(key)
+    if cached is not None:
+        return cached
+    try:
+        config = flight.resolve().config
+    except (flight.FlightConfigError, OSError, ValueError):
+        config = {}
+    _RESOLVED_FLIGHT_CACHE[key] = config
+    return config
+
+
+def backend_budget_group(backend: str) -> str | None:
+    """The budget group resolved flight config declares for a backend, or ``None``.
+
+    The lookup is delegated to the module that owns the declaration
+    (:mod:`reckon.crew.budget_group`), read over resolved config rather than
+    the catalogue file alone, so a host or project override of a backend's
+    ``budget_group`` is honoured. A backend the config does not name declares
+    no group here, so a lane whose billing nothing states keeps its cost.
+    """
+    from reckon.crew import budget_group as budget_group_module
+
+    return budget_group_module.declared_group_for(_resolved_flight_config(), backend)
+
+
+def is_subscription_backend(backend: str) -> bool:
+    """Whether a named backend draws on a group the catalogue bills as a
+    flat subscription rather than metering it per token.
+
+    The billing rides the catalogue's ``budget_group`` name: a group whose
+    name ends in ``-sub`` (``claude-sub``, ``codex-sub``) is a subscription.
+    The lookup reads the catalogue, so a backend it does not name — or names
+    without a group — is metered and keeps its recorded cost.
+    """
+    group = backend_budget_group(backend)
+    return group is not None and group.endswith(SUBSCRIPTION_GROUP_SUFFIX)
+
+
 def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, Any]:
     """Replace an invented dollar figure with an explicit, flagged absence.
 
@@ -2005,6 +2097,13 @@ def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, 
     Recording it verbatim would make a free lane look like the dearest one
     on any surface that ranks by cost, silently. Nulling it and flagging the
     null keeps the absence visible instead.
+
+    A subscription-billed lane — one drawing on a budget group the catalogue
+    bills as a subscription (``claude-sub``, ``codex-sub``) — is not metered
+    per token either, so its harness cost is treated the same way: nulled,
+    flagged, and preserved under ``harness_reported_cost_usd`` so a reader
+    keeps the figure without it being summed as spend. The unmetered local
+    lane keeps its original shape exactly.
 
     The computed ``notional_cost_usd`` — derived from declared per-million
     rates, never read from the harness — is deliberately outside this flag's
@@ -2015,7 +2114,8 @@ def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, 
     has today: a nulled figure, not a computed one.
     """
     result = dict(budget)
-    if not is_unmetered_backend(backend):
+    subscription = is_subscription_backend(backend)
+    if not subscription and not is_unmetered_backend(backend):
         return result
     reported = (result.get("cost_usd"), result.get("cost_usd_cumulative"))
     if not any(
@@ -2023,6 +2123,15 @@ def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, 
         for value in reported
     ):
         return result
+    if subscription:
+        result["harness_reported_cost_usd"] = result.get("cost_usd")
+        result["harness_reported_cost_usd_cumulative"] = result.get(
+            "cost_usd_cumulative"
+        )
+        result["billing"] = "subscription"
+        group = backend_budget_group(backend)
+        if group:
+            result["budget_group"] = group
     result["cost_usd"] = None
     result["cost_usd_cumulative"] = None
     result["cost_usd_imputed"] = True

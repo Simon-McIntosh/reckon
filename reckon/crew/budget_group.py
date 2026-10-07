@@ -103,6 +103,22 @@ def declared_groups(config: Mapping[str, Any] | None) -> dict[str, list[str]]:
     return members_by_group
 
 
+def declared_group_for(config: Mapping[str, Any] | None, backend: str) -> str | None:
+    """Return one backend's declared group from resolved flight config, or ``None``
+    when it declares none.
+
+    Membership is the same declaration :func:`declared_groups` restates: the
+    backend's ``budget_group`` slot, read from whatever config the caller
+    resolved, so a host, project or override value is honoured over a shipped
+    one. A backend the config does not name, or names without a group, declares
+    no group here.
+    """
+    name = str(backend or "").strip()
+    if not name:
+        return None
+    return _declared_group_by_backend(config).get(name)
+
+
 def ungrouped(config: Mapping[str, Any] | None) -> tuple[str, ...]:
     """Return the backends declaring no budget group, in declaration order.
 

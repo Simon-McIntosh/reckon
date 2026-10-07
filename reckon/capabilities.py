@@ -224,6 +224,23 @@ def _coordinator_input_tokens(run: Mapping[str, Any]) -> float | None:
     return _measured_number(tokens.get("input_tokens"))
 
 
+def _backend_billing(run: Mapping[str, Any]) -> str | None:
+    """The billing class the catalogue declares for a run's backend.
+
+    ``"subscription"`` when the catalogue bills the backend's budget group as a
+    flat subscription, ``"unmetered"`` for a lane the harness's own backend set
+    marks locally served; ``None`` for a lane metered per token. Read from the
+    catalogue at read time, so a committed row written before the declaration
+    existed is reinterpreted rather than rewritten.
+    """
+    backend = str(run.get("backend") or "").strip()
+    if ledger.is_subscription_backend(backend):
+        return "subscription"
+    if ledger.is_unmetered_backend(backend):
+        return "unmetered"
+    return None
+
+
 def _cost_usd(run: Mapping[str, Any]) -> float | None:
     """Read a run's recorded dollar cost, preferring a computed notional figure.
 
@@ -231,11 +248,16 @@ def _cost_usd(run: Mapping[str, Any]) -> float | None:
     run's measured tokens, so it prices whatever model the lane actually
     served and is absent where no dated rate exists — unlike the harness's own
     ``cost_usd``, which prices whatever model name the harness was told to
-    speak and can make a free lane read as the dearest one.  A figure already
-    flagged imputed (``cost_usd_imputed``, a null inserted because the lane is
-    unmetered) is excluded exactly as before, whatever else the block carries:
-    the flag's meaning does not change under the new field.
+    speak and can make a free lane read as the dearest one.  A lane the
+    catalogue bills as a subscription, or marks as locally served, is not
+    charged per token at all, so no dollar figure is spend for it and none is
+    returned.  A figure already flagged imputed (``cost_usd_imputed``, a null
+    inserted because the lane is unbilled) is excluded exactly as before,
+    whatever else the block carries: the flag's meaning does not change under
+    the new field.
     """
+    if _backend_billing(run) is not None:
+        return None
     budget = run.get("budget")
     if not isinstance(budget, Mapping) or budget.get("cost_usd_imputed"):
         return None
@@ -246,7 +268,15 @@ def _cost_usd(run: Mapping[str, Any]) -> float | None:
 
 
 def _cost_usd_imputed(run: Mapping[str, Any]) -> bool:
-    """Whether a run's reported dollar cost was suppressed as unmetered."""
+    """Whether a run's reported dollar cost was suppressed as not spend.
+
+    True when the row carries its own recording's flag, or when the catalogue
+    marks the row's backend as subscription-billed — so a stored row written
+    before the declaration still reads its dollar figure as suppressed rather
+    than as spend.
+    """
+    if _backend_billing(run) is not None:
+        return True
     budget = run.get("budget")
     return bool(isinstance(budget, Mapping) and budget.get("cost_usd_imputed"))
 
@@ -770,6 +800,7 @@ def derive_routing(
                 "orientation_input_tokens": _orientation_input_tokens(run),
                 "cost_usd": _cost_usd(run),
                 "cost_usd_imputed": _cost_usd_imputed(run),
+                "billing": _backend_billing(run),
             }
         )
 
@@ -821,6 +852,8 @@ def derive_routing(
         imputed_cost_samples = sum(
             bool(item["cost_usd_imputed"]) for item in observations
         )
+        billings = {item["billing"] for item in observations}
+        row_billing = next(iter(billings)) if len(billings) == 1 else "mixed"
         rows.append(
             {
                 "model": model,
@@ -828,6 +861,7 @@ def derive_routing(
                 "spec_level": spec_level,
                 "role": role,
                 "samples": samples,
+                "billing": row_billing,
                 "passed": passed,
                 "pass_rate": round(passed / samples, 6),
                 "reworked": reworked,
@@ -854,6 +888,7 @@ def derive_routing(
                     "value": _median_or_none(dollar_costs),
                     "cost_usd_imputed_samples": imputed_cost_samples,
                     "cost_usd_imputed": imputed_cost_samples > 0 and not dollar_costs,
+                    "billing": row_billing,
                 },
                 "per_run_cost": {
                     "label": "immediate spend; a short window can reflect this",
