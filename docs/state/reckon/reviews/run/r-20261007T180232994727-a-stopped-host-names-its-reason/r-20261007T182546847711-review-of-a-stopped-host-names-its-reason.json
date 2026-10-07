@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-07T18:36:26.034Z",
+  "dispatched_at": "2026-10-07T18:26:22Z",
+  "findings": [
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "489",
+      "severity": "follow-on",
+      "text": "follow-on: the reason check precedes the self._stopped early return, so stop() is idempotent for a valid reason but raises ValueError for a bad reason even on an already-stopped host. Every production caller passes a module constant, so this is a residual of the guard's placement, not a defect -- moving the isinstance check after the self._stopped return, or only validating on the first stop, would make idempotence unconditional."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the two SessionHost.stop call sites (session_host.py:592 in the supervise finally, session_host.py:633 in run()'s finally); both pass a reason. The other '.stop()' hits (cli.py:5615 poller.stop, serve.py:3957 _EXECUTED_SOURCE.stop) are unrelated classes.",
+    "diff": "read the two commits gained since review (e5a14599c fix + two tests + evidence fragment; 8ed54b97b pins the refusal regex) against base 242220970.",
+    "done_when": "read \u00a713's done-when; the raised-loop and refusal tests were added since the last review, the two prior tests (bare request_stop, end-of-file) remain, and the manifest's gate logs 26 passed EXIT=0 at head.",
+    "goal": "read \u00a713 and the node brief; the incremental diff makes the unnamed raised-loop exit record _FAILED_REASON and enforces the reason at runtime, both in service of \u00a713's 'every stop path names its reason'.",
+    "manifest": "read; baseline 22 / after 26 both EXIT=0, two-arm negative control EXIT=1, revisions e5a14599c and 8ed54b97b beyond the reviewed base.",
+    "write_paths": "read the declared scope; every path in the incremental diff is inside it."
+  },
+  "justifications": {
+    "durability": "Each new test fails when the guard it exercises is removed (both mutations verified), so the tests fire rather than passing vacuously; the runtime ValueError makes a null or empty reason unrepresentable rather than merely unannotated, which is exactly what the prior review named as the residual.",
+    "evidence": "Independently reproduced on a full scratch copy of head 8ed54b97b (module.__file__ under the scratch tree): the two-file gate logs 26 passed EXIT=0, matching the run's gate.log. The four new tests pass, and two mutations each redden the test they guard -- restoring the unconditional signalled fallback fails test_a_raised_loop_records_a_reason_and_propagates (records 'signalled', not 'host failed'), and removing the isinstance guard fails test_stop_refuses_a_reason_that_is_not_a_non_empty_string (DID NOT RAISE ValueError). The run's own arms agree: baseline.log 22 passed EXIT=0, gate.log 26 passed EXIT=0; added failures 0.",
+    "fit": "_FAILED_REASON (session_host.py:101) sits beside _SIGNALLED_REASON / _REQUEST_ENDED_REASON / _EXITED_REASON with a comment stating the mechanism; the supervise finally comment names the two unnamed exits; no plan, sprint or ticket identifier appears in code, comment or message.",
+    "goal_fidelity": "docs/plans/a-follower-lives-as-long-as-its-session.html:167 (\u00a713) requires every stop path to name a reason. This increment closes the last unnamed exit: the supervise finally at reckon/crew/session_host.py:590-592 records _SIGNALLED_REASON only when a stop was requested and _FAILED_REASON (session_host.py:101) otherwise, and stop() (session_host.py:489-490) refuses a reason that is not a non-empty string before any state change, so host.stop(None) can no longer write stop_reason: null. It also retires the prior review's only follow-on.",
+    "reuse": "the change reuses the existing stop() / _write_record stop_reason machinery and the reason-constant convention; no second stop path, no new abstraction.",
+    "scope_discipline": "git diff --stat 242220970..8ed54b97b changes exactly the three declared write paths (reckon/crew/session_host.py, tests/test_session_host.py, docs/evidence/fragments/.../a-stopped-host-names-its-reason.html); no path outside the brief's scope is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read \u00a713 and the brief; the incremental diff names the raised-loop exit (_FAILED_REASON) and enforces the reason at runtime (ValueError), closing \u00a713's last unnamed stop path.\nVERDICT done_when: read \u00a713's done-when; the two new tests (raised loop, refusal) join the two prior tests (bare stop, end-of-file), and the manifest's gate logs 26 passed EXIT=0 at head.\nVERDICT write_paths: read the declared scope; the diff touches only the declared code, test and evidence paths.\nVERDICT manifest: read; baseline 22 / after 26 EXIT=0, two-arm negative control EXIT=1, revisions e5a14599c and 8ed54b97b.\nVERDICT diff: read e5a14599c (guarded fallback + ValueError + two tests) and 8ed54b97b (refusal regex) against base 242220970.\nCALL_SITES: reckon/crew/session_host.py:592, reckon/crew/session_host.py:633\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/plans/a-follower-lives-as-long-as-its-session.html:167 (\u00a713) requires every stop path to name a reason. This increment closes the last unnamed exit: the supervise finally at reckon/crew/session_host.py:590-592 records _SIGNALLED_REASON only when a stop was requested and _FAILED_REASON (session_host.py:101) otherwise, and stop() (session_host.py:489-490) refuses a reason that is not a non-empty string before any state change, so host.stop(None) can no longer write stop_reason: null. It also retires the prior review's only follow-on.\nSCORE evidence: 20\nJUSTIFICATION evidence: Independently reproduced on a full scratch copy of head 8ed54b97b (module.__file__ under the scratch tree): the two-file gate logs 26 passed EXIT=0, matching the run's gate.log. The four new tests pass, and two mutations each redden the test they guard -- restoring the unconditional signalled fallback fails test_a_raised_loop_records_a_reason_and_propagates (records 'signalled', not 'host failed'), and removing the isinstance guard fails test_stop_refuses_a_reason_that_is_not_a_non_empty_string (DID NOT RAISE ValueError). The run's own arms agree: baseline.log 22 passed EXIT=0, gate.log 26 passed EXIT=0; added failures 0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 242220970..8ed54b97b changes exactly the three declared write paths (reckon/crew/session_host.py, tests/test_session_host.py, docs/evidence/fragments/.../a-stopped-host-names-its-reason.html); no path outside the brief's scope is touched.\nSCORE durability: 20\nJUSTIFICATION durability: Each new test fails when the guard it exercises is removed (both mutations verified), so the tests fire rather than passing vacuously; the runtime ValueError makes a null or empty reason unrepresentable rather than merely unannotated, which is exactly what the prior review named as the residual.\nSCORE fit: 20\nJUSTIFICATION fit: _FAILED_REASON (session_host.py:101) sits beside _SIGNALLED_REASON / _REQUEST_ENDED_REASON / _EXITED_REASON with a comment stating the mechanism; the supervise finally comment names the two unnamed exits; no plan, sprint or ticket identifier appears in code, comment or message.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change reuses the existing stop() / _write_record stop_reason machinery and the reason-constant convention; no second stop path, no new abstraction.",
+  "review_run_id": "r-20261007T182546847711-review-of-a-stopped-host-names-its-reason",
+  "reviewed_base_sha": "242220970ddda915bbc96d4dd5f370b77fa0fb34",
+  "reviewed_head_sha": "8ed54b97b4720f8f305c17d2f415cbfb0ec2deff",
+  "reviewed_run_id": "r-20261007T180232994727-a-stopped-host-names-its-reason",
+  "rubric": "code_review",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T18:33:30+00:00",
+  "total": 120
+}
