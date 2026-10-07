@@ -379,16 +379,29 @@ def test_validate_layer_refuses_shapes_outside_the_review_key_table():
 
 
 def test_the_schema_cleaner_and_validator_read_one_table():
-    assert set(flight.REVIEW_OWNED_KEYS) == {"plan_change_threshold"}
+    assert {"plan_change_threshold", "review_need_threshold"} <= set(
+        flight.REVIEW_OWNED_KEYS
+    )
     cleaned = flight._schema_view(
         {
             "review": {
-                "plan_change_threshold": 0.3,
+                **dict.fromkeys(flight.REVIEW_OWNED_KEYS, 0.3),
                 "tiers": {},
             }
         }
     )
     assert cleaned["review"] == {"tiers": {}}
+
+
+def test_the_review_need_threshold_is_read_like_the_change_threshold():
+    assert flight.review_need_threshold(None) == flight.DEFAULT_REVIEW_NEED_THRESHOLD
+    assert (
+        flight.review_need_threshold({"review": {"review_need_threshold": 0.8}}) == 0.8
+    )
+    assert (
+        flight.review_need_threshold({"review": {"review_need_threshold": 2}})
+        == flight.DEFAULT_REVIEW_NEED_THRESHOLD
+    )
 
 
 def test_rule_nine_names_the_coverage_predicate():

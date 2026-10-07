@@ -138,6 +138,13 @@ review:
   # whatever their size. Reckon-owned: the generated schema does not carry it,
   # and the flight module's own validator checks its shape.
   plan_change_threshold: 0.30
+  # The judged probability at which a change to reviewed work owes a new
+  # review. A review-need judge reads the diff since the review, what the
+  # review checks and the goals the work serves, and answers how likely the
+  # change is to alter a verdict the review reached. When the judge cannot
+  # answer, the word-share threshold above decides instead. Reckon-owned, like
+  # the threshold above.
+  review_need_threshold: 0.5
 
 # The plan-review gate ships advisory, whatever every other gate here does: a
 # repository adopting reckon carries no stored plan reviews, and an enforced

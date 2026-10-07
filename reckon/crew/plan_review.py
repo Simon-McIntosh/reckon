@@ -66,6 +66,7 @@ from reckon import _plan_html
 from reckon._plan_html import DOCUMENT_UNIT, landed_section_ids
 from reckon._store import write_json_atomically
 from reckon.crew import review as _review_store
+from reckon.crew import review_need
 
 # Reviewer-text parsing is owned by reckon.crew.review, so the code-review and
 # plan-report grammars share one line reader rather than each defining their
@@ -660,6 +661,15 @@ def _edit_share(reviewed: str, present: str) -> float:
     return (larger - matching) / larger
 
 
+def _plan_goals(plan: Mapping[str, Any] | str | Path) -> dict[str, str]:
+    """The goals a plan's work serves, as the review-need judge is shown them."""
+    state = _as_state(plan)
+    return {
+        "plan": str(state.get("title") or ""),
+        "summary": str(state.get("summary") or ""),
+    }
+
+
 def review_coverage(
     project: str,
     plan_slug: str,
@@ -671,18 +681,22 @@ def review_coverage(
     """Return contributing reviews, uncovered units and their measured change.
 
     A unit is covered by a stored review when it existed in that review and its
-    authored prose still matches: exactly, through the digest recomputed from
-    the review's snapshot, or within the change threshold, when the review's
-    snapshot carries the prose to measure; a review without a snapshot has only
-    its stored digests, so the threshold is read as zero for it. A unit absent
-    from the review is never covered, a section the review's snapshot did not
-    declare implementable counts as new, and a changed done-when leaves its
-    section uncovered whatever the fraction — those three revisions are material
-    beside the threshold.
+    authored prose still matches, exactly or through the digest recomputed from
+    the review's snapshot. A section whose prose changed since the newest review
+    that read it is judged by :mod:`reckon.crew.review_need`, which reads the
+    diff, what the review checks and the plan's goals, and covers the section
+    when the change is judged not to need a new review. A section the judge
+    leaves unanswered falls back to the word-share rule: covered when its
+    done-when is unchanged and its words changed by less than the change
+    threshold. A review without a snapshot has only its stored digests, so
+    neither applies to it. A unit absent from the review is never covered, a
+    section the review's snapshot did not declare implementable counts as new,
+    and the document unit, whose digest carries decisions, gates and
+    dependencies, is covered only by an exact match.
 
-    The threshold comes from the project's own resolved flight config when the
-    caller passes none, so a host or project layer that retunes it changes every
-    caller's verdict rather than only a caller handed a config.
+    Both thresholds come from the project's own resolved flight config when the
+    caller passes none, so a host or project layer that retunes one changes
+    every caller's verdict rather than only a caller handed a config.
     """
     from reckon import flight
     from reckon.roadmap import implementable_sections
@@ -730,8 +744,14 @@ def review_coverage(
     digests = _section_digests(content)
     present_prose = _prose_texts(content)
     covered: set[str] = set()
-    contributing = []
+    contributing: list[dict[str, Any]] = []
     newest_evidence: dict[str, float | None] = {}
+    # A section whose prose changed since a review read it is judged rather than
+    # counted: the newest review that read it supplies the text the review-need
+    # judge compares with the present one. The word-share rule is kept beside it
+    # for a section the judge leaves unanswered.
+    judged: dict[str, tuple[dict[str, Any], str]] = {}
+    within_share: dict[str, dict[str, Any]] = {}
     for record in sorted(records, key=lambda item: int(item.get("plan_version") or 0)):
         evidence = _snapshot_evidence(project, plan_slug, record)
         if evidence is None:
@@ -774,10 +794,11 @@ def review_coverage(
                 covered.add(identity)
                 matched = True
                 continue
-            if snapshot_prose is None:
+            if snapshot_prose is None or identity not in snapshot_prose:
                 continue
-            reviewed_text = snapshot_prose.get(identity, "")
+            reviewed_text = snapshot_prose[identity]
             present_text = present_prose.get(identity, "")
+            judged[identity] = (record, reviewed_text)
             if _done_when_paragraph(reviewed_text) != _done_when_paragraph(
                 present_text
             ):
@@ -785,10 +806,40 @@ def review_coverage(
             share = _edit_share(reviewed_text, present_text)
             newest_evidence[identity] = share
             if share < threshold:
-                covered.add(identity)
-                matched = True
+                within_share[identity] = record
         if matched:
             contributing.append(record)
+    pending = {
+        identity: entry for identity, entry in judged.items() if identity not in covered
+    }
+    if pending:
+        verdicts = review_need.judge(
+            [
+                review_need.Change(
+                    identity=identity,
+                    reviewed=reviewed_text,
+                    present=present_prose.get(identity, ""),
+                    goal=_done_when_paragraph(present_prose.get(identity, "")) or "",
+                )
+                for identity, (_record, reviewed_text) in sorted(pending.items())
+            ],
+            subject=review_need.PLAN_SUBJECT,
+            goals=_plan_goals(content),
+            threshold=flight.review_need_threshold(config),
+        )
+        for identity, (record, _reviewed_text) in pending.items():
+            verdict = verdicts.get(identity)
+            if verdict is not None and verdict.required is not None:
+                if verdict.required:
+                    continue
+                cover = record
+            elif identity in within_share:
+                cover = within_share[identity]
+            else:
+                continue
+            covered.add(identity)
+            if all(cover is not item for item in contributing):
+                contributing.append(cover)
     uncovered = outstanding - covered
     changes = {identity: newest_evidence.get(identity) for identity in uncovered}
     return contributing, uncovered, changes

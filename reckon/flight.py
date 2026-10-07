@@ -100,8 +100,10 @@ DEFAULT_LIGHT_TIME_BUDGET = "10m"
 # the two cannot drift.
 REVIEW_OWNED_KEYS: dict[str, str] = {
     "plan_change_threshold": "unit_interval",
+    "review_need_threshold": "unit_interval",
 }
 DEFAULT_PLAN_CHANGE_THRESHOLD = 0.30
+DEFAULT_REVIEW_NEED_THRESHOLD = 0.5
 
 # The unit each budget suffix is worth in seconds. A budget is written as an
 # integer followed by one of these letters, and the reader converts it once so
@@ -702,15 +704,30 @@ def plan_review_change_threshold(config: Mapping[str, Any] | None) -> float:
     config — falls back to the shipped default rather than failing, and a value
     of the wrong shape is treated the same way rather than widening coverage.
     """
-    review = (config or {}).get(REVIEW_KEY)
-    value = (
-        review.get("plan_change_threshold", DEFAULT_PLAN_CHANGE_THRESHOLD)
-        if isinstance(review, Mapping)
-        else DEFAULT_PLAN_CHANGE_THRESHOLD
+    return _review_unit_interval(
+        config, "plan_change_threshold", DEFAULT_PLAN_CHANGE_THRESHOLD
     )
-    shape = REVIEW_OWNED_KEYS["plan_change_threshold"]
-    if not _review_owned_key_shape_is_valid(shape, value):
-        return DEFAULT_PLAN_CHANGE_THRESHOLD
+
+
+def review_need_threshold(config: Mapping[str, Any] | None) -> float:
+    """The probability at which a change since a review owes a new one.
+
+    The judged probability that a change could alter a verdict the review
+    reached; at or above it a new review is owed. Read and defaulted exactly as
+    :func:`plan_review_change_threshold` is.
+    """
+    return _review_unit_interval(
+        config, "review_need_threshold", DEFAULT_REVIEW_NEED_THRESHOLD
+    )
+
+
+def _review_unit_interval(
+    config: Mapping[str, Any] | None, key: str, default: float
+) -> float:
+    review = (config or {}).get(REVIEW_KEY)
+    value = review.get(key, default) if isinstance(review, Mapping) else default
+    if not _review_owned_key_shape_is_valid(REVIEW_OWNED_KEYS[key], value):
+        return default
     return float(value)
 
 

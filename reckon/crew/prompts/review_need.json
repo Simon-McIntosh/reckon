@@ -1,0 +1,26 @@
+{
+  "instructions": "A review already read this {subject} before the change shown in `changes[{index}].diff`, which compares the text that review read with the text present now. Decide whether that change needs a new review: whether it could alter a verdict the review reached against `review_checks`, or adds content of a kind the review never read that bears on `goals` or on `changes[{index}].goal`.",
+  "criteria": {
+    "true": "The change alters what the work does, decides, depends on or measures: a new, removed or reordered step; a changed mechanism, interface, file, dependency, decision or scope; a done-when that now measures something else, or a negative control added or lost; or new content of that kind the review never read.",
+    "false": "The change leaves what the work does, decides, depends on and measures as the review read it: wording, spelling, formatting, clearer phrasing with the same meaning, added citations, evidence links or landing notes, status bookkeeping, or a restatement of content the review already read."
+  },
+  "checks": {
+    "plan": [
+      "the plan is wired: its dependencies, informs and gates are present and correct",
+      "each done-when is measurable and names a declared negative control",
+      "each node has one goal",
+      "evidence and gate logs sit on durable paths",
+      "claims are cited and every anchor resolves",
+      "code naming carries no plan labels, ticket numbers or changelog prose",
+      "the reasoning holds",
+      "existing machinery is reused rather than rebuilt, behind deep modules rather than thin wrappers"
+    ],
+    "run": [
+      "the change does what the run's goal states and its done-when measures",
+      "nothing outside the goal regresses and no contract breaks",
+      "the tests prove the behaviour, with a negative control that fails without it",
+      "the change stays within the run's declared write paths",
+      "names and comments follow the repository's rules"
+    ]
+  }
+}
