@@ -16,6 +16,7 @@ default is suppression, so arming is opted into rather than out of.
 from __future__ import annotations
 
 import contextlib
+import importlib
 import json
 import os
 import shlex
@@ -721,6 +722,29 @@ def _publish_worker_scratch_root(tmp_path_factory):
         os.environ.pop(WORKER_SCRATCH_ROOT_ENV, None)
     else:
         os.environ[WORKER_SCRATCH_ROOT_ENV] = previous
+
+
+# Dispatch refuses when the scratch root's filesystem is short of space, and
+# the session places that root under pytest's base temp, so every test that
+# dispatches would read the free space of whatever disk holds the base temp:
+# on a shared node whose /tmp other processes have filled, the whole dispatch
+# population fails on the host rather than the code. The check is answered for
+# every test except the module that drives it with a fabricated filesystem.
+# A dispatch a test drives through a subprocess still reads the real disk.
+_HEADROOM_SUBJECT_MODULES = frozenset({"test_dispatch_refuses_without_tmp_headroom"})
+
+
+@pytest.fixture(autouse=True)
+def _answered_scratch_headroom(request, monkeypatch):
+    """Answer the scratch headroom check unless it is the test's own subject."""
+    if request.module.__name__.rsplit(".", 1)[-1] in _HEADROOM_SUBJECT_MODULES:
+        return
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    monkeypatch.setattr(
+        dispatch_module,
+        "require_worker_scratch_headroom",
+        lambda config: {"free_bytes": 1, "floor_bytes": 0},
+    )
 
 
 def test_temp_config_home(
