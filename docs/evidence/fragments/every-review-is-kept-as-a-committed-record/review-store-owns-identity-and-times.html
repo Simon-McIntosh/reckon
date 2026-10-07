@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="The review store owns a record's identity, times and what it accepts">
+  <meta name="plan-summary" content="store_committed_review resolves a record's dispatch and completion times from the run records, the record's own carried stamps, or the dispatch instant its review run id encodes, recording the stage under times_source and never the store clock; a plan review resolves the crew run its report directory's dispatch sidecar names; the store refuses a body that is not a review; and the legacy id for a record naming no review run is derived by one public function the import script calls.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The review store owns a record's identity, times and what it accepts | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The review store owns a record's identity, times and what it accepts</h1>
+
+    <section id="review-store-owns-identity-and-times-anchor">
+      <h2>Measure</h2>
+      <table>
+        <thead>
+          <tr><th>fact</th><th>value</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>gate</td>
+            <td><code>tests/test_review_store_owns_identity_and_times.py</code> with
+              <code>tests/test_import_host_reviews.py</code>,
+              <code>tests/test_review_records_have_a_committed_root.py</code>,
+              <code>tests/test_review_record_committed_at_promotion.py</code>,
+              <code>tests/test_plan_review_store.py</code></td>
+          </tr>
+          <tr><td>head arm</td><td>40 passed, 2 failed, EXIT=1</td></tr>
+          <tr><td>base arm</td><td>29 passed, 2 failed, EXIT=1</td></tr>
+          <tr>
+            <td>added failures</td>
+            <td>0 — the two head failures
+              (<code>test_metadata_only_edit_keeps_the_fingerprint</code>,
+              <code>tests/test_plan_review_store.py::test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it</code>)
+              are the base arm's failing ids, unrelated to this node</td>
+          </tr>
+          <tr>
+            <td>negative control</td>
+            <td>2 failed
+              (<code>test_a_run_review_with_no_run_record_takes_the_encoded_dispatch_time</code>,
+              <code>test_a_plan_review_with_no_run_record_takes_its_own_stamps</code>),
+              9 passed, EXIT=1 — the head arm fails neither</td>
+          </tr>
+          <tr>
+            <td>times sources</td>
+            <td><code>run-record</code>, <code>record</code>, <code>run-id</code>,
+              written under <code>times_source</code>; the store clock is never
+              substituted</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Changed paths</h2>
+      <ul>
+        <li><code>reckon/crew/review.py</code> — <code>run_id_dispatch_time</code>,
+          <code>resolve_record_times</code>, <code>carries_review_material</code>,
+          <code>names_a_review_subject</code>, <code>derived_legacy_review_run_id</code>;
+          the material guard in <code>store_review</code> and
+          <code>store_committed_review</code></li>
+        <li><code>reckon/crew/plan_review.py</code> — the material guard in
+          <code>store_plan_review</code></li>
+        <li><code>scripts/import_host_reviews.py</code> — derives the legacy id and
+          reads review material through the store's public functions</li>
+        <li><code>tests/test_review_store_owns_identity_and_times.py</code></li>
+        <li><code>tests/test_review_records_have_a_committed_root.py</code> — records
+          given review material so the guard admits them, and
+          <code>times_source</code> asserted</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
