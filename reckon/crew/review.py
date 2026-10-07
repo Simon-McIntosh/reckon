@@ -1797,46 +1797,6 @@ def store_review(
     return path
 
 
-def _run_record_times_found(
-    project: str,
-    run_id: str,
-    *,
-    root: str | Path | None = None,
-) -> tuple[str, str, bool]:
-    """Return ``(dispatched_at, completed_at, found)`` for a run's own record.
-
-    ``found`` reports whether a record — a committed per-run file or a live
-    pointer — was present for the run at all, independent of whether it carried
-    a stamp. A caller that must tell a run whose record exists yet records no
-    time (a defect) from one with no record anywhere (a time never recorded)
-    reads this flag; the stamps themselves are the same ``run_record_times``
-    returns.
-    """
-    if not run_id:
-        return "", "", False
-    from reckon import ledger
-
-    try:
-        path = ledger.run_path(project, run_id, root)
-        record = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, ledger.LedgerError):
-        record = None
-    if not isinstance(record, Mapping):
-        pointer = _reviewed_run_pointer(run_id)
-        if pointer is None:
-            return "", "", False
-        return (
-            str(pointer.get("created_at") or ""),
-            str(pointer.get("completed_at") or ""),
-            True,
-        )
-    return (
-        str(record.get("dispatched_at") or ""),
-        str(record.get("completed_at") or ""),
-        True,
-    )
-
-
 def run_record_times(
     project: str,
     run_id: str,
@@ -1850,12 +1810,34 @@ def run_record_times(
     rather than the moment the review file was stored. A run not yet promoted
     has no committed per-run file, so the live pointer stands in and supplies
     both stamps it carries: its ``created_at`` dispatch stamp and its
-    ``completed_at`` completion stamp. A run carrying no stamp yields an empty
-    string for it rather than the store's own clock, because a defaulted time
-    is a time nobody recorded.
+    ``completed_at`` completion stamp.
+
+    A record whose times resolve from no source is committed as ``unknown``:
+    with neither a committed file nor a live pointer, or with a source that
+    carries no stamp, both entries are empty strings rather than the store's
+    own clock, because a defaulted time is a time nobody recorded.
     """
-    dispatched, completed, _found = _run_record_times_found(project, run_id, root=root)
-    return dispatched, completed
+    if not run_id:
+        return "", ""
+    from reckon import ledger
+
+    try:
+        path = ledger.run_path(project, run_id, root)
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, ledger.LedgerError):
+        record = None
+    if not isinstance(record, Mapping):
+        pointer = _reviewed_run_pointer(run_id)
+        if pointer is None:
+            return "", ""
+        return (
+            str(pointer.get("created_at") or ""),
+            str(pointer.get("completed_at") or ""),
+        )
+    return (
+        str(record.get("dispatched_at") or ""),
+        str(record.get("completed_at") or ""),
+    )
 
 
 def run_id_dispatch_time(run_id: str) -> str:
