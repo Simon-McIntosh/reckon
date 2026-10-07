@@ -1303,14 +1303,14 @@ def _session_host_runtime_root() -> Path | None:
     return Path(scratch) if scratch else None
 
 
-def _session_host_fifo() -> Path | None:
-    """Resolve the calling Claude session's host FIFO, or None when there is none.
+def _session_host_owner() -> tuple[int, str] | None:
+    """The calling Claude process as ``(pid, start tick)``, or None without one.
 
     The host belongs to this session's Claude process, not to the crew session
-    name, so the path is built from ``CLAUDE_PID`` and that process's start tick
-    -- the pair that stays fixed across ``/clear``. A caller not running under
-    Claude Code, or one whose Claude process the kernel no longer reports, has
-    no host to ask.
+    name, so every path that names it -- the request FIFO and the census record
+    -- is built from this pair, which stays fixed across ``/clear``. A caller
+    not running under Claude Code, or one whose Claude process the kernel no
+    longer reports, has no host to name.
     """
     harness, _session, _transcript = _coordinator_runtime()
     if harness != "claude-code":
@@ -1324,45 +1324,38 @@ def _session_host_fifo() -> Path | None:
     start = _process_start_time(pid)
     if not start:
         return None
+    return pid, start
+
+
+def _session_host_fifo() -> Path | None:
+    """Resolve the calling Claude session's host FIFO, or None when there is none."""
+    owner = _session_host_owner()
     root = _session_host_runtime_root()
-    if root is None:
+    if owner is None or root is None:
         return None
+    pid, start = owner
     return root / SESSION_HOST_DIRECTORY / f"{pid}-{start}.fifo"
 
 
-# The host writes its census of running children to a directory under the
-# config home, one record per session, named for the Claude process and its
-# kernel start tick. Dispatch reads that record to tell a follower the host runs
-# from one a coordinator armed by hand.
-SESSION_HOST_STATE_DIRECTORY = "session-hosts"
-
-
+# The host writes its census of running children to a directory the host module
+# owns, one record per session, named for the Claude process and its kernel
+# start tick. Dispatch reads that record to tell a follower the host runs from
+# one a coordinator armed by hand.
 def _session_host_record_path() -> Path | None:
     """The calling Claude session's host census record, or None without a host.
 
-    The path is the pair that stays fixed across ``/clear`` -- the Claude
-    process's pid and its kernel start tick -- under the config home's
-    session-hosts directory, the directory the host writes its census to. A
-    caller not running under Claude Code, or whose Claude process the kernel no
-    longer reports, has no record to read.
+    Both the directory and the filename suffix are the host module's own, so the
+    name dispatch reads is the name the host wrote rather than a second spelling
+    of it, and an override that moves the host's records moves this reader with
+    them.
     """
-    harness, _session, _transcript = _coordinator_runtime()
-    if harness != "claude-code":
+    owner = _session_host_owner()
+    if owner is None:
         return None
-    try:
-        pid = int(str(os.environ.get("CLAUDE_PID") or ""))
-    except ValueError:
-        return None
-    if pid <= 1:
-        return None
-    start = _process_start_time(pid)
-    if not start:
-        return None
-    # The suffix is the host module's own, so the name dispatch reads is the
-    # name the host wrote rather than two spellings that agree today.
-    from reckon.crew.session_host import RECORD_SUFFIX
+    from reckon.crew.session_host import RECORD_SUFFIX, _state_dir
 
-    return crew_home() / SESSION_HOST_STATE_DIRECTORY / f"{pid}-{start}{RECORD_SUFFIX}"
+    pid, start = owner
+    return _state_dir() / f"{pid}-{start}{RECORD_SUFFIX}"
 
 
 def _session_host_runs_follower(
