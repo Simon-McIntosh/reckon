@@ -56,6 +56,24 @@ argument, its FIFO name and its parent chain. The session-end check, that no
 still to be read after this session ends.</p>
   </section>
 
+  <section id="s8-session-end">
+    <h2>§8 — the proof session ended, read from /proc</h2>
+    <p>Read on node 98dci4-clu-2018 after the proof session, Claude process 42863, ended. Its host's last record write, at 13:09:07Z, already carried <code>children: []</code>. The host's own stop line goes to its stderr, which the ending session took with it, and its cache log is the children's stderr sink and is empty, so nothing on disk states when the host found its owner gone.</p>
+<table>
+  <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>No orphaned host or follower</td><td>A coordinator <code>/proc</code> snapshot at 13:16:08Z found 18 <code>crew host</code> and <code>crew follow</code> processes, every environment readable, none naming <code>CLAUDE_PID=42863</code> or follower owner 42863. The independent unfenced census <code>r-20261007T131906667502-session-end-census</code> at 13:31Z read <code>owner42863_survivors=0</code>; the same classifier for the live owner 2496700 counted 11 (negative control). Review 116/120, no blocking finding.</td></tr>
+    <tr><td>The one-minute point</td><td>Not sampled. The earliest <code>/proc</code> reading is seven minutes after the host's last write; the record shows the children already stopped at that write.</td></tr>
+    <tr><td>Link</td><td><code>reckon doctor</code> run from each of the 15 mounted projects exits 0 and prints <code>reckon-crew-host → /home/ITER/mcintos/Code/reckon/plugins/crew-host</code> in all 15.</td></tr>
+    <tr><td>Probe link</td><td>No <code>reckon-monitor-probe</code> entry under <code>~/.claude/skills</code>.</td></tr>
+    <tr><td>Per-project sync</td><td>Not run. The one personal-scope link serves every project's sessions (lead ruling, 2026-10-07).</td></tr>
+    <tr><td>A second live session</td><td>In Claude process 2496700 the census dispatch at 13:19:06Z reported <code>delivery: host</code>, <code>session_attached: true</code> and an empty arming line with no Monitor call. Entry point 2497126 became <code>reckon crew host</code> under the same pid and started <code>crew follow --project reckon --session follower-proof</code> (pid 2570178). Every later transition of four runs arrived as a ticker-only notification labelled <code>reckon crew</code>.</td></tr>
+  </tbody>
+</table>
+<p><strong>Correction to the record above.</strong> It says <code>/proc/&lt;pid&gt;/environ</code> is unreadable for the host processes because they are non-dumpable. That does not hold: an unfenced reader read every crew process's environment. The earlier census ran inside the worker fence, and its bwrap user namespace is what denied the read. The 483 unreadable environments on the node belong to other users (469) or to this user's sshd, sd-pam and zombie processes (14); the census counted the 14 without listing them, which its review recorded as a follow-on.</p>
+<p><strong>Stale FIFOs.</strong> Three of five FIFOs were stale: 42863's, and those of two sessions that never dispatched (2484216 and 2489693). The entry point traps no signal, so a monitor stopped at session end never reaches its own removal; §9 now covers that path.</p>
+  </section>
+
 </main>
 </body>
 </html>

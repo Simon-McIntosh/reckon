@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.83">
-<meta name="plan-version" content="38">
+<meta name="plan-impl" content="0.67">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -123,24 +123,11 @@
   <p class="landed-summary">Landed: <code>skills/reckon-build/SKILL.md</code>, the Claude Code harness reference and sprint-orchestration §15 and §17 name session-host delivery first and the Monitor fallback second (<code>--lifetime 29m</code>, <code>9m</code> under <code>-p</code>), guarded by an ordering test; the global follower rule carries the same qualification (dotfiles <code>5168bcd</code>). Review 107/120. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/skills-name-session-host-delivery.html">full record</a></p>
 </section>
 
-    <h2 id="s8" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§8 — Prove it in a live session</h2>
-    <p><strong>Deliverable.</strong> One live coordinator session in this repository with the plugin linked:
-      dispatch a node without calling the Monitor tool, watch its rows arrive, keep the session for more than an
-      hour, then end it. Record the evidence in
-      <code>docs/evidence/archive/a-follower-lives-as-long-as-its-session-landed.html</code>. Once that holds, remove the probe link. The plugin link is one personal-scope symlink,
-      <code>~/.claude/skills/reckon-crew-host</code>, which <code>reckon sync</code> points at this checkout's
-      <code>plugins/crew-host</code> whichever project it runs for, so the one link already serves every
-      repository's sessions. Syncing the other mounted projects would copy their UI files and change nothing
-      about the link, so it is not part of this section (lead ruling, 2026-10-07).</p>
-    <p><strong>Done when</strong> the evidence shows: the dispatched run's rows in the pane with no Monitor call
-      and only ticker lines; rows still arriving more than 60 minutes after the first dispatch, with no re-arm; no
-      <code>crew host</code> or <code>crew follow</code> process whose environment names the session's
-      <code>CLAUDE_PID</code>, read from <code>/proc</code> rather than from the session host's record, one minute
-      after it ends. The read is made outside the worker fence, because a fenced worker's bwrap namespace cannot
-      read another process's environment. Its negative control is the same reading for a live session's
-      <code>CLAUDE_PID</code>, which must find that session's host, so the zero is a measured one. The evidence
-      also shows no <code>reckon-monitor-probe</code> entry under <code>~/.claude/skills</code>, and
-      <code>reckon doctor</code> clean for the link in every mounted project.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s8" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="">§8 — Prove it in a live session</h2></header>
+  <p class="landed-summary">Proved in two live sessions: host delivery with no Monitor call, rows at 66 min and 2 h 24 min with no re-arm, and after the proof session ended an unfenced <code>/proc</code> census found <code>owner42863_survivors=0</code> (live-owner control 11). <code>reckon doctor</code> is valid for the link from all 15 mounted projects and the probe link is gone; per-project sync was ruled unnecessary. Review 116/120. <a href="s8-session-end">full record</a></p>
+</section>
 
     <h2 id="s9">§9 — The session host removes its FIFO when it ends</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -161,6 +148,16 @@ FIFO gone; and the session-host census reports <code>stale_fifos=0</code> after 
 and one that did not have both ended. Each test fails on the current code, which is its negative control:
 the host test because nothing removes the FIFO once the entry point has become <code>reckon crew host</code>,
 and the entry-point test because no trap removes it on <code>TERM</code>.</p>
+
+    <h2 id="s10">§10 — A dry run predicts the host&#x27;s delivery</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> <code>reckon crew dispatch --dry-run</code> from a session whose host is waiting reports the delivery the real dispatch would get, rather than refusing <code>watcher-required</code>, and writes nothing to the host's FIFO. Measured 2026-10-07: the dry run of <code>session-end-census</code> refused <code>watcher-required</code> (exit 8), and the identical real dispatch was admitted with <code>delivery: host</code>, because the dry run reaches the watcher admission without asking the host. A coordinator that validates with a dry run is told to arm a Monitor watch it does not need.</p>
+<p><strong>Done when</strong> a test in <code>tests/test_dispatch_session_host.py</code> runs a dry-run dispatch for an unattached session whose calling Claude process has a waiting host FIFO, finds no <code>watcher-required</code> refusal and a predicted delivery of <code>host</code>, and finds no byte written to the FIFO. The same test fails on the current code with <code>watcher-required</code>, which is its negative control.</p>
+
+    <h2 id="s11">§11 — The session host records when it stopped</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> When <code>reckon crew host</code> stops, its final record write carries the time it stopped and why: its owner ended, or it was signalled. Measured 2026-10-07: the only on-disk trace of the proof session's host stopping was an <code>updated_at</code> with <code>children: []</code>. Its stop line went to stderr, which the ending session took, so the gap between owner end and child stop could not be bounded from disk.</p>
+<p><strong>Done when</strong> a test in <code>tests/test_session_host.py</code> ends a fake owner and finds the record's stop reason reading owner ended, with a stop time no later than one poll interval after the owner exited. A second test signals the host and finds the reason reading signalled. Both fail on the current code, which writes neither field, and that is their negative control.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -200,11 +197,17 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-afl-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build a-follower-lives-as-long-as-its-session" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afl-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build a-follower-lives-as-long-as-its-session" data-resolved-at="2026-10-07T13:50:53+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build the session-length follower host</h4>
     <div class="r-fu-body"><p>Plan authored with the probe's measurements. Next: build §3 to §7, then prove it
           in a live session under §8.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session</pre>
+    <p class="r-fu-outcome">§3–§7 landed and §8 proved the session-length follower in two live sessions; three gaps the proof measured remain as §9, §10 and §11</p>
+    </article>
+<article class="r-fu" data-id="f-afl-002" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-07T13:50:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Close the gaps the live proof measured</h4>
+    <div class="r-fu-body"><p>§9 removes stale FIFOs from both the entry point and the host, §10 makes a dry run predict host delivery, and §11 records when a host stopped. §9 and §11 both edit the host's stop path, so they run in sequence.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §9</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -285,6 +288,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261007T133955499546-review-of-session-end-census" data-who="reckon-build" data-when="2026-10-07T13:45:17.017Z">
     <div class="r-comment-body"><p>Independent review of the session-end census: six dimensions scored (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 20, reuse 20; total 116 of 120), zero blocking findings, one follow-on (the unreadable-environ population is bounded by inspection, not a recorded per-process listing).</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20261007T1350-s8" data-who="reckon-build" data-when="2026-10-07T13:50:00Z">
+    <div class="r-comment-body">gate session-end-census passed: owner42863_survivors=0 unreadable_environ=0 control_survivors=11 doctor_link_valid=15/15 stale_fifos=3; review 116/120; section closed</div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261007T081324657243-review-of-skills-name-session-host-delivery" data-who="reckon-build" data-when="2026-10-07T08:24:24.150Z">
     <div class="r-comment-body"><p>§7 review attached to r-20261007T074228172964-skills-name-session-host-delivery at head 8362b726d (base 9cf1c0ef5): parsed record, six dimensions scored 0..20 each (goal_fidelity 16, evidence 17, scope_discipline 19, durability 15, fit 19, reuse 19; total 105), added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own base-gate.log (2 failing ids) and head-gate.log (1, a strict subset); three follow-on findings, none blocking.</p></div>
