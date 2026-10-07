@@ -11326,6 +11326,19 @@ def watch_ticker(
 
     def _wait(interval: float) -> bool:
         """Sleep, bounded by the lease; report whether the seat has lapsed."""
+        remaining = _lease_remaining()
+        if remaining is not None and remaining <= 0:
+            return True
+        if sleeper is not time.sleep:
+            # A supplied sleeper may advance a simulated clock or return
+            # immediately. One call remains one poll interval in that case.
+            sleeper(
+                max(0.0, min(interval, remaining) if remaining is not None else interval)
+            )
+            if not runs.renew_watch_host_lease(project):
+                return True
+            remaining = _lease_remaining()
+            return remaining is not None and remaining <= 0
         left = interval
         while True:
             remaining = _lease_remaining()

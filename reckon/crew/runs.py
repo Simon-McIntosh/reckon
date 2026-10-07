@@ -156,6 +156,22 @@ def watch_host_lease(project: str):
     )
 
 
+def _fresh_watch_holder(project: str, record: Mapping[str, Any]):
+    """Use a remote lease, but clear a local holder confirmed dead by this host."""
+    lease = watch_host_lease(project)
+    holder = lease.holder()
+    if holder is None or holder.host != socket.gethostname():
+        return holder
+    if (record.get("host"), record.get("pid")) == (holder.host, holder.pid):
+        dead = record_process_alive(record) is False
+    else:
+        dead = process_alive(holder.pid) is False
+    if dead:
+        lease.release_holder(holder)
+        return None
+    return holder
+
+
 def watch_stream_path(project: str) -> Path:
     """Stable append-only transition stream for one project's watcher."""
     return watch_lock_path(project).with_suffix(".events")
@@ -2402,14 +2418,18 @@ def producer_live(project: str) -> bool:
     """
     lease = watch_host_lease(project)
     holder = lease.holder()
-    if holder is not None or lease.path.exists():
-        return holder is not None
+    if holder is not None and holder.host != socket.gethostname():
+        return True
     path = watch_lock_path(project)
     if not path.is_file():
+        if holder is not None and process_alive(holder.pid) is False:
+            lease.release_holder(holder)
         return False
     with path.open("rb") as handle:
         record = _read_watch_record(handle)
     if _seat_names_a_foreign_host(record) or not record:
+        if holder is not None and process_alive(holder.pid) is False:
+            lease.release_holder(holder)
         # A foreign or erased seat names a pid this host cannot judge — another
         # kernel's, or none at all. Delivery must follow the stream rather than
         # such a record, so a stream that moved within the stall window reads
@@ -2427,6 +2447,11 @@ def producer_live(project: str) -> bool:
     if not _seat_host_is_local(record) and _seat_stream_fresh(project, record):
         return True
     _erase_confirmed_dead_seat(path, record)
+    if holder is not None and (record.get("host"), record.get("pid")) == (
+        holder.host,
+        holder.pid,
+    ):
+        lease.release_holder(holder)
     return False
 
 
@@ -2455,8 +2480,14 @@ def _record_producer_running(
     if project:
         lease = watch_host_lease(project)
         holder = lease.holder()
-        if holder is not None or lease.path.exists():
-            return holder is not None
+        if holder is not None and holder.host != socket.gethostname():
+            return True
+        if (
+            holder is None
+            and lease.path.exists()
+            and _seat_names_a_foreign_host(record)
+        ):
+            return False
     if _seat_names_a_foreign_host(record):
         return _stream_says_alive(record, project)
     pid = record.get("pid")
@@ -2596,26 +2627,17 @@ def _take_watch_seat_fd() -> Any:
 
 @contextmanager
 def _project_watch_claim(project: str, stall_window: str):
-    """Claim the shared host lease and local watcher lock, if both are free."""
+    """Claim the local seat path, then the lease shared between hosts."""
     path = watch_lock_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
     if project in _WATCH_HOST_LEASES:
         with path.open("a+b") as occupied:
             yield False, _read_watch_record(occupied)
         return
-    lease = watch_host_lease(project)
-    if not lease.claim():
-        with path.open("a+b") as occupied:
-            yield False, _read_watch_record(occupied)
-        return
     inherited = _take_watch_seat_fd()
+    handle = inherited if inherited is not None else path.open("a+b")
+    lease = None
     try:
-        handle = inherited if inherited is not None else path.open("a+b")
-    except BaseException:
-        lease.release()
-        raise
-    try:
-        previous = _read_watch_record(handle)
         if inherited is None:
             deadline = time.monotonic() + _CLAIM_CONTENTION_SECONDS
             while True:
@@ -2627,6 +2649,21 @@ def _project_watch_claim(project: str, stall_window: str):
                         yield False, _read_watch_record(handle)
                         return
                     time.sleep(0.01)
+
+        lease = watch_host_lease(project)
+        holder = lease.holder()
+        if (
+            inherited is None
+            and holder is not None
+            and holder.host == socket.gethostname()
+        ):
+            # This path's lock is ours. A local predecessor can still hold an
+            # unlinked inode, but it no longer owns the seat a new arm opens.
+            lease.release_holder(holder)
+        if not lease.claim():
+            yield False, _read_watch_record(handle)
+            return
+        previous = _read_watch_record(handle)
 
         # Adopt the log the arming named before the record is written, so a
         # reader who finds this seat dead finds the producer's own last words
@@ -2711,7 +2748,8 @@ def _project_watch_claim(project: str, stall_window: str):
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
     finally:
         handle.close()
-        lease.release()
+        if lease is not None:
+            lease.release()
 
 
 class _FollowerRegistration:
@@ -3210,8 +3248,7 @@ def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
     # producer as absent, and one that sees it held reads a dead process as
     # live — each the wrong way to decide a dispatch guard. The running answer
     # is the one the guard may trust.
-    lease = watch_host_lease(project)
-    holder = lease.holder()
+    holder = _fresh_watch_holder(project, registration)
     if holder is not None:
         if (registration.get("host"), registration.get("pid")) != (
             holder.host,
@@ -3279,8 +3316,7 @@ def project_watch_visibility(
             registration = _read_watch_record(handle)
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
-    lease = watch_host_lease(project)
-    holder = lease.holder()
+    holder = _fresh_watch_holder(project, registration)
     if holder is not None:
         seat_held = True
         if (registration.get("host"), registration.get("pid")) != (
@@ -3297,7 +3333,7 @@ def project_watch_visibility(
     # repaired state (an empty registration) rather than the stale one.
     if (
         registration
-        and holder is None
+        and (holder is None or holder.host == socket.gethostname())
         and _record_producer_dead(registration, project=project)
         and _reconcile_watch_record(project, registration)
     ):
