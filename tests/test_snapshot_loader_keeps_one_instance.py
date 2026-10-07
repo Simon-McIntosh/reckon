@@ -35,9 +35,18 @@ def test_both_loaders_keep_the_one_imported_snapshot_module() -> None:
     )
     assert hook_view is imported, "the hook's loader returned a second instance"
     assert cli_view is imported, "the cli's loader returned a second instance"
-    assert sys.modules["reckon.crew"].obligation_snapshot is imported, (
-        "the package attribute no longer names the registered module"
-    )
+    # The producer reaches the module the way runs.py does, through the
+    # package. That route resolves to the registered instance whether or not
+    # the package attribute is bound yet: a module a loader registered by path
+    # before the facade was imported is never bound onto it, which makes the
+    # attribute's presence a matter of load order. A bound attribute must still
+    # name the registered module, since a second instance there would split the
+    # process.
+    from reckon.crew import obligation_snapshot as producer_view
+
+    assert producer_view is imported, "the producer's route reaches a second instance"
+    bound = getattr(sys.modules["reckon.crew"], "obligation_snapshot", imported)
+    assert bound is imported, "the package attribute names a second instance"
 
 
 def test_the_hook_loads_by_path_without_the_crew_facade() -> None:
