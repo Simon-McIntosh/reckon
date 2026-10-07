@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured from the reviewed run: its manifest records baseline_suite and after_suite both null and names no base gate log, so its own added-failure count is stored null rather than a fabricated zero. I supplied the missing base arm myself in scratch extractions (git archive, outside the reviewed worktree): base b8cc7f0f6 (tests/test_fleet_node.py) 38 passed EXIT=0; head 6cdb51f2a (tests/test_fleet_node.py tests/test_fleet_claude.py) 42 passed EXIT=0. The +4 is the two added hold-script cases and the two new pane cases; no test fails at head that passes at base, so added failures are zero.",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:814 fleet_node.generate_hold_script"
+  ],
+  "completed_at": "2026-10-07T07:52:37.768Z",
+  "dispatched_at": "2026-10-07T07:29:43Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-fleet-moves-to-a-new-node/fleet-processes-get-bounded-thread-pools.html",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the landed fragment sets evidence-verdict pass for section 3, but that section's third done-when - one recorded measurement on the new node, after the migration section, showing a numpy import holding fewer threads than the 28-wide pool measured on clu-2018 - is by design deferred to the migration work and is not produced by this node; a reader of the fragment alone cannot see that the section is not yet fully closed. The reviewed manifest states this deferral, and the measurement needs a node this work does not provision, so producing it here is out of scope."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "verified the one production call site of the changed generator: reckon/cli.py:814 fleet_node.generate_hold_script; the fleet pane path is the standalone bin/fleet-claude, not a generate_hold_script caller",
+    "diff": "read against base b8cc7f0f6: 6cdb51f2a adds DEFAULT_THREAD_CAP and THREAD_CAP_VARIABLES and wires the five exports into generate_hold_script via format(thread_caps=...), adds the same five exports to bin/fleet-claude, adds two hold-script cases and a new pane-test module; git diff --stat b8cc7f0f6..6cdb51f2a lists exactly the manifest's five changed files",
+    "done_when": "the brief's first two items are delivered and I reproduced each; the plan's third item is a migration-dependent measurement and is correctly not produced here",
+    "goal": "the goal is that a fleet process gets a bounded thread pool: every compute-library thread pool a fleet process opens is capped at one declared width, keeping a value the submitting environment already sets, at the two places every fleet process inherits its environment from",
+    "manifest": "read; it records head 6cdb51f2a and base b8cc7f0f6, test_logs gate.log (42 passed EXIT=0), a declared negative-control.log whose last line is EXIT=1, and a negative_control_note explaining why only the hold-script case reddens; baseline_suite and after_suite are both null",
+    "write_paths": "the node's manifest declares four files plus the evidence fragment and a figures directory; the diff over b8cc7f0f6..6cdb51f2a touches exactly those five files and the figures directory was not needed"
+  },
+  "justifications": {
+    "durability": "the declared negative control fires and I reproduced it independently: removing the OMP_NUM_THREADS line from the module's THREAD_CAP_VARIABLES in a scratch copy of head reddens exactly tests/test_fleet_node.py::test_the_hold_script_caps_every_compute_library_thread_pool (1 failed, 41 passed, EXIT=1), an id the head arm passes. The tests pin both behaviours the done-when names, on both scripts: test_the_hold_script_caps_every_compute_library_thread_pool asserts the exact ordered export list against a literal EXPECTED_THREAD_CAPS so a name dropped from the declared set fails; test_a_thread_cap_already_set_survives_the_hold_scripts_export runs the generated exports under a clean bash with OMP preset to 3 and reads the values back; the two pane cases run bin/fleet-claude with a stub claude and read the environment the stub actually received, the environment built from scratch; and where the hold script keeps a set value and defaults the rest. Residual: the chosen single mutation exercises the hold-script path only, because the pane script carries its own literal five-name list, so the pane cases' firing is set by the module constant they iterate rather than by that mutation.",
+    "evidence": "the branch's declared gate is tests/test_fleet_node.py tests/test_fleet_claude.py. I re-ran both arms in scratch extractions outside the reviewed worktree: head 6cdb51f2a 42 passed EXIT=0, base b8cc7f0f6 (tests/test_fleet_node.py) 38 passed EXIT=0, so the change adds only passing tests. I reproduced the declared negative control in a scratch copy of head: 1 failed, 41 passed, EXIT=1, matching negative-control.log's failing id. The changed generator also has a second caller, tests/test_ensure_holds_one_reservation.py, which uses evaluate rather than assert on the script text; I ran it against head and it is green (4 passed, EXIT=0), so the changed script body breaks nothing outside the declared gate. The reviewed manifest leaves baseline_suite and after_suite null, so its own delta is unmeasured; I store that as null rather than a fabricated zero and supply the base arm myself. gate.log names revision 6cdb51f2a, the tree and the literal command, and its own summary line is 42 passed in 2.12s with EXIT=0.",
+    "fit": "the change follows the module's existing idiom exactly: ACCOUNT_ENV, CPUS_ENV and MEMORY_ENV already sit above as declared constants, so DEFAULT_THREAD_CAP and THREAD_CAP_VARIABLES join them; the comments state the mechanism (compute libraries size themselves from the node's cores unless the environment caps them) with no version, plan, ticket or gate identifier and no attribution; the test names describe what the changed code measures. The five names appear in three places - the module constant, the bin/fleet-claude literal, and the EXPECTED_THREAD_CAPS literal - but each serves a distinct guard and drift is caught in both directions by the combination of the two test modules.",
+    "goal_fidelity": "all of the plan's first two done-when items are delivered. (1) generate_hold_script now emits, in the batch step every node process inherits from, an export of each of the five variables as a parameter expansion with a default of 8 (reckon/crew/fleet_node.py:55-63, 154-163, 174-186), which both exports the declared default and keeps a value the submitting environment already sets, and the two hold-script cases assert both. (2) bin/fleet-claude:44-46 exports the same five with an indirect parameter expansion keeping any value already set, and tests/test_fleet_claude.py runs it with a stub claude and reads the environment the stub received, asserting the default and the keep-what-is-set behaviour. The width 8 matches the plan's thread-cap decision (docs/plans/the-fleet-moves-to-a-new-node.html:473, data-choice of 8). (3) The third done-when, a recorded measurement on the new node after the migration section, is a separate migration-dependent node and is correctly not produced here, as the manifest states.",
+    "reuse": "the change shares one source of truth for the five names and the width: THREAD_CAP_VARIABLES and DEFAULT_THREAD_CAP are imported by tests/test_fleet_claude.py rather than re-listed, and generate_hold_script builds its exports from the same tuple. The one duplication, the five-name list literal in bin/fleet-claude, is forced by the script being standalone shell that cannot import Python, and the pane test couples the script back to the module constant by iterating THREAD_CAP_VARIABLES. No new dependency and no parallel helper were added.",
+    "scope_discipline": "git diff --stat b8cc7f0f6..6cdb51f2a lists exactly five files - bin/fleet-claude, reckon/crew/fleet_node.py, tests/test_fleet_node.py, tests/test_fleet_claude.py and docs/evidence/fragments/the-fleet-moves-to-a-new-node/fleet-processes-get-bounded-thread-pools.html - every one inside the manifest's declared write paths; the declared figures directory was not created because this node's done-when names no figure (its only graphical item is the migration measurement). The reviewed base b8cc7f0f6 is an ancestor of head 6cdb51f2a and head is a descendant of the base with no unrelated commits."
+  },
+  "project": "reckon",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T065825928483-fleet-processes-get-bounded-thread-pools.at-6cdb51f2af569ebc092fd6e6aa9ee2bc50e67f1d.json",
+  "review_run_id": "r-20261007T072906538986-review-of-fleet-processes-get-bounded-thread-pools",
+  "reviewed_base_sha": "b8cc7f0f622a96640b0d5320ce81a7b280b33466",
+  "reviewed_head_sha": "6cdb51f2af569ebc092fd6e6aa9ee2bc50e67f1d",
+  "reviewed_run_id": "r-20261007T065825928483-fleet-processes-get-bounded-thread-pools",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T07:34:00.000000+00:00",
+  "total": 117
+}
