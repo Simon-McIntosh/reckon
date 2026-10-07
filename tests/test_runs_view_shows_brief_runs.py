@@ -175,8 +175,17 @@ def test_a_live_brief_run_shows_a_null_plan_and_its_digest(
 
 
 def test_the_skill_retires_the_rule_and_names_the_brief_carrier() -> None:
+    # The build skill keeps its core in SKILL.md and its detail in references/,
+    # so the rule is read across both, as a coordinator loading the skill does.
+    skill_dir = ROOT / "skills" / "reckon-build"
     skill = " ".join(
-        (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text().split()
+        "\n".join(
+            [skill_dir.joinpath("SKILL.md").read_text()]
+            + [
+                path.read_text()
+                for path in sorted((skill_dir / "references").glob("*.md"))
+            ]
+        ).split()
     )
 
     assert RETIRED_RULE not in skill
