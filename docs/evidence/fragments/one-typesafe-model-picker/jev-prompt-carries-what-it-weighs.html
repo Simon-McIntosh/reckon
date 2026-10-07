@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="Jev's prompt carries every fact it is asked to weigh">
+  <meta name="plan-summary" content="The picker's state and questions are assembled as Python mappings and rendered through a single tojson each, so every field the guidance names reaches Jev, a missing fact renders null rather than a measured zero, and hostile text in a node's goal, done-when or comment stays a string value.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,picker,jev,prompt,evidence">
+  <title>Jev's prompt carries every fact it is asked to weigh | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="jev-prompt-carries-what-it-weighs" data-node="jev-prompt-carries-what-it-weighs" data-reckon="landed" data-when="2026-10-07">
+  <h2>Jev's prompt carries every fact it is asked to weigh</h2>
+  <p id="jev-prompt-carries-what-it-weighs-landing">The picker now builds one Python mapping for
+  <code>state.jinja</code> and one for the question criteria and glossary, rendering each through a
+  single <code>tojson</code>; a candidate carries its lane and model as separate fields beside its
+  backend name with <code>days_to_reset</code> and its budget source, age, stale flag and banked
+  reset (null when absent), the node carries its write-path count and whether it declares a
+  negative control, and the questions explain the names Jev weighs. Representative
+  9-candidate state: 1175&nbsp;tokens before, 1478&nbsp;tokens after (bound 1500). Gate
+  <code>tests/test_picker*.py</code> + <code>tests/test_dispatch_speed.py</code> + the new test file:
+  base 192 passed, head 201 passed, 0 added failures. Commit <code>5b859be9c</code>.</p>
+</article>
+</body>
+</html>
