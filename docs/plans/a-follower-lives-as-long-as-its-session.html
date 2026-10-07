@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.91">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="54">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -352,7 +352,10 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>Landed at merge <code>be78fede</code>. <code>dispatch._session_host_fifo_path</code> composes the FIFO path from an owner pair. <code>_session_host_fifo</code> and <code>session_host._fifo_path</code> both call it, so <code>{pid}-{start}.fifo</code> is spelled once under <code>reckon/</code>; the bash entry point keeps its own spelling. Gate: 22 passed, and the equality test fails when one side's format is changed alone. Population of 9 session-host test modules: 137 passed at base, 138 at the merged head, 0 added. Review 120/120. Its one follow-on is that the head gate log names the base revision, because the gate ran before the commit; the reviewer reproduced the result at <code>173caf43</code>. Section closed by tick. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/one-spelling-of-the-host-fifo-path.html">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261007T170555017051-one-spelling-of-the-host-fifo-path" data-who="reckon-build" data-when="2026-10-07T17:16:42.039Z">
-    <div class="r-comment-body"><p>one spelling of the host FIFO path — dispatch&#x27;s _session_host_fifo_path composes {runtime}/reckon-session-host/{pid}-{start}.fifo from an owner pair, both _session_host_fifo and session_host._fifo_path call it, the format appears once under reckon/, and the equality test passes at head (22 passed) and fails under the declared mutation (EXIT=1)</p></div>
+    <div class="r-comment-body"><p>one spelling of the host FIFO path — dispatch's _session_host_fifo_path composes {runtime}/reckon-session-host/{pid}-{start}.fifo from an owner pair, both _session_host_fifo and session_host._fifo_path call it, the format appears once under reckon/, and the equality test passes at head (22 passed) and fails under the declared mutation (EXIT=1)</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261007T172750168972-review-of-one-spelling-of-the-host-fifo-path" data-who="reckon-build" data-when="2026-10-07T17:36:33.987Z">
+    <div class="r-comment-body"><p>independent review of r-20261007T170555017051-one-spelling-of-the-host-fifo-path stored: status=parsed, 6 dimensions scored (goal_fidelity 20, evidence 20, scope_discipline 20, durability 20, fit 20, reuse 20), total 120, reviewed_base_sha a1074fb6, reviewed_head_sha 173caf43, added_failure_count null (unmeasured: the reviewed manifest names no base gate log), added_failure_ids []</p></div>
 </div>
 </section>
 </main>

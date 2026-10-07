@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite and no after_suite gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1341",
+    "reckon/crew/session_host.py:221"
+  ],
+  "completed_at": "2026-10-07T17:36:33.987Z",
+  "dispatched_at": "2026-10-07T17:28:26Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-follower-lives-as-long-as-its-session/one-spelling-of-the-host-fifo-path.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's header names rev a1074fb6 (the base) rather than the reviewed commit 173caf43, because the gate ran with the change uncommitted and HEAD still at the base; the manifest's tests line repeats that revision. A reader cannot tie the recorded head arm to the commit from the log alone. The result was independently reproduced at 173caf43 (the equality test passes), so this is a traceability gap, not a false claim."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit 173caf43 against base a1074fb6; one commit, four files, all inside the declared scope (dispatch.py, session_host.py, tests/test_session_host.py, the fragment).",
+    "done_when": "the plan's \u00a712 done-when is met: dispatch._session_host_fifo_path(owner) composes from an owner pair, both _session_host_fifo there (dispatch.py:1341) and session_host._fifo_path (session_host.py:221) call it, the format {pid}-{start}.fifo appears once under reckon/ (dispatch.py:1333), and tests/test_session_host.py::test_both_readers_name_one_fifo_for_the_same_owner asserts the two readers agree and fails when one side's format is changed alone.",
+    "goal": "the node goal is \u00a712: one Python function names a session host's request FIFO from its owner pair and both readers call it; reckon/crew/dispatch.py:1319 defines _session_host_fifo_path and shares the composition that session_host._fifo_path previously spelled itself.",
+    "manifest": "read; it records the gate over tests/test_session_host.py and tests/test_dispatch_session_host.py at 22 passed EXIT=0, a negative control at gate-negative.log (2 failed EXIT=1), and the single-format count of 1 under reckon/.",
+    "write_paths": "read the manifest's declared paths; git show --stat 173caf43 lists reckon/crew/dispatch.py, reckon/crew/session_host.py, tests/test_session_host.py and the evidence fragment, all inside those paths."
+  },
+  "justifications": {
+    "durability": "test_both_readers_name_one_fifo_for_the_same_owner pins the invariant and reddens when session_host re-inlines a divergent format; I reproduced both arms in a scratch extraction of 173caf43 (head: 1 passed EXIT=0; the underscore mutation: 1 failed EXIT=1). The bash entry point's own spelling (plugins/crew-host/bin/crew-host:39, $owner_pid-$owner_start.fifo) is unguarded, but the plan carves it out because it cannot import Python, and it composes the same runtime/reckon-session-host/{pid}-{start}.fifo path.",
+    "evidence": "the manifest's tests line records the two-file gate at 22 passed EXIT=0 and gate-negative.log holds the 2-failed negative control; I reproduced the equality test at 173caf43 (1 passed) and its declared mutation (1 failed) in a scratch tree, confirming the guard fires.",
+    "fit": "_session_host_fifo_path names the mechanism (a FIFO path composed from an owner pair) and its docstring states why the composition lives in dispatch; no plan, sprint or ticket identifier appears in any added name, comment or test id.",
+    "goal_fidelity": "dispatch.py:1319 _session_host_fifo_path takes an owner pair and returns root / SESSION_HOST_DIRECTORY / f\"{pid}-{start}.fifo\"; _session_host_fifo (dispatch.py:1336) and session_host._fifo_path (session_host.py:204) both route through it, so the host removes exactly the file a dispatch writes.",
+    "reuse": "the shared function is placed in dispatch, keeping the existing lazy-import direction (session_host imports dispatch deferred), and reuses the existing SESSION_HOST_DIRECTORY and _session_host_runtime_root rather than forking a third spelling; no new module.",
+    "scope_discipline": "git show --stat 173caf43 lists only the four declared paths; the path's format and location are unchanged and the bash entry point still names the same file."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: a1074fb6d94835eb325bfb4272887bd74cca3866\nreviewed_head_sha: 173caf43743b66f0d57f5632170f3c06767dafe3\nVERDICT goal: the node goal is \u00a712: one Python function names a session host's request FIFO from its owner pair and both readers call it; reckon/crew/dispatch.py:1319 defines _session_host_fifo_path and shares the composition that session_host._fifo_path previously spelled itself.\nVERDICT done_when: the plan's \u00a712 done-when is met: dispatch._session_host_fifo_path(owner) composes from an owner pair, both _session_host_fifo there (dispatch.py:1341) and session_host._fifo_path (session_host.py:221) call it, the format {pid}-{start}.fifo appears once under reckon/ (dispatch.py:1333), and tests/test_session_host.py::test_both_readers_name_one_fifo_for_the_same_owner asserts the two readers agree and fails when one side's format is changed alone.\nVERDICT write_paths: read the manifest's declared paths; git show --stat 173caf43 lists reckon/crew/dispatch.py, reckon/crew/session_host.py, tests/test_session_host.py and the evidence fragment, all inside those paths.\nVERDICT manifest: read; it records the gate over tests/test_session_host.py and tests/test_dispatch_session_host.py at 22 passed EXIT=0, a negative control at gate-negative.log (2 failed EXIT=1), and the single-format count of 1 under reckon/.\nVERDICT diff: read commit 173caf43 against base a1074fb6; one commit, four files, all inside the declared scope (dispatch.py, session_host.py, tests/test_session_host.py, the fragment).\nCALL_SITES: reckon/crew/dispatch.py:1341, reckon/crew/session_host.py:221\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: dispatch.py:1319 _session_host_fifo_path takes an owner pair and returns root / SESSION_HOST_DIRECTORY / f\"{pid}-{start}.fifo\"; _session_host_fifo (dispatch.py:1336) and session_host._fifo_path (session_host.py:204) both route through it, so the host removes exactly the file a dispatch writes.\nSCORE evidence: 20\nJUSTIFICATION evidence: the manifest's tests line records the two-file gate at 22 passed EXIT=0 and gate-negative.log holds the 2-failed negative control; I reproduced the equality test at 173caf43 (1 passed) and its declared mutation (1 failed) in a scratch tree, confirming the guard fires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 173caf43 lists only the four declared paths; the path's format and location are unchanged and the bash entry point still names the same file.\nSCORE durability: 20\nJUSTIFICATION durability: test_both_readers_name_one_fifo_for_the_same_owner pins the invariant and reddens when session_host re-inlines a divergent format; I reproduced both arms in a scratch extraction of 173caf43 (head: 1 passed EXIT=0; the underscore mutation: 1 failed EXIT=1). The bash entry point's own spelling (plugins/crew-host/bin/crew-host:39, $owner_pid-$owner_start.fifo) is unguarded, but the plan carves it out because it cannot import Python, and it composes the same runtime/reckon-session-host/{pid}-{start}.fifo path.\nSCORE fit: 20\nJUSTIFICATION fit: _session_host_fifo_path names the mechanism (a FIFO path composed from an owner pair) and its docstring states why the composition lives in dispatch; no plan, sprint or ticket identifier appears in any added name, comment or test id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the shared function is placed in dispatch, keeping the existing lazy-import direction (session_host imports dispatch deferred), and reuses the existing SESSION_HOST_DIRECTORY and _session_host_runtime_root rather than forking a third spelling; no new module.\nFINDING docs/evidence/fragments/a-follower-lives-as-long-as-its-session/one-spelling-of-the-host-fifo-path.html:1 follow-on: the head gate log's header names rev a1074fb6 (the base) rather than the reviewed commit 173caf43, because the gate ran with the change uncommitted and HEAD still at the base; the manifest's tests line repeats that revision. A reader cannot tie the recorded head arm to the commit from the log alone. The result was independently reproduced at 173caf43, so this is a traceability gap, not a false claim.\n",
+  "review_run_id": "r-20261007T172750168972-review-of-one-spelling-of-the-host-fifo-path",
+  "reviewed_base_sha": "a1074fb6d94835eb325bfb4272887bd74cca3866",
+  "reviewed_head_sha": "173caf43743b66f0d57f5632170f3c06767dafe3",
+  "reviewed_run_id": "r-20261007T170555017051-one-spelling-of-the-host-fifo-path",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T17:34:00.082592+00:00",
+  "total": 120
+}
