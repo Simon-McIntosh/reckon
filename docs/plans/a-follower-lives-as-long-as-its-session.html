@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.83">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -127,8 +127,11 @@
     <p><strong>Deliverable.</strong> One live coordinator session in this repository with the plugin linked:
       dispatch a node without calling the Monitor tool, watch its rows arrive, keep the session for more than an
       hour, then end it. Record the evidence in
-      <code>docs/evidence/archive/a-follower-lives-as-long-as-its-session-landed.html</code>. Once that holds, run
-      <code>reckon-sync</code> for every mounted project and remove the probe link.</p>
+      <code>docs/evidence/archive/a-follower-lives-as-long-as-its-session-landed.html</code>. Once that holds, remove the probe link. The plugin link is one personal-scope symlink,
+      <code>~/.claude/skills/reckon-crew-host</code>, which <code>reckon sync</code> points at this checkout's
+      <code>plugins/crew-host</code> whichever project it runs for, so the one link already serves every
+      repository's sessions. Syncing the other mounted projects would copy their UI files and change nothing
+      about the link, so it is not part of this section (lead ruling, 2026-10-07).</p>
     <p><strong>Done when</strong> the evidence shows: the dispatched run's rows in the pane with no Monitor call
       and only ticker lines; rows still arriving more than 60 minutes after the first dispatch, with no re-arm; no
       <code>crew host</code> or <code>crew follow</code> process whose environment names the session's
@@ -140,11 +143,18 @@
 <p><strong>Deliverable.</strong> When <code>reckon crew host</code> stops, because its owner ended or
 it was signalled, it removes the FIFO it was handed. The entry point removes the FIFO only when its
 owner ends before the first request; once it has become <code>reckon crew host</code>, nothing does,
-so every session that dispatched leaves one stale FIFO in the runtime directory. The host derives the
-path from its owner pair and the same runtime-directory order the entry point uses.</p>
+so every session that dispatched leaves one stale FIFO in the runtime directory. The entry point's own
+removal does not hold either. It runs only when the wait loop sees the owner gone, and the entry point
+traps no signal, so a monitor that Claude Code stops at session end exits before reaching it. Measured
+2026-10-07: two sessions that never dispatched (Claude pids 2484216 and 2489693) ended and left their
+FIFOs behind with no entry point alive. So the entry point also removes its FIFO on <code>TERM</code>,
+<code>HUP</code> and <code>INT</code>. The host derives the path from its owner pair and the same
+runtime-directory order the entry point uses.</p>
 <p><strong>Done when</strong> a test in <code>tests/test_session_host.py</code> starts the host on a
-FIFO named for a fake owner, ends the owner, and finds the FIFO gone, and the session-host census
-reports <code>stale_fifos=0</code> after a session that dispatched has ended.</p>
+FIFO named for a fake owner, ends the owner, and finds the FIFO gone; a test in
+<code>tests/test_session_host_plugin.py</code> sends <code>TERM</code> to a waiting entry point and finds its
+FIFO gone; and the session-host census reports <code>stale_fifos=0</code> after one session that dispatched
+and one that did not have both ended.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
