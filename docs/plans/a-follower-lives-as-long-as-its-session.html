@@ -25,8 +25,8 @@
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="40">
+<meta name="plan-impl" content="0.78">
+<meta name="plan-version" content="41">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -300,6 +300,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261007T074228172964-skills-name-session-host-delivery" data-who="reckon-build" data-when="2026-10-07T09:08:57.438Z">
     <div class="r-comment-body"><p>§7: session-host delivery named first and the Monitor fallback second (with its -p lifetime) in SKILL.md, claude-code.md and sprint-orchestration sections 15 and 17; CREW_VERBS_OUTSIDE_ORCHESTRATION lists ('crew','host') and ('crew','budget-reset'); the new ordering guard test fails if the fallback re-arm guidance is moved above the session-host paragraph; gate at 4d10ebb6a: tests/test_skill_contracts.py passes, and tests/test_crew_help_names_its_state.py's single failure is the pre-existing budget-reset phrase, owned elsewhere.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-20261007T1545-s9-node" data-who="reckon-build" data-when="2026-10-07T15:45:00Z">
+    <div class="r-comment-body"><p>Node <code>session-host-removes-its-fifo</code> landed at merge <code>9dfb2a1e</code>. <code>SessionHost.stop</code> removes the FIFO it was handed, and the entry point traps <code>TERM</code>, <code>HUP</code> and <code>INT</code> to remove its FIFO. Gate: 18 passed, and the declared mutation fails both new tests. Population of 8 importing test files: 127 passed at base, 129 at the merged head, 0 added. Review 107/120; its one follow-on is that the FIFO filename format is now spelled in both <code>session_host._fifo_path</code> and <code>dispatch._session_host_fifo</code>. The section stays open for its live clause: a census reading <code>stale_fifos=0</code> after one session that dispatched and one that did not, both started after this merge, have ended. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/session-host-removes-its-fifo.html">evidence</a></p></div>
 </div>
 </section>
 </main>
