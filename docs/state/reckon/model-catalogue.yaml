@@ -19,6 +19,13 @@
 #     keys without the resolved values changing.
 #
 # A backend absent from this catalogue keeps whatever its host layer declares.
+#
+# A budget group names an account quota. A group whose name ends in ``-sub``
+# is billed a flat subscription rather than metered per token, so a lane
+# drawing on one is not charged for its tokens: the harness's own
+# ``total_cost_usd`` figure for such a lane is not spend and must not be
+# summed or ranked as though it were. The billing rides the group name because
+# the flight schema admits no separate billing key.
 
 version: 1
 
@@ -55,16 +62,19 @@ backends:
     model: claude-sonnet-5-5
     effort: medium
     alias: sonnet 5.5
+    budget_group: claude-sub
 
   claude-opus:
     model: claude-opus-5-5
     effort: high
     alias: opus 5.5
+    budget_group: claude-sub
 
   claude-haiku:
     model: claude-haiku-4-5-20251001
     effort: high
     alias: haiku 4.5
+    budget_group: claude-sub
 
   # The calling harness itself. It has no model, effort or rates to catalogue;
   # only its display alias is a reckon decision rather than a machine fact.

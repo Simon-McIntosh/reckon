@@ -96,6 +96,14 @@ _MAX_RETRY_DELAY_SECONDS = 0.05
 # flight.yaml's local_backend documentation for the concrete host mapping.
 UNMETERED_BACKENDS = frozenset({"clive", "clive-glm"})
 
+# The suffix that marks a catalogue-declared budget group as billed a flat
+# subscription rather than metered per token. The flight schema fixes no
+# separate billing key, so the group name carries it: the catalogue declares
+# ``claude-sub`` and ``codex-sub`` on the backends that draw on them, and a
+# group whose name carries this suffix is subscription-billed, so its lanes'
+# harness cost is not spend.
+SUBSCRIPTION_GROUP_SUFFIX = "-sub"
+
 # Declared schema for completed ledger rows; tests ensure every key a promoted row
 # writes is declared here before merging new measurements.
 RECORD_FIELDS = (
@@ -1997,6 +2005,57 @@ def is_unmetered_backend(backend: str) -> bool:
     return str(backend or "").strip() in UNMETERED_BACKENDS
 
 
+def _model_catalogue() -> Mapping[str, Any]:
+    """Read reckon's own model catalogue, or ``{}`` when absent or unreadable.
+
+    Read lazily and defensively: the catalogue is versioned data in the
+    checkout, so a wheel install carries none, and a read that fails must not
+    turn every ledger write into an error. The billing declaration lives there
+    rather than in a backend set in this module, so which lanes are
+    subscription-billed is data a project or host can see and change without
+    editing code.
+    """
+    from reckon import flight
+
+    try:
+        return flight.read_layer_file(flight.model_catalogue_path())
+    except (OSError, ValueError):
+        return {}
+
+
+def backend_budget_group(backend: str) -> str | None:
+    """The budget group the catalogue declares for a backend, or ``None``.
+
+    Only the catalogue is consulted: a backend it does not name declares no
+    group here, so a lane whose billing the catalogue does not state keeps
+    whatever its host layer declares and its recorded cost.
+    """
+    name = str(backend or "").strip()
+    if not name:
+        return None
+    backends = _model_catalogue().get("backends")
+    if not isinstance(backends, Mapping):
+        return None
+    settings = backends.get(name)
+    if not isinstance(settings, Mapping):
+        return None
+    value = settings.get("budget_group")
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def is_subscription_backend(backend: str) -> bool:
+    """Whether a named backend draws on a group the catalogue bills as a
+    flat subscription rather than metering it per token.
+
+    The billing rides the catalogue's ``budget_group`` name: a group whose
+    name ends in ``-sub`` (``claude-sub``, ``codex-sub``) is a subscription.
+    The lookup reads the catalogue, so a backend it does not name — or names
+    without a group — is metered and keeps its recorded cost.
+    """
+    group = backend_budget_group(backend)
+    return group is not None and group.endswith(SUBSCRIPTION_GROUP_SUFFIX)
+
+
 def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, Any]:
     """Replace an invented dollar figure with an explicit, flagged absence.
 
@@ -2005,6 +2064,13 @@ def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, 
     Recording it verbatim would make a free lane look like the dearest one
     on any surface that ranks by cost, silently. Nulling it and flagging the
     null keeps the absence visible instead.
+
+    A subscription-billed lane — one drawing on a budget group the catalogue
+    bills as a subscription (``claude-sub``, ``codex-sub``) — is not metered
+    per token either, so its harness cost is treated the same way: nulled,
+    flagged, and preserved under ``harness_reported_cost_usd`` so a reader
+    keeps the figure without it being summed as spend. The unmetered local
+    lane keeps its original shape exactly.
 
     The computed ``notional_cost_usd`` — derived from declared per-million
     rates, never read from the harness — is deliberately outside this flag's
@@ -2015,7 +2081,8 @@ def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, 
     has today: a nulled figure, not a computed one.
     """
     result = dict(budget)
-    if not is_unmetered_backend(backend):
+    subscription = is_subscription_backend(backend)
+    if not subscription and not is_unmetered_backend(backend):
         return result
     reported = (result.get("cost_usd"), result.get("cost_usd_cumulative"))
     if not any(
@@ -2023,6 +2090,15 @@ def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, 
         for value in reported
     ):
         return result
+    if subscription:
+        result["harness_reported_cost_usd"] = result.get("cost_usd")
+        result["harness_reported_cost_usd_cumulative"] = result.get(
+            "cost_usd_cumulative"
+        )
+        result["billing"] = "subscription"
+        group = backend_budget_group(backend)
+        if group:
+            result["budget_group"] = group
     result["cost_usd"] = None
     result["cost_usd_cumulative"] = None
     result["cost_usd_imputed"] = True
