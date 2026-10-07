@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-plan-is-done-when-every-section-is-ticked">
+  <meta name="plan-title" content="A Plan Is Done When Every Section Is Ticked">
+  <meta name="plan-summary" content="A plan opens with a linked todo per section, ticked from its declaration; ticking owes no review, and done needs every todo ticked.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,plan-format">
+  <meta name="plan-blocks" content="plan-lifecycle-hygiene">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;}">
+  <title>A Plan Is Done When Every Section Is Ticked | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-impl" content="0.0">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-07">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: landing rewrites the design, and the rewrite costs a review</h2>
+    <p>A section lands today through <code>collapse_section</code>. The op replaces the section's authored body with a
+      landed card: a badge, a one-line summary and a link to the full record. That has three costs, all measured on
+      2026-10-07 while landing one section of
+      <a href="/reckon/a-follower-lives-as-long-as-its-session">a-follower-lives-as-long-as-its-session</a>.</p>
+    <ul>
+      <li><strong>The design a reader needs is gone from the plan.</strong> The deliverable and done-when a later node
+        reads move out of the page and survive only in the evidence record.</li>
+      <li><strong>The rewrite owes a review.</strong> The collapse moved the document unit's digest, so the next build
+        owed a content review. That review's one finding was the card's own link.</li>
+      <li><strong>The card's link was dead.</strong> <code>evidence_anchor</code> was written verbatim as the href,
+        and the skills' example passed a bare anchor. Commit <code>c14913bd</code> repaired the link; the rewrite
+        remains.</li>
+    </ul>
+    <p>The lead's proposal: stop collapsing. Each plan opens with a linked todo list, one item per section, ticked when
+      the section lands. Ticking never owes a review. Every section must have an item, and a plan reaches done only
+      when every item is ticked.</p>
+
+    <h2 id="s2">§2 — What exists: the todo list is already stored, and already outside the review</h2>
+    <p>Almost everything the proposal needs is already in the plan's state. What is missing is a reader that shows
+      it, two controls that enforce it, and a landing beat that stops rewriting the body.</p>
+    <table>
+      <thead><tr><th>Need</th><th>What exists</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>One item per section with a state</td><td><code>section_declarations</code> maps each section id to
+          <code>implementable</code>, <code>deferred</code> or <code>done</code>, stored in the
+          <code>plan-section-declarations</code> meta.</td><td><code>reckon/_plan_html.py</code></td></tr>
+        <tr><td>Ticking an item</td><td><code>{op:'set', path:'section_declarations.&lt;id&gt;', value:'done'}</code>
+          already writes one declaration.</td><td><code>reckon/_store.py</code></td></tr>
+        <tr><td>Ticking owes no review</td><td><code>_without_section_declarations</code> removes the declarations
+          from the review fingerprint, and comments are normalised out beside them.</td>
+          <td><code>reckon/crew/plan_review.py</code></td></tr>
+        <tr><td>Progress follows the ticks</td><td><code>derive_impl_from_sections</code> computes
+          <code>impl</code> from the declarations.</td><td><code>reckon/_plan_html.py</code></td></tr>
+        <tr><td>A landed review retires</td><td><code>review_lifecycle</code> decides a plan has landed from its
+          declarations, never from a collapsed body.</td><td><code>reckon/crew/review_lifecycle.py</code></td></tr>
+        <tr><td>A visible list at the top</td><td>Nothing. The SPA renders no section checklist.</td>
+          <td><code>docs/ui/</code></td></tr>
+        <tr><td>Every section has an item</td><td>Nothing checks it. <code>insert_section</code> declares the
+          sections it writes, but an authored <code>h2</code> can carry no declaration.</td><td>—</td></tr>
+        <tr><td>Done needs every item ticked</td><td>Nothing checks it. A terminal status requires a transition
+          verdict and evidence, not the declarations.</td><td><code>reckon/_store.py</code></td></tr>
+      </tbody>
+    </table>
+    <p>The plan-review session (<code>every-review-is-kept-as-a-committed-record</code>) confirmed on 2026-10-07 that
+      no node of theirs depends on <code>collapse_section</code> or the landed card. One coupling remains:
+      <code>plan_review._fingerprint_forms</code> keeps a pre-collapse digest form so that a collapse alone owes no
+      review. §8 owns it.</p>
+
+    <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="">§3 — The plan read carries its todo list</h2>
+    <p><strong>Deliverable.</strong> A plan's typed read (<code>read_plan</code>, <code>view</code> summary and
+      detail) carries a <code>todos</code> list derived in Python. It has one entry per authored section, in document
+      order, each with the section id, its heading text, the in-page link <code>#&lt;id&gt;</code>, and its
+      declaration. A ticked entry also carries the newest comment on that section, which is the landing beat's closing
+      record. Nothing new is stored: the list is derived from the headings, the declarations and the comments.</p>
+    <p><strong>Done when</strong> a test reads a fixture plan with three sections (one done with a closing comment,
+      one implementable, one deferred) and finds three entries in document order with those states, the done entry
+      carrying its comment. A second test ticks a section through <code>set section_declarations.&lt;id&gt;</code>
+      and finds the plan's review fingerprint unchanged. Both fail on the current code, which has no
+      <code>todos</code> field; that is their negative control.</p>
+
+    <h2 id="s4" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="">§4 — The SPA shows the todo list at the top of the plan</h2>
+    <p><strong>Deliverable.</strong> The plan view renders the <code>todos</code> field from §3 above the first
+      section, as a checklist. Each item links to its section's heading, a ticked item shows its closing comment, and
+      a deferred item reads as deferred rather than open. The SPA renders the field and derives nothing.</p>
+    <p><strong>Done when</strong> a module test of the plan view renders a payload carrying three todos and finds three
+      links to <code>#s1</code>, <code>#s2</code> and <code>#s3</code> above the first heading, with the done item
+      checked. With the render removed, the test fails; that is its negative control.</p>
+
+    <h2 id="s5" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§5 — Every section has a todo item</h2>
+    <p><strong>Deliverable.</strong> <code>reckon audit-doc</code> reports <code>section-without-todo</code> for an
+      authored section heading with no declaration, and <code>todo-without-section</code> for a declaration naming no
+      heading. A plan write that would leave either is refused by <code>edit_plan</code>. The census comes first:
+      count the live plans that would fail today, and state the count in the evidence, because closing this guard
+      turns every existing gap into a refusal at that plan's next write.</p>
+    <p><strong>Done when</strong> the census of every mounted project's live plans is recorded with its count. A test
+      writes a plan with an undeclared heading and finds the audit error and the write refusal, and a second test
+      finds the reverse case. Both fail on the current code, which checks neither; that is their negative
+      control.</p>
+
+    <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§6 — A plan reaches done only when every todo is ticked</h2>
+    <p><strong>Deliverable.</strong> A write that sets a plan's status to <code>shipped</code> or <code>done</code> is
+      refused while any declaration is <code>implementable</code>, and the refusal names those sections. Whether a
+      <code>deferred</code> section counts as ticked is the open decision below. The census comes first here too:
+      count the plans already at a terminal status with an implementable declaration, and state the count.</p>
+    <p><strong>Done when</strong> the census is recorded with its count. A test sets a plan with one implementable
+      section to <code>done</code> and finds the refusal naming that section. After the section is ticked, the same
+      write succeeds. The first test fails on the current code; that is its negative control.</p>
+
+    <h2 id="s7" data-reckon="section" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="">§7 — The landing beat ticks instead of collapsing</h2>
+    <p><strong>Deliverable.</strong> The landing beat in <code>skills/reckon-build/SKILL.md</code>, its coordinator
+      reference and <code>skills/reckon-edit/SKILL.md</code> becomes three ops: <code>append_evidence</code>, a
+      <code>set</code> of the section's declaration to <code>done</code>, and a closing comment on the section carrying
+      the result and a link to the evidence. <code>collapse_section</code> stays available but no skill uses it, and
+      the section body stays as authored.</p>
+    <p><strong>Done when</strong> the skill-contract test applies each skill's documented landing examples to a
+      fixture plan and finds the section's body unchanged, its declaration <code>done</code>, its closing comment
+      present, and the plan's review fingerprint unchanged. With a collapse put back in the examples, the test
+      fails; that is its negative control.</p>
+
+    <h2 id="s8" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links="">§8 — Retire the pre-collapse fingerprint form</h2>
+    <p><strong>Deliverable.</strong> Once no stored plan review depends on it, remove the pre-collapse form from
+      <code>plan_review._fingerprint_forms</code>. A change to the fingerprint's shape makes every plan owe a review at
+      its next build, so this section starts with a census of the stored review sidecars. It runs only when that
+      census shows the change orphans no review, or orphans a number the lead accepts. Deferred until §7 has landed
+      and the plan-review session's open edits to <code>reckon/crew/plan_review.py</code> have merged.</p>
+    <p><strong>Done when</strong> the sidecar census is recorded, the form is removed, and a test shows a plan whose
+      collapsed card is unchanged keeps its review. The display path in <code>reckon/mcp_views.py</code>, which reads
+      landed cards for plans already collapsed, is left unchanged.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="deferred-counts-as-ticked">
+    <p class="r-dec-q">Does a deferred section count as ticked when a plan is set to done?</p>
+    <p class="r-dec-ctx">A deferred section is one the author chose not to build in this plan. If it blocks done,
+          authors are pushed to delete sections they mean to come back to.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="deferred-satisfies">Yes: done needs every section done or deferred</button>
+      <button class="r-opt" data-value="deferred-blocks">No: done needs every section done</button>
+      </p>
+    </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tick-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build a-plan-is-done-when-every-section-is-ticked §3">
+    <h4 class="r-fu-title">Derive the todo list, then show and enforce it</h4>
+    <div class="r-fu-body"><p>§3 derives the list in the plan read. §4 renders it and §7 changes the landing beat;
+      both read §3's field. §5 and §6 are independent controls, each measured by a census before it is closed.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-plan-is-done-when-every-section-is-ticked §3</pre>
+    </article>
+    </section>
+  </main>
+</body>
+</html>
