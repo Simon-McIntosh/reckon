@@ -25,6 +25,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("dispatch",): "contract, routing, budget, watcher, and scope",
     ("drain",): "session-closure count",
     ("follow",): "one session's live runs",
+    ("gate",): "shared crew gate state",
     ("host",): "one live session's crew followers",
     ("gc",): "integrated state makes them disposable",
     ("ledger",): "committed run records",
