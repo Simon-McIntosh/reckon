@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed manifest names no baseline_suite log (its baseline_suite line is empty) and names its after_suite log as gate-arm.log. Derived from the reviewed run's own recorded arms: after_suite (gate-arm.log, f355dc83) reports 28 passed, 0 failed, EXIT=0; the run's own earlier base-revision arm (gate.log, 5d270a38) reports 2 failed, 23 passed, EXIT=1. The head arm carries no FAILED/ERROR node id, so no test id fails at head that is absent at base: added_failure_count 0, added_failure_ids []. Count is 0 from the head arm alone, which is correct regardless of the base arm.",
+  "base_log_revision": "5d270a38a650fe5802e2305ef770e0bceb890f80",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4471 _dispatch_lane_gate reads the fleet gate before the backend gate; reached by plan_dispatch, dispatch, resume_plan and change_lane",
+    "reckon/cli.py:2254 crew_dispatch holds before any pointer or worktree is created",
+    "reckon/cli.py:6798 crew_resume catches LanePaused from resume_plan",
+    "reckon/cli.py:6910 crew_redispatch catches LanePaused from change_lane",
+    "reckon/crew/recovery.py:2742 plan_dispatch / :2771 dispatch / :3825 dispatch route the recover and reflex launches through the gated entry points"
+  ],
+  "completed_at": "2026-10-07T08:57:34.226Z",
+  "dispatched_at": "2026-10-07T08:42:58Z",
+  "findings": [
+    {
+      "file": "tests/test_the_fleet_gate_holds_dispatch.py",
+      "line": "152",
+      "severity": "follow-on",
+      "text": "the launch-path search filters candidates by the incidental 'plan in symbols' test and then asserts only that a non-supervised launcher calls one of plan_dispatch/resume_* or change_lane. A launch path added later that spawns a worker via a name outside {_spawn, _start_supervisor}, or that spawns without a Name 'plan' in scope, is never collected, so done-when item 2's guarantee ('a launch path added later without the gate read fails the test') holds only for the exact shape the filter admits; the trailing assert that '_dispatch_fleet_gate' appears in dispatch.py's text is a tautology because the definition sits in that file. I verified the search over the head tree collects four launchers (cli.py:crew_resume, dispatch.py:dispatch, dispatch.py:supervised_launch, resumption.py:_resume), each of which passes.",
+      "would_change": false
+    },
+    {
+      "file": "tests/test_the_fleet_gate_holds_dispatch.py",
+      "line": "64",
+      "severity": "follow-on",
+      "text": "done-when item 1 pairs each launching path's held assertion with 'a control finds the same call admitted once the gate is open'. The open-control exists only on the dispatch path (test_gate_command_prints_both_documents_and_dispatch_waits admits a dry-run dispatch with exit 0 after --open). resume (test_resume_checks_the_shared_gate_before_building_a_launch) and redispatch (test_redispatch_checks_the_shared_gate_before_stopping_the_source) assert only the held direction, so their admitted-when-open direction is untested and a guard that refused unconditionally would still pass those two.",
+      "would_change": false
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "five production call sites: _dispatch_lane_gate (the shared read), crew_dispatch, crew_resume, crew_redispatch, and recovery's plan_dispatch/dispatch launches.",
+    "diff": "read commit by commit against base 5d270a38: one commit f355dc83 modifies cli.py and dispatch.py and adds the test module; the fleet read is inserted ahead of the backend gate in _dispatch_lane_gate and ahead of worktree creation in plan_dispatch/resume_plan/change_lane/supervised_launch.",
+    "done_when": "items 1-4 largely delivered: held-under-pause and backend-precedence tests exist and the negative control reproduces; the admitted-once-open control is present only for dispatch, and the launch-path search's guarantee is narrower than item 2 states.",
+    "goal": "The fleet-wide gate holds launches across every backend: dispatch, resume, redispatch and supervised_launch each read it, and recovery/reflex paths reach it through plan_dispatch/resume_plan/change_lane; readings, completion and promotion are untouched.",
+    "manifest": "read; status complete, head f355dc83, base 5d270a38, after_suite (gate-arm.log) 28 passed/EXIT=0, negative_control_log declared, baseline_suite empty; commit body present and conventional.",
+    "write_paths": "diff touches exactly reckon/cli.py, reckon/crew/dispatch.py and tests/test_the_fleet_gate_holds_dispatch.py, all inside the manifest fence; the two declared fragment/figure paths were not produced and are not required by the plan section."
+  },
+  "justifications": {
+    "durability": "the guards fail on regression and one was demonstrated: skipping the fleet read in dispatch reddens the held-dispatch test (negative-control.log, EXIT=1), and test_backend_gate_still_holds_when_fleet_gate_is_open pins backend precedence. Deducted because the launch-path search's filter and tautology (finding 1) and the missing resume/redispatch open-controls (finding 2) leave two of done-when's guarantees pinned only in the held direction.",
+    "evidence": "the gate is recorded and reproduces: gate-arm.log names revision f355dc83 and reports 28 passed EXIT=0, and negative-control.log shows the declared mutation (skip the fleet read) reddens test_dispatch_rejects_a_paused_fleet_document with EXIT=1. Deductions: the reviewed manifest names no baseline_suite log, so only the head arm is declared; and the admitted-once-open control (done-when 1) exists only for dispatch (finding 2).",
+    "fit": "the change extends the existing gate idiom: it reuses _gate_rows_from_payload and _read_text_under_deadline, matching the surrounding LanePaused/exit-75 handling in cli.py, and adds no plan, version, ticket or attribution identifier in names or comments; the fleet_gate_path and _dispatch_fleet_gate names describe their role.",
+    "goal_fidelity": "the landed change holds every worker launch at once: _dispatch_fleet_gate is read before the backend gate in _dispatch_lane_gate (dispatch.py:4458) and directly in plan_dispatch (dispatch.py:5434), resume_plan (dispatch.py:12119), change_lane (dispatch.py:12513) and supervised_launch (dispatch.py:10023), and recovery.py:2742/2771/3825 reach those entry points, so the recover and reflex launches named by the section are held. Deducted because done-when item 2's search guarantee is narrower than the section states (finding 1).",
+    "reuse": "no capability is forked: the fleet gate is read through the same _dispatch_lane_gate owner it extends (dispatch.py:4456) and the same deadline/parse helpers, and the writer reuses write_json_atomically; the search over reckon/ found no pre-existing fleet-wide gate owner that this duplicates.",
+    "scope_discipline": "git diff --name-status 5d270a38..f355dc83 lists exactly M reckon/cli.py, M reckon/crew/dispatch.py and A tests/test_the_fleet_gate_holds_dispatch.py; all three sit inside the manifest fence (reckon/crew/dispatch.py, reckon/cli.py, tests/test_the_fleet_gate_holds_dispatch.py) and the commit carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T081246992462-the-fleet-gate-holds-dispatch.at-f355dc83c2efde5b313ee1c4a9b27a4d67975e02.json",
+  "review_run_id": "r-20261007T084225968123-review-of-the-fleet-gate-holds-dispatch",
+  "reviewed_base_sha": "5d270a38a650fe5802e2305ef770e0bceb890f80",
+  "reviewed_head_sha": "f355dc83c2efde5b313ee1c4a9b27a4d67975e02",
+  "reviewed_run_id": "r-20261007T081246992462-the-fleet-gate-holds-dispatch",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T08:55:00+00:00",
+  "total": 107
+}
