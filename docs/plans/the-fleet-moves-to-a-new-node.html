@@ -23,7 +23,7 @@
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="26">
+<meta name="plan-version" content="27">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -523,7 +523,7 @@
     <div class="r-comment-body"><p>The fleet batch step's request loop now waits on its request FIFO with a bounded select (REQUEST_WAIT_SECONDS = 0.5) instead of a blocking read, so it collects exited children on its own interval and no longer depends on a request arriving, and it reassembles a request split across reads from a pending buffer so it is handled once and whole; proven by test_an_exited_child_is_collected_with_no_request_arriving and test_a_request_split_across_reads_is_handled_once_and_whole, gate 20 passed with EXIT=0, evidence in docs/evidence/fragments/the-fleet-moves-to-a-new-node/fleet-supervisor-collects-every-child.html.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T084717269959-review-of-fleet-supervisor-collects-every-child" data-who="reckon-build" data-when="2026-10-07T09:15:21.491Z">
-    <div class="r-comment-body"><p>Independent delta review of run r-20261007T065728317601-fleet-supervisor-collects-every-child stored at reviewed_base_sha 5db90a224..reviewed_head_sha e58cd3c8: all 6 dimensions scored (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 20, reuse 19; total 116) — the delta&#x27;s two repairs verified (comment de-historicised; new split-read case passes at head and fails under a pending-buffer mutation), one follow-on recorded.</p></div>
+    <div class="r-comment-body"><p>Independent delta review of run r-20261007T065728317601-fleet-supervisor-collects-every-child stored at reviewed_base_sha 5db90a224..reviewed_head_sha e58cd3c8: all 6 dimensions scored (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 20, reuse 19; total 116) — the delta's two repairs verified (comment de-historicised; new split-read case passes at head and fails under a pending-buffer mutation), one follow-on recorded.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261007T073256147577-review-of-fleet-health-names-a-stall" data-who="reckon-build" data-when="2026-10-07T07:55:00.053Z">
     <div class="r-comment-body"><p>independent review stored for run r-20261007T065615607875-fleet-health-names-a-stall at base 3befbf4f / head 660b2e36: six dimensions scored 19 goal_fidelity, 17 evidence, 19 scope_discipline, 16 durability, 17 fit, 19 reuse (total 107), added_failure_count null and added_failure_ids [] (unmeasured: the reviewed manifest names no baseline_suite/after_suite gate log), with a CALL_SITES line naming one production caller and two follow-on findings.</p></div>
@@ -554,6 +554,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261007T084312491499-review-of-worker-hooks-run-under-reckons-interpreter" data-who="reckon-build" data-when="2026-10-07T09:11:56.217Z">
     <div class="r-comment-body"><p>The reviewed node's install.py change passes all three done-when clauses and its four-file gate (98 passed EXIT=0); two defects recorded at reckon/cli.py — the second composer of the worker git guard still emits the bare command (cli.py:509) and _is_worker_git_guard_group (cli.py:381) no longer recognises the composed guard group, so both composers together duplicate the guard.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261007T081349225506-worker-hooks-run-under-reckons-interpreter" data-who="reckon-build" data-when="2026-10-07T09:33:08Z">
+    <div class="r-comment-body"><p>Both hook installers use one guard composer and one recogniser for bare and interpreter-bound groups; named gate 101 passed, EXIT=0; reverse-change control failed, EXIT=1.</p></div>
 </div>
 </section>
 </main>
