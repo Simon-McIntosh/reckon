@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -216,6 +216,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T050423721258-review-of-sync-tests-keep-the-real-skills-dir" data-who="reckon-build" data-when="2026-10-07T05:31:58.198Z">
     <div class="r-comment-body"><p>Independent review of r-20261007T040504698629-sync-tests-keep-the-real-skills-dir over the commits gained since review, 9bdf6250a..b5d399fd touching cli.py, conftest.py, test_doctor_session_host_link.py and the evidence fragment, stored at both declared review paths as a parsed record scoring goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 19, reuse 20, total 118, reviewed_base_sha 9bdf6250adf0e69d250b09e7e31629625abbef38, reviewed_head_sha b5d399fd70f5033a8ceb0ddbbe4d3ce2aecd3a0d, added_failure_count unmeasured because the reviewed run declares no baseline_suite or after_suite arm, three follow-on findings, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T053804331668-sync-isolation-covers-every-fixture-scope" data-who="reckon-build" data-when="2026-10-07T05:57:33.692Z">
+    <div class="r-comment-body"><p>test(sync): the RECKON_CLAUDE_SKILLS_DIR override is now session-scoped, so a module- or session-scoped fixture that runs reckon sync links into the temporary directory instead of the operator&#x27;s real ~/.claude/skills; the module-name exemption list is deleted, tests/test_doctor.py opts out via its own fixture, and a new module proves a module-scoped fixture&#x27;s sync links into the override (gate 36 passed, exit 0; negative control 2 failed, exit 1).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T034544742984-review-of-session-host-supervises-followers" data-who="reckon-build" data-when="2026-10-07T04:01:49.175Z">
     <div class="r-comment-body"><p>Attached an independent review to run r-20261007T025625735707-session-host-supervises-followers at head 241b80161 against base 0dbf9865: §4's session host (reckon/crew/session_host.py, hidden `crew host` at reckon/cli.py:4743) implements all five done-when clauses, the re-run gate reads 9 passed EXIT=0 and the declared negative control reads 1 failed EXIT=1; stored a parsed record scoring goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 19, reuse 15 (total 106) with four follow-on findings and no blocking finding.</p></div>
