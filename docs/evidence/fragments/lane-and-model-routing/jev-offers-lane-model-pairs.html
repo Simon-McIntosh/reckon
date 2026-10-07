@@ -22,12 +22,13 @@
   <p id="jev-offers-lane-model-pairs-measure">
     <strong>Measure.</strong> Gate built from the head tree:
     <code>tests/test_picker_lanes.py</code>, every <code>tests/test_picker*.py</code>,
-    <code>tests/test_pick_candidates_one_pass.py</code> and
-    <code>tests/test_jev_weighs_context.py</code>, run in the foreground with the
+    every <code>tests/test_pick*.py</code> and every <code>tests/test_jev*.py</code>,
+    run in the foreground with the
     main checkout's <code>.venv/bin/python -m pytest -p no:cacheprovider -n 8</code>.
     Base arm at revision <code>1b98398693513aceaac6bd8fd3f23d1ae939c62a</code> (the
-    new test file did not exist at base): 155 passed, EXIT=0. Head arm: 158
-    passed, EXIT=0 — a delta of +3, zero added failures. Logs
+    new test file did not exist at base): 164 passed, EXIT=0. Head arm at
+    <code>be705ecaf6e40e784688df83d479ad1279f2a10c</code>: 168
+    passed, EXIT=0 — a delta of +4, zero added failures. Logs
     <code>gate-base.log</code> and <code>gate-head.log</code> under the run
     directory, each ending in an <code>EXIT=</code> line. The golden render
     fixture in <code>tests/test_picker_helpers_have_one_owner.py</code> was
@@ -48,7 +49,7 @@
     <strong>Negative control.</strong> Keying the <code>lanes</code> block by
     <code>&lt;lane&gt;:&lt;model&gt;</code> instead of the lane (repeating pressure
     per model) reddens the once-per-lane test. Log
-    <code>negative-control.log</code> under the run directory, ending in an
+    <code>negative-control-lanes.log</code> under the run directory, ending in an
     <code>EXIT=</code> line.
   </p>
   <p id="jev-offers-lane-model-pairs-pair-keys">
@@ -62,10 +63,13 @@
     behind one builder, <code>prompts.option_key</code>, so the offered key and
     the resolved candidate cannot drift apart. A new test asserts every offered
     key is a <code>lane:model</code> pair and that each maps back to exactly one
-    configured backend. The two gate files that pinned the former
+    configured backend. The gate files that pinned the former
     backend-keyed option contract (<code>tests/test_picker.py</code>,
-    <code>tests/test_picker_pressure.py</code>) were moved onto the pair keys,
-    since that contract is precisely what the finding changed.
+    <code>tests/test_picker_pressure.py</code> and
+    <code>tests/test_jev_prompt_carries_what_it_weighs.py</code>) were moved onto
+    the pair keys, since that contract is precisely what the finding changed;
+    that last file also gains the <code>lanes</code> key in the state key set it
+    pins, which the earlier round omitted from its gate.
   </p>
   <p id="jev-offers-lane-model-pairs-negative-control-pair-keys">
     <strong>Negative control for the finding.</strong> Reverting the pair keys in
