@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.89">
-<meta name="plan-version" content="52">
+<meta name="plan-impl" content="0.83">
+<meta name="plan-version" content="53">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -116,6 +116,10 @@
     <p>§2 and §6 ran first and in parallel, and both have landed. §3 waits for §23 of a plan is reviewed before
       it is built, because both change the function that stores a delivered review. §5 follows §3, and §4 follows
       §5, whose imported records its per-day summary is checked against.</p>
+
+    <h2 id="s8">§8 — Every delivered plan review becomes a record</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Measured on 2026-10-07 against each project's <code>origin/main</code>, many delivered plan reviews have no committed record. A delivered review is a report directory carrying a <code>report.md</code> with rubric and finding lines. It counts as recorded when a record matches it by review run id, or by plan, fingerprint and rubric. Unrecorded: reckon 240 of 390, nova 49 of 139, imas-ambix 53 of 190, imas-codex 39 of 172, imas-ink 0 of 18. There are two causes. First, the staging path is <code>plan-&lt;slug&gt;.v&lt;N&gt;.json</code> (<code>plan_review_path</code>), with an <code>.at-&lt;blob8&gt;</code> sibling only when the plan bytes differ. Repeated reviews of the same bytes at one version therefore share one file. The three delivered design reviews of <code>a-brief-should-not-cost-what-it-names</code> at version 2 (4, 5 and 6 October) left one record. Second, <code>store_delivered_reviews</code> runs only when the gate or a read reaches the plan, so a plan nobody builds keeps its reviews as report files. §5's import read the host store, so neither kind reached the committed tree. Nothing is lost yet: the reports stay on the host, and raw-report retention withholds any report that has no committed record.</p><p><strong>Deliverable.</strong> Two changes, as two nodes. (1) A delivered plan review is stored under a path its own review run owns, so two reviews of one plan version never share a staging file. Readers that key on the version still read the newest. The change belongs in <code>plan_review_path</code> and <code>store_plan_review</code>, and adds no second store. (2) <code>scripts/import_host_reviews.py</code> also imports every delivered report that no record carries. It parses the report through the parser <code>_store_delivered_report</code> uses and commits it through <code>review.store_committed_review</code>, keyed by the report directory's run id. The import across projects commits into their repositories, as §5's did.</p><p><strong>Done when</strong> a test stores two delivered reviews of one plan version with identical plan bytes and reads both back by review run id; the import's dry run lists, per project, the delivered reports no record carries; after the import is merged, that count is zero in every project when measured against <code>origin</code>; and a second pass imports zero. The census of delivered reports without a record is a search the done-when runs, not a figure copied from this section.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -293,6 +297,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261007T065616199230-review-of-the-review-store-keeps-no-unreachable-refusal" data-who="reckon-build" data-when="2026-10-07T07:32:11.006Z">
     <div class="r-comment-body"><p>reckon:every-review-is-kept-as-a-committed-record §5 - independent review of run r-20261007T062215954650-the-review-store-keeps-no-unreachable-refusal stored a parsed record at both declared paths scoring all six dimensions (durability 19, evidence 19, fit 18, goal_fidelity 20, reuse 19, scope_discipline 20; total 115) over reviewed_base_sha 4fceb3e2 and reviewed_head_sha faa71228d, added_failure_count unmeasured (null) and added_failure_ids [], with two follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20261007-s5-gap" data-who="reckon-build" data-when="2026-10-07T08:02:00Z">
+    <div class="r-comment-body"><p>The section 5 closing record says every review was imported. That held for the host <em>store</em> but not for delivered <em>reports</em>. About 381 delivered plan reviews never became stored records, because of a staging path collision and lazy storing, so the import could not see them. They are on the host and withheld from retention. Section 8 imports them and closes the collision.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T053609428174-review-of-raw-review-reports-are-pruned-once-committed" data-who="reckon-build" data-when="2026-10-07T05:52:43.509Z">
     <div class="r-comment-body"><p>review of r-20261007T050757595641-raw-review-reports-are-pruned-once-committed scored at C5: goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20 (total 116), reviewed base 5f53ef9de head 5c1d172fe, one follow-on (the gc pass ignores run_id); the reviewed node's gate and its negative control both reproduce.</p></div>
