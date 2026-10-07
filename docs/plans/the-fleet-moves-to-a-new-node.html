@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-sprint" content="S21">
-  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;}">
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="57">
+<meta name="plan-version" content="58">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -183,40 +183,12 @@
       <li>The test points the services configuration at a temporary directory and starts no real service.</li>
     </ul>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
     <h2 id="s6">&sect;6 &mdash; The lane gate can hold every launch at once</h2>
-    <section data-reckon="section" data-id="s6" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p>
-      The quiesce in &sect;11 needs launches to stop everywhere, not only where a
-      coordinator agrees to stop. Reflex reviews, repair resumes, <code>crew
-      recover</code> and plan reviews launch on their own, and <code>crew drain</code>
-      only reports. A second refusal record would be a second gate beside one that
-      already exists: dispatch reads a backend's declared gate document, and a
-      <code>paused: true</code> there holds the launch as <code>LanePaused</code>, a
-      wait rather than a refusal, which the recovery reflexes already handle. The
-      gate is extended rather than duplicated. Beside each backend's declared document,
-      every launch reads one fleet-wide gate document in the crew state on shared
-      storage, in the same format and with the same deadline, and a pause in either
-      holds the launch. Every path that starts a worker is routed through that one
-      read: dispatch, resume, redispatch, the review and repair reflexes, recover and
-      plan review. Nothing writes a gate document today, so the fleet-wide one gains a
-      writer, <code>reckon crew gate --pause REASON</code> and <code>--open</code>,
-      which prints the document before and after. Reads, follows, completion and
-      promotion are not launches and keep working, so finished runs can still land
-      while the gate is held.
-    </p>
-    <p>
-      <strong>Interface accounting.</strong> This adds one command and no refusal
-      family: a held launch is the existing <code>LanePaused</code>. It retires
-      nothing, because the backend gate it extends keeps its own role for the local
-      lane's router.
-    </p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>One test per launching path finds it held as <code>LanePaused</code> under a fleet-wide pause, naming the fleet gate and its reason, and a control finds the same call admitted once the gate is open.</li>
-      <li>The set of launching paths is found by a search the test runs over the code, not by a hand list, so a launch path added later without the gate read fails the test.</li>
-      <li>A backend's own gate document still holds its launches exactly as before.</li>
-      <li>Completion and promotion while the gate is held still succeed.</li>
-    </ul>
+<section data-reckon="section" data-id="s6" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed through <code>6d4a79a6c</code>, <code>048204c6c</code> and <code>e09b16654</code>: <code>reckon crew gate</code> writes one fleet-wide gate that every worker launch reads first, so dispatch, resume, redispatch, the reflexes, recover and plan review wait as <code>LanePaused</code> while completion and promotion continue; a search from the process-spawning roots fails any later launch path without the read. <a href="s6">full record</a></p>
+</section>
 
     <h2 id="s7">&sect;7 &mdash; The worker reservation can be moved</h2>
     <section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
