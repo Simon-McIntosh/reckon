@@ -1245,6 +1245,91 @@ def _ensure_watch_producer(
         return watch_state(project, session=session)
 
 
+# The session host a Claude Code session runs declares its request FIFO in a
+# directory under the node-local runtime root, named for the Claude process and
+# its kernel start tick so the pair survives /clear. Dispatch resolves the same
+# path to ask that session's host for a follower before it refuses.
+SESSION_HOST_DIRECTORY = "reckon-session-host"
+
+
+def _session_host_runtime_root() -> Path | None:
+    """The node-local root a session host's FIFO lives under, or None.
+
+    The same three candidates the host entry point chooses from, so a dispatch
+    and the host it asks resolve the same directory: the session's own runtime
+    directory first, then the per-user directory a login node provides, then the
+    scratch root. Each is node-local, so waiting on the FIFO costs nothing on
+    shared storage.
+    """
+    runtime = str(os.environ.get("XDG_RUNTIME_DIR") or "").strip()
+    if runtime:
+        return Path(runtime)
+    run_user = Path(f"/run/user/{os.getuid()}")
+    if run_user.is_dir():
+        return run_user
+    scratch = str(os.environ.get("TMPDIR") or "").strip()
+    return Path(scratch) if scratch else None
+
+
+def _session_host_fifo() -> Path | None:
+    """Resolve the calling Claude session's host FIFO, or None when there is none.
+
+    The host belongs to this session's Claude process, not to the crew session
+    name, so the path is built from ``CLAUDE_PID`` and that process's start tick
+    -- the pair that stays fixed across ``/clear``. A caller not running under
+    Claude Code, or one whose Claude process the kernel no longer reports, has
+    no host to ask.
+    """
+    harness, _session, _transcript = _coordinator_runtime()
+    if harness != "claude-code":
+        return None
+    try:
+        pid = int(str(os.environ.get("CLAUDE_PID") or ""))
+    except ValueError:
+        return None
+    if pid <= 1:
+        return None
+    start = _process_start_time(pid)
+    if not start:
+        return None
+    root = _session_host_runtime_root()
+    if root is None:
+        return None
+    return root / SESSION_HOST_DIRECTORY / f"{pid}-{start}.fifo"
+
+
+def _ask_session_host_for_follower(project: str, session: str | None) -> bool:
+    """Ask this session's host to follow the project, returning whether it did.
+
+    The request is one JSON line naming the project and the session, written to
+    the host's FIFO through the same non-blocking write the fleet spawn uses, so
+    a FIFO with no reader means no host and falls back at once rather than
+    stalling. The caller then waits, for at most the producer bound, until the
+    session reads as attached -- the fact that matters, since the host attaching
+    a follower is what makes the finished run reach the session. Without a host,
+    or when it does not attach within the bound, this reports False and the
+    caller admits exactly as it does today.
+    """
+    if not session:
+        return False
+    fifo = _session_host_fifo()
+    if fifo is None:
+        return False
+    line = json.dumps({"project": project, "session": session}).encode("utf-8") + b"\n"
+    try:
+        # A deadline already in the past asks ``_write_fleet_request`` for a
+        # single attempt: no reader on the FIFO is a fallback, not a wait.
+        _write_fleet_request(fifo, line, time.monotonic())
+    except CrewError:
+        return False
+    deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
+    while time.monotonic() < deadline:
+        if watch_state(project, session=session)["session_attached"]:
+            return True
+        time.sleep(0.1)
+    return False
+
+
 def _released_follower_warning(dispatch_watch: Mapping[str, Any]) -> str:
     """Name the released registration and the command that re-arms it.
 
@@ -1374,6 +1459,7 @@ def _watcher_delivery_admission(
     *,
     session: str,
     launch_kind: str,
+    delivery: str = "monitor",
 ) -> str | None:
     """Decide whether a session's delivery admits the dispatch.
 
@@ -1384,6 +1470,11 @@ def _watcher_delivery_admission(
     the run's own record keeps the delivery it was missing visible to a later
     reader. Everything else is refused, and every unmet condition is named in
     the one refusal rather than one per round trip.
+
+    ``delivery`` names how the session's follower was sought — ``"host"`` when a
+    session host attached it, ``"monitor"`` otherwise. It rides the refusal too,
+    so a caller that fell back to the Monitor path is told so rather than left
+    to infer it.
 
     Returns the warning line when a released session proceeds, and ``None``
     when the session is attached or the launch kind carries no delivery.
@@ -1398,16 +1489,20 @@ def _watcher_delivery_admission(
         # this kind too, as the call site refused it for all kinds.
         if dispatch_watch.get("watcher_live"):
             return None
-        raise WatcherRequired(project, dispatch_watch)
+        refusal = WatcherRequired(project, dispatch_watch)
+        refusal.delivery = delivery
+        raise refusal
     if dispatch_watch.get("session_follower_released") and dispatch_watch.get(
         "watcher_live"
     ):
         return _released_follower_warning(dispatch_watch)
     conditions = _unmet_follower_conditions(project, dispatch_watch, session=session)
     if conditions:
-        raise _FollowerAdmissionUnmet(
+        refusal = _FollowerAdmissionUnmet(
             project, dispatch_watch, session=session, conditions=conditions
         )
+        refusal.delivery = delivery
+        raise refusal
     return None
 
 
@@ -7183,6 +7278,7 @@ def dispatch(
             }
 
         dispatch_watch = watch_state(project, session=session)
+        session_delivery = "monitor"
         released_follower_warning: str | None = None
         if watch_required and not watch_override and watch_arming_suppressed():
             # Opting in is the caller's act. An environment that forbids arming
@@ -7191,6 +7287,19 @@ def dispatch(
             watch_override = True
         if watch_required and not watch_override:
             dispatch_watch = _ensure_watch_producer(project, session=session)
+            # A session that is not attached may be run by a host that can attach
+            # it without a turn spent arming a Monitor watch. Asking is a write
+            # to the host's FIFO and a bounded wait, and a session without a host
+            # falls back to the Monitor path unchanged -- so this only ever
+            # upgrades delivery, never refuses a dispatch the old path admitted.
+            if (
+                str(launch_kind) == "cli"
+                and session
+                and not dispatch_watch.get("session_attached")
+                and _ask_session_host_for_follower(project, session)
+            ):
+                session_delivery = "host"
+                dispatch_watch = watch_state(project, session=session)
             # The watcher requirement is answered by the process, read from the
             # watcher's own state — never by a session's follower, which is how a
             # project with no watcher process at all kept admitting dispatches.
@@ -7206,6 +7315,7 @@ def dispatch(
                 dispatch_watch,
                 session=session,
                 launch_kind=launch_kind,
+                delivery=session_delivery,
             )
         watcher_waiver = (
             {
@@ -7492,6 +7602,7 @@ def dispatch(
             "watch": {
                 "arming_line": _watch_arming_line(project),
                 "attach_line": _watch_attach_line(project, session=session),
+                "delivery": session_delivery,
                 "watcher_live": False,
                 "session": session,
                 "session_attached": False,
@@ -7678,6 +7789,13 @@ def dispatch(
         record["peer_channel"] = _wire_peer_channels(record, adjacent_peers)
         wired_peer_run_ids = list(record["peer_channel"]["peers"])
         record["watch"] = watch_state(project, session=session)
+        # The delivery verdict rides the payload so a later reader can tell a
+        # session the host attached from one that still needs the Monitor tool.
+        # A host-delivered session carries no arming instruction: the host armed
+        # the follower, and re-arming a Monitor watch would double-deliver.
+        record["watch"]["delivery"] = session_delivery
+        if session_delivery == "host":
+            record["watch"]["arming_line"] = ""
         _write_json(pointer_path(run_id), record)
         # Starting the supervisor is dispatch's last repository-facing step.
         # Every write dispatch makes inside a repository — the worktree, and
