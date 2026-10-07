@@ -1234,12 +1234,11 @@ def review_scope(
     for record in sorted(
         prior, key=lambda item: int(item.get("plan_version") or 0), reverse=True
     ):
-        responses = record.get("responses") or {}
         for finding in record.get("findings") or ():
             if not isinstance(finding, Mapping):
                 continue
-            response = responses.get(str(finding.get("id")))
-            if not isinstance(response, Mapping):
+            response = _stored_response(record, finding)
+            if response is None:
                 continue
             reason = str(response.get("reason") or "").strip()
             text = " ".join(str(finding.get("text") or "").split())
@@ -1284,6 +1283,29 @@ def finding_ids(record: Mapping[str, Any]) -> list[str]:
             if found:
                 ids.append(found)
     return ids
+
+
+def _stored_response(
+    record: Mapping[str, Any], finding: Mapping[str, Any]
+) -> Mapping[str, Any] | None:
+    """The response stored for a finding, or ``None`` when it carries none.
+
+    A finding's answer is keyed in the record's ``responses`` map by the
+    finding's id, stripped of surrounding space — the same key
+    :func:`finding_ids` reads. Every reader of an answer goes through here: the
+    recurrence folds compare its ``action``, and the re-review scope shows its
+    ``action`` and ``reason``. A record with no ``responses`` map, a finding
+    with no id, or an id with no entry has no stored response, so all of them
+    read a missing answer the same way.
+    """
+    responses = record.get("responses")
+    if not isinstance(responses, Mapping):
+        return None
+    finding_id = str(finding.get("id") or "").strip()
+    if not finding_id:
+        return None
+    response = responses.get(finding_id)
+    return response if isinstance(response, Mapping) else None
 
 
 def unanswered_findings(record: Mapping[str, Any]) -> list[str]:
@@ -1412,18 +1434,16 @@ def declined_recurrence(
     """
     declined: dict[str, set[str]] = {}
     for record in list_plan_reviews(base_dir=base_dir):
-        responses = record.get("responses")
         findings = record.get("findings")
-        if not isinstance(responses, Mapping) or not isinstance(findings, list):
+        if not isinstance(findings, list):
             continue
         plan_key = f"{record.get('project')}/{record.get('plan_slug')}"
         for finding in findings:
             if not isinstance(finding, Mapping):
                 continue
-            finding_id = str(finding.get("id") or "").strip()
             finding_type = str(finding.get("type") or "").strip()
-            response = responses.get(finding_id) if finding_id else None
-            if not finding_type or not isinstance(response, Mapping):
+            response = _stored_response(record, finding)
+            if not finding_type or response is None:
                 continue
             if str(response.get("action") or "").strip().lower() != "declined":
                 continue
@@ -1571,8 +1591,6 @@ def _acted_finding_types(record: Mapping[str, Any]) -> set[str]:
     findings = record.get("findings")
     if not isinstance(findings, list):
         return set()
-    responses = record.get("responses")
-    responses = responses if isinstance(responses, Mapping) else {}
     acted: set[str] = set()
     for finding in findings:
         if not isinstance(finding, Mapping):
@@ -1580,8 +1598,8 @@ def _acted_finding_types(record: Mapping[str, Any]) -> set[str]:
         finding_type = str(finding.get("type") or "").strip()
         if not finding_type:
             continue
-        response = responses.get(str(finding.get("id") or ""))
-        if isinstance(response, Mapping) and (
+        response = _stored_response(record, finding)
+        if response is not None and (
             str(response.get("action") or "").strip().lower() == "acted"
         ):
             acted.add(finding_type)
