@@ -23,6 +23,7 @@ import pytest
 
 from reckon.crew import recovery, runs
 from reckon.crew import review as review_module
+from reckon.crew.picker import client as picker_client
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
 
@@ -326,3 +327,104 @@ def test_a_runtime_source_commit_dispatches_a_light_scoped_review(world, monkeyp
     assert report["dispatched"] is True, report.get("reason")
     assert report["review_tier"] == "light"
     assert report["scope"] == ["pkg/mod.py"]
+
+
+# ── The review-need judge decides a move the rule would send back ───────────
+
+
+class _StubJev:
+    """Answer the judge's question with one probability and record each request."""
+
+    def __init__(self, probability: float) -> None:
+        self.probability = probability
+        self.requests: list[tuple[dict, dict]] = []
+
+    def __call__(self, state, questions, *, env_path):
+        self.requests.append((state, questions))
+        return {
+            "model": "stub",
+            "answers": {
+                key: {"type": "noul", "noul": self.probability} for key in questions
+            },
+        }
+
+
+RUN_GOAL = "expose the reviewed value"
+RUN_DONE_WHEN = "the value reads 1 and its test passes"
+
+
+def _source_move(world: dict, run_id: str, *, findings: list | None = None) -> dict:
+    repo = world["repo"]
+    reviewed = world["reviewed"]
+    _write_run(
+        world,
+        run_id=run_id,
+        head=reviewed,
+        extra={
+            "node": {
+                "id": run_id,
+                "plan": "fixture-plan",
+                "write_paths": ["pkg/mod.py"],
+                "goal": RUN_GOAL,
+                "done_when": RUN_DONE_WHEN,
+            }
+        },
+    )
+    _store_review(run_id, base=reviewed, head=reviewed)
+    if findings is not None:
+        stored = review_module.read_review(PROJECT, run_id)
+        review_module.store_review({**stored, "findings": findings})
+    _commit(
+        repo, {"pkg/mod.py": "VALUE = 1  # the reviewed value\n"}, "docs: comment it"
+    )
+    return runs.read_pointer(run_id)
+
+
+def test_a_source_move_judged_immaterial_carries_the_clean_review(world, monkeypatch):
+    stub = _StubJev(0.1)
+    monkeypatch.setattr(picker_client, "ask", stub)
+    record = _source_move(world, "r-judged-carry")
+
+    report = recovery.carry_review_forward(record)
+
+    assert report["carried"] is True
+    assert report["judged"] == {"probability": pytest.approx(0.1), "source": "jev"}
+    state, questions = stub.requests[0]
+    assert len(questions) == 1
+    assert "# the reviewed value" in state["changes"][0]["diff"]
+    assert state["goals"] == {"goal": RUN_GOAL, "done_when": RUN_DONE_WHEN}
+
+
+def test_a_source_move_judged_material_earns_the_light_review(world, monkeypatch):
+    monkeypatch.setattr(picker_client, "ask", _StubJev(0.9))
+    record = _source_move(world, "r-judged-review")
+
+    report = recovery.carry_review_forward(record)
+
+    assert report["carried"] is False
+    assert report["review_tier"] == recovery.review_tiers.LIGHT
+    assert "judged" not in report
+
+
+def test_a_judge_that_cannot_answer_leaves_the_light_review(world):
+    record = _source_move(world, "r-unjudged-review")
+
+    report = recovery.carry_review_forward(record)
+
+    assert report["carried"] is False
+    assert report["review_tier"] == recovery.review_tiers.LIGHT
+
+
+def test_a_review_that_raised_findings_is_never_judged(world, monkeypatch):
+    stub = _StubJev(0.0)
+    monkeypatch.setattr(picker_client, "ask", stub)
+    record = _source_move(
+        world,
+        "r-repaired-review",
+        findings=[{"id": "f1", "severity": "major", "text": "the value is unread"}],
+    )
+
+    report = recovery.carry_review_forward(record)
+
+    assert stub.requests == []
+    assert report["carried"] is False

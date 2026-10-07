@@ -51,13 +51,16 @@ class Change:
 
     ``identity`` names the unit to the caller and never reaches the model.
     ``goal`` is what the unit itself must achieve, such as a section's
-    done-when or a run's goal, beside the goals shared by every change.
+    done-when or a run's goal, beside the goals shared by every change. A
+    caller holding a diff already, such as a run's ``git diff``, passes it as
+    ``diff`` and the two texts are not compared.
     """
 
     identity: str
     reviewed: str
     present: str
     goal: str = ""
+    diff: str = ""
 
 
 @dataclass(frozen=True)
@@ -182,7 +185,7 @@ def judge(
     verdicts: dict[str, Verdict] = {}
     pending: list[tuple[str, str, dict[str, str]]] = []
     for change in changes:
-        diff = unified_diff(change.reviewed, change.present)
+        diff = change.diff or unified_diff(change.reviewed, change.present)
         if not diff:
             verdicts[change.identity] = Verdict(False, 0.0, "unchanged")
             continue

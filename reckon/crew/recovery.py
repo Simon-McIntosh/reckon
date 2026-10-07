@@ -28,6 +28,7 @@ from reckon.crew import lane_document as _lane_document
 from reckon.crew import metering, plan_review, quota_weight, runs
 from reckon.crew import repair as repair_module
 from reckon.crew import review as review_module
+from reckon.crew import review_need
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     DEFAULT_WATCH_STALL_WINDOW,
@@ -1755,6 +1756,64 @@ def review_head_move(record: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _diff_between(tree: Path | None, older: str, newer: str) -> str | None:
+    """The text diff between two revisions, or None if git cannot give one."""
+    if tree is None or not older or not newer:
+        return None
+    try:
+        completed = subprocess.run(
+            ["git", "diff", f"{older}..{newer}"],
+            cwd=tree,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if completed.returncode:
+        return None
+    return completed.stdout
+
+
+def _judge_head_move(
+    record: Mapping[str, Any],
+    move: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None,
+) -> review_need.Verdict | None:
+    """Whether a move the review rule would send back still needs a reviewer.
+
+    Asked only when the stored review is clean — complete, at or above the
+    floor and raising no finding. A review that raised findings is answered by
+    the move, as a repair is, so the move is read whatever its size. The judge
+    reads the move's diff against the run's goal and done-when; None means it
+    was not asked, and the caller's rule stands.
+    """
+    from reckon import flight
+
+    project = str(record.get("project") or "")
+    run_id = str(record.get("run_id") or "")
+    if not _review_accepts_promotion(review_module.read_review(project, run_id)):
+        return None
+    diff = _diff_between(_review_tree(record), move["reviewed_head"], move["head"])
+    if not diff:
+        return None
+    node = record.get("node") or {}
+    goal = str(node.get("goal") or "")
+    done_when = str(node.get("done_when") or "")
+    verdicts = review_need.judge(
+        [
+            review_need.Change(
+                identity=run_id, reviewed="", present="", goal=done_when, diff=diff
+            )
+        ],
+        subject=review_need.RUN_SUBJECT,
+        goals={"goal": goal, "done_when": done_when},
+        threshold=flight.review_need_threshold(config),
+    )
+    return verdicts.get(run_id)
+
+
 def carry_review_forward(
     record: Mapping[str, Any], *, config: Mapping[str, Any] | None = None
 ) -> dict[str, Any] | None:
@@ -1778,13 +1837,24 @@ def carry_review_forward(
     must read: the review is not re-stamped onto a head no reviewer read, and
     the refusal is written to the run's record so a reader sees the head was
     left unreviewed on purpose.
+
+    Either kind of move is carried after all when the stored review is clean
+    and the review-need judge, reading the move's diff against the run's goal
+    and done-when, answers that it needs no new review. The judgement is kept
+    on the carried record. A judge that cannot answer leaves the rule above.
     """
     move = review_head_move(record)
     if not move:
         return None
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
-    if move["changes_runtime_source"]:
+    judged = (
+        _judge_head_move(record, move, config=config)
+        if move["changes_runtime_source"] or move["touches_delivered_work"]
+        else None
+    )
+    carried_by_judgement = judged is not None and judged.required is False
+    if move["changes_runtime_source"] and not carried_by_judgement:
         return {
             "run_id": run_id,
             "carried": False,
@@ -1794,7 +1864,7 @@ def carry_review_forward(
             "reviewed_head": move["reviewed_head"],
             "head": move["head"],
         }
-    if move["touches_delivered_work"]:
+    if move["touches_delivered_work"] and not carried_by_judgement:
         touched = list(move["deliverable_paths"])
         if touched:
             detail = "touches the delivered work: " + ", ".join(touched)
@@ -1847,6 +1917,13 @@ def carry_review_forward(
         "paths": list(move["paths"]),
         "at": carried["timestamp"],
     }
+    if carried_by_judgement:
+        # The move changed what the rule alone would send back to a reviewer;
+        # the judgement that let the review carry is kept beside it.
+        carried["carried_forward"]["judged"] = {
+            "probability": judged.probability,
+            "source": judged.source,
+        }
     review_module.store_review(carried)
     _mutate_pointer(
         run_id,
@@ -1862,6 +1939,11 @@ def carry_review_forward(
         "scope": list(move["paths"]),
         "reviewed_head": move["reviewed_head"],
         "head": move["head"],
+        **(
+            {"judged": dict(carried["carried_forward"]["judged"])}
+            if carried_by_judgement
+            else {}
+        ),
     }
 
 
