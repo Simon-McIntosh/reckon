@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:42:03.674Z",
+  "dispatched_at": "2026-10-04T21:32:43Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery.py:2047",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a74 must extend `_ordered_review_lanes`/`_review_lane_plan` to filter candidates by the profile's required modality rather than add a second selector, or the refusal \u00a71 built never runs on the automatic path.",
+      "text": "`_ordered_review_lanes` is the mechanism that already picks the lane a composed review runs on, and it orders candidates by owning lane, then local, then alphabetical with no notion of modality; \u00a71 landed `flight.select_profile_backend` as a parallel selector and \u00a74 leaves the dispatch site unnamed, so a figure profile composed onto the ordinary ordering can still land on a lane that cannot read the image \u2014 the exact fall-through the plan exists to close",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/path_classes.py:66",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a74 should name `path_class(...) == \"figures\"` as its trigger and compose with `review_tiers`, so a plan re-implementing the classifier would drift from the owner that the velocity and promotion paths already read.",
+      "text": "the plan's \u00a74 selects the figure profile for \"a run that changed an image under a figures directory\", re-deriving a fact `path_class` already computes (`docs/figures/` prefix or `FIGURE_SUFFIXES`), and `reckon/review_tiers.py` already consumes `path_class` to classify a finished run from its changed paths",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html#s4",
+      "id": "thin_wrapper-1",
+      "reason": "the plan must state whether the figure profile is a case added to a \u00a72g selector the plan expects \u00a72g to land, or a selector this plan introduces, and extend that owner instead of a parallel one.",
+      "text": "\u00a74 asserts it is \"mostly the application of a rule \u00a72g already carries\", but \u00a72g's per-kind profile selection from changed paths is not present in the code (`reckon/crew/recovery.py` has no profile selection; `dispatch_review_for_run` composes without one), so the figure profile would be a new selector built beside a \u00a72g mechanism that does not yet exist",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html#s4",
+      "id": "reuse_search-1",
+      "reason": "citing either owner would have surfaced both the classifier and the lane selector above, changing \u00a74 from a free-standing rule to an extension of two existing mechanisms.",
+      "text": "the plan's only prior-art citations for \u00a74 are \"\u00a72g's existing rule\" and the codex `-i` flag; it does not cite `reckon/path_classes.py` (figure detection), `reckon/crew/recovery.py` (review lane choice), or `reckon/review_tiers.py` (per-run review sizing), so the reuse map for the section that does the selecting was not run",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "137c9a9dba723cf8ab9d2cf08ae354f4f390b21bc4d9b1803aa8f38eaef00199",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T213230271457-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "021b6c06eef56620e22359d33bef0cacebd839aa",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a71's landed surface (`select_profile_backend`, `missing_input_modalities`, `declared_input_modalities?`, `input_modalities_required`) is one small interface over the single `PROFILE_INPUT_MODALITIES` map in `reckon/flight.py`; the modality rule is not spread across wrappers.",
+    "duplicate_owner": "a finding \u2014 the plan routes a review to a lane that can read an image through a second selection path (`flight.select_profile_backend`) beside the existing, modality-blind review-lane owner `reckon/crew/recovery._ordered_review_lanes`, which already orders every composed review's candidate backends.",
+    "reuse_search": "a finding \u2014 the plan cites the existing codex `-i` capability and `\u00a72g`, but does not cite the mechanisms that already answer the two questions \u00a74 rests on: `reckon/path_classes.path_class` (which already classifies a changed figure path) and `reckon/crew/recovery._ordered_review_lanes` (which already selects the lane a composed review runs on).",
+    "thin_wrapper": "a finding \u2014 \u00a74 adds the figure profile as \"the application of a rule \u00a72g already carries\", but \u00a72g's per-kind profile selector has no implementation in `reckon/crew/recovery.py`, so the plan neither extends an existing selector nor says why it cannot; it names no home and no owner for the selection."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.441194+00:00"
+}

@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:16:25.147Z",
+  "dispatched_at": "2026-10-05T02:02:21Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/worker-authors-its-own-record.html:65",
+      "id": "reuse_search-1",
+      "reason": "the done-when greps a path that cannot match, so it returns zero vacuously and the real clause surface is never checked; the path must be `skills/reckon-build/`.",
+      "text": "the \u00a72 table names `skills/reckon-ship/SKILL.md` and the \u00a72 done-when (line 75) instructs \"a grep of `skills/reckon-ship/` for the prohibiting phrasings returns zero\", but `ls skills/` shows only `reckon-build, reckon-create, reckon-edit, reckon-roadmap, reckon-sprint, reckon-status, reckon-sync`; `skills/reckon-ship/` does not exist",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/worker-authors-its-own-record.html:86",
+      "id": "reuse_search-2",
+      "reason": "the plan's account of its own landed wording is stale (section\u2194fragment, cumulative record\u2194per-node fragment), so a re-implementer mirroring \u00a72 would reproduce the wording the prompt no longer carries.",
+      "text": "the \u00a72 \"Landed\" paragraph states the skill now carries the worker \"appends its landing record to its own section of the plan and its evidence anchor to the cumulative evidence record\", but the landed prose it describes (skills/reckon-build/references/worker-protocol.md:213) reads \"Write your landing record to your own fragment path and never to the plan ... docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:` line in your manifest\", and `PLAN_LANDING_CONTRACT` (reckon/crew/prompts.py:156) says the same",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/test_skill_contract_parity.py:1",
+      "id": "thin_wrapper-1",
+      "reason": "the plan must state why the existing owner cannot absorb these cases, or land them in it; a second file adds maintenance surface with no justifying sentence.",
+      "text": "the plan introduces a new test module that layers the same assertion shape (skill text must carry a source-derived sentence) over `tests/test_skill_contracts.py`, which already performs source-derived skill assertions (e.g. `test_worker_protocol_property_table_tracks_the_node_authority`, tests/test_skill_contracts.py:412, derives its expectation from `NODE_PROPERTIES` at assertion time), and the plan itself edited `tests/test_skill_contracts.py` (read-set budget) in the same change",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/test_skill_contracts.py:811",
+      "id": "duplicate_owner-1",
+      "reason": "the owner test is exactly the literal-pinned, silently-drifting copy \u00a75 exists to retire; the fix is to migrate that owner test to the derived form and retire its literals, not to add a second file beside it while the literal copy remains.",
+      "text": "the plan's parity mechanism duplicates `test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer`, which already pins the same three sentences this plan changes (\"review of an authored record, not a transcription of a manifest\", \"Write your landing record to your own fragment path ...\", \"Never mutate the shared project index, sprint state\") as string literals in the owner file",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1347ecda1bf184ecd51673facc0ab01936d0a21ba4b982f80e86bbc54d5df556",
+  "plan_slug": "worker-authors-its-own-record",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T020206232947-plan-review-of-worker-authors-its-own-record",
+  "reviewed_blob_sha": "b92db9dc6fbf9f0caefed6beef8059472dc2694c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the one substantive new module, `tests/test_skill_contract_parity.py`, hides the derive-from-source-and-assert behaviour behind three small helpers and one parametrized case, rather than spreading it across many shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 the parity assertions duplicate `tests/test_skill_contracts.py::test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer`, which already asserts the same landing, narrowed-prohibition and coordinator-half sentences.",
+    "interface_budget": "pass \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; the plan adds a prose clause and a test, no CLI option, MCP view or refusal family, and \u00a74 accounts for the one prompt constant (`CLOSURE_AUTHORITY_CONTRACT`) as another plan's surface, not this plan's addition.",
+    "reuse_search": "a finding \u2014 the plan's \u00a72 contradiction table and its done-when name `skills/reckon-ship/`, but no such directory exists; the enclosing skill is `skills/reckon-build/`, and the landed clauses and their covering test all live there.",
+    "thin_wrapper": "a finding \u2014 the plan adds `tests/test_skill_contract_parity.py` as a parallel layer over the skill-contract assertions `tests/test_skill_contracts.py` already owns, and states no reason that owner cannot be extended instead."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.380049+00:00"
+}

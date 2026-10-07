@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:49:15.891Z",
+  "dispatched_at": "2026-10-04T21:35:26Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:3619",
+      "id": "reuse_search-1",
+      "reason": "the author should check \u00a76 against the landed carry in `dispatch.py:3619-3770` and collapse \u00a76 to a verification or a genuinely new clause rather than dispatch a rebuild.",
+      "text": "\u00a76 asks the cheaper-lane clause to be derived from the routing figures at dispatch time and the sample shortfall to be stated, but \u00a72's landed carry already computes that clause from the committed ledger through capabilities' own helpers, so \u00a76 may be a node to rebuild already-shipped machinery",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/lane_evidence.py:177",
+      "id": "reuse_search-2",
+      "reason": "a reuse map that found this dormant owner would have \u00a76 revive or extend it instead of forking the derivation into `dispatch.py`.",
+      "text": "no caller anywhere in `reckon/` invokes `lane.evidence()`, and the plan never names it, so the one module whose stated job is \"per-lane, per-shape evidence\" is invisible to a design that needs exactly that cut",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:3811",
+      "id": "deep_module-1",
+      "reason": "the plan should name where this behaviour lives (the existing lane_evidence module is the natural deep home) so \u00a76 extends an interface instead of adding to the helper carpet.",
+      "text": "the advisory is implemented as ~12 free helpers (`_lane_advisory_costs`, `_lane_advisory_cheaper_lane`, `_lane_advisory_ledger_runs`, `_lane_advisory_horizon_seconds`, `_dispatch_lane_advisory`, `_lane_reading_carry`, ...) inside a 12,638-line module, so the behaviour has surface without a module boundary and a reader must jump between private module helpers to follow one clause",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/lane_evidence.py:177",
+      "id": "duplicate_owner-1",
+      "reason": "two derivations under one name will drift and a later reader cannot reuse the advisory evidence from the routing surface; naming `reckon/crew/lane_evidence.py` as the owner to extend makes the plan land one measure, not two.",
+      "text": "`reckon/crew/dispatch.py:3619` re-derives a per-lane, per-node-shape `cost_per_durable_node` that `lane_evidence.py` already computes under the same field name but a different measure (`quota_weight` there, rework-charged input tokens here), so one field name now carries two units",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b97072d9258269b786206e7d3f76198c805f88dbf6adc2325743f0feb46735d0",
+  "plan_slug": "advise-the-lane-never-force-it",
+  "plan_version": 32,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T213512256143-plan-review-of-advise-the-lane-never-force-it",
+  "reviewed_blob_sha": "ee54dd5abfbd62aba42cb858024baf26c1576a25",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the advisory's substantial behaviour (horizon comparison, ledger-wide rework-charged cost, cheaper-lane ranking, sample-floor refusal) is spread across roughly twelve free helpers in `reckon/crew/dispatch.py:3552-4042` rather than behind one module interface.",
+    "duplicate_owner": "a finding \u2014 the per-lane rework-charged `cost_per_durable_node` recomputed at `reckon/crew/dispatch.py:3619` is a second derivation of the figure `reckon/crew/lane_evidence.py:177` already owns.",
+    "reuse_search": "a finding \u2014 the plan searches `crew preflight`, the gate-advisory mode, `crew(view=directory)`, the ledgers and `capabilities`' routing helpers, but never cites `reckon/crew/lane_evidence.py:177`, the existing module that already computes per-lane `cost_per_durable_node` for exactly a (role, spec_level) node shape; and \u00a76's done-when appears already met by \u00a72's landed carry at `reckon/crew/dispatch.py:3619`.",
+    "thin_wrapper": "pass \u2014 the advisory is not a bare forward to the lane reading: it adds projection-versus-horizon and a cheaper-lane clause the reading lacks, and \u00a72 states why it rides the existing single read instead of opening a second probe."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.778503+00:00"
+}

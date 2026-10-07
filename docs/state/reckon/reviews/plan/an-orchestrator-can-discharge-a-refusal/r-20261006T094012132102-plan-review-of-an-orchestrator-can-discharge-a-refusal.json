@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T09:53:51.434Z",
+  "dispatched_at": "2026-10-06T09:40:37Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/refusals.py:18",
+      "id": "reuse_search-1",
+      "reason": "\u00a74's done-when is already satisfied in the tree for the dispatch families, so the section must extend `refusals.py`/`test_crew_refusal_visibility.py` for the promotion families rather than build a parallel taxonomy.",
+      "text": "\u00a74 proposes \"a refusal that cannot be discharged is not permitted to exist\", enforced by a test that enumerates the refusal sites from source and fails on any that carries none; `DISPATCH_REFUSAL_REMEDIES` already attaches a resolving action to every refusal family (D01\u2013D23, the 23 `refusal_families` in this week's budget) with `NO_CREW_VERB_SENTENCE` as the explicit no-discharge case, and `tests/test_crew_refusal_visibility.py:31,37` already enumerates the families from `REFUSAL_SOURCE_PATHS` via `importlib`/`ast` and fails on an unregistered one \u2014 the plan rebuilds an existing registry rather than adding the promotion-path families to it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py:1085",
+      "id": "reuse_search-2",
+      "reason": "\u00a75 is the plan's designated first node (\"the only section that can start today\"), and it is already landed, so the node must be retired or reframed as verification rather than released as implementation.",
+      "text": "\u00a75 proposes replacing the negative signature with a positive control (a log carrying the runner's own summary promotes despite the diagnostic; a log with the diagnostic and no completion evidence still refuses), and that exact behaviour is already implemented: `_log_shows_the_command_ran` returns True on `_RUNNER_SUMMARY` (`promotion.py:1075`) and reads the `command not found` diagnostic \"only in the absence of a positive record\" (`promotion.py:1108,1207`), with both halves asserted in `tests/test_crew_gate_log_agrees.py` \u2014 \u00a75 describes a defect that no longer reproduces at the cited site (the guard has moved from line 464 to 1085 and its logic changed)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/refusals.py:97",
+      "id": "duplicate_owner-1",
+      "reason": "each section should extend the named owner in place; forked copies of the refusal registry, the gate-log check, the claim join and the write-path grant drift from their owners and recreate the census-of-one defect this plan exists to remove.",
+      "text": "a census of four re-implementations of existing owners: `reckon/crew/refusals.py:97` owns the refusal\u2192resolving-action registry (`format_refusal`) that \u00a74 proposes to rebuild as a discharge taxonomy; `reckon/crew/promotion.py:1085` owns the gate-log command-ran check that \u00a75 proposes a new version of; `reckon/crew/directory.py:105` (`directory`) plus the dispatch `scope-conflict` guard own the live-claim\u2192owning-session join that \u00a76 proposes to re-derive; `reckon/crew/dispatch.py:2044` (`_grant_landing_write_paths`) already extends `node.write_paths` after dispatch-time capture, the capability \u00a76b proposes to add to the resume path",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/directory.py:105",
+      "id": "thin_wrapper-1",
+      "reason": "if `scope-conflict` already produces the join, \u00a76 should call it from promotion rather than re-derive the join, which is the extension vs wrapper question the section leaves unanswered.",
+      "text": "\u00a76 adds a claim lookup to a refusal message, forwarding to `directory()` and the dispatch `scope-conflict` guard that already name the owning run, node and session, without saying why those mechanisms cannot be reached from the promotion path (a call-site change) instead of a new wrapper",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-can-discharge-a-refusal.html#s4",
+      "id": "interface_budget-1",
+      "reason": "the retirement is stated only in a decision-context paragraph, so the section must account for the added interface surface in its own text as the budget rule requires.",
+      "text": "with cli_options 317 and refusal_families 23, \u00a74's decision offers `--waive <refusal-id> \"<reason>\"` (one new option that could merge the existing five per-refusal waivers, `--waive-suite-delta` / `--waive-boundary-refusal` / `--waive-resume-path` / `--accept-path` / `--no-commit`) and \u00a76b adds a second `--accept-path` form; neither section's own text names what it retires, merges, or why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-can-discharge-a-refusal.html#s6b",
+      "id": "interface_budget-2",
+      "reason": "the section must say whether the second `--accept-path` form replaces the first or why the existing one cannot carry the distinction.",
+      "text": "\u00a76b adds a second form of the existing `--accept-path` option and a new recorded field distinguishing an authorised extension from a waived violation, adding to cli_options and the ledger shape without naming what it retires or merges",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e0d53e88590ac3ebd3252646576354a6850636939b85c0cc1219c33a4a2ab3a9",
+  "plan_slug": "an-orchestrator-can-discharge-a-refusal",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T094012132102-plan-review-of-an-orchestrator-can-discharge-a-refusal",
+  "reviewed_blob_sha": "27fd999a39bcee02cca833ebbc5b91a895021b6b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is proposed; every section is an in-place edit to an existing file, so there is no shallow-wrapper surface to judge.",
+    "duplicate_owner": "a finding \u2014 a census of four duplicates of existing owners, named below.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a74 adds a waiver option and \u00a76b adds a second `--accept-path` form without naming what each retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan proposes \u00a74's refusal-with-remedy registry and \u00a75's positive-control gate-log guard without citing the two mechanisms that already implement them (`reckon/crew/refusals.py` and `reckon/crew/promotion.py:_log_shows_the_command_ran`).",
+    "thin_wrapper": "a finding \u2014 \u00a76 forwards to the existing live-claim join (`reckon/crew/directory.py` / dispatch `scope-conflict`) without saying why that mechanism cannot be extended to the promotion path."
+  },
+  "section_digests": {
+    "_document": "2363b216260e34030d1fcb41bc891dd8a82a6b4da43c1c33d580459a1e8ac8e9",
+    "s1": "09fbd4d9e54abd33b285d0e91e8af9ecb80cba113a6d013aef2eb244e4057672",
+    "s10": "04e9985b9c4bc2b505e33d76a5a3a3c54ce861b7d6d2f36725a245ba30224981",
+    "s2": "1f1483c1df9e7749ef1d8fd6467eaca224474cbc2b59826466478be58f1ebc22",
+    "s3": "f81e1f134a45bec7f2c28301bc52bdac92338d05cba5241c4d9b7ccb48fb4857",
+    "s4": "c9f9382356904b580df57243b493fa0b41764638284ca89354b78dbb39f33d7e",
+    "s5": "35e0f0dc5c6d890b4c37b16e6e1703b31dd9fda0e1f3ca066fdb42bf69914fb5",
+    "s6": "34967bf1f3f5ec12bf055eddbfadf161488e726c3b5bb2d53d52981a2d0a28b3",
+    "s6b": "e15b2a77b45dd7c4dc785e9b5115503870802872968bbed92582351d14bd1643",
+    "s7": "d686fc7945c5be295d2cbedab07c990a339ff0cfe5ac00a14624a7cc0d09b609",
+    "s8": "720da6fc22ecff4fd3c5d71a57b5cd113f5c7e17e40c41b3ab2bdd69d608e5e2",
+    "s9": "b8d4c52eba997e188d965cfe9058970951e209432302e06fe11c58139aefd88d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.801528+00:00"
+}

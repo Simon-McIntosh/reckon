@@ -1,0 +1,79 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T09:53:48.646Z",
+  "dispatched_at": "2026-10-06T09:41:30Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/lane_document.py:524",
+      "id": "reuse_search-1",
+      "reason": "the node is redundant; the section should record the landing (as \u00a72b/\u00a72d/\u00a72e did) rather than redispatch it.",
+      "text": "\u00a72f's done-when (\"a lane document is reported field by field, each present value carried and each absent one marked absent\") is already satisfied at HEAD: `read_lane_reading_fields` resolves the stamp, mean context and binding per field, and `_lane_reading_carry` in `reckon/crew/dispatch.py:3910` withholds each figure on its own with the docstring \"Strictness is per field rather than per document\"; `_lane_reading_unknown` (dispatch.py:3887) is reached only on a fatal parse failure (no document, unparseable, missing/ stale `observed_at`), not on \"any single precondition\". The tests `tests/test_lane_reading_carries_counts.py` and `tests/test_lane_readers_share_the_gate_aware_headroom.py` pin the behaviour. The plan carries \u00a72f as open work and would dispatch a node to rebuild it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:3069",
+      "id": "reuse_search-2",
+      "reason": "\u00a72g would rebuild a landed fix, and the stale line citations mislead every worker it briefs.",
+      "text": "\u00a72g's done-when (\"a file named only in prose is not charged, requiring the estimate to match the same node with the citation removed\") is already satisfied: the context estimator charges `node.write_paths` plus `_declared_input_files(node)` (routing.py:3175), not a scan of `goal + done_when` for anything path-shaped, so the \"citation implies a read\" premise the section names is gone; the exclusion-verb handling \u00a72g cites as \"already right\" is now the `_GOVERNING_VERB` path in `_declared_input_files` (routing.py:3103). The line numbers the section cites no longer resolve: `routing.py:48` is now `routing.py:69`, `dispatch.py:1890` (`_lane_reading_unknown`) is now `dispatch.py:3887`, and `dispatch.py:3241` (the member guard the \u00a72e remainder quotes) is now `dispatch.py:7070`.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/bar.py:149",
+      "id": "duplicate_owner-1",
+      "reason": "a second admission owner beside `bar.py` drifts from it; the class dimension should extend `bar.py`'s key, and the section must say so or state why `bar.py` cannot be extended.",
+      "text": "\u00a72's rule \"keyed on the class of work and the lane\" decides the same thing `bar.py` already owns: local-vs-metered admission, keyed on prescription via `open_endedness_score` (dispatch.py:6210), `PRESCRIBED_MAX` (bar.py:61) and `outcome_for` (bar.py:142), already wired to `prescription_module.judge_prescribed(node)` at dispatch.py:6242 with no parallel config layer. The plan names `crew-effort-routing` and `effort-calibration` as neighbouring mechanisms but not `bar.py`, and proposes a new flight-config rule \"beside the backend it governs\" rather than extending the module that already answers the send/hold question",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/background-agent-fitness-and-dispatch-scope.html \u00a72",
+      "id": "interface_budget-1",
+      "reason": "the section must name the roster retirement or state why nothing can be retired, and account for the added refusal/flag/view surface in its own text.",
+      "text": "with public_definitions 1481, cli_options 317, mcp_views 33 and refusal_families 23, \u00a72 adds a new refusal family (\"refused before a worktree exists, naming the rule and its evidence\") and a review-required flag that `crew complete` honours, \u00a72e adds a `crew view=\"live\"` surface field, and \u00a72d stage 3 defers \"whether the roster survives\" as a pure concurrency token \u2014 a duplicate the section itself names (the scope registry \"already\" refuses the same collisions). No section names what it retires or merges, and the one retirement candidate (the roster) is explicitly left undecided rather than accounted for",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/background-agent-fitness-and-dispatch-scope.html#s2",
+      "id": "thin_wrapper-1",
+      "reason": "this is the same defect as the duplicate_owner finding and would be resolved by the same fix; emitted separately only to satisfy the item census.",
+      "text": "the flight-config rule \u00a72 adds reads the role and spec level \"where they are already resolved\" and forwards to a class lookup, adding no behaviour beyond selecting among default / review-gated / refused on a dimension `bar.py` does not yet carry, without arguing why that selection cannot be added to the existing admission owner",
+      "type": "thin_wrapper",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "c0196e69cbad319c0f131821c1488e8e2b0176dc9a992080e2da51505aa6d237",
+  "plan_slug": "background-agent-fitness-and-dispatch-scope",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T094111383015-plan-review-of-background-agent-fitness-and-dispatch-scope",
+  "reviewed_blob_sha": "a6d334a1e043f3f6bba076b29b20cbc9da9fe1de",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan's core module `reckon/crew/prescription.py` hides five admission properties behind one public `judge_prescribed(node) -> {prescribed, failures, detail}`, and the \u00a72b repair closed the two fail-open holes without widening that interface; the liveness predicate likewise hides pid/host/start-tick judgement behind `_member_worker_liveness` (node.py:325), delegating to the single owner `claims._worker_liveness` rather than restating the host comparison.",
+    "duplicate_owner": "a finding \u2014 \u00a72 re-implements local-vs-metered admission as a new flight-config rule beside `reckon/crew/bar.py`, which already owns that decision and is already wired to the prescription judgement at `dispatch.py:6242`; the section does not name the owner to extend.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a72 adds a class-keyed refusal family and a review-required flag in `crew complete`, and \u00a72e adds a `crew view=\"live\"` count, without naming what any of them retires or merges, and \u00a72d stage 3 explicitly defers rather than names the roster retirement.",
+    "reuse_search": "a finding \u2014 \u00a72f and \u00a72g each propose building machinery that already exists at HEAD (`reckon/crew/lane_document.py:524 read_lane_*_fields` and `reckon/crew/routing.py:3069 _declared_input_files`), and the plan's own \u00a72 cites none of it; the reviewer's reuse map finds the mechanism present, so the section must record the landing rather than dispatch a node to rebuild it.",
+    "thin_wrapper": "a finding \u2014 \u00a72's proposed class-and-lane routing rule is a thin layer over admission machinery `reckon/crew/bar.py` already owns and dispatch already consumes, and the section does not say why that owner cannot be extended instead."
+  },
+  "section_digests": {
+    "_document": "2796d7fa8a1e7b81a217818f4472da23f2192165b7dd401e5211accbf49deec0",
+    "rule": "f932613385002c7d6a833939993f3abdbc28b2e2e4d9754a7474e64a3a7739bc",
+    "s0": "6cd9788b998bab72d6725714b38ccab8cf108fb1ce0ff48c96aec708b9d190ec",
+    "s1": "9121c889922cf65303a42aebb8f5346bff6635cca5f88925f435acd88890446c",
+    "s2": "b8cc0fb7141ec9dc18e9449aecec8b6e51306f721fe730b30782d0764aaa6af1",
+    "s2b": "0d4a06cafb923c7a84d3faa916ef97dd0f62192eeb863fc6044a3014404e75bf",
+    "s2c": "bb40949113cd221fd6d2ca31db1462f56cb6e15b429ba5f6f06bc203539305e4",
+    "s2d": "7e7895fc724fa01a842141fdd23d2235dde9f92a9e735c135593f5988403eac7",
+    "s2e": "1dd2c4f55b3852c929358f5ec0d14ed36bea94100350410895bf72f4bbe35804",
+    "s2f": "955cd1af7eb1701dc539c9b8a9c06d27680141d98bd2176e01e07b67524a9b9f",
+    "s2g": "d1e6a1ba1b36ab770a3518f8e63df7a53545122a49000036571224e4285c90a8",
+    "s3": "aebd6e8fe9aa87dc5c456b0d970950f928b6921770d244dfdef626cbecaad8ac"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.835344+00:00"
+}

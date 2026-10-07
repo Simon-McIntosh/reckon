@@ -1,0 +1,35 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:56:25.671Z",
+  "dispatched_at": "2026-10-04T21:47:22Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:1318",
+      "id": "duplicate_owner-1",
+      "reason": "naming reckon/velocity.py lets \u00a73 extend session_usage (or lift its parse to a shared function) for the per-load delta it needs, instead of maintaining duplicate token accounting that has already failed one independent review.",
+      "text": "docs/research/data/crew-contract-baseline/measure.py, which \u00a73's done-when names as the token measurement instrument and whose bracketing control the \u00a73 review already found broken, opens the transcript store under ~/.claude/projects itself: it walks it, parses assistant `usage` blocks, sums input + cache_creation + cache_read, and carries its own dispatch regex, duplicating velocity.transcript_index (:1318) and velocity.session_usage (:1339); session_usage already deduplicates by message id, splits uncached/cache-creation/cache-read, and excludes sidechain and out-of-window records, so the plan will re-measure and patch a second parallel reader instead of the owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b85ae2536393d9bbbd584e3a1498f9b9f6c1798cfa5e6ed72d467b593428a0b1",
+  "plan_slug": "the-crew-contract-fits-one-read",
+  "plan_version": 26,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T214707294469-plan-review-of-the-crew-contract-fits-one-read",
+  "reviewed_blob_sha": "eb2a1bdee102efd4e036f832f605d41bd33588f0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design concentrates the coordinator contract into one core skill (SKILL.md \u22644,000 words, skill plus references \u226412,000) and demotes the remainder to on-demand references, so it reduces surface rather than spreading complexity across small wrappers, and it proposes no new module.",
+    "duplicate_owner": "a finding \u2014 the instrument \u00a73's done-when binds to, docs/research/data/crew-contract-baseline/measure.py, re-implements transcript indexing and per-request token accounting that reckon/velocity.py already owns.",
+    "reuse_search": "pass \u2014 \u00a72 is itself a reuse map (every binding sentence must name the refusal or check that enforces it) and \u00a73 cites the mechanisms it must not break, tests/test_skill_contract_parity.py and docs/research/data/crew-contract-baseline/measure.py; the one owner its search did not reach is the transcript-usage reader, reported below.",
+    "thin_wrapper": "pass \u2014 the references are a layer over the runtime prompt in reckon/crew/prompts.py, but \u00a73 scopes them to a coordinator composing a delegation by hand and tests/test_skill_contract_parity.py derives its expectations from the prompt's own strings, so the two surfaces are compared rather than asserted independently and the layer carries a stated reason."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.216304+00:00"
+}

@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:22:06.453Z",
+  "dispatched_at": "2026-10-04T17:05:32Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html#s3",
+      "id": "reuse_search-1",
+      "reason": "one sentence naming the existing persisted indexes, and why a live digest-keyed cache cannot be one of them, stops the system carrying a third representation of the same rows, which is the drift \u00a73 and \u00a74 exist to prevent.",
+      "text": "\u00a73 places a new persisted index under the config-home cache without citing the two persisted plan-metadata stores the loader itself reads as fallback (state/<project>/index.json, state/<project>/projection.json)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/ui/state-loader.js:120",
+      "id": "deep_module-1",
+      "reason": "the plan should name one row-application function the three call sites share; complexity spread across three wrappers over one operation is surface without depth, and a change to arrival accounting must otherwise be made in three implementations that can drift.",
+      "text": "\u00a74 and \u00a75 add applyIndexRowChanges and mergeDerived beside the first-paint assemble, three near-copies of map-row then key-by-arrivalKeyOf then hold-unknown-keys-as-arrivals then rebuild state.plans/attachment_relations/arrival",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_views.py:1217",
+      "id": "thin_wrapper-1",
+      "reason": "the adapter exists only because \u00a78 forked the item shape; the plan should settle on one row shape, or state why the agent reader needs the wrapper, rather than add a thin translation layer with no depth.",
+      "text": "_indexed_item maps the index row's fields back into the discovery item shape serve._discover_plans_uncached already defines at serve.py:1782",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/metadata_index.py:419",
+      "id": "duplicate_owner-1",
+      "reason": "the plan's \u00a73/\u00a74 design says the loader merges discovery's derived fields over the index's rows as one row set; leaving discovery building its own rows is what let the index and the served payload disagree on one document's created/edited stamps (the stat-vs-git drift the \u00a73 review measured), and the plan should name metadata_index the row owner discovery extends rather than keep two builders in step by hand.",
+      "text": "the plan adds metadata_index._resource_row / _figure_row as a second per-document row builder beside the existing serve._discover_plans_uncached row builder (serve.py:1769-1858) and figures.figure_rows, all three calling resources.identify_resource + _plan_html.parse_meta + the stamp rule",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_views.py:1143",
+      "id": "duplicate_owner-2",
+      "reason": "two composers of the same derived payload over one index drift the same way the two row builders did; the plan should route the agent read through a shared composer, or say why the served payload cannot be built from the index too.",
+      "text": "\u00a78 adds index_discovery as a second discovery-payload composer beside serve._discover_plans_uncached (serve.py:1745), both composing the project's own sprints/milestones/blockers/timeline for one project",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "135e2502b3ee87d25e327010fc2046cafb76b252119313195f4d1f2fee59462f",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 39,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T170519913023-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "8d2bf0c1c7630630032814d3b68886689eae6c6f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 docs/ui/state-loader.js spreads one row-application operation across assemble, mergeDerived and applyIndexRowChanges, so the arrival and state accounting has three copies.",
+    "duplicate_owner": "a finding \u2014 the plan builds the per-document row set twice, in reckon/metadata_index.py and in serve._discover_plans_uncached (serve.py:1769), rather than naming the index as the row owner discovery extends.",
+    "reuse_search": "a finding \u2014 the plan adds reckon/metadata_index.py, a persisted per-project metadata store, without citing the persisted plan metadata the codebase already keeps and the loader still falls back to (state/<project>/index.json, state/<project>/projection.json), so it never says why those cannot be extended.",
+    "thin_wrapper": "a finding \u2014 mcp_views._indexed_item re-shapes index rows back into the discovery item shape serve._discover_plans_uncached already builds, with no reason given why one shape cannot serve both readers."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.318295+00:00"
+}

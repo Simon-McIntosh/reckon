@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:45:49.546Z",
+  "dispatched_at": "2026-10-04T21:33:20Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery.py:1586",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend the owner (give reckon/clones.py:changed_paths a fail-closed variant, or have recovery delegate to it) rather than add a parallel git reader; the only contract the new function adds is None-on-error vs []-on-error, which belongs on the owner.",
+      "text": "this plan's \u00a75 landing (commit cc17465eff, \"review-carries-forward\") added _changed_paths_between, a `git diff --name-only OLDER..NEWER` reader, beside reckon/clones.py:674 changed_paths(tree, base_sha, tip) which already runs `git`, the same verb and the same --name-only and the same `[line for line in stdout.splitlines() if line.strip()]` post-processing \u2014 so the repository now has a second reader of the same fact and a fix to one (path quoting, rename detection, an error contract) will not reach the other",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:3806",
+      "id": "thin_wrapper-1",
+      "reason": "the plan already says the reflex must resolve the tier \"through promotion's own resolver\"; the honest change is to move the input-gathering into reckon/review_tiers.py (the owner of the tier decision) behind one public function that both promotion and recovery call, instead of a private cross-module helper wrapped by a second private helper.",
+      "text": "recovery._sweep_review_tier reaches across modules into promotion's private promotion._run_review_tier through a function-local import, and its body adds nothing over that call but an except returning review_tiers.FULL \u2014 so the tier resolver's input-gathering (record + manifest_commits to changed paths, changed lines, spec level, capability risk) now has two public entry points (promotion._run_review_tier and this wrapper) that must be kept in step by hand, and the reflex depends on a leading-underscore symbol",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d2e92255a560537604b91b163f6acf65eea76737f9bea76d6b5187357ac03e5d",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 140,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T213304777966-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "76f13662bd151ba6c96d44fab218af0a8a0c10a6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 one module, reckon/review_tiers.py, hides the whole tier rule (SPA-aware runtime-source classification, spec-level and capability-risk precedence, fail-closed handling of an unmeasured diff) behind review_tier(...); its callers feed inputs rather than re-deriving the rule.",
+    "duplicate_owner": "a finding \u2014 the \u00a75 carry-forward's recovery._changed_paths_between re-implements the git changed-path reader that reckon/clones.py:changed_paths already owns.",
+    "reuse_search": "pass \u2014 \u00a72's \"What the code holds at 99455576\" states the search (reuse map, reckon/path_classes.py, reckon/_plan_html.py:164, the _require_review_waiver seam), and the landed reckon/review_tiers.py imports reckon.path_classes.path_class rather than carrying a second classifier.",
+    "thin_wrapper": "a finding \u2014 recovery._sweep_review_tier (reckon/crew/recovery.py:3787) wraps promotion's private _run_review_tier with an except-and-default, giving the tier resolver two entry points."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.472419+00:00"
+}

@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T20:00:26.815Z",
+  "dispatched_at": "2026-10-04T19:57:19Z",
+  "findings": [
+    {
+      "anchor": "reckon/ledger.py:864",
+      "id": "reuse_search-1",
+      "reason": "naming the existing index in \u00a72 would change the plan from \"make run_store.db an index\" to \"reconcile with the index that already reads the files\".",
+      "text": "the plan proposes the run-file-plus-rebuildable-index model without citing `_indexed_data`/`_run_index_path`, machinery that already indexes the run files and is what `load` actually reads, so the plan's own prior-art list is incomplete",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:785",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a71/\u00a72 must name which single index owns the read path and reconcile it with `reckon/run_store.py`, or a worker widens both and they drift.",
+      "text": "the plan names `run_store.db` as \"the index\" (preamble and \u00a71\u2013\u00a72), but `ledger.load(use_index=True)` already routes every keyed read through a *different* rebuildable SQLite cache resolved by `_run_index_path` and built by `_indexed_data` (records/aggregate_rows/metadata tables), so the plan's \"the files are the authority and the index is a cache of them\" model is already owned elsewhere and the code now carries two indexes over the same committed run files",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/run_store.py:95",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a74 should name the roster owner to extend (and retire the unused store tables) instead of adding a parallel store beside them.",
+      "text": "the plan moves the roster to `crew/members.json` and holds to `crew/holds.json` (\u00a74), but `reckon/run_store.py` already declares `members` and `holds` tables (lines 95 and 99) and `append_member` writes the roster into the store, so the plan creates a second owner for the same collection without naming the existing one",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4de5760f973a23f9c792e8163f2ea3b13ca7599f4c567007ded00b35db1cc903",
+  "plan_slug": "the-ledger-is-one-file-per-run",
+  "plan_version": 60,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T195705442093-plan-review-of-the-ledger-is-one-file-per-run",
+  "reviewed_blob_sha": "40c4eb30298ffce107ebd2b1b7f6052bcdc35715",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the union reader hides aggregate rows, per-run files and the index behind `ledger.load`'s existing three-key contract, and one serialiser (`ledger.serialize_run`, line 670) owns the file encoding, so the behaviour sits behind a smaller interface than it hides.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements indexing and roster storage rather than naming one owner: two rebuildable indexes over the same run files, and a third home for members/holds.",
+    "reuse_search": "a finding \u2014 the plan's prior-art search surfaced `run_store.db` but missed the existing per-project run index in `reckon/ledger.py` (`_run_index_path`/`_indexed_data`, lines 785/864), which already reads the run files through a rebuildable SQLite cache.",
+    "thin_wrapper": "pass \u2014 the writer, reader union, split and roster extraction extend `ledger.py`'s existing owners (`append_run`, `load`, `write`, `serialize_run`) rather than layering a parallel mechanism over them."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.243105+00:00"
+}

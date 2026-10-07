@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:06:12.573Z",
+  "dispatched_at": "2026-10-05T01:58:19Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/agent-plan-authoring.html:246",
+      "id": "reuse_search-1",
+      "reason": "\u00a79 should cite the existing implementations and collapse to landed, which removes the largest block of apparent remaining work.",
+      "text": "\u00a79 (\"One self-describing exemplar in-repo\", the round-trip parity test at \u00a79 line 253, and \"Ship a single canonical authoring prompt\") states as recommendations three mechanisms already in the tree: `docs/_exemplar-plan.html`, the round-trip parity test in `tests/test_schema.py` (the resolved `f-apa-roundtrip` followup records it landing as `cf5fb2b`), and the skill-level pointer at `skills/reckon-create/SKILL.md:34` / `skills/reckon-edit/SKILL.md:28` \u2014 the design section cites none of them and no section is marked landed, so a builder reading \u00a79 would re-implement existing machinery",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/agent-plan-authoring.html:262",
+      "id": "thin_wrapper-1",
+      "reason": "if the existing merge already covers a lone writer, the proposed flag is surface without behaviour; the section must extend the owner or drop the proposal.",
+      "text": "\u00a79 proposes \"a clearly-labelled force/merge for the lone-writer case so a transient version mismatch never blocks progress\" without saying why the existing merge machinery (`merge_comment_collections`, `reckon/_plan_html.py:1077`, and the three-way landing merge at `reckon/_plan_html.py:1214`) cannot serve the lone-writer case, nor whether the escape hatch is a new CLI/MCP flag or a reuse of the existing merge",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/AGENTS.md:413",
+      "id": "duplicate_owner-1",
+      "reason": "a parallel archival scheme fragments the cumulative record the owner exists to keep single; \u00a76 must extend or cite the owner, not define a second one.",
+      "text": "\u00a76 (\"Per-stage archival. On a phase transition, write a NEW file under `docs/archive/<slug>-<phase>.html`\") forks the archival owner `docs/AGENTS.md` \u00a7\"Typed archives and cumulative evidence\", which specifies one cumulative `docs/evidence/archive/<slug>-landed.html` and states \"Do not create a landed file per section, commit, or test wave \u2026 A phase transition does not justify another file\" (`docs/AGENTS.md:52`); the proposed `docs/archive/` path exists in neither the owner nor the repo, and \u00a74's collapse template repeats the scheme with a per-section link (`archive/SLUG-12-5-landed.html`, plan line 170)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/agent-plan-authoring.html:271",
+      "id": "interface_budget-1",
+      "reason": "the section adds MCP surface beside an existing owner without retiring the duplicate op names, so the plan must name what it removes or why nothing can be.",
+      "text": "\u00a710 proposes \"add_milestone/update_milestone\" MCP ops that duplicate the existing typed-resource path (`edit_plan` with `doc_type=\"milestone\"`, owner `reckon/mcp.py:1236`; the resolved `c-20261003T131057119940` comment records that those op names \"were never needed\"), and \u00a79 (line 262) adds a force/merge escape hatch; neither section names what it retires or merges",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0ddc4ebaa696e93f17b0ce9f54ee5dea6efc64574479a847e7d2c2d4acb09245",
+  "plan_slug": "agent-plan-authoring",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T015801426753-plan-review-of-agent-plan-authoring",
+  "reviewed_blob_sha": "367e2f26059a42bedd670d02021cb86dca8095f5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design's central move is one file that hides parse, render, MCP and the version check behind a single HTML contract; the reframe consolidates surface rather than spreading it.",
+    "duplicate_owner": "a finding \u2014 \u00a76 re-implements archival as per-phase files under `docs/archive/<slug>-<phase>.html`, forking the archival owner `docs/AGENTS.md` which specifies one cumulative `docs/evidence/archive/<slug>-landed.html` and forbids a landed file per phase.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a79 adds a force/merge escape hatch and \u00a710 adds `add_milestone`/`update_milestone` ops, and neither section names what it retires or merges.",
+    "reuse_search": "a finding \u2014 \u00a79 presents the in-repo exemplar, the render/parse round-trip test and the canonical authoring prompt as forward recommendations, while `docs/_exemplar-plan.html` (cited by `skills/reckon-create/SKILL.md:34`) and the round-trip parity test in `tests/test_schema.py` already exist; \u00a79 cites neither.",
+    "thin_wrapper": "a finding \u2014 \u00a79's proposed force/merge escape hatch adds a thin layer over the existing version check and three-way merge machinery without stating why that machinery cannot serve the lone-writer case."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.789433+00:00"
+}

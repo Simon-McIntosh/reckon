@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T10:50:44.046Z",
+  "dispatched_at": "2026-10-07T10:40:49Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:112",
+      "id": "reasoning-1",
+      "reason": "\u00a72's one-week re-measure compares the fold's share against 41.9%, so a fold defined otherwise measures an unrelated number and the node's whole gate rests on a mismatch.",
+      "text": "\u00a79(d) states the second share \"is the classification \u00a73 of plan-review cycles uses, read from the reviewed bytes and not from any stored answer\", and equates it to the 41.9% baseline; but the research doc's own script derives 41.9% (duplicate_owner 113/270) from the stored response action `== \"acted\"` on the previous review's same-type finding (`docs/figures/plan-review-cycles/measure_review_cycles.py:609-614`, `.../review-cycles-data.json` q4 `after_acted`=113), not from any unit change \u2014 \u00a73's unit-change classification is a separate metric (49.6%, 249/502). Separately, \u00a73 defines a finding as acted when its unit changed between that review and the one before it, so a fold that compares \"that review and the next\" pins the fold to the wrong interval. A node built to \u00a79(d) computes a different quantity from the 41.9% the fold exists to reproduce",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d7a793249ee73b3a19947ec818d0ecdc39798daa45ae3c079eea721c0cd8cef9",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 67,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T10:51:53.340805+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T10:51:53.340805+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v67.json",
+  "review_run_id": "r-20261007T104029292111-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "13b25f357149f0a325b44e5e2736f243099afdde",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the href `/reckon/research/plan-review-cycles` resolves to `docs/research/plan-review-cycles.html` (extensionless, resolved as `.html`); its \u00a73 is \"Acted-on content versus fresh readings\"; \u00a71 states the 83% `duplicate_owner` recurrence (line 63) and \u00a72 states the 41.9% re-measure (line 70).",
+    "done_when": "pass \u2014 all four nodes now name a declared negative control: (a) reverting the bare-object entry, (b) the dropped value restored and read, (c) the content branch's hot guard removed, (d) the fold no longer checking that the unit changed. This answers the earlier done_when finding.",
+    "evidence_paths": "pass \u2014 \u00a79 names no session scratchpad or node-local path for evidence; the fold's figures are recorded \"beside 83% and 41.9%\", i.e. in the plan/store, and gates run in-repository.",
+    "naming": "pass \u2014 \u00a79's symbols (`read_blobs`, `_read_reviewed_blob_texts`, `_run_record_times_found`, `require_plan_reviewed`, `plan_review.py`) carry no plan label, stage name or ticket number, and no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a79(d) defines the 41.9% share as \u00a73's byte-derived \"acted\" classification read from reviewed bytes, but the doc's own recomputation script derives that 41.9% from each previous-review finding's stored response action `\"acted\"`, and \u00a73's classification is a different statistic (the 49.6% changed-unit figure).",
+    "single_goal": "pass \u2014 four nodes, each a single deliverable (one batched-read owner, one dead return value, one test, one recurrence fold); the section carries no second deliverable per node.",
+    "wiring": "pass \u2014 \u00a79 declares no node-level dependency edge; the earlier wiring finding (its nodes (a) and (d) both write `plan_review.py`, and the opening \"each with its own write scope\" is inaccurate for that pair) was declined on the dispatch scope check and s9 has not changed that arrangement, so it is not re-raised."
+  },
+  "section_digests": {
+    "_document": "a9aa58a9a976f30da28054e65eaf6e53de5c07e4ba93333d46f1428f61eb40fb",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "a7fcc45c1a0d087b629ba0370de67f49444253b8bc50ca049cf5f402e4284625",
+    "s9": "9c79932312f8e7f61dd70fc1ce2f5813b699b2f1c3e918cce3de7eb7d42f0691"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T10:51:06.662690+00:00"
+}

@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T09:50:00.521Z",
+  "dispatched_at": "2026-10-05T09:44:19Z",
+  "findings": [
+    {
+      "anchor": "reckon/clones.py:172",
+      "id": "reuse_search-1",
+      "reason": "the named reuse target cannot do the job, so \u00a79 must cite the detector that already implements the rule (the census detector, with the reckon/interface_counts.py port as precedent) or drop the false reuse claim.",
+      "text": "\u00a79 names clones.py's `functions_in` as the reader its write-then-replace inventory would extend, but `functions_in` parses the source and returns `_Function` token windows (reckon/clones.py:149-196), holding no AST node and no call, so it cannot detect the `os.replace`/`os.rename` or `.replace`/`.rename` call the rule turns on; the reading rule \u00a79 describes already exists at docs/research/data/crew-pattern-review/code-depth/census.py:233 `primitive_concepts`, which walks owned nodes and matches `os.replace`/`os.rename` and a one-arg `.replace`/`.rename` attribute",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/interface_counts.py:326",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a79 should extend the owner's reader rather than fork a second walk over reckon/, which is precisely the reimplementation the plan exists to prevent.",
+      "text": "\u00a79 stands up a new module walk plus definition reader inside a test, forking the walk already owned by `interface_counts.read_trees` (git ls-tree of every reckon/ module, parsed \u2014 reckon/interface_counts.py:326) and `interface_counts.definitions` (yields each definition's AST node, the exact input a call inspection needs \u2014 reckon/interface_counts.py:76), so the inventory's module set and parse drift from the counter that reads the same tree",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "127a45c4a743e17209d5de9e8db7d330711c22075c74eee85613006a469583e1",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 87,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T094402497357-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "509a7a0f1ff4438e665efdf6f96d68b0458e9f7e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a78 hides temporary naming, the atomic rename, file fsync, mode and directory fsync behind one call, reckon/_store.py:419 `_write_through_sibling_temporary(path, render, *, fsync, mode, fsync_directory)`, and \u00a79 collapses the remaining call sites onto it rather than adding wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a79 proposes a fresh AST walk over reckon/ plus its own definition reader in a new test while reckon/interface_counts.py:326 `read_trees` and :76 `definitions` already parse every module under reckon/ and yield its definition nodes.",
+    "interface_budget": "pass \u2014 public_definitions 1474, cli_options 317, mcp_views 33, refusal_families 23; \u00a78 adds exactly one public definition and states the retired forks are underscore-private and uncounted, \u00a79 adds none and says so, and \u00a77 adds none.",
+    "reuse_search": "a finding \u2014 \u00a79 cites reckon/clones.py:172 `functions_in` as the reader its AST inventory would extend, but that reader returns token windows and drops the AST, so it cannot see a call, and the exact call-detection rule \u00a79 describes already exists at docs/research/data/crew-pattern-review/code-depth/census.py:233 `primitive_concepts`.",
+    "thin_wrapper": "pass \u2014 the plan promotes the existing owner primitive and deletes the private helpers; it introduces no layer over machinery without saying why that machinery cannot be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.744295+00:00"
+}

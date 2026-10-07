@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:23:31.704Z",
+  "dispatched_at": "2026-10-05T02:14:51Z",
+  "findings": [
+    {
+      "anchor": "reckon/ledger.py:786",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must name one index owner over the run list and state what becomes of the other, or the two caches drift with nothing that reports it.",
+      "text": "`_run_index_path` is a second run-list index (a per-checkout sqlite cache under the picker cache root) that sits beside the `~/.config/reckon/crew/run_store.db` the plan names as \"the index\": \u00a71 writes run_store.db through `_index_append`/`index_lag` while `ledger.load`'s default path, and `load(use_index=True)` at ledger.py:1064, answers from `_run_index_path`, so \u00a71 and \u00a72 use \"the index\" for two different mechanisms, and an implementation node for \u00a73 or \u00a74 can rebuild the wrong cache",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:2976",
+      "id": "duplicate_owner-2",
+      "reason": "the section must route the two files through the existing envelope/commit owner or justify a parallel writer, since a second committed-state writer is the class of duplicate this plan exists to remove.",
+      "text": "\u00a74 moves `members` to `crew/members.json` and `holds` to `crew/holds.json` but names no serialiser or writer for them, while `reckon/_store.py:329` (`_write_json_envelope`) and `_commit_state_write` (ledger.py:1671) already own versioned committed state writes; \"together with every writer and every reader of each\" does not say whether \u00a74 extends those or adds a parallel pair",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:7134",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the CLI and public surface it adds, or the interface budget grows unaudited by the plan that owns the change.",
+      "text": "\u00a73 adds the `crew split-runs` verb with its `--dry-run` option, and `ledger.split_runs` as a public function, without the section naming what it retires or merges, or why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1177d625357cae48c3138b7970d6db68a77a3abe4107f9c43decdaf5ffd32f35",
+  "plan_slug": "the-ledger-is-one-file-per-run",
+  "plan_version": 60,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T021426717550-plan-review-of-the-ledger-is-one-file-per-run",
+  "reviewed_blob_sha": "40c4eb30298ffce107ebd2b1b7f6052bcdc35715",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design hides substantial behaviour behind small interfaces: `ledger.load` returns the union of aggregate rows and run files while hiding the exclusive-write index, the conflict refusal and the cache rebuild, and `append_run` hides exclusive creation, the duplicate guard and the post-write index update behind one call.",
+    "duplicate_owner": "a finding \u2014 the plan names `run_store.db` as \"the index\" while `ledger.load`'s default read path already answers from a second cache owned by `_run_index_path`, and \u00a74 adds two state files without naming the envelope writer that owns committed state writes.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds a CLI verb and option without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "pass \u2014 the plan searched `reckon/ledger.py` and `reckon/run_store.py` and cites the machinery it extends by name (`ledger.ledger_path`, `_run_ledger_root`, `run_store.DETAIL_FIELDS`, the mount registry, the serialiser `serialize_run`), so it adds no writer that already exists.",
+    "thin_wrapper": "pass \u2014 \u00a71 and \u00a73 both write through the single existing `serialize_run` serialiser rather than a parallel one, and \u00a72 repoints existing readers through `load` instead of adding a wrapper beside each."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.231849+00:00"
+}

@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:13:31.948Z",
+  "dispatched_at": "2026-10-05T02:02:01Z",
+  "findings": [
+    {
+      "anchor": "reckon/flight.py:1977",
+      "id": "reuse_search-1",
+      "reason": "naming the existing derivation would make \u00a77 move or extend it rather than stand up a second coverage computation in the roadmap.",
+      "text": "\u00a73/\u00a77 proposes the roadmap emit `coverage` for each open path without citing `_path_coverage`, which already derives coverage, covered_fraction and uncovered_critical_hours from live pointers for the portfolio view",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/followup_pointers.py:105",
+      "id": "reuse_search-2",
+      "reason": "the section should state where the new derivation lives relative to the existing text classifier so the two do not diverge.",
+      "text": "\u00a74/\u00a78 adds followup `kind` inference (migration infers the kind from title and body words) without citing `classify_followup`, which already classifies a followup from its text and invocation into a `FollowupVerdict`",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/project_state.py:1277",
+      "id": "duplicate_owner-1",
+      "reason": "a forked derivation is exactly the defect \u00a710 exists to remove, so the section must identify the existing one by name.",
+      "text": "\u00a710 declares \"one derivation answers active_sprint_id for every reader\", but `focus_sprint_id` already exists there and `reckon/roadmap.py:1988` already calls it; \u00a710 must name the owner to extend and the second reading (read_* surfaces) to route through it, not add a parallel derivation",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/flight.py:1977",
+      "id": "duplicate_owner-2",
+      "reason": "the owner is roadmap.py and the flight-local copy must be retired by name in \u00a77, or the plan ships two coverage computations that drift.",
+      "text": "\u00a77 adds a roadmap coverage derivation that duplicates `_path_coverage`, which already computes coverage and uncovered critical hours locally in flight.py (and the dispatch summary would make a third)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-scheduling-surface.html#s2",
+      "id": "duplicate_owner-3",
+      "reason": "the section text describes a retired invariant and would re-introduce it, so \u00a72 must be reconciled with the plan that now owns roadmap.py, project_state.py and mcp audit codes.",
+      "text": "\u00a72's design still specifies a push that demotes the previously active sprint to `open` and an audit that raises `multiple-active-sprints` at error, both retired by the landed superseding plan `a-sprint-is-live-while-a-crew-works-it` (reckon/mcp.py no longer raises the finding; push no longer demotes)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-scheduling-surface.html#s7",
+      "id": "interface_budget-1",
+      "reason": "the section must state that flight's local coverage derivation is retired into the roadmap field, or say why nothing can be.",
+      "text": "\u00a77 adds the roadmap `coverage` field (public_definitions) and a `cp:N` ticker cell without naming what it retires or merges, while the flight-local derivation it should replace exists",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-scheduling-surface.html#s8",
+      "id": "interface_budget-2",
+      "reason": "the section must account for the added interface surface in its own text.",
+      "text": "\u00a78 adds the followup `kind` field (public_definitions) and the `unclassified-followups` audit finding (a refusal family) without naming what it retires or merges",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6fa4a5f74954bc8a3f3f3e7958b688aa41e15b311e09d8952bb8ed05dbfc3acb",
+  "plan_slug": "work-scheduling-surface",
+  "plan_version": 18,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T020143919363-plan-review-of-work-scheduling-surface",
+  "reviewed_blob_sha": "bb9dfd390068b8ab5ed811bf116645fd1fdf5c47",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is proposed; \u00a710 consolidates the sprint-focus answer behind the existing `focus_sprint_id` derivation rather than adding a parallel one, and \u00a78 extends the existing `Followup` dataclass in place.",
+    "duplicate_owner": "a finding \u2014 \u00a710 proposes a new shared `active_sprint_id` derivation while `reckon/project_state.py:1277 focus_sprint_id` already exists and `reckon/roadmap.py:1988` already consumes it, and \u00a77's roadmap coverage duplicates `reckon/flight.py:1977 _path_coverage`.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a77 adds a roadmap `coverage` field and \u00a78 adds a followup `kind` field plus an audit finding, neither naming what it retires or merges.",
+    "reuse_search": "a finding \u2014 \u00a73/\u00a77 adds a roadmap `coverage` field without citing `reckon/flight.py:1977 _path_coverage`, which already computes coverage and uncovered critical hours from live pointers, and \u00a78 adds a followup `kind` without citing `reckon/followup_pointers.py:105 classify_followup`, the existing text classifier over followups.",
+    "thin_wrapper": "pass \u2014 the sections extend the existing roadmap payload and followup record in place; no unjustified thin layer is wrapped over existing machinery."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.368640+00:00"
+}

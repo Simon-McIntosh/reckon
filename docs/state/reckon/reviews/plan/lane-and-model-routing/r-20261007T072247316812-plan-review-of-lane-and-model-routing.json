@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T07:30:12.365Z",
+  "dispatched_at": "2026-10-07T07:23:18Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/picker/snapshot.py:415",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a75 must extend `budget_group` and `lane_context` (adding both to its write paths) or state why the existing per-wallet block cannot carry lane pressure, otherwise the codebase ends with two mechanisms reporting one account's pressure and `test_budget_group_declaration.py`'s `SOL_FAMILY_LANES` pins the old one.",
+      "text": "\u00a75 states lane pressure \"once per lane in a lanes block\" and lists `reckon/crew/picker/snapshot.py`, `types.py`, `state.jinja` and `questions.jinja` as write paths, but the picker's lane-shaped blocks are already composed by `reckon/crew/picker/lane_context.py:515 build()` (`return_times`, `local_lane`) and the once-per-account quota position is already owned by `reckon/crew/budget_group.py:1` (\"Quota positions read once per declared wallet, never per lane\", with no per-backend entry point), and `Candidate.family` is already emitted as the `lane` field at `reckon/crew/picker/prompts.py:112` \u2014 so \u00a75 as written adds a second lane-pressure path beside the two owners instead of extending them",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "lane-and-model-routing#s4",
+      "id": "interface_budget-1",
+      "reason": "each added family member must be accounted for in its own section's text (name the option/key retired or merged, or state why none can be); as written the cli_options count 323 and the definition count 1529 only grow.",
+      "text": "\u00a74 adds `--model KEY` to `crew dispatch` and \"its sibling surfaces that already take `--backend`\" \u2014 the `--backend` option is declared at `reckon/cli.py:1788`, `:1891`, `:2688`, `:6685` and `:6779` \u2014 with no line stating which surface this retires or merges, and \u00a71 adds a top-level `lanes:` key to the flight schema (new public definitions) and \u00a77 adds a public `resolve_name` with no retirement named either",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e5745d1b2defc70bda48f455d5f3862dc1ee40cdf737a5dfe53d68a94450119f",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 3,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-07T07:37:10.552864+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-07T07:37:17.864155+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T07:37:10.552864+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T07:37:17.864155+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v3.json",
+  "review_run_id": "r-20261007T072247316812-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "18c2155e5865006b4922ec886ebd372afd505e61",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a77's single `resolve_name(name) -> (lane, model_key)` hides three stored vocabularies (backend name, model id, alias) behind one read-side resolver, and \u00a71 hides the lane\u2192backend expansion behind flight resolution, so both add depth rather than surface.",
+    "duplicate_owner": "a finding \u2014 \u00a75 re-implements the once-per-account pressure that `reckon/crew/budget_group.py` already owns and the picker lane block `reckon/crew/picker/lane_context.py:515` already composes.",
+    "interface_budget": "a finding \u2014 public_definitions 1529, cli_options 323, mcp_views 33, refusal_families 23; \u00a71, \u00a74 and \u00a77 add surface to these families without naming what each retires or merges, or why nothing can be.",
+    "reuse_search": "pass \u2014 the plan names the mechanism it extends (the dialect-derived lane at `reckon/_backends.py:1945` `_DIALECTS` and `reckon/crew/picker/snapshot.py:415` `Candidate.family`) and the design report it was built from, rather than proposing a new axis.",
+    "thin_wrapper": "pass \u2014 \u00a74's `--model` is an orthogonal input beside `--backend` (a lane's default model is still taken with `--backend` alone), not a forwarding layer, and \u00a77's resolver reads data the catalogue already holds rather than duplicating a mechanism."
+  },
+  "section_digests": {
+    "_document": "6bff2d25983b1148aaba112eff199817b059c3d350f0c891d7d884f9388e54c3",
+    "s0": "40b7549ef15fc25f25940cfb6e2751d25451df67bf762df774db9d267b432e40",
+    "s1": "534b3c0f7bdbedabfabda2fa637d4c7ac968379079027773990e46f55211cf9b",
+    "s2": "11886c052315abac46df56285908fe2c17d0c7a0884bcb3a615ab76913b2b0b0",
+    "s3": "6eb728f13fd29a431b03dafb2f7dccb78c67e63db072d7ebf39607ade17bf8df",
+    "s4": "a9149501a3d5192976bf2036a74780936250f3edc562efa9c5ae06f1927e955c",
+    "s5": "4c7eec7f54da60354e334c6a230b2b036047497d3dd8fa8f2904fdadf808a725",
+    "s6": "7a36f0fd1ecc81ff2694c8de4ed32db5c93a0aaf2a2e85920e68d06fb01dc5ac",
+    "s7": "96001795da5782242afc40deda206a6fd51d8a9132dca0c4358f3106d27c9e58"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T07:36:44.278723+00:00"
+}

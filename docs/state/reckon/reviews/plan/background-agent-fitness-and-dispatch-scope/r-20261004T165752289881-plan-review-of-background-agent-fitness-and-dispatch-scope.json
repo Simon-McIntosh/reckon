@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:10:44.149Z",
+  "dispatched_at": "2026-10-04T16:58:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/background-agent-fitness-and-dispatch-scope.html:550",
+      "id": "reuse_search-1",
+      "reason": "\u00a72f should cite lane_document.py as the owner and reduce to the two clauses that remain (the member-in-flight refusal naming a free member of the required role, and the crew-observe remedy check), rather than re-specifying a reader that exists.",
+      "text": "\u00a72f's done-when asks for a lane document \"reported field by field\", but reckon/crew/lane_document.py:524 read_lane_reading_fields already resolves each figure independently and dispatch.py:3913 _lane_reading_carry already withholds the figure it cannot read rather than the whole reading, confining the binding_observed caveat to the field that carries it; commit 1a64dede3 (2026-09-23) landed exactly that, so two of \u00a72f's four done-when clauses are already met in the tree the plan cites",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/background-agent-fitness-and-dispatch-scope.html:149",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change here is almost certainly one more overlay key on the existing resolution chain, and \u00a72 should say so or say why that chain cannot carry it; leaving it open is what produces a parallel router beside routing.resolve_role.",
+      "text": "\u00a72 says the class-of-work lane rule \"lives in the flight configuration beside the backend it governs, is read at dispatch where the role and spec level are already resolved\", which is the same point resolve_role and _capability_overlay's by_capability_class already select a node's lane from; the plan does not state whether the rule extends that overlay chain (a second by_* key) or adds a reader beside it",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/background-agent-fitness-and-dispatch-scope.html:160",
+      "id": "duplicate_owner-1",
+      "reason": "forking the promotion review gate splits the single place reviews are enforced; the plan should extend promotion.review_required to key on the \u00a71 class and name that file as the owner.",
+      "text": "\u00a72's done-when asks for \"a review-required flag that crew complete honours by refusing promotion without a scored review from another lane\", but reckon/crew/promotion.py:4908 already derives review_required and _unreviewed_refusal already refuses an unreviewed promotion of a run that owes a review, with reckon/crew/routing.py:2629 require_plan_reviewed gating dispatch; the plan's flag is a second gate beside the one that would need to be keyed by class-of-work",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "379f44db418e5cc01a5d1c84fbf7d9713fe66dbefcc9e8e43941d8c8d46d64c5",
+  "plan_slug": "background-agent-fitness-and-dispatch-scope",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T165752289881-plan-review-of-background-agent-fitness-and-dispatch-scope",
+  "reviewed_blob_sha": "a6d334a1e043f3f6bba076b29b20cbc9da9fe1de",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 judge_prescribed (one public function hiding five properties, pure over the node record) and member_in_flight_verdict/refuse_member_in_flight are small interfaces over substantial hidden behaviour, not a spread of shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a72's review-required flag that crew complete honours by refusing promotion without a scored review re-implements the review gate that reckon/crew/promotion.py already enforces.",
+    "reuse_search": "a finding \u2014 the plan searched teammate plans (crew-effort-routing, effort-calibration, scoring-should-stop-a-promotion) but did not search the code owner for \u00a72f's field-by-field lane reader, which already exists in reckon/crew/lane_document.py.",
+    "thin_wrapper": "a finding \u2014 \u00a72's class-of-work routing rule is described as a new read \"at dispatch where the role and spec level are already resolved\" without saying whether it extends the existing overlay chain in routing.resolve_role/_capability_overlay or wraps it in a parallel reader."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.847644+00:00"
+}

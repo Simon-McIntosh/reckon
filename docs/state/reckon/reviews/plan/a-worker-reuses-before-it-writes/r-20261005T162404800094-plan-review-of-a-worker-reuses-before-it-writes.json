@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:29:08.381Z",
+  "dispatched_at": "2026-10-05T16:24:22Z",
+  "findings": [
+    {
+      "anchor": "reckon/serve.py:1213",
+      "id": "reuse_search-1",
+      "reason": "\u00a713's \"one process runner\" premise rests on a measured census that omits a second never-raising process runner, so the section's scope and the git-access-has-one-owner followup would be built on a wrong count.",
+      "text": "\u00a713 states the package carries exactly four named git runners (velocity.git, routing._git, clones._git, served_code._git) and declines only service._run as the existing process runner, but reckon/serve.py:1213 `_run_git` is a fifth bounded, never-raising process runner returning `CompletedProcess | None`, and `_git_head`/`_git_first_committed`/`_git_last_committed` route through it; named git helpers also sit uncited at reckon/ledger.py:2609 `_git_stdout`, reckon/crew/node.py:1315 `_git_answer` and :1335 `_git_output`, reckon/fleet_index.py:29 `_git_head` and reckon/worker_git_shim.py:594 `_run_git_dir`",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/capabilities.py:1143",
+      "id": "duplicate_owner-1",
+      "reason": "path resolution is a named recurring duplicate; the owner should be the existing resolver's module or a dedicated cache module, and the section must justify the placement it chose.",
+      "text": "\u00a713 retires `capabilities.pick_input_cache_root` and moves the single cascade owner onto reckon/velocity.py, but the section never states why the one home for path resolution belongs on the velocity feature module rather than on the module that already owns the pick-input resolver the ledger reads, so every consumer (ledger, capabilities, lane_context, clones, serve) must import reckon.velocity for a cache path",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2fa6bb74dee2726a9831c9e97a78341a5dd0e04b3fc1536f6a299ef5bc35bfe1",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 136,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T162404800094-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "9c494f7ae3230d144adae666364018dfbcef8a69",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a713's `cache_root(kind)` hides a five-kind, two-order cascade behind one argument, and \u00a712's public sources reader hides the `ls-tree` lister composed with the batched `read_blobs` behind one path-to-bytes call.",
+    "duplicate_owner": "a finding \u2014 the plan gives the cache cascade one home on reckon/velocity.py, but the module it retires, capabilities.pick_input_cache_root, is the resolver the ledger's database path already reads, so the section does not justify placing the unifying path resolver on the velocity feature module rather than extending the module that already owns that path resolution.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 names its public change (+1 sources reader on velocity, \u22121 retired `revised_python`) and \u00a713 names its (+1 process runner, +1 `cache_root`, \u22121 retired `pick_input_cache_root`, net +1), and neither section adds a CLI option, MCP view or refusal family.",
+    "reuse_search": "a finding \u2014 the plan searched the codebase thoroughly (it cites velocity.git, read_blobs, _plan_documents, routing._git, the five cache cascades and service._run) but its census of existing git accessors is incomplete: \u00a713 states the package carries four named git runners, and the tree carries more.",
+    "thin_wrapper": "pass \u2014 the two retained wrappers state their reason: `velocity.git` keeps its bytes-and-raise contract so its four decoding callers are untouched, and `routing._git` is error-domain translation into `CrewError`, which is not a second runner."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.622555+00:00"
+}

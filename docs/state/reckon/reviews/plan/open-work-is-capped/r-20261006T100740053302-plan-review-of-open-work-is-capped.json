@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:19:31.456Z",
+  "dispatched_at": "2026-10-06T10:07:55Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/open-work-is-capped.html:69",
+      "id": "reuse_search-1",
+      "reason": "\u00a73 must either reuse the plan-currency reading the plan already names or state why stored impl is the right signal for \"nearest to closing\", which changes what the cap points the reader at.",
+      "text": "\u00a73 makes the cap's nudge \"the three pending plans nearest to closing\" but ranks them by their stored `impl` (`reckon/mcp.py:3297 _plans_nearest_to_closing`, sorted on `row[\"impl\"]`, the plan meta carried through `_inventory_row`), while \u00a72 at line 51 explicitly rejects that reading (\"the plan-currency reading the `*-currency-audit` nodes produce, not its stored `impl`\"); the two sections therefore define completion two different ways and \u00a73 reuses the one \u00a72 discredits, so the nudge points at plans whose stored impl need not match their landed sections",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp.py:3273",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a73 must name the pending census the limit counts against and extend it (or state why the velocity/roadmap count cannot be reused at create time), so the cap, the velocity view's pending count and the triage's row count cannot drift apart unnoticed.",
+      "text": "\u00a73's `_pending_plans` re-derives the project's pending-plan set from the discovery inventory, a second (here, third and fourth) census beside pending owners that already exist and that the plan's own evidence cites: `reckon/velocity.py:471 plan_census` (the census the passed gate at plan line 95 names as the source of the pending count, \"68 pending\"), `reckon/roadmap.py:3331 completion.pending` with its `pending_work` rows, and `reckon/mcp_views.py:3337 _pending_plan_row` feeding `pending_plans` at `:3430`; \u00a73 names no owner and the plan never says which of them the limit compares against. The same census also selects one of six divergent closed-status vocabularies with no owner named \u2014 `reckon/velocity.py:115 CLOSED_STATUSES`, `reckon/schedule.py:23 RECORDED_STATUSES`, `reckon/roadmap.py:1263 closed_statuses`, `reckon/lifecycle.py:7 COMPLETED_STATUSES`, `reckon/_store.py:3058 _LANDED_STATUSES`, and `mcp_views` `TERMINAL_STATUSES` \u2014 even though \u00a71 (line 43) adopts the velocity set as the plan's own definition",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2259f2b18c57aa1a8c959ec3a9c0ff419985ea8cf7d3517aa077f17b01fc90d7",
+  "plan_slug": "open-work-is-capped",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T100740053302-plan-review-of-open-work-is-capped",
+  "reviewed_blob_sha": "43dccb12742da7e95698c3be68d8ddfdb7dfe487",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a73's whole behaviour hides behind the existing `edit_plan` create path: one call site sets one `warning` field on the response, with the census, ranking and wording kept in private helpers (`reckon/mcp.py:3262`\u2013`3340`), so no new module spreads the behaviour across surface.",
+    "duplicate_owner": "a finding \u2014 \u00a73's per-project pending census (`reckon/mcp.py:3273 _pending_plans`) is a new one beside the pending owners the repository already carries, and the plan names none of them.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds no member of any of the four: no CLI option, no MCP view, no public definition (its helpers are `_`-private), and the only refusal family the design introduced \u2014 the create refusal with its override argument \u2014 was retired to a warning by the locked decision `wip-limit-mode`, which \u00a73's own text defers to (\"in the mode the lead locks\"), so there is no added surface that must be named.",
+    "reuse_search": "a finding \u2014 \u00a73 ranks the plans \"nearest to closing\" by the stored `impl` meta, the reading \u00a72 declares untrustworthy in favour of the plan-currency reading, and \u00a73 cites no existing completion reading it reuses.",
+    "thin_wrapper": "pass \u2014 \u00a73 introduces no module wrapping existing machinery; it imports the velocity census's closed vocabulary (`reckon/velocity.py:115 CLOSED_STATUSES`) rather than re-implementing a close test, and adds a check inside the existing create path rather than a parallel entry point."
+  },
+  "section_digests": {
+    "_document": "03658749c21871f13c646456c9d313d863ebdacba34458f38b0e9361ebad9aa3",
+    "s1": "6f8bf158978590a8d0fae0aa757a9bc67db9fba3ad7265181ee6ce8dd2d4f538",
+    "s2": "e815d8bb188238c600ce82b8e2783525d221f2e12f5c7e1696e870d44fe01d9e",
+    "s3": "a9daac0ed1dd0246fc5b463e4d905e85ecebaa811eb1b20e0fb5f324839e31ae"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.058062+00:00"
+}

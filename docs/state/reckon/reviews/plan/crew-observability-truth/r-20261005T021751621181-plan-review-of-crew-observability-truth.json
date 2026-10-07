@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:24:32.336Z",
+  "dispatched_at": "2026-10-05T02:18:09Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/routing.py:379",
+      "id": "reuse_search-1",
+      "reason": "the section must cite the existing owner and check whether its three hand-over measures already hold, rather than dispatch a node to rebuild them.",
+      "text": "\u00a75 presents \"let a lane declare where its work goes when it is spent \u2026 resolved at dispatch when the primary is held\" and \"spec level can name a backend\" as new machinery, but `resolve_budget_fallback` (routing.py:379) already returns a held backend's declared fallback and refuses when none is declared, and dispatch already substitutes it at dispatch.py:6836; `by_spec_level.<level>.backend` already resolves a backend at cli.py:2490 \u2014 the plan's \u00a75 measures may already be satisfied by code in the tree, the same currency-audit pattern the plan applies to \u00a72 and \u00a73",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s17",
+      "id": "thin_wrapper-1",
+      "reason": "the measure as written cannot be satisfied by a channel the plan does not name, and would otherwise ship a second delivery mechanism beside the one that provably does not reach workers.",
+      "text": "\u00a717's measure \"an overrun messages the worker and terminates nothing\" requires delivering a message to a live worker, but names no channel and does not reconcile with the measured fact that a CLI-launched print-mode worker has no turn in which to receive one (the same workstation measured 0 deliveries in 3,949 worker streams); the honest change is to extend the existing peer/message surface and state whether it can reach a worker mid-turn rather than add a parallel delivery path",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/serving_origin.py:85",
+      "id": "duplicate_owner-1",
+      "reason": "the section should extend the existing endpoints reader (and the producer surface that consumes it) rather than fork a second one, so a lane drop is observed once at the owner and not by two readers that can drift.",
+      "text": "\u00a718's measure \"the lane's availability is observed once, at the producer, and delivered to every follower\" proposes a new producer-side reader of the endpoints document, but that read is already owned by `serving_origin.py:85` against the `endpoints_document` field declared in `_flight_schema.py:289`; the plan itself notes the routing pre-flight already reports serving state \"by a better route\"",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s15",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the added verb at cli_options and the added write path at mcp_views, since the rubric holds any section that grows an interface family to name what it retires or why nothing can be.",
+      "text": "\u00a715 asks for a new `crew` verb that \"records an additional exclusive path on a live run\" and \u00a714 asks for a `section_declarations` write path on the MCP surface (public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23); neither section names an interface it retires or merges, nor states why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "41d1535de6c6e51f64bf875bb5fee05fb4221575588e174c6e13fe1e1753577a",
+  "plan_slug": "crew-observability-truth",
+  "plan_version": 714,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T021751621181-plan-review-of-crew-observability-truth",
+  "reviewed_blob_sha": "38321c6e75b417891a2c250f33b54d88b45d4320",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 every section lands its behaviour in an existing owning module (routing.py, dispatch.py, recovery.py, ticker.py, reports.py); no new module is proposed that would spread one behaviour across several single-call wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a718 proposes a producer-side watcher over the lane's endpoints document, a reader already owned by reckon/crew/serving_origin.py:85 against the `endpoints_document` field declared at reckon/_flight_schema.py:289.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a715 adds a new `crew` verb to grant a scope extension and \u00a714 adds a `section_declarations` write path, and neither section names what it retires or merges, or states why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a75 proposes a held-lane declared fallback and a by_spec_level entry that names a backend, both of which already exist in the tree (`resolve_budget_fallback` at reckon/crew/routing.py:379, called from reckon/crew/dispatch.py:6836; `by_spec_level.<level>.backend` at reckon/cli.py:2490) and neither is cited by \u00a75.",
+    "thin_wrapper": "a finding \u2014 \u00a717 adds a \"message is delivered to the running worker\" measure without naming the existing delivery channel or reconciling it with the measured fact that messages to headless print-mode workers do not arrive."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.868093+00:00"
+}

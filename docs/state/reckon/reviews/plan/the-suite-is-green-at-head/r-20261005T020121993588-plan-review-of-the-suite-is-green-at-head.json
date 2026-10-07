@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:13:14.355Z",
+  "dispatched_at": "2026-10-05T02:01:39Z",
+  "findings": [
+    {
+      "anchor": "tests/conftest.py",
+      "id": "duplicate_owner-1",
+      "reason": "the plan's own \u00a73 repairs (test-ledger-reads-only-its-own-state, the follow-lifetime home-snapshot fix) each hand-roll scoping; naming tests/conftest.py as the owner and one shared isolated-home fixture would make those nodes extend it instead of adding a 55th copy.",
+      "text": "the isolated-home mechanism is re-declared as `crew_home` (19 files), `isolated_home` (22 files) and `config_home` (12 files) \u2014 54 files total \u2014 while the owner `tests/conftest.py` provides none, so \u00a73's \"scope the outside-state guard / read a synthetic checkout\" repairs add more per-file instances of isolation rather than extending one fixture",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/conftest.py:223",
+      "id": "duplicate_owner-2",
+      "reason": "the guard's set is a deliberate superset (squeue/scontrol/scancel too) with a different purpose from placement's reservation verbs, so the guard cannot simply import placement's tuple; a comment naming placement.py as the source is enough, not a restructure.",
+      "text": "the guard's allocation-verb vocabulary `_ALLOCATION_VERBS = (\"salloc\", \"sbatch\", \"srun\")` re-encodes scheduler verbs already owned by `reckon/crew/placement.py:52` (`RESERVATION_SCHEDULER = \"salloc\"`, `RESERVATION_STEP_SCHEDULER = \"srun\"`)",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "7b5b1098366fd6d84b98de62055638c7af48e8687aefa6da99bda05a535e2e80",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 269,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T020121993588-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "3c0d55e8d8fa0611d4b11ce5ce90db94e47345d0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a73 adds no module; its bounded-run behaviour is carried by suite-wide conftest fixtures used once per session, so there is no spread of new shallow wrappers introduced by this design.",
+    "duplicate_owner": "a finding \u2014 the \"give this test its own RECKON_HOME\" mechanism is re-implemented as a local fixture in 54 test files while `_SCHEDULER_VERBS` re-encodes scheduler verbs owned by `reckon/crew/placement.py`.",
+    "interface_budget": "pass \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 changes tests/conftest.py and test files only and adds nothing to any of the four families, so there is no added surface to retire or justify.",
+    "reuse_search": "pass \u2014 \u00a73 extends the existing session reaper `reaped_watch_producers` (tests/conftest.py:465) and the existing scheduler-reach guard `_SCHEDULER_VERBS` (tests/conftest.py:223) rather than adding a runner, and it reuses the peer-added pytest-timeout/pytest-xdist (d4c5a54a) instead of building its own bound/parallel mechanism.",
+    "thin_wrapper": "pass \u2014 the fixed-wait removals replace a local sleep with a local bounded wait on the same observed condition; no new layer is interposed over an existing reader."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.348580+00:00"
+}

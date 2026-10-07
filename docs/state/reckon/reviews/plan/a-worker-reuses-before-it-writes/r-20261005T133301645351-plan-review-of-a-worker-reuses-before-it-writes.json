@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T13:37:14.785Z",
+  "dispatched_at": "2026-10-05T13:33:20Z",
+  "findings": [
+    {
+      "anchor": "reckon/interface_counts.py:443",
+      "id": "duplicate_owner-1",
+      "reason": "without the direction fixed the node will either drop `_plan_metas`'s specialisation or fork the reader a third time.",
+      "text": "\u00a710 names `reckon/velocity.py` as the owner of \"the batched git cat-file blob reader\", but velocity's only batched cat-file reader is `_plan_metas` (reckon/velocity.py:358), which reads plan documents and returns parsed `(status, archived)` pairs, not raw path\u2192bytes as `interface_counts._read_blobs` returns; the section does not say whether to generalise `_plan_metas` or extract its batch loop into a shared helper",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s10",
+      "id": "duplicate_owner-2",
+      "reason": "the measurement the section names is blind to the duplication it describes, so the node would report success with the fork still in place.",
+      "text": "the declared done-when grep (`def call_name\\|def definitions\\|def literal_strings\\|def interfaces\\|def token_lines\\|def docstring_spans`) returns no line for clones.py's copies, because \u00a74 left them privatised as `_docstring_spans` and `_token_lines` (reckon/clones.py:76,91) and the pattern `def token_lines` does not match `def _token_lines`; a single-ownership test built from that grep passes while the duplicate \u00a710 exists to remove survives",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s10",
+      "id": "duplicate_owner-3",
+      "reason": "the node cannot meet a done-when that no correct repair can satisfy; the grep must be scoped to module-level predicates or the name qualified.",
+      "text": "the same done-when (\"exactly one line per name, all in the one module\") is unsatisfiable as written: `definitions` also matches the unrelated class method reckon/served_code.py:694, which the section does not retire, so the grep reads two lines for that name forever",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s10",
+      "id": "duplicate_owner-4",
+      "reason": "this either reverses the ownership direction (the census keeps frozen predicate copies) or requires the package to version the predicates the census reads.",
+      "text": "making the frozen census import the package's live predicates ends the census's reproducibility: re-running an earlier pin after a later predicate edit reproduces a figure its recorded `snapshots.json` entry does not hold, and the section's stated reason (\"the predicates are applied to trees at the pins, not to the package at the pins\") covers the input tree only, not the predicate implementation",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s10",
+      "id": "interface_budget-1",
+      "reason": "the section must either keep the lifted helpers private and say so, or count them against the 1475 public definitions it claims are unchanged.",
+      "text": "the section's accounting states \"public_definitions does not grow; the reader and cache helpers were private\" while, in the same paragraph, proposing to lift those helpers \"to names that say what they do\"; a helper renamed off its leading underscore becomes a public definition the counter counts, so the stated accounting contradicts the change",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "246689d5e9676c408f5a7455009fab868f7f7a9a9eecc5f4c49c20e718152831",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 111,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T133301645351-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "19a69029923f0cc45a93d1b03b6609761c6f222a",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the six predicates move behind one module's function-level interfaces and the reader/cache stay behind velocity's, so the change concentrates behaviour rather than fanning it out into new shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 the mechanisms \u00a710 assigns to `reckon/velocity.py` are not one mechanism, and the done-when that is meant to prove single ownership cannot see the copies in `reckon/clones.py`.",
+    "interface_budget": "a finding \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; the section states public_definitions does not grow while also proposing to lift private velocity helpers to names that would count.",
+    "reuse_search": "pass \u2014 \u00a710 is itself the reuse audit: it names the code-depth census (`docs/research/data/crew-pattern-review/code-depth/census.py`), `reckon/interface_counts.py`, `reckon/clones.py` and `reckon/velocity.py` as the mechanisms its primitives duplicate, and opening those files confirms the copies (`census.py:85,135,373,383`; `clones.py:76,91`; `velocity.py:358`).",
+    "thin_wrapper": "pass \u2014 the section re-homes the predicates to a runtime owner and states why the frozen census under `docs/research/` cannot be that owner (a package caller cannot import it), rather than adding a layer over it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.697887+00:00"
+}

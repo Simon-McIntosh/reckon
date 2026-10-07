@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:19:05.726Z",
+  "dispatched_at": "2026-10-05T02:11:00Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/execution-orchestration-hardening.html:39",
+      "id": "reuse_search-1",
+      "reason": "the plan should name ledger.py as the existing owner of the durable execution record and extend it, or state what specifically remains unbuilt, so the first implementation node does not rebuild a shipped mechanism.",
+      "text": "\u00a73 states the design must \"refactor \u2026 around a \u2026 resumable execution ledger\" and the inline callouts still read \"The durable execution ledger remains open\" (lines 45, 57, 68), but `reckon/ledger.py` is that durable ledger: a committed per-run record with version-paired writes, duplicate-run refusal, and the failure/gate fields the plan wants \u2014 and \u00a73 never cites it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/execution-orchestration-hardening.html:34",
+      "id": "duplicate_owner-1",
+      "reason": "naming `reckon/_store.py` as the owner turns a parallel resolution into an extension and prevents the mount-resolution fork the placement/state-reader class of duplicates repeatedly produces on this workstation.",
+      "text": "\u00a72 \"Return mounted checkout, branch and content digest on reads and writes\" resolves a project's registered mount, which is already owned by `reckon/_store.py` (`_mounts_path`, `_config_home`, mounts.json routing, lines 161\u2013215)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/execution-orchestration-hardening.html:34",
+      "id": "thin_wrapper-1",
+      "reason": "the node must extend the existing read/write path in `_store.py`/`reckon/mcp.py` rather than add a wrapper that must be kept in step with it.",
+      "text": "the same bullet adds checkout/branch/digest to the read and write responses as a projection over state `_store.py` already holds, with no statement of why the existing resolution/read path cannot carry it",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/execution-orchestration-hardening.html:36",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the interface count it adds in its own text; the only bullet that does is the audit-field rename, and the sprint verbs add the larger surface.",
+      "text": "\u00a72 adds \"first-class sprint proposal/validate/close operations or a dry-run mode\" (new CLI options and/or MCP views) without naming what it retires or merges, or why nothing can be, against the supplied budgets (cli_options 317, mcp_views 33)",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7678dfb3b01743ff08084aad1bc5824886cb92d16533c638399c2ba5fe315eb8",
+  "plan_slug": "execution-orchestration-hardening",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T021039772438-plan-review-of-execution-orchestration-hardening",
+  "reviewed_blob_sha": "8a2e49b55d98940af6fdda907fec9a96d2c5d4bd",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the one implementable section (\u00a75) lands inside the already-deep `reckon/crew/promotion.py`, which hides the commit/merge/content-survival behaviour behind few public entry points; the plan proposes no new module family and no spread of shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 the plan re-introduces mounted-checkout/registration resolution on the read/write surface rather than naming and extending `reckon/_store.py`, the current owner of mounts.json and config-home resolution.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a72 adds sprint propose/validate/close operations and read/write projection fields without naming, in its own text, anything it retires or merges (the audit-field rename is the only bullet that retires anything).",
+    "reuse_search": "a finding \u2014 the plan's \u00a73 text still calls the \"durable execution ledger\" open, but `reckon/ledger.py` is a mature implementation of exactly that mechanism and the plan cites neither it nor a reason to rebuild it.",
+    "thin_wrapper": "a finding \u2014 \u00a72's \"return mounted checkout, branch and content digest on reads and writes\" adds a response projection over mount/checkout state that `reckon/_store.py` already resolves, without saying why that resolution cannot be extended instead."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.965040+00:00"
+}

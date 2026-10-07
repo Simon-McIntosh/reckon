@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T07:52:35.318Z",
+  "dispatched_at": "2026-10-07T07:37:29Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-module-fits-a-worker-window.html#s7 (line 140)",
+      "id": "done_when-1",
+      "reason": "the clause must be per-node (\"the guard passes with this module no longer in the allowlist\", leaving the empty-allowlist condition to the section/merge level), or \u00a77 must be dispatched as one node over all three moves; otherwise a dispatched \u00a77 node holds an unsatisfiable measure and its gate proves nothing.",
+      "text": "\u00a77 says each of mcp.py, runs.py, _backends.py \"is one node\", but its single done-when requires \"the guard passes with the module removed from its allowlist and the allowlist then empty\": the allowlist can be empty only once every oversize module has been split, so a node that has split just mcp.py cannot satisfy \"then empty\", and creating an empty allowlist while runs.py and _backends.py (\u00a77) plus recovery.py (\u00a75) and promotion.py (\u00a76) are still over the 50,000 bound turns the guard red because \u00a72 fails any file above the bound that is not allowlisted \u2014 the clause is satisfiable only after all of \u00a73\u2013\u00a77 have landed, never by one \u00a77 node",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-module-fits-a-worker-window.html#decisions (module-bound, line 183)",
+      "id": "reasoning-1",
+      "reason": "the under-count does not change the bound choice (a larger count strengthens 50,000 over 40,000), it only misstates the support for it.",
+      "text": "the rationale says a 40,000 bound would force \"four more modules (the ledger, the server, routing and budget, all between 41,000 and 44,000)\" to be split, but five files exceed 40,000 estimated tokens today: tests/test_crew.py 49,747, ledger 43,523, routing 43,119, serve 43,374, budget 41,496 \u2014 the largest, tests/test_crew.py at just under the chosen 50,000 bound, is omitted, and the guard measures `tests/` too",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "078f542aae1f80a4a7d8a301493ad9e43cb1fad4ad0268b76efd284081077fbb",
+  "plan_slug": "every-module-fits-a-worker-window",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-07T07:56:23.597091+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T07:56:30.996078+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T07:56:23.597091+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T07:56:30.996078+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-module-fits-a-worker-window.v1.json",
+  "review_run_id": "r-20261007T073703299140-plan-review-of-every-module-fits-a-worker-window",
+  "reviewed_blob_sha": "737ef0d9f5c0239cc185ebdd9f9acf2932d9564f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file, symbol and link resolves: the seven modules exist with the table's byte counts matching `6891282e9`; `_context_fit_verdict`, `_tokens_for_bytes` and `_MEASURED_LAUNCH_CONTEXT_FLOOR_TOKENS` (50,392) sit in `reckon/crew/routing.py`; `read_sources` (velocity.py:424) is what `read_trees` (interface_counts.py:553) reads through; `tests/test_staged_write_inventory.py` overlays working bytes as claimed; `reckon.served_code._import_targets` yields (local, absolute, attribute); `pyproject.toml` names `reckon.cli:main` and `main` exists.",
+    "done_when": "a finding \u2014 \u00a77 gives three nodes one collective done-when whose \"the allowlist then empty\" clause no single node can satisfy.",
+    "evidence_paths": "pass \u2014 map fragments land under the committed `docs/evidence/fragments/<slug>/` tree that peers already use, not a scratch or node-local path.",
+    "naming": "pass \u2014 prescribed names (`tests/test_every_module_fits_a_worker_window.py`, `scripts/check_pure_move.py`, sibling module names) describe the mechanism they carry; no version tag, ticket, part number or `_v2`; \u00a78 explicitly bans part numbers, versions and the word core.",
+    "reasoning": "a finding \u2014 the `module-bound` decision's count of what a 40,000 bound would cost is wrong; the root-cause argument itself holds (253,906 + 50,392-floor > 230,144 is verified).",
+    "single_goal": "pass \u2014 \u00a73\u2013\u00a76 declare two nodes (map, move) and \u00a77 three (one per module), each naming one deliverable; the only bundling defect is the shared gate recorded under done_when.",
+    "wiring": "pass \u2014 the plan declares no cross-plan edges and its `plan-standalone` meta argues correctly that no blocks/gate holds (\u00a76 of the-fleet-moves-to-a-new-node can run on a larger-window lane), with intra-plan order stated in \u00a78; no same-plan section uses `data-links`, matching the house convention."
+  },
+  "section_digests": {
+    "_document": "9a7252a11a7ab5b070832bb44a7d38fa8e012647b9bd8bef14f7a522fc7ea9da",
+    "s1": "b19a00becfaeb93129b092226ec7ac1b87063bba5bb603d21e705c49edd7e380",
+    "s2": "5d3cc0a1f28c1fdeb9d56e2a4ff2fa5797b8ece7af579bf17108ee9afb3d111e",
+    "s3": "6975a00d65bfacb82526fc2cc635ba0fbc2923b80ababdaf02c38435883da996",
+    "s4": "d6bb27c2901d1f2eed96b6215bafbcbe84df181db203e843904324c4b77c0755",
+    "s5": "aa9cdfb8d99577c174ee2e9465f22f9641d4a82f7b8b73dde429de8cf360e27f",
+    "s6": "41997e4908fcbd4839e6bcc1e88063b84d2d376bd741194f950b8b470def6c3b",
+    "s7": "8f89a36ece6c5aa7987a1a6ccab8fda42b6beaac259e3273826fa0323f01bcf5",
+    "s8": "09fb68ac509239cda4be6f9fefd549459cc0abb72771e5fe0b98c8cb3c4e1b0f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T07:56:11.395169+00:00"
+}

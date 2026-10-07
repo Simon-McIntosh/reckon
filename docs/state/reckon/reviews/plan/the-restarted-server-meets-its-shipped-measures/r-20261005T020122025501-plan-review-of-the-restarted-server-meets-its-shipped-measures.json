@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:23:27.212Z",
+  "dispatched_at": "2026-10-05T02:01:35Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-restarted-server-meets-its-shipped-measures.html#s2",
+      "id": "reuse_search-1",
+      "reason": "the plan should search the state it already holds and restate \u00a72's remainder as verifying the read on the restarted server rather than re-declaring what is already declared and labelled.",
+      "text": "the section's done-when asks that four directions be declared in reckon's project state and that plans carry labels resolving to them, but `docs/state/reckon/project.json` already declares all four (`state-that-tells-the-truth`, `unattended-execution`, `legible-to-human-and-agent`, `portable-across-harnesses`); that file is the canonical `project` resource the distributed-state marker at `docs/.reckon/project-state-migration.json` names; and 57 files under `docs/plans/` already carry `plan-north-star` labels matching those ids, so the plan proposes work already present in the state it holds",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d37568d5be0b908a4e1c4f00c7619b8f59b068c0a3341102b26b9eae3b8f03d9",
+  "plan_slug": "the-restarted-server-meets-its-shipped-measures",
+  "plan_version": 18,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T020122025501-plan-review-of-the-restarted-server-meets-its-shipped-measures",
+  "reviewed_blob_sha": "57ca14c12a65eded9a0dec68a3f7b62338897a51",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module; the only code \u00a73 adds sits inside the existing `_crew_rows` join and still hides pointer, roster and plan-detail assembly behind that one entry point.",
+    "duplicate_owner": "pass \u2014 the run phase \u00a73 derives is owned by `reckon/crew/recovery.py` (`classify_pointer`/`_observed_phase`), the plan-head read by `reckon/_plan_html.py`, and memoisation by the shared `reckon/file_memo.memoized`; the landed change extends those owners rather than forking them.",
+    "interface_budget": "pass \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; no section adds a definition, CLI option, MCP view or refusal family \u2014 \u00a72 populates an already-landed collection and \u00a73/\u00a74 change no interface.",
+    "reuse_search": "a finding \u2014 \u00a72 proposes to declare four directions and label plans, but the canonical project resource already declares all four and 57 plans already carry matching labels.",
+    "thin_wrapper": "pass \u2014 \u00a74 adds a test, not a layer; it executes the shipped sprint view through the existing `tests/spa_module_eval` harness rather than wrapping the sprint route."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.323647+00:00"
+}

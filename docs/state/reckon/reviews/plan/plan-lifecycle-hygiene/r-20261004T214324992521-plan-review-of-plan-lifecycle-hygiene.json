@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:53:39.812Z",
+  "dispatched_at": "2026-10-04T21:43:45Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:3316",
+      "id": "reuse_search-1",
+      "reason": "the strictness decision the plan waits on is partly already made in code, so the remaining work is an extension of a named owner, not a new subsystem, and M1's \"blocked\" status overstates what is missing.",
+      "text": "\u00a73.1 / \u00a74 M1 list \"write-time lifecycle invariants\" as unbuilt and blocked, but `validate_landing_patch` (`reckon/_store.py:3316`), `_require_terminal_evidence` (`reckon/_store.py:3333`, `reckon/_store.py:1417`) and `apply_ops` (`reckon/_store.py:3396`) already refuse a terminal or landing write that names no continuation or no `docs/evidence/archive/<slug>-landed.html` record, and are wired onto the live write path at `reckon/serve.py:3580`; the plan must state whether \u00a73.1 extends these or replaces them",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/archive.py:146",
+      "id": "reuse_search-2",
+      "reason": "\u00a73.3 collapses to \"wire the existing command to a cron\", deleting a proposed mechanism and its M3 milestone.",
+      "text": "\u00a73.3 / \u00a74 M3 report the \"automated sweep\" as still pending and propose a quarterly `plan-archived=1` pass, but `run_archive_pass` (`reckon/archive.py:146`) plus `reckon archive --apply` (`reckon/cli.py:8126`) already implement exactly that age-thresholded pass; the only missing piece is a scheduler, not the sweep",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:2675",
+      "id": "duplicate_owner-1",
+      "reason": "the close gate should extend one owner (a single sprint-readiness predicate) rather than add a scan the plan itself concedes will duplicate a rule.",
+      "text": "\u00a73.5's sprint-close gate would add a third sprint-eligibility scan beside the two that already exist \u2014 `reckon/mcp.py:2291 _audit_sprint_findings` and the roadmap scan at `reckon/roadmap.py:2675`, which already share the `CLOSED_SPRINT_STATUSES` vocabulary at `reckon/roadmap.py:1939` \u2014 the plan names no owner and so invites a fork of the unresolved-followup / unset-impl logic",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/doccheck.py:488",
+      "id": "duplicate_owner-2",
+      "reason": "the WARN and ERROR halves belong on the existing audit module, so \u00a73.1 should route detection through it rather than describe a second detector.",
+      "text": "\u00a73.1's \"status shipped/done + no section-landed card \u27f9 WARN on write + audit ERROR after N days\" duplicates the landed-summary / render-contract audit already owned by `reckon/doccheck.py::audit_lifecycle` (`reckon/doccheck.py:488) and `_LANDED_SECTION_CLASS` (`reckon/doccheck.py:116`); the plan re-authors the check instead of naming this owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:7981",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a73.2's deliverable is a scheduler and a report surface, not a new sweep, and saying so removes a mechanism from the plan.",
+      "text": "\u00a73.2 proposes a \"staleness sweep\" that flags active plans older than 30 days with impl < 1.0, but `reckon audit` (`reckon/cli.py:7981`) and `audit_lifecycle` already compute that exact STALE list (threshold at `reckon/doccheck.py:150`); the plan adds a re-reader where the honest change is to schedule the existing command",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6cf8bbfefcbd18dd98eb6848d86104771521a0794b64f05eb88c3e5ba9cde10d",
+  "plan_slug": "plan-lifecycle-hygiene",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T214324992521-plan-review-of-plan-lifecycle-hygiene",
+  "reviewed_blob_sha": "f51893071814db94a0dc2e1c3397737441991392",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 no module is named to own lifecycle invariants; the six milestones spread the behaviour across the server write path, the MCP audit, the plan-creation skill and the sprint-close path, with no single interface hiding it.",
+    "duplicate_owner": "a finding \u2014 \u00a73.5's sprint-close gate and \u00a73.1's terminal-state checks re-implement eligibility scans that already have owners (`reckon/_store.py`, `reckon/roadmap.py`, `reckon/mcp.py`), so the plan should extend those owners rather than add a parallel scan.",
+    "reuse_search": "a finding \u2014 the plan proposes \u00a73.1 write-time invariants, \u00a73.2 audit cadence and \u00a73.3 archive waves as mechanisms to build, but each already ships: `reckon/_store.py` write validation, `reckon/doccheck.py::audit_lifecycle`, and `reckon/archive.py::run_archive_pass` respectively; the plan cites none of them as the thing to extend.",
+    "thin_wrapper": "a finding \u2014 \u00a73.2's \"staleness sweep\" re-derives the exact STALE / MISSING_IMPL / STALE_RCA list `reckon/doccheck.py::audit_lifecycle` already produces, so the proposed sweep is a thin re-read over an existing reader rather than an extension of it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.082269+00:00"
+}

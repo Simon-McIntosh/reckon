@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate arms. baseline-gate.log (revision 88b082576ba64f53fa866b15e586dcbba360f20a) reports 1 failed, 90 passed, EXIT=1 with failing id tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt. final-gate.log (revision cdb5bafade37dc47077c49b7369db27cb94297fe) reports 91 passed, EXIT=0 with no FAILED/ERROR id. Head failing ids minus base failing ids is empty, so added_failure_count 0, added_failure_ids [].",
+  "base_log_revision": "88b082576ba64f53fa866b15e586dcbba360f20a",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-07T11:30:35Z",
+  "dispatched_at": "2026-10-07T11:31:24Z",
+  "findings": [],
+  "head_log_revision": "cdb5bafade37dc47077c49b7369db27cb94297fe",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site changed \u2014 the diff is one documentation line and one test-inventory entry.",
+    "diff": "read commit by commit against base 88b08257; 299c9b8bf adds one documentation line to skills/reckon-build/SKILL.md and cdb5bafa adds one inventory entry to tests/test_skill_contracts.py, every path inside the fence.",
+    "done_when": "the declared gate is the four-target pytest run; baseline-gate.log (revision 88b08257) records 1 failed, 90 passed, EXIT=1 and final-gate.log (revision cdb5bafa) records 91 passed, EXIT=0; all four targets live in the named files.",
+    "goal": "the node goal is to make the fleet gate pass the three tests it reddens once merged onto current main; the diff documents the crew gate command in skills/reckon-build/SKILL.md:192 and records it in the strict command inventory at tests/test_skill_contracts.py:1060, and the named gate is green at head.",
+    "manifest": "read; status complete, base 88b08257, head cdb5bafa, baseline_suite and after_suite both present and naming their logs, negative_control_log declared, a landing line present, both commit bodies present and conventional, and check-manifest reported clean.",
+    "write_paths": "read the manifest and the run pointer; both changed paths \u2014 skills/reckon-build/SKILL.md and tests/test_skill_contracts.py \u2014 sit inside the seven write paths the pointer records."
+  },
+  "justifications": {
+    "durability": "removing the crew gate line from SKILL.md reddens tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt at EXIT=1 (negative-control-final.log), and removing the inventory entry reddens tests/test_skill_contracts.py::test_ship_cli_instructions_match_registered_commands_and_flags via named != set(expected), so both halves are load-bearing; the review reproduced the doc-line mutation at the head tree (EXIT=1).",
+    "evidence": "both arms are on disk and named by revision \u2014 baseline-gate.log (88b08257, 1 failed / 90 passed, EXIT=1) and final-gate.log (cdb5bafa, 91 passed, EXIT=0) \u2014 so the result is recorded, not claimed; the review independently reran the two inventory tests against the head tree and reproduced 2 passed, and reproduced the mutation red.",
+    "fit": "the SKILL.md line joins the existing tabular crew command surface in alphabetical position (gate between gc and ledger), and the inventory entry matches the registered click options --pause, --open and --pretty at reckon/cli.py:1161-1165.",
+    "goal_fidelity": "the node goal is to make the fleet gate pass the three tests it reddens once merged onto current main; the change documents the already-registered crew gate command in skills/reckon-build/SKILL.md:192 and records its three flags in the strict inventory at tests/test_skill_contracts.py:1060, and the named four-target gate passes 91 of 91 at head cdb5bafa (final-gate.log).",
+    "reuse": "nothing is defined; the inventory test re-enumerates registered commands through the existing _registered_leaf_paths helper (tests/test_skill_contracts.py:989) rather than a hand list, and the added entry mirrors the existing per-verb rows.",
+    "scope_discipline": "the two commits touch exactly skills/reckon-build/SKILL.md and tests/test_skill_contracts.py, each inside the seven write paths the run pointer records."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the fleet gate pass the three tests it reddens once merged onto current main; the diff documents the crew gate command in skills/reckon-build/SKILL.md:192 and records it in the strict command inventory at tests/test_skill_contracts.py:1060, and the named gate is green at head.\nVERDICT done_when: the declared gate is the four-target pytest run; baseline-gate.log (revision 88b08257) records 1 failed, 90 passed, EXIT=1 and final-gate.log (revision cdb5bafa) records 91 passed, EXIT=0; all four targets live in the named files.\nVERDICT write_paths: read the manifest and the run pointer; both changed paths \u2014 skills/reckon-build/SKILL.md and tests/test_skill_contracts.py \u2014 sit inside the seven write paths the pointer records.\nVERDICT manifest: read; status complete, base 88b08257, head cdb5bafa, baseline_suite and after_suite both present and naming their logs, negative_control_log declared, a landing line present, both commit bodies present and conventional, and check-manifest reported clean.\nVERDICT diff: read commit by commit against base 88b08257; 299c9b8bf adds one documentation line to skills/reckon-build/SKILL.md and cdb5bafa adds one inventory entry to tests/test_skill_contracts.py, every path inside the fence.\nCALL_SITES: none (documentation and test-inventory change)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the node goal is to make the fleet gate pass the three tests it reddens once merged onto current main; the change documents the already-registered crew gate command in skills/reckon-build/SKILL.md:192 and records its three flags in the strict inventory at tests/test_skill_contracts.py:1060, and the named four-target gate passes 91 of 91 at head cdb5bafa (final-gate.log).\nSCORE evidence: 19\nJUSTIFICATION evidence: both arms are on disk and named by revision \u2014 baseline-gate.log (88b08257, 1 failed / 90 passed, EXIT=1) and final-gate.log (cdb5bafa, 91 passed, EXIT=0) \u2014 so the result is recorded, not claimed; the review independently reran the two inventory tests against the head tree and reproduced 2 passed, and reproduced the mutation red.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch exactly skills/reckon-build/SKILL.md and tests/test_skill_contracts.py, each inside the seven write paths the run pointer records.\nSCORE durability: 18\nJUSTIFICATION durability: removing the crew gate line from SKILL.md reddens tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt at EXIT=1 (negative-control-final.log), and removing the inventory entry reddens tests/test_skill_contracts.py::test_ship_cli_instructions_match_registered_commands_and_flags via named != set(expected), so both halves are load-bearing; the review reproduced the doc-line mutation at the head tree (EXIT=1).\nSCORE fit: 19\nJUSTIFICATION fit: the SKILL.md line joins the existing tabular crew command surface in alphabetical position (gate between gc and ledger), and the inventory entry matches the registered click options --pause, --open and --pretty at reckon/cli.py:1161-1165.\nSCORE reuse: 20\nJUSTIFICATION reuse: nothing is defined; the inventory test re-enumerates registered commands through the existing _registered_leaf_paths helper (tests/test_skill_contracts.py:989) rather than a hand list, and the added entry mirrors the existing per-verb rows.",
+  "review_run_id": "r-20261007T113100384635-review-of-the-fleet-gate-passes-on-current-main",
+  "reviewed_base_sha": "88b082576ba64f53fa866b15e586dcbba360f20a",
+  "reviewed_head_sha": "cdb5bafade37dc47077c49b7369db27cb94297fe",
+  "reviewed_run_id": "r-20261007T110402797715-the-fleet-gate-passes-on-current-main",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:35:58.053980+00:00",
+  "total": 115
+}

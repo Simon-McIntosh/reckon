@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T11:01:51.622Z",
+  "dispatched_at": "2026-10-07T10:52:52Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:112",
+      "id": "reasoning-1",
+      "reason": "the done-when's fixture is self-consistent under either reading, so the mismatch surfaces only against the real 7\u201313 October figures, after the node has landed; naming the immediately preceding review pins the measure the baselines were computed with.",
+      "text": "\u00a79(d) defines the fold's two shares as following \"an earlier review of the same plan\" (83% for duplicate_owner) and \"a previous review whose same-type finding carries a stored response with action acted\" (41.9%, 113 of 270), but the cited script (measure_review_cycles.py:585-644) resolves both over consecutive review pairs only, prev = reviews[i] and nxt = reviews[i+1], so the comparison is with the immediately preceding review; a node that reads \"an earlier review\" as any prior review of the plan counts more findings in the numerator and does not reproduce the 83% and 41.9% baselines",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f4fda0aa25b4558936c6adcd3dda28906c835d29d990ea4270aaef5cc6994832",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 68,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T11:02:59.597681+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T11:02:59.597681+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v68.json",
+  "review_run_id": "r-20261007T105233717543-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "a4c56687419dc0116693c2ebb63744367a95bd8f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a79 anchor resolves: reckon.velocity.read_blobs (velocity.py:395), plan_review._read_reviewed_blob_texts (plan_review.py:1443), review._run_record_times_found (review.py:1800), require_plan_reviewed (routing.py:2724), review_day_summary (plan_review.py:1522), the extensionless /reckon/research/plan-review-cycles href (docs/research/plan-review-cycles.html), and measure_review_cycles.py lines 609\u2013614 (the prev_acted_types extraction).",
+    "done_when": "pass \u2014 each \u00a79 node names a declared negative control: (a) the test fails when the bare-object entry is reverted, (b) fails when the dropped value is restored and read, (c) fails when the content branch's hot guard is removed, (d) the acted share turns red when the fold ignores the stored response's action.",
+    "evidence_paths": "pass \u2014 \u00a79's deliverables are code and tests in the repository and the gate logs land under the run's durable report directory; nothing in \u00a79 writes to a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a79's symbols and prose carry no plan labels, stage names, ticket numbers or version tags; the mechanism is named, not the tracker entry.",
+    "reasoning": "a finding \u2014 \u00a79(d) defines the fold's two shares in prose that the cited script resolves over consecutive review pairs, and the plan never states that the comparison is with the immediately preceding review, so \"an earlier review\" and \"a previous review\" read as any earlier review and will not reproduce the cited baselines.",
+    "single_goal": "pass \u2014 \u00a79's four nodes each carry one deliverable (a read_blobs entry, a return-value/docstring cleanup, a test, a recurrence fold).",
+    "wiring": "pass \u2014 \u00a79 declares no depends-on and needs none: \u00a78 node (1) landed at 02f0134e8, \u00a78 node (2) writes scripts/import_host_reviews.py, and no unmet dependency remains for \u00a79's four nodes."
+  },
+  "section_digests": {
+    "_document": "a9aa58a9a976f30da28054e65eaf6e53de5c07e4ba93333d46f1428f61eb40fb",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "a7fcc45c1a0d087b629ba0370de67f49444253b8bc50ca049cf5f402e4284625",
+    "s9": "0f330cd6d4c58987a3503695da1fd51680cad7961939e3c4243fceb4936ba4c1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:02:09.652293+00:00"
+}

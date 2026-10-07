@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:12:02.099Z",
+  "dispatched_at": "2026-10-04T16:57:29Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/refusals.py:18",
+      "id": "reuse_search-1",
+      "reason": "the author would generalise the existing registry and reuse the census harness instead of inventing a parallel promotion-side taxonomy, and \u00a72's \"33 of 42\" would be measured against a surface already partly equipped.",
+      "text": "\u00a74/\u00a79's centrepiece (a registry giving every refusal a discharge, plus a test that enumerates the refusal sites from the source and fails on any with none) already exists for the dispatch surface: `reckon/crew/refusals.py:18` holds `DISPATCH_REFUSAL_REMEDIES` (D01\u2013D23) behind `format_refusal` (`refusals.py:97`), and `tests/test_crew_refusal_visibility.py:34,66,79` AST-walks `REFUSAL_SOURCE_PATHS` and asserts each reachable family names its resolving action in the shared formatter. \u00a79's claimed \"falsifier, to be written before the change\" is already written, for the dispatch surface.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py:1160",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a79's premise that \u00a75 is \"the only section that can start today\" is stale; the author would either find the residual defect (the plan's own attached comment argues the positive-record form is fixture-spoofable and the fix should read declared fields, not substrings. That deeper fix is not what landed) or re-scope \u00a75/\u00a79.",
+      "text": "\u00a75/\u00a79's \"correct test for the thing the guard is actually asking about\" is already landed: `_require_gate_log_agrees` (`promotion.py:1160`) refuses the `command not found` diagnostic only when the log carries no positive record, via `_log_shows_the_command_ran` (`promotion.py:1115`), which accepts a runner result summary or a terminal `EXIT=<n>` outside `{126,127}`. The specimen log carries a real runner summary (line 663), so the third refusal no longer fires on the shape \u00a75 describes as blocked, and `reckon/crew/promotion.py` no longer reads `recorded != 0 and re.search(...)` as \u00a75 states.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:79",
+      "id": "duplicate_owner-2",
+      "reason": "the author would assert the existing capture path and name whichever lane still fails to invoke it, rather than add a parallel write; the outstanding question is a spot check of the codex dialect, not a new mechanism.",
+      "text": "\u00a710's remedy (\"a codex-family session records its session id into the live pointer on its first turn, exactly as the other lanes do\") is already the job of `capture_run_session` (`runs.py:79`), which writes `session_id` and a `session_harness` boundary onto the run and is reached through `resolve_session` (`resumption.py:464`) across pointer, stream and ledger. The harness-boundary handling in `_current_harness_session` (`dispatch.py:11558`) and the `lane_change` record (`dispatch.py:12302`) already carry the lane-change case, and `tests/test_dispatch_reads_the_run_session.py` already asserts capture reads the stream when the pointer lags.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/resumption.py:464",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a710 should be restated as \"extend `capture_run_session` so the codex dialect writes on its first turn\" and \u00a76 as reaching the existing scope-conflict claimant naming from the promotion path, which the plan's own \u00a76 already says is \"the surface exists and is simply not reached\"; naming the owner would make the change an extension rather than a second reader.",
+      "text": "\u00a710 (and the s10 done-write for a fresh session) forwards to session capture that `resolve_session` already performs over three sources, and \u00a76 asks for a claimed-file owner name that `tests/test_scope_refusal_names_its_claimant.py` already asserts for scope refusals; neither section says why the existing reader cannot be extended.",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3d431f6bb14dbc570524acb7f6bfb24b752a34de707ed9b5254352c6cd8ba547",
+  "plan_slug": "an-orchestrator-can-discharge-a-refusal",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T165715520680-plan-review-of-an-orchestrator-can-discharge-a-refusal",
+  "reviewed_blob_sha": "27fd999a39bcee02cca833ebbc5b91a895021b6b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "finding \u2014 \u00a74 leaves the discharges' home undefined across an unresolved flag-per-refusal-vs-keyed decision, while the tree already has the one deep module for exactly this job.",
+    "duplicate_owner": "a finding \u2014 \u00a74 duplicates the refusal-remedy registry owned by `reckon/crew/refusals.py`, and \u00a710 duplicates the session capture owned by `reckon/crew/runs.py`.",
+    "reuse_search": "finding \u2014 the plan proposes a refusal-to-discharge registry, a source-enumerating refusal census test, a positive-evidence gate-log check and a session-capture write; none is cited, though all four already exist in the tree.",
+    "thin_wrapper": "finding \u2014 \u00a75 and \u00a710 each propose a layer over machinery that already exists, without arguing the machinery cannot be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.814291+00:00"
+}

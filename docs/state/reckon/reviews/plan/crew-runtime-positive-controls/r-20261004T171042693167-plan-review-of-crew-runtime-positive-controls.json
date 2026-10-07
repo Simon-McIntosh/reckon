@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:21:28.719Z",
+  "dispatched_at": "2026-10-04T17:10:57Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion.py:7115",
+      "id": "duplicate_owner-1",
+      "reason": "the \"blank field resolves the current directory\" defect the section exists to remove is reachable through at least six paths outside promotion.py; hoisting `_record_tree` into one shared resolver that every reader calls \u2014 and widening \u00a756's grep past promotion.py, as \u00a745 did by enumerating callers \u2014 closes them all, whereas auditing promotion alone leaves the rest forking the rule.",
+      "text": "\u00a756's done-when resolves sites through `_record_tree` and greps only `reckon/crew/promotion.py`, but `_record_tree`/`_record_worktree` are module-private to promotion.py, and the same \"empty worktree field is absent, never `Path('.')`\" rule is forked elsewhere: reckon/crew/recovery.py:5361 and :5411 build `Path(str(record.get(\"worktree...\") or \".\"))`, reckon/crew/resumption.py:856 the same, and reckon/crew/dispatch.py:11908 and :12337 write `str(record.get(\"worktree\") or \".\")`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/reports.py:139",
+      "id": "duplicate_owner-2",
+      "reason": "reports.py already owns manifest shape validation (`\"baseline_suite\"/\"after_suite\": frozenset({\"text\",\"mapping\"})` at reports.py:139 and `suite_observation_missing_fields`), so the flat/keyed decision belongs in that one owner at check-manifest time; teaching two more readers a second shape is the parallel-reader defect \u00a738 closed, and it is decided by the one party that cannot ask the worker to change the manifest.",
+      "text": "\u00a748 offers as one of two options \"the promotion guard and `_gate_log_path` accept a record keyed by arm\", which would spread acceptance of a second suite-record shape across reckon/crew/promotion.py:5818",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:8556",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a751 names handing the worker its scratch as `TMPDIR` as the primary remedy and \u00a757 is a lead ruling acknowledged as coming from the lead; extending `remove_worker_scratch` to reach the arms is the honest change but the reviewer records it as a note rather than a required plan change, because the ruling already sanctions the owner-side fix.",
+      "text": "\u00a757 (a lead ruling) requires a passing run to clear every scratch arm it made, layered beside \u00a751's `remove_worker_scratch` release rather than extending it, even though \u00a751 already established the owner names the run's scratch by id",
+      "type": "thin_wrapper",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "1942c122ebc386eae54e8337c6136ef415df7fee3bde1da29202c4aaebdf5ad8",
+  "plan_slug": "crew-runtime-positive-controls",
+  "plan_version": 326,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T171042693167-plan-review-of-crew-runtime-positive-controls",
+  "reviewed_blob_sha": "28132e26e844452573e6977e2794a285997c2259",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a750 collapses the 27 literal `{\"ok\": True, **result}` sites in reckon/cli.py behind one outcome-derived helper, and \u00a744/\u00a745/\u00a746 follow the same shape as \u00a738 by putting many readers behind one resolver rather than spreading shallow accessors.",
+    "duplicate_owner": "a finding \u2014 \u00a756 audits the blank-worktree idiom only in reckon/crew/promotion.py, while the rule it enforces lives in the promotion-private `_record_tree`/`_record_worktree` and is re-implemented with the current-directory fallback in recovery.py, resumption.py and dispatch.py.",
+    "reuse_search": "pass \u2014 every pending section names the existing mechanism it extends (`_record_tree` at reckon/crew/promotion.py:7115 for \u00a756, `worker_scratch_root`/`remove_worker_scratch` at reckon/crew/dispatch.py:8558 and :8556 for \u00a751): no new subsystem is proposed.",
+    "thin_wrapper": "a finding \u2014 \u00a757 layers a worker-side scratch-clearing obligation on top of \u00a751's release-side clearing, both over the same `worker_scratch_root()` owner, without saying why that owner cannot be extended to reach the arms."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.933997+00:00"
+}

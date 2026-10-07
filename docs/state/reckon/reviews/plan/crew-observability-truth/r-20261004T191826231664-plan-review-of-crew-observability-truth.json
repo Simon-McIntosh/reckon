@@ -1,0 +1,35 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T19:22:19.451Z",
+  "dispatched_at": "2026-10-04T19:18:41Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/crew-observability-truth.html",
+      "id": "reuse_search-1",
+      "reason": "the maps are the plan's own reuse evidence and their staleness is the one way they can still cause a duplicate; re-pointing each verdict at the current head, or stamping the map with the revision a node should re-read, is a one-line change that removes the risk.",
+      "text": "three of the four reuse-map artifacts are keyed to base revisions older than the current plan (`593f237`, `5384182`, `4e48e772e55a`, all ancestors of the plan's own `plan-commits`), so their `absent`/`partial` verdicts describe a tree the plan has since changed; a worker dispatched today on \u00a713 rows 1/6 or \u00a717 row 3 from those maps would rebuild already-landed machinery (`--wave` default join; `_token_between` at `recovery.py`).",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "714b56c02fc4b93108f4b8cde57b3ba88361df06c5c2f9551e825c0be6d0e315",
+  "plan_slug": "crew-observability-truth",
+  "plan_version": 712,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T191826231664-plan-review-of-crew-observability-truth",
+  "reviewed_blob_sha": "bf0adc5ceedf50c0f57be94bd0abf5c3aa2c08e5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design hides substantial behaviour behind existing deep owners rather than spreading shallow wrappers: liveness derivation stays in `runs.py` (`project_watch_visibility` / `producer_live`), classification in `recovery.py` (`classify_pointer`), row rendering in `ticker.py`, the promoted record in `promotion.py`, spend folding in `metering.py`, the manifest reader in `reports.py`, lane probes in `flight.py`. Every measure names the owner it extends.",
+    "duplicate_owner": "pass \u2014 no proposed mechanism re-implements an owner: \u00a73 routes `crew gc` through the existing `resolve_dispatch_authority`/`resolve_dispatch_ledger_root` (`routing.py:774,838`) instead of `cli._repo_root`; \u00a713 row 10 cites `metering.is_durable` (`metering.py:233`) as one implementation with two callers; \u00a719 M2 reuses `metering.accumulate_run_spend` (`metering.py:601`) on the promotion ordering rather than re-deriving spend in the watch loop, as the reuse map instructs.",
+    "reuse_search": "pass \u2014 the plan cites four reuse-map artifacts (`display-reuse-map.md`; `display-truth-reuse-wave-soft-limit.md`; `display-truth-reuse-promotion-row.md`; `display-truth-reuse-refusal-classifier.md`) that map each measure row across \u00a72\u2013\u00a75, \u00a713, \u00a715\u2013\u00a720 to an existing surface at a named revision with `fits`/`needs-extension`/`does-not-fit` verdicts and `file:symbol` citations, and the plan records the currency correction its own search produced (\u00a75 `nothing maps a spec level to a backend` is retracted against `by_spec_level.<level>.backend`, present at `_flight_schema.py:273` and `routing.py:90`).",
+    "thin_wrapper": "pass \u2014 the three places the plan adds a surface each justify why the owner cannot carry it: \u00a717's worker message has no existing channel (`grep -rn \"def send\\|message_worker\" reckon/crew/` returns none, and a mid-turn worker is unreachable by `crew resume`), \u00a718 M3's queue probe was superseded rather than added (`flight._probe_serving` / `probe_availability` at `flight.py:1446,1518` read the endpoints document), and \u00a713's wave id reuses the ledger field rather than a second index."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.882339+00:00"
+}

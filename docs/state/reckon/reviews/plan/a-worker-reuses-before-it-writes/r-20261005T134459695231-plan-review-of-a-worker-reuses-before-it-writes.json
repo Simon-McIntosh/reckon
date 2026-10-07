@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T13:49:00.086Z",
+  "dispatched_at": "2026-10-05T13:45:17Z",
+  "findings": [
+    {
+      "anchor": "reckon/interface_counts.py:54",
+      "id": "reuse_search-1",
+      "reason": "the node's own acceptance check must be narrowed to `cat-file --batch` or it never reads as \"one function\", and the inventory must either consolidate the neighbouring `git()` wrapper or state why it stays.",
+      "text": "the section claims to enumerate what is duplicated across the two files it edits, but the byte-identical `git()` wrapper (`reckon/interface_counts.py:54` and `reckon/velocity.py:145`) is a second, un-cited duplication; and the done-when's `grep -rn 'cat-file' reckon/` cannot isolate the batch reader because it also matches frozenset verb literals (`reckon/worker_git_shim.py:100`, `reckon/ledger.py:2298` and `:2310`), docstrings (`reckon/velocity.py:362`, `reckon/interface_counts.py:444`) and single-object `cat-file -e` checks (`reckon/crew/routing.py:1222`, `reckon/crew/promotion.py:3997`)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:358",
+      "id": "deep_module-1",
+      "reason": "the node must pin the extracted interface to a spec-list batch reader (single-revision callers mapping `(revision, path)` pairs) or state that `_plan_metas` keeps its own loop, before it runs.",
+      "text": "the extracted public reader is described as returning \"path to bytes for a revision\", which fits the counter's single-revision call but not `_plan_metas`, whose specs span many commits and whose docstring says one `cat-file --batch` process serves every plan so a full-history census avoids \"one subprocess per commit\"; a per-revision interface forces `_plan_metas` back to a subprocess per commit or a second interface",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8fc54d918a9d45895a044ea9e49e5dda8249f31b2a34f43ed6993b96c7738f7f",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 113,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T134459695231-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "0ce2d6aa42f0ecdd69375f2de79412496d1df3a0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the one promoted reader is specified as returning bytes \"for a revision\", yet its second caller `velocity._plan_metas` batches an ordered list of `(sha, path)` specs across many commits in a single pass.",
+    "duplicate_owner": "pass \u2014 \u00a710 folds a duplicate into its existing owner (velocity.py holds the loop and the cache root) rather than forking a parallel path, which is what this item asks for.",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a710 states in its own text that public_definitions grows by exactly two and why nothing public can be retired.",
+    "reuse_search": "a finding \u2014 \u00a710 cites the mechanisms it searched (`interface_counts._read_blobs`, `velocity._plan_metas`, `_velocity_cache_root`, the clones tokenisation pair, the frozen census), but its inventory of what is duplicated in the two files it touches is incomplete and the search instrument it names is non-discriminating.",
+    "thin_wrapper": "pass \u2014 the change promotes the existing `cat-file --batch` loop to a public name rather than layering a new wrapper over an existing reader."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.675057+00:00"
+}

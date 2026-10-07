@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T19:18:16.176Z",
+  "dispatched_at": "2026-10-04T19:14:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html#s13",
+      "id": "reuse_search-1",
+      "reason": "the node should first confirm the existing guard still loses the race under load (the plan asserts a product lost-update) and otherwise add the missing test, not fork the mechanism.",
+      "text": "\u00a713 designs a publish-time check that the pointer \"still exists and the run is not discarded\" with no reference to `_write_existing_pointer` (reckon/crew/dispatch.py:5030), which already performs that two-sided existence check and was committed for this exact race in 3120843f6 today, so the section risks reimplementing a guard that is already in the tree",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html#s12",
+      "id": "reuse_search-2",
+      "reason": "\u00a712 should reuse the existing event-wait helper rather than introduce a second bounding approach for the same file.",
+      "text": "\u00a712 asks the case to \"wait on the event it asserts rather than a wall-clock window, or bound its window from a measured figure\" without citing the event-wait helper and measured bound the \u00a714 node already built (`_wait_for` at tests/test_dispatch_returns_without_worker.py:705 and `_dispatch_exit_bound`/`_survival_window_seconds` at :825-842)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html#s11",
+      "id": "thin_wrapper-1",
+      "reason": "the hold-or-divert behaviour should extend the existing verdict (e.g. wait-then-release or divert-with-report inside it) instead of adding a parallel member-busy decision that can drift from `node.py`.",
+      "text": "\u00a711 routes a launch onto a busy member through a dispatch-side \"hold or divert\" path without saying why the guard that already decides member busyness, `member_in_flight_verdict` / `refuse_member_in_flight` (reckon/crew/node.py:357,391), cannot be extended; the plan's own code comment binds that semantic to the same guard (dispatch.py:11365)",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:8697",
+      "id": "duplicate_owner-1",
+      "reason": "the owner is recovery.py's classification arm; the plan should extend it (or, if the observed collision kills the process before `launch_failures` is written, prove that residual case and cite the gap) rather than add a second stderr reader.",
+      "text": "\u00a711's clause to make `observe` read `stderr.log` when the stream is empty so a launch failure classifies `launch-failed` with its reason attached duplicates the existing launch-failed arm in recovery.py:8697-8738, which already reads `latest[\"stderr_tail\"]` captured by dispatch.py:7963 and names the cause",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "cdb504e98cf10ffb6283f38700c1d56688a49df1ecc8a935b8dd823264842147",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 151,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T191424386225-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "54a58ff23cf2f6bef410950e2862439fedf5d666",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the per-run supervisor hides the snapshot, the spawn, the wait and the exit record behind one entry point (`_start_supervisor` reaching `reckon/crew/supervisor_main.py`), and the live \u00a712\u2013\u00a714 add tests and a dispatch-side guard over existing helpers rather than new modules; no shallow-wrapper sprawl is introduced.",
+    "duplicate_owner": "a finding \u2014 \u00a711's clause to make `observe` read `stderr.log` so a launch failure classifies `launch-failed` with its reason duplicates the launch-failed reader in `reckon/crew/recovery.py:8697-8738`, which already surfaces the stderr tail `dispatch.py:7963` captures; the owner to extend is `recovery.py`.",
+    "reuse_search": "a finding \u2014 the live design sections (\u00a712, \u00a713) propose repairs without citing mechanisms that already exist for their exact defect: `_write_existing_pointer` (reckon/crew/dispatch.py:5030) for the discard-vs-publish race, and the `_wait_for`/`_dispatch_exit_bound` event-wait the \u00a714 case built (tests/test_dispatch_returns_without_worker.py:825-854).",
+    "thin_wrapper": "a finding \u2014 \u00a711 adds a hold-or-divert path for a busy member with no statement why the existing member guard cannot be extended, so a second member-busy decision lands beside the one `refuse_member_in_flight` already makes."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.348327+00:00"
+}

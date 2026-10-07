@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:11:26.707Z",
+  "dispatched_at": "2026-10-06T10:00:39Z",
+  "findings": [
+    {
+      "anchor": "reckon/ledger.py:866",
+      "id": "reuse_search-1",
+      "reason": "a reuse search that never names the existing per-record SQLite index cannot decide whether to extend it, and the plan as written spends its first three nodes rebuilding one.",
+      "text": "the plan's \u00a72\u2013\u00a73 SQLite store over run records re-proposes machinery that already exists as the incrementally-refreshed picker index in ledger._indexed_data (commits a8ca2a36c, 88c10ba1d from the depended-on plan dispatch-cost-per-durable-node), and the plan names neither that index nor reckon/run_store.py as its prior art",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:866",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is an extension of the existing index owner; a second store over the same records is the plan's own duplicate, and the plan must either cite the extension or justify the fork.",
+      "text": "\u00a72 adds an SQLite store whose indexed-query property is already delivered by ledger._indexed_data, and it never states why that existing index cannot be replaced-in-place by the plan's design with a detail table and rotation instead of a parallel store being introduced",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/run_store.py:118",
+      "id": "duplicate_owner-1",
+      "reason": "the plan's \u00a77 index already has two index owners and one hardcoded path; naming run_store.store_path as the owner lets \u00a77 consolidate them in one pass instead of adding a third index.",
+      "text": "three owners of the run-record index and its path exist and the plan names none: run_store.store_path (reckon/run_store.py:118) resolves the store, ledger._indexed_data (reckon/ledger.py:866) builds a second SQLite index of the same run records at _store.cache_root(\"pick-input\")/ledger-<sha>.sqlite, and velocity.py hardcodes the store path as a module constant rather than calling the owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:80",
+      "id": "duplicate_owner-2",
+      "reason": "a hardcoded absolute path defeats the \u00a73 location gate, and the plan must fold it into the owner it names.",
+      "text": "RUN_STORE = Path(\"/home/ITER/mcintos/.config/reckon/crew/run_store.db\") hardcodes the crew-config store path that run_store.store_path (reckon/run_store.py:118) already owns, so the plan's store-location decision (\u00a73, host-local vs shared) is silently bypassed by a module constant the plan does not mention",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:2995",
+      "id": "duplicate_owner-3",
+      "reason": "the migration measure must be stated against the mechanism that today answers \"which runs exist\" (run_store.indexed_run_ids via ledger), or the split will migrate against the wrong authority.",
+      "text": "ledger.indexed_run_ids and the store reconciliation at ledger.py:1143 (_run_store_location) already treat \"the run store\" as the independent authority for promoted runs, a fourth site whose answer the plan's \u00a77 node-3 split would move; the plan does not name it, so the split's \"canonical JSON of every row matches\" measure is not anchored to the owner that currently answers the question",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "history-persists-as-detail-washes-out#s7",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the added definitions and refusal family in its own text, e.g. by naming ledger.write and ledger.load retired for the run path, or why nothing can be.",
+      "text": "\u00a77 node 1 adds the new public writer ledger.append_run and a new refusal family (\"run already exists\"), and the landed store adds run_store.RunStore, store_path, DETAIL_FIELDS and QUERY_KEYS, none of which \u00a77 pairs with anything retired or merged",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8d2cab83907c2d47e38988fe4a8b4a242f4aa533f59eb1b89b303c5446db1e82",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T100018013235-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "14c34eeb6c577e885cdc85594a188ed8e6ef14be",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a77 hides the per-run file layout, the write refusal and the index rebuild behind ledger.append_run and ledger.load, an interface smaller than what it hides.",
+    "duplicate_owner": "a finding \u2014 the plan's index/store path is owned by three sites, and the plan names none of them as the owner to extend.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; the section adds a public writer (ledger.append_run), store accessors (run_store.store_path, RunStore, DETAIL_FIELDS, QUERY_KEYS) and a new refusal family without naming what it retires, merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan searches the ledger module and cites ledger.append_run / ledger.load, but never names reckon/run_store.py (the SQLite index it is about to build) nor the pre-existing run-record SQLite index at reckon/ledger.py:866, so it proposes machinery the companion plan dispatch-cost-per-durable-node already landed.",
+    "thin_wrapper": "a finding \u2014 \u00a72 introduces a whole SQLite store over run records without saying why the existing per-record index owner cannot be extended to carry rotation."
+  },
+  "section_digests": {
+    "_document": "477bae049540baec9018a1394cb02d56f66d55d739e98fed4822f1019eacebe2",
+    "s1": "16a4b0ff613308f968af13a86453cdda7611fbb4a0b662f0998319199f08c1f2",
+    "s2": "81ea5591beea9f0bfe0621b90127946f5c732b8471e2c5373404a592fa5daefe",
+    "s3": "3422a7a0a23c318e54716e2fbbaf99599e0142f7bbc74d9eb45f924541cd8ccf",
+    "s4": "6beff7af8378d0a3be80a490fb73cc8c5e6a8ee94449c98de40a252d2f57fcd5",
+    "s5": "0cd70cc30708f232bf564bff0e7825d783d5f5ab455747bfac40ebe742ea0ed3",
+    "s6": "5181e894e8b3823f366d0b459a48ecc8e236e645ca5b1f02071dfc0fdae47681",
+    "s7": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.994601+00:00"
+}

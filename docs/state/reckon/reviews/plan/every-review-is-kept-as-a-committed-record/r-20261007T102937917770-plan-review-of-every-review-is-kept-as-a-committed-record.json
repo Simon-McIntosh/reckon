@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T10:38:08.891Z",
+  "dispatched_at": "2026-10-07T10:29:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:111",
+      "id": "wiring-1",
+      "reason": "an undeclared same-file dependency lets a coordinator reading the roadmap dispatch \u00a78 and \u00a79 concurrently onto plan_review.py, the collision the plan itself says must be sequenced.",
+      "text": "\u00a79 declares no depends-on while its nodes (a) and (d) both write plan_review.py, the same file \u00a78's node (1) changes; the only record of the ordering is followup f-erkc-007's body, and \u00a79's opening claim that its four nodes each have \"its own write scope\" is contradicted by that same followup's body",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:112",
+      "id": "reasoning-1",
+      "reason": "if the implemented fold reads the stored answer it computes a different quantity than the 41.9% \u00a72's one-week re-measure compares against, so the re-measure would compare two different metrics.",
+      "text": "\u00a79(d) defines the fold's second share by the stored answer (\"whose answer was acted\") but equates it to 41.9%, which the cited research doc defines as the share after a same-type finding whose unit changed between reviews, not whose stored response read \"acted\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c88fd02d081cca26bea151d9743f5d7112e8cd7250fd499c0682cfab02c47d98",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 66,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T10:39:25.339769+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "section 8 node (1) landed at 02f0134e8, so no ordering against it remains; within section 9 the dispatch scope check refuses concurrent claims on reckon/crew/plan_review.py, which is not a co-claimable path, so nodes (a) and (d) cannot run together and need no plan-level edge",
+      "when": "2026-10-07T10:39:33.089326+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T10:39:25.339769+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "section 8 node (1) landed at 02f0134e8, so no ordering against it remains; within section 9 the dispatch scope check refuses concurrent claims on reckon/crew/plan_review.py, which is not a co-claimable path, so nodes (a) and (d) cannot run together and need no plan-level edge",
+      "when": "2026-10-07T10:39:33.089326+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v66.json",
+  "review_run_id": "r-20261007T102937917770-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "7f7991a0706b6efc039ef842d100ebc39a056191",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 plan_review._read_reviewed_blob_texts (plan_review.py:1443, called by review_day_summary at :1590), reckon.velocity.read_blobs (velocity.py:395), review._run_record_times_found (review.py:1800, its flag discarded at :1857), require_plan_reviewed (routing.py:2724, content branch at :2824) and the plan-review view's day summary (plan_review.review_day_summary, :1522) all resolve.",
+    "done_when": "pass \u2014 each of \u00a79's nodes (a)\u2013(d) names a mutation under which its own test turns red (a: revert the bare-object entry; b: restore the dropped value; c: remove the content branch's hot guard; d: make the fold ignore the answer).",
+    "evidence_paths": "pass \u2014 \u00a79 names no session scratchpad or node-local path; its evidence is the nodes' own test/gate logs, written under each project's tree.",
+    "naming": "pass \u2014 every symbol \u00a79 names is a mechanism name; no plan label, stage name, ticket number or version tag reaches it.",
+    "reasoning": "a finding \u2014 \u00a79(d)'s second share is \"the share that follow an earlier same-type finding whose answer was acted\", the stored response value, but the 41.9% it is said to equal is the research doc's \"after an acted same-type finding\", where acted means the finding's unit changed between reviews, not its stored answer.",
+    "single_goal": "pass \u2014 four nodes, one deliverable each: (a) move the bare-object read behind velocity.read_blobs, (b) drop the unread return value, (c) a falsifiable hot-guard test, (d) a recurrence fold.",
+    "wiring": "a finding \u2014 \u00a79 carries data-links=\"\" so the roadmap DAG shows \u00a78 and \u00a79 as independent, yet \u00a79's nodes (a) and (d) both write plan_review.py that \u00a78's node (1) also changes."
+  },
+  "section_digests": {
+    "_document": "a9aa58a9a976f30da28054e65eaf6e53de5c07e4ba93333d46f1428f61eb40fb",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "a7fcc45c1a0d087b629ba0370de67f49444253b8bc50ca049cf5f402e4284625",
+    "s9": "b16b7eb6e3899857a9d64625126e9be124b69096a4744038802acbd3cb583097"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T10:38:28.372012+00:00"
+}

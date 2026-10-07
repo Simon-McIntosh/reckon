@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:05:17.103Z",
+  "dispatched_at": "2026-10-05T16:00:18Z",
+  "findings": [
+    {
+      "anchor": "reckon/serve.py:466",
+      "id": "deep_module-1",
+      "reason": "the section must either add a no-home-branch parameter (or exclude the served-client kind) or restate the done-when as a deliberate, named behaviour change for that kind, otherwise the implementer hits an unsatisfiable gate.",
+      "text": "\u00a713 folds five cache cascades into `cache_root(kind, *, home_first)` and says they differ only in \"two deliberate orders\", but `_client_cache_root` has no `RECKON_HOME` step at all (`RECKON_CLIENT_CACHE` \u2192 `<XDG_CACHE_HOME or ~/.cache>/reckon/client`), so it is a third shape: with `RECKON_HOME` set and `XDG_CACHE_HOME` unset its base resolution is the real user cache, and any `home_first` variant that consults `RECKON_HOME` at all moves it, which \u00a713's own done-when (`each of the five kinds resolves to the directory it resolved to at the base under both an isolated RECKON_HOME and an explicit XDG_CACHE_HOME`) then forbids \u2014 the section and its gate contradict each other for this kind",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "de70726757a53bcc4296de798be39d602451981d189b0f99cf9996ce561aa41a",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 132,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T155959743694-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "4d9953353e3d04eb866e39c27c3827d1d5134148",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 `cache_root(kind, *, home_first)` hides the five-cascade resolution behind one boolean order that cannot represent the fifth caller, so the interface is smaller than the behaviour it must preserve.",
+    "duplicate_owner": "pass \u2014 the section names the existing owners it consolidates rather than forking them: `routing._git` (reckon/crew/routing.py:473) becomes a wrapper over the one runner, and `capabilities.pick_input_cache_root` (reckon/capabilities.py:1143) and `lane_context._profile_cache_root` (reckon/crew/picker/lane_context.py:261) become callers of the one cascade.",
+    "interface_budget": "pass \u2014 \u00a712 states its net is zero (adds the sources reader on velocity, retires the public `revised_python`); \u00a713 states `public_definitions` grows by two (the process runner and `cache_root`) with the retired resolvers private, and neither section adds a CLI option, MCP view, or refusal family.",
+    "reuse_search": "pass \u2014 \u00a712 and \u00a713 enumerate the machinery they extend (four named git runners `velocity.git`/`routing._git`/`clones._git`/`served_code._git`, 63 direct subprocess git calls, and five cache cascades), and the plan's measured figures reproduce against the tree (reckon/clones.py:644 `_git` returns a process, reckon/velocity.py:147 `git` raises and returns bytes, 1,169 tracked `.py` at HEAD with 98 outside `reckon/` and `tests/`).",
+    "thin_wrapper": "pass \u2014 the two retained wrappers over the one runner each state why they cannot be the runner (`velocity.git` keeps a bytes-and-raise contract; `routing._git` translates a failed invocation into `CrewError`), which is error-domain translation rather than a parallel mechanism."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.640798+00:00"
+}

@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:50:56.235Z",
+  "dispatched_at": "2026-10-04T21:42:44Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:11553",
+      "id": "thin_wrapper-1",
+      "reason": "the plan's \u00a73 measure is \"dispatch and observe stop writing session fields onto roster members\", and a member-named entry point kept for compatibility leaves the retired contract reachable by name; the honest change is to delete it and call `capture_run_session` directly.",
+      "text": "`_capture_member_session(record)` is defined as `return capture_run_session(record)` with the docstring \"Compatibility entry point for promotion; capture writes only the run\", so it is a bare alias over `capture_run_session` (reckon/crew/runs.py:79) with no added behaviour; it is the surviving name of the retired roster-capture contract and every caller is a direct one (reckon/crew/promotion.py:5365, 8169, 8679; reckon/crew/dispatch.py:11091)",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:11255",
+      "id": "duplicate_owner-1",
+      "reason": "the plan's \u00a72/\u00a79 falsifier names the `blocking_limit` / `Prompt is too long` endings as the withheld-session condition, so the reading is the plan's own contract; the file to extend is `reckon/crew/context_budget.py`, which already owns the context-refusal and compact_boundary vocabulary, and the shared reader is `reckon/_backends.py:3620`.",
+      "text": "`_session_too_large_to_continue` opens and re-decodes a run's stream itself (dispatch.py:11272) for the same events two owners already decode: `context_budget.py:25-26` owns the literals `\"Prompt is too long\"` and `\"system/compact_boundary\"` (dispatch.py:11294,11291) and `recovery._admission_refusal` owns `terminal_reason == \"blocking_limit\"` (dispatch.py:11298 vs recovery.py:4950); it also bypasses the shared decoded-stream cache `_backends.cached_stream_events` (reckon/_backends.py:3620) that recovery.py:4932 uses, so the file is parsed a second time per decision",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:11450",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a79 names \"a redispatched-then-resumed run launches with the new harness's own session\" as the section's done-when, which is exactly the lane_change path; the selection decision should ask `_current_harness_session` rather than re-deriving harness ownership from a narrower field set, or the two must be pinned together by a test the plan already lists.",
+      "text": "the \"which harness owns this session\" rule is implemented twice in the same module: `_task_session_resolution` compares `owner != harness` from `session_harness`/`dialect` (dispatch.py:11441-11453), and `_current_harness_session` (dispatch.py:11558-11599) implements the same rule plus the `lane_change` boundary (`changed_harness`) and the fresh-observation fallback; the incomplete copy at 11450 will drift from the more complete owner from the more complete owner as lane-change handling evolves",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "266b19595af318a67085279545e7f4c71997628842800de6fb0318cfda06eb35",
+  "plan_slug": "new-work-gets-a-new-worker",
+  "plan_version": 47,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T214228368504-plan-review-of-new-work-gets-a-new-worker",
+  "reviewed_blob_sha": "f3a695f38ba1738c129bac598c1bf652ef0e42bd",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module; the task-keyed selection is one call, `_task_session_resolution` (reckon/crew/dispatch.py:11392), which hides the run-record join, the withhold-verdict and the held-session check behind a single return, and the resume side keeps its reader in the module that already owns session reading, `resolve_session` (reckon/crew/resumption.py:464).",
+    "duplicate_owner": "a finding \u2014 `_session_too_large_to_continue` re-parsing a run's stream duplicates the event vocabulary and the cached stream reader that other modules already own.",
+    "reuse_search": "pass \u2014 the plan ran a reuse map before proposing machinery (\u00a71, 34 site rows, all five falsifier sites present) and the landed decision cites the mechanism it replaced, `_member_session_resolution`, and its successor `_task_session_resolution` at reckon/crew/dispatch.py:11392.",
+    "thin_wrapper": "a finding \u2014 `_capture_member_session` is a compatibility alias that forwards to `capture_run_session` and adds nothing."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.036924+00:00"
+}

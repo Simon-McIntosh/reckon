@@ -1,0 +1,100 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:18:03.369Z",
+  "dispatched_at": "2026-10-06T10:09:46Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/scoring-should-stop-a-promotion.html#s6",
+      "id": "reuse_search-1",
+      "reason": "the plan should name the rubric/role mechanism it extends, which is the difference between a role and a second review subsystem.",
+      "text": "\u00a76 proposes `reckon/crew/figure_review.py` and `reckon/crew/prompts/figure-review.md` as new machinery, but the review system is already rubric-parameterised: `reckon/crew/review.py:175` defines `PLAN_REVIEW_RUBRICS`, `:359 load_plan_review_prompt`, `:628` maps rubric to item list, and `:687 parse_plan_review_report` parses a second role's report; `reckon/crew/plan_review.py` (988 lines) is the existing sibling role. A census of \u00a76's uncited prior art: (1) role/prompt/parser reuse `reckon/crew/review.py:175,359,628,687`; (2) sibling role module `reckon/crew/plan_review.py`; (3) image-input lane capability `reckon/_flight_schema.py:294` and its refusal in `reckon/flight.py:1381` (`select_profile_backend`). The plan cites none of the three, so an implementer reads \u00a76 as greenfield.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/scoring-should-stop-a-promotion.html#s6",
+      "id": "thin_wrapper-1",
+      "reason": "a parallel module for a new rubric is surface without depth; the honest change is a fourth rubric in the existing parameterised role, exactly as `plan_review` was added, and the plan should either extend it or justify the fork.",
+      "text": "\u00a76 introduces a new module and prompt for one review role whose only distinct behaviour is a trigger (diff touches a figures image), a prompt, a caption-only write scope, and a lane requirement \u2014 all of which the existing role mechanism already expresses (rubric selection plus prompt file at `reckon/crew/review.py:354-359`, one write-scope rule, one capability check). The section never says why `review.py`'s role parameter cannot carry a figure rubric.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/scoring-should-stop-a-promotion.html#s6",
+      "id": "duplicate_owner-1",
+      "reason": "without naming `_flight_schema.input_modalities` and `routing.select_profile_backend`, \u00a76's implementer will add a second capability check that drifts from the one the gate already verified.",
+      "text": "\u00a76's requirement that \"a figure review refuses a lane that cannot read an image\" duplicates an owner that already ships: `reckon/_flight_schema.py:294` declares `input_modalities` (\"a lane that does not say it reads images is treated as not reading them\"), and `reckon/crew/routing.py:select_profile_backend` performs the refusal \u2014 recorded by this plan's own closed gate `g-ssp-figure-lane` (`plan.html:3231-3234`, evidence `a-review-can-see-the-figure#s1`), which states \u00a76 \"must route through select_profile_backend\". The \u00a76 body text does not name that owner, and re-derives figure detection that `reckon/figures.py` (`figure_rows` at `reckon/figures.py:116`) owns.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/scoring-should-stop-a-promotion.html#s6",
+      "id": "interface_budget-1",
+      "reason": "each added family must be accounted for in the section's own text, or the plan grows interface surface the budget counts without a stated offset.",
+      "text": "with public_definitions 1481, cli_options 317, mcp_views 33 and refusal_families 23, \u00a76 adds a public module (`figure_review.py`), a prompt file, a new role and a new refusal family, and states nothing it retires or merges nor why nothing can be; \u00a712 likewise proposes a `--dispatch-reviews` option (`reckon/cli.py:6951`) in its remedy list without naming what it retires.",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/scoring-should-stop-a-promotion.html#s11",
+      "id": "interface_budget-2",
+      "reason": "\u00a711 retires a printed command in the armed case, which satisfies the \"names what it retires\" rule rather than breaking it.",
+      "text": "\u00a711 changes the review-missing obligation from \"prints the dispatch command\" to \"prints it only when no armed follower will dispatch\", which narrows a surface rather than adding one, and names the owner (`crew complete` obligation text); this is the correct shape and is recorded here as the census's negative instance so the accounting is not read as blank.",
+      "type": "interface_budget",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a932d6a988aa4fdccb9d0bc3a91932c662d858fcdce7409d1116d4a1e994e1f4",
+  "plan_slug": "scoring-should-stop-a-promotion",
+  "plan_version": 206,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T100927272908-plan-review-of-scoring-should-stop-a-promotion",
+  "reviewed_blob_sha": "b70ef94316578ab79394de20a719df940da2d87a",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan's substantive mechanisms are extensions of existing deep modules (promotion refusal into `reckon/crew/promotion.py`, the reflex into `resumption.sweep`, the store index into `reckon/crew/review.py`, ledger shrink-refusal into `reckon/ledger.py`); no proposed module hides less than it exposes.",
+    "duplicate_owner": "a finding \u2014 \u00a76 re-declares the \"a lane can read an image\" capability and its dispatch refusal, which is already owned by `reckon/_flight_schema.py:294` (`input_modalities`) and `reckon/flight.py:1381` (`select_profile_backend`), and re-derives figure detection owned by `reckon/figures.py`.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a76 adds a module, a prompt and a refusal family, and \u00a712 adds a `--dispatch-reviews` CLI option, none of which the sections account for by naming what they retire or merge, or stating why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan searches the code it extends across \u00a71\u2013\u00a75 and cites file:line throughout, but \u00a76 proposes a figure-review role without citing the review module's existing rubric-parameterised roles (`reckon/crew/review.py:175` `PLAN_REVIEW_RUBRICS`, `:359 load_plan_review_prompt`, `:687 parse_plan_review_report`) or the sibling role module `reckon/crew/plan_review.py`, and without citing the image-input declaration it depends on (`reckon/_flight_schema.py:294` `input_modalities`).",
+    "thin_wrapper": "a finding \u2014 \u00a76 adds a new module `reckon/crew/figure_review.py` plus a new prompt for a review role, over a review module that already parameterises role, prompt and parser by rubric, without stating why the existing role mechanism cannot be extended."
+  },
+  "section_digests": {
+    "_document": "0ff9fe242e8b663b6b9406d5e760c3a0f125d1e922d800ead411cc8d488e81c2",
+    "s1": "80bb6f490cd042d9e8a687df7c507b613bebe3f255fe6d6acc39cd1af3fc764e",
+    "s10": "58ce55634b1139deebbacc64374dfc3b9f95a048256fae52ae6bbbd611fe06e1",
+    "s11": "12ca91ff46282400591910a71afc454966a0e7b0db697803af45c408f0538a6d",
+    "s12": "8fc0e32c910c072509963e1cde86a06ef0f38637847779509acf73cfea049ac1",
+    "s13": "4468d3febaa235841362d43149cd5a148b22dc43e3e4a449e7ad5535064cd12b",
+    "s2": "a5b9af7082beec0446285c38e1363c16558ff8c37672b48d76c4fad4ccd81080",
+    "s2c": "5a7c7c8511a9e1dbc3faface290e2ae70fdda908b18a85ba8f64620edbeda54e",
+    "s2d": "338c41385c9011225386aa9a609c32e76003fd1a6cf6dcb58635c80b47d331ce",
+    "s2e": "ee6560c4da65bc28976152bca3855cbca84be7c1540b6f4c77398968add70550",
+    "s2f": "576cde224cd92bba95eb0b27946230a24ef2446fff19cc0fe636279c704a0dee",
+    "s2g": "11fa9736b2aae90ccde19fe3710f1263c44daa94aa4844aa5fb1b7611ecd6e81",
+    "s2h": "2f7fd9478dc7416b5794b2e20fec7373e94791bec72c397ad0f1df4d7f8f45e9",
+    "s2i": "ed065c467b7652cbb12d681845b9e5193fc90adea484f8079e42384d12495b6d",
+    "s2j": "1769663e0f36bba5566f26d92be1be4afd31143190193436fbbf04a43eab04f1",
+    "s2k": "b6fc2df79162c3ad10da610e5e395ce821e547abe29de1885d84d41c99a4c235",
+    "s3": "9ef758880694a735dd49d88e2b4b01b48aee693a77d3896b3bdd80154e7b2c9a",
+    "s4": "5d67d3bc9b218a16bcb96f699b7124495b1513588f4f43f4ec3f4d405ba4d4f7",
+    "s4b": "d36b747f10c15eb1483ce3b0ec1509e0a1686c6833add3864e91cc58c2379ac2",
+    "s5": "5a862e80db57f1eb9b94f987c151bd5bdf079e76a863d6d06a6e6f5235de9780",
+    "s5b": "8df4ec55ed3f4389206b15ec05b1e195f5f5456485befa9c07c4c7adf2322fc6",
+    "s5c": "c9b831d300f0c91f91adbd39bcfcf5d7c4fe233f5d636a4e21536fecb4bd36ce",
+    "s5d": "727b4b1219350bbc522610128fb2941c897901d031f8a8c5b4da5122751e1cd6",
+    "s5e": "5951f48eb75dff6738971cf54a98fc62a8612b9a8b7bd28f6a091123bb293313",
+    "s5f": "a6ef0c694960ee9ede9f159280853afddb2b3bdd09f3240c727fa1218787dc87",
+    "s5g": "05818b1088a6bf35a2c04bb635269f99c53b36d961c81f0524a36d0c3ec64a87",
+    "s5h": "7e3b60d10c806794b185f1f6bd75809b83e45a3d2d37f37128ceabed5d403e96",
+    "s5i": "c590c4926015c0cfb65faa25a45f32b22be05a55d7e5c577c37cb6532fc1f433",
+    "s5j": "714fbc2c52e98b0a935445988c0e7853221c00e10353af7b8b434b957c9dd0ad",
+    "s6": "efbbec7034e3043c3f08ab60360de4044a8a4ba680cdcd8e4a633994fd59bbd6",
+    "s7": "771dbccd4221eeadbd02945dd919f84c6c4ba28cfad8d2b03b42ddbcef0c1fe8",
+    "s8": "87d06c23a29b8b2827c560b7acea2a33336f873a6d9499845f8f0406ac2aa83a",
+    "s9": "b662fb73af4ef5b1b8896350c0864a2c266c5d1d78b138194c74fda976971741"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.165249+00:00"
+}

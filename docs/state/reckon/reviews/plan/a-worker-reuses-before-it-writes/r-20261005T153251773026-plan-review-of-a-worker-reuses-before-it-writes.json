@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T15:45:00.995Z",
+  "dispatched_at": "2026-10-05T15:33:35Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/served_code.py:90",
+      "id": "reuse_search-1",
+      "reason": "\u00a713's scope, its 1.5-hour estimate, and its done-when (\"git invocations in exactly one function\") are all built on an inventory that omits a fourth runner and the entire direct-invocation population; the plan must either name each site that migrates or narrow the done-when's grep to the three helpers it actually means.",
+      "text": "the plan states \"the package runs git through three runners ... Three is the whole the plan consolidates, but `def _git(root: Path, *args: str) -> str | None` at served_code.py:90 is a fourth runner, and a grep for the plan's own done-when pattern (`subprocess.run([\"git\"\u2026]`, `[\"git\", \"-C\"`) returns 63 sites across 21 modules \u2014 promotion.py, recovery.py, ledger.py, routing.py, resources.py, pages.py, _backends.py, node.py, standing_suite.py, reports.py, fleet_index.py, cli.py, serve.py, agent_context.py, hooks/worker_stop.py, velocity.py \u2014 none of which is the worker-git-shim exception the plan names",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/picker/lane_context.py:261",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a713 promises the resolvers keep \"every directory and variable they resolve today\", which a single fixed order cannot honour whenever RECKON_HOME and XDG_CACHE_HOME are both set (precisely the test-isolation case), and the done-when test asserts equivalence only for the kinds it exercises \u2014 the plan must parameterise the order per kind or keep the two RECKON_HOME-first resolvers as named owners.",
+      "text": "\u00a713 collapses the cache cascades into one ordered `velocity.cache_root(kind)`, but `lane_context._profile_cache_root` (lane_context.py:261) and `capabilities.pick_input_cache_root` (capabilities.py:1143) order `RECKON_HOME` before `XDG_CACHE_HOME` deliberately \u2014 both docstrings state a test isolates RECKON_HOME but not XDG_CACHE_HOME, so XDG-first would let an isolated run write the live user cache \u2014 while `velocity.velocity_cache_root` (velocity.py:542) and `clones._cache_root` (clones.py:389) order XDG before RECKON_HOME; \u00a713 further calls the set \"three cascades\" while listing four, so the census is loose as well as the premise wrong",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/routing.py:473",
+      "id": "duplicate_owner-2",
+      "reason": "the merged runner either breaks ~24 checked callers as written (`.stdout` on bytes) or silently changes crew error semantics from CrewError to CalledProcessError; the plan must state how checked callers decode and how crew errors are preserved, or keep a crew wrapper over velocity.git.",
+      "text": "merging `routing._git` into `velocity.git` changes the contract of its checked callers: `routing._git` runs `text=True` and returns a text `CompletedProcess`, raising `CrewError` on a non-zero exit (routing.py:473-484), while `velocity.git` returns bytes (velocity.py:147-148) and the plan makes it raise `CalledProcessError` and return a process only when `check` is false \u2014 yet \u00a713 names only the `check=False` callers that must read a process, and the checked callers read decoded text via `.stdout` (routing.py:488, 512, 1089, 1182)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/velocity.py:147",
+      "id": "deep_module-1",
+      "reason": "this is a wart on an otherwise deep runner rather than a plan-level defect, and the author can fix it by leaving velocity.git's shape alone and adding the process-returning form beside it; it would not by itself change the section's design.",
+      "text": "the proposed `git(..., check=True)` returns bytes when checking and a `CompletedProcess` when not, so the return type is conditional on an argument",
+      "type": "deep_module",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/velocity.py:147",
+      "id": "interface_budget-1",
+      "reason": "the counts are accounted for and no CLI option, MCP view or refusal family is added, so the omission is a clarification rather than an unretired surface.",
+      "text": "\u00a713 names its `public_definitions` delta (`cache_root`, +1) and the retirements, but the conditional-return `git` adds a keyword whose two return shapes are a second behavioural mode across the merged call sites, and the section does not name what that costs",
+      "type": "interface_budget",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "af1efc32c1fac883d7b948565a84295825d527ec603664f720230d9a35558a88",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 129,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T153251773026-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "e69df956e349ea6d1c4ef244f7020ba61abe2b94",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 each addition is one function on the existing deep velocity module (git gaining `check`, `cache_root(kind)`, a revision-sources reader) hiding a multi-step mechanism; no cluster of shallow wrappers is added.",
+    "duplicate_owner": "a finding \u2014 the plan names velocity as the owner, but its premise that the cascades differ \"only in the variable and the leaf\" is false, so one ordered cache_root cannot be the owner of all four.",
+    "interface_budget": "a finding \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 and \u00a713 do state their own additions and retirements, but the widened `check` keyword on velocity.git adds a second return shape across ~24 routing callers without naming what that costs in the interface budget.",
+    "reuse_search": "a finding \u2014 the plan's git-runner census names three runners but the package carries a fourth at reckon/served_code.py:90 and more than sixty direct `subprocess.run([\"git\"\u2026])` sites across twenty-one modules, so the reuse map is incomplete.",
+    "thin_wrapper": "pass \u2014 \u00a713 extends velocity.git and velocity's cache cascade in place, and \u00a712 deletes revised_python in favour of the lifted reader, rather than layering parallel wrappers over them."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.650373+00:00"
+}

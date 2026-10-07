@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T15:58:36.879Z",
+  "dispatched_at": "2026-10-05T15:51:56Z",
+  "findings": [
+    {
+      "anchor": "reckon/serve.py:467",
+      "id": "reuse_search-1",
+      "reason": "the section must add `serve.py`'s resolver to its kind set (a fifth kind) or narrow the done-when grep to the migrated modules, and the census \"four cascades in two deliberate orders\" becomes five.",
+      "text": "`_client_cache_root` is a fifth cache cascade (`RECKON_CLIENT_CACHE` \u2192 `XDG_CACHE_HOME` \u2192 `~/.cache/reckon/client`) of the same shape \u00a713 consolidates, but the plan's census counts \"four cache cascades\" and \u00a713's kind set (velocity, clones, pick, run-time-profile) omits it, so \u00a713's own done-when \u2014 \"`grep -rn 'XDG_CACHE_HOME' reckon/` reports the cascade in exactly one function\" \u2014 is unsatisfiable as written and a fifth copy survives the consolidation it exists to perform",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:147",
+      "id": "duplicate_owner-1",
+      "reason": "the author would express `velocity.git` as a raising wrapper over the core runner (mirroring the `routing._git` treatment) and drop a runner, or state the contract difference that forbids it.",
+      "text": "\u00a713 gives the core layer a new public process-returning git runner \"beside\" `velocity.git` and leaves `velocity.git`'s shape unchanged, without stating why `velocity.git` cannot be the raising wrapper over the one runner the way \u00a713 rewrites `routing._git` (`reckon/crew/routing.py:473`) as a `CrewError` wrapper over it, so the same library keeps two process-invoking runners side by side and the diff shrinks nothing",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "17da477cb6305d123968dddeaf308865b9dbe1b5883ff081777d72933a83ae9d",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 131,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T155135042505-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "453b041f7944208ddeec0894702198aa4061ee70",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `cache_root(kind, *, home_first)` hides a five-step resolution behind two arguments, and the sources reader hides the `ls-tree` listing plus one batched object read behind a single path\u2192bytes call.",
+    "duplicate_owner": "a finding \u2014 \u00a713 adds a second process-returning git runner to `reckon/velocity.py` beside the existing `velocity.git` (reckon/velocity.py:147) and does not express `velocity.git` over it, though it applies that exact raising-wrapper pattern to `routing._git`.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 states a net zero (it adds the sources reader and retires the public `revised_python`) and \u00a713 states a growth of two, naming the retired resolvers as private, so neither section adds to a family without accounting for what it retires.",
+    "reuse_search": "a finding \u2014 the plan searched and does cite the mechanisms it extends (`velocity.git`, `read_blobs`, `read_trees`, `routing._git`, and the four cache cascades), but its cascade census misses `reckon/serve.py:467 _client_cache_root`, a fifth copy of the same env \u2192 `XDG_CACHE_HOME` \u2192 `~/.cache/reckon/<leaf>` shape.",
+    "thin_wrapper": "pass \u2014 the plan keeps `routing._git` only as a stated error-domain wrapper that will call the core runner (`reckon/crew/routing.py:473`), and justifies the new public reader by its two consumers rather than adding a bare pass-through."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.645433+00:00"
+}

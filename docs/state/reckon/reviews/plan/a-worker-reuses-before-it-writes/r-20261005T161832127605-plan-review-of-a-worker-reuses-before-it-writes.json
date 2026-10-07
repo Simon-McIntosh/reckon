@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:22:57.942Z",
+  "dispatched_at": "2026-10-05T16:18:50Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:373",
+      "id": "deep_module-1",
+      "reason": "as written the done-when is unmeetable (read_blobs keeps its own subprocess call), so the runner interface must name stdin/payload support or the done-when must be re-scoped to the callers that fit it.",
+      "text": "\u00a713 extends `service._run` with \"a byte mode and the one 180-second timeout\" and its done-when asserts `grep -rn 'subprocess' reckon/velocity.py` reports ONE invoking function, but velocity.py carries four subprocess sites today and `read_blobs` (:373) feeds git on stdin (`input=payload`), a capability the described interface does not carry",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/service.py:206",
+      "id": "duplicate_owner-1",
+      "reason": "the mechanical reuse is right but the owner is wrong-domain and inverts layering, so the runner belongs in a neutral low-level module (or the plan must justify the core\u2192crew dependency), otherwise future git callers extend an owner whose docstring scopes it to serving the HTTP daemon.",
+      "text": "extending `service._run` into the package-wide process owner makes core `reckon/velocity.py` import `reckon.service`, whose top-level `from reckon.crew.paid_lanes import systemd_user_dir` (service.py:20) drags in the crew layer; verified: `import reckon.velocity` currently pulls no crew module, and would after this change",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e3f514dd626e2e13fcbc9b6c4a51a1150cd7df047d8a69e0bf25dbf7bf8e448c",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 135,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T161832127605-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "74a86d2738642f25094627f03965f8c9e0b0078d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a713's runner interface cannot absorb `read_blobs`, the git caller its own done-when requires it to hide.",
+    "duplicate_owner": "a finding \u2014 the runner \u00a713 extends is homed in `reckon/service.py`, the systemd-user-unit manager, so the core layer would import the crew layer.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 states net zero (adds the velocity sources reader, retires the public `revised_python`) and \u00a713 states net one (adds the process runner and `cache_root`, retires `pick_input_cache_root`), and neither section adds a CLI option, MCP view or refusal family.",
+    "reuse_search": "pass \u2014 the plan searched the codebase it extends and cites what it found: `read_blobs` (velocity.py:360), `_plan_documents` (velocity.py:306), `read_trees` (interface_counts.py:441), `service._run` (service.py:206) and the five cache cascades; its counts (1,169 tracked `.py` at HEAD, 98 outside `reckon/` and `tests/`) reproduce exactly, and no other `ls-tree -r` lister or archive-based source reader exists to miss.",
+    "thin_wrapper": "pass \u2014 `read_trees` becomes parse-over-the-shared-reader rather than a parallel reader, and the retention of `routing._git` is justified in-plan as error-domain translation that delegates to the runner; the new public sources reader is the consolidation itself, not a wrapper over an extendable owner."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.627609+00:00"
+}

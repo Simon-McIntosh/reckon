@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:29:36.550Z",
+  "dispatched_at": "2026-10-04T17:16:05Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery.py:9844",
+      "id": "reuse_search-1",
+      "reason": "an implementer following \u00a72b's quoted branch chases code that has moved; restating \u00a72b against the current clause changes where the repair lands and what the done-when must assert.",
+      "text": "\u00a72b states the stall verdict \"never asks whether it is alive\" and quotes a `<pre>` block whose branch is a bare `state = \"stalled\"`; in the current tree the stall clause already derives `stall_process_state = _process_reading(alive, ...)` at recovery.py:9844 and folds it into the emitted word through `_stall_reading` at recovery.py:9622, so the quoted shape no longer exists and the residual defect is narrower than described (a live worker in an unrecognised long operation is still labelled `stalled`, not that liveness is unread).",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:4100",
+      "id": "duplicate_owner-1",
+      "reason": "the measured misfires (a live worker declared stalled) are emitted by `runs.py:_watch_event` and the recovery watch loop, so the design must route both emitters through the one stall reader or the section's done-when is met while the surface stays wrong.",
+      "text": "`_watch_event` re-derives `event: \"stalled\"` from its own `_stream_quiet_seconds(pointer)` against the raw `stall_seconds` with no liveness check at all (runs.py:4099-4103), while the classifier it calls for the row does consult liveness (recovery.py:9844) and recovery.py's own watch loop uses a third rule (`live = row.get(\"process_alive\") is True`, recovery.py:11286-11288); the plan's \u00a72b and \u00a78 name `classify_pointer` alone, so a repair confined to it leaves the loop that emits the `stalled` event an operator reads still flagging a live, quiet worker. The owner to extend is the classifier's stall reader at `reckon/crew/recovery.py:9622`.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "511b56b85d22ca83d01b12a00f1fb4cd2805bdf30be1d1e787e1e5d2682cc863",
+  "plan_slug": "a-worker-is-charged-to-a-job",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T171550027378-plan-review-of-a-worker-is-charged-to-a-job",
+  "reviewed_blob_sha": "591ab43915c5432840b8e7a0b5d8607c6cf06c70",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/crew/placement.py` hides the reservation hold, its publication, the step prefix and the state query behind a small surface, and \u00a75's bound is computed once in `reckon/crew/summary.py` (`binding_bound`, `fleet_bound_report`) and consumed by `ticker.py` and `dispatch.py` rather than re-derived in each; no shallow spread of wrappers over one mechanism.",
+    "duplicate_owner": "a finding \u2014 the stall verdict is derived in three separate places and the plan's \u00a72b and \u00a78 name only one of them, leaving the operator-visible watch emitter re-deriving the threshold.",
+    "reuse_search": "a finding \u2014 the plan cites existing machinery pervasively (it mirrors `reckon crew watch --ensure` for the reservation, reuses the positive-controls reaper, the roster as the concurrency authority, `lane_document` for lane counts, and `summary.py`'s bound model), but its \u00a72b premise about the stall verdict is stated against a stale revision of `reckon/crew/recovery.py`.",
+    "thin_wrapper": "pass \u2014 the placement wraps a launch by prefixing the already-resolved argv rather than replacing it, and the plan explicitly restates why the existing launch plan is extended (the absolute executable, the environment and the stream paths are carried through unchanged; absence of the field means today's login-node launch), so it extends rather than parallels the mechanism."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.565215+00:00"
+}

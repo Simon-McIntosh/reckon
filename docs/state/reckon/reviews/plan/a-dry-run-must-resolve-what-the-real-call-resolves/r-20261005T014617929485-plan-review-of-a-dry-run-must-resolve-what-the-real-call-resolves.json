@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T01:59:42.580Z",
+  "dispatched_at": "2026-10-05T01:46:34Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:5253",
+      "id": "reuse_search-1",
+      "reason": "naming the guard and `resolve_project_repository` reduces \u00a72 from a vague re-design to a one-line change at a named site and corrects the plan's stated defect mechanism.",
+      "text": "\u00a72's causal model is wrong: it says the read-only resolutions \"are simply not reached when `dry_run` is set\", but `plan_dispatch` has no `dry_run` parameter and the dry-run branch of the CLI (`reckon/cli.py:2059`) calls this same function; the resolutions are skipped only by the guard `if repo is not None and project_mount_repository(project) is not None:` at dispatch.py:5253\u20135255, because the CLI hands `--repo` through unresolved while the real `dispatch()` resolves the mount first at dispatch.py:6617 \u2014 so the dry run already resolves the plan, section and review whenever `--repo` is given, and the fix is to resolve the mount in `plan_dispatch` as `dispatch()` does (via `resolve_project_repository`, dispatch.py:249), not to \"move the dry run's stopping line\"",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:5318",
+      "id": "duplicate_owner-1",
+      "reason": "the section must name the two owners to reconcile and fix the trigger conditions there, rather than add a new resolution path.",
+      "text": "member roster resolution already exists twice: `plan_dispatch` resolves the roster and raises D14 only inside `if member and (local or backend_override is not None or default_backend_override is not None)` (dispatch.py:5318\u20135355) while `dispatch()` resolves it for any named member (dispatch.py:7058\u20137071) \u2014 \u00a73's \"one answer, not two\" is a consolidation of these two owners onto the shared lookup `ledger.member` (reckon/ledger.py:1475), and the plan names neither; the recorded decision (\"project alone\" vs \"repository required\") is answerable from the roster shape, since `ledger.member` keys a member by (project, id) and carries no repository dimension",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c0c6b32c8bed88ef7f8b5a049dca91c269ba5734c44f44d9617346b31c39028d",
+  "plan_slug": "a-dry-run-must-resolve-what-the-real-call-resolves",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014617929485-plan-review-of-a-dry-run-must-resolve-what-the-real-call-resolves",
+  "reviewed_blob_sha": "dfe8221355283616d636d3caef005971a6c8e136",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the change is a modification of the one shared resolver `plan_dispatch` (reckon/crew/dispatch.py:5198), whose interface already hides routing, the authority join, the plan/review gates and admission behind `DispatchPlan`; no new module or wrapper is proposed.",
+    "duplicate_owner": "a finding \u2014 \u00a73 asks to make member resolution single-valued but names neither of the two existing owners of that resolution (reckon/crew/dispatch.py:5318 in `plan_dispatch` and reckon/crew/dispatch.py:7058 in `dispatch`), so the fix risks becoming a third site.",
+    "interface_budget": "pass \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; no section adds a CLI option, MCP view, public definition or refusal family \u2014 \u00a72/\u00a73 reuse the existing `plan-unavailable`/`plan-review-missing`/D14 codes and their already-shared payloads (reckon/cli.py:2106 / 2305), and \u00a74 adds only documentation.",
+    "reuse_search": "a finding \u2014 the plan claims the resolution calls \"already exist on the real path and are simply not reached when dry_run is set\", but the shared resolver is already invoked by the dry-run branch and the skip is a `repo is not None` guard, not a dry_run flag; the mechanism (`resolve_project_repository`, `plan_dispatch`) is never named.",
+    "thin_wrapper": "pass \u2014 the plan extends `plan_dispatch`/the dispatch CLI rather than layering a parallel preview resolver over them, so there is no wrapper whose justification is missing."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.367207+00:00"
+}

@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:14:39.098Z",
+  "dispatched_at": "2026-10-06T10:02:01Z",
+  "findings": [
+    {
+      "anchor": "reckon/project_state.py:2120",
+      "id": "reuse_search-1",
+      "reason": "\u00a74 and \u00a75 build the new read on an invariant `push` does not maintain, so the design must either change `push_sprint`'s deliberate hint-not-slot contract or drop the \"one pushed sprint\" premise the ambiguity decision depends on.",
+      "text": "the plan asserts the `push` op \"promotes and demotes in one versioned write\" so \"two actives cannot arise from the push op\", but `push_sprint` (`reckon/project_state.py:2126-2133`) sets only the target sprint to `active` and its own docstring states the opposite \u2014 \"`active` marks the sprint being pushed; it is a hint, not an exclusive slot \u2026 several sprints may be active at once while several crews work them\" \u2014 and the write at `:2163` writes `{**target, \"status\": \"active\"}` touching no other row. The invariant the plan's active-sprint repair rests on does not exist.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/project_state.py:1251",
+      "id": "reuse_search-2",
+      "reason": "\u00a71's diagnosis and \u00a73's \"elected S1/S12\" evidence describe a revision that no longer exists, so the plan must be re-measured against the current tree before its repair is scoped.",
+      "text": "\u00a71 says `read_plan(project, \"index\")` calls `_derive_default_sprint_focus`, \"walks composed order and returns the first sprint holding any unfinished item\", and \"never reads sprint status at all\"; no such symbol exists in `reckon/`, and the reader that does exist, `focus_sprint_id` (`:1251-1284`), first consults the live-crew liveness (`reckon/sprint_liveness.py:225`) then the stored `active` status (`:1270-1279`). The described defect (a closed sprint elected over the pushed one) was landed fixed by commit `bec9f24a7` on 2026-09-25, two days after the plan's measurements, and both surfaces now resolve `active_sprint_id` through this one function (`reckon/project_state.py:1469,1554` and `reckon/roadmap.py:1995`).",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/project_state.py:1251",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend `focus_sprint_id`/`sprint_liveness` and the existing audit findings and touch `_has_unfinished_items` for the dangling-item case, rather than authoring a parallel reader that will drift from the owner, as \u00a71's own stale reference to a deleted function already shows.",
+      "text": "the plan would add a composed read that \"must consult stored status rather than walking composed order\" (already the behaviour of `focus_sprint_id`, `reckon/project_state.py:1251`), and to make \"an unresolvable member slug \u2026 reported as a broken reference\" the audit already reports it at `reckon/mcp.py:2378` (`sprint-item-missing-plan`) and `reckon/roadmap.py:2305` (`unresolved-sprint-item`). The full census of existing readers/authors of the two facts this plan would re-own: active sprint \u2014 `reckon/project_state.py:1216` (`live_sprint_ids`), `:1251` (`focus_sprint_id`), `:1469` and `:1554` (composed `active_sprint_id`), `reckon/roadmap.py:1995` (`_sprint_status_buckets`), `reckon/mcp.py:2301` (audit reads stored `active`); membership \u2014 `reckon/roadmap.py:2652-2721` (scalar-vs-items reconciliation, emits `plan-sprint-missing-item`/`-mismatch`), `reckon/mcp.py:2404-2464` (the same in the audit), `reckon/mcp.py:2378` and `reckon/roadmap.py:2305` (unresolvable member already reported), and `reckon/project_state.py:1235-1248` (`_has_unfinished_items`, which still counts a bare slug as unfinished \u2014 the one read-path gap the plan names correctly).",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/one-fact-has-one-reader.html#s4",
+      "id": "interface_budget-1",
+      "reason": "against refusal_families 23 the section must account for the added refusal in its own text or justify it, as the interface budget requires.",
+      "text": "\u00a74 and \u00a75 add a read refusal (the ambiguous-active-sprint read \"has no correct answer and must say so rather than choosing\") and leave `d-ambiguous-active-sprint` open between refuse and a deterministic pick; it adds to the refusal surface without naming which existing refusal family it retires or merges, or why nothing can be.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "829d56b046ee3fdb15463340ef69b64ec6f72f370834f9e49896ac6af81de1fb",
+  "plan_slug": "one-fact-has-one-reader",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T100137024638-plan-review-of-one-fact-has-one-reader",
+  "reviewed_blob_sha": "0eafb1f5f5422f5728a4a1902d4e4496f834fdcb",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module, class or wrapper; it edits existing owners in place, so there is no new surface that could hide behaviour less deeply than what it hides.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements the active-sprint reader and the membership reconciliation the codebase already owns, at `reckon/project_state.py:1251` and `reckon/mcp.py:2378`.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a74 and \u00a75 add a read refusal (\"must say so rather than choosing\") without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan (measured 2026-09-23) proposes a sprint-focus reader that already exists as `focus_sprint_id` (`reckon/project_state.py:1251`) and the dedicated `reckon` module `reckon/sprint_liveness.py`, and it names `_derive_default_sprint_focus` (`reckon/project_state.py`) which is not in the tree; the plan cites no search of either, and its central invariant premise about the `push` op is contradicted by that op's own docstring.",
+    "thin_wrapper": "pass \u2014 no thin layer over existing machinery is proposed; the shape described is an extension of existing readers, so there is no wrapper to justify."
+  },
+  "section_digests": {
+    "_document": "19e71b016550ee028dc7d7311b48b8b0fc9ac52f79ba1e0e30a9b4f07c864d66",
+    "s1": "79a601ea4946597868e42f9c4e7fdb792f505cdb239ecdb8a5bdefd62f2dfadd",
+    "s2": "80f95b8b6050ef1aa7e34d634ea8c44b5a650299f1c4928305055391ecfd09ba",
+    "s3": "f9dd18e3a25a3578540948c8e34ea1b312e2862dec42a7523a400a0eff91e937",
+    "s4": "95ea9b03a75831556fd70501bb8bf2189963331d782b265c60f71496070feb26",
+    "s5": "a90de131432193749b318ef64b4205257697f0e75266810a5cddfe4564dbbd7f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.045505+00:00"
+}

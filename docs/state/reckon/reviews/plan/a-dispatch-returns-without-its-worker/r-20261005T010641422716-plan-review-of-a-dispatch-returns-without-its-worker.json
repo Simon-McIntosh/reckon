@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-05T01:10:56.699Z",
+  "dispatched_at": "2026-10-05T01:06:52Z",
+  "findings": [
+    {
+      "anchor": "a-dispatch-returns-without-its-worker.html#s16",
+      "id": "reuse_search-1",
+      "reason": "citing the existing stranded-launch owner changes \u00a716's mechanism and its test (write-time prevention vs. extending the release) and may collapse the section.",
+      "text": "\u00a716 proposes a new pre-admission launch guarantee for the plan-review pointer without citing `_stranded_launch` (`reckon/crew/recovery.py:6602`) and `_discard_stranded_review` (`reckon/crew/recovery.py:1331`), which already detect and release a pidless pre-spawn pointer past the bound \u2014 the exact state \u00a716 measures \u2014 so the section may be adding a second owner of one lifecycle instead of extending the first",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "a-dispatch-returns-without-its-worker.html#s11",
+      "id": "reuse_search-2",
+      "reason": "the author must name the reader/owner of the member session lock before implementation, or the node re-derives it.",
+      "text": "\u00a711 adds dispatch-side detection of a busy member and hold-or-divert without naming the mechanism that exposes the member's writer-lock (`thread-store ... already has an active writer`), so the plan proposes a subsystem with no citation of the machinery it must read",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "a-dispatch-returns-without-its-worker.html#s16",
+      "id": "thin_wrapper-1",
+      "reason": "reframing \u00a716 to extend dispatch's one pointer-write ordering (as \u00a75 already does for refusals) changes the section's target file and its done-when.",
+      "text": "the plan-review launch is a thin layer over dispatch's launch (`recovery._dispatch_composed_review` calls `reckon.crew.dispatch`), and \u00a716 special-cases the plan-review path for a pointer-write ordering that lives in dispatch's shared path, without saying why that ordering cannot simply be fixed once for every lane",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bad41d76a3674880edf9faad7d3a7b2ee112061a26667787f68799d5255fd414",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 159,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T010641422716-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "302e3f7a6bba5a151d082d53ae184d8fca0d09c7",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 records that the per-run supervisor has no module boundary and schedules one whose interface is the spec it reads and the run-directory records it writes; the landed body (`_run_supervisor`, `_supervisor_spec`, `_supervisor_argv`, `_start_supervisor`, `_spawn_detached_supervisor`, `_spawn_through_fleet`, `_confirm_supervisor_survived`, `_write_boundary_tree_snapshot`, `supervisor_main.py`) is exactly the spread \u00a717 exists to fold.",
+    "duplicate_owner": "pass \u2014 \u00a718 names the owner to extend (`fleet_supervisor.state_directory`, `reckon/crew/fleet_supervisor.py:253`) for the fleet-record path that `dispatch._fleet_record_path` (`reckon/crew/dispatch.py:9648`) re-derives, and `fleet_node.py:306` already reads it through that owner.",
+    "reuse_search": "a finding \u2014 \u00a711 (busy-member hold/divert) and \u00a716 (the stranded plan-review pointer) each add machinery without citing the mechanism each most resembles: \u00a716's \"pre-spawn pointer that never spawned\" state is already owned by `_stranded_launch`/`_discard_stranded_review` in `reckon/crew/recovery.py`, and \u00a711 names no reader of the member's session writer-lock.",
+    "thin_wrapper": "a finding \u2014 \u00a716 treats the pre-admission pointer write as a plan-review defect, but `recovery._dispatch_composed_review` reaches the same `dispatch` path every launch takes, so the pointer is written by dispatch's shared write-ordering; the section does not say why dispatch's ordering cannot be extended instead of a plan-review-specific guarantee."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.322032+00:00"
+}

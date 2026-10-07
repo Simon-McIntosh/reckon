@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:07:14.371Z",
+  "dispatched_at": "2026-10-06T09:59:14Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/project_state.py:1251",
+      "id": "reuse_search-1",
+      "reason": "the section should name `project_state.focus_sprint_id` as the mechanism it extends (drop the uniqueness constraint and the persisted item status it reads), not describe inventing a focus rule that already exists.",
+      "text": "\u00a72 (\"Sprint activation becomes derived\") proposes deriving the default focus as \"the earliest sprint in order holding incomplete items\" and says the consuming views \"already degrade gracefully through fallback chains\", but `focus_sprint_id(sprint_rows, liveness)` already owns exactly this: it falls back from live-crew liveness to the first active row holding unfinished items to the earliest unfinished sprint, and `roadmap._sprint_status_buckets` (reckon/roadmap.py:1995) already calls it; the section invents a second derivation rather than extending the owner",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/lifecycle.py:52",
+      "id": "duplicate_owner-1",
+      "reason": "a three-way fork of the blocking assembly drifts the moment one consumer's rule changes, and the plan measured this defect in its own node, where the derivation first \"blocked on an insufficient fence, having changed nothing: read_plan builds blocking in two modules the coordinator had not scoped\" (f-dgs-002) \u2014 naming lifecycle.py as the owner makes the fence and the change both single-site.",
+      "text": "the plan's derivation wiring says an unpassed gate \"flows through the existing `effective_status` path\", but `effective_status` is shared while the `blocking` list it is handed is assembled independently at every consumer: reckon/mcp_views.py:2473-2481 (`_blocking` = explicit + `unresolved_dependencies` + `unpassed_gate_blockers`), reckon/serve.py:2165-2172 (`_derive_lifecycle` rebuilds the same three-part list), and reckon/roadmap.py:2820/2909 (assemble `gate_blockers` and call `effective_status` separately); the plan should extend one owner \u2014 `lifecycle.py`, which already owns `unresolved_dependencies`, `unpassed_gate_blockers` and `effective_status` \u2014 with a single `blocking_rows()` assembler, rather than adding gate rows to each fork further",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/derived-gate-state.html#s2",
+      "id": "interface_budget-1",
+      "reason": "the four op verbs and the config key are durable interface surface, and the section must say what that surface displaces (for example that `retire_prose` absorbs the raw-HTML bypass path) or record that the surface is additive by necessity, so the addition is a counted decision rather than an unaccounted one.",
+      "text": "\u00a72 adds `edit_plan` op verbs (`gate`, `pass`, `fail`) with `retire_prose` arriving in \u00a76, a new `gates.enforce` flight-config key, and new public derivation functions (`unpassed_gate_blockers`, `execution_gates`), against public_definitions 1481 and mcp_views 33; the section accounts for retired *data* (persisted `blocked`, persisted item status, the sprint-activation invariant) but never names an interface family entry it retires or merges, nor states why none can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e1bb5b2b2a580bfbd065cfb0c2c756351cb3c33d7f1b49b04e61adb69b0be90d",
+  "plan_slug": "derived-gate-state",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T095847337009-plan-review-of-derived-gate-state",
+  "reviewed_blob_sha": "0a83b55979a2ee47cb50c8d2ede558393000210c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the gates element hides the whole record shape, the store, the round-trip renderer and the verdict re-derivation behind one `gates` section, with the join exposed through three small functions (`execution_gates`, `unpassed_gate_blockers`, `effective_status`) rather than a spread of wrappers.",
+    "duplicate_owner": "a finding \u2014 the plan's \"derivation wiring\" routes gate blockers into a `blocking` list whose assembly is owned by no single module; the three consumers each rebuild it independently, so wiring gates \"through the existing path\" in fact extends three forks.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a72 adds edit_plan op verbs (`gate`, `pass`, `fail`, and the later `retire_prose`), a new `gates.enforce` flight key, and new public derivation functions without naming any interface surface those retire or merge, or why none can be.",
+    "reuse_search": "a finding \u2014 \u00a72 cites `effective_status` and doccheck's staleness thresholds as the machinery it reuses, but treats \"the existing blocking derivation\" as a single path and proposes a fresh sprint-focus derivation without citing `project_state.focus_sprint_id`, which already implements the fallback chain the section describes.",
+    "thin_wrapper": "pass \u2014 the section extends the established decisions/followups pattern (parser, schema, renderer, round-trip parity) in place rather than adding a parallel element family or a forwarding layer over it."
+  },
+  "section_digests": {
+    "_document": "e6a3f098f404d1104a424c28c0970bb546606222460f0f2db299fe8cd23f1894",
+    "census": "8660769e41df1d9a282a9f3a382d6b9cea7a6493f5bcde22a06bcb2083b5e071",
+    "reckon-index": "9da96ab81cf4fbefd212f9199436fa0f5118d1c198126af720bd0d6e13c0abe0",
+    "s1": "d9205f8d28f8570f7a5ef929c538f8793cd08717c98e42edbc1d5204e131543a",
+    "s2": "e7165a21b299987b26558dd55b2c1759e6f60b70615829e9e90b045baec8818d",
+    "s4": "8f098c6dd53d0e2f4b238941e58546447d17c19737db04f0cb4d3a72429bf46e",
+    "s5": "10f5c64b7ad40ab956c22460a6c1f45b19b807321464bb303692ef8eb17f79a2",
+    "s6": "ffb41cf3d3e6698c789702c8824fe8c47a7298de983366d72585040bb0a6e813",
+    "s7": "e73921e026c333ac41a82f41eacf8f03698f6fcecc70ae7780564ca1240ac72c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.938495+00:00"
+}

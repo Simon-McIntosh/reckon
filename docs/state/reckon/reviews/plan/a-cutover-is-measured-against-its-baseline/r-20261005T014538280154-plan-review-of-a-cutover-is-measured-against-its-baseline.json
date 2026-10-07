@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T01:56:09.901Z",
+  "dispatched_at": "2026-10-05T01:45:53Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/placement.py:417",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a73/\u00a75 should cite `placement.py::ensure_reservation` as the mechanism the exercise demonstrates, not re-plan it, so the node's done-when points at the existing guard (including its \"unanswerable queue is not an absent job\" rule) instead of a fresh re-hold path.",
+      "text": "the plan's \u00a73 re-hold done-when (\"the next dispatch re-holds the shared allocation\") is already implemented by `ensure_reservation`, which is idempotent fleet-wide, replaces a record whose job left the system, and adopts a live supervisor-running allocation (`_adopt_live_fleet_allocation`, reckon/crew/placement.py:488); \u00a75 restates this as work to be built without naming the owner.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/fleet_supervisor.py:1",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a74 should extend and cite `fleet_supervisor.py` rather than describe building the launcher; as written the node would fork the batch step the shipped dependency already owns, and the plan's own stale audit comment (\"the launcher ... is not built\") is what misleads it.",
+      "text": "the plan's \u00a74 done-when 1\u20133 (a batch script starts a zellij server; a session run as its own step keeps its socket under the launcher's runtime directory; ending that step reaps a detached child) are already implemented by `fleet_supervisor.py` (`start_session` :1035, `prepare_runtime` :262, `fleet_supervisor.py:1259`) and tested at `tests/test_fleet_supervisor.py:465` and `:406`.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-cutover-is-measured-against-its-baseline.html:179",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to declare the batch step already carried by `fleet_supervisor.py` and have the cutover exercise it, which removes a whole build node from \u00a74.",
+      "text": "\"The re-hold path ... must create the batch script that starts the zellij server\" proposes new build work over a batch step that already exists, with no statement of why `fleet_supervisor.py` cannot be extended.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-cutover-is-measured-against-its-baseline.html:203",
+      "id": "reuse_search-1",
+      "reason": "a reuse map naming `fleet_supervisor.py` and `placement.py::ensure_reservation` would collapse \u00a74's build done-when into \"exercise the shipped launcher and re-hold\", changing the plan's scope by several nodes.",
+      "text": "the plan searched the imas-ambix research note and names the baseline's home (imas-ambix `f-shaf-003`), but its reuse search did not reach reckon's own crew code: neither `fleet_supervisor.py` nor `placement.py` is cited anywhere in the plan, and the S21 comment instead claims the launcher is unbuilt.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-cutover-is-measured-against-its-baseline.html:201",
+      "id": "interface_budget-1",
+      "reason": "the plan names no concrete CLI option, MCP view, public definition or refusal family by identifier, so the accounting is implied rather than an added countable; the required edit is covered by the reuse and duplicate findings, not a separate interface decision.",
+      "text": "\u00a74/\u00a75 add a launcher and a throttled-fraction reader as new machinery without naming what either retires or merges, or why nothing can be; the plan's honest reuse answer (both already owned by `fleet_supervisor.py`/`host.py`) would also be its interface-retirement statement.",
+      "type": "interface_budget",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "56549e95986d34c4e5a4a7ffd15cfbe48141585946ccefefa60264e441efb07d",
+  "plan_slug": "a-cutover-is-measured-against-its-baseline",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014538280154-plan-review-of-a-cutover-is-measured-against-its-baseline",
+  "reviewed_blob_sha": "b48dc00d8bc89ed4a94eefbfd3005a2d8510a999",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the existing owner `fleet_supervisor.py` is one deep module (one module hides zellij start, runtime-dir construction, service supervision and child reaping behind a line protocol); the plan proposes no spread of small wrappers, and its only genuinely new artifact is the single throttled-fraction reader.",
+    "duplicate_owner": "a finding \u2014 \u00a73's re-hold proof and \u00a74's launcher/runtime-dir/reaping done-when re-own mechanisms already owned by `reckon/crew/placement.py` (`ensure_reservation`, re-hold, adoption) and `reckon/crew/fleet_supervisor.py` (batch step, runtime dir, reaping), which the plan never names.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a74/\u00a75 add a launcher and a measurement reader (new public surface) without naming what they retire or merge, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan searched imas-ambix's research note and names the baseline's home, but it does not cite reckon's own `fleet_supervisor.py` or `placement.py`, the code the \u00a74/\u00a75 work would extend, and it presents the batch-step launcher as unbuilt when it shipped.",
+    "thin_wrapper": "a finding \u2014 \u00a74 proposes \"the launcher\" as a new layer over the batch step, but `fleet_supervisor.py` already is that launcher, so building \u00a74 as written produces a parallel wrapper over `start_session`/`prepare_runtime` with no stated reason the existing module cannot be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.304283+00:00"
+}

@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:09:13.044Z",
+  "dispatched_at": "2026-10-05T01:57:57Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/budget.py:2934",
+      "id": "duplicate_owner-1",
+      "reason": "the section should extend `reckon/budget.py:2934 recorded_windows` (adding a per-session breakdown beside its per-backend one) and name it, rather than re-deriving a lagging ledger-only figure, which is the same \"a forked state reader drifts from its owner\" defect the rubric names.",
+      "text": "\u00a74's done-when requires \"what they are shipping\" per session drawing the window, and the plan sources that from the ledger (\"the ledger records what each run spent\") while `recorded_windows()` already reads each live session's window draw by its rollout receipt and session id, fenced through `reckon/crew/rollout.py`; the plan names neither `budget.py` nor `directory.py` (the \"who\" owner chosen by the `shared-window-source` decision) as the mechanism to extend, so the node will build a parallel per-session aggregation that drifts from the fresher rollout-sourced reading the pre-flight already paces to",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/advise-the-lane-never-force-it.html#s8",
+      "id": "thin_wrapper-1",
+      "reason": "the section must either state that the advisory is added to the run event the follower renders (extending `ticker.py`) or justify why the follower cannot read it, because the committed `done-when` as worded is already satisfied by \u00a73's row carry and would let the node close without ever touching the channel the `advisory-delivery-point` decision actually locked (dispatch-and-follower).",
+      "text": "\u00a78's whole deliverable is a follower line (\"the advisory arrives where the choice is made\"), but the section names no mechanism and gives no reason the follower's existing lane cell cannot carry it; `reckon/crew/ticker.py:_lane_cells` already renders the lane mean from the lane document (`lane.json`) and never reads the per-dispatch `lane_advisory`, so the advisory does not ride any watch-stream field the follower sees",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e540b3dbf223a20cc4c3c19b9a683446e90bc9af0b4e5223fd2aaba29f58ee12",
+  "plan_slug": "advise-the-lane-never-force-it",
+  "plan_version": 32,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T015740111225-plan-review-of-advise-the-lane-never-force-it",
+  "reviewed_blob_sha": "ee54dd5abfbd62aba42cb858024baf26c1576a25",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the advisory is a single carry dict behind the dispatch payload, and \u00a76 reuses `reckon.capabilities`' own routing helpers (`_routing_outcome_exclusion`, `_write_paths`, `_charged_cost`, `_median_or_none`) rather than wrapping them, so the plan does not spread complexity across shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a74 re-derives per-session window draw from the ledger, duplicating the per-session window reader already owned by `reckon/budget.py` and the coordinator enumeration owned by `reckon/crew/directory.py`.",
+    "interface_budget": "pass \u2014 public_definitions 1470, cli, mcp and refusal families unchanged by any open section; \u00a77 states the binding constraint (\"adds no new command and no new tool\") and the landed \u00a72/\u00a73 nodes honoured it by riding existing calls, and no open section proposes a new CLI option, MCP view or refusal family.",
+    "reuse_search": "pass \u2014 the plan cites the mechanisms it extends (the gate's advisory mode, the `requested_backend` precedent at `reckon/crew/dispatch.py:3411`, the coordinator directory and ledgers chosen by the `shared-window-source` decision, and the ledger's routing figures for \u00a76); the one reused surface it fails to name is captured under duplicate_owner.",
+    "thin_wrapper": "a finding \u2014 \u00a78 adds a follower line carrying the advisory without saying why the existing lane cell in `reckon/crew/ticker.py` cannot be extended to carry it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.775041+00:00"
+}

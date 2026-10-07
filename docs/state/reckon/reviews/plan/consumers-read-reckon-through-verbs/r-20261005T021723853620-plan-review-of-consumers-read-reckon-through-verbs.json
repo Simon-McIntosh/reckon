@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:24:51.184Z",
+  "dispatched_at": "2026-10-05T02:17:46Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/runs.py:1402",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should name `runs.repair_manifest_status` as the owner to generalise (or say the generic `--set` replaces `repair-status`), otherwise \u00a74 mints a second repair path that drifts from the first.",
+      "text": "\u00a74's `crew repair-manifest --run R --set field=value` reimplements a mechanism that already exists: `repair_manifest_status()` retains `manifest.md.asdelivered`, rewrites the field and atomically replaces via `os.replace`, and it is already surfaced as `crew repair-status` (reckon/cli.py:6536). \u00a74's declared write paths are `reckon/cli.py`, the sync implementation, the skills and tests \u2014 `runs.py` is not named, so the implementer must fork the mechanism or reach into an unlisted owner.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "skills/reckon-build/scripts/worktree_fleet.py:114",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a73's rewiring is half-done; it retires the pointer-classification duplicate but leaves the resolver duplicate the immediately preceding section exists to eliminate, so the plan should name `crew path` as the resolver for the script too.",
+      "text": "\u00a73 owns this script and its done-when requires it to call `crew list` and `crew claims` \"with no local pointer-classification fallback\", but it is silent on the file's own `config_home()` (lines 114\u2013122), a byte-for-byte re-implementation of `reckon/_store.py::_config_home` (RECKON_HOME \u2192 `~/.config/reckon` \u2192 `~/docs-server`). \u00a72 just landed `crew path --kind live|config-home` to remove exactly this coupling, and \u00a71 calls config-home hardcoding the largest consumer coupling at 1,537 lines.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "skills/reckon-build/scripts/worktree_fleet.py:171",
+      "id": "duplicate_owner-3",
+      "reason": "the section must either widen `crew claims` to carry worktree ownership or keep a facet of local derivation and say so, or the done-when cannot be met as written.",
+      "text": "\u00a73's done-when has `worktree_fleet.py` call `crew claims` for its worktree claims, but `crew claims` (\u00a73 text) \"derives every claim from `node.write_paths`\", whereas `live_worktree_claims()` keys the inventory on the pointer's `worktree` field (`pointer[\"worktree\"]`). The verb named inventories write-paths; the script needs worktree\u2192run ownership, so \"no local pointer-classification fallback\" is not reachable with the single verb the section names.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_views.py:1044",
+      "id": "thin_wrapper-1",
+      "reason": "the section's own justification for the verb rests on a distinction the code contradicts, so the author must either correct the claim or state the real reason a CLI reader is needed (shell/batch consumers with no MCP).",
+      "text": "\u00a73 states `crew lanes` \"is expressly distinct from the endpoint/quota payload of MCP `view=\\\"lanes\\\"`\", but that view already attaches the lane reading through `_attach_lane_document()` (called at mcp_views.py:1044 and 803/833), so headroom, running and the rest of the lane-document fields are already on the MCP surface. The plan adds a second reader of the same document without saying why the existing surface cannot serve consumers or be extended.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans#s4",
+      "id": "interface_budget-1",
+      "reason": "the section must state which existing command it replaces (`repair-status`) or why nothing can be retired, so the added CLI-option surface is accounted for in the section's own text.",
+      "text": "the section adds two CLI surfaces (`crew repair-manifest` with a free-form `--set field=value`, and `reckon sync --write`) and a near-duplicate of `crew repair-status`, yet names nothing it retires or merges among the `cli_options` family (317 this week). \u00a74's \"two coordinator recipes become verbs\" retires prose, not CLI surface, and the recipes are outside all four counted families.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b3388dedb2c569c72b61fe53be8fc9103ad352157fd2ac8735c02743afab3e33",
+  "plan_slug": "consumers-read-reckon-through-verbs",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T021723853620-plan-review-of-consumers-read-reckon-through-verbs",
+  "reviewed_blob_sha": "afa07c06d3e44c2d6eb9d48cc3a6cdd8bd41a234",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a74's repair verb hides the as-delivered copy, the canonical field shape, the `check-manifest` run and the atomic replace behind one command, and \u00a72 delegates to the crew store's existing resolvers (`reports_dir`, `runs_dir`, `run_dir`, `live_dir`, `review_store_root`) rather than re-deriving the layout.",
+    "duplicate_owner": "a finding \u2014 \u00a74 adds a manifest-repair path parallel to `runs.repair_manifest_status`/`crew repair-status`, and \u00a73 leaves `worktree_fleet.config_home()` \u2014 the exact config-home duplicate \u00a72 built a verb to remove \u2014 in place.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a74 adds `crew repair-manifest` and `reckon sync --write` without naming what they retire or merge, or why nothing can be.",
+    "reuse_search": "pass \u2014 \u00a71's census and \u00a72\u2013\u00a73 cite the mechanisms they extend (`_config_home` in `reckon/_store.py`, `read_lane_document_file` in `reckon/crew/lane_document.py`, and `skills/reckon-build/scripts/worktree_fleet.py`), so the plan searched before proposing new surface.",
+    "thin_wrapper": "a finding \u2014 \u00a73's `crew lanes` is a second reader of the lane document that MCP `view=\"lanes\"` already attaches, and the plan's stated distinction from that view is not what the code does."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.855767+00:00"
+}

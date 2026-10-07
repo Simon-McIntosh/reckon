@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T01:56:34.117Z",
+  "dispatched_at": "2026-10-05T01:47:55Z",
+  "findings": [
+    {
+      "anchor": "reckon/project_state.py:1180",
+      "id": "duplicate_owner-1",
+      "reason": "the plan introduced `file_memo` as the single stat-identity memo (created at 56e13e115) and left the pre-existing duplicate in project_state unmigrated, so the plan should either route `_cached_plan_state` through `file_memo.memoized(file_signature)` or state why project_state keeps its own.",
+      "text": "`_plan_file_signature` returns the identical five-tuple (st_dev, st_ino, st_size, st_mtime_ns, st_ctime_ns) as `file_memo.file_signature` (file_memo.py:30); `_cached_plan_state` (project_state.py:1191) is a second stat-keyed parse cache with its own dict, lock and signature compare, missing file_memo's copy-on-return and its mid-parse write guard, so one plan file is memoised through two independent caches that can disagree",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:2435",
+      "id": "interface_budget-1",
+      "reason": "the section must account in its own text for the interface surface it adds, per the same rule every other surface-adding section follows.",
+      "text": "\u00a78 introduces a `stale-code` 503 refusal (`reckon/serve.py:2435`) and a new public module `reckon/served_code.py` (`take_snapshot`, `drift`, `served_report`, `forget_reports`), adding to the public_definitions (1470) and refusal_families (23) families, while the section text names neither a definition or refusal it retires or merges nor a reason none can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fb70f18be1bf03303d34acc3780ae37132979ee9ec51146ad4c7f65f2fe04449",
+  "plan_slug": "a-page-load-reads-each-file-once",
+  "plan_version": 42,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014737560219-plan-review-of-a-page-load-reads-each-file-once",
+  "reviewed_blob_sha": "93916be7ad96784721ca97c7a38fc73829ea9fa7",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/file_memo.py` (87 lines) hides stat-identity keying, a lock, deepcopy-on-return, the mid-parse write guard and an LRU bound behind `memoized()` / `file_signature()` / `clear()`, and `resource_scan_scope` hides whole-tree scan sharing behind one context manager; both present an interface much smaller than what they hide.",
+    "duplicate_owner": "a finding \u2014 `reckon/project_state.py:1180` `_plan_file_signature` and `:1191` `_cached_plan_state` re-implement the stat-identity signature and the stat-keyed parse cache that `reckon/file_memo.py` now owns.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a78 adds `reckon/served_code.py`'s exported surface (`take_snapshot`, `drift`, `served_report`, `forget_reports`) and a new `stale-code` refusal family without naming in its own text what it retires or merges, or why nothing can be.",
+    "reuse_search": "pass \u2014 \u00a72 names and extends the mechanisms it searched (`_plan_html.parse_meta`, `resources.iter_resources`, `serve._ProjectChangeWatch`, `fleet_index._activity30`) rather than forking them, and file_memo is now imported by compliance.py and served_code.py, so it is shared infrastructure rather than a local cache.",
+    "thin_wrapper": "pass \u2014 `resource_scan_scope` (resources.py:439) extends the owner `iter_resources` (resources.py:468) by caching inside it, and is consumed from serve.py, roadmap.py and crew/picker/*; it does not layer a second tree-walk path beside the owner."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.420197+00:00"
+}

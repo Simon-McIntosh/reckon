@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:04:30.853Z",
+  "dispatched_at": "2026-10-05T01:50:07Z",
+  "findings": [
+    {
+      "anchor": "reckon/_backends.py:2967",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend one owner for git-layout resolution (or name that owner and justify the fork) instead of adding a parallel resolver, which is the recurring duplicate the rubric is about.",
+      "text": "`worktree_git_write_roots` resolves a worktree's own git directory and its repository's shared object store with `git rev-parse --absolute-git-dir --git-common-dir`, a git-layout resolution the repository already owns at least twice (`reckon/crew/node.py:repository_identity`, which collapses linked worktrees through `--git-common-dir`, and `reckon/worker_git_shim.py:_run_git_dir`); the plan proposes one more copy rather than extending an existing owner, so a change to how a worktree's git layout resolves would have to be made in four places.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html#s3",
+      "id": "interface_budget-1",
+      "reason": "each section that adds interface surface must account for it in its own text, per the one rule the interface_budget item enforces.",
+      "text": "the design adds an escape-hatch CLI option (`--no-fence REASON`), an installer CLI option (`--include-git-guard`) and a new MCP refusal family (`run_scoped_write`), against this week's public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23, and none of \u00a71, \u00a73 or \u00a74 states what any of the added family members retires or merges, or why nothing can be.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4bdd360b5937b138d707ab8f4619b22109875a5239ead566e7751d8efd5bda32",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 123,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014951268732-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "a9cac7fa2abae4dcbf3b5419cf28292a4d8b5d7e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 one composition point (`launch_plan` \u2192 `fence_argv` in reckon/_backends.py:3013) hides the whole mechanism behind a small interface: the protected set, its symlink/ancestry resolution, the worktree git write roots, the credential binds and the containment test are not visible to a caller, which names only the run's write roots and worktree.",
+    "duplicate_owner": "a finding \u2014 the plan adds `worktree_git_write_roots` (reckon/_backends.py:2967), a fourth resolver of a checkout's git layout that shells `git rev-parse --absolute-git-dir --git-common-dir`, beside the owners that already resolve the same layout: `reckon/crew/node.py:repository_identity` (reckon/crew/node.py:1340, `--path-format=absolute --git-common-dir`) and `reckon/worker_git_shim.py:_run_git_dir` (reckon/worker_git_shim.py:594).",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; the sections add `--no-fence REASON` (reckon/cli.py:1826), `--include-git-guard` (reckon/cli.py:7419) and a `run_scoped_write` refusal family, and no design section names in its own text what any of them retires or merges, or why nothing can be.",
+    "reuse_search": "pass \u2014 the plan searched the repository it extends and cites the mechanisms rather than the plan's account of them: bwrap (proved installed and unprivileged namespaces working), the existing per-dialect sandbox tiers (`sandbox_write_roots`/`delivery_write_roots`, which `fenced_write_roots` reuses \u2014 the plan's own record says \"not a second list\"), the `native_agent_guard.py` PreToolUse hook family the git guard sits beside, the existing worker shim PATH the git shim joins, and `read_run_pointer` for run scoping.",
+    "thin_wrapper": "pass \u2014 the two mechanisms that enforce one git rule (the PreToolUse `worker_git_guard.py` and the execution-time `worker_git_shim.py`) are each justified in the plan's own text: parsing a shell language cannot be made complete, so the shim resolves the repository at run time while the guard stays as the early, readable refusal. The fence itself is not a thin layer over the existing sandbox tier \u2014 the plan's premise is that the dialect sandbox is bypassed (`--dangerously-skip-permissions`, codex `worktree-full`), so the OS fence is the missing layer rather than a parallel one."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.529332+00:00"
+}

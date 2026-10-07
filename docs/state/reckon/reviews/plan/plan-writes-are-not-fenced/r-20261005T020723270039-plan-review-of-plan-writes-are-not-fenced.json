@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:19:03.192Z",
+  "dispatched_at": "2026-10-05T02:07:45Z",
+  "findings": [
+    {
+      "anchor": "plan-writes-are-not-fenced#s7",
+      "id": "duplicate_owner-1",
+      "reason": "the section should name `_refuse_duplicate_id` as the owning mechanism and retire the parallel sprint check, so a caller meets one duplicate-id policy rather than two.",
+      "text": "\u00a77 lands the append-path duplicate-id refusal through the shared `_refuse_duplicate_id` (reckon/_store.py:2373), but its own text names `create_sprint`'s hand-rolled check `any(isinstance(s, dict) and s.get(\"id\") == sprint_id for s in sprints)` (reckon/mcp.py:2927) only as precedent and leaves it in place, so the codebase ships two implementations of one duplicate-id refusal that differ in shape (an `OpError` with `existing_item` versus an inline `{ok: false, error: ...}` dict)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "plan-writes-are-not-fenced#s10 (reckon/mcp.py:3353, reckon/mcp.py:3864, reckon/_store.py:1837)",
+      "id": "interface_budget-1",
+      "reason": "on the supplied figures (public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23) a pure addition to the tool surface must say in its own text why the single-pair form cannot be folded into the batch path, or what it replaces.",
+      "text": "\u00a710 adds a `replacements` parameter to the `edit_plan` text surface and a new public `replace_plan_text_batch`, and its own text states the single-pair form is retained (\"The single-pair form behaves as it does today\"), naming no surface it retires, merges, or cannot retire",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c98bcf2716b753fb2afb18d384bdc37fdbda5bc1e4fa6f6edeb9b1273f782d67",
+  "plan_slug": "plan-writes-are-not-fenced",
+  "plan_version": 33,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T020723270039-plan-review-of-plan-writes-are-not-fenced",
+  "reviewed_blob_sha": "dfcb3a888f6bd6b8b734f3677c5276f7e46564ca",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the write path hides the lock, the version check, the commutative comment merge and the section/evidence/collapse consumers behind one `_write_state` call (reckon/_store.py:1285), and the batch text write hides N ordered replacements behind one `replace_plan_text_batch` call (reckon/_store.py:1837); both interfaces are smaller than the behaviour they carry.",
+    "duplicate_owner": "a finding \u2014 \u00a77 leaves a second duplicate-id refusal live in `create_sprint` (reckon/mcp.py:2927) beside the shared owner `_refuse_duplicate_id (reckon/_store.py:2373)` it otherwise lands.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a710 adds a `replacements` parameter and a public `replace_plan_text_batch` without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "pass \u2014 the design cites the machinery it extends by location (`_append_followup` reckon/mcp.py:2614, the sprint duplicate refusal reckon/mcp.py:2927, `_consistent_section_records` reckon/_schema.py, the setter in reckon/_store.py), and the per-file fence it lands generalises the pre-existing JSON-envelope flock (`_json_envelope_lock, now _serialized_path_lock, reckon/_store.py:274`) rather than adding a new lock.",
+    "thin_wrapper": "pass \u2014 \u00a77 extends `append_to_list`'s existing refusal owner rather than adding a parallel check, \u00a79 extends the existing `set section_declarations.<id>` path rather than adding an op, and \u00a710's batch is a justified second input form on `replace_plan_text` (one lock, one version bump) rather than a wrapper: each states the change it makes to existing machinery."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.100436+00:00"
+}

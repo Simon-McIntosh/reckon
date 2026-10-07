@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T05:40:15.450Z",
+  "dispatched_at": "2026-10-07T05:34:48Z",
+  "findings": [
+    {
+      "anchor": "reckon/roadmap.py:128",
+      "id": "reuse_search-1",
+      "reason": "the author must either extend `_plan_declarations` (or the owner) to resolve record ids from the file too, or state that the inventory row always carries `sections`; as written the record-only arm of \u00a715's done-when cannot be met at an inventory-row caller.",
+      "text": "\u00a715 states that a caller holding only an inventory row \"feeds the owner the file-aware declarations the roadmap already resolves (`_plan_declarations`, `roadmap.py:128`)\", but `_plan_declarations` reads only `read_state(text)[\"section_declarations\"]` from the file and never the typed section records (`sections`); at the roadmap ref-validation sites (`roadmap.py:831`, `:947`, `:2470`) the target comes from `all_plans`, whose rows (`roadmap.py:2240`) may carry neither `section_declarations` nor `sections`, so the plan's own done-when arm \u2014 \"another whose only evidence is a typed record \u2026 each roadmap staged-ref site reports `section_found` true\" \u2014 is unmet for such a row: the owner receives a set that omits the record-only section and reports it absent",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5c50185c0a298bb185243cd88c9e6d8e9419866159d3811c6672d863c682a4ef",
+  "plan_slug": "section-contract-and-computed-impl",
+  "plan_version": 99,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261007T053424294057-plan-review-of-section-contract-and-computed-impl",
+  "reviewed_blob_sha": "b82eef9138212709f10346a03ad4fa22d1023874",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the section adds no module and no definition; it routes four existing ref-validation sites and two existence-asking sites onto one existing function, so the surface it touches shrinks rather than grows.",
+    "duplicate_owner": "pass \u2014 the section retires the duplicate owner `_declared_stages` (`reckon/roadmap.py:181`) and moves every existence check onto `declared_section_identities`; the census of `plan_section_anchors` callers is complete (`_schema.py:589`, `roadmap.py:831`, `:947`, `:2470`, `:2990`, `:189` inside the retired helper, `:233` via its fallback, `promotion.py:7273`; `_schema.py:692` is the owner calling itself and `promotion.py` and `_schema.py:754`'s narrower anchor meaning is correctly retained).",
+    "interface_budget": "pass \u2014 public_definitions 1523, cli_options 323, mcp_views 33, refusal_families 23; \u00a715 adds to none of the four and states in its own text what it retires (\"no definition added, one private duplicate (`_declared_stages`) retired, and the identifier grammar applied uniformly\"), which satisfies the account-or-justify rule.",
+    "reuse_search": "pass \u2014 \u00a715 searched `reckon/` and names the existing owner it extends (`declared_section_identities`, `reckon/_schema.py:678`) and the duplicate it retires (`_declared_stages`, `reckon/roadmap.py:181`), adding no new machinery of its own \u2014 but its file-aware fallback for inventory rows is incomplete (finding below).",
+    "thin_wrapper": "pass \u2014 no wrapper is added; \u00a715 changes callers to call the existing owner, which is the extension the item asks for, not a parallel layer over it."
+  },
+  "section_digests": {
+    "_document": "b3e317a55bc99281c91004c633bd3436b967d639d0093042e8382fda5f2f34d5",
+    "s-contract": "f366889c6bd9e5d22c7648ad207d192fc7c57f306226260bbdc61af42facde89",
+    "s0": "1ab5310dfc352b1616d26748ecb2ede37e4b22edb08cff5d38882e0df7bfd38b",
+    "s1": "575abaabf78815d603a63f305f24849afc2e8a23b5095750aed026d129f109b7",
+    "s10": "442596316d5529c8e0ca2beebb4bd78b7a641c0012f4ab842e9c391891981252",
+    "s11": "2423a9472cd4dd20745063fdbfc9bd8389d08ec30fc7d92d6a0c5a1cfab9d904",
+    "s12": "0c57a8f87c50a8febc414f1c7fd4f8da6acde27dfa801ce3e75d0db1113bf0a0",
+    "s13": "dfb28dd89d9b23c2ba7291cc31ac355152fe3555df28c0b193a1329b8dfe99bd",
+    "s14": "5551d29212c13ac5d360581bd825e4ba6459ab51ed4d4ddd72c8ff47f5b0995d",
+    "s15": "aef31481216c3820ba82200118b8a4740f8af7f1ebcab203c37fb45c95efda1e",
+    "s2": "c9627911571ffeb5980e8f440e0c1ac40ee62252c5479ea760ee8c3373285d68",
+    "s3": "b7b0969a15e31246b5ffd2220eab300b4752861359a2aaa1557d143e28ccf28a",
+    "s4": "11761fc55a617bd8eb281c58e0956ec1b69c571d7b5f74ada9bad6e60bb73d77",
+    "s5": "e08114c9520b269de48455c63a6cf7fd4a97eba7999c6040e6d76f3423f7ec79",
+    "s6": "e5c5a0ebc8e55b3b7a9eb8df4ab33868a03a73f8441a8e786055a21d2abf826f",
+    "s7": "4787d243806ca8c941d78507bba2a2a639f320cffe5e2121afa19a45d02da464",
+    "s8": "7817fd2791828ef8e2ed19e683bdac919bad6f6d1f947640c52ac9ab6c4a68ca",
+    "s9": "e0631b1543405b216abf712de58f8a5b04e1a54e9ba4ab7fb4e49133431dcbd5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:15:33.873678+00:00"
+}

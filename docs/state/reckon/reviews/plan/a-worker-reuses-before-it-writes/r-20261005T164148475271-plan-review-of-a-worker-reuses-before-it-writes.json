@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:48:16.692Z",
+  "dispatched_at": "2026-10-05T16:42:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-reuses-before-it-writes.html#s13",
+      "id": "deep_module-1",
+      "reason": "the plan should either keep the runner where its consumers already live until the followup is approved, or state that the module ships ahead of its consumer set and why that is worth the surface.",
+      "text": "\u00a713 creates a standalone git-access module on the argument that its eventual twenty-one consumers \"should not import a velocity report to run git\", but \u00a712 has the clone detector import velocity's public sources reader anyway, so the detector is the module's one real consumer and it already depends on velocity; the runner's breadth is justified by the deferred, authority-gated `git-access-has-one-owner` followup, not by any caller the two sections land",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:147",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to give the runner the raise the four callers need, or to state why the raising form must stay on the velocity feature module, which the section does not.",
+      "text": "\u00a713 rewrites `velocity.git` to call the core runner \"in byte mode and raising on a non-zero exit, so its four decoding callers are untouched\"; the stated reason is caller-churn avoidance, not why the runner cannot carry the raising variant (it already takes a byte mode and a stdin payload, so a `check` flag is the natural extension), leaving two public ways to reach the same process over the same machinery",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/capabilities.py:1167",
+      "id": "duplicate_owner-1",
+      "reason": "the section must say whether the path helper retires, re-points at `cache_root(\"pick-input\")`, or keeps its leaf, because as written a caller cannot tell how the pick-input family reaches the one owner.",
+      "text": "\u00a713 retires `pick_input_cache_root` \"with its callers, the ledger's database path among them\", but `pick_input_cache_path` (capabilities.py:1167) also calls the retired function and is itself public and used by two internal callers and two tests; the section never names its fate, so the cache-path owner is moved incompletely",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "cef5c5b576db87cc37d548343e88ef3d3da98c2dd334f3b3ab58bc55a76eab97",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 139,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T164148475271-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "5d945ba0d61a04963c2cfe5f7fc8650a9cd8c94e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the new git-access module hides mode, the 180-second timeout and never-raising behind one runner, but its only immediate consumer in \u00a712 already imports velocity (for the sources reader), so the module's breadth rests on an unscheduled followup rather than on today's callers.",
+    "duplicate_owner": "a finding \u2014 the section retires `pick_input_cache_root` but leaves its public sibling `pick_input_cache_path`, which resolves through the retired function, unnamed.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23. \u00a712 names its accounting in-text (one public sources reader added on velocity, `revised_python` retired, net zero); \u00a713 names its accounting in-text (two public definitions added \u2014 the runner and `cache_root` \u2014 and one retired, `pick_input_cache_root`, net one). Both adding sections state what they retire, which is the rule this item holds them to.",
+    "reuse_search": "pass \u2014 the plan names the mechanisms it extends, and every one was opened and verified: `reckon/clones.py:644` `_git`, `:652` `revised_python` (archive+tar, confirmed), `:389` `_cache_root`; `reckon/velocity.py:147` public `git`, `:306` `_plan_documents`, `:360` `read_blobs`, `:542` `velocity_cache_root`; `reckon/interface_counts.py:441` `read_trees`; `reckon/crew/routing.py:473` `_git(check=)`; and the five cache cascades at `serve.py:466`, `capabilities.py:1143`, `clones.py:389`, `velocity.py:542`, `lane_context.py:261`. The one existing generic runner, `reckon/service.py:206` `_run`, is named and declined with a layering reason that holds \u2014 `service.py:24` imports `reckon.crew.paid_lanes` at module scope, so a core module calling it would invert the layering.",
+    "thin_wrapper": "a finding \u2014 \u00a713 keeps `velocity.git` as a bytes-and-raise wrapper over the new core runner, justified only by sparing four call sites."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.604603+00:00"
+}

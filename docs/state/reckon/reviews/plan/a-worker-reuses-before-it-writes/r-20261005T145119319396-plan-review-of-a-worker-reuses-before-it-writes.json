@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:57:39.733Z",
+  "dispatched_at": "2026-10-05T14:51:37Z",
+  "findings": [
+    {
+      "anchor": "reckon/interface_counts.py:46",
+      "id": "reuse_search-1",
+      "reason": "the plan must fix the reader's scope parameter and restate the done-when assertion, or one of the two consumers changes what it measures.",
+      "text": "\u00a712 does not state the shared reader's scope: read_trees counts only under prefix `reckon` (interface_counts.py:46) while the detector's corpus is `(\"reckon/\", \"tests/\")` (clones.py:521), so \"the detector and the counter see the same path set\" holds only if the reader is unprefixed and read_trees filters by prefix afterwards \u2014 which the plan never says, and a prefix-scoped reader lifted \"as read_trees performs it\" would silently drop tests/ from the detector's corpus",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s11",
+      "id": "reuse_search-2",
+      "reason": "the removal check must be scoped to the `if text is not None` line the section actually retires (e.g. `grep -n 'if text is not None'`), not the whole file.",
+      "text": "the done-when runs `grep -n 'is not None' reckon/interface_counts.py` and requires it to return nothing, but that file carries four other legitimate clauses (:157 AST, :349 view_arg, :466 cache_root, :520 cached), so a literal run of the named check cannot pass and invites deleting `cache_root is not None` at :466, which breaks the cache_root override",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/clones.py:644",
+      "id": "duplicate_owner-1",
+      "reason": "the migration must either add a non-raising git variant on velocity (extending the owner) or keep a justified wrapper, and must say whether the corpus cache relocates or keeps its own root.",
+      "text": "\u00a712 deletes `_git` and `_cache_root` in favour of velocity's, but velocity's `git` (reckon/velocity.py:147) is `subprocess.check_output(..., timeout=180)`, which returns bytes and raises, while clones `_git` (clones.py:644) uses `check=False` and returns a CompletedProcess whose `.returncode`/`.stdout` are inspected by `changed_paths` (clones.py:678) and `_repository_key` (clones.py:425); velocity's `velocity_cache_root` (velocity.py:542) also resolves a different directory (`~/.cache/reckon/velocity`) under `RECKON_VELOCITY_CACHE`, not the detector corpus cache's `~/.cache/reckon/clones` under `RECKON_CLONE_CACHE`, so importing it relocates a cache the plan says \"stays\"",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "25171e90904706ac41042c807bcb7a922f86b73bebca7a9e4015bd79d87fe78c",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 121,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T145119319396-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "f20d2ec553ddcba3e6ccfe3e9cfd5863500459c5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the new reader on reckon/velocity.py hides the ls-tree listing, the `.py` filter and the one batched `cat-file --batch` read behind a single `(repo, revision, prefix) -> {path: bytes}` call, an interface smaller than what it hides.",
+    "duplicate_owner": "a finding \u2014 \u00a712 treats velocity's `git` and `velocity_cache_root` as drop-in owners for the detector's `_git` and `_cache_root`, but neither pair is interchangeable, so the substitution breaks callers the plan never names.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 states its net explicitly (one public sources reader added on velocity, the public `revised_python` retired, net zero) and \u00a711 states \"No definition is added\", so each section accounts for its surface.",
+    "reuse_search": "a finding \u2014 \u00a712 proposes one shared source reader but never reconciles the counter's `reckon`-only scope (reckon/interface_counts.py:46) with the detector's `(\"reckon/\", \"tests/\")` corpus (reckon/clones.py:521), so its \"same path set\" assertion cannot hold for both consumers; \u00a711's scoped-removal check is an unscoped grep that matches four other clauses.",
+    "thin_wrapper": "pass \u2014 the reader is not a parallel layer but one home for a composition currently duplicated between read_trees (reckon/interface_counts.py:448-450) and the detector's archive read (reckon/clones.py:659-671); two disjoint consumers justify collapsing them onto velocity."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.663052+00:00"
+}

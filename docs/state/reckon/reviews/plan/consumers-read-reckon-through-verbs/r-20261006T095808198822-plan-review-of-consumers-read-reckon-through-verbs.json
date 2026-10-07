@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:09:32.076Z",
+  "dispatched_at": "2026-10-06T09:58:35Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/query.py:24",
+      "id": "duplicate_owner-1",
+      "reason": "naming query.py and claims.py as the owners to extend collapses two parallel vocabularies into one and stops the four-name set drifting from classify_pointer, which is exactly what the reuse item exists to force.",
+      "text": "\u00a73's `crew list --field worktree|pid|phase|base_sha` (snapshot plan.html#s3) declares a new four-name live-pointer field vocabulary, but the field-selection read model over the identical pointers already exists in reckon/crew/query.py: DEFAULT_RUN_FIELDS carries \"worktree\" and OPTIONAL_RUN_FIELDS carries \"base_sha\" (query.py:24-52), classify_pointer() at reckon/crew/recovery.py:7873 supplies \"phase\" and \"pid\", and _requested_field_names (query.py:76), project_live_rows (query.py:162) and runs_view (query.py:423) already validate and project a requested field set \u2014 the MCP crew view=\"runs\" exposes that same selection (reckon/_mcp_tools.py:83) \u2014 so the plan forks one field vocabulary into two. Second instance of the same defect: \u00a73's `crew claims` \"deriving every claim from node.write_paths\" (plan.html#s3) re-derives claims when reckon/crew/claims.py:85 (declared_claim_paths) and claims.py:179 (_declared_paths, which read node.write_paths) already own that derivation, and the module's own docstring records that it was written for exactly this caller and is wired to no command; the MCP crew scopes view already reads live claims too.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html#s3",
+      "id": "interface_budget-1",
+      "reason": "the rubric's interface_budget rule requires any section that grows the CLI/MCP families to state what it retires or merges, or why nothing can be; \u00a73 and \u00a74 justify why each verb exists but never account for the added surface, and one sentence each (\"the CLI verbs front the existing MCP views for shell consumers\") would discharge the item.",
+      "text": "the section adds three CLI verbs (crew lanes, crew list --field, crew claims) whose payloads read the same lane document and live-pointer classification the MCP crew views already serve (view=\"lanes\" at reckon/mcp_views.py:685, view=\"runs\" with a fields argument, view=\"scopes\" at reckon/_mcp_tools.py:70), yet the section names no CLI or MCP surface it retires or merges; the settled S5 keeps crew lanes \"expressly distinct from\" MCP view=\"lanes\" rather than consolidating, so the lane reading and the claim inventory each gain a second consumer-facing surface beside the existing one, and \u00a74's crew repair-manifest and sync --write add two more commands (cli_options 317) with no surface named as retired.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "94016b4ddddcb5217927e5ddd7aa409089e05a1dffaef894022fcad80112072c",
+  "plan_slug": "consumers-read-reckon-through-verbs",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T095808198822-plan-review-of-consumers-read-reckon-through-verbs",
+  "reviewed_blob_sha": "afa07c06d3e44c2d6eb9d48cc3a6cdd8bd41a234",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no new deep module; it exposes existing deep modules (lane_document, the store resolvers, the claims machinery) behind consumer-facing verbs, and each verb's interface is smaller than the behaviour behind it.",
+    "duplicate_owner": "a finding \u2014 crew list --field declares a fresh four-name field vocabulary (worktree|pid|phase|base_sha) when the field-selection read model over the same live pointers is already owned by reckon/crew/query.py, and crew claims re-derives claims when that derivation is already owned by reckon/crew/claims.py; the plan names neither owner to extend.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds three CLI verbs (crew lanes, crew list --field, crew claims) that are CLI twins of existing MCP crew views, and its text names what it retires for consumers (direct file reads) but not what it retires or merges on reckon's own CLI/MCP surface, and \u00a74 adds crew repair-manifest and sync --write without naming a surface either retires.",
+    "reuse_search": "pass \u2014 \u00a71 is a measured census of the couplings (config-home paths, crew output, lane.json fields) and \u00a72/\u00a73 name the machinery they extend (_config_home() in reckon/_store.py, reports_dir()/runs_dir()/run_dir()/review_* resolvers in reckon/crew/runs.py and reckon/crew/review.py, read_lane_document_file() in reckon/crew/lane_document.py), so the search exists; the two owners it fails to name are reported below.",
+    "thin_wrapper": "pass \u2014 the two thinnest additions (crew lanes over read_lane_document_file, crew path over the store resolvers) state in their own text why the layer exists: external consumers cannot import private internals, and \u00a73's settled reading S5 distinguishes the lane verb's payload from MCP view=\"lanes\" rather than duplicating it silently."
+  },
+  "section_digests": {
+    "_document": "252b25b9a84ad27dfb9ef2c94765f210ab63646c2d8c4d93f200bd82b6a661d4",
+    "s1": "8d1abbb1730317d54cd7c30a76ca3394583270acd89613e1be7a75781ccc353f",
+    "s2": "84de0782c5a39bd0c675a4ff49e1ec88679671180cd4c978b78be3574a9baaaf",
+    "s3": "7b2afff1ffb949aef00618804037f05a1233f05403b67f4b7f707e68b7ce493e",
+    "s4": "b3062ac14f86bd7b12313d6ac1d0e08daab0dfceb07d0c121a049d96dc27e04c",
+    "s5": "90f06e72948218cc545e9c02aa75d3fc6adce7dbcf876c3381d035058a8f0718",
+    "s6": "9f8bdf5c31e550c119890653b6fa049819ecff9bb5a906eeef70a8bbe09faa94"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.851944+00:00"
+}

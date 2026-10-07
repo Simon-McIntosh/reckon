@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:38:55.983Z",
+  "dispatched_at": "2026-10-04T17:30:07Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/roadmap.py:2866",
+      "id": "deep_module-1",
+      "reason": "the plan tells authors a gate can be scoped to a section, exactly the guidance reckon-create gives to prefer gates over depends_on, and without the section-readiness wiring an author who does so gets the premature whole-plan blocking the skills steer them away from.",
+      "text": "readiness computes is_blocked from gate_blockers unconditionally, so gated_sections (parsed at _plan_html.py:618, stored at _store.py:2964, schema-validated at _schema.py:1092) changes only the graph edge, never the plan-level verdict the plan's \u00a72 promises (\"a failed gate therefore renders downstream sections and plans blocked\"); the interface is wider than the behaviour it hides",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/serve.py:2156",
+      "id": "duplicate_owner-1",
+      "reason": "the plan's own premise is one derivation with one owner (\"state that can be computed must not also be stored\"); it should name the roadmap blocker assembly (or a shared builder) as the owner both readers consume, or the two derivations keep drifting as measured.",
+      "text": "serve._derive_lifecycle assembles its own blocker list (unresolved_dependencies + sprint-item explicit + unpassed_gate_blockers) instead of consuming the assembly that owns it in roadmap.build_roadmap, and it has already drifted: roadmap's is_blocked carries held_blockers and plan_holding_decisions that serve's effective_status never sees, so the same plan can read blocked in one reader and open in the other",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5b45e979a14bc98b18b1a78b83d8d6758a7eab547f06e96835fe863ab2dee367",
+  "plan_slug": "derived-gate-state",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T172952583451-plan-review-of-derived-gate-state",
+  "reviewed_blob_sha": "0a83b55979a2ee47cb50c8d2ede558393000210c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the gate element grows a gated_sections surface (schema field, parser, edge logic) that its own plan-readiness consumer ignores, so an unpassed section-scoped gate blocks the whole plan regardless of the sections it names.",
+    "duplicate_owner": "a finding \u2014 the plan routes gates \"through the existing effective_status path\" (singular) but no single owner assembles the blocking list; serve._derive_lifecycle re-lines the pieces and has already drifted from roadmap's assembly.",
+    "reuse_search": "pass \u2014 the plan cites and extends the existing machinery it depends on: gates mirror the decisions/followups element pattern, unpassed gates route through the existing effective_status/blocking derivation (reckon/lifecycle.py), staleness reuses doccheck's existing thresholds (reckon/doccheck.py), prose retirement extends the edit-transaction layer, and \u00a72 explicitly declines to re-author the gate rule owned by uniform-worker-dispatch.",
+    "thin_wrapper": "pass \u2014 the gate element is explicitly justified as a layering over the established decisions/followups machinery and the existing blocking derivation rather than a parallel mechanism, and the one file it must share (SKILL.md) is fenced to its owner."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.956031+00:00"
+}

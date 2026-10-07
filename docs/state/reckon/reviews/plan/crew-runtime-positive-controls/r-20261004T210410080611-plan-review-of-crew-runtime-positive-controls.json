@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:08:13.669Z",
+  "dispatched_at": "2026-10-04T21:04:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/crew-runtime-positive-controls.html#s3",
+      "id": "reuse_search-1",
+      "reason": "naming those owners up front would replace the new class with an extension of the owner rather than a parallel one.",
+      "text": "the section adds a service subsystem with no reuse map, though `reckon/service.py` already renders, installs and controls user units and `paid_lanes.systemd_user_dir()` already owns where a unit lives",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:3424",
+      "id": "duplicate_owner-1",
+      "reason": "two unit managers drift; the plan should extend `reckon/service.py` with a per-project unit name and render instead of forking a second manager.",
+      "text": "`SystemdUserWatchService` reimplements `reckon/service.py`'s `unit_path` (service.py:89), `installed` (service.py:217), `write_unit` (service.py:230), `systemctl` (service.py:180) and `linger_enabled`/`enable_linger` (service.py:201,207), and its `write_unit` line 3461 copies the unchanged-content write logic of `service.write_unit` verbatim, including the \"systemd opens the log file but will not create its parent\" step",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:3433",
+      "id": "duplicate_owner-2",
+      "reason": "path resolution is the recurring duplicate this item names; with `XDG_CONFIG_HOME` set the watcher writes to one directory while the manager reads another, so the unit never starts.",
+      "text": "`SystemdUserWatchService.unit_path` hardcodes `Path.home() / \".config\" / \"systemd\" / \"user\"`, bypassing `paid_lanes.systemd_user_dir()` (paid_lanes.py:750) which resolves `XDG_CONFIG_HOME` the way systemd itself does",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/review.py:1339",
+      "id": "duplicate_owner-3",
+      "reason": "it would add a fourth resolution site; the plan should name one owner that both `store_review` and `check-manifest` (whose `audit_manifest`, reports.py:1858, already sits beside a resolver) call, folding the existing pair in.",
+      "text": "\u00a760 has `store_review` resolve `reviewed_base_sha`/`reviewed_head_sha`, where commit resolution is already owned by `promotion._commit_resolves_in` (promotion.py:477) and `reports._commit_resolves_in` (reports.py:1494) \u2014 two copies already \u2014 and `recovery._resolve_commit` (recovery.py:378)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:3424",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to parameterise the existing renderer and installer for a named unit rather than add a parallel class.",
+      "text": "the new `SystemdUserWatchService` wraps `reckon/service.py`'s machinery without saying why `reckon/service.py` cannot be extended to render and install a second unit",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b7996c721dc57c6cc657a53a5db2278174dc3dd38baae345afcd0b32ca48a5c4",
+  "plan_slug": "crew-runtime-positive-controls",
+  "plan_version": 339,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T210410080611-plan-review-of-crew-runtime-positive-controls",
+  "reviewed_blob_sha": "5cfaa4fb2a1231be4be2141ce2235f6674578b0a",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module that hides substantial behaviour behind a smaller interface; the \u00a73 facade is over-wrapping, reported under thin_wrapper and duplicate_owner.",
+    "duplicate_owner": "a finding \u2014 \u00a73 forks `reckon/service.py`'s unit manager and bypasses `paid_lanes.systemd_user_dir()`; \u00a760 adds a further commit resolver beside three existing ones.",
+    "reuse_search": "a finding \u2014 \u00a73 introduces `SystemdUserWatchService` without citing `reckon/service.py`, which already renders, installs and controls user units.",
+    "thin_wrapper": "a finding \u2014 \u00a73's `SystemdUserWatchService` is a thin layer over `reckon/service.py` and `paid_lanes`, with no statement of why those owners cannot be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.912709+00:00"
+}

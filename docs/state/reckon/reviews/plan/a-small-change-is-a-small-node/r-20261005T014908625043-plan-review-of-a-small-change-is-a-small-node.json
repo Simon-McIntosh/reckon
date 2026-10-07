@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:05:03.724Z",
+  "dispatched_at": "2026-10-05T01:49:28Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:723",
+      "id": "reuse_search-1",
+      "reason": "s2's deliverable becomes extend the existing answer store to code reviews, not add a parallel one.",
+      "text": "s2 records each finding as repaired with a commit or declined with a reason, which record_response already stores as acted/declined plus reason keyed by finding id and unanswered_findings already gates on, and its premise that code reviews have no answer field is false since dimension_dispositions at reckon/crew/review.py:2139 answers code-review findings",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py:8449",
+      "id": "deep_module-1",
+      "reason": "it leaves answers in two stores to reconcile and never names which one owns them; s2 must settle that.",
+      "text": "s2 writes the answers onto the ledger row, a second answer home beside the review store that owns the findings (and keeps only dimensions and total, per reckon/ledger.py:2090), so one behaviour is split across manifest parse, promotion and a raw row field instead of one interface like record_response/unanswered_findings",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/review.py:2139",
+      "id": "thin_wrapper-1",
+      "reason": "the item requires either that justification or a direct extension of the store, and s2 currently gives neither.",
+      "text": "the s2 answer path wraps the existing disposition/response mechanism without saying why the code-review store cannot be extended to answer arbitrary findings",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:709",
+      "id": "duplicate_owner-1",
+      "reason": "a third answer store drifts from the two that exist; the plan should name the owner mechanism and extend it.",
+      "text": "the plan re-implements answer a review finding rather than extend its owners: reckon/crew/plan_review.py owns the response vocabulary and gate (unanswered_findings, record_response) and reckon/crew/review.py owns the code-review store and its dimension_dispositions field",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-small-change-is-a-small-node.html:50",
+      "id": "interface_budget-1",
+      "reason": "the two existing answer mechanisms are the obvious merge target and the section must account for the surface it adds.",
+      "text": "s2 adds an answer record (a new stored field and, mirroring the live plan-review path, a CLI verb within the --answer/--acted/--declined family) without stating what it retires or merges",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "86c15bd2c8edfeab21efc7a9447ddb75903741eebb7243e47074fff24688e1ce",
+  "plan_slug": "a-small-change-is-a-small-node",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014908625043-plan-review-of-a-small-change-is-a-small-node",
+  "reviewed_blob_sha": "4211e06b0985bcdec61ac60c341733343ae00e45",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 s2 writes the answers onto the reviewed run's ledger row, a second home beside the review store whose reducer keeps only dimensions and total (reckon/ledger.py:2090), spreading one behaviour across the manifest parse, promotion and a raw ledger field rather than behind one interface.",
+    "duplicate_owner": "a finding \u2014 s2 re-implements finding answers instead of extending the owners reckon/crew/plan_review.py (response vocabulary and gate) and reckon/crew/review.py (the code-review store and its dimension_dispositions answer field).",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; s2 adds an answer record (a new stored field and, mirroring the plan-review path, a CLI verb in the --answer/--acted/--declined family) without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 s2 proposes an answer record for code reviews (\"repaired with its commit, or declined with a reason\"), but that exact shape already exists at reckon/crew/plan_review.py:723 (record_response, RESPONSE_ACTIONS = (\"acted\",\"declined\"), keyed by finding id, gated by unanswered_findings at :709) and reckon/crew/review.py:2139 (dimension_dispositions) already answers code-review findings; the plan cites neither.",
+    "thin_wrapper": "a finding \u2014 the s2 manifest-to-ledger answer path is a thin layer over the existing response/disposition machinery with no statement of why that machinery cannot be extended to answer arbitrary code-review findings."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.487245+00:00"
+}

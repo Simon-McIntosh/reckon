@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T10:49:51.908Z",
+  "dispatched_at": "2026-10-05T10:41:51Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/review.py:30",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a77 must add review.py:30-31 to its rewrite list and make the completion check line-break tolerant, or the section completes with the count still spelled five in the file whose completeness predicate already requires six.",
+      "text": "\u00a77 promises no site in reckon/ still spells the dimension count as a literal and gates that with grep 'five dimension\\|five-dimension\\|5 dimension', but the module docstring reads \"which stays the five\\ndimensions\" (line 30 ends \"five\", line 31 begins \"dimensions\"), a phrase a line-oriented grep cannot match and which the section's prose-site list omits, so after the six enumerated sites are rewritten the stale count survives while the completion gate passes",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "53fd933a097ebf0c40755d70da1eed6cd53b8c7a04b87d0114f31e4e6357266c",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 94,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T104019253298-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "0faf314c9d6c5b9d26f976baf50689e1d463247b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a78 promotes one private primitive to write_atomically and \u00a79 routes the remaining forks through it, so roughly nineteen re-implementations collapse behind one interface; the change reduces surface rather than spreading complexity across wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a77 consolidates the review dimension count to one home, but neither its prose-site list nor its line-oriented completion grep reaches reckon/crew/review.py:30-31, so a duplicate of the count survives the section's own gate.",
+    "interface_budget": "pass \u2014 public_definitions 1474, cli_options 317, mcp_views 33, refusal_families 23; \u00a77 adds to none, \u00a78 names its single public_definitions addition (write_atomically) and states the retired forks are private and uncounted, and \u00a79 does the same for its inventory rule on reckon/interface_counts.py.",
+    "reuse_search": "pass \u2014 \u00a78 and \u00a79 each name the mechanism they extend and the file that owns it (reckon/_store.py:419 _write_through_sibling_temporary; reckon/interface_counts.py:76 definitions and :326 read_trees; the census predicate at docs/research/data/crew-pattern-review/code-depth/census.py:233 primitive_concepts), and \u00a79 correctly rejects reckon/clones.py as the extension point because its reader returns token windows and holds no call.",
+    "thin_wrapper": "pass \u2014 the one retained layer, write_json_atomically, is justified in \u00a78 as the single serialisation point that is not a second owner of the mechanism, and the new work extends the existing primitive rather than wrapping it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.715619+00:00"
+}

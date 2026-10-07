@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:09:38.194Z",
+  "dispatched_at": "2026-10-04T16:56:47Z",
+  "findings": [
+    {
+      "anchor": "reckon/mcp.py:436",
+      "id": "duplicate_owner-1",
+      "reason": "name `reckon/crew/runs.py` as the owner and add one `run_worktree(run_id) -> Path | None` there, have the shim and mcp.py read through it, and let only the standalone guard keep a private copy with its isolation reason stated; this closes the drift the plan already saw when the read-form decision was consolidated into the shim.",
+      "text": "`_run_worktree(run_id)` re-derives the run's worktree from the live pointer, and two sibling copies do the same: `reckon/worker_git_shim.py:611` and `reckon/hooks/worker_git_guard.py:152`; the shim already imports `pointer_path` from `reckon/crew/runs.py` yet re-implements `read_pointer`'s body (JSON read + worktree extraction) with different missing-pointer semantics, so the pointer-reading contract now has three authorities where the owner has one",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/hooks/worker_git_guard.py:138",
+      "id": "duplicate_owner-2",
+      "reason": "the guard runs as a standalone hook under a system interpreter, so a private resolver is defensible, but the plan's own \u00a74 spine is that one rule has one authority; the comment should point at the isolation reason (the hook must not import the package) rather than an unrelated docstring, and the finding is the citation, not the duplication.",
+      "text": "`_config_home()` is copied into the new guard with the comment \"Duplicated rather than imported \u2014 see the module docstring\", but the module docstring explains only why the read-form *classifier* is imported from the shim, not why config-home resolution is re-derived; the owner is `reckon/_store.py:128` (`_config_home`), whose `RECKON_HOME`-then-`~/.config/reckon` order the guard's copy reproduces",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "c199bf4630d94ede58f99ccd27fe7839df68452b537bb03a66d2a618818b9546",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 123,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T165633295116-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "a9cac7fa2abae4dcbf3b5419cf28292a4d8b5d7e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the fence is one deep module: `fence_argv` (`reckon/_backends.py:3013`) with `protected_paths` (:2780), `protected_read_only_binds` (:2903) and `resolved_destination` (:2859) hide bind composition, symlink resolution and write-root containment behind one composed argv at the single `launch_plan` point; the harness carry routes every file through one `seed_harness_home` (:2129), which the plan states as \"one copy mechanism, not two\".",
+    "duplicate_owner": "a finding \u2014 run-pointer-to-worktree resolution is implemented three times beside the mechanism that already owns it, `reckon/crew/runs.py` (`read_pointer:575`, `pointer_path:74`, `run_dir:69`), rather than extended there once.",
+    "reuse_search": "pass \u2014 the design cites the machinery it extends rather than inventing a parallel stack: the existing shim mechanism (`reckon/shim_lookup.py`, `reckon/host_shims/`, the new `reckon/worker_shims/git` it adds \"beside the shims the worker PATH already carries\"), the existing PreToolUse guard family (`reckon/hooks/native_agent_guard.py`), and the dialect sandbox flags in `reckon/_backends.py`; it selects the OS fence because the harness sandboxes (claude `--add-dir`, codex `worktree-full`) are bypassable, and states that reason.",
+    "thin_wrapper": "pass \u2014 the `git` shim (`reckon/worker_shims/git` + `reckon/worker_git_shim.py`) is a layer over git, and the plan states why the existing mechanism cannot absorb the job: a shell language cannot be parsed completely, so enforcement moves to execution time while `mutating_verb` (`reckon/worker_git_shim.py:414`) is the one classifier both the shim and the guard read."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.540660+00:00"
+}
