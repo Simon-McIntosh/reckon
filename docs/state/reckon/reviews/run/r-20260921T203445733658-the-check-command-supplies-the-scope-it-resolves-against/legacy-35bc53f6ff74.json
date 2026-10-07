@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:2464"
+  ],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260921/the-check-command-supplies-the-scope-it-resolves-against/reckon/crew/promotion.py",
+      "line": "3232",
+      "text": "promotion resolves the worktree as the repository when the recorded worktree is no longer a directory, so a run whose worktree has been reclaimed reads clean at check-manifest and stray at promotion for the same declaration \u2014 measured in surface-agreement.log as CHECK-SHAPE [] against PROMOTION-NO-WORKTREE ('src/module.py',); unreachable while the worktree exists, which is when promotion runs."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit; 4e06ae51 carries the cli.py change, the fixture and the first cases, 2bb68b24 tightens the undeclared-path assertion to name exactly the stray path, ff31cc6a adds the plan record and the evidence anchor, and no message carries an attribution trailer.",
+    "done_when": "read the manifest, the gate and red logs and the test diff; the three added cases assert the three clauses (clean from outside both trees, a finding naming only the undeclared path from the same outside caller, identical readings from two callers), the six existing cases are untouched, and the red log carries the declared mutation verbatim on its first line at 3 failed, 6 passed.",
+    "goal": "read reckon/cli.py:2458-2468; crew_check_manifest now reads worktree and repo from the run pointer and passes both to audit_manifest, and my own surface measurement (surface-agreement.log) shows the check reporting no finding where the base reported every changed path stray from a foreign caller.",
+    "manifest": "read; it records 9 passed at ff31cc6a, the red log at 3 failed and 6 passed, and the cli.py restore; I re-measured each \u2014 the gate log's revision line, the blob identity 1cefe56d at HEAD and at 4e06ae51, and promotion's own compare returning matched.",
+    "write_paths": "read the numstat of bd2a5438..ff31cc6a; five files, 375 insertions and 1 deletion, every path inside the five declared write paths, the three docs insertion-only, and the single deletion is the replaced call line in reckon/cli.py."
+  },
+  "justifications": {
+    "durability": "the mutation reddens the three added cases at tests/test_manifest_check_command.py:282, :301 and :329 while the six existing cases stay green, and 2bb68b24 records tightening the assertion now at :327, which had not been load-bearing.",
+    "evidence": "negative-control-check-manifest-scope.log:1 is byte-equal to the pointer's declared mutation and promotion._require_declared_negative_control returns matched on this pair (promotion-pair-check.log:5), which the sibling node's pair failed.",
+    "fit": "the added names describe mechanism \u2014 absolute_scope_run, outside_cwd, test_an_absolute_declaration_resolves_from_outside_the_run_worktree \u2014 and the figure is referenced at docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:1407 with a project-absolute src.",
+    "goal_fidelity": "reckon/cli.py:2461-2466 takes worktree and repo from the pointer, the same pair promotion._outside_declared_scope resolves against at promotion.py:966-970, and the two agree in surface-agreement.log.",
+    "scope_discipline": "git diff --numstat bd2a5438..ff31cc6a lists exactly the five declared paths \u2014 85, 75 and 53 insertions against 0 deletions in the docs and the one deletion in reckon/cli.py \u2014 with nothing outside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read reckon/cli.py:2458-2468; crew_check_manifest now reads worktree and repo from the run pointer and passes both to audit_manifest, and my own surface measurement (surface-agreement.log) shows the check reporting no finding where the base reported every changed path stray from a foreign caller.\nVERDICT done_when: read the manifest, the gate and red logs and the test diff; the three added cases assert the three clauses (clean from outside both trees, a finding naming only the undeclared path from the same outside caller, identical readings from two callers), the six existing cases are untouched, and the red log carries the declared mutation verbatim on its first line at 3 failed, 6 passed.\nVERDICT write_paths: read the numstat of bd2a5438..ff31cc6a; five files, 375 insertions and 1 deletion, every path inside the five declared write paths, the three docs insertion-only, and the single deletion is the replaced call line in reckon/cli.py.\nVERDICT manifest: read; it records 9 passed at ff31cc6a, the red log at 3 failed and 6 passed, and the cli.py restore; I re-measured each \u2014 the gate log's revision line, the blob identity 1cefe56d at HEAD and at 4e06ae51, and promotion's own compare returning matched.\nVERDICT diff: read commit by commit; 4e06ae51 carries the cli.py change, the fixture and the first cases, 2bb68b24 tightens the undeclared-path assertion to name exactly the stray path, ff31cc6a adds the plan record and the evidence anchor, and no message carries an attribution trailer.\nCALL_SITES: reckon/cli.py:2464\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:2461-2466 takes worktree and repo from the pointer, the same pair promotion._outside_declared_scope resolves against at promotion.py:966-970, and the two agree in surface-agreement.log.\nSCORE evidence: 19\nJUSTIFICATION evidence: negative-control-check-manifest-scope.log:1 is byte-equal to the pointer's declared mutation and promotion._require_declared_negative_control returns matched on this pair (promotion-pair-check.log:5), which the sibling node's pair failed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat bd2a5438..ff31cc6a lists exactly the five declared paths \u2014 85, 75 and 53 insertions against 0 deletions in the docs and the one deletion in reckon/cli.py \u2014 with nothing outside the fence.\nSCORE durability: 19\nJUSTIFICATION durability: the mutation reddens the three added cases at tests/test_manifest_check_command.py:282, :301 and :329 while the six existing cases stay green, and 2bb68b24 records tightening the assertion now at :327, which had not been load-bearing.\nSCORE fit: 19\nJUSTIFICATION fit: the added names describe mechanism \u2014 absolute_scope_run, outside_cwd, test_an_absolute_declaration_resolves_from_outside_the_run_worktree \u2014 and the figure is referenced at docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:1407 with a project-absolute src.\nFINDING /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cdocw-20260921/the-check-command-supplies-the-scope-it-resolves-against/reckon/crew/promotion.py:3232 promotion resolves the worktree as the repository when the recorded worktree is no longer a directory, so a run whose worktree has been reclaimed reads clean at check-manifest and stray at promotion for the same declaration \u2014 measured in surface-agreement.log as CHECK-SHAPE [] against PROMOTION-NO-WORKTREE ('src/module.py',); unreachable while the worktree exists, which is when promotion runs.",
+  "review_run_id": "legacy-35bc53f6ff74",
+  "review_run_id_source": "derived",
+  "reviewed_run_id": "r-20260921T203445733658-the-check-command-supplies-the-scope-it-resolves-against",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-21T20:48:00.200875+00:00",
+  "total": 96
+}

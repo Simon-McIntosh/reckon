@@ -1,0 +1,127 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:2531-2542 crew_widen on the crew group reached from reckon.cli:main",
+    "reckon/crew/runs.py:346 _mutate_pointer reached through the reckon.crew facade at reckon/crew.py:117"
+  ],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit to e2b1fb4c; 9a6130d1 adds the command and its six-case test, 40149b03 the evidence section with its figure and plan summary, 03aab7e7 the under-lock phase re-check with the race case, 5c16ea5f the control-label correction, 76521cfd the revision citations, and e2b1fb4c the narrowed earlier-revision clause; reckon/cli.py and tests/test_fence_widening.py are byte-identical between 03aab7e7 and e2b1fb4c, so measurements at the latter hold at both.",
+    "done_when": "the done_when names tests/test_fence_widening.py entering through the CLI runner with four asserted properties and the declared mutation verbatim on the red log's first line; I ran that file green at the reviewed revision (7 passed, EXIT=0) and reproduced all three recorded controls in a scratch extraction at the same revision.",
+    "goal": "the source node's goal is a command that widens a blocked run's write scope by adding a path to that run's own live pointer; `crew widen` is registered at reckon/cli.py:2531 and my own CLI-runner invocation at the reviewed revision appends the named path to node.write_paths in place while session_id and the recorded commits come back unchanged.",
+    "manifest": "read at its clause-corrected state; status complete, its commits field carries six shas ending e2b1fb4c, its checkpoint records the narrowed earlier-revision clause, and both control claims it states match my own reproduction of the same two mutations at the same revision.",
+    "write_paths": "the run's live pointer declares five paths and `git diff --name-only 8b1b31e6 e2b1fb4c` lists exactly those five \u2014 reckon/cli.py, tests/test_fence_widening.py, docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html, docs/figures/work-does-not-fall-to-the-coordinator, docs/plans/work-does-not-fall-to-the-coordinator.html \u2014 with nothing outside them."
+  },
+  "justifications": {
+    "durability": "reinstating the regressions reddens the right cases at the reviewed revision \u2014 the declared persistence mutation reddens test_widening_a_blocked_run_adds_the_named_path (1 failed, 6 passed, tests/test_fence_widening.py:182) and removing the under-lock re-check at reckon/cli.py:2595 reddens exactly test_a_run_that_leaves_blocked_before_the_pointer_write_is_refused (1 failed, 6 passed), against 7 passed with the code intact; 19 rather than 20 because removing only the outer check at reckon/cli.py:2573 reddens nothing (7 passed, measured), so that guard is exercised but not falsified.",
+    "evidence": "the corrected clause at docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:1538-1543 is true at both revisions it names, measured \u2014 the file at 9a6130d1 is byte-identical to the base 8b1b31e6 (empty diff, 1465 lines, zero occurrences of \"widen\") and 03aab7e7 carries the section that names the guard removal \"the declared mutation\" against a seven-case file whose recorded control reads \"1 failed, 5 passed\" \u2014 and the label floor it states is real, \"Two controls\" occurring zero times through 03aab7e7 and once from 5c16ea5f on.",
+    "fit": "reckon/cli.py:2531 follows the surrounding Click idiom with ClickException and _emit, introduces no name the naming rules forbid, and reckon/cli.py carries 2 ruff findings at the base 8b1b31e6 and the same 2 at the head, so the change adds none.",
+    "goal_fidelity": "reckon/cli.py:2597-2611 writes only node.write_paths under the per-run lock and preserves every other pointer key, which is the node goal end to end; 19 rather than 20 because the promotion half of the goal's own measure \u2014 a widened run actually promoting \u2014 is declared untested and outside this node's fence.",
+    "scope_discipline": "`git diff --name-only 8b1b31e6 e2b1fb4c` lists exactly the pointer's five declared write paths, and the two correction commits 76521cfd and e2b1fb4c stay inside the same five."
+  },
+  "node": "fourth-review-of-the-widening-command",
+  "prior_findings": [
+    {
+      "dispositions": [
+        {
+          "claim": "the log led with the worker's additional guard-removal control while the run declares the persistence mutation, so _require_declared_negative_control refused the run at promotion",
+          "disposition": "cleared",
+          "evidence": "at the clause-corrected state the run's live pointer node.negative_control and the red log's first line compare equal as exact strings in one script rather than by eye, and the section beneath it is the declared persistence control: I reproduced that mutation at e2b1fb4c, 1 failed 6 passed, failing test_widening_a_blocked_run_adds_the_named_path at tests/test_fence_widening.py:182, matching the recorded log's case and count",
+          "finding": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T122851730217-the-widening-command-writes-the-pointer/widen-red-mutation.log:1"
+        },
+        {
+          "claim": "the record called the guard-removal mutation \"the declared mutation\" while the run's declaration is the persistence mutation, and the plan summary at docs/plans/work-does-not-fall-to-the-coordinator.html:620 repeated the label",
+          "disposition": "cleared",
+          "evidence": "at e2b1fb4c the section heading reads \"Two controls: the declared one, and the boundary it holds\" and the body states \"The declared control is the persistence mutation\" (docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:1498-1499); measured per revision, \"Two controls\" occurs zero times through 03aab7e7 and once from 5c16ea5f on, and the plan's widening landed summary carrying the same distinction is byte-identical between e2b1fb4c and HEAD (awk-extracted block, empty diff)",
+          "finding": "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:1498"
+        },
+        {
+          "claim": "the blocked-phase guard was applied to the record read before the per-run lock, and the mutation re-read the pointer under that lock without re-checking the phase, so a run whose phase flipped in the window was widened in place",
+          "disposition": "cleared",
+          "evidence": "the under-lock re-check is present at reckon/cli.py:2595 at e2b1fb4c, and removing only it \u2014 the inner condition set never to fire with the outer check left in place \u2014 reddens exactly test_a_run_that_leaves_blocked_before_the_pointer_write_is_refused, 1 failed 6 passed EXIT=1, against 7 passed with the block in place; a first attempt that made the condition fire unconditionally reddened three cases and was discarded as an instrument defect rather than counted",
+          "finding": "reckon/cli.py:2569"
+        }
+      ],
+      "scores": {
+        "durability": 18,
+        "evidence": 12,
+        "fit": 16,
+        "goal_fidelity": 19,
+        "scope_discipline": 20
+      },
+      "source": "review-of-the-widening-command, stored 2026-09-22T13:55:04Z against revision 40149b03",
+      "total": 85
+    },
+    {
+      "dispositions": [
+        {
+          "claim": "both red-log sections named revision 40149b03, which cannot reproduce the output recorded beneath them, so the receipt stated a revision other than the one it measured",
+          "disposition": "cleared",
+          "evidence": "both section headers name revision 03aab7e7 (log lines 3 and 34) and the tree path, and I reproduced both sections at that revision's code, which is byte-identical to the reviewed revision's for reckon/cli.py and tests/test_fence_widening.py (empty diff 03aab7e7..e2b1fb4c): the declared persistence control gives 1 failed 6 passed with the add-and-read-back case the only failure, and the boundary control gives 2 failed 5 passed with exactly the two cases the log names",
+          "finding": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T122851730217-the-widening-command-writes-the-pointer/widen-red-mutation.log:3"
+        },
+        {
+          "claim": "the closing paragraph named commits 9a6130d1 and 03aab7e7 while it was rewritten by 5c16ea5f, so a reader who checks out the named commits reads the pre-repair text that calls the boundary control the declared mutation",
+          "disposition": "cleared",
+          "evidence": "the paragraph at docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:1534-1543 now names 9a6130d1 for the command, 03aab7e7 for the under-lock re-check and 5c16ea5f as the earliest revision carrying the labels and figures, and each named claim measures true: the command lands in 9a6130d1, the re-check in 03aab7e7, the figure blob changes at 5c16ea5f (bc85939f to 58b872b0) and \"Two controls\" first occurs there",
+          "finding": "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:1536"
+        }
+      ],
+      "scores": {
+        "durability": 19,
+        "evidence": 16,
+        "fit": 18,
+        "goal_fidelity": 19,
+        "scope_discipline": 20
+      },
+      "source": "re-review-of-the-widening-command, stored 2026-09-22T14:46:44Z against revision 5c16ea5f",
+      "total": 92
+    },
+    {
+      "dispositions": [
+        {
+          "claim": "the corrected closing paragraph states that \"a reader at either earlier commit opens a record that still named the guard removal the declared control and stated the boundary control one check wide\", which holds at 03aab7e7 but not at 9a6130d1: at 9a6130d1 the evidence record carries no widening section at all (zero occurrences of \"widen\"; 1465 lines, the same as the base 8b1b31e6) and the plan's section 10 carries no landed summary for this node, the section having landed in 40149b03, so a reader at the earliest commit the clause names finds no record of this node rather than a mislabelled one and the clause generalises a defect across a revision that predates the text it describes.",
+          "disposition": "cleared",
+          "evidence": "e2b1fb4c narrows the clause rather than widening it: the corrected text names 03aab7e7 alone for the mislabelled text and states that a reader at 9a6130d1 finds no record of this node, and both halves are true at the clause-corrected state \u2014 the evidence file at 9a6130d1 is byte-identical to the base 8b1b31e6 (empty diff, 1465 lines, zero occurrences of \"widen\"), and 03aab7e7 carries the section that names the guard removal \"the declared mutation\" while its recorded control reads \"1 failed, 5 passed\" against a seven-case file, which is the one-check-wide statement the clause makes",
+          "finding": "docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:1539"
+        }
+      ],
+      "scores": {
+        "durability": 19,
+        "evidence": 18,
+        "fit": 18,
+        "goal_fidelity": 19,
+        "scope_discipline": 20
+      },
+      "source": "third-review-of-the-widening-command, stored 2026-09-22T15:08:14.695729+00:00 against revision 76521cfd",
+      "total": 94
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is a command that widens a blocked run's write scope by adding a path to that run's own live pointer; `crew widen` is registered at reckon/cli.py:2531 and my own CLI-runner invocation at the reviewed revision appends the named path to node.write_paths in place while session_id and the recorded commits come back unchanged.\nVERDICT done_when: the done_when names tests/test_fence_widening.py entering through the CLI runner with four asserted properties and the declared mutation verbatim on the red log's first line; I ran that file green at the reviewed revision (7 passed, EXIT=0) and reproduced all three recorded controls in a scratch extraction at the same revision.\nVERDICT write_paths: the run's live pointer declares five paths and `git diff --name-only 8b1b31e6 e2b1fb4c` lists exactly those five \u2014 reckon/cli.py, tests/test_fence_widening.py, docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html, docs/figures/work-does-not-fall-to-the-coordinator, docs/plans/work-does-not-fall-to-the-coordinator.html \u2014 with nothing outside them.\nVERDICT manifest: read at its clause-corrected state; status complete, its commits field carries six shas ending e2b1fb4c, its checkpoint records the narrowed earlier-revision clause, and both control claims it states match my own reproduction of the same two mutations at the same revision.\nVERDICT diff: read commit by commit to e2b1fb4c; 9a6130d1 adds the command and its six-case test, 40149b03 the evidence section with its figure and plan summary, 03aab7e7 the under-lock phase re-check with the race case, 5c16ea5f the control-label correction, 76521cfd the revision citations, and e2b1fb4c the narrowed earlier-revision clause; reckon/cli.py and tests/test_fence_widening.py are byte-identical between 03aab7e7 and e2b1fb4c, so measurements at the latter hold at both.\nCALL_SITES: reckon/cli.py:2531-2542 crew_widen on the crew group reached from reckon.cli:main, reckon/crew/runs.py:346 _mutate_pointer reached through the reckon.crew facade at reckon/crew.py:117\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:2597-2611 writes only node.write_paths under the per-run lock and preserves every other pointer key, which is the node goal end to end; 19 rather than 20 because the promotion half of the goal's own measure \u2014 a widened run actually promoting \u2014 is declared untested and outside this node's fence.\nSCORE evidence: 20\nJUSTIFICATION evidence: the corrected clause at docs/evidence/archive/work-does-not-fall-to-the-coordinator-landed.html:1538-1543 is true at both revisions it names, measured \u2014 the file at 9a6130d1 is byte-identical to the base 8b1b31e6 (empty diff, 1465 lines, zero occurrences of \"widen\") and 03aab7e7 carries the section that names the guard removal \"the declared mutation\" against a seven-case file whose recorded control reads \"1 failed, 5 passed\" \u2014 and the label floor it states is real, \"Two controls\" occurring zero times through 03aab7e7 and once from 5c16ea5f on.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-only 8b1b31e6 e2b1fb4c` lists exactly the pointer's five declared write paths, and the two correction commits 76521cfd and e2b1fb4c stay inside the same five.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the regressions reddens the right cases at the reviewed revision \u2014 the declared persistence mutation reddens test_widening_a_blocked_run_adds_the_named_path (1 failed, 6 passed, tests/test_fence_widening.py:182) and removing the under-lock re-check at reckon/cli.py:2595 reddens exactly test_a_run_that_leaves_blocked_before_the_pointer_write_is_refused (1 failed, 6 passed), against 7 passed with the code intact; 19 rather than 20 because removing only the outer check at reckon/cli.py:2573 reddens nothing (7 passed, measured), so that guard is exercised but not falsified.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/cli.py:2531 follows the surrounding Click idiom with ClickException and _emit, introduces no name the naming rules forbid, and reckon/cli.py carries 2 ruff findings at the base 8b1b31e6 and the same 2 at the head, so the change adds none.\nREVISION: e2b1fb4cb7b5abb3d411d96bf14369c3be264f72",
+  "review_run_id": "legacy-10eb99c5ddb4",
+  "review_run_id_source": "derived",
+  "review_store": "reckon/crew/review.py",
+  "reviewed_base_sha": "8b1b31e6168199c5c2ab8f2701151a3cdf7a797f",
+  "reviewed_node": "the-widening-command-writes-the-pointer",
+  "reviewed_revision": "e2b1fb4cb7b5abb3d411d96bf14369c3be264f72",
+  "reviewed_run_id": "r-20260922T122851730217-the-widening-command-writes-the-pointer",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-22T15:31:03.940049+00:00",
+  "total": 97
+}

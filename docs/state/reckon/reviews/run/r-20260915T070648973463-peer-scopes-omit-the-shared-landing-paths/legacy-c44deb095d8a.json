@@ -1,0 +1,51 @@
+{
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "tests/test_crew_dispatch_guard.py",
+      "line": 219,
+      "recommendation": "Add a same-plan peer with no exclusive paths and a different-plan/different-project peer, and assert the entry disappears respectively the foreign shared set survives.",
+      "severity": "minor",
+      "summary": "The new test_peer_prompt_omits_shared_landing_paths asserts the shared-removal and same-repo exclusive-retention halves of the repair, but the empty-entry-disappears branch (a same-plan peer whose only claims are the shared landing paths) and the retention of a genuinely different-plan or cross-project peer's own landing set are covered by inspection only."
+    },
+    {
+      "file": "tests/test_crew_dispatch_guard.py",
+      "line": 237,
+      "recommendation": "Acceptable brittleness; if the prompt layout changes, re-target the assertion rather than removing the guard.",
+      "severity": "minor",
+      "summary": "The assertion selects the peer line by scanning the prompt for the peer node id and asserts on the comma-joined line, coupling the test to the prompt's current composition format."
+    }
+  ],
+  "justifications": {
+    "durability": "A real code change with a regression test that provably fails on the defect (reproduction.log) and passes on the fix; the test composes two same-plan dispatches and asserts the prompt's peer line omits both landing paths while retaining exclusive `reckon/crew/ticker.py`. It is the falsifier the plan itself named - the plan explicitly ruled out the admission test (two nodes both dispatching) and required the prompt assertion, which is where the defect lived and why it was invisible. Two deductions keep this below 20: the empty-entry-disappears branch (a same-plan peer whose only claims are the shared landing paths) is asserted only by inspection, not by test, and the retention branch is proven only via a same-repo exclusive source path rather than a genuinely different-plan or different-project shared set that must survive; and the test couples to the comma-joined prompt line, so a format change fails it loudly (acceptable brittleness, a maintenance cost).",
+    "evidence": "Reproduction was real, not reconstructed: reproduction.log shows the new test failing before the repair with the exact contended peer line `docs/evidence/archive/fixture-landed.html, docs/plans/fixture.html, reckon/crew/ticker.py` and the quoted AssertionError. Log receipts read as files: baseline 24 passed, focused-after 1 passed, after 25 passed, Ruff 8-to-8 delta 0 (the SIM105 line-number shift 3242 to 3294 is the same pre-existing finding moving with added lines), plan audit 0 errors, evidence audit OK. I independently re-ran at the merged head: the regression test passes 1-of-1 and the guard-plus-prompts pair passes 25-of-25, and the three peer-scope-asserting tests in test_crew.py (derives-peer-scope, prompt-names-concurrent-scopes, shadow-derives-committed-node) still pass, so the filter adds no collateral. The filter is genuinely exercised - `_grant_landing_write_paths` (line 2227) expands the first node's write_paths in place and the live pointer records the landing paths, so the second node's peer claim really carries them; the test is not vacuous. One honest limit: the pre-fix failing state was asserted from the worker's logged artifact rather than re-executed on the broken revision by me.",
+    "fit": "Reuses the existing authority machinery (`_resolved_scope_entries`, `_shared_landing_paths`, `mounted_repository_projects`) instead of inventing a parallel resolver, and is the complementary half of the pre-existing `_candidate_scope_entries`, which removes the same shared set from the node's own claims - so the disclosure filter is symmetric with the exclusivity filter. Placement is at the single composition point after live and supplied scopes merge, matching the plan's chosen repair ('stop disclosing the shared landing paths as peer claims') rather than explaining them in the contract. Nit, not a defect: the repositories/write/preferred_projects bootstrap is repeated in a third function after `_candidate_scope_entries` and `_repository_scope_claims`, consistent with the file's existing style but a candidate for extraction.",
+    "goal_fidelity": "The stated defect - a same-plan peer scope disclosing the plan file and cumulative-evidence path as exclusive claims, contradicting the landing contract forty lines later in the same prompt - is fixed at the single composition point. `_peer_scopes_without_shared_landing_paths` (dispatch.py:1000) runs after `_merge_peer_scopes` merges live and supplied claims (dispatch.py:2941-2948), re-resolves each peer path through the same `_resolved_scope_entries` authority the exclusivity machinery uses, drops only members of `_shared_landing_paths`, and drops an entire peer entry when nothing exclusive remains. The filtered `peers` feeds the prompt (line 3112), the return payload, and the persisted record (line 3186), so prompt, pointer, and response cannot diverge. Cross-plan and cross-project peer paths survive because they are not in the current node's shared set, which is correct: the current node is never instructed to append to them, so they remain genuine exclusive claims. Both reviewed commits are ancestors of HEAD, so the review reads the merged tree.",
+    "scope_discipline": "The diff across both commits touches exactly the four declared write paths: reckon/crew/dispatch.py and tests/test_crew_dispatch_guard.py (4477e19), plus docs/plans/crew-observability-truth.html and docs/evidence/archive/crew-observability-truth-landed.html (6fa99d1). No stray files; the plan diff shows only the appended comment, so the plan-version/plan-modified meta lines are untouched as claimed; the two in-line comment edits on assigned files are the docstring rewording in `_shared_landing_paths` and the fixture comment in test_member_lookup_uses_project_mount_from_another_repository."
+  },
+  "plan": "crew-observability-truth",
+  "project": "reckon",
+  "raw_text": "Independent scored review of run r-20260915T070648973463-peer-scopes-omit-the-shared-landing-paths, plan reckon:crew-observability-truth \u00a721. Reviewed commits 4477e19 (fix(crew): omit shared paths from peer claims) and 6fa99d1 (docs: record peer-scope prompt verification). SCORE 96/100.\n\nVERIFIED. (1) Fix present at the merged head: both commits are ancestors of HEAD, so the review reads the merged tree. (2) Reproduction genuine, not reconstructed: reproduction.log shows the new test failing before repair with the exact contended peer line `docs/evidence/archive/fixture-landed.html, docs/plans/fixture.html, reckon/crew/ticker.py` and the quoted AssertionError; the filter is genuinely exercised because `_grant_landing_write_paths` expands the first node's write_paths in place and the live pointer records them, so the second node's peer claim really carries the landing paths. (3) Mechanism matches the plan's chosen repair: the new `_peer_scopes_without_shared_landing_paths` (dispatch.py:1000) runs after live and supplied scopes merge at the single composition point, re-resolves each peer path through the same `_resolved_scope_entries` authority, drops only members of `_shared_landing_paths`, drops a peer entry when nothing exclusive remains, and feeds prompt, payload, and persisted record from one filtered `peers` variable; cross-plan and cross-project peer paths survive because they are not in the current node's shared set, which is correct. (4) Independent re-run at the merged head: regression test 1-of-1 passed; guard-plus-prompts pair 25-of-25 passed; the three peer-scope-asserting tests in test_crew.py (dispatch-derives-peer-scope, prompt-names-concurrent-scopes, shadow-derives-committed-node) all still pass, so no collateral. (5) Receipts: baseline 24 / focused-after 1 / after 25, Ruff 8-to-8 delta 0, plan audit 0 errors, evidence audit OK.\n\nFINDINGS. F1 (durability, minor): the empty-entry-disappears branch and the preserve-a-different-plan-peers' landing set branch are asserted by inspection and by a same-repo exclusive proxy (ticker.py) respectively, not directly by test. F2 (durability, minor): the regression test is coupled to the comma-joined peer line in the composed prompt; a prompt-format change fails it loudly, which is acceptable but a maintenance coupling. Neither blocks the change. The merged-head suite attribution is intentionally out of this node's scope.\n\nSCORES: goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 19; total 96/100.",
+  "review_run_id": "legacy-c44deb095d8a",
+  "review_run_id_source": "derived",
+  "reviewed_base": "fc5a312f1f25ac40a5671a944075ed47ad1a8988",
+  "reviewed_commit": "6fa99d1",
+  "reviewed_commits": [
+    "4477e1975de6700e0caf15c91486f84418275370",
+    "6fa99d1db69f58e8d797e8543b12e2ef6bd724ac"
+  ],
+  "reviewed_run_id": "r-20260915T070648973463-peer-scopes-omit-the-shared-landing-paths",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "section": "s21",
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-10-07T06:00:12.696593+00:00",
+  "total": 96
+}

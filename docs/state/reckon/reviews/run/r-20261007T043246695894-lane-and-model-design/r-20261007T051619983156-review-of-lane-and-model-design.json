@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-07T05:16:48Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/lane-and-model-design/report.md",
+      "line": "104",
+      "severity": "follow-on",
+      "text": "follow-on: report.md cites parse_overrides at reckon/flight.py:2243, but parse_overrides is defined at reckon/flight.py:2260 and line 2243 sits inside an unrelated portfolio function, so the anchor carrying the SS1 --set argument lands on the wrong code"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/lane-and-model-design/report.md",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: report.md names census.txt beside it as a delivered artifact (also at lines 278 and 314), but no such file exists - the fence granted report.md alone and the manifest records the census was folded into the appendix - so three pointers in the report direct a reader to a file that was never written"
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "no commits over base 65d0bf6e756ce6ab406d2fe0e89047f31b684bb0; the deliverable is the out-of-repo report.md, read in full - six answer sections, a seven-row migration table, three lead decisions and the census appendix",
+    "done_when": "the done_when names no test because the measure is the artifact itself; report.md SS5 gives seven independently landable nodes with their write paths and gates and SS0/Landing list the three lead decisions, which is the \"ready for the lead to approve and to build in nodes\" the measure names",
+    "goal": "The reviewed node's goal is a design for a lane with a model chosen inside it (its manifest GOAL), and report.md answers all six dispatch questions in turn - schema (SS1), dispatch surface (SS2), picker (SS3), history (SS4), migration order (SS5) and the call-site census (SS6 plus appendix)",
+    "manifest": "read; it records the five measurement commands, the raw census folded in as the report's appendix, three follow-ons (the refused sibling census file, the one-line claude/claude-opus drift, the unmeasured legacy-name dispatch census) and declares no baseline_suite or after_suite arm",
+    "write_paths": "the reviewed worktree head is 65d0bf6e756ce6ab406d2fe0e89047f31b684bb0 with no commit over base and the manifest's changed_paths names no repository file, so the diff is empty and the node wrote only its granted report.md"
+  },
+  "justifications": {
+    "durability": "a design node names no test and report.md's claims are individually checkable, but no reproducibility script or census file was left behind and one load-bearing anchor (report.md:104, parse_overrides) points at unrelated code, so a later reader re-running the report's own reasoning hits a dead end",
+    "evidence": "the census reproduces - 0 refs to claude-opus/claude-haiku/codex-astra/codex-luna in reckon/ and skills/ with a positive control (claude 93 refs in reckon/), and _backends.py:1945 and picker/snapshot.py:408 resolve as cited - but report.md:104 cites parse_overrides at reckon/flight.py:2243 where it is defined at :2260, and report.md:5/:278/:314 name a census.txt artifact that was never written",
+    "fit": "report.md is a doc, so the source-only identifier and plan-reference rules do not bind it, and the design reuses the dialect names the code already carries (reckon/_backends.py:1945) rather than introducing new vocabulary",
+    "goal_fidelity": "report.md answers each of the six dispatch questions in its own section (SS1-SS6) and SS5 names the node \"host-flight-collapses-claude\" that retires the claude-opus backend block the lead's direction asks to remove",
+    "reuse": "the design's premise is reuse - SS0 shows it promotes Candidate.family (reckon/crew/picker/snapshot.py:408) and Dialect.name (reckon/_backends.py:1945) instead of adding an axis, and SS4 fronts the existing ledger/run/review readers with one resolve_name resolver",
+    "scope_discipline": "the reviewed worktree carries no commit over base 65d0bf6e756ce6ab406d2fe0e89047f31b684bb0 and the manifest's changed_paths names no repository file, so the node changed only its granted report.md and touched no plan or project state"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The reviewed node's goal is a design for a lane with a model chosen inside it (its manifest GOAL), and report.md answers all six dispatch questions in turn - schema (SS1), dispatch surface (SS2), picker (SS3), history (SS4), migration order (SS5) and the call-site census (SS6 plus appendix)\nVERDICT done_when: the done_when names no test because the measure is the artifact itself; report.md SS5 gives seven independently landable nodes with their write paths and gates and SS0/Landing list the three lead decisions, which is the \"ready for the lead to approve and to build in nodes\" the measure names\nVERDICT write_paths: the reviewed worktree head is 65d0bf6e756ce6ab406d2fe0e89047f31b684bb0 with no commit over base and the manifest's changed_paths names no repository file, so the diff is empty and the node wrote only its granted report.md\nVERDICT manifest: read; it records the five measurement commands, the raw census folded in as the report's appendix, three follow-ons (the refused sibling census file, the one-line claude/claude-opus drift, the unmeasured legacy-name dispatch census) and declares no baseline_suite or after_suite arm\nVERDICT diff: no commits over base 65d0bf6e756ce6ab406d2fe0e89047f31b684bb0; the deliverable is the out-of-repo report.md, read in full - six answer sections, a seven-row migration table, three lead decisions and the census appendix\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: report.md answers each of the six dispatch questions in its own section (SS1-SS6) and SS5 names the node \"host-flight-collapses-claude\" that retires the claude-opus backend block the lead's direction asks to remove\nSCORE evidence: 16\nJUSTIFICATION evidence: the census reproduces - 0 refs to claude-opus/claude-haiku/codex-astra/codex-luna in reckon/ and skills/ with a positive control (claude 93 refs in reckon/), and _backends.py:1945 and picker/snapshot.py:408 resolve as cited - but report.md:104 cites parse_overrides at reckon/flight.py:2243 where it is defined at :2260, and report.md:5/:278/:314 name a census.txt artifact that was never written\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree carries no commit over base 65d0bf6e756ce6ab406d2fe0e89047f31b684bb0 and the manifest's changed_paths names no repository file, so the node changed only its granted report.md and touched no plan or project state\nSCORE durability: 15\nJUSTIFICATION durability: a design node names no test and report.md's claims are individually checkable, but no reproducibility script or census file was left behind and one load-bearing anchor (report.md:104, parse_overrides) points at unrelated code, so a later reader re-running the report's own reasoning hits a dead end\nSCORE fit: 20\nJUSTIFICATION fit: report.md is a doc, so the source-only identifier and plan-reference rules do not bind it, and the design reuses the dialect names the code already carries (reckon/_backends.py:1945) rather than introducing new vocabulary\nSCORE reuse: 20\nJUSTIFICATION reuse: the design's premise is reuse - SS0 shows it promotes Candidate.family (reckon/crew/picker/snapshot.py:408) and Dialect.name (reckon/_backends.py:1945) instead of adding an axis, and SS4 fronts the existing ledger/run/review readers with one resolve_name resolver\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/lane-and-model-design/report.md:104 follow-on: report.md cites parse_overrides at reckon/flight.py:2243, but parse_overrides is defined at reckon/flight.py:2260 and line 2243 sits inside an unrelated portfolio function, so the anchor carrying the SS1 --set argument lands on the wrong code\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/lane-and-model-design/report.md:5 follow-on: report.md names census.txt beside it as a delivered artifact (also at lines 278 and 314), but no such file exists - the fence granted report.md alone and the manifest records the census was folded into the appendix - so three pointers in the report direct a reader to a file that was never written\n",
+  "review_run_id": "r-20261007T051619983156-review-of-lane-and-model-design",
+  "reviewed_base_sha": "65d0bf6e756ce6ab406d2fe0e89047f31b684bb0",
+  "reviewed_head_sha": "65d0bf6e756ce6ab406d2fe0e89047f31b684bb0",
+  "reviewed_run_id": "r-20261007T043246695894-lane-and-model-design",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T05:28:30.456059+00:00",
+  "total": 111
+}

@@ -1,0 +1,104 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery.py:203",
+    "reckon/crew/recovery.py:261",
+    "reckon/crew/recovery.py:269",
+    "reckon/crew/promotion.py:3053",
+    "reckon/crew/dispatch.py:991",
+    "reckon/crew/runs.py:65"
+  ],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "517",
+      "text": "NOT FIXED at repaired head -- first-review finding 1: read_review still returns the newest record by mtime at reckon/crew/review.py:563, and reckon/crew/promotion.py:3053 still calls it without a head, so a superseded complete record can still be read as current."
+    },
+    {
+      "file": "tests/test_review_records_its_revision.py",
+      "line": "69",
+      "text": "FIXED at repaired head -- first-review finding 2: the tautological membership assertion is gone and tests/test_review_records_its_revision.py:92 now asserts a stored-then-read record, so the test can fail if normalisation regresses."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "465-470",
+      "text": "FIXED at repaired head -- first-review finding 3: a partial record is now routed to _incomplete_review_path at reckon/crew/review.py:513-514 when a complete record exists, so it can no longer occupy the legacy path a complete review holds."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "457",
+      "text": "residual -- _incomplete_review_path derives its identity from an optional review_run_id, so two partial records of one run sharing that id resolve to one path and the second overwrites the first."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read 79e8c571..468517ea; c3ae4b4b adds _complete_review_exists and _incomplete_review_path and routes a partial record away from a path a complete record occupies, and 468517ea adds the landing comment and the correction evidence anchor.",
+    "done_when": "the measure is this node's own review record; the repaired run's manifest records the corrected focused gate as 14 passed at 468517ea in corrective-focused.log and the corrected mutation as 3 failed/11 passed in corrective-negative-control.log.",
+    "goal": "the repaired head 468517ea30526b81bc1f9a1057419f2673ed5699 keeps the goal the reviewed run already met -- the store records reviewed_base_sha and reviewed_head_sha (reckon/crew/review.py:102-121), keys a complete record by its head (reckon/crew/review.py:506-512) and marks a pair-less record incomplete (reckon/crew/review.py:393) -- and adds the goal's protective half at reckon/crew/review.py:434-483.",
+    "manifest": "read at its repaired head; it records focused 14/14, mutation 3 failed/11 passed, the required all_debug gate as 60 passed/5 failed with the same five pre-existing ids, ruff clean and both HTML docs OK.",
+    "write_paths": "the repair commit c3ae4b4b touches only reckon/crew/review.py, tests/test_review_records_its_revision.py and the two documentation paths already declared for the reviewed run."
+  },
+  "justifications": {
+    "durability": "tests/test_review_records_its_revision.py:92 replaces the tautology with a store-and-read assertion and tests/test_review_records_its_revision.py:157 guards the partial-record overwrite, both reddening under the declared mutation.",
+    "evidence": "the corrected focused gate and both mutation layouts are recorded at 468517ea in corrective-focused.log:1 and corrective-negative-control.log:1, and the required gate delta stays zero-added.",
+    "fit": "the new helpers at reckon/crew/review.py:434-470 follow the module's carried-vs-truthiness idiom and carry no forbidden name.",
+    "goal_fidelity": "reckon/crew/review.py:513-514 keys a complete record by its head and diverts a partial record, so the store names the revision and accumulates rechecks as the goal requires.",
+    "scope_discipline": "the diff 79e8c571..468517ea touches only reckon/crew/review.py, tests/test_review_records_its_revision.py and the two declared documentation paths."
+  },
+  "node": "rereview-of-a-review-names-the-revision-it-read",
+  "prior_findings": {
+    "findings": [
+      {
+        "file": "reckon/crew/review.py",
+        "line": "517",
+        "text": "the unnamed-head branch returns the newest record by mtime instead of refusing, and reckon/crew/promotion.py:3054 reaches it without naming a head.",
+        "verdict": "not fixed at 468517ea"
+      },
+      {
+        "file": "tests/test_review_records_its_revision.py",
+        "line": "69",
+        "text": "asserts membership in a record literal the same test just wrote, so no code change can make it fail.",
+        "verdict": "fixed at 468517ea (assertion removed; store-and-read assertions at line 92)"
+      },
+      {
+        "file": "reckon/crew/review.py",
+        "line": "465-470",
+        "text": "an incomplete record is still written to the legacy per-run path, so it can overwrite a pre-existing complete record.",
+        "verdict": "fixed at 468517ea (routes to _incomplete_review_path at review.py:513-514)"
+      }
+    ],
+    "prior_node": "review-of-a-review-names-the-revision-it-read",
+    "prior_scores": {
+      "durability": 16,
+      "evidence": 17,
+      "fit": 17,
+      "goal_fidelity": 18,
+      "scope_discipline": 18
+    },
+    "prior_total": 86
+  },
+  "project": "reckon",
+  "raw_text": "REVISION: 468517ea30526b81bc1f9a1057419f2673ed5699\nVERDICT goal: the repaired head 468517ea30526b81bc1f9a1057419f2673ed5699 keeps the goal the reviewed run already met -- the store records reviewed_base_sha and reviewed_head_sha (reckon/crew/review.py:102-121), keys a complete record by its head (reckon/crew/review.py:506-512) and marks a pair-less record incomplete (reckon/crew/review.py:393) -- and adds the goal's protective half at reckon/crew/review.py:434-483.\nVERDICT done_when: the measure is this node's own review record; the repaired run's manifest records the corrected focused gate as 14 passed at 468517ea in corrective-focused.log and the corrected mutation as 3 failed/11 passed in corrective-negative-control.log.\nVERDICT write_paths: the repair commit c3ae4b4b touches only reckon/crew/review.py, tests/test_review_records_its_revision.py and the two documentation paths already declared for the reviewed run.\nVERDICT manifest: read at its repaired head; it records focused 14/14, mutation 3 failed/11 passed, the required all_debug gate as 60 passed/5 failed with the same five pre-existing ids, ruff clean and both HTML docs OK.\nVERDICT diff: read 79e8c571..468517ea; c3ae4b4b adds _complete_review_exists and _incomplete_review_path and routes a partial record away from a path a complete record occupies, and 468517ea adds the landing comment and the correction evidence anchor.\nCALL_SITES: reckon/crew/recovery.py:203, reckon/crew/recovery.py:261, reckon/crew/recovery.py:269, reckon/crew/promotion.py:3053, reckon/crew/dispatch.py:991, reckon/crew/runs.py:65\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:513-514 keys a complete record by its head and diverts a partial record, so the store names the revision and accumulates rechecks as the goal requires.\nSCORE evidence: 18\nJUSTIFICATION evidence: the corrected focused gate and both mutation layouts are recorded at 468517ea in corrective-focused.log:1 and corrective-negative-control.log:1, and the required gate delta stays zero-added.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff 79e8c571..468517ea touches only reckon/crew/review.py, tests/test_review_records_its_revision.py and the two declared documentation paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_records_its_revision.py:92 replaces the tautology with a store-and-read assertion and tests/test_review_records_its_revision.py:157 guards the partial-record overwrite, both reddening under the declared mutation.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers at reckon/crew/review.py:434-470 follow the module's carried-vs-truthiness idiom and carry no forbidden name.\nFINDING reckon/crew/review.py:517 NOT FIXED at repaired head -- first-review finding 1: read_review still returns the newest record by mtime at reckon/crew/review.py:563, and reckon/crew/promotion.py:3053 still calls it without a head, so a superseded complete record can still be read as current.\nFINDING tests/test_review_records_its_revision.py:69 FIXED at repaired head -- first-review finding 2: the tautological membership assertion is gone and tests/test_review_records_its_revision.py:92 now asserts a stored-then-read record, so the test can fail if normalisation regresses.\nFINDING reckon/crew/review.py:465-470 FIXED at repaired head -- first-review finding 3: a partial record is now routed to _incomplete_review_path at reckon/crew/review.py:513-514 when a complete record exists, so it can no longer occupy the legacy path a complete review holds.\nFINDING reckon/crew/review.py:457 residual -- _incomplete_review_path derives its identity from an optional review_run_id, so two partial records of one run sharing that id resolve to one path and the second overwrites the first.\n",
+  "review_run_id": "legacy-d1e7335a90df",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "91e4095a79a34541fea2cb30113a7c90d13f0dac",
+  "reviewed_head_sha": "468517ea30526b81bc1f9a1057419f2673ed5699",
+  "reviewed_run_id": "r-20260922T204226780149-a-review-names-the-revision-it-read",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "superseded_head_sha": "79e8c571cb23a7ee80b5f172a125093fa897b175",
+  "times_source": "unknown",
+  "timestamp": "2026-10-07T06:00:12.854825+00:00",
+  "total": 89
+}

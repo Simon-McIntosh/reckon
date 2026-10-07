@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "both gate logs read: base-arm.log 254 passed 0 failed, head-arm.log 258 passed 0 failed, so the reviewed run added no failing id",
+  "base_log_revision": "5b947ae9eabe806a05523c957cfe14e4b13872ef",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:52 pick() snapshotter default",
+    "reckon/crew/dispatch.py:4993 dispatch imports picker snapshot and builds the budget view",
+    "reckon/crew/picker/replay.py:45 replay snapshot.candidates"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-07T05:16:09Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "364",
+      "severity": "follow-on",
+      "text": "the candidate's stale flag is derived from state[\"expired\"] (age-only, set at snapshot.py:252 whatever the reading's source), while reckon/crew/picker/lane_context.py:174 derives the same reading's stale flag for the return-times block only when source==\"ledger\"; a stale account-surface reading can therefore reach Jev as stale=true on the candidate and stale=false in the return-times block, so two representations of one reading's staleness disagree."
+    }
+  ],
+  "head_log_revision": "106afb36dc38c4549adc62554bd60719f4b6e8db",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 106afb36d against base 5b947ae9e; it changes reckon/crew/picker/snapshot.py (the budget-level testing and two new BudgetCandidate fields), the two stale-reading assertions in tests/test_picker_dispatch_pace.py, and adds tests/test_stale_reading_reaches_jev.py (four tests) plus the evidence fragment.",
+    "done_when": "the done_when names tests/test_stale_reading_reaches_jev.py and the negative control; the manifest records base 254 passed EXIT=0 and head 258 passed EXIT=0, and I re-ran the new test file at head 106afb36d in a scratch tree as 4 passed EXIT=0.",
+    "goal": "the node's goal is to carry a stale account-window reading into the dispatch candidate instead of nulling it; reckon/crew/picker/snapshot.py:363 now keeps budget_facts whenever the reading is known and the candidate reads utilisation_pct/burn_multiple/pace_allowance/resets_at from it at :428-434, with the new stale and budget_age_s fields at :364 and :421-426.",
+    "manifest": "read; it states the gate result, names the negative-control log whose last line is EXIT=1, names the two reversed assertions in tests/test_picker_dispatch_pace.py, and carries a follow-on for the unused figures directory.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/picker/snapshot.py, tests/test_stale_reading_reaches_jev.py, the evidence fragment, the figures dir); the diff also repairs tests/test_picker_dispatch_pace.py, a path the coordinator widened the fence to include, reversing exactly the two stale-reading assertions that encoded the superseded nulling."
+  },
+  "justifications": {
+    "durability": "negative-control.log reinstates the shelf-life nulling and reddens test_stale_recorded_reading_recent_candidate_with_figures_and_age and test_stale_published_reading_reaches_candidate_with_figures_and_age (2 failed, 2 passed, EXIT=1), both green in the head arm, so the added assertions fail if the change regresses.",
+    "evidence": "the gate and its result are recorded (manifest, head-arm.log 258 passed EXIT=0 at 106afb36d), and I reproduced the new file independently at the reviewed head as 4 passed EXIT=0 (review-head-gate.log).",
+    "fit": "reading_known, fresh, stale and budget_age_s name the mechanism with no plan, version or ticket identifier, matching the surrounding snapshot.py:346-361 idiom.",
+    "goal_fidelity": "snapshot.py:363 carries a stale reading's figures (utilisation_pct, burn_multiple, pace_allowance at :428-432) with the stale and budget_age_s fields at :364 and :421-426, and tests/test_stale_reading_reaches_jev.py::test_absent_reading_stays_null_with_reason confirms only a genuinely absent reading still nulls with a reason.",
+    "reuse": "the added fields extend the existing BudgetCandidate and consume snapshot.py:261's expired flag rather than recomputing staleness, but the age/stale derivation is a second spelling of lane_context._budget_block's (lane_context.py:172-177), hence below 20.",
+    "scope_discipline": "the diff touches snapshot.py, tests/test_stale_reading_reaches_jev.py, the evidence fragment and tests/test_picker_dispatch_pace.py, the last added by a fence widen the manifest discloses."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to carry a stale account-window reading into the dispatch candidate instead of nulling it; reckon/crew/picker/snapshot.py:363 now keeps budget_facts whenever the reading is known and the candidate reads utilisation_pct/burn_multiple/pace_allowance/resets_at from it at :428-434, with the new stale and budget_age_s fields at :364 and :421-426.\nVERDICT done_when: the done_when names tests/test_stale_reading_reaches_jev.py and the negative control; the manifest records base 254 passed EXIT=0 and head 258 passed EXIT=0, and I re-ran the new test file at head 106afb36d in a scratch tree as 4 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/picker/snapshot.py, tests/test_stale_reading_reaches_jev.py, the evidence fragment, the figures dir); the diff also repairs tests/test_picker_dispatch_pace.py, a path the coordinator widened the fence to include, reversing exactly the two stale-reading assertions that encoded the superseded nulling.\nVERDICT manifest: read; it states the gate result, names the negative-control log whose last line is EXIT=1, names the two reversed assertions in tests/test_picker_dispatch_pace.py, and carries a follow-on for the unused figures directory.\nVERDICT diff: read commit 106afb36d against base 5b947ae9e; it changes reckon/crew/picker/snapshot.py (the budget-level testing and two new BudgetCandidate fields), the two stale-reading assertions in tests/test_picker_dispatch_pace.py, and adds tests/test_stale_reading_reaches_jev.py (four tests) plus the evidence fragment.\nCALL_SITES: reckon/crew/picker/__init__.py:52, reckon/crew/dispatch.py:4993, reckon/crew/picker/replay.py:45\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: snapshot.py:363 carries a stale reading's figures (utilisation_pct, burn_multiple, pace_allowance at :428-432) with the stale and budget_age_s fields at :364 and :421-426, and tests/test_stale_reading_reaches_jev.py::test_absent_reading_stays_null_with_reason confirms only a genuinely absent reading still nulls with a reason.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate and its result are recorded (manifest, head-arm.log 258 passed EXIT=0 at 106afb36d), and I reproduced the new file independently at the reviewed head as 4 passed EXIT=0 (review-head-gate.log).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff touches snapshot.py, tests/test_stale_reading_reaches_jev.py, the evidence fragment and tests/test_picker_dispatch_pace.py, the last added by a fence widen the manifest discloses.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log reinstates the shelf-life nulling and reddens test_stale_recorded_reading_reaches_candidate_with_figures_and_age and test_stale_published_reading_reaches_candidate_with_figures_and_age (2 failed, 2 passed, EXIT=1), both green in the head arm, so the added assertions fail if the change regresses.\nSCORE fit: 19\nJUSTIFICATION fit: reading_known, fresh, stale and budget_age_s name the mechanism with no plan, version or ticket identifier, matching the surrounding snapshot.py:346-361 idiom.\nSCORE reuse: 17\nJUSTIFICATION reuse: the added fields extend the existing BudgetCandidate and consume snapshot.py:261's expired flag rather than recomputing staleness, but the age/stale derivation is a second spelling of lane_context._budget_block's (lane_context.py:172-177), hence below 20.\nFINDING reckon/crew/picker/snapshot.py:364 follow-on: the candidate's stale flag is derived from state[\"expired\"] (age-only, set at snapshot.py:252 whatever the reading's source), while reckon/crew/picker/lane_context.py:174 derives the same reading's stale flag for the return-times block only when source==\"ledger\"; a stale account-surface reading can therefore reach Jev as stale=true on the candidate and stale=false in the return-times block, so two representations of one reading's staleness disagree.",
+  "review_run_id": "r-20261007T051538986038-review-of-stale-reading-reaches-jev",
+  "reviewed_base_sha": "5b947ae9eabe806a05523c957cfe14e4b13872ef",
+  "reviewed_head_sha": "106afb36dc38c4549adc62554bd60719f4b6e8db",
+  "reviewed_run_id": "r-20261007T022329056429-stale-reading-reaches-jev",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T05:24:00+00:00",
+  "total": 111
+}

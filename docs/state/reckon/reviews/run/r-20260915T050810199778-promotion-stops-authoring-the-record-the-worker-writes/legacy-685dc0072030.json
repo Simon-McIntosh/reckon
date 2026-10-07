@@ -1,0 +1,50 @@
+{
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "tests/test_crew_promotion.py",
+      "line": 1796,
+      "recommendation": "Delete the unused assignment, or use the resolved path in the template; project rule is that a commit adds no lint findings.",
+      "severity": "minor",
+      "summary": "New F841 finding introduced by the commit inside the added _write_resource_html helper: 'path' is assigned but never used (the bare-alias HTML template is built independently)."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": 1100,
+      "recommendation": "Either scan the declared commits for the id (any), or document and test the ordering contract on the manifest commits.",
+      "severity": "minor",
+      "summary": "_worker_authored_landing_record reads only revisions[-1] from the manifest's commits list; a manifest listing the record commit not-last (or omitting it) makes the guard miss and the duplicate-comment merge collision recurs silently."
+    }
+  ],
+  "justifications": {
+    "durability": "A real code change with tests asserting both directions, and the mechanism is self-hosting: this very run's landing (3049028 carrying the c-run-...-promotion-stops-authoring id in the plan) is the worker-authored record the guard now detects, so the fix executes itself on promotion. Residual untested exposure keeps this below 20: detection reads only revisions[-1] from the manifest's commits list, so a manifest listing commits out of order (record commit not last) or omitting the record commit makes the guard miss and the duplicate-comment merge collision recurs silently; the tests cover only a single-commit worker. The id match is a substring scan of the whole committed plan HTML. These are edges outside the tested contract path, not defects in it.",
+    "evidence": "Gate claim independently reproduced, not taken on trust. I reran tests/test_crew_promotion.py on all_debug at the base (be380283, extracted read-only via git archive, shared GPFS path) and at the merged head (clean worktree, which equals the reviewed revision for this file - no later commit touches it): base 40 passed, after 42 passed, zero failures, two tests added (37 to 39 test definitions). The reviewed run's own log receipts show the same 40 passed / 42 passed, read as files rather than by absence of error. Evidence-doc counts verified internally against the committed doc at the reviewed revision: 20 anchor rows and 16 run-outcome rows matching the updated 'twenty anchors / sixteen run-outcome comments' summary. One deduction: the record's merged-head attribution is absent by design (that gate is a separately dispatched test node's job), so the strongest verification claim stops at the run's own head.",
+    "fit": "Lands exactly where the plan's final record and the section's analysis said the repair belongs (promotion, not the contract), and it closes the specific conflict this section recorded - the duplicate c-run-<run_id> comment id that collided at merge 7bc827d. The landing comment the run writes carries the same id the landing path now skips, the cumulative evidence record gains its matching anchor with counts updated consistently (19 to 20 anchors, 15 to 16 run-outcome comments), and the audit-doc/schema surface remains consistent with the edited plan. The residual multi-commit ordering edge is a durability note, not a fit gap.",
+    "goal_fidelity": "Exactly what \u00a719's final record owed: the repair lands in promotion rather than in the contract ('a change to promotion rather than to the contract'), promotion reads the plan at the run's submitted commit via the shared object store and skips appending its own landing comment when the worker's committed plan already carries the run-derived c-run-<run_id> id. Both directions are asserted - the worker-authored case records no second comment and lands a plan untouched (only the ledger row committed), and a silent worker still lands exactly one comment plus the plan write. The run also wrote its own run-outcome comment into the plan under the same id and updated the cumulative evidence anchor. Nothing promised in the plan's final record is missing.",
+    "scope_discipline": "The diff is confined to exactly the four declared write paths: reckon/crew/promotion.py and its asserting test file (8bc1083), plus docs/plans/crew-observability-truth.html and docs/evidence/archive/crew-observability-truth-landed.html (3049028) - the plan's own landing surfaces. No stray files, no other plans or sibling stores touched, and both commits are linear first-parent changes with no merge-attribution ambiguity. Deduction: the commit introduces one new lint finding - F841 (local variable 'path' assigned but never used) at tests/test_crew_promotion.py:1796 inside the newly added _write_resource_html helper - which violates the project's 'commit adds no findings' rule; every other ruff finding in the two files is pre-existing backlog outside the changed regions."
+  },
+  "plan": "crew-observability-truth",
+  "project": "reckon",
+  "raw_text": "Independent scored review of run r-20260915T050810199778-promotion-stops-authoring-the-record-the-worker-writes, plan reckon:crew-observability-truth \u00a719. Reviewed commits 8bc1083 (fix(crew): skip the landing comment when the worker already wrote it) and 3049028 (docs: record the landing-comment dedup and its anchor). SCORE 89/100.\n\nVERIFIED. (1) Gate claim reproduced independently: tests/test_crew_promotion.py at base be380283 = 40 passed, at the merged head = 42 passed, zero added failures, two tests added (37 to 39 functions). The reviewed run's own baseline/after logs carry the same 40 and 42. (2) Mechanism and intent match the plan's final record: promotion appends nothing when the run's committed plan already carries the run-derived comment id (git show <head_sha>:<plan> against the shared object store, computed before the idempotent already_recorded retry loop so post-merge re-promotion still resolves to already_recorded first). Only one c-run- id generation site exists in the source, and it is now guarded; no second append path bypasses it. (3) Evidence-doc counts verified: 20 anchor rows and 16 run-outcome rows match the amended 'twenty anchors / sixteen run-outcome comments' summary. (4) Self-hosting: this run's own worker-authored plan comment uses the very id the landing path now detects and skips, so the fix executed on its own landing; the manifest's commits list is in chronological order with the record-commit last, which the revisions[-1] read depends on.\n\nFINDINGS. F1 (scope, minor): the commit introduces one new lint finding - F841 at tests/test_crew_promotion.py:1796, an assigned-but-unused 'path' local in the new _write_resource_html helper - a 'commit adds no findings' violation; all other ruff findings in the touched files are pre-existing backlog outside the changed lines. F2 (durability, minor): detection reads only the last declared commit, so a manifest listing commits out of order (or omitting the record commit) makes the guard miss and the duplicate-comment collision recurs silently; tests cover a single-commit worker only. Neither blocks the change. The merged-head suite attribution is intentionally out of this node's scope.\n\nSCORES: goal_fidelity 19, evidence 18, scope_discipline 17, durability 16, fit 19; total 89/100.",
+  "review_run_id": "legacy-685dc0072030",
+  "review_run_id_source": "derived",
+  "reviewed_commit": "3049028",
+  "reviewed_commits": [
+    "8bc1083ee004322eeec5443604ba085d2daa33d8",
+    "304902830fb434229bf13347ef7a9ff5baa3135a"
+  ],
+  "reviewed_run_id": "r-20260915T050810199778-promotion-stops-authoring-the-record-the-worker-writes",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 17
+  },
+  "section": "s19",
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-10-07T06:00:12.691028+00:00",
+  "total": 89
+}

@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:267 sync -> _personal_skills_dir",
+    "reckon/cli.py:8177 doctor skills-presence -> _personal_skills_dir",
+    "reckon/cli.py:8194 doctor link -> crew_host_link_state(_personal_skills_dir())"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-07T05:04:23.721258+00:00",
+  "findings": [
+    {
+      "file": "tests/conftest.py",
+      "line": "1071",
+      "severity": "follow-on",
+      "text": "follow-on: the autouse fixture's isolation is skipped for any module in the hardcoded set _SKILLS_DIR_SELF_ISOLATED_MODULES ({'test_doctor'}), so a new test module that patches Path.home for the skills directory but is not listed would have the fixture point the override at a session temp directory instead, and the coupling is by module name rather than by a property the module declares."
+    },
+    {
+      "file": "tests/conftest.py",
+      "line": "1063",
+      "severity": "follow-on",
+      "text": "follow-on: the fixture re-spells the override variable name as its own literal CLAUDE_SKILLS_DIR_ENV = 'RECKON_CLAUDE_SKILLS_DIR' instead of importing reckon.cli's constant, so a rename of that constant would silently stop the autouse fixture isolating any test."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "8652",
+      "severity": "follow-on",
+      "text": "follow-on: reckon install-skills still writes to Path.home()/'.claude'/'skills' directly rather than through _personal_skills_dir(), so it remains outside the override the node introduced; this is out of the node's named scope."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the two commits e0c2d5bc and b5d399fd gained since the prior review; e0c2d5bc reroutes the doctor skills-presence check through _personal_skills_dir(), makes the autouse fixture build its directory with tmp_path_factory.mktemp, skips the override for the test_doctor module, and replaces the inert real-home assertion with one that reads only the patched home; b5d399fd updates the evidence fragment to match.",
+    "done_when": "the done-when names the sync test landing the link at the override and leaving the default home untouched; I re-ran the reviewed gate at head b5d399fd independently as 29 passed EXIT=0 and reproduced the declared mutation as 1 failed, 16 passed, EXIT=1 at tests/test_doctor_session_host_link.py:404, the id the reviewed manifest names.",
+    "goal": "the reviewed node keeps every test's reckon sync and doctor away from the operator's real ~/.claude/skills; the delta completes that goal for the doctor skills-presence check, which at reckon/cli.py:8177 now resolves _personal_skills_dir() instead of a hardcoded Path.home()/'.claude'/'skills', so all three named sites (sync link cli.py:267, doctor skills cli.py:8177, doctor link cli.py:8194) honour RECKON_CLAUDE_SKILLS_DIR.",
+    "manifest": "read; it carries status complete, names both gate logs, records the sole failing id test_sync_links_into_the_override_and_elsewhere_nothing in the negative control, and lists one follow-on for reckon install-skills at cli.py:8652.",
+    "write_paths": "the declared scope is reckon/cli.py, tests/conftest.py, tests/test_doctor_session_host_link.py and the evidence fragment; git diff --stat 9bdf6250a..b5d399fd touches exactly those four and nothing else across the two gained commits."
+  },
+  "justifications": {
+    "durability": "the sync test now fails under the declared mutation and no longer reads the operator's real home, but the fixture's isolation is bypassed by a hardcoded module-name set at tests/conftest.py:1071, so the instrument's protection is selected by a literal name rather than by a property the modules declare.",
+    "evidence": "I independently reproduced the head gate at b5d399fd in a scratch extraction as 29 passed EXIT=0 and reproduced the declared mutation (sync hardcoding Path.home) as 1 failed, 16 passed, EXIT=1 at tests/test_doctor_session_host_link.py:404, so the guard is shown to fire rather than merely to pass.",
+    "fit": "the added names (_SKILLS_DIR_SELF_ISOLATED_MODULES, isolated_claude_skills_dir) describe mechanism with no version, plan or ticket identifier and no attribution, but tests/conftest.py:1063 still re-spells the override variable as its own literal instead of importing reckon.cli's CLAUDE_SKILLS_DIR_ENV, carried unchanged from the base.",
+    "goal_fidelity": "the delta closes the one residual gap the prior review named at cli.py:8177, so doctor's skills-presence check now resolves the same override as the link check (cli.py:8194) and the sync path (cli.py:267), and the goal holds structurally rather than because the sibling test_doctor module patches Path.home.",
+    "reuse": "the delta reuses _personal_skills_dir and the existing isolated_claude_skills_dir fixture rather than forking a second resolver or a per-module home helper, so no capability is duplicated.",
+    "scope_discipline": "git diff --stat 9bdf6250a..b5d399fd touches exactly the four declared paths, reckon/cli.py (+5/-2), tests/conftest.py (+23/-2), tests/test_doctor_session_host_link.py (+8/-30) and the evidence fragment (+7/-7), and creates no file outside them."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 9bdf6250adf0e69d250b09e7e31629625abbef38\nreviewed_head_sha: b5d399fd70f5033a8ceb0ddbbe4d3ce2aecd3a0d\nVERDICT goal: the reviewed node keeps every test's reckon sync and doctor away from the operator's real ~/.claude/skills; the delta completes that goal for the doctor skills-presence check, which at reckon/cli.py:8177 now resolves _personal_skills_dir() instead of a hardcoded Path.home()/'.claude'/'skills', so all three named sites (sync link cli.py:267, doctor skills cli.py:8177, doctor link cli.py:8194) honour RECKON_CLAUDE_SKILLS_DIR.\nVERDICT done_when: the done-when names the sync test landing the link at the override and leaving the default home untouched; I re-ran the reviewed gate at head b5d399fd independently as 29 passed EXIT=0 and reproduced the declared mutation as 1 failed, 16 passed, EXIT=1 at tests/test_doctor_session_host_link.py:404, the id the reviewed manifest names.\nVERDICT write_paths: the declared scope is reckon/cli.py, tests/conftest.py, tests/test_doctor_session_host_link.py and the evidence fragment; git diff --stat 9bdf6250a..b5d399fd touches exactly those four and nothing else across the two gained commits.\nVERDICT manifest: read; it carries status complete, names both gate logs, records the sole failing id test_sync_links_into_the_override_and_elsewhere_nothing in the negative control, and lists one follow-on for reckon install-skills at cli.py:8652.\nVERDICT diff: read the two commits e0c2d5bc and b5d399fd gained since the prior review; e0c2d5bc reroutes the doctor skills-presence check through _personal_skills_dir(), makes the autouse fixture build its directory with tmp_path_factory.mktemp, skips the override for the test_doctor module, and replaces the inert real-home assertion with one that reads only the patched home; b5d399fd updates the evidence fragment to match.\nCALL_SITES: reckon/cli.py:267 sync -> _personal_skills_dir, reckon/cli.py:8177 doctor skills-presence -> _personal_skills_dir, reckon/cli.py:8194 doctor link -> crew_host_link_state(_personal_skills_dir())\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the delta closes the one residual gap the prior review named at cli.py:8177, so doctor's skills-presence check now resolves the same override as the link check (cli.py:8194) and the sync path (cli.py:267), and the goal holds structurally rather than because the sibling test_doctor module patches Path.home.\nSCORE evidence: 20\nJUSTIFICATION evidence: I independently reproduced the head gate at b5d399fd in a scratch extraction as 29 passed EXIT=0 and reproduced the declared mutation (sync hardcoding Path.home) as 1 failed, 16 passed, EXIT=1 at tests/test_doctor_session_host_link.py:404, so the guard is shown to fire rather than merely to pass.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 9bdf6250a..b5d399fd touches exactly the four declared paths, reckon/cli.py (+5/-2), tests/conftest.py (+23/-2), tests/test_doctor_session_host_link.py (+8/-30) and the evidence fragment (+7/-7), and creates no file outside them.\nSCORE durability: 19\nJUSTIFICATION durability: the sync test now fails under the declared mutation and no longer reads the operator's real home, but the fixture's isolation is bypassed by a hardcoded module-name set at tests/conftest.py:1071, so the instrument's protection is selected by a literal name rather than by a property the modules declare.\nSCORE fit: 19\nJUSTIFICATION fit: the added names (_SKILLS_DIR_SELF_ISOLATED_MODULES, isolated_claude_skills_dir) describe mechanism with no version, plan or ticket identifier and no attribution, but tests/conftest.py:1063 still re-spells the override variable as its own literal instead of importing reckon.cli's CLAUDE_SKILLS_DIR_ENV, carried unchanged from the base.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta reuses _personal_skills_dir and the existing isolated_claude_skills_dir fixture rather than forking a second resolver or a per-module home helper, so no capability is duplicated.\nFINDING tests/conftest.py:1071 follow-on: the autouse fixture's isolation is skipped for any module in the hardcoded set _SKILLS_DIR_SELF_ISOLATED_MODULES ({'test_doctor'}), so a new test module that patches Path.home for the skills directory but is not listed would have the fixture point the override at a session temp directory instead, and the coupling is by module name rather than by a property the module declares.\nFINDING tests/conftest.py:1063 follow-on: the fixture re-spells the override variable name as its own literal CLAUDE_SKILLS_DIR_ENV = 'RECKON_CLAUDE_SKILLS_DIR' instead of importing reckon.cli's constant, so a rename of that constant would silently stop the autouse fixture isolating any test.\nFINDING reckon/cli.py:8652 follow-on: reckon install-skills still writes to Path.home()/'.claude'/'skills' directly rather than through _personal_skills_dir(), so it remains outside the override the node introduced; this is out of the node's named scope.",
+  "review_run_id": "r-20261007T050423721258-review-of-sync-tests-keep-the-real-skills-dir",
+  "reviewed_base_sha": "9bdf6250adf0e69d250b09e7e31629625abbef38",
+  "reviewed_head_sha": "b5d399fd70f5033a8ceb0ddbbe4d3ce2aecd3a0d",
+  "reviewed_run_id": "r-20261007T040504698629-sync-tests-keep-the-real-skills-dir",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-10-07T05:26:04.343609+00:00",
+  "total": 118
+}

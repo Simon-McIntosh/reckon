@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2774 gate_population_finding inside plan_dispatch",
+    "reached from crew.dispatch at tests/test_gate_population_resolves.py:150"
+  ],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/crew-runtime-positive-controls/gate-population/gate-population.red.log",
+      "line": "1",
+      "text": "the log's first line reads \"removing the gate-population match check admits a pattern matching nothing\" while the run's own pointer declares node.negative_control as \"remove the gate-population match check from plan_dispatch in reckon/crew/dispatch.py so a pattern matching nothing is admitted\"; the declaration is not a substring of the log, so _require_declared_negative_control refuses this run (reproduced by calling it with the run's own pointer record and manifest, exact refusal naming the declaration and the resolved path), which means a run whose work the coordinator already merged cannot be promoted until the two wordings agree."
+    },
+    {
+      "file": "docs/evidence/archive/crew-runtime-positive-controls-landed.html",
+      "line": "1555",
+      "text": "the anchor names \"removing the gate-population match check admits a pattern matching nothing\" as \"the declared mutation\" and states at :1560 that the red log's first line repeats it verbatim, and the run's manifest repeats that claim in negative_control_note, but the declaration the record carries is the longer sentence above, so the record and the run it describes disagree about which mutation was declared and the check requires the record's own wording."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits; f528785a adds 105 lines in reckon/crew/node.py, 14 in reckon/crew/dispatch.py and the 288-line test file, and 0da49468 adds the evidence anchor, the figure and the plan landing, leaving the public export list in reckon/crew.py untouched.",
+    "done_when": "the fence's cases are all present in seven tests, and the green log records 7 passed EXIT=0 at f528785a, but the declared-mutation clause cannot be discharged at promotion because the declaration the pointer carries and the red log's first line are different sentences.",
+    "goal": "the refusal fires where the plan asks, before a worktree exists; tests/test_gate_population_resolves.py:150 drives crew.dispatch with a launcher that fails if reached and asserts no live pointer, and gate_population_finding at reckon/crew/node.py:850 names the pattern and the repository in its detail.",
+    "manifest": "read in full; it reports the seven passing cases, both logs, the 14-of-155 versus 14-of-162 delta and the reverted mutation, but its negative_control_note calls a paraphrase \"the declared mutation\" and asserts the log's first line repeats the declaration verbatim.",
+    "write_paths": "the pointer declares six paths and `git diff --name-only eb2ffd60..0da49468` lists exactly those six, with nothing outside them."
+  },
+  "justifications": {
+    "durability": "the negative halves are store-driven rather than syntactic, since a seeded file makes a real glob match while a literal path and a ratio are admitted for their own stated reasons, and the seventh case pins the literal-path boundary so it cannot silently widen; _gate_population_matches returning True on an unparseable pattern is a deliberate fail-open on the guard's own input, documented where it is written.",
+    "evidence": "the measurement behind the red log is genuine (gate-population.red.log: 2 failed, 5 passed, EXIT=1, and the two failures are exactly the refusal cases), but the record cannot discharge its own mutation clause: calling _require_declared_negative_control with this run's own pointer and manifest raises CrewError, so promotion refuses as the run stands.",
+    "fit": "the names say what they do (GATE_POPULATION_FIELD, gate_population_patterns, gate_population_finding at reckon/crew/node.py:788-850), the finding is deliberately excluded from the eight contract properties with the reason in the comment beside it, no plan or ticket label reaches a symbol, file name or comment, and no public export moves because reckon/crew.py is outside the diff.",
+    "goal_fidelity": "the refusal lands at dispatch.py:2774 before any worktree, naming the pattern and the repository, and the guarded thing is what the case exercises rather than the function in isolation: tests/test_gate_population_resolves.py:150 calls crew.dispatch with a launcher that pytest.fail's if reached and then asserts crew.list_live is empty.",
+    "scope_discipline": "`git diff --name-only eb2ffd60..0da49468` returns exactly the six declared write paths, so nothing landed outside the fence, and the three document paths are the record the plan's section requires rather than goal creep."
+  },
+  "node": "review-of-a-gate-population-names-files-the-repository-has",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the refusal fires where the plan asks, before a worktree exists; tests/test_gate_population_resolves.py:150 drives crew.dispatch with a launcher that fails if reached and asserts no live pointer, and gate_population_finding at reckon/crew/node.py:850 names the pattern and the repository in its detail.\nVERDICT done_when: the fence's cases are all present in seven tests, and the green log records 7 passed EXIT=0 at f528785a, but the declared-mutation clause cannot be discharged at promotion because the declaration the pointer carries and the red log's first line are different sentences.\nVERDICT write_paths: the pointer declares six paths and `git diff --name-only eb2ffd60..0da49468` lists exactly those six, with nothing outside them.\nVERDICT manifest: read in full; it reports the seven passing cases, both logs, the 14-of-155 versus 14-of-162 delta and the reverted mutation, but its negative_control_note calls a paraphrase \"the declared mutation\" and asserts the log's first line repeats the declaration verbatim.\nVERDICT diff: read both commits; f528785a adds 105 lines in reckon/crew/node.py, 14 in reckon/crew/dispatch.py and the 288-line test file, and 0da49468 adds the evidence anchor, the figure and the plan landing, leaving the public export list in reckon/crew.py untouched.\nVERDICT call_sites: one production call site, gate_population_finding at reckon/crew/dispatch.py:2774 inside plan_dispatch, reached by the case through crew.dispatch.\nCALL_SITES: reckon/crew/dispatch.py:2774 gate_population_finding inside plan_dispatch, reached from crew.dispatch at tests/test_gate_population_resolves.py:150\nREVISION: 0da49468f7921634de563bf738299a1052bac685\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the refusal lands at dispatch.py:2774 before any worktree, naming the pattern and the repository, and the guarded thing is what the case exercises rather than the function in isolation: tests/test_gate_population_resolves.py:150 calls crew.dispatch with a launcher that pytest.fail's if reached and then asserts crew.list_live is empty.\nSCORE evidence: 12\nJUSTIFICATION evidence: the measurement behind the red log is genuine (gate-population.red.log: 2 failed, 5 passed, EXIT=1, and the two failures are exactly the refusal cases), but the record cannot discharge its own mutation clause: calling _require_declared_negative_control with this run's own pointer and manifest raises CrewError, so promotion refuses as the run stands.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-only eb2ffd60..0da49468` returns exactly the six declared write paths, so nothing landed outside the fence, and the three document paths are the record the plan's section requires rather than goal creep.\nSCORE durability: 18\nJUSTIFICATION durability: the negative halves are store-driven rather than syntactic, since a seeded file makes a real glob match while a literal path and a ratio are admitted for their own stated reasons, and the seventh case pins the literal-path boundary so it cannot silently widen; _gate_population_matches returning True on an unparseable pattern is a deliberate fail-open on the guard's own input, documented where it is written.\nSCORE fit: 17\nJUSTIFICATION fit: the names say what they do (GATE_POPULATION_FIELD, gate_population_patterns, gate_population_finding at reckon/crew/node.py:788-850), the finding is deliberately excluded from the eight contract properties with the reason in the comment beside it, no plan or ticket label reaches a symbol, file name or comment, and no public export moves because reckon/crew.py is outside the diff.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/crew-runtime-positive-controls/gate-population/gate-population.red.log:1 the log's first line reads \"removing the gate-population match check admits a pattern matching nothing\" while the run's own pointer declares node.negative_control as \"remove the gate-population match check from plan_dispatch in reckon/crew/dispatch.py so a pattern matching nothing is admitted\"; the declaration is not a substring of the log, so _require_declared_negative_control refuses this run (reproduced by calling it with the run's own pointer record and manifest, exact refusal naming the declaration and the resolved path), which means a run whose work the coordinator already merged cannot be promoted until the two wordings agree.\nFINDING docs/evidence/archive/crew-runtime-positive-controls-landed.html:1555 the anchor names \"removing the gate-population match check admits a pattern matching nothing\" as \"the declared mutation\" and states at :1560 that the red log's first line repeats it verbatim, and the run's manifest repeats that claim in negative_control_note, but the declaration the record carries is the longer sentence above, so the record and the run it describes disagree about which mutation was declared and the check requires the record's own wording.\n",
+  "review_run_id": "legacy-2f5d8e9d3759",
+  "review_run_id_source": "derived",
+  "review_store": "reckon/crew/review.py",
+  "reviewed_base_sha": "eb2ffd60d634d3510f35e77880322564095e9aa9",
+  "reviewed_node": "a-gate-population-names-files-the-repository-has",
+  "reviewed_revision": "0da49468f7921634de563bf738299a1052bac685",
+  "reviewed_run_id": "r-20260922T120119468216-a-gate-population-names-files-the-repository-has",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-22T14:12:44.978974+00:00",
+  "total": 86
+}

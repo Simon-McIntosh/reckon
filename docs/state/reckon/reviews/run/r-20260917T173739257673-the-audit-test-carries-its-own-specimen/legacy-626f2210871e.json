@@ -1,0 +1,35 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "tests/test_doccheck_code_spans.py",
+      "line": "28",
+      "text": "the specimen's pre block is a bare <pre> element, which the literal-markdown check never examines \u2014 its scopes are the five r-*-body and r-*-outcome classes plus every <p> (reckon/doccheck.py:628) \u2014 so the quoted pre pair is inert: with the exclusion disabled by swapping _prose_text for the visible-text reader the specimen still yields two md-bold findings and neither is the pre pair, leaving the pre side of the exclusion to the separate nested-pre test at :79 rather than to the specimen this node was dispatched to build."
+    }
+  ],
+  "justifications": {
+    "durability": "the specimen fails if the exclusion regresses \u2014 replacing _prose_text with the visible-text reader in reckon/doccheck.py yields two md-bold findings on the specimen against the asserted one \u2014 and the live comparison trips if a verbatim pair starts reporting as prose, though nothing in the file fails if a later edit re-binds an assertion to the living document.",
+    "evidence": "the done-when's named gate re-ran green at the head revision under my own command (45 passed, exit 0, /tmp/specimen-review/gate-head.log) against the manifest's recorded 45-at-head over 42-at-base, and both falsifier edits were re-made by me in a scratch copy tree with the logs kept on disk, so the headline numbers are re-derived rather than accepted and only the base-side 42 is derived from the +3 tests instead of re-run.",
+    "fit": "the change reuses the file's own _bare/_codes helpers and sentence-named tests, names its fixtures by mechanism (QUOTED_SPECIMEN at :25, PROSE_SPECIMEN beside it), carries no plan or stage labels, and is clean under ruff check and ruff format --check.",
+    "goal_fidelity": "tests/test_doccheck_code_spans.py:131 asserts the exclusion against a specimen the file owns and the live comparison at :142 is content-insensitive, and both halves of the named falsifier reproduce under my own runs (an asterisk pair injected into a comment body of the plan: base file 1 failed/9 passed, repaired file 13 passed; a second prose element added to the specimen: the specimen test fails by name) \u2014 but the specimen's pre pair is carried rather than exercised, per the finding below.",
+    "scope_discipline": "every changed path is one of the three declared write paths and every hunk is an insertion except the three replaced lines of the old live-plan test, by numstat 56/3 in dc60bae3 and 19/0 plus 48/0 in 4466a21e."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_doccheck_code_spans.py:131 asserts the exclusion against a specimen the file owns and the live comparison at :142 is content-insensitive, and both halves of the named falsifier reproduce under my own runs (an asterisk pair injected into a comment body of the plan: base file 1 failed/9 passed, repaired file 13 passed; a second prose element added to the specimen: the specimen test fails by name) \u2014 but the specimen's pre pair is carried rather than exercised, per the finding below.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done-when's named gate re-ran green at the head revision under my own command (45 passed, exit 0, /tmp/specimen-review/gate-head.log) against the manifest's recorded 45-at-head over 42-at-base, and both falsifier edits were re-made by me in a scratch copy tree with the logs kept on disk, so the headline numbers are re-derived rather than accepted and only the base-side 42 is derived from the +3 tests instead of re-run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path is one of the three declared write paths and every hunk is an insertion except the three replaced lines of the old live-plan test, by numstat 56/3 in dc60bae3 and 19/0 plus 48/0 in 4466a21e.\nSCORE durability: 19\nJUSTIFICATION durability: the specimen fails if the exclusion regresses \u2014 replacing _prose_text with the visible-text reader in reckon/doccheck.py yields two md-bold findings on the specimen against the asserted one \u2014 and the live comparison trips if a verbatim pair starts reporting as prose, though nothing in the file fails if a later edit re-binds an assertion to the living document.\nSCORE fit: 20\nJUSTIFICATION fit: the change reuses the file's own _bare/_codes helpers and sentence-named tests, names its fixtures by mechanism (QUOTED_SPECIMEN at :25, PROSE_SPECIMEN beside it), carries no plan or stage labels, and is clean under ruff check and ruff format --check.\nFINDING tests/test_doccheck_code_spans.py:28 the specimen's pre block is a bare <pre> element, which the literal-markdown check never examines \u2014 its scopes are the five r-*-body and r-*-outcome classes plus every <p> (reckon/doccheck.py:628) \u2014 so the quoted pre pair is inert: with the exclusion disabled by swapping _prose_text for the visible-text reader the specimen still yields two md-bold findings and neither is the pre pair, leaving the pre side of the exclusion to the separate nested-pre test at :79 rather than to the specimen this node was dispatched to build.\n",
+  "review_run_id": "legacy-626f2210871e",
+  "review_run_id_source": "derived",
+  "reviewed_run_id": "r-20260917T173739257673-the-audit-test-carries-its-own-specimen",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-18T11:24:46.868872+00:00",
+  "total": 97
+}
