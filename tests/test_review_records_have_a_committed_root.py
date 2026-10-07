@@ -5,8 +5,8 @@ where a live review is written for the gate to read — it also belongs in the
 repository, under ``docs/state/<project>/reviews/``, where it travels with the
 plan, the ledger and the evidence. These cases hold the two path owners to that
 committed root beside an unchanged staging path, hold a committed record's
-dispatch and completion times to the run record that produced it — marking the
-absence when neither the review run nor the reviewed run records them — rather
+dispatch and completion times to the run record that produced it — refusing the
+write when neither the review run nor the reviewed run records them — rather
 than to the store clock, and hold an answered finding to an append-only event
 list while the findings and the rest of the body keep their bytes.
 """
@@ -188,15 +188,15 @@ def test_a_committed_record_carries_the_run_records_times(checkout: Path) -> Non
     assert stored["timestamp"] not in (DISPATCH_TS, COMPLETION_TS)
 
     # A run record and a review run id that carries no encodable instant, with
-    # no carried stamps, resolve no dispatch time: the record is committed with
-    # both stamps empty and the absence marked, never defaulted to the clock and
-    # the stamps never silently omitted.
+    # no carried stamps, resolve no dispatch time and are refused rather than
+    # stored with one missing: the committed record never substitutes the clock
+    # for a stamp, and never omits one silently.
     (
         checkout / "docs" / "state" / PROJECT / "runs" / f"{REVIEWED_RUN}.json"
     ).write_text(
         json.dumps({"run_id": REVIEWED_RUN, "project": PROJECT}), encoding="utf-8"
     )
-    unstamped = _read(
+    with pytest.raises(ValueError, match=REVIEWED_RUN):
         review_module.store_committed_review(
             {
                 "project": PROJECT,
@@ -206,16 +206,6 @@ def test_a_committed_record_carries_the_run_records_times(checkout: Path) -> Non
             },
             root=checkout,
         )
-    )
-    assert unstamped[review_module.DISPATCH_TIME_KEY] == ""
-    assert unstamped[review_module.COMPLETION_TIME_KEY] == ""
-    assert (
-        unstamped[review_module.TIMES_SOURCE_KEY] == review_module.UNKNOWN_TIMES_SOURCE
-    )
-    assert unstamped["timestamp"] not in (
-        unstamped[review_module.DISPATCH_TIME_KEY],
-        unstamped[review_module.COMPLETION_TIME_KEY],
-    )
 
 
 def _pointer(config: Path, run_id: str, payload: dict) -> Path:
