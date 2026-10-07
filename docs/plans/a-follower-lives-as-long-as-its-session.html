@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.9">
-<meta name="plan-version" content="51">
+<meta name="plan-impl" content="0.91">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -160,7 +160,7 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 <p><strong>Done when</strong> a test in <code>tests/test_session_host.py</code> ends a fake owner and finds the record's stop reason reading owner ended, with a stop time no later than one poll interval after the owner exited. A second test signals the host and finds the reason reading signalled. Both fail on the current code, which writes neither field, and that is their negative control.</p>
 
     <h2 id="s12">§12 — One spelling of the session host&#x27;s FIFO path</h2>
-<section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> One Python function names a session host's request FIFO from its owner pair, and both readers call it. Today <code>reckon/crew/session_host.py</code> (<code>_fifo_path</code>, added under §9) and <code>reckon/crew/dispatch.py</code> (<code>_session_host_fifo</code>) each compose <code>&lt;runtime&gt;/reckon-session-host/&lt;pid&gt;-&lt;start&gt;.fifo</code>. The two agree only until one changes, and a disagreement would leave the host removing a different file from the one dispatch writes to. The §9 review raised it as a follow-on. The bash entry point keeps its own spelling, because it cannot import Python.</p>
 <p><strong>Done when</strong> a test resolves the FIFO path for one owner pair through the host and through dispatch and finds them equal. The filename format <code>{pid}-{start}.fifo</code> appears once in <code>reckon/</code>. <code>tests/test_session_host.py</code> and <code>tests/test_dispatch_session_host.py</code> pass. The equality test fails when one side's format is changed alone, and that is its negative control.</p>
 
@@ -215,10 +215,16 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §9</pre>
     <p class="r-fu-outcome">§10 and §11 landed and closed; §9's code landed at 9dfb2a1e with its live census still to read; §12 was added from the §9 review and is now buildable</p>
     </article>
-<article class="r-fu" data-id="f-afl-003" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-07T17:25:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afl-003" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-07T17:25:00Z" data-recommends-skill="" data-resolved-at="2026-10-07T17:36:56+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Give the FIFO path one owner, then read §9&#x27;s live census</h4>
     <div class="r-fu-body"><p>§12 is buildable now: the dry-run node that held <code>reckon/crew/dispatch.py</code> and <code>tests/test_dispatch_session_host.py</code> has landed, and those are the files §12 changes. §9 stays open until its live census reads <code>stale_fifos=0</code>. That census needs two Claude sessions started after merge <code>9dfb2a1e</code>, one that dispatched and one that did not, to have ended. A session started earlier runs the old entry point and will leave its FIFO.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §12</pre>
+    <p class="r-fu-outcome">§12 landed and closed; §9's live census is all that remains</p>
+    </article>
+<article class="r-fu" data-id="f-afl-004" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-07T17:40:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Read §9&#x27;s live census after two fresh sessions end</h4>
+    <div class="r-fu-body"><p>Every code node has landed. §9 stays open for its live clause: a census reading <code>stale_fifos=0</code> once two Claude sessions have ended, one that dispatched and one that did not. Both must have started after merge <code>9dfb2a1e</code>. A session started earlier runs the old entry point and leaves its FIFO, which the census should list as expected rather than count. When both have ended, dispatch one unfenced census node for §9 and close the section on its result.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §9</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -331,7 +337,7 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>Landed at merge <code>5fbbc90a</code>. A dry-run dispatch reads a waiting host's liveness with the same non-blocking open the real request uses, closed without a byte, and mirrors the real admission's host-attached branch, so it predicts the delivery the real dispatch reaches. A session with no host still refuses <code>watcher-required</code>. The open is one helper, <code>_open_request_fifo</code>, shared with <code>_write_fleet_request</code>. The merge kept main's retry on a FIFO not yet created. A repair round (resumed by the coordinator) added the attached-by-host branch, which the first build lacked. Reviews 110/120 and 113/120, 0 added failures. Population of 227 importing test modules: 0 deterministic added failures, after a test-isolation fix (<code>5d74eac6</code>) stopped the suite reaching the live session's host. A wedged host still holding its FIFO open is predicted as live; a dry run cannot tell without writing, and the docstring says so. Section closed by tick, not collapse. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/a-dry-run-predicts-host-delivery.html">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261007T151956577480-a-dry-run-predicts-host-delivery" data-who="reckon-build" data-when="2026-10-07T16:13:25.988Z">
-    <div class="r-comment-body"><p>A dry-run dispatch now predicts the delivery the real dispatch reaches across both admission arms, and writes nothing to the host&#x27;s FIFO: plan_dispatch reads the host&#x27;s liveness for a waiting host (via the extracted _open_request_fifo, the one spelling of the non-blocking write-open shared with _write_fleet_request) and mirrors the host-attached arm (_session_host_runs_follower on the census pid) so an already-attached session reads host while a foreign follower reads monitor, a no-host session still refused watcher-required; tests/test_dispatch_session_host.py plus the four fleet-request files 61 passed EXIT=0, negative control (mirrored branch deleted) 1 failed EXIT=1.</p></div>
+    <div class="r-comment-body"><p>A dry-run dispatch now predicts the delivery the real dispatch reaches across both admission arms, and writes nothing to the host's FIFO: plan_dispatch reads the host's liveness for a waiting host (via the extracted _open_request_fifo, the one spelling of the non-blocking write-open shared with _write_fleet_request) and mirrors the host-attached arm (_session_host_runs_follower on the census pid) so an already-attached session reads host while a foreign follower reads monitor, a no-host session still refused watcher-required; tests/test_dispatch_session_host.py plus the four fleet-request files 61 passed EXIT=0, negative control (mirrored branch deleted) 1 failed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-07T16:25:00Z">
     <div class="r-comment-body"><p>Landed at merge <code>750f677a</code>. <code>SessionHost.stop</code> takes a reason and writes <code>stopped_at</code> and <code>stop_reason</code> (<code>owner ended</code> or <code>signalled</code>) into the host's final record, stamped when the host notices. Gate: 17 passed, and both new tests fail on the base code. Population of 8 importing test files: 129 passed at base, 131 at the merged head, 0 added. Review 111/120. Its one finding was a text-less placeholder that names no defect; the repair round it started was stopped, and the plan-review session owns the guard. Section closed by tick, not collapse. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/the-session-host-records-when-it-stopped.html">evidence</a></p></div>
@@ -341,6 +347,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261007T160403892846-review-of-the-session-host-records-when-it-stopped" data-who="reckon-build" data-when="2026-10-07T16:18:53.093Z">
     <div class="r-comment-body"><p>§11 review of r-20261007T154818066959: goal_fidelity 19, evidence 18, scope_discipline 19, durability 17, fit 19, reuse 19 (total 111); the stop-time/reason change meets §11 and both done_when readings, with two follow-on coverage/contract notes and no defect found.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-10-07T17:40:00Z">
+    <div class="r-comment-body"><p>Landed at merge <code>be78fede</code>. <code>dispatch._session_host_fifo_path</code> composes the FIFO path from an owner pair. <code>_session_host_fifo</code> and <code>session_host._fifo_path</code> both call it, so <code>{pid}-{start}.fifo</code> is spelled once under <code>reckon/</code>; the bash entry point keeps its own spelling. Gate: 22 passed, and the equality test fails when one side's format is changed alone. Population of 9 session-host test modules: 137 passed at base, 138 at the merged head, 0 added. Review 120/120. Its one follow-on is that the head gate log names the base revision, because the gate ran before the commit; the reviewer reproduced the result at <code>173caf43</code>. Section closed by tick. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/one-spelling-of-the-host-fifo-path.html">evidence</a></p></div>
 </div>
 </section>
 </main>

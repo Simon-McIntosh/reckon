@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.95">
-<meta name="plan-version" content="122">
+<meta name="plan-version" content="124">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -516,6 +516,12 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-20261007T164500Z" data-who="reckon-build" data-when="2026-10-07T16:45:00Z">
     <div class="r-comment-body"><p>Node (2) landed in all five projects. Four import nodes were cut from stale local branches, so the coordinator merged each import commit onto the project's <code>origin/main</code>. Where a record differed only by its store <code>timestamp</code>, it kept origin's copy. Where the import carried more answers, it took the import's copy.</p><ul><li><strong>reckon</strong> (reviewed 108/120): 13 plan reviews added, including this plan's v81, v82, v84, v88, v97, v100, v102 and v106. Its census listed those five named ones, so the red control held.</li><li><strong>imas-ambix</strong> (106/120): three <code>jt60sa-facility-mint</code> plan reviews added.</li><li><strong>nova</strong> (116/120): nothing was missing. Two run reviews take the staging copy, which carries a disposition recorded after the morning import.</li><li><strong>imas-codex</strong> (106/120): both records it found had already reached origin through their runs' promotions, with fuller times, so nothing was merged.</li><li><strong>imas-ink</strong> (119/120): all 29 records were already committed, and there was no commit.</li></ul><p><strong>Post-fix census.</strong> This plan's v116 content review was dispatched at 16:18Z and promoted at 16:30Z, after the fix was installed. Its record carries the composed id <code>r-20261007T161827…</code>, and it was added by its own promotion commit, <code>06854303a promote(r-20261007T161831525422-plan-review-of-…)</code>. A plan review is now committed when it promotes. Two import reviews found the dry run prints no records-to-import list, so the census needed a probe of the script's private functions. That is node (3).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261007T171336679594-the-import-dry-run-lists-what-it-imports" data-who="reckon-build" data-when="2026-10-07T17:20:20.561Z">
+    <div class="r-comment-body"><p>The host review import's dry run now lists each actionable record — a recognised record whose committed path is absent — by review run id, subject and plan version, beside the count `records to import: N`, from a new `_actionable_records` decision that both the dry run's listing and `_import_records` call so the listed set and the written set cannot drift; `--write` is unchanged; gate `tests/test_import_dry_run_lists_what_it_imports.py`+`tests/test_import_host_reviews.py` 14 passed EXIT=0, negative control 2 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261007T172149413448-review-of-the-import-dry-run-lists-what-it-imports" data-who="reckon-build" data-when="2026-10-07T17:30:05.022Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261007T171336679594 stored as a parsed record: six dimensions scored in 0..20 (goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20, reuse 20; total 119), reviewed_base_sha 7ad6ede0531d38eb49dda78fbfc9636b179bbcdc and reviewed_head_sha 60990277c65ae273c22be03e537949950f946b6b, one follow-on finding that the &quot;cannot drift&quot; guarantee is unguarded.</p></div>
 </div>
 </section>
 </main>

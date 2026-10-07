@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "scripts/import_host_reviews.py:586",
+    "scripts/import_host_reviews.py:390"
+  ],
+  "completed_at": "2026-10-07T17:30:05.022Z",
+  "dispatched_at": "2026-10-07T17:22:17Z",
+  "findings": [
+    {
+      "file": "scripts/import_host_reviews.py",
+      "line": "390",
+      "severity": "follow-on",
+      "text": "follow-on: _import_records sharing _actionable_records is stated as the reason the listed set and the written set cannot drift, but no test fails if _import_records reverts to its own inline committed-path filter, so that guarantee rests on inspection rather than a guard."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit 60990277 against base 7ad6ede0; one commit, three files, all inside the declared scope.",
+    "done_when": "the plan's done-when names a test running the dry run on a fixture store holding one absent and one already-committed record; tests/test_import_dry_run_lists_what_it_imports.py:93 does exactly that and the manifest records the gate over it.",
+    "goal": "the node goal is that the host review import's dry run lists each actionable record by review run id, subject and plan version beside its count, from the same decision the write path uses; scripts/import_host_reviews.py:358 defines _actionable_records and :371 _print_actionable, and :384 _import_records consumes the same set at :390.",
+    "manifest": "read; it records the gate over tests/test_import_dry_run_lists_what_it_imports.py and tests/test_import_host_reviews.py at 14 passed EXIT=0, and a negative control at gate-logs/negcontrol.log.",
+    "write_paths": "read the manifest's declared paths; git show --stat 60990277 lists scripts/import_host_reviews.py, tests/test_import_dry_run_lists_what_it_imports.py and the evidence fragment, all inside those paths."
+  },
+  "justifications": {
+    "durability": "removing the `_print_actionable(_actionable_records(plan))` call reddens both new cases at tests/test_import_dry_run_lists_what_it_imports.py:93 and :124 (2 failed, EXIT=1), but no test reddens if _import_records stops sharing _actionable_records, so the cannot-drift guarantee at scripts/import_host_reviews.py:390 is unverified.",
+    "evidence": "the manifest's tests line records the two-file gate at 14 passed EXIT=0 and gate-logs/head.log holds that summary; I reproduced 2 passed EXIT=0 on tests/test_import_dry_run_lists_what_it_imports.py alone.",
+    "fit": "_print_actionable mirrors the sibling _print_delivered at scripts/import_host_reviews.py:519 and every added name describes mechanism, with no plan or ticket identifier.",
+    "goal_fidelity": "scripts/import_host_reviews.py:371 _print_actionable prints `records to import: N` then one importable line per record carrying the review run id, subject and plan version.",
+    "reuse": "_actionable_records extends the script's existing committed-path decision rather than forking it, and a search of reckon/ and scripts/ for an import-listing owner found none.",
+    "scope_discipline": "git show --stat 60990277 lists only the three declared paths and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 7ad6ede0531d38eb49dda78fbfc9636b179bbcdc\nreviewed_head_sha: 60990277c65ae273c22be03e537949950f946b6b\nVERDICT goal: the node goal is that the host review import's dry run lists each actionable record by review run id, subject and plan version beside its count, from the same decision the write path uses; scripts/import_host_reviews.py:358 defines _actionable_records and :371 _print_actionable, and :384 _import_records consumes the same set at :390.\nVERDICT done_when: the plan's done-when names a test running the dry run on a fixture store holding one absent and one already-committed record; tests/test_import_dry_run_lists_what_it_imports.py:93 does exactly that and the manifest records the gate over it.\nVERDICT write_paths: read the manifest's declared paths; git show --stat 60990277 lists scripts/import_host_reviews.py, tests/test_import_dry_run_lists_what_it_imports.py and the evidence fragment, all inside those paths.\nVERDICT manifest: read; it records the gate over tests/test_import_dry_run_lists_what_it_imports.py and tests/test_import_host_reviews.py at 14 passed EXIT=0, and a negative control at gate-logs/negcontrol.log.\nVERDICT diff: read commit 60990277 against base 7ad6ede0; one commit, three files, all inside the declared scope.\nCALL_SITES: scripts/import_host_reviews.py:586, scripts/import_host_reviews.py:390\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: scripts/import_host_reviews.py:371 _print_actionable prints `records to import: N` then one importable line per record carrying the review run id, subject and plan version.\nSCORE evidence: 20\nJUSTIFICATION evidence: the manifest's tests line records the two-file gate at 14 passed EXIT=0 and gate-logs/head.log holds that summary; I reproduced 2 passed EXIT=0 on tests/test_import_dry_run_lists_what_it_imports.py alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 60990277 lists only the three declared paths and carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: removing the `_print_actionable(_actionable_records(plan))` call reddens both new cases at tests/test_import_dry_run_lists_what_it_imports.py:93 and :124 (2 failed, EXIT=1), but no test reddens if _import_records stops sharing _actionable_records, so the cannot-drift guarantee at scripts/import_host_reviews.py:390 is unverified.\nSCORE fit: 20\nJUSTIFICATION fit: _print_actionable mirrors the sibling _print_delivered at scripts/import_host_reviews.py:519 and every added name describes mechanism, with no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: _actionable_records extends the script's existing committed-path decision rather than forking it, and a search of reckon/ and scripts/ for an import-listing owner found none.\nFINDING scripts/import_host_reviews.py:390 follow-on: _import_records sharing _actionable_records is stated as the reason the listed set and the written set cannot drift, but no test fails if _import_records reverts to its own inline committed-path filter, so that guarantee rests on inspection rather than a guard.\n",
+  "review_run_id": "r-20261007T172149413448-review-of-the-import-dry-run-lists-what-it-imports",
+  "reviewed_base_sha": "7ad6ede0531d38eb49dda78fbfc9636b179bbcdc",
+  "reviewed_head_sha": "60990277c65ae273c22be03e537949950f946b6b",
+  "reviewed_run_id": "r-20261007T171336679594-the-import-dry-run-lists-what-it-imports",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T17:28:31.372817+00:00",
+  "total": 119
+}

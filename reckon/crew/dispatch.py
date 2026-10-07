@@ -1316,14 +1316,29 @@ def _session_host_owner() -> tuple[int, str] | None:
     return pid, start
 
 
-def _session_host_fifo() -> Path | None:
-    """Resolve the calling Claude session's host FIFO, or None when there is none."""
-    owner = _session_host_owner()
+def _session_host_fifo_path(owner: tuple[int, str]) -> Path | None:
+    """Name the request FIFO a session host owns from its ``(pid, start)`` pair.
+
+    Both this module and the host entry point resolve one FIFO for a session's
+    Claude process, so the composition lives here once -- the host imports it
+    deferred, exactly as it imports the directory name and runtime-root order
+    from here -- rather than two spellings that agree only until one changes.
+    A missing runtime root yields no path, the same way an unresolvable owner
+    does for each caller.
+    """
     root = _session_host_runtime_root()
-    if owner is None or root is None:
+    if root is None:
         return None
     pid, start = owner
     return root / SESSION_HOST_DIRECTORY / f"{pid}-{start}.fifo"
+
+
+def _session_host_fifo() -> Path | None:
+    """Resolve the calling Claude session's host FIFO, or None when there is none."""
+    owner = _session_host_owner()
+    if owner is None:
+        return None
+    return _session_host_fifo_path(owner)
 
 
 def _session_host_waiting() -> bool:
