@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/repair.py:review_findings",
+    "reckon/crew/recovery.py:3425",
+    "reckon/crew/obligation_snapshot.py:719"
+  ],
+  "completed_at": "2026-10-07T17:39:11.422Z",
+  "dispatched_at": "2026-10-07T17:26:07Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read revision by revision against base 7ad6ede0; f9af2390 changes reckon/crew/repair.py and reckon/crew/review.py plus the new test file, and 77ee4653 adds the evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when named tests/test_a_claimless_finding_is_not_a_finding.py with tests/test_repair.py and tests/test_reviews_read_the_committed_store_first.py; tests/test_repair.py does not exist in the tree, so the literal command could not run and the worker ran the new file with five existing repair test files and the committed-store test instead, recording 47 passed EXIT=0.",
+    "goal": "the node goal is that review_findings reads every finding through one claim predicate so a claimless finding never reaches repair while every existing id stays unchanged; reckon/crew/review.py:159 adds review.finding_claim and reckon/crew/repair.py:130 routes review_findings through it.",
+    "manifest": "read; it states 47 passed EXIT=0 for the gate, a 4-failed EXIT=1 negative control, and a base-body defect reproduction, each with a log path on disk.",
+    "write_paths": "the manifest declares reckon/crew/repair.py, reckon/crew/review.py, tests/test_a_claimless_finding_is_not_a_finding.py and the evidence fragment; every path in the two landed revisions is inside them."
+  },
+  "justifications": {
+    "durability": "the negative control (accept a mapping with no claim field) reddens four cases with EXIT=1 while the head arm is green, and tests/test_a_claimless_finding_is_not_a_finding.py:53 re-derives the expected id through an independent sha256 oracle.",
+    "evidence": "the gate log records 47 passed EXIT=0 and a 20-to-4 red negative control at EXIT=1, but the done_when's named tests/test_repair.py does not exist so the literal gate could not be run and the worker substituted the existing repair test files.",
+    "fit": "finding_claim and claimless_findings sit beside declared_severity at reckon/crew/review.py:128 and follow the module's own shape, introducing no plan label, version tag or ticket reference.",
+    "goal_fidelity": "review.py:159 finding_claim is the one predicate and repair.py:130 reads every finding through it, so a claimless entry is dropped before repair while finding_id's file/line/text derivation is untouched.",
+    "reuse": "a search of reckon/crew for an existing claim reader found none \u2014 parse_review reads emitted text lines and repair.finding_id derives an id \u2014 so finding_claim owns the capability rather than forking one.",
+    "scope_discipline": "both landed revisions touch only reckon/crew/repair.py, reckon/crew/review.py, tests/test_a_claimless_finding_is_not_a_finding.py and the evidence fragment, matching the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that review_findings reads every finding through one claim predicate so a claimless finding never reaches repair while every existing id stays unchanged; reckon/crew/review.py:159 adds review.finding_claim and reckon/crew/repair.py:130 routes review_findings through it.\nVERDICT done_when: the done_when named tests/test_a_claimless_finding_is_not_a_finding.py with tests/test_repair.py and tests/test_reviews_read_the_committed_store_first.py; tests/test_repair.py does not exist in the tree, so the literal command could not run and the worker ran the new file with five existing repair test files and the committed-store test instead, recording 47 passed EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/repair.py, reckon/crew/review.py, tests/test_a_claimless_finding_is_not_a_finding.py and the evidence fragment; every path in the two landed revisions is inside them.\nVERDICT manifest: read; it states 47 passed EXIT=0 for the gate, a 4-failed EXIT=1 negative control, and a base-body defect reproduction, each with a log path on disk.\nVERDICT diff: read revision by revision against base 7ad6ede0; f9af2390 changes reckon/crew/repair.py and reckon/crew/review.py plus the new test file, and 77ee4653 adds the evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/repair.py:review_findings, reckon/crew/recovery.py:3425, reckon/crew/obligation_snapshot.py:719\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: review.py:159 finding_claim is the one predicate and repair.py:130 reads every finding through it, so a claimless entry is dropped before repair while finding_id's file/line/text derivation is untouched.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate log records 47 passed EXIT=0 and a 20-to-4 red negative control at EXIT=1, but the done_when's named tests/test_repair.py does not exist so the literal gate could not be run and the worker substituted the existing repair test files.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both landed revisions touch only reckon/crew/repair.py, reckon/crew/review.py, tests/test_a_claimless_finding_is_not_a_finding.py and the evidence fragment, matching the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control (accept a mapping with no claim field) reddens four cases with EXIT=1 while the head arm is green, and tests/test_a_claimless_finding_is_not_a_finding.py:53 re-derives the expected id through an independent sha256 oracle.\nSCORE fit: 20\nJUSTIFICATION fit: finding_claim and claimless_findings sit beside declared_severity at reckon/crew/review.py:128 and follow the module's own shape, introducing no plan label, version tag or ticket reference.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/crew for an existing claim reader found none \u2014 parse_review reads emitted text lines and repair.finding_id derives an id \u2014 so finding_claim owns the capability rather than forking one.\nreviewed_base_sha: 7ad6ede0531d38eb49dda78fbfc9636b179bbcdc\nreviewed_head_sha: 77ee4653a37686e474c85326d21b5ece2fb6571e",
+  "review_run_id": "r-20261007T172540990400-review-of-a-claimless-finding-is-not-a-finding",
+  "reviewed_base_sha": "7ad6ede0531d38eb49dda78fbfc9636b179bbcdc",
+  "reviewed_head_sha": "77ee4653a37686e474c85326d21b5ece2fb6571e",
+  "reviewed_run_id": "r-20261007T171236982919-a-claimless-finding-is-not-a-finding",
+  "reviewer": {
+    "backend": "local",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261007T172540990400-review-of-a-claimless-finding-is-not-a-finding",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T17:51:16.786368+00:00",
+  "total": 116
+}
