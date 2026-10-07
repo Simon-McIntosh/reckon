@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:every-review-is-kept-as-a-committed-record">
+  <meta name="plan-verifies" content="reckon:every-review-is-kept-as-a-committed-record#s4">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-07">
+  <title>Raw review reports are pruned once their record is committed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="raw-review-reports-are-pruned-once-committed-landing">
+  <h2>Raw review reports are pruned once their record is committed</h2>
+  <p><code>crew gc</code> gains one pass over the plan-review report
+  directories. A <code>report.md</code> older than
+  <code>review.raw_report_retention_days</code> (declared as a non-negative
+  integer in <code>flight.REVIEW_OWNED_KEYS</code>, read through
+  <code>flight.raw_report_retention_days</code>, default 30) is listed as
+  <code>prune</code> and removed only under <code>--apply</code>, and only when
+  the review's committed record exists under
+  <code>docs/state/&lt;project&gt;/reviews/plan/&lt;slug&gt;/&lt;run&gt;.json</code>;
+  otherwise it is listed as <code>withheld</code> with the reason
+  <code>missing-committed-record</code>. Every candidate is printed with its path, age in
+  days and action; a dry run prints the same set <code>--apply</code> would act
+  on. The sidecar and the <code>plan.html</code> snapshot survive every case.</p>
+  <p>Gate <code>tests/test_raw_report_retention.py</code> with
+  <code>tests/test_crew_gc.py</code> and
+  <code>tests/test_review_is_earned_by_significant_change.py</code> at
+  <code>-n 4</code>: 49 passed, <code>EXIT=0</code>. Declared negative control —
+  prune a past-retention report whose committed record is absent — makes
+  <code>test_a_past_report_without_a_record_is_withheld_and_never_removed</code>
+  fail, <code>EXIT=1</code>.</p>
+</section>
+</main>
+</body>
+</html>
