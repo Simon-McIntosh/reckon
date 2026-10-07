@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.9">
-<meta name="plan-version" content="50">
+<meta name="plan-version" content="51">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -329,6 +329,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-07T17:25:00Z">
     <div class="r-comment-body"><p>Landed at merge <code>5fbbc90a</code>. A dry-run dispatch reads a waiting host's liveness with the same non-blocking open the real request uses, closed without a byte, and mirrors the real admission's host-attached branch, so it predicts the delivery the real dispatch reaches. A session with no host still refuses <code>watcher-required</code>. The open is one helper, <code>_open_request_fifo</code>, shared with <code>_write_fleet_request</code>. The merge kept main's retry on a FIFO not yet created. A repair round (resumed by the coordinator) added the attached-by-host branch, which the first build lacked. Reviews 110/120 and 113/120, 0 added failures. Population of 227 importing test modules: 0 deterministic added failures, after a test-isolation fix (<code>5d74eac6</code>) stopped the suite reaching the live session's host. A wedged host still holding its FIFO open is predicted as live; a dry run cannot tell without writing, and the docstring says so. Section closed by tick, not collapse. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/a-dry-run-predicts-host-delivery.html">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261007T151956577480-a-dry-run-predicts-host-delivery" data-who="reckon-build" data-when="2026-10-07T16:13:25.988Z">
+    <div class="r-comment-body"><p>A dry-run dispatch now predicts the delivery the real dispatch reaches across both admission arms, and writes nothing to the host&#x27;s FIFO: plan_dispatch reads the host&#x27;s liveness for a waiting host (via the extracted _open_request_fifo, the one spelling of the non-blocking write-open shared with _write_fleet_request) and mirrors the host-attached arm (_session_host_runs_follower on the census pid) so an already-attached session reads host while a foreign follower reads monitor, a no-host session still refused watcher-required; tests/test_dispatch_session_host.py plus the four fleet-request files 61 passed EXIT=0, negative control (mirrored branch deleted) 1 failed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-07T16:25:00Z">
     <div class="r-comment-body"><p>Landed at merge <code>750f677a</code>. <code>SessionHost.stop</code> takes a reason and writes <code>stopped_at</code> and <code>stop_reason</code> (<code>owner ended</code> or <code>signalled</code>) into the host's final record, stamped when the host notices. Gate: 17 passed, and both new tests fail on the base code. Population of 8 importing test files: 129 passed at base, 131 at the merged head, 0 added. Review 111/120. Its one finding was a text-less placeholder that names no defect; the repair round it started was stopped, and the plan-review session owns the guard. Section closed by tick, not collapse. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/the-session-host-records-when-it-stopped.html">evidence</a></p></div>
