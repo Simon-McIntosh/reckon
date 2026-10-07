@@ -7,9 +7,8 @@ These cases hold a promoting review run to supplying its own id for the round
 that run delivered — the run that produced it is exactly the run being promoted
 — so the round lands rather than being abandoned. They hold the promotion to
 skipping a round it cannot key at all, one that is neither this run's own
-delivered round nor carries a review run id, with a note naming the file rather
-than refusing the whole landing, and hold a round that does carry its id to
-being committed beside it.
+delivered round nor carries a review run id of its own, to being filed under the
+derived legacy id of its own bytes rather than skipped.
 
 Every crew directory is environment-resolved under ``tmp_path``; nothing touches
 the operator's own store.
@@ -18,7 +17,6 @@ the operator's own store.
 from __future__ import annotations
 
 import json
-import logging
 import subprocess
 from pathlib import Path
 
@@ -208,30 +206,27 @@ def test_a_review_without_its_run_id_lands_under_the_promoting_run_id(
     assert row["review"]["id"] == REVIEW
 
 
-def test_an_unnameable_round_is_skipped_with_a_note_not_refused(
-    repository: Path, tmp_path: Path, caplog: pytest.LogCaptureFixture
+def test_an_unnamed_round_lands_under_its_derived_legacy_id(
+    repository: Path, tmp_path: Path
 ) -> None:
     _write_run_record(repository, SUBJECT)
     delivered_path = _store(_complete_run_review(None, review_run_id=None))
     # Another round of the same subject, also carrying no id: it is not the
-    # round this run delivered, so it cannot be filed under any run id and must
-    # be skipped rather than refusing the landing.
-    unnameable_path = _store(
+    # round this run delivered, so it has no run id of its own to be keyed by.
+    # Its own bytes key it, and it is committed under the derived legacy id
+    # rather than skipped.
+    unnamed_path = _store(
         _complete_run_review(HEAD_ONE, review_run_id=None), head=HEAD_ONE
     )
+    derived = review_module.derived_legacy_review_run_id(unnamed_path.read_bytes())
     _review_pointer(repository, tmp_path, run_id=REVIEW, declared=[str(delivered_path)])
 
-    with caplog.at_level(logging.WARNING, logger="reckon.crew.promotion"):
-        crew.complete(REVIEW, gate="passed", root=repository)
+    crew.complete(REVIEW, gate="passed", root=repository)
 
-    committed_names = sorted(
-        path.name for path in _committed_run_dir(repository).glob("*.json")
-    )
-    assert committed_names == [f"{REVIEW}.json"]
+    committed_dir = _committed_run_dir(repository)
+    committed_names = sorted(path.name for path in committed_dir.glob("*.json"))
+    assert committed_names == sorted([f"{REVIEW}.json", f"{derived}.json"])
 
-    notes = [
-        record.getMessage()
-        for record in caplog.records
-        if record.name == "reckon.crew.promotion"
-    ]
-    assert any(str(unnameable_path) in note for note in notes)
+    filed = _read(committed_dir / f"{derived}.json")
+    assert filed["review_run_id"] == derived
+    assert filed["review_run_id_source"] == "derived"

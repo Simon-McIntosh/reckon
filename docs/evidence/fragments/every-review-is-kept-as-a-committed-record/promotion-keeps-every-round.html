@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>Landing: promotion keeps every round | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: promotion keeps every round</h1>
+    </header>
+
+    <section id="promotion-keeps-every-round-landing-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li><code>reckon/crew/promotion.py</code> &mdash; <code>_delivered_review_payloads_for_commit</code> no longer skips a stored round that carries no <code>review_run_id</code> and is not the delivered one. It files it under <code>review.derived_legacy_review_run_id</code> of its own bytes and marks it <code>review_run_id_source: derived</code>, the same derivation the host importer uses. The now-unused module logger and <code>logging</code> import were removed.</li>
+        <li><code>reckon/crew/review.py</code> &mdash; <code>store_review</code> and <code>store_committed_review</code> call <code>names_a_review_subject</code> for the subject rule instead of testing it inline; <code>resolve_record_times</code> keeps the completion from whichever source supplied one and the dispatch from the first source that has it, naming the dispatch's source.</li>
+        <li><code>reckon/crew/plan_review.py</code> &mdash; <code>store_plan_review</code> routes its plan-version subject test through <code>names_a_review_subject</code>.</li>
+        <li><code>tests/test_promotion_keeps_every_round.py</code> (new) and <code>tests/test_a_review_without_its_run_id_still_promotes.py</code> (updated to the new behaviour).</li>
+      </ul>
+    </section>
+
+    <section id="promotion-keeps-every-round-landing-measure">
+      <h2>Measure</h2>
+      <ul>
+        <li>Gate, the five declared files run in the foreground under <code>--basetemp</code> in <code>/tmp</code>: head <code>30 passed</code>, <code>EXIT=0</code>.</li>
+        <li>Negative control, the declared mutation (skip an unnamed stored round at promotion instead of filing it under its derived legacy id) applied to the head: <code>2 failed, 28 passed</code>, <code>EXIT=1</code> &mdash; the two round-keeping cases fail, the rest still pass.</li>
+      </ul>
+    </section>
+
+    <section id="promotion-keeps-every-round-landing-commits">
+      <h2>Commits and records</h2>
+      <p>Code and tests: <code>ff3c1d4d7e7d737db47999a65a2f2bdee5e1c7d4</code>. Logs in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T032825749037-promotion-keeps-every-round/</code>: <code>gate.log</code> (gate), <code>negative-control.log</code> (declared mutation).</p>
+    </section>
+  </main>
+</body>
+</html>
