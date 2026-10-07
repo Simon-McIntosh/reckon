@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite at b8cc7f0f6 (baseline.log, 15 passed, exit 0, failure_ids []) minus after_suite at efe09f6ba (gate.log, 20 passed, exit 0, failure_ids []); no failure id in the head arm is read from the base arm. Independently reproduced across this review's own delta: base 5af5e8561 (base-gate.log, 19 passed, exit 0, failure_ids []) and head 6849fe5cd (head-gate.log, 20 passed, exit 0, failure_ids []), so the delta added one passing test and no failing id.",
+  "base_log_revision": "b8cc7f0f622a96640b0d5320ce81a7b280b33466",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:9016 apply_backend_placement",
+    "reckon/cli.py:5656 crew_placement"
+  ],
+  "completed_at": "2026-10-07T09:00:25.131Z",
+  "dispatched_at": "2026-10-07T08:45:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/placement.py",
+      "line": "577",
+      "severity": "follow-on",
+      "text": "The shape read now falls back to the declared defaults when fleet_node.allocation_shape returns None (placement.py:577-581), but the only case that reaches a successful shape read in the suite is the fake that answers it; no case drives a running, same-user target whose shape query answers non-zero or unparseable while the job is still admitted, so the fallback branch is unexercised. The fallback is deliberate (the record names the real job id regardless), so this is a coverage gap, not a defect."
+    }
+  ],
+  "head_log_revision": "efe09f6babaa79d0dc0bf605f359f3b324785883",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/runs.py:4308 scheduler_job_state returns only the state (no owner), so the retained state|owner read at placement.py:446 asks a question the existing reader does not; fleet_node.allocation_shape at fleet_node.py:254 is the shape reader the fix reuses.",
+    "diff": "read against base 5af5e8561; efe09f6ba narrows REPLACEMENT_JOB_QUERY to %T|%u, adds SCHEDULER_UNKNOWN_JOB_MARKER and its branch, deletes _target_shape, and routes the shape through fleet_node.allocation_shape; 6849fe5cd updates the fragment. 122 insertions, 57 deletions across three files.",
+    "done_when": "the two prior follow-ons are the delta's done-when: (1) reuse \u2014 _target_shape's re-implementation of fleet_node.allocation_shape is removed and replaced by a call to it (placement.py:575-581); (2) evidence \u2014 the unknown-job case is now asserted against this cluster's non-zero-exit 'Invalid job id specified' answer via SCHEDULER_UNKNOWN_JOB_MARKER (placement.py:86,479), with a new case separating a scheduler that could not be asked (test file :394).",
+    "goal": "this node reviews only the commits the run gained since it was reviewed, 5af5e8561..6849fe5cd (efe09f6ba fix, 6849fe5cd docs), against plan \u00a77's goal that reckon crew placement be repointable at a running job; the fix routes the target's shape through the fleet node's own reader and makes the unknown-job refusal reachable against this cluster's client.",
+    "manifest": "read; it records head efe09f6ba and base b8cc7f0f6, baseline_suite and after_suite (both exit 0, zero failures), test_logs gate/baseline/negative-control, and a declared negative-control log whose last line is EXIT=1.",
+    "write_paths": "the delta touches exactly three files, all inside the run's declared write scope: reckon/crew/placement.py, tests/test_crew_placement_reservation.py and docs/evidence/fragments/the-fleet-moves-to-a-new-node/the-reservation-can-be-replaced.html."
+  },
+  "justifications": {
+    "durability": "I applied my own mutation (SCHEDULER_UNKNOWN_JOB_MARKER changed so the cluster's answer no longer matches); test_replacement_refuses_a_job_the_scheduler_does_not_know reddens with the message falling through to 'could not be asked' (1 failed, EXIT=1), a case the unmutated head arm passes, so the marker guard is real and the new test measures it. The declared pending-job negative control still reddens test_replacement_refuses_a_pending_job (EXIT=1, DID NOT RAISE CrewError). The prior review's concern that this case guarded an unreachable branch is resolved; only the shape-fallback branch is untested (see finding).",
+    "evidence": "the focused gate tests/test_crew_placement_reservation.py together with tests/test_ensure_holds_one_reservation.py is green at 20 passed exit 0 at head 6849fe5cd, which I reproduced (base 5af5e8561 19 passed, exit 0; zero added failures). I fired the guarded branch directly: the marker branch returns 'the scheduler does not know job 99999999' for the cluster's real stderr, the same branch returns 'could not be asked' for a non-marked non-zero exit, and a real squeue -h -j 99999999 exits 1 with 'slurm_load_jobs error: Invalid job id specified', so the case is now exercised against the deployment target's own answer.",
+    "fit": "the added names are mechanism names (REPLACEMENT_JOB_QUERY, SCHEDULER_UNKNOWN_JOB_MARKER, _read_target_job, _replacement_refusal) with no plan, ticket or version id and no attribution, and the comments state the mechanism and why the two non-answers must not be read as each other.",
+    "goal_fidelity": "the delta repairs both prior follow-ons without disturbing the node goal: the replacement still names the target explicitly, refuses pending / other-user / unknown-id / could-not-be-asked through _replacement_refusal and _read_target_job, records the replaced id and prints both, and dispatch.py:9016 still resolves reservation['job_id'], so every later dispatch and resume moves while running steps are untouched.",
+    "read_note": "reviewed the delta 5af5e8561..6849fe5cd only, as the node goal directs; the full node was scored previously at run r-20261007T073459603891-review-of-the-reservation-can-be-replaced.",
+    "reuse": "the fix retires _target_shape's second parse of the scheduler shape fields and now calls fleet_node.allocation_shape (fleet_node.py:254), the reader placement.py:740 already uses, removing the heaviest of the prior three duplications; the record assembly keeps a test-visible 'size' key the fleet reader does not emit, and the retained state|owner read asks a question runs.py:4308 scheduler_job_state does not (it returns state only, no owner), so the remaining custom read is justified rather than a re-derivation, lifting this dimension from the 5 the prior review recorded. one untested fallback remains.",
+    "scope_discipline": "git diff --stat 5af5e8561..6849fe5cd lists exactly reckon/crew/placement.py, tests/test_crew_placement_reservation.py and the evidence fragment, the three files within the run's declared write paths, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: this node reviews only 5af5e8561..6849fe5cd (efe09f6ba fix, 6849fe5cd docs) against plan \u00a77; the fix routes the target shape through fleet_node.allocation_shape and makes the unknown-job refusal reachable against this node's cluster client.\nVERDICT done_when: the two prior follow-ons \u2014 remove the shape re-implementation and make the unknown-job case reach production \u2014 are both met (placement.py:575-581 reuse; placement.py:86,479 marker).\nVERDICT write_paths: the delta touches exactly placement.py, the test module and the fragment, all inside the run's declared scope.\nVERDICT manifest: read; head efe09f6ba, base b8cc7f0f6, both gate arms exit 0, declared negative control last line EXIT=1.\nVERDICT diff: 122 insertions / 57 deletions across three files; _target_shape deleted, SCHEDULER_UNKNOWN_JOB_MARKER added, shape read routed to fleet_node.allocation_shape.\nCALL_SITES: reckon/crew/runs.py:4308 scheduler_job_state (state only), fleet_node.py:254 allocation_shape\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the delta repairs both follow-ons without disturbing the node goal; refusals and dispatch naming intact.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate green 20 passed exit 0 (base 19), zero added failures; the marker branch fires against the cluster's real Invalid-job-id answer, and a real squeue exits 1 with that marker.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat lists exactly the three files the run declares and nothing else.\nSCORE durability: 20\nJUSTIFICATION durability: my marker mutation reddens the new test; the declared pending-job control still reddens its case; the prior unreachable-branch concern is resolved.\nSCORE fit: 20\nJUSTIFICATION fit: mechanism names, no plan/ticket/version id, no attribution, mechanism comments; the marker literal is scheduler output data.\nSCORE reuse: 16\nJUSTIFICATION reuse: _target_shape's duplication of fleet_node.allocation_shape is removed in favour of the owner reader; the retained state|owner read asks a question scheduler_job_state does not.\nFINDING reckon/crew/placement.py:577 follow-on: the shape fallback to declared defaults when allocation_shape returns None is unexercised by the suite (deliberate fallback, coverage gap only).\n",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T065930311978-the-reservation-can-be-replaced.at-6849fe5cd6751a6fe85307275b7ba53bfec9a1a7.json",
+  "review_run_id": "r-20261007T084507678738-review-of-the-reservation-can-be-replaced",
+  "reviewed_base_sha": "5af5e8561d638ebfa6861f6df2346bdd34fd9ecb",
+  "reviewed_head_sha": "6849fe5cd6751a6fe85307275b7ba53bfec9a1a7",
+  "reviewed_run_id": "r-20261007T065930311978-the-reservation-can-be-replaced",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T08:55:11.357002+00:00",
+  "total": 114
+}
