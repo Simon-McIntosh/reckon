@@ -58,6 +58,7 @@ import hashlib
 import json
 import re
 import shlex
+import subprocess
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1299,6 +1300,34 @@ def unanswered_findings(record: Mapping[str, Any]) -> list[str]:
     ]
 
 
+def _committed_copy_of(record: Mapping[str, Any]) -> Path | None:
+    """The committed file a stored plan review already has, or ``None``.
+
+    A promoted plan review lives in the project's committed tree, keyed by the
+    review run that produced it. An answer written to a staging file would be
+    skipped by every reader that prefers the committed copy — ``list_plan_reviews``
+    lists a record held in both trees once, as the committed copy — so the answer
+    is written where the reader reads. A review with no committed copy is not yet
+    promoted and answers to staging as before.
+    """
+    project = str(record.get("project") or "").strip()
+    plan_slug = str(record.get("plan_slug") or "").strip()
+    review_run_id = str(record.get("review_run_id") or "").strip()
+    if not project or not plan_slug or not review_run_id:
+        return None
+    committed_root = _review_store.committed_review_root(project)
+    if committed_root is None:
+        return None
+    path = plan_review_path(
+        project,
+        plan_slug,
+        int(record.get("plan_version") or 0),
+        committed_root=committed_root,
+        review_run_id=review_run_id,
+    )
+    return path if path.is_file() else None
+
+
 def record_response(
     record: Mapping[str, Any],
     finding_id: str,
@@ -1318,6 +1347,11 @@ def record_response(
     ``finding_id``, which must name a finding the record carries, so an answer
     can never attach to a finding nobody can read back. The returned path is the
     record whose ``responses`` now carries the answer.
+
+    A record that has been promoted is answered on its committed copy, which is
+    committed in one commit, so the answer reaches every committed-first reader
+    and is not left as a modified tracked file; a record not yet promoted is
+    written to the staging store as before.
     """
     action_value = str(action or "").strip().lower()
     if action_value not in RESPONSE_ACTIONS:
@@ -1348,6 +1382,17 @@ def record_response(
     events = list(updated.get(RESPONSE_EVENTS_KEY) or [])
     events.append({"finding": str(finding_id), **response})
     updated[RESPONSE_EVENTS_KEY] = events
+    committed = _committed_copy_of(updated)
+    if committed is not None:
+        # The record is promoted: writing a modified staging file would leave the
+        # answer invisible to every committed-first reader, so the committed copy
+        # is rewritten and committed in one commit through the same helper a
+        # promotion uses.
+        write_json_atomically(
+            committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
+        )
+        _review_store.commit_record_write(str(updated.get("project") or ""), committed)
+        return committed
     return store_plan_review(updated, base_dir=base_dir)
 
 
@@ -1448,11 +1493,11 @@ def _read_reviewed_blob_texts(
 
     ``reviewed_blob_sha`` names the bytes a reviewer read, written to the
     repository object store when the review was dispatched, so the text a
-    review was taken against survives the plan being written past it. One
-    ``git cat-file --batch`` process answers every blob in a single pass — the
-    batching :func:`reckon.velocity.read_blobs` uses — rather than one
-    subprocess per record. The mapping is keyed by the normalised blob sha; a
-    value of ``None`` means git reports the object missing, which the caller
+    review was taken against survives the plan being written past it. The bytes
+    come from :func:`reckon.velocity.read_blobs`, whose one batched object read
+    answers every blob in a single process rather than one subprocess per
+    record. The mapping is keyed by the normalised blob sha;
+    a value of ``None`` means git reports the object missing, which the caller
     falls back from rather than reading as absent content. A project with no
     resolvable checkout, or a git invocation that fails outright, yields an
     empty mapping and every review is measured from its snapshot instead.
@@ -1468,32 +1513,16 @@ def _read_reviewed_blob_texts(
     repo = _project_repo_root(project)
     if repo is None:
         return {}
-    from reckon.velocity import run_git
+    from reckon.velocity import read_blobs
 
-    payload = "".join(f"{sha}\n" for sha in unique).encode("ascii")
     try:
-        result = run_git(repo, "cat-file", "--batch", input=payload)
-    except OSError:
+        blobs = read_blobs(repo, unique)
+    except (OSError, subprocess.CalledProcessError):
         return {}
-    if result.returncode != 0:
-        return {}
-    data, position, texts = result.stdout, 0, {}
-    for sha in unique:
-        newline = data.find(b"\n", position)
-        if newline < 0:
-            break
-        header = data[position:newline].decode("ascii", "replace")
-        position = newline + 1
-        if header.strip().endswith("missing"):
-            texts[sha] = None
-            continue
-        try:
-            size = int(header.split()[2])
-        except (IndexError, ValueError):
-            break
-        texts[sha] = data[position : position + size].decode("utf-8", "replace")
-        position += size + 1
-    return texts
+    return {
+        sha: None if blob is None else blob.decode("utf-8", "replace")
+        for sha, blob in blobs.items()
+    }
 
 
 def _review_prose(
@@ -1620,9 +1649,7 @@ def review_day_summary(
             }
             if index > 0:
                 previous = entries[index - 1][1]
-                entry["previous_run_id"] = str(
-                    previous.get("review_run_id") or ""
-                )
+                entry["previous_run_id"] = str(previous.get("review_run_id") or "")
                 plan_totals["re_reviews"] += 1
                 current_prose = _review_prose(project, slug, record, blob_texts)
                 previous_prose = _review_prose(project, slug, previous, blob_texts)

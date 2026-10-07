@@ -1986,6 +1986,123 @@ def resolve_record_times(
     return "", "", UNKNOWN_TIMES_SOURCE
 
 
+# A disposition or an answer is written back to whichever copy of a record the
+# reader selected, and a promotion commits one copy of that record: the one a
+# reviewer delivered, or a sibling at another path. The fields such a write
+# touches — the disposition map, the per-finding response map and the response
+# event list — are read from every copy of the record a promotion commits
+# rather than from the single file it happens to read.
+def _answer_stamp(entry: Any) -> str:
+    """The moment an answer entry records, for choosing the latest per key."""
+    if isinstance(entry, Mapping):
+        for key in ("recorded_at", "when"):
+            stamp = str(entry.get(key) or "")
+            if stamp:
+                return stamp
+    return ""
+
+
+def _staging_copies_of_record(
+    project: str, record: Mapping[str, Any]
+) -> list[Mapping[str, Any]]:
+    """Every staging file that is another copy of ``record``, oldest first.
+
+    A record is copied whenever a sibling of it is written, and a disposition
+    or an answer is recorded on whichever copy the reader selected. A promotion
+    commits one copy, so the answers a sibling carries are read from here and
+    merged into the committed record rather than left behind in the host store.
+    Copies are the files keyed by the record's own review run — the one key
+    every copy shares — so a record the store filed under a different subject
+    name is still its own. A file that cannot be read is skipped.
+    """
+    review_run_id = str(record.get("review_run_id") or "").strip()
+    if not review_run_id:
+        return []
+    directory = review_store_root() / project
+    if not directory.is_dir():
+        return []
+    copies: list[Mapping[str, Any]] = []
+    for entry in sorted(
+        _review_run_index(directory).get(review_run_id) or [],
+        key=lambda item: item["mtime_ns"],
+    ):
+        path = entry["path"]
+        try:
+            stored = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if (
+            isinstance(stored, Mapping)
+            and str(stored.get("review_run_id") or "").strip() == review_run_id
+        ):
+            copies.append(stored)
+    return copies
+
+
+def _committed_record_at(path: str | Path) -> Mapping[str, Any] | None:
+    """The committed record already stored at ``path``, or None when none parses.
+
+    A round is stored once, then re-stored whenever a promotion commits the
+    subject's rounds again. The re-store writes the round's body, which carries
+    no answer; the answer a write recorded on the committed copy lives only in
+    the file being overwritten, so it is read here and merged back rather than
+    dropped. A path that does not exist yet, or whose bytes do not parse, has no
+    record to preserve.
+    """
+    try:
+        stored = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return stored if isinstance(stored, Mapping) else None
+
+
+def _merge_record_answers(sources: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
+    """Union the answer fields of several copies of one review record.
+
+    The two mappings merge by key with the latest entry winning, ordered by the
+    stamp each entry records — ``recorded_at`` on a disposition, ``when`` on a
+    response — so a re-answer of one finding supersedes the copy an earlier
+    write left. The event list is the union of every copy's events in time
+    order, deduplicated by content, so the history of what was answered and
+    when survives whichever copy happened to hold it. A field present in no
+    copy is absent from the result, so a record carrying no answer is not given
+    an empty one.
+    """
+    dispositions: dict[str, Any] = {}
+    responses: dict[str, Any] = {}
+    events: list[Any] = []
+    seen_events: set[str] = set()
+    for source in sources:
+        for key, target in (
+            (DIMENSION_DISPOSITIONS_KEY, dispositions),
+            ("responses", responses),
+        ):
+            mapping = source.get(key)
+            if not isinstance(mapping, Mapping):
+                continue
+            for name, entry in mapping.items():
+                existing = target.get(name)
+                if existing is None or _answer_stamp(entry) >= _answer_stamp(existing):
+                    target[name] = entry
+        for event in source.get("response_events") or ():
+            if not isinstance(event, Mapping):
+                continue
+            marker = json.dumps(event, sort_keys=True, default=str)
+            if marker in seen_events:
+                continue
+            seen_events.add(marker)
+            events.append(event)
+    events.sort(key=_answer_stamp)
+    merged: dict[str, Any] = {}
+    if dispositions:
+        merged[DIMENSION_DISPOSITIONS_KEY] = dispositions
+    if responses:
+        merged["responses"] = responses
+    if events:
+        merged["response_events"] = events
+    return merged
+
+
 def store_committed_review(
     record: dict[str, Any],
     *,
@@ -1995,40 +2112,43 @@ def store_committed_review(
 ) -> Path:
     """Persist one review record into the project's committed tree.
 
-    The record must name ``project`` and ``review_run_id`` — the run that
-    produced the review. ``project`` may be supplied by the caller instead,
-    which is how a promotion commits a record whose own body omits the project:
-    the promoting run knows the project it is landing into, so the committed
-    record takes that project rather than the write being refused. The review
-    run id keys the committed file and supplies the
-    dispatch and completion times through :func:`resolve_record_times`, so the
-    record carries when the review ran rather than when its file was stored; a
-    record carrying no review run id is refused rather than filed under the run
-    it reviews, because two review runs of one reviewed run would otherwise name
-    the same committed file. The times are resolved from the run records, the
-    record's own carried stamps, or the dispatch instant the review run id
-    encodes — in that order — and the stage used is recorded under
-    ``times_source``. The store clock is never substituted for a stamp: a
-    record whose times resolve from no source is committed with both stamps
-    empty and ``times_source`` ``"unknown"``, marking the absence rather than
-    defaulting it to the clock, because the record has no time to record and is
-    kept rather than lost.
+        The record must name ``project`` and ``review_run_id`` — the run that
+        produced the review. ``project`` may be supplied by the caller instead,
+        which is how a promotion commits a record whose own body omits the project:
+        the promoting run knows the project it is landing into, so the committed
+        record takes that project rather than the write being refused. The review
+        run id keys the committed file and supplies the
+        dispatch and completion times through :func:`resolve_record_times`, so the
+        record carries when the review ran rather than when its file was stored; a
+        record carrying no review run id is refused rather than filed under the run
+        it reviews, because two review runs of one reviewed run would otherwise name
+        the same committed file. The times are resolved from the run records, the
+        record's own carried stamps, or the dispatch instant the review run id
+        encodes — in that order — and the stage used is recorded under
+        ``times_source``. The store clock is never substituted for a stamp: a
+        record whose times resolve from no source is committed with both stamps
+        empty and ``times_source`` ``"unknown"``, marking the absence rather than
+        defaulting it to the clock, because the record has no time to record and is
+        kept rather than lost.
 
-    The body must be a review: it names the plan or the run it reviews (which
-    the ``plan_slug``/``reviewed_run_id`` checks above already require) and it
-    carries review material — findings, scores, a rubric or a reviewed
-    revision. A body carrying none of those is refused here, so the committed
-    store holds records only.
+        The body must be a review: it names the plan or the run it reviews (which
+        the ``plan_slug``/``reviewed_run_id`` checks above already require) and it
+        carries review material — findings, scores, a rubric or a reviewed
+        revision. A body carrying none of those is refused here, so the committed
+        store holds records only.
 
-    ``committed_root`` names the tree directly (a caller that already resolved
-    it, or a test); omitted, it resolves through :func:`committed_review_root`
+        ``committed_root`` names the tree directly (a caller that already resolved
+        it, or a test); omitted, it resolves through :func:`committed_review_root`
     against ``root``. A run review — one naming ``reviewed_run_id`` — is written
-    under ``run/<reviewed-run-id>/``, whatever ``plan_slug`` its body also
-    carries, because a run review records the plan its reviewed run was carried
-    under and that plan is not the review's subject. A plan review is written
-    under ``plan/<slug>/`` and is routed there only when the body names no
-    reviewed run and carries an integer ``plan_version``. The write is atomic and
-    every other body field is preserved.
+        under ``run/<reviewed-run-id>/``, whatever ``plan_slug`` its body also
+        carries, because a run review records the plan its reviewed run was carried
+        under and that plan is not the review's subject. A plan review is written
+        under ``plan/<slug>/`` and is routed there only when the body names no
+        reviewed run and carries an integer ``plan_version``. A disposition or
+        answer recorded on any copy of this record — a staging sibling or the
+        committed file already at the target path — is merged into the committed
+        body, so a re-store of a round carries the answers rather than overwriting
+        them. The write is atomic and every other body field is preserved.
     """
     project = str(record.get("project") or "").strip() or str(project or "").strip()
     if not project:
@@ -2086,9 +2206,61 @@ def store_committed_review(
             committed_root=committed_root,
             review_run_id=review_run_id,
         )
+
+    # A disposition or an answer may have been recorded on a sibling of the file
+    # this call commits, because its writer wrote back to whichever copy the
+    # reader selected. Every copy of the record is read for those fields and
+    # merged in, so a promotion carries them into the committed record rather
+    # than leaving them where only the host store could see them. The committed
+    # copy already at the target path is a source too: once an answer is written
+    # there, a later round of the same record is re-stored with a body that
+    # carries no answer, so reading the committed copy is what keeps the answer
+    # from being overwritten. It is merged last, so an answer the committed
+    # record already holds wins a tie against a staging sibling's copy of it.
+    existing = _committed_record_at(path)
+    stored.update(
+        _merge_record_answers(
+            [
+                stored,
+                *_staging_copies_of_record(project, stored),
+                *([existing] if existing is not None else []),
+            ]
+        )
+    )
     path.parent.mkdir(parents=True, exist_ok=True)
     _write_record(path, stored)
     return path
+
+
+def commit_record_write(project: str, path: str | Path) -> bool:
+    """Commit a write to a review record that lives in the committed tree.
+
+    A disposition or an answer written to the committed record is a tracked
+    file in the project's checkout, so the write is committed through the same
+    helper a promotion commits its state writes with — one path, one commit —
+    rather than left as a modified tracked file the next reader would trip on.
+    A staging write is not tracked and is left uncommitted. A project with no
+    committed tree, or a path outside it, is not committed here and returns
+    ``False``.
+    """
+    committed = committed_review_root(project)
+    if committed is None:
+        return False
+    try:
+        Path(path).resolve().relative_to(Path(committed).resolve())
+    except (OSError, ValueError):
+        return False
+    from reckon import ledger
+
+    ledger._commit_state_write(
+        project,
+        "fix(review): commit an answer on a committed review record",
+        "Commit the disposition or answer written to a committed review record "
+        "so it travels with the tree rather than sitting as a modified file.",
+        Path(path),
+        "review",
+    )
+    return True
 
 
 # A review record can be met mid-write: a review worker composes its record
@@ -2834,7 +3006,10 @@ def record_dimension_disposition(
     speaks for another. Writing anywhere else would leave the copy the reader
     reads without the entry — the row standing while this call reported the
     disposition as recorded. The write is atomic and preserves every other
-    field, including the reviewer's verbatim text.
+    field, including the reviewer's verbatim text. When the file is the
+    committed record, the write is committed in one commit through
+    :func:`commit_record_write`, so a disposition recorded after promotion is
+    not left as a modified tracked file; a staging write is left uncommitted.
     """
     dimension_name = str(dimension or "").strip().lower()
     if dimension_name not in REVIEW_DIMENSIONS:
@@ -2903,6 +3078,10 @@ def record_dimension_disposition(
 
     path.parent.mkdir(parents=True, exist_ok=True)
     _write_record(path, record)
+    # A disposition written to the committed record is a tracked change, so it
+    # is committed here rather than left for the next reader to trip on; a
+    # staging write is not tracked and is left where it was written.
+    commit_record_write(project, path)
     return path
 
 
