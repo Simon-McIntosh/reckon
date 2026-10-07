@@ -734,3 +734,59 @@ def test_a_primary_only_window_replays_its_own_allowance(
     assert reproduced["window_minutes"] == 43_200
     assert reproduced["derived"] == pytest.approx(row["allowance"]["derived"])
     assert reproduced == row["allowance"]
+
+
+def test_a_new_window_replays_a_withheld_allowance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A thin account reading retains its position and replays no projection."""
+    from reckon import budget
+    from reckon.crew.pace_replay import replay
+
+    moment = datetime(2030, 1, 3, tzinfo=UTC)
+    reset = moment + timedelta(days=7) - timedelta(minutes=11)
+    reading = budget._rate_limits_reading(
+        {
+            "primary": {
+                "window_minutes": 10_080,
+                "used_percent": 1.0,
+                "resets_at": int(reset.timestamp()),
+            },
+            "secondary": None,
+        },
+        observed_at=moment,
+        moment=moment,
+    )
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(budget, "recorded_windows", lambda *a, **k: {"alpha": reading})
+    monkeypatch.setattr(budget, "_account_surface_readings", lambda *a, **k: {})
+    config = {
+        "backends": {
+            "alpha": {
+                "launch": "cli",
+                "command": "codex",
+                "budget_group": "sol",
+            }
+        },
+        "budget": {"pace_multiple": 1.1, "drain_lead_hours": 12.0},
+    }
+    row = budget.pace_row(
+        config, project="sample", lane="alpha", node="n", score=0.0, now=moment
+    )
+    assert row["allowance"]["utilisation"] == pytest.approx(0.01)
+    assert row["allowance"]["derived"] is None
+    assert "window too young to project" in row["allowance"]["reason"]
+
+    report = replay(
+        [
+            {
+                "run_id": "run-early",
+                "role": "implement",
+                "backend": "alpha",
+                "local": False,
+                "pace": row,
+            }
+        ]
+    )
+    assert report["allowances"]["all_match"] is True, report["text"]
+    assert report["rows"][0]["recomputed_allowance"] == row["allowance"]
