@@ -1935,17 +1935,13 @@ def resolve_record_times(
     3. the dispatch instant the review run id encodes.
 
     ``times_source`` is ``"run-record"``, ``"record"`` or ``"run-id"``, or
-    ``"unknown"`` when no dispatch time resolves and the review run has no
-    record of its own. A dispatch resolved only from the run id leaves
-    ``completed_at`` empty only when no earlier source carried a completion,
-    because a run id itself encodes none and the clock is never substituted for
-    one. A record whose review run has no record anywhere — a round filed under
-    a derived legacy id, or one naming a run that was never committed — is
+    ``"unknown"`` when no dispatch time resolves. A dispatch resolved only from
+    the run id leaves ``completed_at`` empty only when no earlier source carried
+    a completion, because a run id itself encodes none and the clock is never
+    substituted for one. A record whose times resolve from no source is
     committed with both stamps empty and ``"unknown"`` under ``times_source``,
     marking the absence rather than refusing the record or giving it a time
-    nobody recorded. A review run whose own record **does** exist yet carries no
-    dispatch stamp is a defect rather than an unrecorded time, so that write is
-    refused naming the run.
+    nobody recorded.
     """
     review_run_id = str(record.get("review_run_id") or "").strip()
     reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
@@ -1959,10 +1955,7 @@ def resolve_record_times(
         dispatched = dispatched or pair[0]
         completed = completed or pair[1]
 
-    own_run_dispatched, own_run_completed, own_run_record_found = (
-        _run_record_times_found(project, review_run_id, root=root)
-    )
-    absorb((own_run_dispatched, own_run_completed))
+    absorb(run_record_times(project, review_run_id, root=root))
     if plan_slug:
         crew_run_id = _plan_review_crew_run_id(project, plan_slug, review_run_id)
         if crew_run_id:
@@ -1985,23 +1978,11 @@ def resolve_record_times(
     if encoded:
         return encoded, completed or own_completed, RUN_ID_TIMES_SOURCE
 
-    if own_run_record_found:
-        # The review run's own record exists but records no dispatch time, so a
-        # source was consulted and yielded nothing. That is a defect in the
-        # record the run wrote, not a time nobody recorded, so the write is
-        # refused naming the run rather than committed with an unknown time.
-        raise ValueError(
-            "review run "
-            f"{review_run_id!r} (reviewed run {reviewed_run_id!r}) has a run "
-            "record that carries no dispatch time — the committed record is "
-            "refused rather than stored with a time nobody recorded"
-        )
-
-    # No record exists for the review run anywhere, no carried stamp resolves
-    # and the run id encodes no instant, so the times were never recorded. The
-    # record is still committed, with both stamps empty and the absence marked
-    # under ``times_source``; the store clock is never substituted for a stamp
-    # nobody recorded.
+    # No source resolved a dispatch time — no record supplies one, no carried
+    # stamp resolves and the run id encodes no instant — so the record is
+    # committed with both stamps empty and the absence marked under
+    # ``times_source``. The store clock is never substituted for a stamp nobody
+    # recorded, whatever other records exist for the review run.
     return "", "", UNKNOWN_TIMES_SOURCE
 
 
@@ -2028,14 +2009,10 @@ def store_committed_review(
     record's own carried stamps, or the dispatch instant the review run id
     encodes — in that order — and the stage used is recorded under
     ``times_source``. The store clock is never substituted for a stamp: a
-    record whose review run has no record anywhere is committed with both stamps
+    record whose times resolve from no source is committed with both stamps
     empty and ``times_source`` ``"unknown"``, marking the absence rather than
-    defaulting it to the clock, because such a record — a round filed under a
-    derived legacy id, or one naming a run that was never committed — has no
-    time to record and is kept rather than lost. A review run whose own record
-    exists but carries no dispatch stamp is refused naming the run, because a
-    source was consulted and yielded nothing: that is a defect in the record the
-    run wrote, not a time nobody recorded.
+    defaulting it to the clock, because the record has no time to record and is
+    kept rather than lost.
 
     The body must be a review: it names the plan or the run it reviews (which
     the ``plan_slug``/``reviewed_run_id`` checks above already require) and it
