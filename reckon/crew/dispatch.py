@@ -5120,6 +5120,20 @@ def dispatch_picker_selection(
     def ask() -> None:
         try:
             from reckon.crew.picker import PickRequest, pick
+            from reckon.crew.picker import snapshot as picker_snapshot
+
+            # The estimate is the same deterministic measurement the context-fit
+            # verdict charges a node against, so Jev weighs the node's size
+            # rather than a zero. It is advisory: a failure to measure leaves the
+            # figure at zero and never aborts the pick.
+            local_backend = config.get("local_backend")
+            backend_settings = (config.get("backends") or {}).get(local_backend) or {}
+            try:
+                estimated_context = picker_snapshot.estimated_context_tokens(
+                    node, repo, backend_settings=backend_settings
+                )
+            except Exception:  # noqa: the estimate is advisory to the pick
+                estimated_context = 0
 
             inputs = {
                 "records": records,
@@ -5133,7 +5147,13 @@ def dispatch_picker_selection(
                     key: value for key, value in inputs.items() if key in accepted
                 }
             selection = pick(
-                PickRequest(project, node, comment=comment, session=session),
+                PickRequest(
+                    project,
+                    node,
+                    comment=comment,
+                    session=session,
+                    estimated_context=estimated_context,
+                ),
                 dict(config),
                 repo=repo,
                 cached_only=True,

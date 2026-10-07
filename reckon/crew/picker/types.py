@@ -34,6 +34,7 @@ class Candidate:
     outcomes: dict[str, int]
     reasons: list[str] = field(default_factory=list)
     days_to_reset: float | None = None
+    context: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)

@@ -55,6 +55,7 @@ def pick(
     verdict_inputs: dict[str, Any] | None = None,
     budget_snapshot: dict[str, Any] | None = None,
     cached_only: bool = False,
+    authority: dict[str, Any] | None = None,
 ) -> Selection:
     """Return one auditable selection; an excluded default cannot bypass gates."""
     started = time.perf_counter()
@@ -78,6 +79,7 @@ def pick(
             verdict_inputs=verdict_inputs,
             budget_snapshot=view,
             cached_only=cached_only,
+            authority=authority,
         )
     offered = [candidate for candidate in options if not candidate.reasons]
     excluded = [candidate.as_dict() for candidate in options if candidate.reasons]

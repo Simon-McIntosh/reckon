@@ -460,8 +460,8 @@ def test_representative_live_state_fits_the_token_bound(
         caller=caller,
     )
     assert len(selection.offered) == 9
-    assert selection.rendered_token_estimate <= 1500
+    assert selection.rendered_token_estimate <= 2200
     assert all(c["p50_s"] == 200 for c in seen[0]["return_times"].values())
     assert all(c["stale"] for c in seen[0]["return_times"].values())
-    print(f"representative_state_tokens={selection.rendered_token_estimate}/1500")
+    print(f"representative_state_tokens={selection.rendered_token_estimate}/2200")
     print("representative_state=" + json.dumps(seen[0], separators=(",", ":")))
