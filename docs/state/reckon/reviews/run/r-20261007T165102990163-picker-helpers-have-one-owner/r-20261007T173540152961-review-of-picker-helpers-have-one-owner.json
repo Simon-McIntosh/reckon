@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4e2f6823c4147317288504f541f8a421f9469b7f",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/picker/prompts.py:213 (lane_context.build)",
+    "reckon/crew/picker/lane_context.py:463 (_cached_run_time_profile from build)",
+    "reckon/crew/picker/lane_context.py:351 (_cached_run_time_profile from local_lane)",
+    "reckon/crew/picker/outcomes.py:28 (imports _number/_percentile from run_time_profile)"
+  ],
+  "completed_at": "2026-10-07T17:44:24.628Z",
+  "dispatched_at": "2026-10-07T17:36:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/run_time_profile.py",
+      "line": "90",
+      "severity": "blocking",
+      "text": "blocking: _number now returns float(value) where it previously returned the value unchanged, so an integer stays an integer no longer; because _number is the one owner feeding _wall_seconds, the profile's wall_seconds_p90 and odd-count median change type from int to float, and since reckon/ledger.py:2290 writes wall_seconds via int(...), every real profile's p90 renders as \"300.0\" where it rendered \"300\"; the rendered state.jinja bytes therefore change, failing the spec requirement that every rendered picker state and every profile figure be unchanged (reproduced: same fixture, base render \"p90_s\":300, head render \"p90_s\":300.0)."
+    },
+    {
+      "file": "tests/test_picker_helpers_have_one_owner.py",
+      "line": "132",
+      "severity": "follow-on",
+      "text": "follow-on: the test that claims to pin an unchanged rendered state renders the new code twice (cold then warm) and asserts equality, so both sides move with the code under test and it passes green over the int-to-float figure change; it guards cache consistency, not the before/after invariance the done_when names."
+    },
+    {
+      "file": "reckon/crew/picker/lane_context.py",
+      "line": "283",
+      "severity": "follow-on",
+      "text": "follow-on: the refactor dropped the ledger._SAFE_ID.fullmatch(project) check that guarded the cache filename (removed from base lane_context.py:268), so the project string now forms the cache leaf unchecked; not reachable today because an unsafe name yields no ledger stamp and the path is never used, but a defence-in-depth check was lost."
+    }
+  ],
+  "head_log_revision": "28ffa38d44e5a77ae20cfebf8b2bc029c8e334cf",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read ab38d6a3d and 28ffa38d against base 4e2f6823 commit by commit; -175/+413 over six files, the helper moves, the cache delegation to capabilities.cached_pick_input_rekeyed, and the new test file.",
+    "done_when": "the done_when names four items; items 1-3 landed and item 4 (rendered state byte-identical) is not asserted by the gate \u2014 tests/test_picker_helpers_have_one_owner.py:132 compares the new code to itself cold-vs-warm, not before-vs-after, and a real before/after render differs.",
+    "goal": "the node goal is one owner per duplicated picker helper and for the profile cache; reckon/crew/run_time_profile.py:79 now owns _number/_percentile/_size_class and reckon/crew/picker/lane_context.py:277 routes the profile cache through capabilities.cached_pick_input_rekeyed (reckon/capabilities.py:1269), so the helper and cache goals are met, but the goal's requirement that every rendered picker state and profile figure be unchanged is not.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T165102990163-picker-helpers-have-one-owner/manifest.md; it records base gate-head.log 369 passed EXIT=0 and head 372 passed EXIT=0, negative_control_log gate-negative-control.log, status complete.",
+    "write_paths": "read the manifest's declared grants; every path in the diff (reckon/capabilities.py, reckon/crew/picker/lane_context.py, reckon/crew/picker/outcomes.py, reckon/crew/run_time_profile.py, tests/test_picker_helpers_have_one_owner.py, docs/evidence/fragments/one-typesafe-model-picker/picker-helpers-have-one-owner.html) is inside them."
+  },
+  "justifications": {
+    "durability": "the one-owner scan at tests/test_picker_helpers_have_one_owner.py:61 is load-bearing (the negative control reddens it), but the render guard at tests/test_picker_helpers_have_one_owner.py:132 compares the new code to itself and cannot fail on the int-to-float profile-figure regression.",
+    "evidence": "both gate arms are on disk and green (gate-base.log 369 passed, gate-head.log 372 passed, EXIT=0) and the negative control (gate-negative-control.log) fires with the declared test id, but the gate never asserts the before/after byte-identity the done_when requires.",
+    "fit": "the new shared cache function sits beside cached_pick_input at reckon/capabilities.py:1269 and the delegate _size_of at reckon/crew/picker/lane_context.py:61 follows the module idiom; no forbidden name is introduced.",
+    "goal_fidelity": "one owner is achieved at reckon/crew/run_time_profile.py:79 and the cache is delegated at reckon/crew/picker/lane_context.py:277, but the rendered picker state changes (p90_s 300 -> 300.0), violating the spec's requirement 4.",
+    "reuse": "cached_pick_input_rekeyed extends the existing pick-input cache at reckon/capabilities.py:1241 rather than forking a reader/writer/key, and _size_of delegates to the existing _size_class; the hand-rolled profile reader/writer/schema/key are deleted.",
+    "scope_discipline": "every changed path (reckon/capabilities.py, reckon/crew/run_time_profile.py, reckon/crew/picker/outcomes.py, reckon/crew/picker/lane_context.py, tests/test_picker_helpers_have_one_owner.py) is inside the manifest's declared write grants and no plan or index file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is one owner per duplicated picker helper and for the profile cache; reckon/crew/run_time_profile.py:79 now owns _number/_percentile/_size_class and reckon/crew/picker/lane_context.py:277 routes the profile cache through capabilities.cached_pick_input_rekeyed (reckon/capabilities.py:1269), so the helper and cache goals are met, but the goal's requirement that every rendered picker state and profile figure be unchanged is not.\nVERDICT done_when: the done_when names four items; items 1-3 landed and item 4 (rendered state byte-identical) is not asserted by the gate \u2014 tests/test_picker_helpers_have_one_owner.py:132 compares the new code to itself cold-vs-warm, not before-vs-after, and a real before/after render differs.\nVERDICT write_paths: read the manifest's declared grants; every path in the diff (reckon/capabilities.py, reckon/crew/picker/lane_context.py, reckon/crew/picker/outcomes.py, reckon/crew/run_time_profile.py, tests/test_picker_helpers_have_one_owner.py, docs/evidence/fragments/one-typesafe-model-picker/picker-helpers-have-one-owner.html) is inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T165102990163-picker-helpers-have-one-owner/manifest.md; it records base gate-head.log 369 passed EXIT=0 and head 372 passed EXIT=0, negative_control_log gate-negative-control.log, status complete.\nVERDICT diff: read ab38d6a3d and 28ffa38d against base 4e2f6823 commit by commit; -175/+413 over six files, the helper moves, the cache delegation to capabilities.cached_pick_input_rekeyed, and the new test file.\nCALL_SITES: reckon/crew/picker/prompts.py:213 (lane_context.build), reckon/crew/picker/lane_context.py:463 (_cached_run_time_profile from build), reckon/crew/picker/lane_context.py:351 (_cached_run_time_profile from local_lane), reckon/crew/picker/outcomes.py:28 (imports _number/_percentile from run_time_profile)\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: one owner is achieved at reckon/crew/run_time_profile.py:79 and the cache is delegated at reckon/crew/picker/lane_context.py:277, but the rendered picker state changes (p90_s 300 -> 300.0), violating the spec's requirement 4.\nSCORE evidence: 15\nJUSTIFICATION evidence: both gate arms are on disk and green (gate-base.log 369 passed, gate-head.log 372 passed, EXIT=0) and the negative control (gate-negative-control.log) fires with the declared test id, but the gate never asserts the before/after byte-identity the done_when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path (reckon/capabilities.py, reckon/crew/run_time_profile.py, reckon/crew/picker/outcomes.py, reckon/crew/picker/lane_context.py, tests/test_picker_helpers_have_one_owner.py) is inside the manifest's declared write grants and no plan or index file is touched.\nSCORE durability: 13\nJUSTIFICATION durability: the one-owner scan at tests/test_picker_helpers_have_one_owner.py:61 is load-bearing (the negative control reddens it), but the render guard at tests/test_picker_helpers_have_one_owner.py:132 compares the new code to itself and cannot fail on the int-to-float profile-figure regression.\nSCORE fit: 17\nJUSTIFICATION fit: the new shared cache function sits beside cached_pick_input at reckon/capabilities.py:1269 and the delegate _size_of at reckon/crew/picker/lane_context.py:61 follows the module idiom; no forbidden name is introduced.\nSCORE reuse: 18\nJUSTIFICATION reuse: cached_pick_input_rekeyed extends the existing pick-input cache at reckon/capabilities.py:1241 rather than forking a reader/writer/key, and _size_of delegates to the existing _size_class; the hand-rolled profile reader/writer/schema/key are deleted.\nFINDING reckon/crew/run_time_profile.py:90 blocking: _number now returns float(value) where it previously returned the value unchanged, so an integer stays an integer no longer; because _number is the one owner feeding _wall_seconds, the profile's wall_seconds_p90 and odd-count median change type from int to float, and since reckon/ledger.py:2290 writes wall_seconds via int(...), every real profile's p90 renders as \"300.0\" where it rendered \"300\"; the rendered state.jinja bytes therefore change, failing the spec requirement that every rendered picker state and every profile figure be unchanged (reproduced: same fixture, base render \"p90_s\":300, head render \"p90_s\":300.0).\nFINDING tests/test_picker_helpers_have_one_owner.py:132 follow-on: the test that claims to pin an unchanged rendered state renders the new code twice (cold then warm) and asserts equality, so both sides move with the code under test and it passes green over the int-to-float figure change; it guards cache consistency, not the before/after invariance the done_when names.\nFINDING reckon/crew/picker/lane_context.py:283 follow-on: the refactor dropped the ledger._SAFE_ID.fullmatch(project) check that guarded the cache filename (removed from base lane_context.py:268), so the project string now forms the cache leaf unchecked; not reachable today because an unsafe name yields no ledger stamp and the path is never used, but a defence-in-depth check was lost.\n",
+  "review_run_id": "r-20261007T173540152961-review-of-picker-helpers-have-one-owner",
+  "reviewed_base_sha": "4e2f6823c4147317288504f541f8a421f9469b7f",
+  "reviewed_head_sha": "28ffa38d44e5a77ae20cfebf8b2bc029c8e334cf",
+  "reviewed_run_id": "r-20261007T165102990163-picker-helpers-have-one-owner",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 14,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T17:43:24.459153+00:00",
+  "total": 97
+}
