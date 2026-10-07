@@ -1057,6 +1057,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "drain"): {"--project", "--leave"},
         ("crew", "follow"): {"--project"},
         ("crew", "gc"): set(),
+        ("crew", "gate"): {"--pause", "--open", "--pretty"},
         ("crew", "ledger"): {"--project", "--view"},
         ("crew", "list"): set(),
         ("crew", "member", "add"): set(),
