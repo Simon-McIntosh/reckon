@@ -162,6 +162,7 @@ def test_a_committed_record_carries_the_run_records_times(checkout: Path) -> Non
         "reviewed_run_id": REVIEWED_RUN,
         "review_run_id": REVIEW_RUN,
         "status": "parsed",
+        "scores": {"evidence": 18},
     }
     path = review_module.store_committed_review(record, root=checkout)
 
@@ -179,13 +180,17 @@ def test_a_committed_record_carries_the_run_records_times(checkout: Path) -> Non
     # Dispatch and completion come from the run record, not the store clock.
     assert stored[review_module.DISPATCH_TIME_KEY] == DISPATCH_TS
     assert stored[review_module.COMPLETION_TIME_KEY] == COMPLETION_TS
+    assert (
+        stored[review_module.TIMES_SOURCE_KEY] == review_module.RUN_RECORD_TIMES_SOURCE
+    )
     # The store time is the record's own storage stamp and is a distinct fact:
     # neither run time was defaulted to it.
     assert stored["timestamp"] not in (DISPATCH_TS, COMPLETION_TS)
 
-    # A run record that carries no times is refused rather than stored with
-    # them missing: the committed record never substitutes the clock for a
-    # stamp, and never omits one silently.
+    # A run record and a review run id that carries no encodable instant, with
+    # no carried stamps, resolve no dispatch time and are refused rather than
+    # stored with one missing: the committed record never substitutes the clock
+    # for a stamp, and never omits one silently.
     (
         checkout / "docs" / "state" / PROJECT / "runs" / f"{REVIEWED_RUN}.json"
     ).write_text(
@@ -197,6 +202,7 @@ def test_a_committed_record_carries_the_run_records_times(checkout: Path) -> Non
                 "project": PROJECT,
                 "reviewed_run_id": REVIEWED_RUN,
                 "review_run_id": REVIEWED_RUN,
+                "scores": {"evidence": 18},
             },
             root=checkout,
         )

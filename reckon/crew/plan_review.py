@@ -437,6 +437,11 @@ def store_plan_review(
         raise ValueError("plan review record is missing plan_slug")
     if plan_version is None:
         raise ValueError("plan review record is missing plan_version")
+    if not _review_store.carries_review_material(record):
+        raise ValueError(
+            "plan review record carries no review material — findings, scores, "
+            "a rubric or a reviewed revision — so it is not a review"
+        )
     stored = dict(record)
     stored["project"] = project
     stored["plan_slug"] = plan_slug
