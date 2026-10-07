@@ -16,6 +16,7 @@ CommandPath = tuple[str, ...]
 STATE_PHRASES: dict[CommandPath, str] = {
     ("ack",): "one run's obligations",
     ("attach",): "prepared in-harness run",
+    ("budget-reset",): "a budget group's banked reset is available or used",
     ("check-manifest",): "delivered manifest against its own node",
     ("complete",): "finished run",
     ("directory",): "live coordinator ownership",
