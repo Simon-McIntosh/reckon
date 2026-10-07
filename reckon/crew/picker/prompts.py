@@ -60,6 +60,15 @@ _GLOSSARY: dict[str, str] = {
         "when the lane reports none."
     ),
     "days_to_reset": "Days until the lane's window resets; null when unknown.",
+    "lanes": (
+        "One pressure block per lane, however many models the lane holds. A lane "
+        "is a subscription or host whose models share one account window, so its "
+        "utilisation, burn, pace allowance, reset, worker slots, congestion and "
+        "banked-reset flag are stated here once and are the same for every model "
+        "in it. availability is the lane's serving state aggregated over those "
+        "models. Read a model's own serving observation from its candidate entry; "
+        "read the shared spending policy from its lane."
+    ),
     "context": (
         "A candidate's context block. window_tokens is the input window that "
         "gates the lane; estimated_tokens is this node's deterministic input "
@@ -175,29 +184,48 @@ def build_state(
             candidate.backend: _candidate_state(candidate) for candidate in candidates
         },
         "return_times": lane["return_times"],
+        "lanes": lane["lanes"],
         "local_lane": lane["local_lane"],
     }
+
+
+def option_key(candidate: Any) -> str:
+    """The key Jev chooses a candidate by: its lane and model joined as one pair.
+
+    A pick has two linked parts, so an option is named ``<lane>:<model>``. A
+    candidate that names no model uses its backend name for the second part,
+    which keeps the pair form and keeps every offered key distinct.
+    """
+
+    lane = getattr(candidate, "family", None) or getattr(candidate, "backend", "")
+    model = getattr(candidate, "model", None) or getattr(candidate, "backend", "")
+    return f"{lane}:{model}"
 
 
 def build_questions(candidates: Sequence[Any]) -> dict[str, Any]:
     """Assemble the questions as one mapping.
 
-    The criteria carry one entry per offered backend plus the ``hold`` guidance
-    the template supplies; the per-candidate entries are values of a mapping, so
-    no candidate name can change the shape of the questions.
+    The criteria carry one entry per offered lane-and-model pair plus the
+    ``hold`` guidance the template supplies; the entries are values of a
+    mapping keyed by that pair, so no candidate name can change the shape of
+    the questions. Each entry also names the pair's parts and its backend, so
+    a chosen pair resolves to exactly one candidate.
     """
 
     return {
         "glossary": _GLOSSARY,
         "criteria_entries": {
-            candidate.backend: {
-                "family": candidate.family,
+            option_key(candidate): {
+                "backend": candidate.backend,
+                "lane": candidate.family,
                 "model": candidate.model,
                 "effort": candidate.effort,
                 "local": candidate.local,
                 "meaning": (
-                    "Execute the node using this configured backend; consult "
-                    "its matching live candidate state."
+                    "Execute the node as this lane and model pair; read the "
+                    "lane's shared pressure from the lanes block and this "
+                    "pair's own fit and serving observation from the candidate "
+                    "table."
                 ),
             }
             for candidate in candidates

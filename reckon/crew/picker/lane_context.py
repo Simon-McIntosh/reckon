@@ -192,6 +192,155 @@ def return_times(
     return blocks
 
 
+#: The pressure figures a lane carries, one make of each. A figure no reading
+#: supports is ``None`` rather than a zero, so a lane nothing observed is not a
+#: lane that used none of its window.
+_NULL_LANE: dict[str, Any] = {
+    "availability": None,
+    "utilisation_pct": None,
+    "burn_multiple": None,
+    "pace_allowance": None,
+    "resets_at": None,
+    "days_to_reset": None,
+    "worker_slots": None,
+    "congestion": None,
+    "reset_available": None,
+}
+
+#: Serving statuses that mean no model in a lane is being served. Read as the
+#: lane's own availability only when every model it holds reports one of them.
+_UNSERVED = frozenset({"refused", "logged-out", "unavailable"})
+
+
+def _aggregate_availability(members: Sequence[Any]) -> str | None:
+    """One lane's serving state from the observations of the models it holds.
+
+    A lane is served when any of its models is, because the pick may name that
+    model; a lane every one of whose models is refused, logged out or
+    unavailable is unavailable, and a lane whose models say nothing is unknown.
+    The aggregate never invents a status: no observation reads null.
+    """
+
+    statuses = {str(getattr(member, "availability", "") or "") for member in members}
+    statuses.discard("")
+    if "served" in statuses:
+        return "served"
+    if statuses and statuses <= _UNSERVED:
+        return "unavailable"
+    return "unknown" if statuses else None
+
+
+def _groups_by_backend(
+    snapshot: Mapping[str, Any] | None,
+) -> dict[str, Mapping[str, Any]]:
+    """Index a composed budget snapshot's groups by each member backend.
+
+    The snapshot is a ``budget.preflight`` report whose ``groups`` list carries
+    one entry per declared wallet; each entry names the backends that draw on
+    it. Indexing by member lets a lane read the one account it belongs to
+    rather than recomputing a figure per model.
+    """
+
+    indexed: dict[str, Mapping[str, Any]] = {}
+    if not isinstance(snapshot, Mapping):
+        return indexed
+    for entry in snapshot.get("groups", []):
+        if not isinstance(entry, Mapping):
+            continue
+        for member in entry.get("members", []):
+            indexed[str(member)] = entry
+    return indexed
+
+
+def _lane_account(
+    member: Any,
+    groups_by_backend: Mapping[str, Mapping[str, Any]],
+    *,
+    moment: datetime,
+) -> dict[str, Any]:
+    """A lane's account figures, read once from the wallet it draws on.
+
+    The figures come from the declared budget group's own allowance when the
+    snapshot carries it, so three models on one account read as one wallet. A
+    lane whose group the snapshot does not reach falls back to the figures the
+    member already carries, which the snapshot derived from that same group;
+    neither path recomputes a pace or a burn.
+    """
+
+    entry = groups_by_backend.get(str(getattr(member, "backend", "")))
+    allowance = (entry or {}).get("allowance") if entry is not None else None
+    if isinstance(allowance, Mapping):
+        utilisation = allowance.get("utilisation")
+        resets_at = allowance.get("resets_at")
+        reset = parse_utc(str(resets_at or ""))
+        return {
+            "utilisation_pct": (
+                None if utilisation is None else round(float(utilisation) * 100.0, 1)
+            ),
+            "burn_multiple": allowance.get("burn_multiple"),
+            "pace_allowance": allowance.get("effective_limit"),
+            "resets_at": resets_at,
+            "days_to_reset": (
+                None
+                if reset is None
+                else max(0.0, (reset - moment).total_seconds() / 86400)
+            ),
+            # The banked-reset flag is carried only when a reset is counted, so
+            # an allowance without it measured none.
+            "reset_available": bool(allowance.get("reset_available")),
+        }
+    return {
+        "utilisation_pct": getattr(member, "utilisation_pct", None),
+        "burn_multiple": getattr(member, "burn_multiple", None),
+        "pace_allowance": getattr(member, "pace_allowance", None),
+        "resets_at": getattr(member, "resets_at", None),
+        "days_to_reset": getattr(member, "days_to_reset", None),
+        "reset_available": getattr(member, "reset_available", None),
+    }
+
+
+def lanes(
+    candidates: Sequence[Any],
+    *,
+    budget_snapshot: Mapping[str, Any] | None = None,
+    config: Mapping[str, Any] | None = None,
+    now: datetime | None = None,
+) -> dict[str, dict[str, Any]]:
+    """One pressure block per lane, however many models the lane holds.
+
+    A lane is a subscription or host whose models share one account window, so
+    its availability, utilisation, burn, pace allowance, reset, worker slots,
+    congestion and banked-reset flag are properties of the lane and are stated
+    once here rather than once per model. The account figures are read from the
+    declared wallet the lane draws on; the local lane's live load is read from
+    its own member.
+    """
+
+    moment = now if now is not None else datetime.now(UTC)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    groups_by_backend = _groups_by_backend(budget_snapshot)
+    grouped: dict[str, list[Any]] = {}
+    for candidate in candidates:
+        lane = getattr(candidate, "family", None)
+        if lane is None:
+            continue
+        grouped.setdefault(str(lane), []).append(candidate)
+    blocks: dict[str, dict[str, Any]] = {}
+    for lane, members in grouped.items():
+        block = dict(_NULL_LANE)
+        block["availability"] = _aggregate_availability(members)
+        block.update(_lane_account(members[0], groups_by_backend, moment=moment))
+        local_member = next(
+            (member for member in members if getattr(member, "local", False)), None
+        )
+        if local_member is not None:
+            block["worker_slots"] = getattr(local_member, "worker_slots", None)
+            block["congestion"] = getattr(local_member, "congestion", None)
+        blocks[lane] = block
+    return blocks
+
+
 #: A project's run-time profile, memoized within one process. Each entry holds
 #: the freshness key the profile was read at beside the profile itself. This is
 #: a first layer only: a real dispatch is a fresh process, so the memo cannot
@@ -485,6 +634,12 @@ def build(
         "return_times": return_times(
             profile,
             node,
+            candidates,
+            budget_snapshot=budget_snapshot,
+            config=config,
+            now=moment,
+        ),
+        "lanes": lanes(
             candidates,
             budget_snapshot=budget_snapshot,
             config=config,

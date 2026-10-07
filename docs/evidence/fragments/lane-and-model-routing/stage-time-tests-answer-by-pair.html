@@ -1,0 +1,50 @@
+<article class="landed-report" data-run-id="r-20261007T191613270183-stage-time-tests-answer-by-pair" data-node="stage-time-tests-answer-by-pair">
+  <h3 id="stage-time-tests-answer-by-pair-summary">stage-time-tests-answer-by-pair — the stage-timing stub answers by the offered pair</h3>
+  <p id="stage-time-tests-answer-by-pair-change">
+    <code>tests/test_pick_records_its_stage_times.py</code> answers Jev as it is
+    now asked. The stub <code>_answer()</code> computed no key at all: it returned
+    <code>choice: "local"</code>, a backend name, with the distribution
+    <code>{"local": 0.9, "hold": 0.1}</code>. <code>pick()</code> now resolves an
+    answer against <code>prompts.option_key</code> for each offered candidate
+    (<code>&lt;lane&gt;:&lt;model&gt;</code>) and rejects anything outside that set,
+    so the stubbed reply was refused as not an offered key and the pick fell back
+    instead of routing. The stub now derives the key from the candidate it means
+    to choose — <code>picker.prompts.option_key(candidate or _candidate())</code>
+    — and keys both the choice and the distribution by it, so no key string is
+    hand-typed and the stub follows the offered form rather than pinning one.
+  </p>
+  <p id="stage-time-tests-answer-by-pair-measure">
+    <strong>Measure.</strong> Gate: <code>tests/test_pick_records_its_stage_times.py</code>,
+    <code>tests/test_picker_lanes.py</code>, every <code>tests/test_picker*.py</code>
+    and <code>tests/test_pick_candidates_one_pass.py</code> (19 files), run in the
+    foreground with the main checkout's
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -n 8</code>. Base arm at
+    <code>d2140c1f79977fee66979f4b4c4545d0fd3c96cd</code>: 3 failed, 155 passed,
+    <code>EXIT=1</code>, the two declared failures among them. Head arm at
+    <code>d8cd397b1426755875257dd2666a23df1ab38d51</code> (the stub change, at
+    <code>b75c2854b</code>, plus this record; the test file is byte-identical
+    between them): 158 passed, <code>EXIT=0</code> — delta zero added failures,
+    both declared ids green.
+    Logs <code>base-gate.log</code> and <code>head-gate.log</code> under the run
+    directory, each ending in an <code>EXIT=</code> line. Only the one test file
+    changed; no product source was touched.
+  </p>
+  <p id="stage-time-tests-answer-by-pair-negative-control">
+    <strong>Negative control.</strong> Reverting the stub to answer with the
+    backend name — <code>key = (candidate or _candidate()).backend</code>, the
+    pre-fix form — reddens
+    <code>test_a_pick_records_every_stage</code> and
+    <code>test_an_unwritable_log_leaves_the_pick_unchanged</code>
+    (<code>2 failed, 2 passed</code>, <code>EXIT=1</code>), while the head arm
+    passes both. Log <code>negative-control.log</code> under the run directory.
+  </p>
+  <p id="stage-time-tests-answer-by-pair-out-of-scope">
+    <strong>Out of scope.</strong>
+    <code>tests/test_picker_dispatch_pace.py::test_dispatch_marks_old_published_window_stale</code>
+    failed in the base arm (<code>budget_age_s</code> 7203.4 against
+    <code>approx(7200, abs=1)</code>) and passed in the head arm on the same
+    command with no change reaching it — a wall-clock-sensitive assertion, not a
+    regression from this node. These tests pin stage times for the picker's
+    dispatch path and are left to their owning node.
+  </p>
+</article>

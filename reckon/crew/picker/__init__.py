@@ -67,7 +67,8 @@ def _answer(
 ) -> tuple[str, float, dict[str, float]]:
     answer = payload["answers"]["route"]
     choice = answer["choice"]
-    keys = {candidate.backend for candidate in offered} | {"hold"}
+    # Jev answers by the lane-and-model pair each option is offered under.
+    keys = {prompts.option_key(candidate) for candidate in offered} | {"hold"}
     confidence = answer["confidence"]
     probabilities = answer["probabilities"]
     if (
@@ -196,7 +197,7 @@ def pick(
                 if choice == "hold":
                     action = "hold"
                 else:
-                    selected = next(c for c in offered if c.backend == choice)
+                    selected = next(c for c in offered if prompts.option_key(c) == choice)
             finally:
                 jev_ms = (time.perf_counter() - jev_started) * 1000
                 stages["jev_ms"] = round(jev_ms, 3)

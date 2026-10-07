@@ -75,14 +75,22 @@ def _candidate(backend: str = "local") -> picker.Candidate:
     )
 
 
-def _answer(choice: str = "local") -> dict[str, object]:
+def _answer(candidate: picker.Candidate | None = None) -> dict[str, object]:
+    """Jev's reply offering the pair it means to choose, plus hold.
+
+    The choice and the distribution are keyed by the lane-and-model pair the
+    candidate is offered under, computed from the candidate itself: the picker
+    rejects an answer by backend name, since that names no offered option.
+    """
+
+    key = picker.prompts.option_key(candidate or _candidate())
     return {
         "model": "jev-snapshot",
         "answers": {
             "route": {
-                "choice": choice,
+                "choice": key,
                 "confidence": 0.9,
-                "probabilities": {"local": 0.9, "hold": 0.1},
+                "probabilities": {key: 0.9, "hold": 0.1},
             }
         },
     }
