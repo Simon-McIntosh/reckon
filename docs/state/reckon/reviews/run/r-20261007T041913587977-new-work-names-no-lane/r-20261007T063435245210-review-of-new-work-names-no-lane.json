@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "both declared arms read: baseline_suite gate-base.log (four files) 292 passed 0 failed EXIT=0; after_suite gate-ruling.log (three files) 28 passed 0 failed EXIT=0, so the reviewed change added no failing id; an independent re-run of the three head files at 72a3fdb54 gave 28 passed EXIT=0.",
+  "base_log_revision": "494df0b11762da8531276069fd5a19b7b8b19d33",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py follow_local_lane (edited); callers follow_each_local_lane (obligations list) and the prompt-mode injection path via _inject_list"
+  ],
+  "completed_at": "2026-10-07T06:51:19.223Z",
+  "dispatched_at": "2026-10-07T06:34:56Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "_dispatches_new_work",
+      "severity": "follow-on",
+      "text": "_dispatches_new_work matches any token equal to 'dispatch', 'review-plan' or 'shadow' anywhere in the command, so a continuation whose argument carries one of those words (for example a --reason value exactly 'dispatch') would have its lane stripped as if it were new work; no test pins this and the intent is the subcommand position."
+    },
+    {
+      "file": "tests/test_new_work_names_no_lane.py",
+      "line": "70",
+      "severity": "follow-on",
+      "text": "the file ends without a trailing newline."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "167",
+      "severity": "follow-on",
+      "text": "review_invocation still composes ' --local' for the review dispatch it prints (a new-work remedy), so the producer of that command still names a lane even though the obligations hook now strips it; the node correctly fenced this file as owned by a concurrent node and recorded it as a follow-on."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/new-work-names-no-lane.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the fragment quotes the five-file head arm (294 passed) as the head measure while the manifest's after_suite names the three-file ruling gate (28 passed); the two arms are not reconciled in one place."
+    }
+  ],
+  "head_log_revision": "72a3fdb54bc828a636b10659b4deca4d8f04249d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "follow_local_lane is called from follow_each_local_lane (obligations list) and the prompt-mode injection path; both share the one edit, so the lane behaviour is applied consistently in both modes.",
+    "diff": "read commit by commit against base 494df0b11; three commits changing the hook, four skill files, three test files and the evidence fragment, all inside the declared scope. The head commit 72a3fdb54 changes only tests/test_obligations_hook_reads_the_snapshot.py.",
+    "done_when": "the done_when asks for the lane removed from a named-verb remedy and kept for a continuation with a red negative control; tests/test_new_work_names_no_lane.py asserts both, the recorded gate shows 294 passed EXIT=0 at the five-file head against 292 passed EXIT=0 at base (four files), and the negative control restoring the old --backend->--local rewrite gives 1 failed / 1 passed EXIT=1.",
+    "goal": "the node's goal is that a composed new-work remedy names no lane (the picker routes it or holds it) while a continuation keeps the lane its run was carried on; reckon/hooks/coordinator_obligations.py _dispatches_new_work returns True for dispatch, review-plan and shadow and follow_local_lane strips --local / --backend <v> / --backend=<v> from those, leaving resume / redispatch / repair untouched.",
+    "manifest": "read in full; records commits fa4758313, 0b09490aa, 72a3fdb54, the five-file and ruling gates at EXIT=0, the negative control at EXIT=1, and one follow-on on reckon/crew/plan_review.py.",
+    "write_paths": "the manifest declares the hook, the four skill files, five test files and the evidence fragment; every path in the 494df0b11..72a3fdb54 delta is inside them."
+  },
+  "justifications": {
+    "durability": "the new behaviour is pinned red-first: tests/test_new_work_names_no_lane.py fails under the restored rewrite (negative control EXIT=1) and passes at head; is exercised in tests/test_obligations_hook_reads_the_snapshot.py through a lane-bearing redispatch. Gaps: the file has no trailing newline, and _dispatches_new_work is a whole-token membership test that would trigger a lane strip on any token equal to one of the verbs (e.g. a --reason value exactly 'dispatch'), which no test pins.",
+    "evidence": "both gate logs are present and readable: gate-base.log 292 passed EXIT=0, gate-ruling.log 28 passed EXIT=0, and the manifest's five-file head arm 294 passed EXIT=0; the negative control log shows the mutation failing the new file (1 failed / 1 passed, EXIT=1) and the committed hook md5 278d0db1bb18d3c8a2eec2dd84790734 matches the worktree, so the mutation was reverted. One blemish: the after_suite names head 72a3fdb54 but the ruling gate log self-declares rev 0b09490aa (one commit short) and gate-head.log's rev header reads the base sha 494df0b11; an independent re-run of the three head files at 72a3fdb54 gave 28 passed EXIT=0, closing the gap.",
+    "fit": "the edit extends the existing follow_local_lane/shlex idiom rather than introducing new machinery, the two helpers are named by mechanism (_dispatches_new_work, _without_lane), and the docstrings/comment are rewritten to the new rule. Minor: the follow_local_lane docstring says 'a lane a caller names stays the caller's to name', which reads against the fact that a composed new-work remedy's own --local is stripped.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py strips every lane flag from a dispatch/review-plan/shadow remedy and returns a continuation unchanged; a direct probe confirmed 'reckon crew dispatch ... --backend codex --local' becomes the same command with no --backend and no --local, and 'reckon crew resume --run r1 --backend codex --advice continue' is returned byte-identical. The four skill files state the same default and the plan's review_excluded_backends claim is grounded (reckon/_flight_schema.py:207).",
+    "reuse": "no capability is duplicated: the lane edit lives in the hook, and the skill updates edit existing sections (routing-choice prose, command blocks) rather than adding parallel guidance; test_skill_contracts.py pins the new prose by renaming the old routing-choice test rather than adding a second overlapping one.",
+    "scope_discipline": "all eleven changed paths are inside the declared write paths; the one out-of-scope concern (reckon/crew/plan_review.py:167 review_invocation still composes ' --local') is correctly left alone and reported as a follow-on rather than touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a composed new-work remedy names no lane (the picker routes it or holds it) while a continuation keeps the lane its run was carried on; reckon/hooks/coordinator_obligations.py _dispatches_new_work returns True for dispatch, review-plan and shadow and follow_local_lane strips --local / --backend <v> / --backend=<v> from those, leaving resume / redispatch / repair untouched.\nVERDICT done_when: the done_when asks for the lane removed from a named-verb remedy and kept for a continuation with a red negative control; tests/test_new_work_names_no_lane.py asserts both, the recorded gate shows 294 passed EXIT=0 at the five-file head against 292 passed EXIT=0 at base (four files), and the negative control restoring the old --backend->--local rewrite gives 1 failed / 1 passed EXIT=1.\nVERDICT write_paths: the manifest declares the hook, the four skill files, five test files and the evidence fragment; every path in the 494df0b11..72a3fdb54 delta is inside them.\nVERDICT manifest: read in full; records commits fa4758313, 0b09490aa, 72a3fdb54, the five-file and ruling gates at EXIT=0, the negative control at EXIT=1, and one follow-on on reckon/crew/plan_review.py.\nVERDICT diff: read commit by commit against base 494df0b11; three commits changing the hook, four skill files, three test files and the evidence fragment, all inside the declared scope. The head commit 72a3fdb54 changes only tests/test_obligations_hook_reads_the_snapshot.py.\nVERDICT call_sites: follow_local_lane is called from follow_each_local_lane (obligations list) and the prompt-mode injection path; both share the one edit, so the lane behaviour is applied consistently in both modes.",
+  "review_run_id": "r-20261007T063435245210-review-of-new-work-names-no-lane",
+  "reviewed_base_sha": "494df0b11762da8531276069fd5a19b7b8b19d33",
+  "reviewed_head_sha": "72a3fdb54bc828a636b10659b4deca4d8f04249d",
+  "reviewed_run_id": "r-20261007T041913587977-new-work-names-no-lane",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:46:53+00:00",
+  "total": 110
+}
