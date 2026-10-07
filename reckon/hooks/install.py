@@ -19,9 +19,9 @@ The settings fragment is data. :func:`build_hook_snippet` composes it, and
   (the user-scope ``~/.claude/settings.json`` when the caller names none). The
   merge preserves every existing key and every existing hook group, and adds the
   fragment's entries.
-* An entry already registered under its own event is skipped, not duplicated:
-  the existing entry keeps its bytes exactly as the operator wrote it, and every
-  other entry is still added. So installing over a settings file that already
+* An entry already registered under its own event is skipped, not duplicated.
+  Worker commands in bare form are upgraded in that entry to the checkout's
+  interpreter; other entries keep their bytes. Installing over a file that already
   carries one hook of the fragment — the worker stop hook, say — still binds the
   rest, and a second install of the whole fragment changes nothing at all. The
   result names both lists, so a caller can report what it did without comparing
@@ -30,20 +30,16 @@ The settings fragment is data. :func:`build_hook_snippet` composes it, and
   directory and moved into place, and a settings file that changed between the
   read and the write is not overwritten.
 
-The obligations hook imports this package, so its command names the interpreter
-that can import it: the checkout's own ``.venv/bin/python``, resolved beside
-this module. Launched instead through the script's own ``env python3`` shebang
-the hook fails with ``No module named 'reckon'`` and does nothing, so the
-command is what binds the hook to the package it reads its duties from. The
-worker stop hook is standard-library only and keeps its bare script command.
+Every hook command names the checkout's own ``.venv/bin/python`` before its
+script. These hooks import reckon or need a newer Python than the system
+``python3`` found on a worker's PATH; the explicit interpreter makes their
+decisions independent of the shell that launches them.
 
 The merge counts an entry whose command runs the same hook script, with the same
 arguments, as registered whatever interpreter launches it: a settings file
 installed before the interpreter was added is not given a second copy.
 
-Standard-library only, and it imports neither hook script nor any other module
-of this package: the caller may be the CLI before the package's own imports are
-exercised, and the fragment names each hook script by path.
+The installer does not import hook scripts; the fragment names each by path.
 """
 
 from __future__ import annotations
@@ -83,7 +79,12 @@ STOP_EVENT = "Stop"
 
 # What identifies a command as one of this fragment's entries: the hook script it
 # runs, whatever interpreter launches it and however the command is quoted.
-HOOK_SCRIPT_NAMES = (COORDINATOR_HOOK_SCRIPT_NAME, WORKER_STOP_SCRIPT_NAME)
+HOOK_SCRIPT_NAMES = (
+    COORDINATOR_HOOK_SCRIPT_NAME,
+    WORKER_STOP_SCRIPT_NAME,
+    WORKER_GIT_GUARD_SCRIPT_NAME,
+)
+WORKER_SCRIPT_NAMES = (WORKER_STOP_SCRIPT_NAME, WORKER_GIT_GUARD_SCRIPT_NAME)
 
 
 class HookInstallError(RuntimeError):
@@ -150,7 +151,7 @@ def build_hook_snippet(
     interpreter = str(interpreter_path())
     prompt_command = shlex.join([interpreter, str(script), "--hook", PROMPT_MODE])
     stop_command = shlex.join([interpreter, str(script), "--hook", STOP_MODE])
-    worker_stop_command = shlex.join([str(worker_stop_script_path())])
+    worker_stop_command = shlex.join([interpreter, str(worker_stop_script_path())])
     entries: dict[str, Any] = {
         event: [_command_group(prompt_command)] for event in PROMPT_EVENTS
     }
@@ -159,7 +160,7 @@ def build_hook_snippet(
         _command_group(worker_stop_command),
     ]
     if include_git_guard:
-        entries["PreToolUse"] = [_git_guard_group()]
+        entries["PreToolUse"] = [worker_git_guard_group()]
     return {"hooks": entries}
 
 
@@ -194,10 +195,10 @@ def install_hook_settings(
         )
     target = _settings_target(settings_path)
     original = _read_bytes(target)
-    merged, added, skipped = _merge_settings(
+    merged, added, skipped, upgraded = _merge_settings(
         _parse_settings(original, target), snippet, target
     )
-    if added:
+    if added or upgraded:
         _write_settings(target, merged, original)
     _print(merged, stream)
     return HookInstallResult(
@@ -214,12 +215,12 @@ def _command_group(command: str) -> dict[str, Any]:
     return {"hooks": [{"type": "command", "command": command}]}
 
 
-def _git_guard_group(script_path: Path | str | None = None) -> dict[str, Any]:
+def worker_git_guard_group(script_path: Path | str | None = None) -> dict[str, Any]:
     """Return the PreToolUse Bash group that binds the worker git guard.
 
     The matcher is ``Bash``: the guard reads a Bash command's text, so it has
     nothing to say about any other tool and is not asked about one. The
-    command is the guard script alone, resolved from this checkout, because
+    command names the checkout interpreter and guard script, because
     the guard must run from a reckon checkout: it imports
     ``reckon.worker_git_shim`` from the checkout it is launched beside, putting
     that checkout on ``sys.path`` itself. A standalone copy would raise on that
@@ -228,11 +229,47 @@ def _git_guard_group(script_path: Path | str | None = None) -> dict[str, Any]:
     """
     script = (
         worker_git_guard_script_path() if script_path is None else Path(script_path)
-    )
+    ).resolve()
+    interpreter = script.parents[2] / ".venv" / "bin" / "python"
     return {
         "matcher": "Bash",
-        "hooks": [{"type": "command", "command": shlex.join([str(script)])}],
+        "hooks": [
+            {
+                "type": "command",
+                "command": shlex.join([str(interpreter), str(script)]),
+            }
+        ],
     }
+
+
+def is_worker_git_guard_group(group: Any) -> bool:
+    """Recognise a bare or interpreter-bound worker git guard group."""
+    if not isinstance(group, dict) or group.get("matcher") != "Bash":
+        return False
+    hooks = group.get("hooks")
+    if not isinstance(hooks, list) or len(hooks) != 1:
+        return False
+    hook = hooks[0]
+    if not isinstance(hook, dict) or hook.get("type") != "command":
+        return False
+    try:
+        command = shlex.split(str(hook.get("command") or ""))
+    except ValueError:
+        return False
+    if len(command) == 2:
+        interpreter = Path(command[0])
+        if (
+            interpreter.name != "python"
+            or interpreter.parent.name != "bin"
+            or interpreter.parent.parent.name != ".venv"
+        ):
+            return False
+        path = Path(command[1])
+    elif len(command) == 1:
+        path = Path(command[0])
+    else:
+        return False
+    return path.name == WORKER_GIT_GUARD_SCRIPT_NAME and path.parent.name == "hooks"
 
 
 def _print(payload: dict[str, Any], stream: IO[str] | None) -> None:
@@ -269,13 +306,13 @@ def _parse_settings(original: bytes | None, path: Path) -> dict[str, Any]:
 
 def _merge_settings(
     settings: dict[str, Any], snippet: dict[str, Any], path: Path
-) -> tuple[dict[str, Any], list[str], list[str]]:
-    """Return ``settings``, the entries added and the entries skipped.
+) -> tuple[dict[str, Any], list[str], list[str], bool]:
+    """Return settings, entries added and skipped, and whether commands upgraded.
 
     An entry is skipped when every command it carries is already registered
-    under the same event: the groups already holding them are left exactly as
-    they are, and only the entries the file lacks are appended. An event the
-    fragment does not name is untouched, whatever it holds.
+    under the same event. Bare worker commands in those groups are upgraded;
+    only entries the file lacks are appended. An event the fragment does not
+    name is untouched, whatever it holds.
     """
     existing = settings.get("hooks")
     hooks = {} if existing is None else existing
@@ -286,6 +323,7 @@ def _merge_settings(
     updated = dict(hooks)
     added: list[str] = []
     skipped: list[str] = []
+    upgraded = False
     for event, groups in snippet["hooks"].items():
         current = updated.get(event)
         if current is None:
@@ -294,8 +332,15 @@ def _merge_settings(
             raise HookInstallError(
                 f"cannot update harness settings {path}: {event} must be a list"
             )
-        registered = _registered_identities(current)
-        kept = list(current)
+        replacements = {
+            _command_identity(command): command
+            for group in groups
+            for command in _group_commands(group)
+            if _script_name(command) in WORKER_SCRIPT_NAMES
+        }
+        kept, changed = _upgrade_worker_commands(current, replacements)
+        upgraded |= changed
+        registered = _registered_identities(kept)
         for group in groups:
             commands = _group_commands(group)
             labels = [f"{event}: {command}" for command in commands]
@@ -308,7 +353,45 @@ def _merge_settings(
         updated[event] = kept
     merged = dict(settings)
     merged["hooks"] = updated
-    return merged, added, skipped
+    return merged, added, skipped, upgraded
+
+
+def _script_name(command: str) -> str | None:
+    try:
+        return next(
+            (
+                Path(token).name
+                for token in shlex.split(command)
+                if Path(token).name in HOOK_SCRIPT_NAMES
+            ),
+            None,
+        )
+    except ValueError:
+        return None
+
+
+def _upgrade_worker_commands(
+    groups: list[Any], replacements: dict[str, str]
+) -> tuple[list[Any], bool]:
+    updated = []
+    changed = False
+    for group in groups:
+        if not isinstance(group, dict) or not isinstance(group.get("hooks"), list):
+            updated.append(group)
+            continue
+        hooks = []
+        for hook in group["hooks"]:
+            if not isinstance(hook, dict) or not isinstance(hook.get("command"), str):
+                hooks.append(hook)
+                continue
+            replacement = replacements.get(_command_identity(hook["command"]))
+            if replacement is not None and replacement != hook["command"]:
+                hooks.append({**hook, "command": replacement})
+                changed = True
+            else:
+                hooks.append(hook)
+        updated.append({**group, "hooks": hooks} if hooks != group["hooks"] else group)
+    return updated, changed
 
 
 def _entry_labels(snippet: dict[str, Any]) -> list[str]:

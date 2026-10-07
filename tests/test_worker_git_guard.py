@@ -390,8 +390,11 @@ def test_the_installer_emits_the_guard_entry_without_writing_settings() -> None:
 
     commands = _pre_tool_use_bash_commands(json.loads(buffer.getvalue()))
     assert commands == _pre_tool_use_bash_commands(result.document)
-    assert commands == [str(installer.worker_git_guard_script_path())]
-    assert Path(commands[0]).name == "worker_git_guard.py"
+    interpreter = Path(__file__).resolve().parents[1] / ".venv" / "bin" / "python"
+    script = installer.worker_git_guard_script_path()
+    assert commands == [shlex.join([str(interpreter), str(script)])]
+    assert shlex.split(commands[0]) == [str(interpreter), str(script)]
+    assert script.name == "worker_git_guard.py"
     assert installer.worker_git_guard_script_path().is_file()
     after = real_settings.read_bytes() if real_settings.is_file() else None
     assert after == before
@@ -437,8 +440,14 @@ def test_the_sync_installer_wires_the_guard_behind_the_same_opt_in(
         Path(shlex.split(command)[0]).name == "worker_git_guard.py"
         for command in default_commands
     )
-    assert bash_commands == [str(cli._worker_git_guard_path())]
-    assert Path(bash_commands[0]).name == "worker_git_guard.py"
+    guard_script = cli._worker_git_guard_path()
+    interpreter = guard_script.parents[2] / ".venv" / "bin" / "python"
+    assert bash_commands == [shlex.join([str(interpreter), str(guard_script)])]
+    assert [group for group in opted_groups if group.get("matcher") == "Bash"] == [
+        installer.worker_git_guard_group(guard_script)
+    ]
+    assert interpreter.is_file()
+    assert guard_script.name == "worker_git_guard.py"
 
     # The guard group is reckon's own, so a later remove takes it back out.
     cli._configure_crew_guards(target, remove=True)
@@ -453,6 +462,73 @@ def test_the_sync_installer_wires_the_guard_behind_the_same_opt_in(
 
     after = real_settings.read_bytes() if real_settings.is_file() else None
     assert after == before
+
+
+def test_sync_replaces_an_installed_guard_without_duplicating_it(
+    tmp_path: Path,
+) -> None:
+    from reckon import cli
+
+    target = tmp_path / "settings.json"
+    composed = installer.build_hook_snippet(include_git_guard=True)["hooks"][
+        "PreToolUse"
+    ][0]
+    assert cli._is_worker_git_guard_group(composed)
+    target.write_text(json.dumps({"hooks": {"PreToolUse": [composed]}}))
+
+    cli._configure_crew_guards(target, remove=False, include_git_guard=True)
+
+    groups = json.loads(target.read_text())["hooks"]["PreToolUse"]
+    guards = [group for group in groups if group.get("matcher") == "Bash"]
+    assert len(guards) == 1
+    assert cli._is_worker_git_guard_group(guards[0])
+    assert len(_pre_tool_use_bash_commands({"hooks": {"PreToolUse": guards}})) == 1
+
+
+def test_guard_group_recognises_bare_and_composed_commands() -> None:
+    from reckon import cli
+
+    script = installer.worker_git_guard_script_path()
+    bare = {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": shlex.join([str(script)])}],
+    }
+    composed = installer.worker_git_guard_group(script)
+
+    for group in (bare, composed):
+        assert installer.is_worker_git_guard_group(group)
+        assert cli._is_worker_git_guard_group(group)
+
+    unrelated = {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "/opt/hooks/other_guard.py"}],
+    }
+    assert not installer.is_worker_git_guard_group(unrelated)
+
+
+def test_sync_uses_the_installer_guard_group_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reckon import cli
+
+    composed_paths: list[Path] = []
+    original_composer = installer.worker_git_guard_group
+
+    def record_composition(script_path: Path) -> dict:
+        composed_paths.append(script_path)
+        return original_composer(script_path)
+
+    monkeypatch.setattr(installer, "worker_git_guard_group", record_composition)
+    target = tmp_path / "settings.json"
+    cli._configure_crew_guards(target, remove=False, include_git_guard=True)
+    assert composed_paths == [cli._worker_git_guard_path()]
+
+    composed = original_composer()
+    monkeypatch.setattr(
+        installer, "is_worker_git_guard_group", lambda group: group is composed
+    )
+    assert cli._is_worker_git_guard_group(composed)
+    assert not cli._is_worker_git_guard_group(original_composer())
 
 
 def test_the_fragment_is_unchanged_when_the_guard_is_not_requested() -> None:
@@ -486,7 +562,12 @@ def test_the_composed_guard_command_points_into_a_reckon_checkout() -> None:
     )
     assert len(commands) == 1
 
-    script = Path(commands[0]).resolve()
+    interpreter, script_path = map(Path, shlex.split(commands[0]))
+    assert (
+        interpreter == Path(__file__).resolve().parents[1] / ".venv" / "bin" / "python"
+    )
+    assert interpreter.is_file()
+    script = script_path.resolve()
     assert script.name == "worker_git_guard.py"
     assert script.is_file()
 

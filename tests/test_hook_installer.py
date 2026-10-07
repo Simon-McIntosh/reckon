@@ -21,6 +21,7 @@ import io
 import json
 import os
 import shlex
+import subprocess
 from pathlib import Path
 from pwd import getpwuid
 
@@ -64,9 +65,14 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOKS_DIR = REPO_ROOT / "reckon" / "hooks"
 COORDINATOR_HOOK = HOOKS_DIR / "coordinator_obligations.py"
 WORKER_STOP_HOOK = HOOKS_DIR / "worker_stop.py"
+WORKER_GIT_GUARD = HOOKS_DIR / "worker_git_guard.py"
 INTERPRETER = REPO_ROOT / ".venv" / "bin" / "python"
 
-HOOK_SCRIPT_NAMES = {COORDINATOR_HOOK.name, WORKER_STOP_HOOK.name}
+HOOK_SCRIPT_NAMES = {
+    COORDINATOR_HOOK.name,
+    WORKER_STOP_HOOK.name,
+    WORKER_GIT_GUARD.name,
+}
 
 
 def _encode(payload: dict) -> bytes:
@@ -94,7 +100,15 @@ def _stop_command() -> str:
 
 
 def _worker_stop_command() -> str:
-    return shlex.join([str(installer.worker_stop_script_path())])
+    return shlex.join([str(INTERPRETER), str(WORKER_STOP_HOOK)])
+
+
+def _bare_worker_stop_command() -> str:
+    return shlex.join([str(WORKER_STOP_HOOK)])
+
+
+def _git_guard_command() -> str:
+    return shlex.join([str(INTERPRETER), str(WORKER_GIT_GUARD)])
 
 
 def _bare_prompt_command() -> str:
@@ -227,6 +241,68 @@ def test_the_coordinator_commands_name_the_repository_interpreter() -> None:
     for event in ("UserPromptSubmit", "SessionStart"):
         assert _bare_prompt_command() not in observed[event]
     assert _bare_stop_command() not in observed["Stop"]
+
+
+def test_worker_commands_run_under_the_checkout_interpreter_with_broken_python3(
+    tmp_path: Path,
+) -> None:
+    stub_dir = tmp_path / "bin"
+    stub_dir.mkdir()
+    stub = stub_dir / "python3"
+    stub.write_text("#!/bin/sh\nexit 89\n")
+    stub.chmod(0o755)
+    snippet = installer.build_hook_snippet(include_git_guard=True)
+    stop = _commands(snippet, "Stop")[-1]
+    guard = _commands(snippet, "PreToolUse")[0]
+    assert shlex.split(stop) == [str(INTERPRETER), str(WORKER_STOP_HOOK)]
+    assert shlex.split(guard) == [str(INTERPRETER), str(WORKER_GIT_GUARD)]
+
+    manifest = tmp_path / "manifest.md"
+    manifest.write_text("node: sample\nstatus: in-progress\ncheckpoint: testing\n")
+    home = tmp_path / "home"
+    worktree, other = tmp_path / "worktree", tmp_path / "other"
+    for path in (worktree, other):
+        (path / ".git").mkdir(parents=True)
+    live = home / "crew" / "live"
+    live.mkdir(parents=True)
+    run_id = "r-20261007T081349225506-sample"
+    (live / f"{run_id}.json").write_text(
+        json.dumps({"run_id": run_id, "worktree": str(worktree)})
+    )
+    env = {
+        **os.environ,
+        "PATH": f"{stub_dir}:{os.environ['PATH']}",
+        "RECKON_MANIFEST": str(manifest),
+        "RECKON_HOME": str(home),
+        "RECKON_RUN_ID": run_id,
+    }
+    stopped = subprocess.run(
+        shlex.split(stop),
+        input=json.dumps({"cwd": str(worktree)}),
+        text=True,
+        capture_output=True,
+        env=env,
+        check=False,
+    )
+    guarded = subprocess.run(
+        shlex.split(guard),
+        input=json.dumps(
+            {
+                "tool_name": "Bash",
+                "cwd": str(worktree),
+                "tool_input": {"command": f"git -C {other} commit -m sample"},
+            }
+        ),
+        text=True,
+        capture_output=True,
+        env=env,
+        check=False,
+    )
+    assert stopped.returncode == guarded.returncode == 0
+    assert json.loads(stopped.stdout)["decision"] == "block"
+    assert (
+        json.loads(guarded.stdout)["hookSpecificOutput"]["permissionDecision"] == "deny"
+    )
 
 
 def test_dry_run_prints_the_fragment_and_leaves_the_file_untouched(
@@ -392,10 +468,10 @@ def test_an_entry_written_before_the_interpreter_was_added_is_recognised(
     assert _commands(result.document, "UserPromptSubmit") == [_bare_prompt_command()]
 
 
-def test_a_settings_file_holding_the_bare_form_of_every_entry_is_left_alone(
+def test_a_settings_file_holding_bare_worker_commands_is_upgraded_in_place(
     tmp_path: Path,
 ) -> None:
-    """A reinstall over the pre-interpreter form adds nothing at all."""
+    """A reinstall upgrades the bare worker commands without duplication."""
     settings = tmp_path / "settings.json"
     original = _write_settings_file(
         settings,
@@ -405,19 +481,43 @@ def test_a_settings_file_holding_the_bare_form_of_every_entry_is_left_alone(
                 "SessionStart": [_group(_bare_prompt_command())],
                 "Stop": [
                     _group(_bare_stop_command()),
-                    _group(_worker_stop_command()),
+                    _group(_bare_worker_stop_command()),
+                ],
+                "PreToolUse": [
+                    {
+                        "matcher": "Bash",
+                        "hooks": [
+                            {"type": "command", "command": str(WORKER_GIT_GUARD)}
+                        ],
+                    }
                 ],
             }
         },
     )
-    before = _fingerprint(settings)
 
-    result, _ = _call(settings, write=True)
+    buffer = io.StringIO()
+    result = installer.install_hook_settings(
+        settings, write=True, stream=buffer, include_git_guard=True
+    )
 
     assert result.added == ()
-    assert result.skipped == _expected_entries()
-    assert settings.read_bytes() == original
-    assert _fingerprint(settings) == before
+    assert result.skipped == (
+        *_expected_entries(),
+        f"PreToolUse: {_git_guard_command()}",
+    )
+    assert settings.read_bytes() != original
+    assert _commands(result.document, "Stop") == [
+        _bare_stop_command(),
+        _worker_stop_command(),
+    ]
+    assert _commands(result.document, "PreToolUse") == [_git_guard_command()]
+    assert len(result.document["hooks"]["Stop"]) == 2
+    assert len(result.document["hooks"]["PreToolUse"]) == 1
+    installed = _fingerprint(settings)
+    installer.install_hook_settings(
+        settings, write=True, stream=buffer, include_git_guard=True
+    )
+    assert _fingerprint(settings) == installed
 
 
 def test_dry_run_under_an_already_installed_hook_changes_nothing(
