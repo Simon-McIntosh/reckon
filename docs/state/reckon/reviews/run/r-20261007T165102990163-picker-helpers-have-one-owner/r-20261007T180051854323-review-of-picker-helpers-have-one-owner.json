@@ -1,0 +1,45 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-07T18:06:29.722Z",
+  "dispatched_at": "2026-10-07T18:01:16Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit (ab38d6a3d, 28ffa38d4, b637ec547, 2be907e48) against base 4e2f6823c; the refactor plus a return-type fix and a golden fixture.",
+    "done_when": "read the brief's measures; the manifest's gate names tests/test_picker_helpers_have_one_owner.py and 27 files, base 369 / head 373 both EXIT=0, and the done-when's before/after render and no-second-definition tests are present.",
+    "goal": "read the node brief (GOAL \"Each duplicated picker helper and the profile cache have one owner\"); the landed diff deletes lane_context's hand-rolled profile cache and imports _bucket/_number/_percentile from run_time_profile.",
+    "manifest": "read; it states the four gate tests, base 369 / head 373 EXIT=0, the negative control, and a declared _ledger_stamp deviation.",
+    "write_paths": "read the declared scope; every path in the diff (reckon/capabilities.py, reckon/crew/picker/lane_context.py, reckon/crew/picker/outcomes.py, reckon/crew/run_time_profile.py, tests/test_picker_helpers_have_one_owner.py, the evidence fragment) is inside it."
+  },
+  "justifications": {
+    "durability": "before-fix-render.log shows the golden assertion red on the float regression that fix commit b637ec547 repairs, so the guard fails if the merged return type regresses.",
+    "evidence": "tests/test_picker_helpers_have_one_owner.py::test_rendered_state_matches_the_base_revision_bytes asserts the head reproduces the base revision's committed bytes, and gate-head.log records 373 passed EXIT=0.",
+    "fit": "the new names (_size_of, _profile_stamp, cached_pick_input_rekeyed) describe mechanism and follow reckon/crew/run_time_profile.py's existing style.",
+    "goal_fidelity": "reckon/crew/picker/lane_context.py:297 routes the profile cache through capabilities.cached_pick_input_rekeyed and the owned helpers are imported from reckon/crew/run_time_profile.py:79.",
+    "reuse": "every added definition extends an existing owner -- cached_pick_input_rekeyed reuses capabilities._read_pick_entry/_write_pick_entry/pick_input_cache_path, and no picker helper is re-defined.",
+    "scope_discipline": "git diff --stat 4e2f6823c..2be907e48 changes only the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node brief (GOAL \"Each duplicated picker helper and the profile cache have one owner\"); the landed diff deletes lane_context's hand-rolled profile cache and imports _bucket/_number/_percentile from run_time_profile.\nVERDICT done_when: read the brief's measures; the manifest's gate names tests/test_picker_helpers_have_one_owner.py and 27 files, base 369 / head 373 both EXIT=0, and the done-when's before/after render and no-second-definition tests are present.\nVERDICT write_paths: read the declared scope; every path in the diff (reckon/capabilities.py, reckon/crew/picker/lane_context.py, reckon/crew/picker/outcomes.py, reckon/crew/run_time_profile.py, tests/test_picker_helpers_have_one_owner.py, the evidence fragment) is inside it.\nVERDICT manifest: read; it states the four gate tests, base 369 / head 373 EXIT=0, the negative control, and a declared _ledger_stamp deviation.\nVERDICT diff: read commit by commit (ab38d6a3d, 28ffa38d4, b637ec547, 2be907e48) against base 4e2f6823c; the refactor plus a return-type fix and a golden fixture.\nCALL_SITES: reckon/crew/dispatch.py:5253, reckon/cli.py:1737, reckon/crew/picker/prompts.py:213, reckon/crew/picker/outcomes.py:read_outcomes\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/lane_context.py:297 routes the profile cache through capabilities.cached_pick_input_rekeyed and the owned helpers are imported from reckon/crew/run_time_profile.py:79.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_picker_helpers_have_one_owner.py::test_rendered_state_matches_the_base_revision_bytes asserts the head reproduces the base revision's committed bytes, and gate-head.log records 373 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 4e2f6823c..2be907e48 changes only the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: before-fix-render.log shows the golden assertion red on the float regression that fix commit b637ec547 repairs, so the guard fails if the merged return type regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the new names (_size_of, _profile_stamp, cached_pick_input_rekeyed) describe mechanism and follow reckon/crew/run_time_profile.py's existing style.\nSCORE reuse: 19\nJUSTIFICATION reuse: every added definition extends an existing owner -- cached_pick_input_rekeyed reuses capabilities._read_pick_entry/_write_pick_entry/pick_input_cache_path, and no picker helper is re-defined.",
+  "review_run_id": "r-20261007T180051854323-review-of-picker-helpers-have-one-owner",
+  "reviewed_base_sha": "4e2f6823c4147317288504f541f8a421f9469b7f",
+  "reviewed_head_sha": "2be907e48562ad66bcb277d6bfb99a97c5183468",
+  "reviewed_run_id": "r-20261007T165102990163-picker-helpers-have-one-owner",
+  "rubric": "code_review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T18:05:16+00:00",
+  "total": 115
+}
