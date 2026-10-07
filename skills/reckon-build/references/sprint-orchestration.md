@@ -811,6 +811,18 @@ per session, delivering that session's runs as lines. Its stream vocabulary and
 its flag variants are the part a coordinator consults when arming, so they live
 here rather than in the fixed read set.
 
+**Who arms the follower depends on the session's host, and the host's own
+delivery comes first.** Where a session host runs — on Claude Code, with the
+`reckon-crew-host` plugin linked — dispatch arms the follower through that host
+and the dispatch payload's `watch.delivery` reads `host`: the follower is held
+for the life of the session and **nothing re-arms it**. Do not open a monitor
+beside a host-delivered follower; a second arming double-delivers. The Monitor
+primitive is the fallback for the sessions a host does not deliver — a Codex
+session, a session without the plugin, and a `-p` session, in which Claude Code
+starts no plugin monitors — and only there does the arm-and-re-arm discipline
+below apply. The host-specific lifetimes (`--lifetime 29m`, and `--lifetime 9m`
+in a `-p` session) are named in `references/orchestrator-harness/<harness>.md`.
+
 ### The stream format and its three buckets
 
 **It carries no state filter, deliberately.** A filter that legitimately matches
@@ -953,6 +965,13 @@ search bounded on the consumer side. Each leaves a process running after the tur
 that started it, and the session that would have noticed has already ended.
 
 ### One follower per session, stopped before it is re-armed
+
+**A host-delivered follower is never re-armed; the stop-and-arm discipline
+below is the fallback's.** Where a session host delivered the follower — the
+dispatch payload's `watch.delivery` reads `host` — the host holds it for the
+life of the session, so there is no monitor to expire and nothing to re-arm.
+Where no host delivered it — a Codex session, a session without the plugin, and
+a `-p` session — the follower is armed by hand, and this subsection governs it:
 
 **Re-arm is a stop and an arm, in that order.** A session has exactly one
 follower, and the cost of a second one is not double delivery but an orphan: the

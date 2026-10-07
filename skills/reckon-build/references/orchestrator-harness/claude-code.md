@@ -23,6 +23,25 @@ config.
 
 ## Arming the fleet watch after dispatch
 
+**Session-host delivery comes first; the `Monitor` tool is the fallback.**
+When the `reckon-crew-host` plugin is linked, `reckon crew dispatch` asks the
+session host for a follower rather than leaving you to arm one: the payload's
+`watch.delivery` reads `host` and its `arming_line` is empty. The host armed
+`reckon crew follow --project P --session S` itself — with no `--lifetime` — and
+it lives for as long as the Claude process that started it, restarting the
+follower if it exits. **Nothing re-arms a host-delivered follower**: opening a
+`Monitor` beside one would double-deliver, and the empty `arming_line` is the
+signal that the host's delivery is already in place. Decide on the field rather
+than on habit: `watch.delivery` reading `monitor` (its value on a
+`watcher-required` refusal too) is what tells you the host did not deliver this
+session's follower.
+
+**Arm by hand only where no session host delivered the follower** — a Codex
+session, a Claude session with the plugin not linked, and a `-p` (print or
+headless) session, in which Claude Code starts no plugin monitors. Everything
+below about `Monitor`, its lifetime and re-arming applies to those sessions
+alone; a host-delivered session needs none of it.
+
 Two primitives on this host look interchangeable and are not. The difference
 decides whether a finished worker reaches the session at all:
 
@@ -57,10 +76,13 @@ quiet fleet rather than as a failure.
 
 The attach line reckon prints — `attach_line` in the dispatch payload, and the
 same field in a `watcher-required` refusal — already names the entry point
-absolutely, resolved beside the interpreter that composed it. Add
-`--lifetime 29m`: the follower then ends itself a minute under the host's
-thirty-minute cap, so the last line a reader sees is the follower's own, not
-the host's expiry notice.
+absolutely, resolved beside the interpreter that composed it. (A host-delivered
+session carries an empty `arming_line` here, because the host already armed its
+follower.) In the Monitor fallback, add `--lifetime 29m`: the follower then ends
+itself a minute under the host's thirty-minute cap, so the last line a reader
+sees is the follower's own, not the host's expiry notice. In a `-p` session,
+Claude Code ends a `Monitor` at ten minutes rather than thirty, so the lifetime
+there is `--lifetime 9m`.
 
 **Launch the follower with colour: never pass `--no-color`.** The pane this
 host renders the ticker into reads ANSI colour, and the follower's colour set
@@ -139,13 +161,14 @@ Monitor({
 })
 ```
 
-**This host expires a monitor and the expiry is not a fleet event.** The notice
-reads `Monitor expired after 30m with N events delivered`, and from that moment
-the session has no delivering follower — so the next `reckon crew dispatch` is
-refused with `watcher-required` (exit 8), which is the first many coordinators
-learn of it. `timeout_ms` is capped at 1,800,000 milliseconds — thirty minutes
-— so a session outlasting that cap **will** meet this at least once. A follower
-armed with `--lifetime 29m` ends itself first, and **its final
+**In the Monitor fallback, this host expires the watch and the expiry is not a
+fleet event.** The notice reads `Monitor expired after 30m with N events
+delivered`, and from that moment the session has no delivering follower — so the
+next `reckon crew dispatch` is refused with `watcher-required` (exit 8), which is
+the first many coordinators learn of it. `timeout_ms` is capped at 1,800,000
+milliseconds — thirty minutes — so a session outlasting that cap **will** meet
+this at least once. A follower armed with `--lifetime 29m` ends itself first,
+and **its final
 line is the one to re-arm on**: marked as the follower's end rather than a
 fleet event, it names the attach line to arm and the owning session's runs that
 need the coordinator, and it releases the registration on the way out. Re-arm
@@ -221,13 +244,17 @@ The process rules are `sprint-orchestration.md` §17. Three of them turn on what
 *this* host does with a re-arming monitor, a backgrounded command and a
 backgrounded search, so the host half is here:
 
-- **A monitor expires; the follower inside it does not.** That is why a follower
-  is stopped before it is re-armed: `Monitor` ends at `timeout_ms` and reports it
-  (`Monitor expired after 30m with N events delivered`), and the expiry takes the
-  wrapper rather than the process it started: the `crew follow` inside it keeps
-  running. So each re-arm that does not first stop the previous follower
-  adds one orphan, and none of them is announced. A follower armed with
-  `--lifetime 29m` ends itself a minute under the cap, and that final line *is*
+- **A host-delivered follower is not re-armed, and a Monitor fallback expires
+  without taking the follower with it.** Where the session host delivered the
+  follower, nothing re-arms it: the host holds it for the life of the Claude
+  process, so there is no expiry to meet and no orphan to leave. The re-arm
+  discipline below applies only to the Monitor fallback: there the `Monitor`
+  ends at `timeout_ms` and reports it (`Monitor expired after 30m with N events
+  delivered`), and the expiry takes the wrapper rather than the process it
+  started — the `crew follow` inside it keeps running. So each fallback re-arm
+  that does not first stop the previous follower adds one orphan, and none of
+  them is announced, which is why a fallback follower armed with
+  `--lifetime 29m` ends itself a minute under the cap and that final line *is*
   the stop — its successor is armed on that line, never beside it. **Measured:**
   ten orphaned `crew follow` processes for a single week-old session on this
   workstation, beside per-project producers up to 3.5 days old.

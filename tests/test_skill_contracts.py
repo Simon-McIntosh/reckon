@@ -969,6 +969,16 @@ CREW_VERBS_OUTSIDE_ORCHESTRATION = {
         "through the review workflow"
     ),
     ("crew", "repair-completion"): "ledger maintenance, not orchestration",
+    ("crew", "budget-reset"): (
+        "sets or clears a budget group's banked-reset flag, which preflight and "
+        "the picker read; an orchestrator reads budget state through the "
+        "preflight and budget views, never by flagging it itself"
+    ),
+    ("crew", "host"): (
+        "the session-host plugin's entry point, which attaches a session's "
+        "follower and supervises it; only the plugin runs it, and an "
+        "orchestrator never invokes it"
+    ),
     ("crew", "path"): (
         "prints one state path for a consumer repository to call; an "
         "orchestrator reads state through the crew views, never by path"
@@ -1209,6 +1219,55 @@ def test_ship_dispatch_section_names_the_session_attach() -> None:
     # And it must not send the reader back to polling a file instead.
     for polling in ("read its output file", "read the output file"):
         assert polling not in ship, f"the skill still recommends polling: {polling}"
+
+
+# Session-host delivery is stated before the fallback's arming guidance, because
+# a coordinator that reads the re-arm rule first arms a `Monitor` over a follower
+# the session host already holds and double-delivery follows. The section is
+# authored as blank-line-separated paragraphs, so the ordering is asserted over
+# them: the paragraph saying dispatch arms the follower (and nothing re-arms it)
+# must precede every paragraph carrying re-arm or lifetime guidance, and each of
+# those must name the `Monitor` fallback it belongs to. "nothing re-"+arm/lifetime
+# cannot match, so the host paragraph's own "nothing re-arms it" is not read as
+# fallback guidance.
+_FALLBACK_GUIDANCE = re.compile(r"--lifetime|(?<!nothing )re-?arm")
+
+
+def _producer_follower_paragraphs() -> list[str]:
+    raw = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
+    section = raw.split("One producer for the project, one follower", 1)[1]
+    section = section.split("Concurrency", 1)[0]
+    return [normalized(paragraph) for paragraph in section.split("\n\n") if paragraph.strip()]
+
+
+def test_the_session_host_paragraph_precedes_the_fallback_rearm_guidance() -> None:
+    paragraphs = _producer_follower_paragraphs()
+
+    host = next(
+        (
+            index
+            for index, text in enumerate(paragraphs)
+            if "dispatch arms the follower" in text and "nothing re-arms it" in text
+        ),
+        None,
+    )
+    assert host is not None, "the session-host delivery paragraph is missing"
+
+    guidance = [
+        index
+        for index, text in enumerate(paragraphs)
+        if _FALLBACK_GUIDANCE.search(text)
+    ]
+    assert guidance, "the fallback's re-arm and lifetime guidance is missing"
+    for index in guidance:
+        assert index > host, (
+            "re-arm or lifetime guidance appears at or before the session-host "
+            "paragraph; session-host delivery must be stated first"
+        )
+        assert "Monitor" in paragraphs[index], (
+            "a paragraph carrying re-arm or lifetime guidance does not name the "
+            "Monitor fallback path it belongs to"
+        )
 
 
 def test_every_registered_crew_verb_is_documented_or_exempt() -> None:
