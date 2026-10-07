@@ -1376,6 +1376,104 @@ def _gc_partial_report(
     }
 
 
+# The reason a raw review report is held back: the committed record is the
+# durable copy of a review, and until it exists the raw text is the only copy,
+# so a report whose record is absent is reported rather than removed.
+PLAN_REVIEW_RAW_REPORT_REASON = (
+    "the review's committed record is absent, so the raw report is the only "
+    "copy of the review and is never removed"
+)
+
+
+def _plan_review_raw_reports(
+    *,
+    repo_root: Path,
+    project: str | None,
+    apply: bool,
+    now: datetime | None,
+    run_id: str | None = None,
+) -> list[dict[str, Any]]:
+    """Prune a plan review's raw report text past its retention, printing each.
+
+    The committed record filed under the project's docs tree is what survives a
+    clone, and coverage reads the sidecar and the snapshot beside the raw text,
+    so the raw text is the one part of a delivered review the record already
+    distils. It is removed after ``review.raw_report_retention_days`` on the
+    host — but only once the committed record exists, because until then the raw
+    text is the only copy. Every candidate appears in the returned rows with its
+    path, age in days and action, so a dry run prints the same set ``--apply``
+    would act on. A ``run_id`` confines the pass to the one report, exactly as
+    the rest of the sweep is confined to one run, so ``crew gc --run`` cannot
+    reach another run's raw report.
+    """
+    from reckon.crew import plan_review
+    from reckon.crew import review as _review_store
+    from reckon.crew.runs import reports_dir
+
+    reports_root = reports_dir()
+    if not reports_root.is_dir():
+        return []
+    current = now or datetime.now(tz=UTC)
+    retention: dict[str, int] = {}
+
+    def _days_for(name: str) -> int:
+        if name not in retention:
+            config = flight.resolve(name, checkout_path=repo_root).config
+            retention[name] = flight.raw_report_retention_days(config)
+        return retention[name]
+
+    entries: list[dict[str, Any]] = []
+    for project_dir in sorted(path for path in reports_root.iterdir() if path.is_dir()):
+        name = project_dir.name
+        if project and name != project:
+            continue
+        plan_root = project_dir / "plan-review"
+        if not plan_root.is_dir():
+            continue
+        cutoff = current - timedelta(days=_days_for(name))
+        committed_root = _review_store.committed_review_root(name, root=repo_root)
+        for slug_dir in sorted(path for path in plan_root.iterdir() if path.is_dir()):
+            for run_dir in sorted(path for path in slug_dir.iterdir() if path.is_dir()):
+                if run_id and run_dir.name != run_id:
+                    continue
+                report = run_dir / plan_review._REVIEW_REPORT_NAME
+                if not report.is_file():
+                    continue
+                modified = datetime.fromtimestamp(report.stat().st_mtime, tz=UTC)
+                if modified > cutoff:
+                    continue
+                record = (
+                    plan_review.plan_review_path(
+                        name,
+                        slug_dir.name,
+                        0,
+                        committed_root=committed_root,
+                        review_run_id=run_dir.name,
+                    )
+                    if committed_root is not None
+                    else None
+                )
+                entry = {
+                    "project": name,
+                    "plan_slug": slug_dir.name,
+                    "run_id": run_dir.name,
+                    "path": str(report),
+                    "age_days": (current - modified).days,
+                    "removed": False,
+                }
+                if record is not None and record.is_file():
+                    entry["action"] = "prune"
+                    if apply:
+                        report.unlink()
+                        entry["removed"] = True
+                else:
+                    entry["action"] = "withheld"
+                    entry["withheld"] = "missing-committed-record"
+                    entry["reason"] = PLAN_REVIEW_RAW_REPORT_REASON
+                entries.append(entry)
+    return entries
+
+
 def garbage_collect(
     *,
     repo: str | Path,
@@ -1684,6 +1782,9 @@ def garbage_collect(
                     shutil.rmtree(directory)
                     report["removed"] = True
                 run_reports.append(report)
+        raw_report_reports = _plan_review_raw_reports(
+            repo_root=repo_root, project=project, apply=apply, now=now, run_id=run_id
+        )
     except PROGRAMMING_ERRORS:
         # Re-raised untouched: the traceback names the defective line, where a
         # refusal would have named only the tree the defect happened to hit.
@@ -1775,6 +1876,13 @@ def garbage_collect(
         "run_directories_withheld": run_directories_withheld,
         "run_directories_reaped_with_explicitly_absent_figures": (
             run_directories_reaped_with_explicitly_absent_figures
+        ),
+        "plan_review_raw_reports": raw_report_reports,
+        "plan_review_raw_reports_pruned": sum(
+            1 for item in raw_report_reports if item["action"] == "prune"
+        ),
+        "plan_review_raw_reports_withheld": sum(
+            1 for item in raw_report_reports if item["action"] == "withheld"
         ),
         "scratch": (
             garbage_collect_orphan_scratch(apply=apply) if run_id is None else None

@@ -101,9 +101,11 @@ DEFAULT_LIGHT_TIME_BUDGET = "10m"
 REVIEW_OWNED_KEYS: dict[str, str] = {
     "plan_change_threshold": "unit_interval",
     "review_need_threshold": "unit_interval",
+    "raw_report_retention_days": "non_negative_integer",
 }
 DEFAULT_PLAN_CHANGE_THRESHOLD = 0.30
 DEFAULT_REVIEW_NEED_THRESHOLD = 0.5
+DEFAULT_RAW_REPORT_RETENTION_DAYS = 30
 
 # The unit each budget suffix is worth in seconds. A budget is written as an
 # integer followed by one of these letters, and the reader converts it once so
@@ -729,6 +731,29 @@ def _review_unit_interval(
     if not _review_owned_key_shape_is_valid(REVIEW_OWNED_KEYS[key], value):
         return default
     return float(value)
+
+
+def raw_report_retention_days(config: Mapping[str, Any] | None) -> int:
+    """The days a plan review's raw report text is kept after the review.
+
+    Read from the resolved config through the one review-key table, so a host
+    or project layer can shorten or extend the retention without a code change.
+    A config declaring no such key — an in-process caller or a hand-assembled
+    test config — falls back to the shipped default rather than failing, and a
+    value of the wrong shape is treated the same way rather than extending
+    retention past what the caller asked for.
+    """
+    review = (config or {}).get(REVIEW_KEY)
+    value = (
+        review.get("raw_report_retention_days", DEFAULT_RAW_REPORT_RETENTION_DAYS)
+        if isinstance(review, Mapping)
+        else DEFAULT_RAW_REPORT_RETENTION_DAYS
+    )
+    if not _review_owned_key_shape_is_valid(
+        REVIEW_OWNED_KEYS["raw_report_retention_days"], value
+    ):
+        return DEFAULT_RAW_REPORT_RETENTION_DAYS
+    return int(value)
 
 
 def _review_owned_key_shape_is_valid(shape: str, value: Any) -> bool:
