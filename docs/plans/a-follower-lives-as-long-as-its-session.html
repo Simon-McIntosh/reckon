@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.89">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -317,7 +317,10 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>Landed at merge <code>750f677a</code>. <code>SessionHost.stop</code> takes a reason and writes <code>stopped_at</code> and <code>stop_reason</code> (<code>owner ended</code> or <code>signalled</code>) into the host's final record, stamped when the host notices. Gate: 17 passed, and both new tests fail on the base code. Population of 8 importing test files: 129 passed at base, 131 at the merged head, 0 added. Review 111/120. Its one finding was a text-less placeholder that names no defect; the repair round it started was stopped, and the plan-review session owns the guard. Section closed by tick, not collapse. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/the-session-host-records-when-it-stopped.html">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261007T154818066959-the-session-host-records-when-it-stopped" data-who="reckon-build" data-when="2026-10-07T16:16:45.492Z">
-    <div class="r-comment-body"><p>§11: SessionHost.stop now takes a reason and writes stopped_at and stop_reason into its final record (&quot;owner ended&quot; / &quot;signalled&quot;), taken at the start of the stop so the owner-exit-to-stop gap is bounded by one poll interval; gate tests/test_session_host.py + tests/test_dispatch_session_host.py 17 passed EXIT=0, and dropping the two fields from the final write fails both new tests EXIT=1.</p></div>
+    <div class="r-comment-body"><p>§11: SessionHost.stop now takes a reason and writes stopped_at and stop_reason into its final record ("owner ended" / "signalled"), taken at the start of the stop so the owner-exit-to-stop gap is bounded by one poll interval; gate tests/test_session_host.py + tests/test_dispatch_session_host.py 17 passed EXIT=0, and dropping the two fields from the final write fails both new tests EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261007T160403892846-review-of-the-session-host-records-when-it-stopped" data-who="reckon-build" data-when="2026-10-07T16:18:53.093Z">
+    <div class="r-comment-body"><p>§11 review of r-20261007T154818066959: goal_fidelity 19, evidence 18, scope_discipline 19, durability 17, fit 19, reuse 19 (total 111); the stop-time/reason change meets §11 and both done_when readings, with two follow-on coverage/contract notes and no defect found.</p></div>
 </div>
 </section>
 </main>

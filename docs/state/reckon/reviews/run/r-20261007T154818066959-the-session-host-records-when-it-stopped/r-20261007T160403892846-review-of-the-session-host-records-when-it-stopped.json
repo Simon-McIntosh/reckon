@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e3926b272d0ecedb915d2b33310193d8a18ca59f",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/session_host.py:572",
+    "reckon/crew/session_host.py:609"
+  ],
+  "completed_at": "2026-10-07T16:18:53.093Z",
+  "dispatched_at": "2026-10-07T16:04:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "570",
+      "severity": "follow-on",
+      "text": "follow-on: the finally fallback `if reason is None and self._stopping: reason = _SIGNALLED_REASON` (session_host.py:570) and the request-descriptor EOF path `if not chunk: break` (session_host.py:536) are unasserted -- no test drives a bare request_stop() with no wake-pipe write, nor an EOF on the request descriptor, so stop_reason None has no test. The signal test reaches the wake branch (session_host.py:548-550) which already sets the reason, so the fallback line cannot fail on any current test and a regression deleting it would pass the gate."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "609",
+      "severity": "follow-on",
+      "text": "follow-on: `host.stop()` in the run entry's finally (session_host.py:609) is a second call site of the terminator that now carries a reason and passes none; it would record stop_reason None if it ever fired first. In practice supervise's own finally (session_host.py:571-572) has already stopped and set _stopped, so this call site returns at the guard and is a no-op -- the reason contract is simply unenforced there, not violated."
+    }
+  ],
+  "head_log_revision": "2611d01944bf8c3a1c0e3b82b423b8f857b65a85",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s) of the reason-bearing terminator: reckon/crew/session_host.py:572 (supervise's finally, passing the computed reason) and reckon/crew/session_host.py:609 (the run entry's finally, defaulting the reason to None, reached only as a no-op behind the `if self._stopped: return` guard).",
+    "diff": "read against e3926b272; the single commit 2611d019 adds `_OWNER_ENDED_REASON`/`_SIGNALLED_REASON` (session_host.py:84-87), the `_stopped_at`/`_stop_reason` fields (session_host.py:279-280), the conditional `stopped_at`/`stop_reason` keys in record() (session_host.py:318-322), the `reason` parameter and fields in stop() (session_host.py:461-484), and the reason threading through supervise() (session_host.py:536-572); it also adds the two tests and the evidence fragment -- 89 insertions, 3 deletions across three files.",
+    "done_when": "the section done_when asks a test that ends a fake owner and reads stop_reason 'owner ended' with a stop time no later than one poll after the owner exited, and a second test that signals the host and reads 'signalled', both failing on the base; test_the_record_names_the_owner_that_ended (tests/test_session_host.py:626) asserts stop_reason == 'owner ended' and before <= stopped_at <= after + POLL_SECONDS + 0.5, and test_the_record_names_a_signal (tests/test_session_host.py:650) asserts stop_reason == 'signalled'; both end on the base with KeyError: 'stop_reason' in negative-control.log.",
+    "goal": "the section goal is that the session host's final record carries the time it stopped and why; reckon/crew/session_host.py:461 stop(reason=None) takes _stopped_at at the start of the stop so the owner-exit-to-stop gap is bounded by one poll interval rather than by the child-stop grace, sets _stop_reason=reason, and record() emits both keys only when _stopped, leaving a live census unchanged.",
+    "manifest": "read; it records the head gate tests/test_session_host.py + tests/test_dispatch_session_host.py 17 passed EXIT=0 in gate-test-session-host.log (its header names revision e3926b272 and the working tree carrying the commit), and the base arm 2 failed EXIT=1 in negative-control.log (both new tests KeyError: 'stop_reason').",
+    "write_paths": "the manifest declares reckon/crew/session_host.py, tests/test_session_host.py, the evidence fragment and a figures dir; the diff touches exactly reckon/crew/session_host.py, tests/test_session_host.py and docs/evidence/fragments/a-follower-lives-as-long-as-its-session/the-session-host-records-when-it-stopped.html, all inside the declared set, and no figure was added (matching the manifest's 'No new figure')."
+  },
+  "justifications": {
+    "durability": "the two behaviours are proven by mutation: the base arm in the run's own negative-control.log reddens test_the_record_names_the_owner_* and test_the_record_names_a_signal at EXIT=1, and the tests are real -- they spawn an actual session host process, drive it through a real child and a real owner end, and send a real SIGTERM. The gap is coverage of the None and fallback paths: the EOF break (session_host.py:536) and the finally fallback (session_host.py:570) have no test, and the signal test exercises the wake branch rather than the fallback.",
+    "evidence": "the manifest records the gate result rather than claiming it, and the head arm is independently reproducible: I reran the exact command at the reviewed head 2611d019 in the reviewed worktree (review-gate.log) and got 17 passed EXIT=0. The caveat is that the run's own gate log header names revision e3926b272 (the base) because the gate ran at 18:01 before the commit at 18:02:30, so the run's log cannot by itself tie the green result to the committed object; the independent rerun at 2611d019 closes that gap.",
+    "fit": "the change follows the module's idioms: module-level reason constants beside the existing ones with a why-comment, a docstring paragraph stating the mechanism (the stop time is taken at the start of the stop), type-hinted payload assembly, and a comment at the conditional record write. No symbol, comment or filename carries a plan, ticket, sprint or version label; the two reason strings are mechanism names, not labels.",
+    "goal_fidelity": "stop() at session_host.py:461, record() at session_host.py:301 and the reason threading at session_host.py:536-572 together place the stop time and reason into the final record only, with 'owner ended' on the owner check and 'signalled' on the self-pipe wake, matching the section goal and both done_when readings exactly.",
+    "reuse": "the change reuses the module's `_now` clock, `_stop_child`, and the single `_write_record(force=True)` terminator; it adds no second record writer and no duplicate stop path, so the census has one writer and one terminator as the brief required.",
+    "scope_discipline": "the diff e3926b272..2611d019 touches exactly reckon/crew/session_host.py, tests/test_session_host.py and the evidence fragment, all inside the declared write paths, 89 insertions against 3 deletions across three files; reckon/crew/dispatch.py, which another node owned, is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section goal is that the session host's final record carries the time it stopped and why; reckon/crew/session_host.py:461 stop(reason=None) takes _stopped_at at the start of the stop so the owner-exit-to-stop gap is bounded by one poll interval rather than by the child-stop grace, sets _stop_reason=reason, and record() emits both keys only when _stopped, leaving a live census unchanged.\nVERDICT done_when: the section done_when asks a test that ends a fake owner and reads stop_reason 'owner ended' with a stop time no later than one poll after the owner exited, and a second test that signals the host and reads 'signalled', both failing on the base; test_the_record_names_the_owner_that_ended (tests/test_session_host.py:626) asserts stop_reason == 'owner ended' and before <= stopped_at <= after + POLL_SECONDS + 0.5, and test_the_record_names_a_signal (tests/test_session_host.py:650) asserts stop_reason == 'signalled'; both end on the base with KeyError: 'stop_reason' in negative-control.log.\nVERDICT write_paths: the manifest declares reckon/crew/session_host.py, tests/test_session_host.py, the evidence fragment and a figures dir; the diff touches exactly reckon/crew/session_host.py, tests/test_session_host.py and the evidence fragment, all inside the declared set, and no figure was added.\nVERDICT manifest: read; it records the head gate tests/test_session_host.py + tests/test_dispatch_session_host.py 17 passed EXIT=0 in gate-test-session-host.log (header revision e3926b272, working tree carrying the commit), and the base arm 2 failed EXIT=1 in negative-control.log (KeyError: 'stop_reason').\nVERDICT diff: read against e3926b272; the single commit 2611d019 adds the two reason constants, the _stopped_at/_stop_reason fields, the conditional final-record keys, and the reason threading through supervise; it also adds the two tests and the evidence fragment, 89 insertions and 3 deletions across three files.\nCALL_SITES: reckon/crew/session_host.py:572, reckon/crew/session_host.py:609\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: stop() at session_host.py:461, record() at session_host.py:301 and the reason threading at session_host.py:536-572 together place the stop time and reason into the final record only, with 'owner ended' on the owner check and 'signalled' on the self-pipe wake, matching the section goal and both done_when readings exactly.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records the gate result rather than claiming it, and the head arm is independently reproducible: I reran the exact command at the reviewed head 2611d019 in the reviewed worktree (review-gate.log) and got 17 passed EXIT=0; the run's own gate log names revision e3926b272 because it ran before the commit, so the independent rerun closes that tie.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff e3926b272..2611d019 touches exactly reckon/crew/session_host.py, tests/test_session_host.py and the evidence fragment, all inside the declared write paths, 89 insertions against 3 deletions; reckon/crew/dispatch.py, owned by another node, is untouched.\nSCORE durability: 17\nJUSTIFICATION durability: both behaviours are proven by mutation (the base arm reddens the two new tests at EXIT=1) and the tests are real, spawning an actual session host process with a real child, owner end and SIGTERM; the gap is coverage of the EOF break and the finally fallback, neither of which any test drives.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the module's idioms -- module-level reason constants with a why-comment, a docstring stating the mechanism, type-hinted payload assembly -- and no symbol, comment or filename carries a plan, ticket or version label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change reuses _now, _stop_child and the single _write_record(force=True) terminator and adds no second record writer or stop path, so the census keeps one writer and one terminator.\nFINDING reckon/crew/session_host.py:570 follow-on: the finally fallback `if reason is None and self._stopping` and the request-descriptor EOF break (session_host.py:536) are unasserted, so stop_reason None has no test and a regression deleting the fallback would pass the gate.\nFINDING reckon/crew/session_host.py:609 follow-on: the run entry's finally calls `host.stop()` with no reason -- a second call site of the now-reason-bearing terminator that would record stop_reason None if it fired first; in practice the guard makes it a no-op after supervise's own stop, so the reason contract is unenforced there rather than violated.",
+  "review_run_id": "r-20261007T160403892846-review-of-the-session-host-records-when-it-stopped",
+  "reviewed_base_sha": "e3926b272d0ecedb915d2b33310193d8a18ca59f",
+  "reviewed_head_sha": "2611d01944bf8c3a1c0e3b82b423b8f857b65a85",
+  "reviewed_run_id": "r-20261007T154818066959-the-session-host-records-when-it-stopped",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261007T160403892846-review-of-the-session-host-records-when-it-stopped",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T16:21:06.359831+00:00",
+  "total": 111
+}
