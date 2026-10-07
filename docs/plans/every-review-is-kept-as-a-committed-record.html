@@ -24,8 +24,8 @@
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.83">
-<meta name="plan-version" content="55">
+<meta name="plan-impl" content="0.87">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -324,6 +324,12 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T075551375016-review-of-plan-review-view-summarises-a-day" data-who="reckon-build" data-when="2026-10-07T08:15:57.311Z">
     <div class="r-comment-body"><p>review of r-20261007T065816697716-plan-review-view-summarises-a-day stored at reviews/reckon/r-20261007T065816697716-plan-review-view-summarises-a-day.at-9f36f69d8.json — 6 dimensions sum to 101/120, reviewed base/head b8cc7f0f6..9f36f69d8, added-failure count unmeasured, one follow-on finding (batch blob-read duplication).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20261007-day-summary-landed" data-who="reckon-build" data-when="2026-10-07T08:28:00Z">
+    <div class="r-comment-body"><p>Node <code>plan-review-view-summarises-a-day</code> landed on main (head <code>9f36f69d8</code>). <code>crew(view="plan-review")</code> with <code>since</code> folds the committed records per plan: reviews run by rubric, each re-review's new sections and largest section change (measured with <code>_prose_texts</code> and <code>_edit_share</code>), and how often the per-section rule fired. Its 37-file population went from 397 to 408 passed, with 0 failures at either head. The review scored 101/120 and raised one follow-on: <code>_read_reviewed_blob_texts</code> forks the batch read that <code>velocity.read_blobs</code> owns.</p><p><strong>The figure for 6 October</strong>, against §1's evidence script (96 re-reviews, 4 with a new section, 15 firings): the fold reads 87, 4 and 14. New sections reproduce exactly. The worker attributed the 9-run gap to predecessors that were never committed. The coordinator traced it differently:</p><ul><li>4 runs, in four nova plans: the records are on nova's <code>origin/main</code>, but the mounted nova checkout was 3 commits behind it, missing the import merge.</li><li>4 runs: the reviews were composed but never delivered a report, so they are not reviews, although the script counted their snapshots.</li><li>1 run, <code>r-20261005T053339</code> in imas-codex: a delivered review that was never stored, an instance of the gap §8 closes.</li></ul><p>Against current checkouts with the non-reviews excluded, the two readers agree on 91. The four firing differences come from different section splitting and tokenising, and the fold's split is the coverage gate's.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20261007-day-summary-correction" data-who="reckon-build" data-when="2026-10-07T08:30:00Z">
+    <div class="r-comment-body"><p>Correction to the previous comment: the two readers do not agree on 91. With nova's checkout current, the fold reads 87 + 4 = 91 re-reviews. The script, with its 4 composed-but-undelivered runs removed, has 96 − 4 = 92. The one remaining difference is the delivered-but-unstored imas-codex review, which the fold cannot see until §8 imports it.</p></div>
 </div>
 </section>
 </main>
