@@ -3183,6 +3183,21 @@ def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
     }
 
 
+def watch_observer_alive(registration: Mapping[str, Any]) -> bool | None:
+    """Check the registered supervisor without walking runs or follower pipes."""
+    if "parent_pid" not in registration:
+        return None
+    try:
+        parent_pid = int(registration.get("parent_pid") or 0)
+    except (TypeError, ValueError):
+        return False
+    return bool(
+        parent_pid > 1
+        and process_alive(parent_pid) is True
+        and _process_start_time(parent_pid) == registration.get("parent_start_time")
+    )
+
+
 def project_watch_visibility(
     project: str, *, session: str | None = None
 ) -> dict[str, Any]:
@@ -3224,18 +3239,7 @@ def project_watch_visibility(
         else None
     )
 
-    observer_alive: bool | None = None
-    if "parent_pid" in registration:
-        parent_pid = registration.get("parent_pid")
-        try:
-            parent_pid_value = int(parent_pid)
-        except (TypeError, ValueError):
-            parent_pid_value = 0
-        observer_alive = bool(
-            process_alive(parent_pid) is True
-            and _process_start_time(parent_pid) == registration.get("parent_start_time")
-            and parent_pid_value > 1
-        )
+    observer_alive = watch_observer_alive(registration)
 
     pointer_count = len(list_live(project=project))
     # Liveness follows the process, not the seat: a running producer is live
