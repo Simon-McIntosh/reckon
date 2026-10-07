@@ -395,16 +395,20 @@ def _plan_history(repo, head, prefix=PLAN_DIRECTORY):
 def read_blobs(repo, specs):
     """Read each named blob in one ``cat-file --batch`` process.
 
-    ``specs`` is an ordered sequence of ``(revision, path)`` pairs; the result
-    maps each pair to its blob bytes, or to ``None`` when git reports the object
-    missing at that revision. One process answers the whole sequence, so a
-    census over many revisions or many paths is a single pass over the object
-    store rather than one subprocess per object.
+    ``specs`` is an ordered sequence of entries, each either a
+    ``(revision, path)`` pair naming a path at a revision, or a bare object
+    name (a blob sha). The result maps each entry to its blob bytes, or to
+    ``None`` when git reports the object missing. One process answers the whole
+    sequence, so a census over many revisions or many paths is a single pass
+    over the object store rather than one subprocess per object.
     """
     specs = list(specs)
     if not specs:
         return {}
-    payload = "".join(f"{revision}:{path}\n" for revision, path in specs).encode()
+    payload = "".join(
+        f"{spec[0]}:{spec[1]}\n" if isinstance(spec, tuple) else f"{spec}\n"
+        for spec in specs
+    ).encode()
     result = run_git(repo, "cat-file", "--batch", input=payload)
     result.check_returncode()
     data, position, blobs = result.stdout, 0, {}

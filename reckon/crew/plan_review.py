@@ -58,6 +58,7 @@ import hashlib
 import json
 import re
 import shlex
+import subprocess
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1448,11 +1449,11 @@ def _read_reviewed_blob_texts(
 
     ``reviewed_blob_sha`` names the bytes a reviewer read, written to the
     repository object store when the review was dispatched, so the text a
-    review was taken against survives the plan being written past it. One
-    ``git cat-file --batch`` process answers every blob in a single pass — the
-    batching :func:`reckon.velocity.read_blobs` uses — rather than one
-    subprocess per record. The mapping is keyed by the normalised blob sha; a
-    value of ``None`` means git reports the object missing, which the caller
+    review was taken against survives the plan being written past it. The bytes
+    come from :func:`reckon.velocity.read_blobs`, whose one batched object read
+    answers every blob in a single process rather than one subprocess per
+    record. The mapping is keyed by the normalised blob sha;
+    a value of ``None`` means git reports the object missing, which the caller
     falls back from rather than reading as absent content. A project with no
     resolvable checkout, or a git invocation that fails outright, yields an
     empty mapping and every review is measured from its snapshot instead.
@@ -1468,32 +1469,16 @@ def _read_reviewed_blob_texts(
     repo = _project_repo_root(project)
     if repo is None:
         return {}
-    from reckon.velocity import run_git
+    from reckon.velocity import read_blobs
 
-    payload = "".join(f"{sha}\n" for sha in unique).encode("ascii")
     try:
-        result = run_git(repo, "cat-file", "--batch", input=payload)
-    except OSError:
+        blobs = read_blobs(repo, unique)
+    except (OSError, subprocess.CalledProcessError):
         return {}
-    if result.returncode != 0:
-        return {}
-    data, position, texts = result.stdout, 0, {}
-    for sha in unique:
-        newline = data.find(b"\n", position)
-        if newline < 0:
-            break
-        header = data[position:newline].decode("ascii", "replace")
-        position = newline + 1
-        if header.strip().endswith("missing"):
-            texts[sha] = None
-            continue
-        try:
-            size = int(header.split()[2])
-        except (IndexError, ValueError):
-            break
-        texts[sha] = data[position : position + size].decode("utf-8", "replace")
-        position += size + 1
-    return texts
+    return {
+        sha: None if blob is None else blob.decode("utf-8", "replace")
+        for sha, blob in blobs.items()
+    }
 
 
 def _review_prose(
