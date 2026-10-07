@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>The plan-review store tests expect the commits scalar | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="metadata-scalar-tests-name-commits-landing">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>The plan-review store tests expect the commits scalar</h2>
+        <p class="lead">Excluding a landing&rsquo;s <code>commits</code> from the design digest added it to <code>PLAN_METADATA_SCALARS</code> and updated <code>tests/test_bookkeeping_earns_no_review.py</code>, but left the mirrored expectations in <code>tests/test_plan_review_store.py</code> stale, so its metadata-only and real-plan fingerprint cases failed. They now name <code>commits</code>, with no change to <code>reckon/</code>: the whole file runs 10 passed, <code>EXIT=0</code>.</p>
+      </header>
+      <ul>
+        <li><code>test_metadata_only_edit_keeps_the_fingerprint</code> &mdash; the <code>commits</code> scalar joins the base and edited states and the expected <code>PLAN_METADATA_SCALARS</code> tuple, so the case's own &ldquo;every excluded scalar moved&rdquo; claim holds for it too.</li>
+        <li><code>test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it</code> &mdash; the <code>_METADATA_EDITS</code> table gains <code>("commits", "plan-commits", "0" * 40)</code>, which the case requires, at test time, to be exactly the keys of <code>PLAN_METADATA_SCALARS</code>.</li>
+        <li>Gate: <code>tests/test_plan_review_store.py</code> whole file, 10 passed, <code>EXIT=0</code> (<code>head-test_plan_review_store.log</code>). Negative control: <code>commits</code> removed from <code>PLAN_METADATA_SCALARS</code> in a scratch copy makes both updated cases fail, <code>EXIT=1</code> (<code>negative-control.log</code>).</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

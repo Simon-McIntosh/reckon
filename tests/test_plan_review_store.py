@@ -103,6 +103,7 @@ def test_metadata_only_edit_keeps_the_fingerprint() -> None:
         "sprint": "S22",
         "tags": ["crew"],
         "archived": "",
+        "commits": [],
         "sections": [{"id": "s1", "body": "the authored prose"}],
         "decisions": [{"key": "k", "chosen": "a"}],
         "followups": [{"id": "f1"}],
@@ -121,6 +122,7 @@ def test_metadata_only_edit_keeps_the_fingerprint() -> None:
             "sprint": "S23",
             "tags": ["crew", "extra"],
             "archived": "1",
+            "commits": ["0" * 40],
         }
     )
     # Every excluded scalar moved and no content key did: no review is due.
@@ -143,6 +145,7 @@ def test_metadata_only_edit_keeps_the_fingerprint() -> None:
         "sprint",
         "tags",
         "archived",
+        "commits",
     )
 
 
@@ -272,6 +275,7 @@ _METADATA_EDITS = (
     ("sprint", "plan-sprint", "S99"),
     ("tags", "plan-tags", "x,y"),
     ("archived", "plan-archived", "1"),
+    ("commits", "plan-commits", "0" * 40),
 )
 
 _AUTHORED_EDIT = "</h2>\n<p>an authored edit for the fingerprint check</p>"
