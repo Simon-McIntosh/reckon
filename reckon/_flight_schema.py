@@ -209,6 +209,7 @@ class FlightConfig(ConfiguredBaseModel):
     unprotected_paths: list[str] | None = Field(default=None, description="""Defaults the fence's protected set carries that a host or project layer leaves writable. A layer removes a default only by naming it here, so a reduction of the protected set is a deliberate, named act rather than a side effect of editing `protected_paths`. Each entry names a default as the fence would resolve it — home-relative or absolute — and an entry that names no default is ignored. Every run whose fence leaves out a named default carries the list on its run record.""")
     backends: dict[str, BackendConfig] | None = Field(default=None, description="""Available worker backends, keyed by a name chosen by whoever writes the configuration. The schema fixes no backend names.""")
     lanes: dict[str, LaneConfig] | None = Field(default=None, description="""A lane is a subscription or host, and the models chosen inside it. Declaring a lane is an alternative to writing one backend block per model: resolution expands each lane back into the backend entries today's callers read, so a lane that declares its models and an equivalent set of backend blocks resolve to the same config. Absent means no lane is declared and resolution is unchanged.""")
+    aliases: dict[str, ModelAlias] | None = Field(default=None, description="""Old backend names, mapped to the lane and model key they name. A stored ledger row, run record, review or `review_excluded_backends` entry is never rewritten, so a name whose backend block has retired still has to resolve to a pair; this table is what a reader resolves it through. Declared for history rather than routing: nothing here creates a backend or changes a resolved value.""")
     roles: dict[str, RoleConfig] | None = Field(default=None, description="""Per-role routing overlays, keyed by role name. A role overrides only the keys it names; everything else falls through to its backend.""")
     routing: RoutingConfig | None = Field(default=None, description="""How dispatch selects its worker backend.""")
     gates: GateConfig | None = Field(default=None)
@@ -404,6 +405,15 @@ class LaneConfig(BackendConfig):
             err_msg = f"Invalid time_budget format: {v}"
             raise ValueError(err_msg)
         return v
+
+
+class ModelAlias(ConfiguredBaseModel):
+    """
+    One old backend name and the lane-and-model pair it resolves to. The name is the map key; the pair is what a read-side resolver returns for a stored row, a review or a table, so an old vocabulary normalises to the same lane and model key a new declaration supplies.
+    """
+    name: str = Field(default=..., description="""Map key for an inlined entry.""")
+    lane: str | None = Field(default=None, description="""Lane an old backend name resolves to. Must name a key of `lanes` once every layer has been merged.""")
+    model_key: str | None = Field(default=None, description="""Model key within a lane that an old backend name resolves to. The key is the short name a caller types inside the lane.""")
 
 
 class PlacementConfig(ConfiguredBaseModel):
@@ -653,6 +663,7 @@ ReviewTiers.model_rebuild()
 BackendConfig.model_rebuild()
 LaneModelConfig.model_rebuild()
 LaneConfig.model_rebuild()
+ModelAlias.model_rebuild()
 PlacementConfig.model_rebuild()
 PlacementRequirement.model_rebuild()
 CatalogConfig.model_rebuild()

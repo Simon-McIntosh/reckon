@@ -887,6 +887,23 @@
             "additionalProperties": false,
             "description": "A complete flight configuration, or one layer of one.",
             "properties": {
+                "aliases": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/ModelAlias__identifier_optional"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Old backend names, mapped to the lane and model key they name. A stored ledger row, run record, review or `review_excluded_backends` entry is never rewritten, so a name whose backend block has retired still has to resolve to a pair; this table is what a reader resolves it through. Declared for history rather than routing: nothing here creates a backend or changes a resolved value.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                },
                 "backends": {
                     "additionalProperties": {
                         "anyOf": [
@@ -1893,6 +1910,62 @@
             "title": "LaunchMode",
             "type": "string"
         },
+        "ModelAlias": {
+            "additionalProperties": false,
+            "description": "One old backend name and the lane-and-model pair it resolves to. The name is the map key; the pair is what a read-side resolver returns for a stored row, a review or a table, so an old vocabulary normalises to the same lane and model key a new declaration supplies.",
+            "properties": {
+                "lane": {
+                    "description": "Lane an old backend name resolves to. Must name a key of `lanes` once every layer has been merged.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "model_key": {
+                    "description": "Model key within a lane that an old backend name resolves to. The key is the short name a caller types inside the lane.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "ModelAlias",
+            "type": "object"
+        },
+        "ModelAlias__identifier_optional": {
+            "additionalProperties": false,
+            "description": "One old backend name and the lane-and-model pair it resolves to. The name is the map key; the pair is what a read-side resolver returns for a stored row, a review or a table, so an old vocabulary normalises to the same lane and model key a new declaration supplies.",
+            "properties": {
+                "lane": {
+                    "description": "Lane an old backend name resolves to. Must name a key of `lanes` once every layer has been merged.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "model_key": {
+                    "description": "Model key within a lane that an old backend name resolves to. The key is the short name a caller types inside the lane.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "ModelAlias",
+            "type": "object"
+        },
         "PickerMode": {
             "description": "Whether the recorded picker selection controls dispatch.",
             "enum": [
@@ -2489,6 +2562,23 @@
     "description": "A complete flight configuration, or one layer of one.",
     "metamodel_version": "1.11.0",
     "properties": {
+        "aliases": {
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "$ref": "#/$defs/ModelAlias__identifier_optional"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ]
+            },
+            "description": "Old backend names, mapped to the lane and model key they name. A stored ledger row, run record, review or `review_excluded_backends` entry is never rewritten, so a name whose backend block has retired still has to resolve to a pair; this table is what a reader resolves it through. Declared for history rather than routing: nothing here creates a backend or changes a resolved value.",
+            "type": [
+                "object",
+                "null"
+            ]
+        },
         "backends": {
             "additionalProperties": {
                 "anyOf": [

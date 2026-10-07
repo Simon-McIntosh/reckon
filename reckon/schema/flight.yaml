@@ -276,6 +276,28 @@ slots:
     multivalued: true
     inlined: true
 
+  aliases:
+    description: >-
+      Old backend names, mapped to the lane and model key they name. A stored
+      ledger row, run record, review or `review_excluded_backends` entry is
+      never rewritten, so a name whose backend block has retired still has to
+      resolve to a pair; this table is what a reader resolves it through.
+      Declared for history rather than routing: nothing here creates a backend
+      or changes a resolved value.
+    range: ModelAlias
+    multivalued: true
+    inlined: true
+
+  lane:
+    description: >-
+      Lane an old backend name resolves to. Must name a key of `lanes` once
+      every layer has been merged.
+
+  model_key:
+    description: >-
+      Model key within a lane that an old backend name resolves to. The key is
+      the short name a caller types inside the lane.
+
   default_model:
     description: >-
       Model key a dispatch on this lane resolves to when it names no model. A
@@ -943,6 +965,7 @@ classes:
       - unprotected_paths
       - backends
       - lanes
+      - aliases
       - roles
       - routing
       - gates
@@ -1061,6 +1084,17 @@ classes:
     slots:
       - default_model
       - models
+
+  ModelAlias:
+    description: >-
+      One old backend name and the lane-and-model pair it resolves to. The name
+      is the map key; the pair is what a read-side resolver returns for a
+      stored row, a review or a table, so an old vocabulary normalises to the
+      same lane and model key a new declaration supplies.
+    slots:
+      - name
+      - lane
+      - model_key
 
   PlacementConfig:
     description: >-

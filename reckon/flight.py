@@ -57,7 +57,7 @@ CATALOGUE_LAYER = "catalogue"
 
 # Maps whose keys are user-chosen names rather than schema-fixed keys. Their
 # entries are inlined objects whose identifier slot is the map key.
-_KEYED_MAPS = ("backends", "roles", "lanes")
+_KEYED_MAPS = ("backends", "roles", "lanes", "aliases")
 
 _AUTH_PROBE_TIMEOUT_SECONDS = 10
 _CATALOG_PROBE_TIMEOUT_SECONDS = 10
@@ -1301,19 +1301,20 @@ def _catalogue_shadows(
     return sorted(shadows, key=lambda item: (item["backend"], item["key"]))
 
 
-# The model-level keys a lane model declaration carries onto the backend entry
-# expansion produces for it. Everything else in a lane block is lane-level and
-# applies to every entry the lane expands to.
-LANE_MODEL_KEYS = (
-    "model",
-    "effort",
-    "alias",
-    "input_rate_per_million",
-    "output_rate_per_million",
-    "as_of",
-    "time_budget",
-    "budget_group",
-)
+def _lane_model_keys() -> tuple[str, ...]:
+    """The model-level keys a lane model contributes to its expanded entry.
+
+    Derived from the generated ``LaneModelConfig`` rather than restated here,
+    so a slot added to the schema reaches expansion without a second edit and
+    the two cannot drift. Everything in a lane block that is not one of these
+    is lane-level and applies to every entry the lane expands to.
+    """
+    from reckon._flight_schema import LaneModelConfig
+
+    return tuple(name for name in LaneModelConfig.model_fields if name != "name")
+
+
+LANE_MODEL_KEYS = _lane_model_keys()
 
 
 def _lane_entry(
