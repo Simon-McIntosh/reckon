@@ -25,6 +25,8 @@
   <title>Every Module Fits A Worker Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
   <main class="plan-doc">
@@ -67,7 +69,12 @@
       modules in §1 and is a ratchet. The test also fails when an allowlisted file is now under the bound, so each
       split must remove its own entry. A new oversize file, and an allowlisted file that has shrunk, both read red.</p>
     <p><strong>Deliverable 2, the move check.</strong> <code>scripts/check_pure_move.py</code> takes a base revision,
-      the original module's path and the module paths a split produced, and parses each with <code>ast</code>. Every
+      the original module's path and the module paths a split produced. It reads the base module through the
+      repository's one revision reader, <code>reckon.velocity.read_sources(repo, revision, prefix=...)</code>, the reader
+      <code>interface_counts.read_trees</code> is built on. It reads the produced modules from the working tree the way
+      <code>tests/test_staged_write_inventory.py</code> layers working bytes over that reader, and adds no git reader of
+      its own. It walks each module body itself, because <code>interface_counts.definitions</code> lists only functions
+      and classes and a move also carries assignments. Every
       top-level statement of the base module apart from its imports must appear with byte-identical source in exactly
       one produced module. The script prints a JSON receipt listing each moved statement and where it went, every
       statement in a produced module that did not come from the base, and the estimated tokens of each produced module.
@@ -88,7 +95,10 @@
       for what it does. For each group it lists every definition, the estimated tokens and the import edges between
       groups, and it shows that no group imports another at module level in a cycle. Beside that it gives the external
       census: every name some other file imports from <code>reckon.crew.dispatch</code>, every test that patches a
-      <code>dispatch</code> attribute, and every test that reads the file's text by path. The move node then carries out
+      <code>dispatch</code> attribute, and every test that reads the file's text by path. The import half of the census
+      resolves each import through <code>reckon.served_code._import_targets</code>, the importer index that already maps
+      a local name to its absolute module and attribute, rather than a second name scan. Only the patch and
+      text-by-path halves, which no index records, are searched as text. The move node then carries out
       the map exactly, with the produced modules as its declared write paths, under the contract in §8.</p>
     <p><strong>Done when</strong> the map shows every definition placed once, every produced module at or under
       40,000 estimated tokens, and no import cycle; <code>scripts/check_pure_move.py</code> exits 0 at the move's
@@ -164,7 +174,7 @@
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="module-bound" data-choice="50000" data-by="9cf43820, on the lead&#x27;s direction" data-when="2026-10-07">
-    <p class="r-dec-q">How large may a source module be, in the context-fit check's estimated tokens?</p>
+    <p class="r-dec-q">How large may a source module be, in the context-fit check&#x27;s estimated tokens?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="40000">40,000</button>
       <button class="r-opt chosen" data-value="50000">50,000, a quarter of a 200k window</button>
@@ -176,9 +186,9 @@
     <p class="r-dec-q">After a split, where do callers import moved names from?</p>
     <p class="r-dec-opts">
       <button class="r-opt chosen" data-value="keep-original">The original module, which re-imports every name another file imports from it today</button>
-      <button class="r-opt" data-value="repoint-all">Each name's new module, with every importer repointed in the same commit</button>
+      <button class="r-opt" data-value="repoint-all">Each name&#x27;s new module, with every importer repointed in the same commit</button>
       </p>
-    <p class="r-dec-rat">Keep the original as the import surface. Four sessions are writing these files today, and code in their worktrees imports from the original paths. Repointing every importer would turn each split into a change to dozens of files that conflicts with all of them. Re-imports add no definition and no public name. Tests that patch a moved name still have to be repointed, because a patch on the import surface does not reach the module that calls the name. That cost is counted by each map's census.</p>
+    <p class="r-dec-rat">Keep the original as the import surface. Four sessions are writing these files today, and code in their worktrees imports from the original paths. Repointing every importer would turn each split into a change to dozens of files that conflicts with all of them. Re-imports add no definition and no public name. Tests that patch a moved name still have to be repointed, because a patch on the import surface does not reach the module that calls the name. That cost is counted by each map&#x27;s census.</p>
     </div>
 </section>
 
