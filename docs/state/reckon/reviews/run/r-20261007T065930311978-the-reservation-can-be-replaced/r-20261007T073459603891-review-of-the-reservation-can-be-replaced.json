@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite at b8cc7f0f6 (baseline.log, 15 passed, exit 0, failure_ids []) minus after_suite at 5af5e8561 (gate.log, 19 passed, exit 0, failure_ids []); no failure id in the head arm is read from the base arm",
+  "base_log_revision": "b8cc7f0f622a96640b0d5320ce81a7b280b33466",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:9016 apply_backend_placement",
+    "reckon/cli.py:5656 crew_placement"
+  ],
+  "completed_at": "2026-10-07T08:02:07.931Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "the-reservation-can-be-replaced",
+      "recorded_at": "2026-10-07T08:03:58.419055+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-07T07:35:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/placement.py",
+      "line": "500",
+      "severity": "follow-on",
+      "text": "_target_shape (placement.py:500) re-implements the job-shape read that reckon/crew/fleet_node.py:254 fleet_node.allocation_shape already owns and that placement.py:732 already calls to read a job's partition, cores and memory; _read_target_job (placement.py:440) likewise re-derives the one-job state query and its 'empty answer vs unreadable question' distinction that reckon/crew/runs.py:4308 scheduler_job_state and runs.py:4193 _ask_scheduler own, and the record assembly at placement.py:583 repeats the block placement.py:740 _adopt_live_fleet_allocation already builds for a job read from the scheduler. The addition duplicates all three owners without extending any; the atomic single-query reason in the docstring (placement.py:76-79) justifies one combined reader, not the re-derivation of an owned shape parse and state read."
+    },
+    {
+      "file": "tests/test_crew_placement_reservation.py",
+      "line": "349",
+      "severity": "follow-on",
+      "text": "the fake scheduler answers an unknown job id with empty stdout and exit 0, but this cluster's `squeue -h -j 99999999 -o '%T|%u|%P|%c|%m'` exits 1 with \"slurm_load_jobs error: Invalid job id specified\" on stderr, so in production _read_target_job (placement.py:464) takes the non-zero-exit branch and raises the 'could not be asked about job 99999999' refusal, never the \"does not know job 99999999\" text line 362 asserts, which is unreachable for Slurm. I reproduced both: the real call returned the could-not-be-asked message, and the fake's empty-stdout/exit-0 shape is what makes the assertion pass. The done-when's third refusal case is therefore exercised only against a scheduler behaviour the deployment target does not exhibit; the refusal itself still fires and the record is left untouched."
+    }
+  ],
+  "head_log_revision": "5af5e8561d638ebfa6861f6df2346bdd34fd9ecb",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/dispatch.py:9016 apply_backend_placement reads the published reservation and places the new job id in the step prefix, and reckon/cli.py:5656 crew_placement is the --replace entry.",
+    "diff": "read against base b8cc7f0f6; the single commit 5af5e8561 adds REPLACEMENT_JOB_QUERY, _target_job_argv, _read_target_job, _target_shape, _replacement_refusal and replace_reservation to placement.py, the --replace flag to cli.py:5635, four cases to the test module and the landing fragment.",
+    "done_when": "the done-when names a fake-scheduler replace-then-dispatch test and three refusals; tests/test_crew_placement_reservation.py:268 and :312/:331/:349 assert them, and the manifest records the gate at 19 passed exit 0.",
+    "goal": "the node goal, plan \u00a77, is that reckon crew placement can be repointed at a running job; placement.py:547 replace_reservation publishes a record naming an explicit job and dispatch.py:9016-9025 resolves reservation[\"job_id\"] in every later step prefix.",
+    "manifest": "read; it records head 5af5e8561 and base b8cc7f0f6, baseline_suite and after_suite (both exit 0, zero failures), test_logs gate/baseline/negative-control, and a declared negative control whose last line is EXIT=1.",
+    "write_paths": "the manifest declares four source/evidence paths plus a figures directory; git diff --stat b8cc7f0f6..5af5e8561 names exactly four changed files, all inside them."
+  },
+  "justifications": {
+    "durability": "I reproduced the declared negative control: making _replacement_refusal admit a pending target reddens test_replacement_refuses_a_pending_job (1 failed, EXIT=1, DID NOT RAISE CrewError), a test the head arm passes, so the pending guard is real; but test_replacement_refuses_a_job_the_scheduler_does_not_know guards a branch production never reaches, so it cannot redden on a production regression.",
+    "evidence": "the gate tests/test_crew_placement_reservation.py together with tests/test_ensure_holds_one_reservation.py is green at 19 passed exit 0, which I reproduced at head (base 15 passed): but the third done-when refusal case is asserted only against a fake whose answer this cluster's squeue does not give, so the gate does not measure that case's production behaviour.",
+    "fit": "the added names at placement.py:80-85, :430-547 are mechanism names REPLACEMENT_JOB_QUERY... (REPLACEMENT_JOB_QUERY, _read_target_job, _replacement_refusal) with no plan, ticket or version id and no attribution, and the comments state mechanism; the one slip is _replacement_owner (placement.py:435) re-wording the user resolution fleet_node.py:192 already carries.",
+    "goal_fidelity": "placement.py:547 replace_reservation names the target explicitly, refuses pending / other-user / unknown-id through _replacement_refusal (placement.py:521), records the replaced id (placement.py:583 \"replaced\") and prints both (placement.py:596-608), and dispatch.py:9025 places the new job, so every later dispatch and resume moves while running steps are untouched.",
+    "reuse": "the change reuses publish_reservation, read_reservation, _reservation_hold_lock, reservation_options, _roster_reach and fleet_node.parse_memory_gb, but _target_shape (placement.py:500) and _read_target_job (placement.py:440) re-implement the shape read owned by fleet_node.allocation_shape and the state read owned by runs.scheduler_job_state rather than extending either, and rebuild the record assembly placement.py:740 owns, so the dimension scores at the re-implementation cap.",
+    "scope_discipline": "git diff --stat b8cc7f0f6..5af5e8561 lists exactly reckon/crew/placement.py, reckon/cli.py, tests/test_crew_placement_reservation.py and the evidence fragment, the four files the manifest declares, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal, plan \u00a77, is that reckon crew placement can be repointed at a running job; placement.py:547 replace_reservation publishes a record naming an explicit job and dispatch.py:9016-9025 resolves reservation[job_id] in every later step prefix.\nVERDICT done_when: the done-when names a fake-scheduler replace-then-dispatch test and three refusals; tests/test_crew_placement_reservation.py:268 and :312/:331/:349 assert them and the manifest records the gate at 19 passed exit 0.\nVERDICT write_paths: the manifest declares four paths plus a figures directory; git diff --stat b8cc7f0f6..5af5e8561 names exactly four changed files, all inside them.\nVERDICT manifest: read; it records head 5af5e8561 and base b8cc7f0f6, baseline_suite and after_suite (both exit 0, zero failures), test_logs gate/baseline/negative-control and a declared negative control whose last line is EXIT=1.\nVERDICT diff: read against base b8cc7f0f6; the single commit 5af5e8561 adds REPLACEMENT_JOB_QUERY, _target_job_argv, _read_target_job, _target_shape, _replacement_refusal and replace_reservation to placement.py, --replace to cli.py:5635, four cases and the fragment.\nCALL_SITES: reckon/crew/dispatch.py:9016 apply_backend_placement, reckon/cli.py:5656 crew_placement\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: placement.py:547 replace_reservation names the target explicitly, refuses pending/other-user/unknown-id through _replacement_refusal (placement.py:521), records the replaced id and prints both, and dispatch.py:9025 places the new job.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is green at 19 passed exit 0, which I reproduced at head (base 15 passed), but the third done-when refusal case is asserted only against a fake whose answer this cluster's squeue does not give.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b8cc7f0f6..5af5e8561 lists exactly the four files the manifest declares and nothing else.\nSCORE durability: 16\nJUSTIFICATION durability: I reproduced the declared negative control (accepting a pending target reddens test_replacement_refuses_a_pending_job, EXIT=1, DID NOT RAISE CrewError), but test_replacement_refuses_a_job_the_scheduler_does_not_know guards a branch production never reaches.\nSCORE fit: 17\nJUSTIFICATION fit: the added names are mechanism names with no plan, ticket or version id and no attribution; _replacement_owner (placement.py:435) re-words the user resolution fleet_node.py:192 already carries.\nSCORE reuse: 5\nJUSTIFICATION reuse: _target_shape (placement.py:500) re-implements fleet_node.py:254 allocation_shape and _read_target_job (placement.py:440) re-implements runs.py:4308 scheduler_job_state, extending neither owner.\nFINDING reckon/crew/placement.py:500 follow-on: _target_shape (placement.py:500) re-implements the job-shape read that reckon/crew/fleet_node.py:254 fleet_node.allocation_shape already owns and that placement.py:732 already calls to read a job's partition, cores and memory; _read_target_job (placement.py:440) likewise re-derives the one-job state query and its 'empty answer vs unreadable question' distinction that reckon/crew/runs.py:4308 scheduler_job_state and runs.py:4193 _ask_scheduler own, and the record assembly at placement.py:583 repeats the block placement.py:740 _adopt_live_fleet_allocation already builds for a job read from the scheduler. The addition duplicates all three owners without extending any; the atomic single-query reason in the docstring (placement.py:76-79) justifies one combined reader, not the re-derivation of an owned shape parse and state read.\nFINDING tests/test_crew_placement_reservation.py:349 follow-on: the fake scheduler answers an unknown job id with empty stdout and exit 0, but this cluster's `squeue -h -j 99999999 -o '%T|%u|%P|%c|%m'` exits 1 with \"slurm_load_jobs error: Invalid job id specified\" on stderr, so in production _read_target_job (placement.py:464) takes the non-zero-exit branch and raises the 'could not be asked about job 99999999' refusal, never the \"does not know job 99999999\" text line 362 asserts, which is unreachable for Slurm. I reproduced both: the real call returned the could-not-be-asked message, and the fake's empty-stdout/exit-0 shape is what makes the assertion pass. The done-when's third refusal case is therefore exercised only against a scheduler behaviour the deployment target does not exhibit; the refusal itself still fires and the record is left untouched.\n",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T065930311978-the-reservation-can-be-replaced.at-5af5e8561d638ebfa6861f6df2346bdd34fd9ecb.json",
+  "review_run_id": "r-20261007T073459603891-review-of-the-reservation-can-be-replaced",
+  "reviewed_base_sha": "b8cc7f0f622a96640b0d5320ce81a7b280b33466",
+  "reviewed_head_sha": "5af5e8561d638ebfa6861f6df2346bdd34fd9ecb",
+  "reviewed_run_id": "r-20261007T065930311978-the-reservation-can-be-replaced",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T07:56:35.095782+00:00",
+  "total": 92
+}
