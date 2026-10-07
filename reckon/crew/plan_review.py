@@ -479,8 +479,11 @@ def store_plan_review(
         raise ValueError("plan review record is missing project")
     if not plan_slug:
         raise ValueError("plan review record is missing plan_slug")
-    if plan_version is None:
-        raise ValueError("plan review record is missing plan_version")
+    if not _review_store.names_a_review_subject(record):
+        raise ValueError(
+            "plan review record names no plan subject: a plan slug with a "
+            "usable integer version is required"
+        )
     if not _review_store.carries_review_material(record):
         raise ValueError(
             "plan review record carries no review material — findings, scores, "
