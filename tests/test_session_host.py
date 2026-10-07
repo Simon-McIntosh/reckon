@@ -661,6 +661,131 @@ def test_the_record_names_a_signal(host: HostHarness) -> None:
     assert record["stopped_at"] >= 0, record
 
 
+def _in_process_host(tmp_path: Path):
+    """A SessionHost driven in this process, with its state under ``tmp_path``.
+
+    The two stop-reason paths below are reached only when the request reader
+    ends without a signal -- a bare ``request_stop()`` and an end-of-file on the
+    descriptor -- which is easier to hand to a host in this process than to make
+    the CLI reach. The host is given temporary state, log and runtime roots so
+    it writes nothing in the operator's real directories, and an owner of this
+    process so a record can be written without a stand-in to keep alive.
+    """
+    module = _module()
+    environ = dict(os.environ)
+    environ["PYTHONPATH"] = str(REPO_ROOT)
+    environ["RECKON_HOME"] = str(tmp_path / "home")
+    environ["RECKON_SESSION_HOST_STATE_DIR"] = str(tmp_path / "state")
+    environ["RECKON_SESSION_HOST_LOG_DIR"] = str(tmp_path / "logs")
+    environ["RECKON_SESSION_HOST_POLL_SECONDS"] = POLL_SECONDS
+    environ["XDG_RUNTIME_DIR"] = str(tmp_path / "run")
+    owner = {
+        "pid": os.getpid(),
+        "start_time": _start_time(os.getpid()),
+    }
+    return module.SessionHost(
+        owner=owner,
+        follower_argv=[sys.executable, "-c", "import time; time.sleep(30)"],
+        environ=environ,
+    )
+
+
+def test_a_bare_stop_request_records_a_reason(tmp_path: Path) -> None:
+    """A stop request with no wake-pipe write still names the signalled reason.
+
+    A signal handler both sets the stop request and writes the wake pipe, so the
+    signalled reason is normally set inside the read loop. A stop request that
+    arrives without that write leaves the loop only through its condition, and
+    the final record must still name a reason rather than carry null.
+    """
+    host = _in_process_host(tmp_path)
+    requests = os.fdopen(os.pipe()[0], "rb")
+    wake_read, wake_write = os.pipe()
+    os.set_blocking(wake_read, False)
+    try:
+        host.request_stop()
+        host.supervise(requests, wake_read)
+        record = json.loads(host.record_path.read_text(encoding="utf-8"))
+        assert record["stop_reason"] is not None, record
+        assert record["stop_reason"] == "signalled", record
+        assert record["stopped_at"] is not None, record
+    finally:
+        requests.close()
+        os.close(wake_read)
+        os.close(wake_write)
+
+
+def test_an_end_of_file_records_a_reason(tmp_path: Path) -> None:
+    """End of file on the request descriptor stops the host with a named reason.
+
+    The entry point and ``crew host`` open the FIFO read-write so the host holds
+    a write end and its read never returns end-of-file; a host handed a plain
+    pipe does see it. That exit must name its own reason rather than leave the
+    final record's stop reason null.
+    """
+    host = _in_process_host(tmp_path)
+    wake_read, wake_write = os.pipe()
+    os.set_blocking(wake_read, False)
+    read_fd, write_fd = os.pipe()
+    requests = os.fdopen(read_fd, "rb")
+    os.close(write_fd)  # the next read on the descriptor sees end-of-file
+    try:
+        host.supervise(requests, wake_read)
+        record = json.loads(host.record_path.read_text(encoding="utf-8"))
+        assert record["stop_reason"] is not None, record
+        assert record["stop_reason"] == "request stream ended", record
+        assert record["stopped_at"] is not None, record
+    finally:
+        requests.close()
+        os.close(wake_read)
+        os.close(wake_write)
+
+
+def test_a_raised_loop_records_a_reason_and_propagates(tmp_path: Path) -> None:
+    """An exception escaping the loop records a reason and still propagates.
+
+    A read or select that raises leaves the loop neither by a named break nor by
+    a requested stop, so it must not be recorded as a signalled stop, and it
+    must not be swallowed: the final record names the failure and the exception
+    reaches the caller. The tick is made to raise so the loop's own exit is the
+    exception rather than a stop request.
+    """
+    host = _in_process_host(tmp_path)
+    read_fd, write_fd = os.pipe()
+    requests = os.fdopen(read_fd, "rb")
+    wake_read, wake_write = os.pipe()
+    os.set_blocking(wake_read, False)
+
+    def boom() -> None:
+        raise RuntimeError("the supervision tick raised")
+
+    host.tick = boom
+    try:
+        with pytest.raises(RuntimeError):
+            host.supervise(requests, wake_read)
+        record = json.loads(host.record_path.read_text(encoding="utf-8"))
+        assert record["stop_reason"] == "host failed", record
+        assert record["stopped_at"] is not None, record
+    finally:
+        requests.close()
+        os.close(write_fd)
+        os.close(wake_read)
+        os.close(wake_write)
+
+
+def test_stop_refuses_a_reason_that_is_not_a_non_empty_string(
+    tmp_path: Path,
+) -> None:
+    """A null or empty stop reason is refused before any state changes."""
+    host = _in_process_host(tmp_path)
+    for bad in (None, ""):
+        with pytest.raises(ValueError, match="non-empty string"):
+            host.stop(bad)
+    assert host._stopped is False
+    assert host._stopped_at is None
+    assert not host.record_path.exists(), "a refused stop wrote a record"
+
+
 def test_both_readers_name_one_fifo_for_the_same_owner(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

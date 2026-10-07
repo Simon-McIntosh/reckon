@@ -86,6 +86,19 @@ RECORD_SUFFIX = ".json"
 # the gap between the owner ending and the last child stopping from disk alone.
 _OWNER_ENDED_REASON = "owner ended"
 _SIGNALLED_REASON = "signalled"
+# The request descriptor reached end-of-file: its write end closed and the read
+# can make no further progress. The entry point and ``crew host`` open the FIFO
+# read-write, so this is only reached by a host handed a plain pipe, but the
+# branch guards a closed descriptor from spinning the read loop.
+_REQUEST_ENDED_REASON = "request stream ended"
+# The entry point is finishing after the supervise loop returned. The supervisor
+# stops with its own reason first, so this names the stop only in the guard's
+# own path -- a supervise that raised before it could stop.
+_EXITED_REASON = "host exited"
+# The supervise loop left by raising rather than by a named break or a requested
+# stop: an OSError from select or read, say. The exception still propagates; the
+# reason exists so the final census bounds the end rather than leaving it null.
+_FAILED_REASON = "host failed"
 
 
 def _state_dir(environ: Mapping[str, str] | None = None) -> Path:
@@ -456,7 +469,7 @@ class SessionHost:
             return False
         return reaped != child.pid
 
-    def stop(self, reason: str | None = None) -> None:
+    def stop(self, reason: str) -> None:
         """Stop every child and wait for it, then write the final record.
 
         The guard is the performed-stop flag, not the request flag: a signal
@@ -464,11 +477,17 @@ class SessionHost:
         afterwards. Guarding on the request flag made every signal-path stop a
         no-op, leaving child teardown resting on the parent-death signal alone.
 
-        ``reason`` is why the host is stopping -- its owner ended or it was
-        signalled -- and it, with the stop time, is carried in the final record.
-        The time is taken here, at the start of the stop, so it reflects when
-        the host noticed rather than when the last child happened to end.
+        ``reason`` is required, and is why the host is stopping -- its owner
+        ended, it was signalled, its request stream ended, its entry point is
+        finishing, or its read loop failed -- so the final record always carries
+        a non-null stop reason. A reason that is not a non-empty string is
+        refused before any state changes, so a null or empty reason cannot reach
+        the record. It, with the stop time, is carried in the final record. The
+        time is taken here, at the start of the stop, so it reflects when the
+        host noticed rather than when the last child happened to end.
         """
+        if not isinstance(reason, str) or not reason:
+            raise ValueError("a stop reason must be a non-empty string")
         if self._stopped:
             return
         self._remove_fifo()
@@ -552,6 +571,7 @@ class SessionHost:
                     # first line and every later one waits for new input.
                     chunk = os.read(descriptor, 65536)
                     if not chunk:
+                        reason = _REQUEST_ENDED_REASON
                         break
                     buffer += chunk
                     while b"\n" in buffer:
@@ -562,8 +582,13 @@ class SessionHost:
                     break
                 self.tick()
         finally:
-            if reason is None and self._stopping:
-                reason = _SIGNALLED_REASON
+            # A named break sets its own reason; the loop condition seeing a
+            # bare request_stop() with no wake-pipe write leaves it null with
+            # ``_stopping`` set, and an exception escaping the loop leaves it
+            # null with ``_stopping`` clear. Name each so the final record is
+            # never null, and let the exception propagate afterwards.
+            if reason is None:
+                reason = _SIGNALLED_REASON if self._stopping else _FAILED_REASON
             self.stop(reason)
         return 0
 
@@ -601,7 +626,11 @@ def run(
     try:
         host.supervise(stream, wake_read, first_request=first_request)
     finally:
-        host.stop()
+        # The supervisor stops with its own reason on every path it completes,
+        # so this stop is a no-op guard; it names a reason anyway because the
+        # stop reason is required, and because a supervise that raised before
+        # its own stop would otherwise leave the record's reason null.
+        host.stop(_EXITED_REASON)
         os.close(wake_read)
         os.close(wake_write)
     return 0
