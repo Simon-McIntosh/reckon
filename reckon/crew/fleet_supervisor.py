@@ -26,6 +26,8 @@ Requests arrive one per line on a FIFO in that directory:
   ``stop``                     stop every declared service this reader started
                                and end the request loop, so nothing it started
                                outlives it
+  ``promote``                  publish the fleet record and start declared
+                               services when this reader began in standby
 
 Each session start runs a fresh copy of this module (the ``start`` mode),
 because the loop is long-lived and the starting logic is not: a fix to how a
@@ -107,10 +109,6 @@ REQUEST_READ_BYTES = 65536
 # fixed size is enough to give every tab a size, so it is attached while the
 # tabs are created and taken off again once they exist.
 #
-# Removable once a zellij release carries the upstream fix for per-client tab
-# sizing (zellij-org/zellij#5612), which sizes a tab from the client that will
-# attach to it rather than from the one that created the session; 0.45.1 is the
-# newest release and still needs this.
 SIZED_CLIENT_COLUMNS = 200
 SIZED_CLIENT_ROWS = 50
 # A layout's tabs do not all appear at once: the recorded application on this
@@ -1182,13 +1180,15 @@ def parse_request(line: str) -> Request:
     return Request(fields[0], tuple(fields[1:]))
 
 
-def _reexec(exec_: Any) -> None:
+def _reexec(exec_: Any, *, standby: bool = False) -> None:
     """Replace this image with a fresh copy, so a fix to the module takes hold.
 
-    No arguments are passed, so the replacement enters the request loop again
-    and republishes its record and FIFO.
+    A standby reader retains standby across the replacement, so a reload before
+    promotion cannot publish the fleet record or start declared services.
     """
     argv = [sys.executable, "-m", "reckon.crew.fleet_supervisor"]
+    if standby:
+        argv.append("--standby")
     exec_(argv[0], argv)
 
 
@@ -1235,6 +1235,9 @@ def handle_line(
     environ: Mapping[str, str] | None = None,
     exec_: Any = os.execv,
     services: DeclaredServices | None = None,
+    *,
+    standby: bool = False,
+    promote: Callable[[], None] | None = None,
 ) -> bool:
     """Act on one request line; a line this reader cannot act on is logged only.
 
@@ -1247,10 +1250,13 @@ def handle_line(
         layout = request.fields[1] if len(request.fields) > 1 else ""
         _run_session_copy(request.fields[0] if request.fields else "", layout, environ)
     elif request.verb == "reload":
-        if services is not None:
+        if services is not None and not standby:
             services.reload()
         log("reloading")
-        _reexec(exec_)
+        _reexec(exec_, standby=standby)
+    elif request.verb == "promote" and not request.fields:
+        if promote is not None:
+            promote()
     elif request.verb == "spawn" and len(request.fields) == 2:
         run_id, spec_path = request.fields
         try:
@@ -1305,6 +1311,7 @@ def serve(
     environ: MutableMapping[str, str] | None = None,
     *,
     exec_: Any = os.execv,
+    standby: bool = False,
 ) -> int:
     """Read requests from the FIFO until the batch step ends.
 
@@ -1318,18 +1325,36 @@ def serve(
     runtime = prepare_runtime(environ)
     state_directory(environ).mkdir(parents=True, exist_ok=True)
     announce_requeue(environ)
-    publish_record(runtime, environ)
+    if not standby:
+        publish_record(runtime, environ)
     fifo = runtime / REQUEST_FIFO_NAME
+    pending_fifo = runtime / f".{REQUEST_FIFO_NAME}.pending"
     with suppress(FileNotFoundError):
-        fifo.unlink()
-    os.mkfifo(fifo, 0o600)
+        pending_fifo.unlink()
+    os.mkfifo(pending_fifo, 0o600)
+    # Publish the path only after holding its read end. A nonblocking writer
+    # that sees the path can then open it immediately, even during startup.
+    descriptor = os.open(pending_fifo, os.O_RDWR)
+    os.replace(pending_fifo, fifo)
     log(
         f"fleet supervisor on {_short_hostname()}, "
         f"job {environ.get('SLURM_JOB_ID') or '?'}, runtime {runtime}"
     )
     start_health_sampler(environ)
     services = DeclaredServices(runtime, environ)
-    services.reload()
+    if not standby:
+        services.reload()
+    is_standby = standby
+
+    def promote() -> None:
+        nonlocal is_standby
+        if not is_standby:
+            return
+        publish_record(runtime, environ)
+        is_standby = False
+        services.reload()
+        log("fleet supervisor promoted")
+
     stopping = threading.Event()
     threading.Thread(
         target=services.supervise_loop,
@@ -1342,7 +1367,6 @@ def serve(
     # line is bounded rather than blocking: the loop wakes on its own interval
     # so an exited child is collected without a request arriving, and reads
     # whichever whole lines the wakeup delivered.
-    descriptor = os.open(fifo, os.O_RDWR)
     try:
         pending = b""
         while True:
@@ -1356,7 +1380,15 @@ def serve(
             while b"\n" in pending:
                 raw, pending = pending.split(b"\n", 1)
                 line = raw.decode("utf-8", "replace")
-                if handle_line(line, runtime, environ, exec_, services):
+                if handle_line(
+                    line,
+                    runtime,
+                    environ,
+                    exec_,
+                    services,
+                    standby=is_standby,
+                    promote=promote,
+                ):
                     continue
                 return 0
     finally:
@@ -1387,7 +1419,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if arguments and arguments[0] == SERVICE_MODE:
         name = arguments[1] if len(arguments) > 1 else ""
         return run_declared_service(name, arguments[2:], environ)
-    return serve(environ)
+    return serve(environ, standby=arguments == ["--standby"])
 
 
 if __name__ == "__main__":
