@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import html
 import json
-import logging
 import os
 import re
 import shlex
@@ -95,8 +94,6 @@ from reckon.crew.runs import (
 from reckon.evidence import EXECUTABLE_SECTION_ROLES
 
 # ── Promotion: the transient record becomes committed evidence ──────────────
-
-LOGGER = logging.getLogger(__name__)
 
 _COORDINATOR_LANDING_AUTHOR = "reckon-build"
 
@@ -8033,10 +8030,10 @@ def _delivered_review_payloads_for_commit(
     is the correct key: refusing would abandon the round the run was minted to
     deliver, and filing it under the reviewed run would collide across two
     review runs of one subject. A round the index returns that is neither this
-    run's own delivered round nor carries a review run id cannot be keyed at
-    all, so it is skipped with a note naming the file rather than refusing the
-    whole promotion — the other rounds it sits beside are still the subject's
-    review and should land.
+    run's own delivered round nor carries a review run id of its own is keyed by
+    the derived legacy id of its own bytes, the same derivation the host importer
+    uses, and marked ``review_run_id_source: derived`` — so every round of the
+    subject lands rather than surviving only in the staging store.
 
     The store refuses a record it cannot key or time; this function does not
     filter such a record out, because the refusal must reach the caller as a
@@ -8077,16 +8074,21 @@ def _delivered_review_payloads_for_commit(
         ):
             if delivered_path is not None and Path(path) == Path(delivered_path):
                 continue
+            round_payload = stored
             if not str(stored.get("review_run_id") or "").strip():
-                LOGGER.warning(
-                    "skipping stored review round %s of run %r: it carries no "
-                    "review run id and is not the round this promotion "
-                    "delivered, so it cannot be filed under a committed path",
-                    path,
-                    reviewed_run_id,
-                )
-                continue
-            include(stored)
+                # The round carries no review run id of its own, so it cannot be
+                # keyed by one. Its bytes key it stably instead: file it under
+                # the derived legacy id — the same derivation the host importer
+                # uses — so the round is committed rather than surviving only in
+                # the staging store.
+                round_payload = {
+                    **stored,
+                    "review_run_id": review_module.derived_legacy_review_run_id(
+                        Path(path).read_bytes()
+                    ),
+                    "review_run_id_source": "derived",
+                }
+            include(round_payload)
     if not payloads:
         # A plan review names no reviewed run and its own round was not found
         # through the delivered lookup, so the store index for the review run
