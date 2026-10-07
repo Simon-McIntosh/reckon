@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:7954 sync -> _sync_crew_host_plugin",
+    "reckon/cli.py:8270 doctor skills-presence -> _personal_skills_dir",
+    "reckon/cli.py:8287 doctor link -> crew_host_link_state(_personal_skills_dir())"
+  ],
+  "completed_at": "2026-10-07T07:09:47.932Z",
+  "dispatched_at": "2026-10-07T06:38:09Z",
+  "findings": [
+    {
+      "file": "tests/test_sync_isolation_covers_module_fixtures.py",
+      "line": "83",
+      "severity": "follow-on",
+      "text": "follow-on: the equality assertion at :83 compares the link target against the plugin path the test itself supplied to the checkout it patched, so the two sides move together and it adds little over the is_symlink check at :82, the assertion the declared mutation actually falsifies; it also makes the module's pass rest on sync re-pointing the entry a prior module (tests/test_spa_crew_stylesheet.py:49) left in the shared session directory, a behaviour this test does not itself assert."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit e138728b against base de44bd83; four files (+159/-29) \u2014 tests/conftest.py, tests/test_doctor.py, the new test module and the evidence fragment \u2014 every file inside the declared scope and every line the node's own authorship.",
+    "done_when": "the done-when names five clauses and each holds at head e138728b: the fixture is session-scoped and sets the variable through os.environ (tests/conftest.py:1063-1084), tests/test_doctor.py:8 opts out with a delenv fixture, the module-name exemption set is deleted, the constant is imported from reckon.cli (tests/conftest.py:32), the new module runs sync from a module-scoped fixture (tests/test_sync_isolation_covers_module_fixtures.py:36) and shows the link landing in the override directory, and the gate log ends with a bare EXIT=0 line; I re-ran the named gate independently as 36 passed EXIT=0.",
+    "goal": "the node's goal is to extend the skills-directory override to fixtures of every scope; tests/conftest.py:1058 makes isolated_claude_skills_dir scope=\"session\", so a session-scoped override is set before any module- or session-scoped fixture instantiates and a fixture that runs sync of any scope resolves the override, which is the deliverable the goal names.",
+    "manifest": "read; status complete, commit e138728b, changed_paths and commits populated, baseline_suite and after_suite absent so the added-failure count is unmeasured rather than zero, and negative_control_log names a log whose last line is EXIT=1 with two failing ids the head arm does not fail.",
+    "write_paths": "read the manifest's declared paths (tests/conftest.py, tests/test_doctor.py, tests/test_sync_isolation_covers_module_fixtures.py, the evidence fragment, the figures directory); every path in the diff is inside them and the unused figures directory was not created, which the done-when's no-artifact clause permits."
+  },
+  "justifications": {
+    "durability": "reinstating the function-scoped fixture (the declared mutation) reddens both new tests \u2014 test_module_scoped_sync_lands_in_the_override_directory at tests/test_sync_isolation_covers_module_fixtures.py:82 and test_module_scoped_sync_leaves_the_operator_home_unlinked at :87 \u2014 because a module-scoped fixture runs before a function-scoped override can set the variable, so the guard genuinely fails under the regression it was added to catch.",
+    "evidence": "I re-ran the named gate at head e138728b as 36 passed EXIT=0 (review-gate-head.log) and re-read the declared negative control as 2 failed EXIT=1 at tests/test_sync_isolation_covers_module_fixtures.py:82 and :87; the added-failure count is unmeasured because the reviewed manifest declares no baseline_suite or after_suite arm.",
+    "fit": "the fixture follows the os.environ save/restore idiom of the sibling session fixture at tests/conftest.py:1087 and imports CLAUDE_SKILLS_DIR_ENV from its owner at tests/conftest.py:32, and no added name carries a version, plan or ticket label.",
+    "goal_fidelity": "a session-scoped fixture (tests/conftest.py:1058) is instantiated before any module- or session-scoped fixture, so every fixture that runs sync \u2014 including tests/test_spa_crew_stylesheet.py:49 \u2014 now resolves the override rather than the operator's real ~/.claude/skills.",
+    "reuse": "the change deletes the duplicated env-var literal and the module-name exemption set rather than adding a parallel resolver, so it extends the override's owner at reckon/cli.py:149 and forks no capability.",
+    "scope_discipline": "git diff --stat de44bd83..e138728b touches exactly the four declared paths and creates no file outside them; the declared figures directory is unused as the done-when names no artifact."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to extend the skills-directory override to fixtures of every scope; tests/conftest.py:1058 makes isolated_claude_skills_dir scope=\"session\", so a session-scoped override is set before any module- or session-scoped fixture instantiates and a fixture that runs sync of any scope resolves the override, which is the deliverable the goal names.\nVERDICT done_when: the done-when names five clauses and each holds at head e138728b: the fixture is session-scoped and sets the variable through os.environ (tests/conftest.py:1063-1084), tests/test_doctor.py:8 opts out with a delenv fixture, the module-name exemption set is deleted, the constant is imported from reckon.cli (tests/conftest.py:32), the new module runs sync from a module-scoped fixture (tests/test_sync_isolation_covers_module_fixtures.py:36) and shows the link landing in the override directory, and the gate log ends with a bare EXIT=0 line; I re-ran the named gate independently as 36 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared paths (tests/conftest.py, tests/test_doctor.py, tests/test_sync_isolation_covers_module_fixtures.py, the evidence fragment, the figures directory); every path in the diff is inside them and the unused figures directory was not created, which the done-when's no-artifact clause permits.\nVERDICT manifest: read; status complete, commit e138728b, changed_paths and commits populated, baseline_suite and after_suite absent so the added-failure count is unmeasured rather than zero, and negative_control_log names a log whose last line is EXIT=1 with two failing ids the head arm does not fail.\nVERDICT diff: read the single commit e138728b against base de44bd83; four files (+159/-29) \u2014 tests/conftest.py, tests/test_doctor.py, the new test module and the evidence fragment \u2014 every file inside the declared scope and every line the node's own authorship.\nCALL_SITES: reckon/cli.py:7954 sync -> _sync_crew_host_plugin, reckon/cli.py:8270 doctor skills-presence -> _personal_skills_dir, reckon/cli.py:8287 doctor link -> crew_host_link_state(_personal_skills_dir())\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: a session-scoped fixture (tests/conftest.py:1058) is instantiated before any module- or session-scoped fixture, so every fixture that runs sync \u2014 including tests/test_spa_crew_stylesheet.py:49 \u2014 now resolves the override rather than the operator's real ~/.claude/skills.\nSCORE evidence: 19\nJUSTIFICATION evidence: I re-ran the named gate at head e138728b as 36 passed EXIT=0 (review-gate-head.log) and re-read the declared negative control as 2 failed EXIT=1 at tests/test_sync_isolation_covers_module_fixtures.py:82 and :87; the added-failure count is unmeasured because the reviewed manifest declares no baseline_suite or after_suite arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat de44bd83..e138728b touches exactly the four declared paths and creates no file outside them; the declared figures directory is unused as the done-when names no artifact.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the function-scoped fixture (the declared mutation) reddens both new tests \u2014 test_module_scoped_sync_lands_in_the_override_directory at tests/test_sync_isolation_covers_module_fixtures.py:82 and test_module_scoped_sync_leaves_the_operator_home_unlinked at :87 \u2014 because a module-scoped fixture runs before a function-scoped override can set the variable, so the guard genuinely fails under the regression it was added to catch.\nSCORE fit: 20\nJUSTIFICATION fit: the fixture follows the os.environ save/restore idiom of the sibling session fixture at tests/conftest.py:1087 and imports CLAUDE_SKILLS_DIR_ENV from its owner at tests/conftest.py:32, and no added name carries a version, plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change deletes the duplicated env-var literal and the module-name exemption set rather than adding a parallel resolver, so it extends the override's owner at reckon/cli.py:149 and forks no capability.\nFINDING tests/test_sync_isolation_covers_module_fixtures.py:83 follow-on: the equality assertion at :83 compares the link target against the plugin path the test itself supplied to the checkout it patched, so the two sides move together and it adds little over the is_symlink check at :82, the assertion the declared mutation actually falsifies; it also makes the module's pass rest on sync re-pointing the entry a prior module (tests/test_spa_crew_stylesheet.py:49) left in the shared session directory, a behaviour this test does not itself assert.\n",
+  "review_run_id": "r-20261007T063738884835-review-of-sync-isolation-covers-every-fixture-scope",
+  "reviewed_base_sha": "de44bd836f4fe85ce248e73ebd4e32a770cf6415",
+  "reviewed_head_sha": "e138728b9fa3d4a431f5a5577c3d9aed3f6d4539",
+  "reviewed_run_id": "r-20261007T053804331668-sync-isolation-covers-every-fixture-scope",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T07:05:55.122721+00:00",
+  "total": 118
+}
