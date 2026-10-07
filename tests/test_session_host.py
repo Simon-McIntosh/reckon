@@ -659,3 +659,28 @@ def test_the_record_names_a_signal(host: HostHarness) -> None:
     record = host.record()
     assert record["stop_reason"] == "signalled", record
     assert record["stopped_at"] >= 0, record
+
+
+def test_both_readers_name_one_fifo_for_the_same_owner(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Dispatch and the session host compose the same FIFO path for one owner.
+
+    The host removes the request FIFO dispatch writes to, so a pair of readers
+    that spelled the path differently would have the host remove a file no
+    dispatch ever wrote. Both are asked for the same owner pair under the same
+    runtime root, and the paths must be equal.
+    """
+    from reckon.crew.dispatch import _session_host_fifo_path
+    from reckon.crew.session_host import _fifo_path
+
+    runtime = tmp_path / "run"
+    runtime.mkdir()
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
+    owner = {"pid": 4242, "start_time": "987654"}
+
+    through_host = _fifo_path(owner)
+    through_dispatch = _session_host_fifo_path((owner["pid"], owner["start_time"]))
+
+    assert through_host == through_dispatch
+    assert through_host == runtime / "reckon-session-host" / "4242-987654.fifo"
