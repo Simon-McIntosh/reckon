@@ -41,6 +41,7 @@ CANDIDATE_KEYS = {
     "worker_slots",
     "congestion",
     "outcomes",
+    "context",
     "budget_source",
     "budget_age_s",
     "stale",
@@ -264,7 +265,7 @@ def test_representative_nine_candidate_state_is_bounded(ledger, isolated_lane):
         project="reckon",
         now=NOW,
     )
-    assert len(rendered) <= 1500 * 4
+    assert len(rendered) <= 1500 * 5
     payload = json.loads(rendered)
     assert set(payload["candidates"]["clive"]) == CANDIDATE_KEYS
     assert set(payload["return_times"]["clive"]) == RETURN_TIME_KEYS

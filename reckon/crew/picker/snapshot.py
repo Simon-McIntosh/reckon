@@ -1,10 +1,12 @@
 """Adapt existing fleet measurements and hard gates to picker candidates."""
 
 import json
+import math
 from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from statistics import median
 from typing import Any
 
 from reckon import _backends, budget, capability, ledger
@@ -62,6 +64,103 @@ def recent_outcomes(
             continue
         counts[str(row.get("gate") or "unknown")] += 1
     return {key: counts[key] for key in ("passed", "failed", "not-run", "unknown")}
+
+
+def estimated_context_tokens(
+    node: Any, repo: Path, *, backend_settings: dict[str, Any] | None = None
+) -> int:
+    """A node's deterministic input estimate, independent of any lane window.
+
+    The figure is the same measurement the context-fit verdict charges a node
+    against -- its standing instruction chain plus the repository files its
+    brief loads -- so a request-level estimate and a candidate's own verdict
+    agree whenever the standing chain is shared. The standing chain is read
+    for the resolved backend's agent layout; a caller with no backend reads the
+    harness-independent chain, which is what an unrouted estimate wants.
+    """
+
+    standing_tokens, _ = routing._standing_context_input(repo, backend_settings or {})
+    file_tokens, _ = routing._context_file_inputs(repo, node, None)
+    return standing_tokens + file_tokens
+
+
+def _p90(values: list[float]) -> float:
+    """The 90th percentile of a non-empty sample, by nearest-rank."""
+
+    ordered = sorted(values)
+    index = max(0, math.ceil(0.9 * len(ordered)) - 1)
+    return ordered[index]
+
+
+def _peak_input_utilisation(
+    rows: list[dict[str, Any]], backend: str, *, now: datetime
+) -> dict[str, Any]:
+    """Peak input utilisation of recent passed runs on one lane.
+
+    Only a passed run carries a completed worktree's measurement, and only a
+    row whose throughput block recorded a percent contributes. An absent
+    reading, or a lane with no such run, leaves every figure null rather than
+    a measured zero -- a lane nothing observed is not a lane that used none of
+    its window.
+    """
+
+    cutoff = now - timedelta(days=14)
+    values: list[float] = []
+    for row in rows:
+        if row.get("gate") != "passed" or row.get("backend") != backend:
+            continue
+        stamp = parse_utc(
+            str(row.get("completed_at") or row.get("dispatched_at") or "")
+        )
+        if stamp is None or not cutoff <= stamp <= now:
+            continue
+        block = row.get("throughput")
+        value = (block or {}).get("input_utilisation_pct")
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            values.append(float(value))
+    if not values:
+        return {
+            "peak_utilisation_p50_pct": None,
+            "peak_utilisation_p90_pct": None,
+            "peak_utilisation_runs": None,
+        }
+    return {
+        "peak_utilisation_p50_pct": round(median(values), 1),
+        "peak_utilisation_p90_pct": round(_p90(values), 1),
+        "peak_utilisation_runs": len(values),
+    }
+
+
+def _context_block(
+    context: dict[str, Any] | None,
+    node_tokens: int,
+    utilisation: dict[str, Any],
+) -> dict[str, Any]:
+    """One candidate's weighable context facts, null where unknown.
+
+    ``window_tokens`` is the gating window the context-fit verdict compares an
+    estimate against; ``estimated_tokens`` is this node measured against that
+    candidate (the verdict's own per-backend estimate where one exists, else
+    the once-per-pick figure). ``headroom_pct`` is the share of the window the
+    estimate leaves free. A lane declaring no window carries a null window and
+    no headroom, never a zero that would read as a spent window.
+    """
+
+    if context is None:
+        window_tokens = None
+        estimated_tokens: int | None = node_tokens
+    else:
+        window_tokens = context.get("window_tokens")
+        estimated_tokens = context.get("estimated_tokens")
+    headroom_pct = None
+    if window_tokens and estimated_tokens is not None:
+        headroom_pct = round(100.0 * (window_tokens - estimated_tokens) / window_tokens, 1)
+    return {
+        "window_tokens": window_tokens,
+        "estimated_tokens": estimated_tokens,
+        "headroom_pct": headroom_pct,
+        **utilisation,
+    }
 
 
 def _lane(backend: dict[str, Any], session: str) -> tuple[Any, Any, dict[str, Any]]:
@@ -153,6 +252,7 @@ def _fit(
     repo: Path,
     *,
     verdict_inputs: dict[str, Any] | None = None,
+    context_out: dict[str, Any] | None = None,
 ) -> list[str]:
     execution = capability.assess_execution_fit(
         request.node.done_when,
@@ -195,6 +295,11 @@ def _fit(
         )
     if not competence["allowed"]:
         reasons.append("competence: " + competence["reason"])
+    # The verdict measured this backend's window once; hand the measurement to
+    # the caller rather than measuring it a second time for the candidate's
+    # context block.
+    if context_out is not None:
+        context_out[name] = context
     return reasons
 
 
@@ -310,6 +415,14 @@ def candidates(
         **shared,
         "node_estimate": routing._estimated_hours(repo, request.project, request.node),
     }
+    # The node's estimate is independent of the candidate, so it is measured
+    # once for the pick and reused wherever a lane declares no window of its
+    # own. Peak utilisation is read once per lane rather than once per row.
+    node_context_tokens = estimated_context_tokens(request.node, repo)
+    lane_utilisation = {
+        name: _peak_input_utilisation(rows, name, now=now)
+        for name in config.get("backends", {})
+    }
     budget_by_backend = {row["backend"]: row for row in view["backends"]}
     group_by_backend = {
         member: group for group in view["groups"] for member in group["members"]
@@ -376,8 +489,22 @@ def candidates(
             _lane(backend, request.session) if local else (None, None, {})
         )
         # Already-excluded candidates need no repository census or serving probe.
+        context_block = None
         if not reasons:
-            reasons.extend(_fit(request, name, backend, repo, verdict_inputs=shared))
+            contexts: dict[str, Any] = {}
+            reasons.extend(
+                _fit(
+                    request,
+                    name,
+                    backend,
+                    repo,
+                    verdict_inputs=shared,
+                    context_out=contexts,
+                )
+            )
+            context_block = _context_block(
+                contexts.get(name), node_context_tokens, lane_utilisation.get(name, {})
+            )
         if reasons:
             availability = "not-probed"
         else:
@@ -452,6 +579,7 @@ def candidates(
                 budget_reason=budget_reason,
                 stale=stale,
                 budget_age_s=budget_age_s,
+                context=context_block,
             )
         )
     return result

@@ -48,6 +48,7 @@ CANDIDATE_FIELDS = {
     "worker_slots",
     "congestion",
     "outcomes",
+    "context",
     "budget_source",
     "budget_age_s",
     "stale",

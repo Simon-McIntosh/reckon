@@ -60,6 +60,18 @@ _GLOSSARY: dict[str, str] = {
         "when the lane reports none."
     ),
     "days_to_reset": "Days until the lane's window resets; null when unknown.",
+    "context": (
+        "A candidate's context block. window_tokens is the input window that "
+        "gates the lane; estimated_tokens is this node's deterministic input "
+        "estimate (standing instructions plus the repository files its brief "
+        "loads) measured against that window; headroom_pct is the share of the "
+        "window the estimate leaves free. peak_utilisation_p50_pct and "
+        "peak_utilisation_p90_pct are the median and 90th-percentile peak input "
+        "utilisation of recent passed runs on the lane, with "
+        "peak_utilisation_runs behind them. A run whose input approaches its "
+        "window risks dying mid-way, so a small headroom is a real risk to be "
+        "weighed with pressure. A null figure is unknown, never zero."
+    ),
 }
 
 
@@ -120,6 +132,7 @@ def _candidate_state(candidate: Any) -> dict[str, Any]:
         "worker_slots": candidate.worker_slots,
         "congestion": candidate.congestion,
         "outcomes": candidate.outcomes,
+        "context": getattr(candidate, "context", None),
         "budget_source": getattr(candidate, "budget_source", None),
         "budget_age_s": getattr(candidate, "budget_age_s", None),
         "stale": getattr(candidate, "stale", None),
