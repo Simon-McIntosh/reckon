@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-module-fits-a-worker-window">
+  <meta name="plan-title" content="A module-size guard and a pure-move check">
+  <meta name="plan-summary" content="A ratchet test holds every module under reckon/ and tests/ at or under 50,000 estimated tokens, and a script proves a split moved every non-import statement byte-identically, exiting non-zero on a lost, altered, duplicated or non-import new statement.">
+  <meta name="plan-evidence-for" content="reckon:every-module-fits-a-worker-window">
+  <meta name="plan-verifies" content="reckon:every-module-fits-a-worker-window#s2">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,module-size,refactor,guard">
+  <title>A module-size guard and a pure-move check — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="module-size-guard-and-move-check" data-reckon="landed" data-when="2026-10-07">
+  <h2 id="module-size-guard-and-move-check-title">A module-size guard and a pure-move check</h2>
+
+  <p id="module-size-guard-and-move-check-guard"><strong>The guard.</strong>
+    <code id="module-size-guard-and-move-check-guard-test">tests/test_every_module_fits_a_worker_window.py</code> measures every
+    <code>*.py</code> under <code>tests/</code> and <code>reckon/</code> at the working tree through
+    <code>reckon.crew.routing._tokens_for_bytes</code> — the context-fit check's own estimate, called rather than restated — and fails on a
+    file over 50,000 estimated tokens that is not in a literal <code>ALLOWLIST</code>, and on an allowlisted file that is now at or under
+    50,000, so each split removes its own entry. On this worktree it scans 1,130 files and finds exactly the seven the plan's §1 names over
+    the bound: <code>reckon/crew/dispatch.py</code> (153,573), <code>reckon/crew/recovery.py</code> (149,236),
+    <code>reckon/crew/promotion.py</code> (115,752), <code>reckon/cli.py</code> (101,385), <code>reckon/mcp.py</code> (59,583),
+    <code>reckon/crew/runs.py</code> (52,434) and <code>reckon/_backends.py</code> (50,173). Two red cases write fixture files into a
+    temporary tree and drive the same reader: an unlisted file over the bound, and a listed file under it, each producing one violation message.
+    A third fixture tree under the bound passes, the positive control that the reader sees a clean tree.</p>
+
+  <p id="module-size-guard-and-move-check-move"><strong>The move check.</strong>
+    <code id="module-size-guard-and-move-check-move-script">scripts/check_pure_move.py --base &lt;rev&gt; --module &lt;original&gt; --into &lt;produced&gt;...</code>
+    reads the base module through <code>reckon.velocity.read_sources</code> and the resulting modules (the <code>--into</code> paths plus the
+    original's remainder) from the working tree, adding no git reader of its own. It walks each module body with <code>ast</code>, taking each
+    top-level statement's source including its decorator lines, and requires every non-import top-level statement of the base to appear
+    byte-identically in exactly one resulting module. It prints one JSON receipt — <code>moved</code> (statement, from, to),
+    <code>new</code> (a resulting-module statement not from the base, which may only be an import), and <code>estimated_tokens</code> per
+    resulting module — and exits 1 naming every lost, altered, duplicated or non-import new statement.</p>
+  <p id="module-size-guard-and-move-check-move-tests">
+    <code>tests/test_check_pure_move.py</code> builds a one-commit fixture repository per case. A correct split into two produced modules plus a
+    remainder exits 0 with a receipt naming the three moved statements and their destinations; a moved function with one changed line, a
+    dropped function, and a function copied into two produced modules each exit 1 naming the statement at fault.</p>
+
+  <p id="module-size-guard-and-move-check-gate"><strong>The gate.</strong> Head gate at revision
+    <code>c60c34573f96f671712a280741166432c232dc20</code>, run in the foreground with <code>--basetemp</code> under <code>/var/tmp</code>:
+    <code>pytest tests/test_every_module_fits_a_worker_window.py tests/test_check_pure_move.py tests/test_staged_write_inventory.py</code>,
+    57 passed, <code>EXIT=0</code> (<code>gate-head.log</code>). Ruff adds no finding on the three new files
+    (<code>ruff check</code> and <code>ruff format --check</code> both clean).</p>
+
+  <p id="module-size-guard-and-move-check-control"><strong>Negative control.</strong> The declared mutation — make
+    <code>check_pure_move</code> ignore a changed line inside a moved function, by reducing each statement's compared source to its first line
+    — leaves the changed-line fixture passing, so <code>test_a_changed_line_inside_a_moved_function_fails</code> fails: 1 failed, 3 passed,
+    <code>EXIT=1</code> (<code>negative-control.log</code>). That test passes at the head. This gate measures only this node's own change;
+    verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
