@@ -113,40 +113,33 @@ def _git_capture(cwd: Path, *args: str) -> str | None:
 def _main_checkout(checkout: Path) -> Path:
     """The main checkout a linked worktree belongs to, or ``checkout`` itself.
 
-    Every linked worktree shares its repository's git common directory, whose
-    parent is the main checkout root, so a worker running reckon from its own
-    worktree still names the tree a user-level link must point at. A path in no
-    git repository resolves to itself.
+    ``reckon.crew.node.repository_identity`` owns this resolution: a linked
+    worktree shares its repository's git common directory, whose parent is the
+    main checkout root, so a worker running reckon from its own worktree still
+    names the tree a user-level link must point at.
     """
-    common = _git_capture(
-        checkout, "rev-parse", "--path-format=absolute", "--git-common-dir"
-    )
-    if not common:
-        return checkout.resolve()
-    common_dir = Path(common)
-    return (
-        common_dir.parent.resolve() if common_dir.name == ".git" else checkout.resolve()
-    )
+    from reckon.crew.node import repository_identity
+
+    resolved = repository_identity(checkout)
+    return resolved if resolved is not None else checkout.resolve()
 
 
 def _in_linked_worktree(path: Path) -> bool:
     """Whether ``path`` lives in a linked git worktree rather than a main tree.
 
-    The git dir of a linked worktree is a private subdirectory of the main
-    checkout's ``.git`` (``.git/worktrees/<name>``), while its common dir is
-    that shared ``.git``; the two coincide in the main checkout, so their
-    disagreement is the worktree signature.
+    ``repository_identity`` answers which repository a path belongs to but
+    collapses a worktree into its main checkout, so it cannot say whether the
+    path it was given was the worktree. Comparing the path's own git toplevel
+    against that collapsed root does: they differ exactly in a linked worktree.
     """
+    from reckon.crew.node import repository_identity
+
     probe = path if path.is_dir() else path.parent
-    git_dir = _git_capture(
-        probe, "rev-parse", "--path-format=absolute", "--absolute-git-dir"
-    )
-    common = _git_capture(
-        probe, "rev-parse", "--path-format=absolute", "--git-common-dir"
-    )
-    if not git_dir or not common:
+    main = repository_identity(probe)
+    toplevel = _git_capture(probe, "rev-parse", "--show-toplevel")
+    if main is None or not toplevel:
         return False
-    return Path(git_dir) != Path(common)
+    return Path(toplevel).resolve() != main
 
 
 def crew_host_link_state(skills_dir: Path, checkout: Path) -> CrewHostLink:

@@ -156,6 +156,10 @@ def test_link_repoints_a_symlink_at_the_wrong_target(
 # ── reckon doctor: the four states under a temporary HOME ────────────────────
 
 
+def _no_validation(dest: Path) -> None:
+    """The plugin-validate stub: no Claude CLI is on PATH during the suite."""
+
+
 def _build_home(tmp_path: Path) -> tuple[Path, Path, Path]:
     """A temporary HOME whose skills, mounts and MCP checks are otherwise green."""
     home = tmp_path / "home"
@@ -185,6 +189,7 @@ def _run_doctor(
     main_checkout: Path,
     monkeypatch: pytest.MonkeyPatch,
     link_to: Path | None = None,
+    validator=_no_validation,
 ):
     home, skills_dir, docs_server = _build_home(tmp_path)
     if link_to is not None:
@@ -195,8 +200,9 @@ def _run_doctor(
     monkeypatch.setattr(cli_module, "_reckon_checkout", lambda: main_checkout)
     monkeypatch.setattr(cli_module, "_project_environment_drift", lambda: (None, []))
     # No real Claude CLI runs during the suite; the plugin-validate leg is
-    # exercised through the state report, not through an external process.
-    monkeypatch.setattr(cli_module, "_claude_plugin_validate", lambda dest: None)
+    # exercised through its own tests and through the validator each doctor
+    # case injects.
+    monkeypatch.setattr(cli_module, "_claude_plugin_validate", validator)
     return CliRunner().invoke(main, ["doctor"]), skills_dir
 
 
@@ -246,6 +252,62 @@ def test_doctor_accepts_a_valid_link(
     )
     assert f"✓  {PLUGIN_NAME}" in result.output
     assert f"✗  {PLUGIN_NAME}" not in result.output
+
+
+def test_doctor_fails_when_the_plugin_does_not_validate(
+    tmp_path: Path, main_checkout: Path, monkeypatch: pytest.MonkeyPatch
+):
+    result, _ = _run_doctor(
+        tmp_path,
+        main_checkout,
+        monkeypatch,
+        link_to=main_checkout / "plugins" / "crew-host",
+        validator=lambda dest: "plugin.json: monitors[0] names no command",
+    )
+    assert f"{PLUGIN_NAME} invalid" in result.output
+    assert "monitors[0] names no command" in result.output
+    assert result.exit_code != 0
+
+
+# ── _claude_plugin_validate: the external CLI leg ────────────────────────────
+
+
+def _fake_claude(tmp_path: Path, body: str) -> Path:
+    """Place a fake ``claude`` executable on a temporary bin directory."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    exe = bin_dir / "claude"
+    exe.write_text(f"#!/bin/sh\n{body}")
+    exe.chmod(0o755)
+    return bin_dir
+
+
+def test_claude_plugin_validate_invokes_the_cli(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    marker = tmp_path / "argv"
+    bin_dir = _fake_claude(tmp_path, f'printf "%s" "$*" > "{marker}"\nexit 0\n')
+    monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ['PATH']}")
+
+    assert cli_module._claude_plugin_validate(tmp_path / "plugin") == ""
+    assert marker.read_text() == f"plugin validate {tmp_path / 'plugin'}"
+
+
+def test_claude_plugin_validate_reports_a_refusal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    bin_dir = _fake_claude(tmp_path, "echo 'no plugin.json' >&2\nexit 3\n")
+    monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ['PATH']}")
+
+    message = cli_module._claude_plugin_validate(tmp_path / "plugin")
+    assert message is not None and "no plugin.json" in message
+
+
+def test_claude_plugin_validate_is_skipped_without_the_cli(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+    assert cli_module._claude_plugin_validate(tmp_path / "plugin") is None
 
 
 # ── sync: links the main checkout, refuses from a worktree ───────────────────
