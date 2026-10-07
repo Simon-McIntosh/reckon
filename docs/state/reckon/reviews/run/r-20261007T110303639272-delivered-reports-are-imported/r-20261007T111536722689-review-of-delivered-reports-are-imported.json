@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "scripts/import_host_reviews.py:main",
+    "reckon/crew/plan_review.py:store_delivered_reviews"
+  ],
+  "completed_at": "2026-10-07T11:30:52.645Z",
+  "dispatched_at": "2026-10-07T11:16:10Z",
+  "findings": [
+    {
+      "file": "scripts/import_host_reviews.py",
+      "line": "467",
+      "severity": "follow-on",
+      "text": "follow-on: _delivered_report_candidates swallows OSError/ValueError and drops a delivered report whose record cannot be built, so the report is neither listed nor counted in the dry run and the census the done-when checks can undercount, whereas the staging store records the same refusal as store_error on the sidecar at reckon/crew/plan_review.py:1933."
+    },
+    {
+      "file": "docs/evidence/fragments/every-review-is-kept-as-a-committed-record/delivered-reports-are-imported.html",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the declared evidence fragment is an empty anchor with no what-changed, gate result or negative-control record, unlike every sibling fragment in this plan, so the node's evidence is absent from the plan's committed record."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit b2edd1e75 against base 4b9d124d -- factors delivered_report_record out of _store_delivered_report so the staging store and the importer build one record, adds report_carries_review_lines, and adds the delivered-report census and import to the script; 4 files, 396 insertions, 17 deletions.",
+    "done_when": "the done_when's unit portion is asserted in tests/test_import_host_reviews.py -- the dry run lists the one unrecorded report and prints its count (line 500), a composed-but-undelivered directory is neither listed nor stored (line 520), a report a record already carries is not re-imported (line 546), and a second pass imports zero (line 528); the real per-project census against origin is deferred by the brief to a later per-project node, so it is not this node's gate.",
+    "goal": "the node's goal is that the host import also brings in every delivered plan-review report no committed record carries; scripts/import_host_reviews.py:434 _delivered_report_candidates and :481 _import_delivered enumerate the report root, skip a report a record already carries by review run id or by (plan_slug, plan_fingerprint, rubric), and commit the rest through review.store_committed_review, so the landed change does what the goal states.",
+    "manifest": "read; status complete, and it records the gate (tests/test_import_host_reviews.py + tests/test_plan_review_store.py + tests/test_plan_review_rounds_keep_their_own_file.py, 23 passed, EXIT=0), the negative-control log (1 failed, EXIT=1), and names no baseline_suite or after_suite arm.",
+    "write_paths": "read the manifest's declared paths; the diff touches scripts/import_host_reviews.py, tests/test_import_host_reviews.py, reckon/crew/plan_review.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/delivered-reports-are-imported.html, all declared; the declared docs/figures/every-review-is-kept-as-a-committed-record/delivered-reports-are-imported path produced no figure."
+  },
+  "justifications": {
+    "durability": "tests/test_import_host_reviews.py:500/520/528/546 fail if the candidate gathering, the composed-directory skip or the second-pass dedup regresses -- the negative control restores the \"skip report directories\" defect and reddens test_delivered_report_with_no_record_is_imported_once with EXIT=1.",
+    "evidence": "the manifest's gate (tests/test_import_host_reviews.py, 23 passed, EXIT=0) asserts the done-when's dry-run count, second-pass-zero and carried/composed cases, and negative-control.log shows the gathering assertion reddening; the per-project census the done_when also names is deferred by the brief.",
+    "fit": "the new helpers at scripts/import_host_reviews.py:380-501 follow the module's private-helper idiom and name their mechanism, carrying no plan label, version or ticket reference.",
+    "goal_fidelity": "scripts/import_host_reviews.py:434 _delivered_report_candidates and :481 _import_delivered import every delivered report no committed record carries, keyed by the report directory's run id or by (plan_slug, plan_fingerprint, rubric), which is exactly the goal.",
+    "reuse": "reckon/crew/plan_review.py:1850 delivered_report_record is factored from _store_delivered_report so one constructor serves both callers, and the importer reuses list_plan_reviews; _committed_plan_records at scripts/import_host_reviews.py:394 re-walks a committed plan tree list_plan_reviews already walks, differing only by taking an explicit root.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, but the change to reckon/crew/plan_review.py:1868 adds a refusal to the shared constructor rather than only factoring it, and that refusal reaches the staging caller at plan_review.py:1932."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the host import also brings in every delivered plan-review report no committed record carries; scripts/import_host_reviews.py:434 _delivered_report_candidates and :481 _import_delivered enumerate the report root, skip a report a record already carries by review run id or by (plan_slug, plan_fingerprint, rubric), and commit the rest through review.store_committed_review, so the landed change does what the goal states.\nVERDICT done_when: the done_when's unit portion is asserted in tests/test_import_host_reviews.py -- the dry run lists the one unrecorded report and prints its count (line 500), a composed-but-undelivered directory is neither listed nor stored (line 520), a report a record already carries is not re-imported (line 546), and a second pass imports zero (line 528); the real per-project census against origin is deferred by the brief to a later per-project node, so it is not this node's gate.\nVERDICT write_paths: read the manifest's declared paths; the diff touches scripts/import_host_reviews.py, tests/test_import_host_reviews.py, reckon/crew/plan_review.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/delivered-reports-are-imported.html, all declared; the declared docs/figures/every-review-is-kept-as-a-committed-record/delivered-reports-are-imported path produced no figure.\nVERDICT manifest: read; status complete, and it records the gate (tests/test_import_host_reviews.py + tests/test_plan_review_store.py + tests/test_plan_review_rounds_keep_their_own_file.py, 23 passed, EXIT=0), the negative-control log (1 failed, EXIT=1), and names no baseline_suite or after_suite arm.\nVERDICT diff: read commit b2edd1e75 against base 4b9d124d -- factors delivered_report_record out of _store_delivered_report so the staging store and the importer build one record, adds report_carries_review_lines, and adds the delivered-report census and import to the script; 4 files, 396 insertions, 17 deletions.\nCALL_SITES: scripts/import_host_reviews.py:main, reckon/crew/plan_review.py:store_delivered_reviews\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: scripts/import_host_reviews.py:434 _delivered_report_candidates and :481 _import_delivered import every delivered report no committed record carries, keyed by the report directory's run id or by (plan_slug, plan_fingerprint, rubric), which is exactly the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's gate (tests/test_import_host_reviews.py, 23 passed, EXIT=0) asserts the done-when's dry-run count, second-pass-zero and carried/composed cases, and negative-control.log shows the gathering assertion reddening; the per-project census the done_when also names is deferred by the brief.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, but the change to reckon/crew/plan_review.py:1868 adds a refusal to the shared constructor rather than only factoring it, and that refusal reaches the staging caller at plan_review.py:1932.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_import_host_reviews.py:500/520/528/546 fail if the candidate gathering, the composed-directory skip or the second-pass dedup regresses -- the negative control restores the \"skip report directories\" defect and reddens test_delivered_report_with_no_record_is_imported_once with EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers at scripts/import_host_reviews.py:380-501 follow the module's private-helper idiom and name their mechanism, carrying no plan label, version or ticket reference.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/plan_review.py:1850 delivered_report_record is factored from _store_delivered_report so one constructor serves both callers, and the importer reuses list_plan_reviews; _committed_plan_records at scripts/import_host_reviews.py:394 re-walks a committed plan tree list_plan_reviews already walks, differing only by taking an explicit root.\nFINDING scripts/import_host_reviews.py:467 follow-on: _delivered_report_candidates swallows OSError/ValueError and drops a delivered report whose record cannot be built, so the report is neither listed nor counted in the dry run and the census the done-when checks can undercount, whereas the staging store records the same refusal as store_error on the sidecar at reckon/crew/plan_review.py:1933.\nFINDING docs/evidence/fragments/every-review-is-kept-as-a-committed-record/delivered-reports-are-imported.html:21 follow-on: the declared evidence fragment is an empty anchor with no what-changed, gate result or negative-control record, unlike every sibling fragment in this plan, so the node's evidence is absent from the plan's committed record.\nreviewed_base_sha: 4b9d124dd7dab2c9ae9b070e26aa379d9e4c371c\nreviewed_head_sha: b2edd1e752b2c574888e8115651d656357894dc1",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T110303639272-delivered-reports-are-imported.json",
+  "review_run_id": "r-20261007T111536722689-review-of-delivered-reports-are-imported",
+  "reviewed_base_sha": "4b9d124dd7dab2c9ae9b070e26aa379d9e4c371c",
+  "reviewed_head_sha": "b2edd1e752b2c574888e8115651d656357894dc1",
+  "reviewed_run_id": "r-20261007T110303639272-delivered-reports-are-imported",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:31:48.663911+00:00",
+  "total": 107
+}
