@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/routing.py:require_plan_reviewed",
+    "reckon/mcp.py:_review_owed_fields",
+    "reckon/evidence.py:_fragment_html",
+    "reckon/_plan_html.py:read_state"
+  ],
+  "commits_read": [
+    "d499c73e9e1782e699aab52a7dd4136c46bfd87a"
+  ],
+  "completed_at": "2026-10-07T01:34:51.131Z",
+  "dispatched_at": "2026-10-07T01:27:03Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T011430045173-alkpl-commits-earns-no-review/gate/head_bookkeeping.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's first line names revision f5ac35887 (the base), a tree in which commits is not in PLAN_METADATA_SCALARS, so a reader tying the recorded 9-passed result to that revision finds the change absent; the content is corroborated only by the log's own \"commits in scalars: True\" marker and the negative control, not by the named revision."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit d499c73e9 against base f5ac35887; three files \u2014 reckon/crew/plan_review.py adds \"commits\" to PLAN_METADATA_SCALARS and updates the module docstring and the exclusion-set comment, tests/test_bookkeeping_earns_no_review.py adds the new differential test and a commits entry in the metadata sweep, and the evidence fragment is new prose.",
+    "done_when": "the done-when names tests/test_bookkeeping_earns_no_review.py and the manifest records 9 passed EXIT=0 with the negative control at 1 failed EXIT=1; reckon/crew/plan_review.py:85-97 lists commits in PLAN_METADATA_SCALARS, no key derived from it exists (reckon/_plan_html.py:605 parses it as a plain list scalar), and the new test at tests/test_bookkeeping_earns_no_review.py:288 asserts the document and every section digest are unchanged and coverage holds while the same test's prose edit reports {\"b\"} uncovered.",
+    "goal": "the node's goal is to exclude a plan's commits field from the design-review digest; at head reckon/crew/plan_review.py:96 adds \"commits\" to PLAN_METADATA_SCALARS, so the landing beat's provenance write no longer moves the digested state.",
+    "manifest": "read; it reports status complete, commit d499c73e9, gate 9 passed EXIT=0 and negative control 1 failed 8 deselected EXIT=1, and flags its own fragment-vs-delivery ambiguity to the coordinator.",
+    "write_paths": "read the manifest's declared paths reckon/crew/plan_review.py, tests/test_bookkeeping_earns_no_review.py and the evidence fragment; the diff touches only those three, all inside scope, and writes no figure although the figures directory was declared."
+  },
+  "justifications": {
+    "durability": "tests/test_bookkeeping_earns_no_review.py:295 asserts _section_digests(landed) == _section_digests(base) across two inputs differing only by commits, so reinstating the regression at reckon/crew/plan_review.py:96 reddens it \u2014 shown by the negative control's 1 failed EXIT=1 \u2014 and :304's {\"b\"} check stops the exclusion swallowing real edits.",
+    "evidence": "gate/head_bookkeeping.log records 9 passed EXIT=0 with the \"commits in scalars: True\" marker and gate/negative_control_commits.log ends EXIT=1, but the head log's own header at line 1 names revision f5ac35887, which contains no commits in PLAN_METADATA_SCALARS, so the recorded revision is not the one measured.",
+    "fit": "reckon/crew/plan_review.py:73-84 rewrites the exclusion-set comment to name the mechanism and the plan-review-missing consequence with no plan or ticket identifier, matching the surrounding style.",
+    "goal_fidelity": "reckon/crew/plan_review.py:262 excludes the PLAN_METADATA_SCALARS keys from _digest_state, and the mutation that removes commits at :96 reddens the new test, showing the write is what the goal asked to neutralise.",
+    "reuse": "the change extends the existing PLAN_METADATA_SCALARS exclusion set at reckon/crew/plan_review.py:85 rather than adding a second digest path, and the capability has no other owner in reckon/.",
+    "scope_discipline": "the diff across f5ac35887..d499c73e9 touches only reckon/crew/plan_review.py, tests/test_bookkeeping_earns_no_review.py and the evidence fragment, every one inside the declared write paths."
+  },
+  "node": "review-of-alkpl-commits-earns-no-review",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to exclude a plan's commits field from the design-review digest; at head reckon/crew/plan_review.py:96 adds \"commits\" to PLAN_METADATA_SCALARS, so the landing beat's provenance write no longer moves the digested state.\nVERDICT done_when: the done-when names tests/test_bookkeeping_earns_no_review.py and the manifest records 9 passed EXIT=0 with the negative control at 1 failed EXIT=1; reckon/crew/plan_review.py:85-97 lists commits in PLAN_METADATA_SCALARS, no key derived from it exists (reckon/_plan_html.py:605 parses it as a plain list scalar), and the new test at tests/test_bookkeeping_earns_no_review.py:288 asserts the document and every section digest are unchanged and coverage holds while the same test's prose edit reports {\"b\"} uncovered.\nVERDICT write_paths: read the manifest's declared paths reckon/crew/plan_review.py, tests/test_bookkeeping_earns_no_review.py and the evidence fragment; the diff touches only those three, all inside scope, and writes no figure although the figures directory was declared.\nVERDICT manifest: read; it reports status complete, commit d499c73e9, gate 9 passed EXIT=0 and negative control 1 failed 8 deselected EXIT=1, and flags its own fragment-vs-delivery ambiguity to the coordinator.\nVERDICT diff: read commit d499c73e9 against base f5ac35887; three files \u2014 reckon/crew/plan_review.py adds \"commits\" to PLAN_METADATA_SCALARS and updates the module docstring and the exclusion-set comment, tests/test_bookkeeping_earns_no_review.py adds the new differential test and a commits entry in the metadata sweep, and the evidence fragment is new prose.\nCALL_SITES: reckon/crew/routing.py:require_plan_reviewed, reckon/mcp.py:_review_owed_fields, reckon/evidence.py:_fragment_html, reckon/_plan_html.py:read_state\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:262 excludes the PLAN_METADATA_SCALARS keys from _digest_state, and the mutation that removes commits at :96 reddens the new test, showing the write is what the goal asked to neutralise.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate/head_bookkeeping.log records 9 passed EXIT=0 with the \"commits in scalars: True\" marker and gate/negative_control_commits.log ends EXIT=1, but the head log's own header at line 1 names revision f5ac35887, which contains no commits in PLAN_METADATA_SCALARS, so the recorded revision is not the one measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff across f5ac35887..d499c73e9 touches only reckon/crew/plan_review.py, tests/test_bookkeeping_earns_no_review.py and the evidence fragment, every one inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_bookkeeping_earns_no_review.py:295 asserts _section_digests(landed) == _section_digests(base) across two inputs differing only by commits, so reinstating the regression at reckon/crew/plan_review.py:96 reddens it \u2014 shown by the negative control's 1 failed EXIT=1 \u2014 and :304's {\"b\"} check stops the exclusion swallowing real edits.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/plan_review.py:73-84 rewrites the exclusion-set comment to name the mechanism and the plan-review-missing consequence with no plan or ticket identifier, matching the surrounding style.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing PLAN_METADATA_SCALARS exclusion set at reckon/crew/plan_review.py:85 rather than adding a second digest path, and the capability has no other owner in reckon/.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T011430045173-alkpl-commits-earns-no-review/gate/head_bookkeeping.log:1 follow-on: the head gate log's first line names revision f5ac35887 (the base), a tree in which commits is not in PLAN_METADATA_SCALARS, so a reader tying the recorded 9-passed result to that revision finds the change absent; the content is corroborated only by the log's own \"commits in scalars: True\" marker and the negative control, not by the named revision.",
+  "review_run_id": "r-20261007T012639589207-review-of-alkpl-commits-earns-no-review",
+  "reviewed_base_sha": "f5ac35887fda132895116870cf054aa0f3ba3d13",
+  "reviewed_head_sha": "d499c73e9e1782e699aab52a7dd4136c46bfd87a",
+  "reviewed_run_id": "r-20261007T011430045173-alkpl-commits-earns-no-review",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261007T012639589207-review-of-alkpl-commits-earns-no-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-07T01:33:32.496631+00:00",
+  "total": 116
+}
