@@ -19,11 +19,11 @@
   <meta name="plan-sprint" content="S25">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -63,24 +63,11 @@
     <p><strong>Write paths:</strong> <code>reckon/cli.py</code>, <code>reckon/crew/dispatch.py</code>, <code>reckon/ledger.py</code>, <code>tests/test_dispatch_names_a_model.py</code>.</p>
     <p><strong>Done when:</strong> dry runs of <code>--backend claude --model opus</code> and of the legacy <code>--backend claude-opus</code> resolve to the same backend, effort and launch argv; an ambiguous bare <code>--model</code> is refused naming both lanes; a promoted row carries <code>lane</code> and <code>model_key</code>. Negative control: dropping the model narrowing makes the claude-opus equivalence test fail.</p>
 
-    <h2 id="s5" data-reckon="section" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links="one-typesafe-model-picker#s6">§5 — Jev offers lane-and-model pairs</h2>
-    <p>Jev's candidates become lane-and-model pairs, keyed <code>&lt;lane&gt;:&lt;key&gt;</code> (for example <code>claude:opus</code> or <code>codex:astra</code>) plus <code>hold</code>. Lane pressure is stated once per lane in a <code>lanes</code> block: availability, utilisation, burn multiple, pace allowance, resets, days to reset, worker slots, congestion and the banked-reset flag. The block is composed where the picker's lane-shaped blocks already are, in <code>reckon/crew/picker/lane_context.py</code> <code>build()</code> beside <code>return_times</code> and <code>local_lane</code>, from the per-account pace that <code>reckon/crew/budget_group.py</code> owns; it re-implements neither. Three codex models therefore read as one account, not three. Model fit stays on each pair: serving observation, context window against the node's estimate, effort, rates and recent outcomes. The questions say:</p>
-    <ul>
-      <li>the pick has two linked parts, the lane for spending policy and the model for fit;</li>
-      <li>models in one lane share one window;</li>
-      <li>confidence is confidence in the joint pick;</li>
-      <li>unknown facts are null, not zero.</li>
-    </ul>
-    <p><code>build_state</code> in <code>reckon/crew/picker/prompts.py</code> assembles the rendered state from a fixed key set and lifts <code>return_times</code> and <code>local_lane</code> by name. This section therefore also lifts the new <code>lanes</code> block there; without that step the block never reaches <code>state.jinja</code>.</p>
-    <p>This builds on <code>jev-prompt-carries-what-it-weighs</code> in <code>one-typesafe-model-picker</code> §6, which renders the state from one structured mapping with lane and model as separate fields. The gate below holds this section until that lands.</p>
-    <p><strong>Write paths:</strong> <code>reckon/crew/picker/lane_context.py</code>, <code>reckon/crew/picker/snapshot.py</code>, <code>reckon/crew/picker/types.py</code>, <code>reckon/crew/picker/prompts.py</code>, <code>reckon/crew/picker/templates/questions.jinja</code>, <code>tests/test_picker_lanes.py</code>.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>a replay of at least 50 recorded dispatches through the new questions sends 0 picks to a refused or logged-out model;</li>
-      <li>agreement with the recorded lane is measured and reported for reading only. The recorded lane was chosen by deterministic routing, so disagreement in either direction is not a defect, and this figure closes nothing;</li>
-      <li>the rendered state shows each lane's pressure exactly once and parses as JSON for normal and hostile inputs;</li>
-      <li>a negative control that repeats pressure per model makes the once-per-lane test fail.</li>
-    </ul>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s5" data-reckon="section" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="done" data-links="one-typesafe-model-picker#s6">§5 — Jev offers lane-and-model pairs</h2></header>
+  <p class="landed-summary">Jev picks a lane and a model together: each lane's pressure is stated once, the options are keyed <code>lane:model</code>, and the chosen pair resolves to the backend dispatch uses. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s5">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
