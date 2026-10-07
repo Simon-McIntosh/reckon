@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>A promoted plan review is committed under whatever id it carries | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-promoted-plan-review-is-committed-landing">
+      <p>Promotion now resolves a promoting plan-review run's delivered record through the report whose <code>dispatch.json</code> names the run, not by the promoting run's id alone. <code>_staging_review_record_by_run</code> keeps its review-store index lookup and, when that finds nothing for a plan-review run, resolves the plan from the run's node id, finds the delivered report naming the run among <code>plan_review.delivered_reports</code>, stores it when its sidecar is unstored through <code>plan_review._store_delivered_report</code>, and returns the record keyed by its own composed review run id. Run-review promotion is unchanged. Gate tests/test_a_promoted_plan_review_is_committed.py with tests/test_reviews_read_the_committed_store_first.py and tests/test_every_review_round_is_committed.py: 14 passed, EXIT=0; negative control reverts <code>_staging_review_record_by_run</code> to the promoting run's id alone and fails test_a_promoted_plan_review_commits_the_record_its_report_names and test_promotion_stores_an_unstored_delivered_report_first, 2 failed, EXIT=1.</p>
+    </section>
+  </main>
+</body>
+</html>

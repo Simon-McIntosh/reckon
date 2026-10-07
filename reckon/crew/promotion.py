@@ -26,8 +26,8 @@ from reckon import (
 from reckon._plan_html import section_anchor, section_record_id
 from reckon._schema import is_implementable_section
 from reckon._timestamps import parse_iso, parse_utc
+from reckon.crew import plan_review, rollout
 from reckon.crew import review as review_module
-from reckon.crew import rollout
 from reckon.crew.dispatch import (
     WORKER_SCRATCH_BUDGET_BYTES,
     _backend_settings,
@@ -7987,7 +7987,9 @@ def _landing_preconditions(
     }
 
 
-def _staging_review_record_by_run(project: str, run_id: str) -> dict[str, Any] | None:
+def _staging_review_record_by_run(
+    project: str, run_id: str, record: Mapping[str, Any] | None = None
+) -> dict[str, Any] | None:
     """The staged review record a review run delivered, found by its own id.
 
     A plan review is stored by the plan-review store rather than as a scored run
@@ -7996,9 +7998,76 @@ def _staging_review_record_by_run(project: str, run_id: str) -> dict[str, Any] |
     key they share, so the lookup is served by the review store's own index for
     that key rather than by walking the project directory — a whole-store pass
     per promotion is the cost the index removes.
+
+    A plan review's record is keyed by the composed review run id its report
+    directory carries, which is not the id of the crew run that produced it, so
+    the index lookup by the promoting run's id finds nothing for a plan review.
+    Its delivered report names the promoting run, and is the join between them,
+    so the run's own record resolves the report and the record it delivered.
     """
     found = review_module.record_for_review_run(project, run_id)
-    return None if found is None else found[1]
+    if found is not None:
+        return found[1]
+    if record is None:
+        return None
+    return _plan_review_record_for_promoting_run(project, run_id, record)
+
+
+def _plan_review_record_for_promoting_run(
+    project: str, run_id: str, record: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """The plan-review record whose delivered report names the promoting run.
+
+    A plan review's record is keyed by the composed review run id its report
+    directory carries, which differs from the crew run that produced it, so a
+    lookup by the promoting run's own id finds nothing. The report's
+    ``dispatch.json`` names that crew run, so the delivered report is the join
+    between the promoting run and the record it delivered. Its report directory
+    is resolved from the plan the run's node names, and its report is stored
+    first when no stored record carries its id yet — the same step a plan build
+    runs, so the record is reachable from the staging store as well as from the
+    commit. A run whose node names no plan, or a plan with no delivered report
+    naming the run, yields nothing.
+    """
+    from reckon.crew import recovery
+
+    node_id = str((record.get("node") or {}).get("id") or "")
+    prefix = recovery.PLAN_REVIEW_NODE_PREFIX
+    if not node_id.startswith(prefix):
+        return None
+    plan_slug = node_id[len(prefix) :]
+    if not plan_slug:
+        return None
+    for sidecar in plan_review.delivered_reports(project, plan_slug):
+        directory = Path(str(sidecar.get("report_path") or "")).parent
+        if not _report_dispatch_names_run(directory, run_id):
+            continue
+        if not sidecar.get("stored"):
+            plan_review._store_delivered_report(sidecar)
+        found = review_module.record_for_review_run(
+            project, str(sidecar.get("review_run_id") or "")
+        )
+        return found[1] if found is not None else None
+    return None
+
+
+def _report_dispatch_names_run(directory: Path, run_id: str) -> bool:
+    """Whether a plan-review report's dispatch sidecar names ``run_id``.
+
+    A plan-review report directory is named for the composed review run id; the
+    crew run that actually ran the review carries a different id, written into
+    the directory's ``dispatch.json``. A directory or sidecar that is absent, or
+    one naming no run, is not a match.
+    """
+    try:
+        dispatch = json.loads(
+            (directory / review_module.REVIEW_DISPATCH_FILE_NAME).read_text(
+                encoding="utf-8"
+            )
+        )
+    except (OSError, ValueError):
+        return False
+    return isinstance(dispatch, Mapping) and str(dispatch.get("run_id") or "") == run_id
 
 
 def _delivered_review_payloads_for_commit(
@@ -8096,7 +8165,7 @@ def _delivered_review_payloads_for_commit(
         # A plan review names no reviewed run and its own round was not found
         # through the delivered lookup, so the store index for the review run
         # id is the remaining way to reach it.
-        include(_staging_review_record_by_run(project, run_id))
+        include(_staging_review_record_by_run(project, run_id, record))
     return payloads
 
 
