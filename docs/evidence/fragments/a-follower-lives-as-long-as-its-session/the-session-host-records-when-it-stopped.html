@@ -1,0 +1,14 @@
+<section id="the-session-host-records-when-it-stopped">
+  <h2>The session host records when it stopped and why</h2>
+  <p id="the-session-host-records-when-it-stopped-anchor">
+    <code>SessionHost.stop</code> in <code>reckon/crew/session_host.py</code> now
+    takes a reason and writes both a <code>stopped_at</code> and a
+    <code>stop_reason</code> into its final record: <code>owner ended</code> when
+    the owner is gone, <code>signalled</code> when the host is signalled. Gate
+    <code>tests/test_session_host.py</code> +
+    <code>tests/test_dispatch_session_host.py</code>: 17 passed, <code>EXIT=0</code>;
+    dropping the two fields from the final write fails
+    <code>test_the_record_names_the_owner_that_ended</code> and
+    <code>test_the_record_names_a_signal</code>, <code>EXIT=1</code>.
+  </p>
+</section>

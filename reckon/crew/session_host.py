@@ -82,6 +82,11 @@ PR_SET_PDEATHSIG = 1
 # are the same bytes rather than two spellings that agree today.
 RECORD_SUFFIX = ".json"
 
+# Why a host stopped, recorded in its final census so a later reader can bound
+# the gap between the owner ending and the last child stopping from disk alone.
+_OWNER_ENDED_REASON = "owner ended"
+_SIGNALLED_REASON = "signalled"
+
 
 def _state_dir(environ: Mapping[str, str] | None = None) -> Path:
     """The directory holding one record per live session host."""
@@ -271,6 +276,8 @@ class SessionHost:
         self._children: dict[tuple[str, str], _Child] = {}
         self._stopping = False
         self._stopped = False
+        self._stopped_at: float | None = None
+        self._stop_reason: str | None = None
         self._last_record: str | None = None
         self._stem = f"{self._owner['pid']}-{self._owner['start_time'] or '0'}"
         self._record_path = _state_dir(self._environ) / f"{self._stem}{RECORD_SUFFIX}"
@@ -294,7 +301,7 @@ class SessionHost:
 
     def record(self) -> dict[str, Any]:
         """The census payload naming this host and every child it runs."""
-        return {
+        payload: dict[str, Any] = {
             "pid": os.getpid(),
             "owner": dict(self._owner),
             "children": [
@@ -308,6 +315,13 @@ class SessionHost:
             ],
             "updated_at": self._now(),
         }
+        if self._stopped:
+            # The final census names when the host stopped and why, so a reader
+            # can bound the gap between the owner ending and the last child
+            # stopping without the stderr line the ending session took with it.
+            payload["stopped_at"] = self._stopped_at
+            payload["stop_reason"] = self._stop_reason
+        return payload
 
     def _write_record(self, *, force: bool = False) -> None:
         """Write the census record, and only when it has changed.
@@ -447,18 +461,25 @@ class SessionHost:
             return False
         return reaped != child.pid
 
-    def stop(self) -> None:
+    def stop(self, reason: str | None = None) -> None:
         """Stop every child and wait for it, then write the final record.
 
         The guard is the performed-stop flag, not the request flag: a signal
         sets the request flag to end the read, and the stop path must still run
         afterwards. Guarding on the request flag made every signal-path stop a
         no-op, leaving child teardown resting on the parent-death signal alone.
+
+        ``reason`` is why the host is stopping -- its owner ended or it was
+        signalled -- and it, with the stop time, is carried in the final record.
+        The time is taken here, at the start of the stop, so it reflects when
+        the host noticed rather than when the last child happened to end.
         """
         if self._stopped:
             return
         self._remove_fifo()
         self._stopped = True
+        self._stopped_at = self._now()
+        self._stop_reason = reason
         for child in list(self._children.values()):
             self._stop_child(child)
         self._write_record(force=True)
@@ -518,6 +539,7 @@ class SessionHost:
             self.handle(first_request)
         descriptor = requests.fileno()
         buffer = b""
+        reason: str | None = None
         try:
             while not self._stopping:
                 ready, _w, _x = select.select(
@@ -525,6 +547,7 @@ class SessionHost:
                 )
                 if wake_read in ready:
                     _drain(wake_read)
+                    reason = _SIGNALLED_REASON
                     break
                 if requests in ready:
                     # Read the descriptor raw rather than through a buffered
@@ -540,10 +563,13 @@ class SessionHost:
                         raw, buffer = buffer.split(b"\n", 1)
                         self.handle(raw.decode("utf-8", errors="replace"))
                 if not owner_alive(self._owner):
+                    reason = _OWNER_ENDED_REASON
                     break
                 self.tick()
         finally:
-            self.stop()
+            if reason is None and self._stopping:
+                reason = _SIGNALLED_REASON
+            self.stop(reason)
         return 0
 
 
