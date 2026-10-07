@@ -134,7 +134,9 @@ def batch_log_path(environ: Mapping[str, str] | None = None) -> Path:
     return state_directory(environ) / "fleet-%j.log"
 
 
-def generate_hold_script(size: FleetSize, *, log_path: str | os.PathLike[str]) -> str:
+def generate_hold_script(
+    size: FleetSize, *, log_path: str | os.PathLike[str], standby: bool = False
+) -> str:
     """The whole-node allocation that hosts the interactive sessions.
 
     ``TMPDIR`` is pointed at ``/tmp`` because a compute node cannot write the
@@ -158,6 +160,7 @@ def generate_hold_script(size: FleetSize, *, log_path: str | os.PathLike[str]) -
         f'export {name}="${{{name}:-{DEFAULT_THREAD_CAP}}}"'
         for name in THREAD_CAP_VARIABLES
     )
+    supervisor_args = " --standby" if standby else ""
     body = (
         dedent(
             """
@@ -177,7 +180,7 @@ def generate_hold_script(size: FleetSize, *, log_path: str | os.PathLike[str]) -
         # supervisor runs here when installed, so the zellij servers holding the
         # agent sessions are started from it and survive a lost login node.
         if [ -x "$HOME/.local/bin/fleet-supervisor" ]; then
-            exec "$HOME/.local/bin/fleet-supervisor"
+            exec "$HOME/.local/bin/fleet-supervisor"{supervisor_args}
         fi
 
         echo "[$(date)] Holding $(hostname) for the interactive agent fleet"
@@ -185,7 +188,7 @@ def generate_hold_script(size: FleetSize, *, log_path: str | os.PathLike[str]) -
         """
         )
         .strip()
-        .format(thread_caps=thread_caps)
+        .format(thread_caps=thread_caps, supervisor_args=supervisor_args)
     )
     return "\n".join([*headers, "", body, ""])
 
