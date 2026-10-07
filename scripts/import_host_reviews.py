@@ -106,15 +106,22 @@ def _explicit_review_run_id(body: Mapping[str, Any]) -> str:
 
 
 def _subject_kind(body: Mapping[str, Any]) -> str | None:
-    """Return ``"plan"``, ``"run"`` or ``None`` for the subject a body names."""
+    """Return ``"plan"``, ``"run"`` or ``None`` for the subject a body names.
+
+    A body that names the run it reviews is a run review, whatever plan the run
+    carried: a run review records its reviewed run's ``plan_slug`` and no
+    ``plan_version``, so the reviewed run is tested first and a plan is a
+    subject only when it carries an integer ``plan_version``. A plan slug with
+    no usable version and no reviewed run names no subject.
+    """
+    if str(body.get("reviewed_run_id") or "").strip():
+        return "run"
     if str(body.get("plan_slug") or "").strip():
         try:
             int(body.get("plan_version"))
         except (TypeError, ValueError):
             return None
         return "plan"
-    if str(body.get("reviewed_run_id") or "").strip():
-        return "run"
     return None
 
 

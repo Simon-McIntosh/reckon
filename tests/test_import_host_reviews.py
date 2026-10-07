@@ -350,6 +350,19 @@ def test_recognition_needs_a_subject_and_rejects_a_bare_reference() -> None:
     assert module._review_identity(
         raw, {"review_run_id": "r-x", "reviewed_run_id": "r-y", "scores": {}}
     ) == ("run", "r-y", "r-x", False)
+    # A run review of a plan-carried run names its run's plan slug and no plan
+    # version: the reviewed run is the subject, so the plan slug does not make
+    # it a plan review.
+    assert module._review_identity(
+        raw,
+        {
+            "review_run_id": "r-x",
+            "reviewed_run_id": "r-y",
+            "plan_slug": "p",
+            "plan_version": None,
+            "findings": [],
+        },
+    ) == ("run", "r-y", "r-x", False)
     # The legacy review-run field is kept as the identity rather than derived.
     assert module._review_identity(
         raw, {"reviewer_run_id": "r-x", "reviewed_run_id": "r-y", "rubric": "design"}
@@ -679,4 +692,56 @@ def test_write_imports_a_filename_named_run_review(harness) -> None:
     assert stored["review_run_id"] == expected
     assert stored["review_run_id_source"] == "derived"
     # The staging file is a record, so it stays in place.
+    assert source.is_file()
+
+
+def test_a_run_review_naming_its_runs_plan_is_a_record(harness) -> None:
+    module = _load_script()
+    store = harness["store"]
+    repo = harness["repo"]
+    reviewed_run = "r-plan-carried"
+    review_run = "r-review-of-plan-carried"
+    # A run review of a run that carried a plan: the body names the reviewed
+    # run, its run's plan slug and a null plan version. It is a run record, not
+    # a plan record with no version, so it must not be quarantined.
+    source = _write_record(
+        store,
+        f"{reviewed_run}.json",
+        {
+            "project": PROJECT,
+            "review_run_id": review_run,
+            "reviewed_run_id": reviewed_run,
+            "reviewed_head_sha": "a" * 40,
+            "plan_slug": "jt60sa-discovery-completion",
+            "plan_version": None,
+            "status": "parsed",
+            "findings": [],
+            "scores": {},
+        },
+    )
+    _run_record(repo, reviewed_run)
+    _run_record(repo, review_run)
+
+    dry_code, dry_out = _run_cli(module, ["--project", PROJECT, "--root", str(repo)])
+    assert dry_code == 0
+    assert "recognised records: 1" in dry_out
+    assert "run reviews: 1" in dry_out
+    assert "non-records: 0" in dry_out
+    assert f"record\t{source}" in dry_out
+
+    argv = ["--project", PROJECT, "--root", str(repo), "--write"]
+    code, out = _run_cli(module, argv)
+    assert code == 0
+    assert "imported: 1" in out
+    # It was committed rather than quarantined: the review run's file is in the
+    # committed tree and the reviewed run and its times survived.
+    reviews = repo / "docs" / "state" / PROJECT / "reviews"
+    committed_files = sorted(reviews.rglob(f"{review_run}.json"))
+    assert len(committed_files) == 1
+    stored = json.loads(committed_files[0].read_text(encoding="utf-8"))
+    assert stored["reviewed_run_id"] == reviewed_run
+    assert stored["dispatched_at"] == DISPATCH_TS
+    # Quarantine received nothing: the file was a record, not a non-record.
+    quarantine = harness["tmp"] / "config" / "crew" / "reviews-quarantine" / PROJECT
+    assert not (quarantine / f"{reviewed_run}.json").exists()
     assert source.is_file()
