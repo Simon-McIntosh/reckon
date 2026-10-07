@@ -135,9 +135,9 @@ def test_a_plan_review_is_answered_once_its_finding_is_answered() -> None:
 # ── Run reviews: the four states ────────────────────────────────────────────
 
 
-def test_a_run_review_lands_when_its_run_is_promoted() -> None:
+def test_a_run_review_lands_when_its_run_has_a_ledger_row() -> None:
     record = _run_record(findings=[{"id": "f1", "severity": "blocking"}])
-    assert module.lifecycle(record, run_promoted=True) == module.LANDED
+    assert module.lifecycle(record, run_closed=True) == module.LANDED
 
 
 def test_a_run_review_is_superseded_by_a_later_review_of_the_same_run() -> None:
@@ -159,6 +159,30 @@ def test_a_run_finding_with_no_declared_severity_blocks() -> None:
 def test_a_follow_on_only_run_review_is_answered_not_open() -> None:
     record = _run_record(findings=[{"id": "f1", "severity": "follow-on"}])
     assert module.lifecycle(record) == module.ANSWERED
+
+
+def test_an_id_less_run_finding_reads_by_its_severity() -> None:
+    # The imported store's run findings carry file/line/text and sometimes a
+    # severity, and no run record carries an answer, so a finding with no id
+    # can be answered by nothing: a null severity leaves the review open, and a
+    # record whose only finding is a follow-on is answered.
+    open_record = _run_record(
+        findings=[
+            {"file": "reckon/x.py", "line": 10, "text": "a finding", "severity": None}
+        ]
+    )
+    answered_record = _run_record(
+        findings=[
+            {
+                "file": "reckon/x.py",
+                "line": 10,
+                "text": "a finding",
+                "severity": "follow-on",
+            }
+        ]
+    )
+    assert module.lifecycle(open_record) == module.OPEN
+    assert module.lifecycle(answered_record) == module.ANSWERED
 
 
 def test_a_blocking_finding_answered_through_response_events_is_answered() -> None:
@@ -190,7 +214,7 @@ def test_landed_takes_precedence_over_superseded_and_open_for_a_plan_review() ->
 
 def test_landed_takes_precedence_over_open_for_a_run_review() -> None:
     record = _run_record(findings=[{"id": "f1", "severity": "blocking"}])
-    assert module.lifecycle(record, run_promoted=True) == module.LANDED
+    assert module.lifecycle(record, run_closed=True) == module.LANDED
 
 
 def test_the_hot_set_is_the_two_unsettled_states() -> None:
@@ -281,7 +305,7 @@ def test_a_plan_shipping_moves_its_reviews_to_landed_without_rewriting_records(
     assert after == before
 
 
-def test_the_loader_reads_a_promoted_run_from_the_ledger(
+def test_the_loader_reads_a_closed_run_from_the_ledger(
     checkout: Path, tmp_path: Path
 ) -> None:
     store = tmp_path / "store"

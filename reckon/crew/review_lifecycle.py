@@ -15,8 +15,9 @@ Four states, checked in this order, first match wins:
 ``landed``
     The work the review was about is in the past: a plan review whose plan has
     shipped, or every section the review read is now declared done; a run review
-    whose run was promoted. A landed review is the archive — kept, and read by
-    the look-back views, but no longer carrying a live obligation.
+    whose reviewed run has a ledger row — promoted, or closed without promotion.
+    A landed review is the archive — kept, and read by the look-back views, but
+    no longer carrying a live obligation.
 ``superseded``
     A later full review of the same subject exists, so this one describes
     content that has since been re-read. A plan review is superseded by a later
@@ -119,17 +120,26 @@ def _answered(record: Mapping[str, Any], finding_id: str) -> bool:
 
 
 def _run_open(record: Mapping[str, Any]) -> bool:
-    """Whether a run review carries a blocking finding with no answer."""
+    """Whether a run review carries a blocking finding with no answer.
+
+    A run finding is real data without an identity: the imported store's run
+    findings carry ``file``, ``line``, ``text`` and sometimes ``severity``, and
+    no run record carries ``responses`` or ``response_events``. A finding
+    therefore answers by identity only when it carries an id that an answer can
+    name; a blocking finding with no id can be referenced by nothing, so nothing
+    can answer it and it counts as unanswered. A run review whose blocking
+    findings all carry ids is answered through them as before.
+    """
     findings = record.get(_FINDINGS_KEY)
     if not isinstance(findings, list):
         return False
     for finding in findings:
         if not isinstance(finding, Mapping):
             continue
-        finding_id = str(finding.get("id") or "").strip()
-        if not finding_id:
+        if not _blocking(finding):
             continue
-        if _blocking(finding) and not _answered(record, finding_id):
+        finding_id = str(finding.get("id") or "").strip()
+        if not finding_id or not _answered(record, finding_id):
             return True
     return False
 
@@ -229,17 +239,18 @@ def lifecycle(
     record: Mapping[str, Any],
     *,
     plan_state: Mapping[str, Any] | None = None,
-    run_promoted: bool | None = None,
+    run_closed: bool | None = None,
     later_records: Any = (),
 ) -> str:
     """Return the lifecycle state of one stored review.
 
     Pure: the state is a function of the record, its subject's state and the
     set of candidate later records, and nothing is written. ``plan_state`` is a
-    parsed plan mapping and is consulted only for a plan review; ``run_promoted``
-    is whether the reviewed run's ledger row records it promoted and is
-    consulted only for a run review; ``later_records`` is an iterable of other
-    stored records of the same kind, each a candidate for superseding this one.
+    parsed plan mapping and is consulted only for a plan review; ``run_closed``
+    is whether the reviewed run has a ledger row — promoted, or closed without
+    promotion — and is consulted only for a run review; ``later_records`` is an
+    iterable of other stored records of the same kind, each a candidate for
+    superseding this one.
 
     The states are checked in order — landed, superseded, open, answered — so a
     landed review whose finding is still unanswered reads ``landed``: the work
@@ -247,7 +258,7 @@ def lifecycle(
     """
     candidates = tuple(other for other in later_records if isinstance(other, Mapping))
     if _is_run_review(record):
-        if run_promoted:
+        if run_closed:
             return LANDED
         if _later_run_exists(record, candidates):
             return SUPERSEDED
@@ -289,7 +300,7 @@ def _run_review_records(
     holds, each read back through :func:`reckon.crew.review.stored_records_for_run`
     — so a run's several rounds are all reached through the store. The committed
     run tree is listed beside it, keyed by the reviewed run rather than by the
-    review run, so a promoted run's review is found where a promotion put it.
+    review run, so a closed run's review is found where a promotion put it.
     """
     found: dict[str, dict[str, Any]] = {}
     directory = _review_store.review_store_root(base_dir) / project
@@ -345,13 +356,13 @@ def review_lifecycles(
 
     Plan reviews are read through :func:`reckon.crew.plan_review.list_plan_reviews`,
     run reviews through the run-review store's readers, plan states through the
-    plan parser and promotions through the ledger's run-id reader. Every record
+    plan parser and closed runs through the ledger's run-id reader. Every record
     of one kind is offered to :func:`lifecycle` as a candidate later record for
     its siblings, so a superseding review is found without a second store walk.
     """
     plan_records = _plan_review.list_plan_reviews(project, base_dir=base_dir)
     run_records = _run_review_records(project, base_dir=base_dir, root=root)
-    promoted = ledger.run_ids(project, root=root)
+    closed = ledger.run_ids(project, root=root)
 
     states: dict[str, str] = {}
     for record in plan_records:
@@ -365,10 +376,10 @@ def review_lifecycles(
             later_records=plan_records,
         )
     for path, record in run_records.items():
-        promoted_run = str(record.get("reviewed_run_id") or "").strip() in promoted
+        run_closed = str(record.get("reviewed_run_id") or "").strip() in closed
         states[path] = lifecycle(
             record,
-            run_promoted=promoted_run,
+            run_closed=run_closed,
             later_records=tuple(run_records.values()),
         )
     return states
