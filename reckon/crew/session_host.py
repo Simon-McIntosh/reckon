@@ -83,7 +83,7 @@ RECORD_SUFFIX = ".json"
 
 def _state_dir(environ: Mapping[str, str] | None = None) -> Path:
     """The directory holding one record per live session host."""
-    environ = os.environ if environ is not None else environ
+    environ = os.environ if environ is None else environ
     override = environ.get(STATE_DIR_ENV)
     if override:
         return Path(override)
@@ -92,7 +92,7 @@ def _state_dir(environ: Mapping[str, str] | None = None) -> Path:
 
 def _log_dir(environ: Mapping[str, str] | None = None) -> Path:
     """The directory holding a child's stderr, on the shared home."""
-    environ = os.environ if environ is not None else environ
+    environ = os.environ if environ is None else environ
     override = environ.get(LOG_DIR_ENV)
     if override:
         return Path(override)
@@ -104,13 +104,13 @@ def _log_dir(environ: Mapping[str, str] | None = None) -> Path:
 
 def _poll_seconds(environ: Mapping[str, str] | None = None) -> float:
     """How often the owner is re-checked, and the idle wait for a request."""
-    environ = os.environ if environ is not None else environ
+    environ = os.environ if environ is None else environ
     return _non_negative_float(environ.get(POLL_ENV), DEFAULT_POLL_SECONDS)
 
 
 def _initial_backoff(environ: Mapping[str, str] | None = None) -> float:
     """The delay before a child's first restart, before ``next_backoff`` grows it."""
-    environ = os.environ if environ is not None else environ
+    environ = os.environ if environ is None else environ
     return _non_negative_float(
         environ.get(BACKOFF_ENV), fleet_supervisor.FIRST_BACKOFF_SECONDS
     )
@@ -243,8 +243,8 @@ class SessionHost:
         self._stopping = False
         self._stopped = False
         self._last_record: str | None = None
-        self._record_path = _state_dir(environ) / self._record_name()
-        self._log_path = _log_dir(environ) / f"{self._record_name()}.log"
+        self._record_path = _state_dir(self._environ) / self._record_name()
+        self._log_path = _log_dir(self._environ) / f"{self._record_name()}.log"
 
     # -- identity -----------------------------------------------------------
 
@@ -437,15 +437,26 @@ class SessionHost:
         """Ask the reader to end: used by a signal handler and by tests."""
         self._stopping = True
 
-    def supervise(self, requests: Any, wake_read: int) -> int:
+    def supervise(
+        self, requests: Any, wake_read: int, first_request: str | None = None
+    ) -> int:
         """Read request lines until the owner ends, a signal comes, or EOF.
 
         Each pass reads whatever request is waiting, re-checks the owner, and
         runs one supervision tick. The idle wait is the owner-check cadence, so
         a quiet session host still notices its owner's end within one tick; a
         request or a signal wakes it at once rather than at the tick.
+
+        ``first_request`` is a line the caller already read off the descriptor
+        before handing it over -- the plugin entry point reads exactly one line
+        to decide its exec, then passes both that line and the still-open
+        descriptor. It is handled through the same path as a line read here, so
+        the two orders are indistinguishable; handling it before the loop keeps
+        it ahead of whatever the descriptor delivers next.
         """
         self._write_record(force=True)
+        if first_request:
+            self.handle(first_request)
         descriptor = requests.fileno()
         buffer = b""
         try:
@@ -483,13 +494,15 @@ def run(
     follower_argv: Sequence[str] | None = None,
     environ: Mapping[str, str] | None = None,
     requests: Any | None = None,
+    first_request: str | None = None,
 ) -> int:
     """Run one session host: install signal handlers, then read to its end.
 
     ``requests`` is a text-mode object the host reads request lines from -- by
     default this process's stdin, which the plugin points at the FIFO before it
     execs. A self-pipe is watched beside it so a signal ends the read at once
-    rather than after the idle tick.
+    rather than after the idle tick. ``first_request`` is a line the caller
+    already read off that descriptor and passes in beside it.
     """
     environ = os.environ if environ is None else environ
     host = SessionHost(owner=owner, follower_argv=follower_argv, environ=environ)
@@ -506,7 +519,7 @@ def run(
         signal.signal(sig, _on_signal)
     stream = requests if requests is not None else sys.stdin
     try:
-        host.supervise(stream, wake_read)
+        host.supervise(stream, wake_read, first_request=first_request)
     finally:
         host.stop()
         os.close(wake_read)
@@ -519,6 +532,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
     owner: dict[str, Any] = {}
     follower_argv: list[str] | None = None
+    first_request: str | None = None
     index = 0
     while index < len(arguments):
         argument = arguments[index]
@@ -531,13 +545,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         elif argument == "--follower-command" and index + 1 < len(arguments):
             follower_argv = json.loads(arguments[index + 1])
             index += 2
+        elif argument == "--first-request" and index + 1 < len(arguments):
+            first_request = arguments[index + 1]
+            index += 2
         else:
             index += 1
     if not owner.get("pid"):
         owner = default_owner()
     elif not owner.get("start_time"):
         owner["start_time"] = process_start_time(owner["pid"]) or ""
-    return run(owner=owner, follower_argv=follower_argv)
+    return run(
+        owner=owner,
+        follower_argv=follower_argv,
+        first_request=first_request,
+    )
 
 
 def _drain(descriptor: int) -> None:

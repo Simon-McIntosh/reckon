@@ -4733,7 +4733,16 @@ _ATTENTION_DEPRECATION = (
     hidden=True,
     help="Read requests from this inherited descriptor.",
 )
-def crew_host(owner_pid, owner_start, follower_command, fifo_path, fd_number):
+@click.option(
+    "--first-request",
+    "first_request",
+    default=None,
+    hidden=True,
+    help="A request line the caller already read off the descriptor.",
+)
+def crew_host(
+    owner_pid, owner_start, follower_command, fifo_path, fd_number, first_request
+):
     """Supervise this session's crew followers; run by the plugin, not by hand.
 
     Hidden from help because only the plugin entry point runs it. It reads one
@@ -4764,7 +4773,10 @@ def crew_host(owner_pid, owner_start, follower_command, fifo_path, fd_number):
         descriptor = os_module.open(fifo_path, os_module.O_RDWR)
         requests = os_module.fdopen(descriptor, "r", encoding="utf-8", errors="replace")
     return session_host_module.run(
-        owner=owner, follower_argv=follower_argv, requests=requests
+        owner=owner,
+        follower_argv=follower_argv,
+        requests=requests,
+        first_request=first_request,
     )
 
 

@@ -390,3 +390,104 @@ def test_no_child_survives_its_owners_exit(host: HostHarness) -> None:
         timeout=STOP_BOUND,
         description="the child to end",
     )
+
+
+def test_the_defaults_read_the_process_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A caller that passes no environment gets the process's own.
+
+    The helpers and the host are both called with no ``environ``; each must
+    resolve against the live process environment rather than a None that has no
+    ``get``. The environment is set to a temporary state and log directory so a
+    default that ignored it would be visible in the returned path.
+    """
+    module = _module()
+    state_dir = tmp_path / "state"
+    log_dir = tmp_path / "logs"
+    monkeypatch.setenv("RECKON_SESSION_HOST_STATE_DIR", str(state_dir))
+    monkeypatch.setenv("RECKON_SESSION_HOST_LOG_DIR", str(log_dir))
+    monkeypatch.setenv("RECKON_SESSION_HOST_POLL_SECONDS", "3.5")
+    monkeypatch.setenv("RECKON_SESSION_HOST_BACKOFF", "1.25")
+
+    assert module._state_dir() == state_dir
+    assert module._log_dir() == log_dir
+    assert module._poll_seconds() == 3.5
+    assert module._initial_backoff() == 1.25
+
+    host = module.SessionHost()
+    expected = state_dir / f"{host.owner['pid']}-{host.owner['start_time'] or '0'}.json"
+    assert host.record_path == expected
+
+
+def test_a_first_request_starts_a_follower_and_the_next_one_starts_another(
+    tmp_path: Path,
+) -> None:
+    """The entry point's pre-read line is handled exactly like a read one.
+
+    The plugin reads one request line off the FIFO before it execs the host and
+    passes that line in with the still-open descriptor. The line supplied that
+    way must start its follower, and a second request arriving on the descriptor
+    afterwards must start the next -- the two orders produce the same two
+    children. The first request is the only one that is not written to the
+    descriptor, so a host that ignored it would start one child rather than two.
+    """
+    owner = OwnerStub()
+    marker = tmp_path / "children.txt"
+    fake_follower = tmp_path / "fake_follower.py"
+    fake_follower.write_text(FAKE, encoding="utf-8")
+    environ = dict(os.environ)
+    environ["PYTHONPATH"] = str(REPO_ROOT)
+    environ["RECKON_HOME"] = str(tmp_path / "home")
+    environ["RECKON_SESSION_HOST_STATE_DIR"] = str(tmp_path / "state")
+    environ["RECKON_SESSION_HOST_LOG_DIR"] = str(tmp_path / "logs")
+    environ["RECKON_SESSION_HOST_POLL_SECONDS"] = POLL_SECONDS
+    environ["RECKON_SESSION_HOST_BACKOFF"] = BACKOFF_SECONDS
+    environ["FAKE_FOLLOWER_MARKER"] = str(marker)
+    first = json.dumps({"project": "alpha", "session": "sess"})
+    argv = [
+        sys.executable,
+        "-m",
+        "reckon.crew.session_host",
+        "--owner-pid",
+        str(owner.pid),
+        "--owner-start",
+        owner.start_time,
+        "--follower-command",
+        json.dumps([sys.executable, str(fake_follower)]),
+        "--first-request",
+        first,
+    ]
+    process = subprocess.Popen(
+        argv,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        env=environ,
+    )
+    try:
+        _wait_for(
+            lambda: marker.exists() and len(marker.read_text().split()) >= 1,
+            timeout=START_BOUND,
+            description="the first request's child from --first-request",
+        )
+        assert process.stdin is not None
+        process.stdin.write(
+            json.dumps({"project": "beta", "session": "sess"}).encode() + b"\n"
+        )
+        process.stdin.flush()
+        _wait_for(
+            lambda: marker.exists() and len(marker.read_text().split()) >= 2,
+            timeout=START_BOUND,
+            description="the second request's child read off the descriptor",
+        )
+        assert len(set(marker.read_text().split())) == 2, marker.read_text()
+    finally:
+        if process.poll() is None:
+            process.send_signal(signal.SIGTERM)
+            try:
+                process.wait(timeout=STOP_BOUND)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+        owner.end()
