@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "103594b7642a82938452b1a1d4b26c3a10c54e74",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5342",
+    "reckon/cli.py:1794"
+  ],
+  "completed_at": "2026-10-07T18:32:11.347Z",
+  "dispatched_at": "2026-10-07T18:26:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "44",
+      "severity": "follow-on",
+      "text": "follow-on: appends one JSON line to a .jsonl under the crew home, a shape the picker package already implements in outcomes.record_picker_hold at reckon/crew/picker/outcomes.py:87 with flock and fsync; the best-effort, bounded contract here genuinely differs from that recorder's durable contract, so the duplication is of the low-level append mechanism rather than of the holds recorder itself and is worth a shared helper."
+    },
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "168",
+      "severity": "follow-on",
+      "text": "follow-on: estimate_ms is timed around only math.ceil(len(rendered)/4), so the field the goal calls the estimated-context figure measures a length division rather than that stage's real cost, which can misattribute a slow pick when read from the line."
+    }
+  ],
+  "head_log_revision": "7500c95a2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 103594b7642a82938452b1a1d4b26c3a10c54e74: 7500c95a2 adds the timing to reckon/crew/picker/__init__.py:27-62 and :106-233 plus tests/test_pick_records_its_stage_times.py, and 9015e6242 adds the evidence fragment only; three files, all inside the declared scope.",
+    "done_when": "the node's measure is its suite plus companions; the manifest records base 155 passed EXIT=0 and head 159 passed EXIT=0 with a named negative control, and I re-ran tests/test_pick_records_its_stage_times.py at head -- 4 passed in 0.99s.",
+    "goal": "the node records each pick's per-stage times; reckon/crew/picker/__init__.py:217 appends one JSON line per pick and :106 times its five stages -- candidates snapshot, estimated-context figure, state render, questions render and the Jev request -- with node, session, start, latency, outcome and a within-bound flag.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T181259042051-pick-records-its-stage-times/manifest.md; status complete with two commits, a base/head suite pair naming both gate logs, and a negative-control log whose EXIT=1 is real; its zero-added-failures claim reconciles with the two logs.",
+    "write_paths": "the manifest declares reckon/crew/picker/__init__.py, tests/test_pick_records_its_stage_times.py, docs/evidence/fragments/one-typesafe-model-picker/pick-records-its-stage-times.html and a docs/figures directory; the three files in git diff 103594b76..9015e6242 all fall inside them and no fourth file changed."
+  },
+  "justifications": {
+    "durability": "tests/test_pick_records_its_stage_times.py:182 asserts a past-bound pick still writes exactly one line, and I falsified it myself -- suppressing past-bound writes in _record_pick_timings reddens only that test (review-negative-control.log, 1 failed 3 passed EXIT=1); :189-199 additionally asserts an unwritable log leaves the pick unchanged.",
+    "evidence": "the done_when names the picker suite and the manifest's gate logs gate-base.log and gate-head.log read 155 passed / 159 passed with 0 failures, which my head re-run of tests/test_pick_records_its_stage_times.py (4 passed) corroborates; the gate is the full suite rather than a direct production-log assertion.",
+    "fit": "reckon/crew/picker/__init__.py:24-62 uses mechanism names (PICK_TIMINGS_LOG, _milliseconds, _dispatch_bound_seconds, _record_pick_timings) and docstrings that state the mechanism, with no plan or ticket identifier in the source or test.",
+    "goal_fidelity": "reckon/crew/picker/__init__.py:217 records a line on every pick return path and :110-215 times five stages, matching the goal; the estimate stage at :168 measures only math.ceil(len(rendered)/4), so one named stage attributes near-zero work.",
+    "reuse": "no owner of a per-stage pick timing log exists -- a search of reckon/crew and reckon/crew/picker for .jsonl appenders and perf_counter recorders found only reckon/crew/picker/outcomes.py:87 record_picker_hold -- but the append in _record_pick_timings at :44 re-implements that sibling's append shape without extending it.",
+    "scope_discipline": "git diff --name-only 103594b76..9015e6242 lists exactly the manifest's three declared files, no plan-meta line is touched, and the reviewed worktree is clean at head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node records each pick's per-stage times; reckon/crew/picker/__init__.py:217 appends one JSON line per pick and :106 times its five stages -- candidates snapshot, estimated-context figure, state render, questions render and the Jev request -- with node, session, start, latency, outcome and a within-bound flag.\nVERDICT done_when: the node's measure is its suite plus companions; the manifest records base 155 passed EXIT=0 and head 159 passed EXIT=0 with a named negative control, and I re-ran tests/test_pick_records_its_stage_times.py at head -- 4 passed in 0.99s.\nVERDICT write_paths: the manifest declares reckon/crew/picker/__init__.py, tests/test_pick_records_its_stage_times.py, docs/evidence/fragments/one-typesafe-model-picker/pick-records-its-stage-times.html and a docs/figures directory; the three files in git diff 103594b76..9015e6242 all fall inside them and no fourth file changed.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T181259042051-pick-records-its-stage-times/manifest.md; status complete with two commits, a base/head suite pair naming both gate logs, and a negative-control log whose EXIT=1 is real; its zero-added-failures claim reconciles with the two logs.\nVERDICT diff: read commit by commit against base 103594b7642a82938452b1a1d4b26c3a10c54e74: 7500c95a2 adds the timing to reckon/crew/picker/__init__.py:27-62 and :106-233 plus tests/test_pick_records_its_stage_times.py, and 9015e6242 adds the evidence fragment only; three files, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:5342, reckon/cli.py:1794\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/picker/__init__.py:217 records a line on every pick return path and :110-215 times five stages, matching the goal; the estimate stage at :168 measures only math.ceil(len(rendered)/4), so one named stage attributes near-zero work.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when names the picker suite and the manifest's gate logs gate-base.log and gate-head.log read 155 passed / 159 passed with 0 failures, which my head re-run of tests/test_pick_records_its_stage_times.py (4 passed) corroborates; the gate is the full suite rather than a direct production-log assertion.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 103594b76..9015e6242 lists exactly the manifest's three declared files, no plan-meta line is touched, and the reviewed worktree is clean at head.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_pick_records_its_stage_times.py:182 asserts a past-bound pick still writes exactly one line, and I falsified it myself -- suppressing past-bound writes in _record_pick_timings reddens only that test (review-negative-control.log, 1 failed 3 passed EXIT=1); :189-199 additionally asserts an unwritable log leaves the pick unchanged.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/picker/__init__.py:24-62 uses mechanism names (PICK_TIMINGS_LOG, _milliseconds, _dispatch_bound_seconds, _record_pick_timings) and docstrings that state the mechanism, with no plan or ticket identifier in the source or test.\nSCORE reuse: 16\nJUSTIFICATION reuse: no owner of a per-stage pick timing log exists -- a search of reckon/crew and reckon/crew/picker for .jsonl appenders and perf_counter recorders found only reckon/crew/picker/outcomes.py:87 record_picker_hold -- but the append in _record_pick_timings at :44 re-implements that sibling's append shape without extending it.\nFINDING reckon/crew/picker/__init__.py:44 follow-on: appends one JSON line to a .jsonl under the crew home, a shape the picker package already implements in outcomes.record_picker_hold at reckon/crew/picker/outcomes.py:87 with flock and fsync; the best-effort, bounded contract here genuinely differs from that recorder's durable contract, so the duplication is of the low-level append mechanism rather than of the holds recorder itself and is worth a shared helper.\nFINDING reckon/crew/picker/__init__.py:168 follow-on: estimate_ms is timed around only math.ceil(len(rendered)/4), so the field the goal calls the estimated-context figure measures a length division rather than that stage's real cost, which can misattribute a slow pick when read from the line.",
+  "review_run_id": "r-20261007T182557892525-review-of-pick-records-its-stage-times",
+  "reviewed_base_sha": "103594b7642a82938452b1a1d4b26c3a10c54e74",
+  "reviewed_head_sha": "9015e6242b7d2ad7555d11e0fc2c24cceef36255",
+  "reviewed_run_id": "r-20261007T181259042051-pick-records-its-stage-times",
+  "role": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T18:30:52.837399+00:00",
+  "total": 111
+}
