@@ -17,6 +17,7 @@ TOP_LEVEL_KEYS = {
     "orchestrator_comment",
     "candidates",
     "return_times",
+    "lanes",
     "local_lane",
 }
 
@@ -192,9 +193,10 @@ def test_hostile_candidate_values_cannot_break_the_questions():
     hostile = candidate(family=HOSTILE, model=HOSTILE)
     questions = json.loads(prompts.render("questions.jinja", candidates=[hostile]))
     criteria = questions["route"]["criteria"]
-    assert set(criteria) == {"remote", "hold"}
-    assert criteria["remote"]["family"] == HOSTILE
-    assert criteria["remote"]["model"] == HOSTILE
+    pair = prompts.option_key(hostile)
+    assert set(criteria) == {pair, "hold"}
+    assert criteria[pair]["lane"] == HOSTILE
+    assert criteria[pair]["model"] == HOSTILE
 
 
 def test_questions_explain_every_weighed_field():
