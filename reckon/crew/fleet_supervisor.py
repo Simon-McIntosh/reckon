@@ -71,6 +71,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from reckon import service
 from reckon._store import write_json_atomically
 from reckon.crew.routing import signal_worker
 
@@ -179,7 +180,9 @@ FORCE_RUN_ENV = "FLEET_FORCE_RUN_COMMANDS"
 _OFF = frozenset({"0", "false", "no"})
 
 # Services a user config declares, and the mode one copy of a service runs in.
-CONFIG_HOME_ENV = "XDG_CONFIG_HOME"
+# The variable the config directory resolves under takes its name from the base
+# resolution in ``reckon.service``, so the two cannot drift apart.
+CONFIG_HOME_ENV = service.XDG_CONFIG_HOME_ENV
 CONFIG_DIRECTORY_NAME = "fleet"
 SERVICES_FILE_NAME = "services.json"
 SERVICE_MODE = "service"
@@ -415,15 +418,12 @@ def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None
 def config_directory(environ: Mapping[str, str] | None = None) -> Path:
     """The user's fleet configuration directory, ``~/.config/fleet``.
 
-    Resolved the way a user configuration home is resolved elsewhere on this
-    machine: ``XDG_CONFIG_HOME`` when the environment names one, otherwise
-    ``~/.config``. A caller that isolates that variable drives the whole
-    configuration path without reaching the operator's own.
+    The XDG config base is resolved once, in :mod:`reckon.service`; this
+    appends the directory's own name to it. A caller that isolates
+    ``XDG_CONFIG_HOME`` drives the whole configuration path without reaching
+    the operator's own.
     """
-    environ = os.environ if environ is None else environ
-    base = environ.get(CONFIG_HOME_ENV)
-    root = Path(base).expanduser() if base else Path.home() / ".config"
-    return root / CONFIG_DIRECTORY_NAME
+    return service.xdg_config_home(environ) / CONFIG_DIRECTORY_NAME
 
 
 def services_config_path(environ: Mapping[str, str] | None = None) -> Path:

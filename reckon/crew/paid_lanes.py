@@ -45,6 +45,9 @@ from typing import Any
 from reckon._store import write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.crew import window_reading
+from reckon.service import (
+    systemd_user_dir,  # noqa: F401 - re-exported: the unit directory resolves in reckon.service
+)
 
 #: The windows the document carries, in the order a reader expects them.
 PERIODS = window_reading.PERIODS
@@ -88,11 +91,6 @@ LOCAL_LANE_DOCUMENT_ENV = "RECKON_LOCAL_LANE_DOCUMENT"
 #: dispatch or pre-flight has to be the thing that refreshes it.
 SERVICE_NAME = "reckon-paid-lanes.service"
 TIMER_NAME = "reckon-paid-lanes.timer"
-
-#: The environment variable naming the user's config root, per the XDG base
-#: directory specification. ``systemd`` resolves user units under this when it
-#: is set, so the installer must resolve the same directory it would.
-XDG_CONFIG_HOME_ENV = "XDG_CONFIG_HOME"
 
 #: The refresh cadence, expressed in the timer's own directives so the document
 #: is republished a minute after boot and every five minutes of timer activity.
@@ -745,21 +743,6 @@ def _codex_rollout_candidates(
             if name not in newest or observed > newest[name][0]:
                 newest[name] = (observed, candidate)
     return {account: candidate for account, (_stamp, candidate) in newest.items()}
-
-
-def systemd_user_dir() -> Path:
-    """The directory the user's systemd units are read from.
-
-    Resolved the way systemd itself resolves it: ``XDG_CONFIG_HOME`` when the
-    user set one, otherwise ``~/.config``. The installer writes here so the
-    units land where the manager looks for them, and a caller that isolates
-    ``XDG_CONFIG_HOME`` runs against its own directory rather than the
-    operator's -- which is what lets a test exercise the install without ever
-    reaching the real user manager.
-    """
-    base = os.environ.get(XDG_CONFIG_HOME_ENV)
-    root = Path(base).expanduser() if base else Path.home() / ".config"
-    return root / "systemd" / "user"
 
 
 def checkout_root() -> Path:

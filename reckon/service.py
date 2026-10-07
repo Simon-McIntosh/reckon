@@ -21,9 +21,12 @@ import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
-from reckon.crew.paid_lanes import systemd_user_dir
-
 UNIT_NAME = "reckon.service"
+
+#: The environment variable naming the user's config root, per the XDG base
+#: directory specification. A consumer that resolves a directory under it must
+#: read the same variable the application reading that directory would.
+XDG_CONFIG_HOME_ENV = "XDG_CONFIG_HOME"
 
 UNIT_TEMPLATE = """\
 [Unit]
@@ -88,6 +91,32 @@ def node_executable() -> Path:
         "cannot locate the Node.js interpreter required for JSX compilation; "
         "install node or set RECKON_NODE to its executable"
     )
+
+
+def xdg_config_home(environ: Mapping[str, str] | None = None) -> Path:
+    """The user's XDG configuration base directory.
+
+    Resolved the way XDG-aware tools resolve it: ``XDG_CONFIG_HOME`` when the
+    environment names one, otherwise ``~/.config``. Consumers append the
+    subdirectory each one reads, so the base is resolved here once however many
+    of them build on it.
+    """
+    environ = os.environ if environ is None else environ
+    base = environ.get(XDG_CONFIG_HOME_ENV)
+    return Path(base).expanduser() if base else Path.home() / ".config"
+
+
+def systemd_user_dir() -> Path:
+    """The directory the user's systemd units are read from.
+
+    Resolved the way systemd itself resolves it: ``XDG_CONFIG_HOME`` when the
+    user set one, otherwise ``~/.config``. The installer writes here so the
+    units land where the manager looks for them, and a caller that isolates
+    ``XDG_CONFIG_HOME`` runs against its own directory rather than the
+    operator's -- which is what lets a test exercise the install without ever
+    reaching the real user manager.
+    """
+    return xdg_config_home() / "systemd" / "user"
 
 
 def unit_path(unit_name: str = UNIT_NAME, *, directory: Path | None = None) -> Path:
