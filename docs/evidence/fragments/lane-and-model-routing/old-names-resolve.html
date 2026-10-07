@@ -1,0 +1,70 @@
+<article class="landed-report" data-run-id="r-20261007T171657215064-old-names-resolve" data-node="old-names-resolve">
+<h3 id="old-names-resolve-summary">One catalogue resolver for historical lane and model identities</h3>
+<p><code>reckon/ledger.py::resolve_name</code> reads the catalogue's alias table
+and lane declarations. Ledger reads, live classifications, stored reviews,
+review exclusions and crew views share its pair. The query field vocabulary
+accepts <code>lane</code> and <code>model_key</code>, and resolved pairs appear
+on compact run rows by default. Unknown names remain unknown; ambiguous bare
+models are refused with the declaring lanes named. A recorded model-specific
+alias retains its key when its historical model id has retired. A plain lane
+with an unknown model never inherits today's default.</p>
+<table id="old-names-resolve-aliases">
+<thead><tr><th>Historical name</th><th>Lane</th><th>Model key</th></tr></thead>
+<tbody>
+<tr><td><code>claude-opus</code></td><td><code>claude</code></td><td><code>opus</code></td></tr>
+<tr><td><code>claude-haiku</code></td><td><code>claude</code></td><td><code>haiku</code></td></tr>
+<tr><td><code>codex-astra</code></td><td><code>codex</code></td><td><code>astra</code></td></tr>
+<tr><td><code>codex-luna</code></td><td><code>codex</code></td><td><code>luna</code></td></tr>
+<tr><td><code>codex-terra</code></td><td><code>codex</code></td><td><code>terra</code></td></tr>
+<tr><td><code>codex-spark</code></td><td><code>codex</code></td><td><code>spark</code></td></tr>
+<tr><td><code>clive-glm</code></td><td><code>clive</code></td><td><code>glm</code></td></tr>
+</tbody></table>
+<p>Fixtures using <code>claude-opus</code> and <code>claude</code> with
+<code>model: opus</code> both report <code>(claude, opus)</code>.
+Tests cover all seven aliases, declared model ids and display aliases,
+review exclusions, CLI ledger output and the MCP runs view.
+Aggregate and split run files remain byte-identical after reads.
+A warm ledger index observes an alias removed from the catalogue on its next read.</p>
+<p id="old-names-resolve-commits">Commits:
+<code>fa9f9dc36c854404ffd145893ea16e79885c69eb</code> (regression coverage),
+<code>892aa0479725267cca5cea0b6b3c1274eedade43</code> (resolver and readers),
+<code>34a38d200cd702876a0e8ad0bd760fda0324cb32</code> (retired model-id preservation).
+The final product revision measured below is <code>34a38d200cd702876a0e8ad0bd760fda0324cb32</code>.</p>
+<table id="old-names-resolve-gate">
+<thead><tr><th>Arm</th><th>Log summary</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Base half 1</td><td>2210 passed, 36 warnings in 911.74s (0:15:11)</td><td>EXIT=0</td></tr>
+<tr><td>Base half 2</td><td>1969 passed, 2 skipped, 23 warnings in 543.47s (0:09:03)</td><td>EXIT=0</td></tr>
+<tr><td>Head half 1</td><td>2215 passed, 35 warnings in 714.36s (0:11:54)</td><td>EXIT=0</td></tr>
+<tr><td>Head half 2</td><td>1999 passed, 2 skipped, 23 warnings in 466.81s (0:07:46)</td><td>EXIT=0</td></tr>
+</tbody></table>
+<p>Base revision <code>bdfb159260bf28417d160653d14bf2defeaf1940</code>:
+383 existing test modules. Head: 384 modules, adding
+<code>tests/test_old_names_resolve.py</code>. The gate was selected with
+<code>grep -l</code>, supplemented for parenthesised imports, over readers
+of the four briefed modules. Both arms ran in two foreground halves using the
+main environment's <code>python -m pytest -p no:cacheprovider -n 8</code>,
+with separate temporary directories. Added failures: <strong>0</strong>.
+The routing-identifier leak check is included. Focused final check:
+<code>35 passed in 2.68s</code>. Lint findings: 21 at base and head, zero added.</p>
+<p id="old-names-resolve-control">Negative control: removing only
+<code>aliases.claude-opus</code> from a copied catalogue makes
+<code>test_every_legacy_name_resolves[claude-opus-expected0]</code> fail:
+<code>1 failed, 6 passed in 3.29s</code>, <code>EXIT=1</code>. That fixture
+passes in the final head arm. Initial reproduction: 22 focused failures.
+The additional historical-model-id case reproduced seven failures before repair.</p>
+<p id="old-names-resolve-artifacts">Durable logs and exact commands:
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T171657215064-old-names-resolve</code>, including <code>base.log</code>,
+<code>base-1.log</code>, <code>base-2.log</code>, <code>head.log</code>,
+<code>head-1.log</code>, <code>head-2.log</code>,
+<code>negative-control.log</code>, <code>reproduction.log</code> and
+<code>historical-reproduction.log</code>. An initial partial head gate was
+stopped before the historical-model fix; its <code>interrupted-head</code>
+logs are retained and excluded from the complete comparison.</p>
+<p id="old-names-resolve-follow-on">The existing <code>crew(view="runs")</code>
+MCP surface reports the pair. The base CLI declares <code>crew ledger</code>
+but no <code>crew runs</code> subcommand, confirmed with a positive control
+for <code>ledger</code>. Adding that literal CLI spelling is a follow-on for
+<code>reckon/cli.py</code> after its module-split hold clears. No plan state,
+committed history, catalogue or shared configuration was rewritten.</p>
+</article>

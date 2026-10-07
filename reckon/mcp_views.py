@@ -185,15 +185,22 @@ def _backend_from_run(run: Mapping[str, Any]) -> str:
     return ""
 
 
+def _run_identity_key(run: Mapping[str, Any]) -> tuple[str, str] | str:
+    """Join equivalent recorded spellings without merging different models."""
+    identity = ledger.normalize_identity(run)
+    lane, model_key = identity.get("lane"), identity.get("model_key")
+    return (lane, model_key) if lane and model_key else _backend_from_run(run)
+
+
 def _latest_backend_runs(
     runs: Iterable[Mapping[str, Any]],
-) -> dict[str, Mapping[str, Any]]:
-    """Keep the newest session-bearing run for every configured backend."""
+) -> dict[tuple[str, str] | str, Mapping[str, Any]]:
+    """Keep the newest session-bearing run for each lane-and-model pair."""
 
-    latest: dict[str, Mapping[str, Any]] = {}
-    latest_keys: dict[str, tuple[str, str]] = {}
+    latest: dict[tuple[str, str] | str, Mapping[str, Any]] = {}
+    latest_keys: dict[tuple[str, str] | str, tuple[str, str]] = {}
     for run in runs:
-        backend = _backend_from_run(run)
+        backend = _run_identity_key(run)
         session_id = str(run.get("session_id") or "").strip()
         if not backend or not session_id:
             continue
@@ -804,7 +811,7 @@ def crew_lanes_view(
         backend_name = str(backend)
         settings = settings_value if isinstance(settings_value, Mapping) else {}
         lane_document_fields = _lane_document_fields(settings, composition_time)
-        run = latest.get(backend_name)
+        run = latest.get(_run_identity_key({**settings, "backend": backend_name}))
         if run is None:
             lanes.append(
                 _attach_lane_document(
@@ -1052,7 +1059,7 @@ def crew_lanes_view(
 
     return {
         "composed_at": composition_time,
-        "lanes": lanes,
+        "lanes": [ledger.normalize_identity(lane) for lane in lanes],
         "budget_groups": budget_groups,
     }
 
@@ -1462,12 +1469,14 @@ def load_composed_review(
     )
 
 
-def _run_row(pointer: Mapping[str, Any]) -> dict[str, str]:
+def _run_row(pointer: Mapping[str, Any]) -> dict[str, Any]:
     """Project one live pointer's identity and target onto a compact row."""
 
     node = pointer.get("node")
     node = node if isinstance(node, dict) else {}
+    identity = ledger.normalize_identity(pointer)
     return {
+        **{key: identity[key] for key in ("lane", "model_key") if key in identity},
         "run_id": str(pointer.get("run_id") or ""),
         "member": str(pointer.get("member") or ""),
         "section": str(node.get("section") or ""),

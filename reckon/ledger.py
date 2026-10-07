@@ -48,6 +48,7 @@ import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -207,6 +208,104 @@ class SuiteDeltaError(LedgerError):
             {str(test_id) for test_id in added_failure_ids if str(test_id).strip()}
         )
         super().__init__(detail)
+
+
+@lru_cache(maxsize=8)
+def _identity_catalogue(path: str, stamp: tuple | None) -> Mapping[str, Any]:
+    """Cache only while the catalogue's file identity remains unchanged."""
+    from reckon import flight
+
+    return flight.read_layer_file(path)
+
+
+def resolve_name(
+    name: str, *, lane: str | None = None
+) -> tuple[str | None, str | None]:
+    """Resolve a catalogue lane, model key, model id or alias to one pair.
+
+    Undeclared names stay unknown. A bare model shared by lanes is refused;
+    callers reading a record that already names a lane can constrain the match.
+    Historical aliases remain valid even when their model is no longer offered.
+    """
+    from reckon import flight
+
+    name = str(name or "").strip()
+    if not name:
+        return None, None
+    path = flight.model_catalogue_path()
+    catalogue = _identity_catalogue(str(path), _file_identity(path))
+    lanes = catalogue.get("lanes") or {}
+    aliases = catalogue.get("aliases") or {}
+    matches: set[tuple[str, str]] = set()
+    if name in aliases:
+        entry = aliases[name]
+        matches.add((entry["lane"], entry["model_key"]))
+    elif name in lanes:
+        matches.add((name, lanes[name]["default_model"]))
+    else:
+        for lane_name, declaration in lanes.items():
+            for key, settings in (declaration.get("models") or {}).items():
+                if name in (key, settings.get("model"), settings.get("alias")):
+                    matches.add((lane_name, key))
+        for entry in aliases.values():
+            if name == entry["model_key"]:
+                matches.add((entry["lane"], entry["model_key"]))
+    if lane:
+        matches = {pair for pair in matches if pair[0] == lane}
+    if len(matches) > 1:
+        raise ValueError(
+            f"ambiguous routing name {name!r}; declared by lanes "
+            + ", ".join(sorted(pair[0] for pair in matches))
+        )
+    return next(iter(matches), (None, None))
+
+
+def normalize_identity(
+    record: Mapping[str, Any], *, lane: str | None = None
+) -> dict[str, Any]:
+    """Add read-time identity fields without changing stored name vocabulary.
+
+    A recorded pair is authoritative. An explicitly recorded model narrows the
+    backend's lane; an unknown model never inherits today's lane default.
+    Agent and reviewer blocks carry the same identity alongside their raw fields.
+    """
+    result = dict(record)
+    source = next(
+        (
+            record[key]
+            for key in ("agent", "reviewer")
+            if isinstance(record.get(key), Mapping)
+        ),
+        {},
+    )
+    name = str(
+        record.get("backend") or source.get("backend") or record.get("lane") or ""
+    )
+    lane = record.get("lane") or lane or source.get("lane")
+    key = record.get("model_key")
+    resolved_lane, resolved_key = resolve_name(name, lane=lane)
+    lane = lane or resolved_lane
+    model = key or record.get("model") or source.get("model_key") or source.get("model")
+    if not model and not name:
+        model = record.get("alias") or source.get("alias")
+    if not (lane and key):
+        if model:
+            model_lane, key = resolve_name(str(model), lane=lane)
+            # A model-specific name preserves its historical key even when
+            # the recorded model id has retired from the catalogue.
+            if key is None and name != resolved_lane:
+                key = resolved_key
+            lane = lane or model_lane
+        else:
+            key = resolved_key
+    if lane:
+        result.update(lane=lane, model_key=key)
+    for nested in ("agent", "reviewer", "review"):
+        if isinstance(record.get(nested), Mapping):
+            result[nested] = normalize_identity(
+                record[nested], lane=lane if nested == "agent" else None
+            )
+    return result
 
 
 def normalize_section(value: Any) -> str:
@@ -3159,11 +3258,9 @@ def runs(
     the most recently promoted matching records while preserving their stored
     order.
 
-    This is the raw stored row, byte for byte as committed. A reader asking how
-    long a node ran must not take the ``wall_seconds`` here for the span between
-    its own stamps: :func:`read_records` derives that figure, and its answer
-    carries it. Callers here depend on the stored shape, so the derivation is
-    left off.
+    Stored values are preserved, with catalogue-derived lane and model key
+    added at read time. Use read_records for stamp-derived duration rather
+    than the stored wall_seconds carried here.
     """
     records, _version = read_records(
         project,
@@ -3199,8 +3296,8 @@ def read_records(
     a dispatch instant is a property of that moment rather than of the rows
     being selected.
 
-    ``with_figures=False`` is the raw promotion-order read, which is what
-    :func:`runs` returns; callers depend on the exact stored row there.
+    Disabling figures preserves stored measurements in promotion order.
+    Both paths add catalogue identity fields without rewriting committed rows.
     """
     data, version = load(project, root)
     if with_figures:
@@ -3234,7 +3331,7 @@ def read_records(
         if isinstance(limit, bool) or limit < 1:
             raise LedgerError("record limit must be a positive integer")
         records = records[-limit:]
-    return records, version
+    return [normalize_identity(record) for record in records], version
 
 
 def review_scores(
