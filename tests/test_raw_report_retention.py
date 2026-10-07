@@ -92,18 +92,37 @@ def write_project_layer(repo: Path, days: int) -> None:
     )
 
 
-def gc(repo: Path, *, apply: bool) -> dict:
+def gc(repo: Path, *, apply: bool, run_id: str | None = None) -> dict:
     return routing.garbage_collect(
         repo=repo,
         project=PROJECT,
         integrated_into="HEAD",
         apply=apply,
         now=datetime.now(tz=UTC),
+        run_id=run_id,
     )
 
 
 def raw_reports(report: dict) -> dict[str, dict]:
     return {item["run_id"]: item for item in report["plan_review_raw_reports"]}
+
+
+def confine(repo: Path, run_id: str) -> None:
+    """Register a worktree and a live pointer so ``gc --run`` can be confined.
+
+    The sweep refuses a ``run_id`` whose worktree it cannot resolve and
+    register, which is the guard the raw-report pass must respect rather than
+    reach into another run's state.
+    """
+    tree = repo / ".reckon-worktrees" / run_id
+    tree.parent.mkdir(parents=True, exist_ok=True)
+    _git(repo, "worktree", "add", "-q", "--detach", str(tree))
+    live = Path(os.environ["RECKON_HOME"]) / "crew" / "live"
+    live.mkdir(parents=True, exist_ok=True)
+    (live / f"{run_id}.json").write_text(
+        json.dumps({"run_id": run_id, "worktree": str(tree), "phase": "working"}),
+        encoding="utf-8",
+    )
 
 
 def test_a_past_report_with_a_record_is_pruned_only_under_apply(tmp_path):
@@ -135,6 +154,21 @@ def test_a_past_report_without_a_record_is_withheld_and_never_removed(tmp_path):
     applied = gc(repo, apply=True)
     assert raw_reports(applied)["orphan-run"]["action"] == "withheld"
     assert report.is_file(), "a withheld report is never removed"
+
+
+def test_run_id_confines_the_pass_to_one_report(tmp_path):
+    repo = repository(tmp_path)
+    first = write_report("confined-run", age_days=40)
+    second = write_report("other-run", age_days=40)
+    commit_record(repo, "confined-run")
+    commit_record(repo, "other-run")
+    confine(repo, "confined-run")
+
+    applied = gc(repo, apply=True, run_id="confined-run")
+    rows = raw_reports(applied)
+    assert set(rows) == {"confined-run"}, "only the confined run's report is listed"
+    assert not first.is_file(), "the confined run's report is removed"
+    assert second.is_file(), "another run's report is left in place"
 
 
 def test_a_report_inside_the_commit_within_retention_is_not_listed(tmp_path):

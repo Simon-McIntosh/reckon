@@ -1391,6 +1391,7 @@ def _plan_review_raw_reports(
     project: str | None,
     apply: bool,
     now: datetime | None,
+    run_id: str | None = None,
 ) -> list[dict[str, Any]]:
     """Prune a plan review's raw report text past its retention, printing each.
 
@@ -1401,7 +1402,9 @@ def _plan_review_raw_reports(
     host — but only once the committed record exists, because until then the raw
     text is the only copy. Every candidate appears in the returned rows with its
     path, age in days and action, so a dry run prints the same set ``--apply``
-    would act on.
+    would act on. A ``run_id`` confines the pass to the one report, exactly as
+    the rest of the sweep is confined to one run, so ``crew gc --run`` cannot
+    reach another run's raw report.
     """
     from reckon.crew import plan_review
     from reckon.crew import review as _review_store
@@ -1431,6 +1434,8 @@ def _plan_review_raw_reports(
         committed_root = _review_store.committed_review_root(name, root=repo_root)
         for slug_dir in sorted(path for path in plan_root.iterdir() if path.is_dir()):
             for run_dir in sorted(path for path in slug_dir.iterdir() if path.is_dir()):
+                if run_id and run_dir.name != run_id:
+                    continue
                 report = run_dir / plan_review._REVIEW_REPORT_NAME
                 if not report.is_file():
                     continue
@@ -1778,10 +1783,7 @@ def garbage_collect(
                     report["removed"] = True
                 run_reports.append(report)
         raw_report_reports = _plan_review_raw_reports(
-            repo_root=repo_root,
-            project=project,
-            apply=apply,
-            now=now,
+            repo_root=repo_root, project=project, apply=apply, now=now, run_id=run_id
         )
     except PROGRAMMING_ERRORS:
         # Re-raised untouched: the traceback names the defective line, where a
