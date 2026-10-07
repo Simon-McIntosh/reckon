@@ -143,3 +143,17 @@ def test_stream_reports_a_malformed_period_as_published() -> None:
         reserve.admit_windows(BLOCK, role="implement", clocks=clocks)["admitted"]
         is False
     )
+
+
+def test_a_negative_reported_utilisation_is_unreadable() -> None:
+    clocks = {
+        "seven_day": {
+            "period": "seven_day",
+            "state": "observed",
+            "utilisation": -0.01,
+        }
+    }
+    verdict = reserve.admit_windows(BLOCK, role="implement", clocks=clocks)
+
+    assert verdict["admitted"] is False
+    assert "could not be read" in verdict["reason"]

@@ -252,6 +252,7 @@ def admit_windows(
             and isinstance(fraction, (int, float))
             and not isinstance(fraction, bool)
             and isfinite(float(fraction))
+            and float(fraction) >= 0.0
         )
         detail = (
             None
