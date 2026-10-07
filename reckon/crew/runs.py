@@ -28,6 +28,7 @@ from reckon._store import (
     write_json_atomically,
 )
 from reckon._timestamps import parse_utc
+from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     DEFAULT_WATCH_STALL_WINDOW,
@@ -141,6 +142,34 @@ def watch_lock_path(project: str) -> Path:
     readable = re.sub(r"[^A-Za-z0-9._-]", "-", project).strip("-") or "project"
     digest = hashlib.sha256(project.encode()).hexdigest()[:12]
     return crew_home() / "watch" / f"{readable}-{digest}.lock"
+
+
+def watch_host_lease(project: str):
+    """The shared-storage lease for a project's producer seat."""
+    path = watch_lock_path(project)
+    return HostLease(
+        path.parent,
+        path.stem,
+        socket.gethostname(),
+        os.getpid(),
+        os.environ.get("SLURM_JOB_ID", ""),
+    )
+
+
+def _fresh_watch_holder(project: str, record: Mapping[str, Any]):
+    """Use a remote lease, but clear a local holder confirmed dead by this host."""
+    lease = watch_host_lease(project)
+    holder = lease.holder()
+    if holder is None or holder.host != socket.gethostname():
+        return holder
+    if (record.get("host"), record.get("pid")) == (holder.host, holder.pid):
+        dead = record_process_alive(record) is False
+    else:
+        dead = process_alive(holder.pid) is False
+    if dead:
+        lease.release_holder(holder)
+        return None
+    return holder
 
 
 def watch_stream_path(project: str) -> Path:
@@ -2387,12 +2416,20 @@ def producer_live(project: str) -> bool:
     pane empty for four minutes. Admission and readability are different
     questions about the same process.
     """
+    lease = watch_host_lease(project)
+    holder = lease.holder()
+    if holder is not None and holder.host != socket.gethostname():
+        return True
     path = watch_lock_path(project)
     if not path.is_file():
+        if holder is not None and process_alive(holder.pid) is False:
+            lease.release_holder(holder)
         return False
     with path.open("rb") as handle:
         record = _read_watch_record(handle)
     if _seat_names_a_foreign_host(record) or not record:
+        if holder is not None and process_alive(holder.pid) is False:
+            lease.release_holder(holder)
         # A foreign or erased seat names a pid this host cannot judge — another
         # kernel's, or none at all. Delivery must follow the stream rather than
         # such a record, so a stream that moved within the stall window reads
@@ -2410,6 +2447,11 @@ def producer_live(project: str) -> bool:
     if not _seat_host_is_local(record) and _seat_stream_fresh(project, record):
         return True
     _erase_confirmed_dead_seat(path, record)
+    if holder is not None and (record.get("host"), record.get("pid")) == (
+        holder.host,
+        holder.pid,
+    ):
+        lease.release_holder(holder)
     return False
 
 
@@ -2435,6 +2477,17 @@ def _record_producer_running(
 
     ``project`` names the stream for a record that carries no project of its own.
     """
+    if project:
+        lease = watch_host_lease(project)
+        holder = lease.holder()
+        if holder is not None and holder.host != socket.gethostname():
+            return True
+        if (
+            holder is None
+            and lease.path.exists()
+            and _seat_names_a_foreign_host(record)
+        ):
+            return False
     if _seat_names_a_foreign_host(record):
         return _stream_says_alive(record, project)
     pid = record.get("pid")
@@ -2518,6 +2571,13 @@ _CLAIM_CONTENTION_SECONDS = 0.5
 # image so the seat is never released.
 _WATCH_SEAT_ENV = "RECKON_WATCH_SEAT_FD"
 _WATCH_SEAT_HANDLES: dict[str, Any] = {}
+_WATCH_HOST_LEASES: dict[str, Any] = {}
+
+
+def renew_watch_host_lease(project: str) -> bool:
+    """Keep the producer's claim fresh; stop when another host owns it."""
+    lease = _WATCH_HOST_LEASES.get(project)
+    return lease is not None and lease.renew()
 
 
 def prepare_watch_seat_reexec(project: str) -> int | None:
@@ -2567,13 +2627,17 @@ def _take_watch_seat_fd() -> Any:
 
 @contextmanager
 def _project_watch_claim(project: str, stall_window: str):
-    """Claim the one kernel-tracked watcher seat for a project, if free."""
+    """Claim the local seat path, then the lease shared between hosts."""
     path = watch_lock_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
+    if project in _WATCH_HOST_LEASES:
+        with path.open("a+b") as occupied:
+            yield False, _read_watch_record(occupied)
+        return
     inherited = _take_watch_seat_fd()
     handle = inherited if inherited is not None else path.open("a+b")
+    lease = None
     try:
-        previous = _read_watch_record(handle)
         if inherited is None:
             deadline = time.monotonic() + _CLAIM_CONTENTION_SECONDS
             while True:
@@ -2585,6 +2649,21 @@ def _project_watch_claim(project: str, stall_window: str):
                         yield False, _read_watch_record(handle)
                         return
                     time.sleep(0.01)
+
+        lease = watch_host_lease(project)
+        holder = lease.holder()
+        if (
+            inherited is None
+            and holder is not None
+            and holder.host == socket.gethostname()
+        ):
+            # This path's lock is ours. A local predecessor can still hold an
+            # unlinked inode, but it no longer owns the seat a new arm opens.
+            lease.release_holder(holder)
+        if not lease.claim():
+            yield False, _read_watch_record(handle)
+            return
+        previous = _read_watch_record(handle)
 
         # Adopt the log the arming named before the record is written, so a
         # reader who finds this seat dead finds the producer's own last words
@@ -2658,15 +2737,19 @@ def _project_watch_claim(project: str, stall_window: str):
         )
         _WATCH_STREAM_PRODUCERS[project] = producer
         _WATCH_SEAT_HANDLES[project] = handle
-        _publish_watch_stream(project, _list_live_records(project=project))
+        _WATCH_HOST_LEASES[project] = lease
         try:
+            _publish_watch_stream(project, _list_live_records(project=project))
             yield True, record
         finally:
             _WATCH_SEAT_HANDLES.pop(project, None)
+            _WATCH_HOST_LEASES.pop(project, None)
             _WATCH_STREAM_PRODUCERS.pop(project, None)
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
     finally:
         handle.close()
+        if lease is not None:
+            lease.release()
 
 
 class _FollowerRegistration:
@@ -3165,6 +3248,14 @@ def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
     # producer as absent, and one that sees it held reads a dead process as
     # live — each the wrong way to decide a dispatch guard. The running answer
     # is the one the guard may trust.
+    holder = _fresh_watch_holder(project, registration)
+    if holder is not None:
+        if (registration.get("host"), registration.get("pid")) != (
+            holder.host,
+            holder.pid,
+        ):
+            registration = {"project": project}
+        registration.update(host=holder.host, pid=holder.pid, job=holder.job)
     watcher_live = _record_producer_running(registration, project=project)
     return {
         "arming_line": arming_line,
@@ -3225,6 +3316,16 @@ def project_watch_visibility(
             registration = _read_watch_record(handle)
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
+    holder = _fresh_watch_holder(project, registration)
+    if holder is not None:
+        seat_held = True
+        if (registration.get("host"), registration.get("pid")) != (
+            holder.host,
+            holder.pid,
+        ):
+            registration = {"project": project}
+        registration.update(host=holder.host, pid=holder.pid, job=holder.job)
+
     # Reconcile-on-read: a registration whose process is gone is a disagreement
     # between the registry and the machine, and reading it without repairing it
     # leaves the next reader to find the same lie. Repair in place — never on a
@@ -3232,6 +3333,7 @@ def project_watch_visibility(
     # repaired state (an empty registration) rather than the stale one.
     if (
         registration
+        and (holder is None or holder.host == socket.gethostname())
         and _record_producer_dead(registration, project=project)
         and _reconcile_watch_record(project, registration)
     ):
@@ -4098,10 +4200,28 @@ def watch(
                 "stream_path": str(watch_stream_path(project)),
             }
         while True:
+            if not renew_watch_host_lease(project):
+                return {
+                    "project": project,
+                    "event": "seat-lost",
+                    "watcher_live": False,
+                }
             event = _watch_event(project, stall_seconds=stall_seconds)
             if event is not None and (event["event"] != "empty" or exit_on_empty):
                 return event
-            sleeper(poll_interval)
+            remaining = poll_interval
+            while remaining > 0:
+                step = min(remaining, LEASE_RENEW_SECONDS)
+                sleeper(step)
+                if not renew_watch_host_lease(project):
+                    return {
+                        "project": project,
+                        "event": "seat-lost",
+                        "watcher_live": False,
+                    }
+                remaining -= step
+            if poll_interval <= 0:
+                sleeper(poll_interval)
 
 
 def _pointer_claims_worktree(record: Mapping[str, Any]) -> bool:
