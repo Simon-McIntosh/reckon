@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.86">
-<meta name="plan-version" content="92">
+<meta name="plan-impl" content="0.92">
+<meta name="plan-version" content="93">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -121,9 +121,12 @@
   <p class="landed-summary">A disposition recorded before promotion and an answer recorded after it both reach the committed review record and survive a later re-store. <a href="s10">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
     <h2 id="s11">§11 — A run review naming its run&#x27;s plan is committed under its run</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> <code>review.store_committed_review</code> routes any body carrying a <code>plan_slug</code> under <code>plan/&lt;slug&gt;/</code>, with <code>int(plan_version or 0)</code>. A run review records its reviewed run's <code>plan_slug</code> and no <code>plan_version</code>, so a run review of a plan-carried run is committed under the plan tree at version 0, not under <code>run/&lt;reviewed-run-id&gt;/</code>. The import's classifier had the same branch order, fixed in §8; <code>review.names_a_review_subject</code> already tests the reviewed run first. Measured on 7 October against each project's <code>origin/main</code>: two records are misfiled, both in imas-codex. They are <code>docs/state/imas-codex/reviews/plan/jt60sa-discovery-completion/r-20261007T080445299498-review-of-getseldata-onhost-grep.json</code> and <code>…/r-20261007T094345378621-review-of-eqdbms-layout-probe.json</code>. Every other project has none.</p><p><strong>Deliverable.</strong> One node. <code>store_committed_review</code> routes a body with a <code>reviewed_run_id</code> under <code>run/&lt;reviewed-run-id&gt;/</code>, whatever <code>plan_slug</code> it carries. Separately, the two misfiled imas-codex records move to their run paths in one commit in that repository.</p><p><strong>Done when</strong> a test stores a run review that carries its run's <code>plan_slug</code> and finds it under <code>run/&lt;reviewed-run-id&gt;/</code>; the test fails when the plan branch is tested first again. A search of each project's committed plan tree finds no record carrying a <code>reviewed_run_id</code>. Each of the two imas-codex records is found at <code>run/&lt;reviewed-run-id&gt;/&lt;review-run-id&gt;.json</code>, with a body byte-identical to the misfiled file, and <code>review.stored_record</code> returns it.</p>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">A run review is committed under its reviewed run whatever plan it names; the two misfiled imas-codex records sit at their run paths, and no project's plan tree holds a run review. <a href="s11">full record</a></p>
+</section>
 
     <h2 id="s12">§12 — A review record is read with the answers every copy holds</h2>
 <section data-reckon="section" data-id="s12" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -199,10 +202,11 @@
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §10</pre>
     <p class="r-fu-outcome">Section 10 is closed: dispositions and answers survive promotion and a later re-store; merged at ff436d058.</p>
     </article>
-<article class="r-fu" data-id="f-erkc-009" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-erkc-009" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="2026-10-07T13:56:52+00:00" data-resolved-by="9cf43820">
     <h4 class="r-fu-title">Build §11, then §9</h4>
     <div class="r-fu-body"><p>§11 corrects the committed-store routing and moves two misfiled imas-codex records. §9's four follow-on nodes follow it; nodes (a) and (d) share <code>plan_review.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §11</pre>
+    <p class="r-fu-outcome">Section 11 is closed: run reviews route under their run (d9adb6d90) and the two imas-codex records moved (imas-codex 8d2dc46f1). §9's remaining nodes continue under f-erkc-007.</p>
     </article>
 <article class="r-fu" data-id="f-erkc-010" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build §12 after §11 releases review.py</h4>
