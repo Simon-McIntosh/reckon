@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="The review store keeps no unreachable refusal">
+  <meta name="plan-summary" content="resolve_record_times commits every record whose times resolve from no source as times_source unknown; the refusal for a review run whose own record carries no dispatch stamp is removed, and a test holds the unknown commit for an id that encodes no instant.">
+  <meta name="plan-evidence-for" content="reckon:every-review-is-kept-as-a-committed-record">
+  <meta name="plan-verifies" content="reckon:every-review-is-kept-as-a-committed-record#s5">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,review,store,times">
+  <title>The review store keeps no unreachable refusal — evidence | reckon</title>
+</head>
+<body>
+<article class="r-note" id="the-review-store-keeps-no-unreachable-refusal" data-node="the-review-store-keeps-no-unreachable-refusal" data-reckon="landed" data-when="2026-10-07">
+  <h2>The review store keeps no unreachable refusal</h2>
+  <p><code>resolve_record_times</code> no longer raises for a review run whose own record exists yet carries no dispatch stamp. Its sources are tried in order and a record whose times resolve from no source is committed with both stamps empty and <code>times_source</code> <code>"unknown"</code>, whatever other records exist for its review run. The removed branch answered nothing for a standard run id, because every minted id encodes a dispatch instant and the run-id source is consulted after the record's own stamps — so the refusal was unreachable and its two docstrings were false. Both docstrings now state the rule alone.</p>
+  <p>The new case holds a review run whose own run record exists with no dispatch stamp, under an id that encodes no instant, committed with <code>times_source</code> <code>"unknown"</code> and empty <code>dispatched_at</code>/<code>completed_at</code>, with the store clock in neither stamp. Gate: <code>pytest tests/test_review_store_owns_identity_and_times.py tests/test_import_host_reviews.py tests/test_review_records_have_a_committed_root.py</code> at <code>4fceb3e247d311a446f65175379aa1ba9a16af7b</code>, 30 passed, <code>EXIT=0</code>. The declared mutation — restoring the refusal for a review run whose own record carries no dispatch stamp — leaves the new case and the updated companion case failing (<code>EXIT=1</code>, two failing ids the head arm does not fail).</p>
+</article>
+</body>
+</html>
