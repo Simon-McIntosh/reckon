@@ -337,3 +337,72 @@ def test_a_card_without_a_closing_tag_is_refused_and_leaves_the_file_unchanged(
     assert result["ok"] is False, result
     assert result["error"] == "op_error"
     assert path.read_text(encoding="utf-8") == before
+
+
+def _edit_batch(checkout: Path, ops: list[dict]) -> dict:
+    """Apply several ops as one versioned write in the fixture checkout."""
+    path = checkout / "docs" / "plans" / f"{PLAN}.html"
+    state = _plan_html.read_state(path.read_text(encoding="utf-8"))
+    return mcp_module._edit_plan_tool(
+        PROJECT,
+        PLAN,
+        expected_version=state["version"],
+        checkout_path=str(checkout),
+        doc_type="plan",
+        mode="state",
+        ops=ops,
+    )
+
+
+def _evidence_op(anchor: str) -> dict:
+    """An append_evidence request writing one section of this plan's record."""
+    return {
+        "op": "append_evidence",
+        "plan": PLAN,
+        "anchor": anchor,
+        "title": "Second section landed",
+        "body": "<p>Built the thing; suite green.</p>",
+    }
+
+
+RECORD_HREF = f"/{PROJECT}/evidence/archive/{PLAN}-landed.html"
+
+
+def test_a_bare_anchor_links_the_section_appended_in_the_same_batch(plan) -> None:
+    checkout, path = plan
+
+    result = _edit_batch(
+        checkout, [_evidence_op("s2-landed"), _collapse_op(anchor="s2-landed")]
+    )
+
+    assert result["ok"] is True, result
+    text = path.read_text(encoding="utf-8")
+    assert f'<a href="{RECORD_HREF}#s2-landed">full record</a>' in text
+    record = checkout / "docs" / "evidence" / "archive" / f"{PLAN}-landed.html"
+    assert 'id="s2-landed"' in record.read_text(encoding="utf-8")
+
+
+def test_a_bare_anchor_links_a_section_the_record_already_holds(plan) -> None:
+    checkout, path = plan
+    assert _edit_batch(checkout, [_evidence_op("s2-landed")])["ok"] is True
+
+    result = _edit(checkout, _collapse_op(anchor="#s2-landed"))
+
+    assert result["ok"] is True, result
+    text = path.read_text(encoding="utf-8")
+    assert f'<a href="{RECORD_HREF}#s2-landed">full record</a>' in text
+
+
+def test_a_bare_anchor_the_record_lacks_is_refused_and_leaves_the_file_unchanged(
+    plan,
+) -> None:
+    checkout, path = plan
+    assert _edit_batch(checkout, [_evidence_op("s2-landed")])["ok"] is True
+    before = path.read_text(encoding="utf-8")
+
+    result = _edit(checkout, _collapse_op(anchor="s2-typo"))
+
+    assert result["ok"] is False, result
+    assert result["error"] == "op_error"
+    assert "s2-typo" in result["detail"]
+    assert path.read_text(encoding="utf-8") == before
