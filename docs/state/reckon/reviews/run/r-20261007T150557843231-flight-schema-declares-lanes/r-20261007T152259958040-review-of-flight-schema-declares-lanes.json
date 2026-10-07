@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "b8a145f64ac4a3c44d8ad880cdb8e4b294529664",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/_store.py:2933",
+    "reckon/ledger.py:2058",
+    "reckon/crew/routing.py:1421",
+    "reckon/roadmap.py:1479",
+    "reckon/hooks/coordinator_obligations.py:480"
+  ],
+  "completed_at": "2026-10-07T15:35:34.769Z",
+  "dispatched_at": "2026-10-07T15:23:26Z",
+  "findings": [
+    {
+      "file": "reckon/flight.py",
+      "line": "1364",
+      "severity": "follow-on",
+      "text": "follow-on: expand_lanes builds the lane-named default entry, but no assertion in tests/test_flight_lanes.py reads backends[\"claude\"], so a regression dropping the default-named entry or giving it the wrong default model passes the gate green while the selected done-when requires that entry be covered, and the manifest's claim that the tests cover the default-named entry is unsupported."
+    },
+    {
+      "file": "reckon/_flight_schema.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the schema change is applied to a file whose own header declares it generated from reckon/schema/flight.yaml, and that source carries no lanes key, so scripts/regen_flight_schema.py would drop lanes, LaneConfig and LaneModelConfig; the LinkML round-trip tests that would catch the drift skip under the gate command (no gen-pydantic on PATH), leaving the drift latent until the generator is installed."
+    }
+  ],
+  "head_log_revision": "3ab8e606d34f8781b5c459241ce71b735f2fc2b6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against the base b8a145f64; the single commit 3ab8e606d adds lanes/LaneConfig/LaneModelConfig to the generated schema module, LANE_MODEL_KEYS and _lane_entry and expand_lanes to flight.py with the resolve() call site, 134 lines of tests, and a 64-line evidence fragment.",
+    "done_when": "the plan section 1 done-when names three checks -- tests covering the lane's default-named entry and its derived legacy entries, a no-value-moves proof over mounts.json, and a negative control; tests/test_flight_lanes.py:96 covers the derived entries and the no-op but asserts nothing about the default-named entry backends[\"claude\"], the no-value-moves proof is present and independently reproduced (resolved-base.json vs resolved-head.json: projects identical, 15/15, 8 legacy backends, no lanes key), and negative-control.log reddens the --set test (1 failed, EXIT=1).",
+    "goal": "the node's goal is that the flight schema declare lanes with models inside them and expand each lane into today's backends: entries; reckon/_flight_schema.py:211 adds lanes: dict[str, LaneConfig] and reckon/flight.py:1333 expand_lanes expands each lane into a lane-named entry carrying its default model plus <lane>-<key> entries for declared legacy backends, each carrying lane and model_key and, when derived, derived_from, invoked at reckon/flight.py:1480 after every layer (catalogue included) has merged.",
+    "manifest": "read; it records the gate command over the four flight test files with head 101 passed 2 skipped EXIT=0 against base 98 passed 2 skipped EXIT=0, names test_logs gate-head.log and gate-base.log and negative-control.log, and declares baseline_suite and after_suite arms each with failure_count 0 and empty failure_ids.",
+    "write_paths": "the reviewed manifest declares reckon/_flight_schema.py, reckon/flight.py, tests/test_flight_lanes.py, the evidence fragment and a figures directory; git show --stat 3ab8e606d lists exactly those three source files plus the fragment, every one inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_flight_lanes.py:122 fails if the override layer merges after expansion (shown by negative-control.log), but no assertion covers the default-named entry, and reckon/_flight_schema.py:1 is generated from reckon/schema/flight.yaml, which carries no lanes key, so regeneration silently drops the schema change and the round-trip test that would catch it is skipped under the gate.",
+    "evidence": "the plan done-when's first bullet asks tests covering the lane's default-named entry, but tests/test_flight_lanes.py:96 never reads backends[\"claude\"], so that half of the measure is unread, while the no-value-moves and negative-control halves are recorded and reproducible.",
+    "fit": "the added names (expand_lanes, _lane_entry, LANE_MODEL_KEYS) describe mechanism with no version, plan or ticket identifier, matching reckon/flight.py's module-level function idiom, though LANE_MODEL_KEYS at reckon/flight.py:1289 hand-mirrors the LaneModelConfig fields and will not follow a field added to the schema.",
+    "goal_fidelity": "reckon/flight.py:1364 builds the lane-named entry and the derived <lane>-<key> entries, and a probe resolves backends[\"claude\"] to {model: claude-sonnet-5-5, model_key: sonnet, time_budget: 25m}, the default-model entry the goal names.",
+    "reuse": "expand_lanes at reckon/flight.py:1333 extends the layer-merge owner -- it reuses deep_merge (reckon/flight.py:1116) and runs after _apply_catalogue (reckon/flight.py:1210) -- and a search over reckon/ found no prior lane-expansion capability; only the LANE_MODEL_KEYS mirror above.",
+    "scope_discipline": "git show --stat 3ab8e606d lists reckon/_flight_schema.py, reckon/flight.py, tests/test_flight_lanes.py and the evidence fragment only, every one inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the flight schema declare lanes with models inside them and expand each lane into today's backends: entries; reckon/_flight_schema.py:211 adds lanes: dict[str, LaneConfig] and reckon/flight.py:1333 expand_lanes expands each lane into a lane-named entry carrying its default model plus <lane>-<key> entries for declared legacy backends, each carrying lane and model_key and, when derived, derived_from, invoked at reckon/flight.py:1480 after every layer (catalogue included) has merged.\nVERDICT done_when: the plan section 1 done-when names three checks -- tests covering the lane's default-named entry and its derived legacy entries, a no-value-moves proof over mounts.json, and a negative control; tests/test_flight_lanes.py:96 covers the derived entries and the no-op but asserts nothing about the default-named entry backends[\"claude\"], the no-value-moves proof is present and independently reproduced (resolved-base.json vs resolved-head.json: projects identical, 15/15, 8 legacy backends, no lanes key), and negative-control.log reddens the --set test (1 failed, EXIT=1).\nVERDICT write_paths: the reviewed manifest declares reckon/_flight_schema.py, reckon/flight.py, tests/test_flight_lanes.py, the evidence fragment and a figures directory; git show --stat 3ab8e606d lists exactly those three source files plus the fragment, every one inside the declared scope.\nVERDICT manifest: read; it records the gate command over the four flight test files with head 101 passed 2 skipped EXIT=0 against base 98 passed 2 skipped EXIT=0, names test_logs gate-head.log and gate-base.log and negative-control.log, and declares baseline_suite and after_suite arms each with failure_count 0 and empty failure_ids.\nVERDICT diff: read commit by commit against the base b8a145f64; the single commit 3ab8e606d adds lanes/LaneConfig/LaneModelConfig to the generated schema module, LANE_MODEL_KEYS and _lane_entry and expand_lanes to flight.py with the resolve() call site, 134 lines of tests, and a 64-line evidence fragment.\nCALL_SITES: reckon/_store.py:2933, reckon/ledger.py:2058, reckon/crew/routing.py:1421, reckon/roadmap.py:1479, reckon/hooks/coordinator_obligations.py:480\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/flight.py:1364 builds the lane-named entry and the derived <lane>-<key> entries, and a probe resolves backends[\"claude\"] to {model: claude-sonnet-5-5, model_key: sonnet, time_budget: 25m}, the default-model entry the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: the plan done-when's first bullet asks tests covering the lane's default-named entry, but tests/test_flight_lanes.py:96 never reads backends[\"claude\"], so that half of the measure is unread, while the no-value-moves and negative-control halves are recorded and reproducible.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 3ab8e606d lists reckon/_flight_schema.py, reckon/flight.py, tests/test_flight_lanes.py and the evidence fragment only, every one inside the manifest's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_flight_lanes.py:122 fails if the override layer merges after expansion (shown by negative-control.log), but no assertion covers the default-named entry, and reckon/_flight_schema.py:1 is generated from reckon/schema/flight.yaml, which carries no lanes key, so regeneration silently drops the schema change and the round-trip test that would catch it is skipped under the gate.\nSCORE fit: 18\nJUSTIFICATION fit: the added names (expand_lanes, _lane_entry, LANE_MODEL_KEYS) describe mechanism with no version, plan or ticket identifier, matching reckon/flight.py's module-level function idiom, though LANE_MODEL_KEYS at reckon/flight.py:1289 hand-mirrors the LaneModelConfig fields and will not follow a field added to the schema.\nSCORE reuse: 18\nJUSTIFICATION reuse: expand_lanes at reckon/flight.py:1333 extends the layer-merge owner -- it reuses deep_merge (reckon/flight.py:1116) and runs after _apply_catalogue (reckon/flight.py:1210) -- and a search over reckon/ found no prior lane-expansion capability; only the LANE_MODEL_KEYS mirror above.\nFINDING reckon/flight.py:1364 follow-on: expand_lanes builds the lane-named default entry, but no assertion in tests/test_flight_lanes.py reads backends[\"claude\"], so a regression dropping the default-named entry or giving it the wrong default model passes the gate green while the selected done-when requires that entry be covered, and the manifest's claim that the tests cover the default-named entry is unsupported.\nFINDING reckon/_flight_schema.py:1 follow-on: the schema change is applied to a file whose own header declares it generated from reckon/schema/flight.yaml, and that source carries no lanes key, so scripts/regen_flight_schema.py would drop lanes, LaneConfig and LaneModelConfig; the LinkML round-trip tests that would catch the drift skip under the gate command (no gen-pydantic on PATH), leaving the drift latent until the generator is installed.\n",
+  "review_run_id": "r-20261007T152259958040-review-of-flight-schema-declares-lanes",
+  "reviewed_base_sha": "b8a145f64ac4a3c44d8ad880cdb8e4b294529664",
+  "reviewed_head_sha": "3ab8e606d34f8781b5c459241ce71b735f2fc2b6",
+  "reviewed_run_id": "r-20261007T150557843231-flight-schema-declares-lanes",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T15:37:00+00:00",
+  "total": 108
+}
