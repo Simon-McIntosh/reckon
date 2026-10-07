@@ -42,13 +42,17 @@ CONFIG = {
 
 
 def _reading(
-    *, resets_at: datetime, observed_at: datetime, window_minutes=WEEK_MINUTES
+    *,
+    resets_at: datetime,
+    observed_at: datetime,
+    window_minutes=WEEK_MINUTES,
+    used_percent: float = 2.0,
 ):
     return budget._rate_limits_reading(
         {
             "primary": {
                 "window_minutes": window_minutes,
-                "used_percent": 2.0,
+                "used_percent": used_percent,
                 "resets_at": int(resets_at.timestamp()),
             },
             "secondary": None,
@@ -82,7 +86,9 @@ def test_flagging_a_banked_reset_never_stacks(isolated_reckon_home) -> None:
 
 
 def test_pace_counts_a_banked_reset_from_the_same_reading(isolated_reckon_home) -> None:
-    reading = _reading(resets_at=NOW + timedelta(days=4), observed_at=NOW)
+    reading = _reading(
+        resets_at=NOW + timedelta(days=4), observed_at=NOW, used_percent=6.0
+    )
 
     without = _allowance(reading)
     # No banked reset: the allowance is exactly what it was before the flag

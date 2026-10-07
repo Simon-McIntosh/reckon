@@ -70,6 +70,7 @@ class WindowReading:
     """
 
     figures: tuple[WindowFigure, ...] = field(default_factory=tuple)
+    reported_periods: tuple[str, ...] = field(default_factory=tuple)
     observed_at: datetime | None = None
     age_seconds: float | None = None
     reason: str = ""
@@ -124,6 +125,7 @@ def _newest_reading(
             reason="the newest window-carrying event carried no observation time"
         )
 
+    reported_periods = _reported_periods(ordered[index])
     figures = tuple(
         WindowFigure(
             period=period,
@@ -144,6 +146,7 @@ def _newest_reading(
         )
     return WindowReading(
         figures=figures,
+        reported_periods=reported_periods,
         observed_at=observed_at,
         age_seconds=(moment - observed_at).total_seconds(),
     )
@@ -199,6 +202,19 @@ def _unified_windows(event: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
         for period, window in windows.items()
         if isinstance(window, Mapping)
     }
+
+
+def _reported_periods(event: Mapping[str, Any]) -> tuple[str, ...]:
+    """Names the source supplied, even when a named figure is malformed."""
+    if event.get("type") != "rate_limit_event":
+        return ()
+    info = event.get("rate_limit_info")
+    if not isinstance(info, Mapping):
+        return ()
+    windows = info.get("unifiedWindows")
+    if not isinstance(windows, Mapping):
+        return ()
+    return tuple(str(period) for period in windows)
 
 
 def _ordered_windows(

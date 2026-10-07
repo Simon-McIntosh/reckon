@@ -1085,7 +1085,34 @@ def _burn_multiple(
     if period_seconds <= 0 or elapsed_seconds <= 0 or elapsed_seconds > period_seconds:
         return None
     elapsed_fraction = elapsed_seconds / period_seconds
+    if _burn_floor_reason(utilisation_pct, elapsed_fraction) is not None:
+        return None
     return (utilisation_pct / 100.0) / elapsed_fraction
+
+
+def _burn_floor_reason(utilisation_pct: float, elapsed_fraction: float) -> str | None:
+    """Explain why a measured position cannot support a burn projection yet."""
+    shortfalls = []
+    if elapsed_fraction < BURN_ELAPSED_FRACTION_FLOOR:
+        shortfalls.append(
+            f"{elapsed_fraction * 100:.2f}% elapsed is below the "
+            f"{BURN_ELAPSED_FRACTION_FLOOR * 100:g}% floor"
+        )
+    if utilisation_pct < BURN_UTILISATION_PCT_FLOOR:
+        shortfalls.append(
+            f"{utilisation_pct:g}% utilisation is below the "
+            f"{BURN_UTILISATION_PCT_FLOOR:g}% floor"
+        )
+    if not shortfalls:
+        return None
+    cause = (
+        "window too young to project"
+        if elapsed_fraction < BURN_ELAPSED_FRACTION_FLOOR
+        else "window utilisation too low to project"
+    )
+    return (
+        f"{cause}: burn evidence is quantised too coarsely: {' and '.join(shortfalls)}"
+    )
 
 
 def _window_elapsed_fraction(state: BudgetState) -> float | None:
@@ -1125,35 +1152,23 @@ def _with_projected_exhaustion(state: BudgetState, *, now: datetime) -> BudgetSt
 
     elapsed_fraction = _window_elapsed_fraction(state)
     utilisation = state.utilisation_pct
-    burn = state.burn_multiple
-    if elapsed_fraction is None or utilisation is None or burn is None:
+    if elapsed_fraction is None or utilisation is None:
         return replace(state, projected_exhaustion_at=None)
-
-    below_elapsed_floor = elapsed_fraction < BURN_ELAPSED_FRACTION_FLOOR
-    below_utilisation_floor = utilisation < BURN_UTILISATION_PCT_FLOOR
-    if below_elapsed_floor or below_utilisation_floor:
-        shortfalls = []
-        if below_elapsed_floor:
-            shortfalls.append(
-                f"{elapsed_fraction * 100:.2f}% elapsed is below the "
-                f"{BURN_ELAPSED_FRACTION_FLOOR * 100:g}% floor"
-            )
-        if below_utilisation_floor:
-            shortfalls.append(
-                f"{utilisation:g}% utilisation is below the "
-                f"{BURN_UTILISATION_PCT_FLOOR:g}% floor"
-            )
-        floor_detail = "burn evidence is quantised too coarsely: " + " and ".join(
-            shortfalls
-        )
+    floor_detail = _burn_floor_reason(utilisation, elapsed_fraction)
+    if floor_detail is not None:
         detail = state.detail
         if floor_detail not in detail:
             detail = f"{detail}; {floor_detail}".strip("; ")
         return replace(
             state,
+            burn_multiple=None,
             projected_exhaustion_at=None,
             detail=detail,
         )
+
+    burn = state.burn_multiple
+    if burn is None:
+        return replace(state, projected_exhaustion_at=None)
 
     observed = _parse_stamp(state.observed_at) if state.observed_at else None
     if observed is None or reset is None or state.seconds_until_reset is None:
@@ -1823,6 +1838,7 @@ CLOCK_SEVEN_DAY = "seven_day"
 # the payload, since the first admits nothing and the second admits everything.
 OBSERVED = "observed"
 UNKNOWN = "unknown"
+NOT_PUBLISHED = "not_published"
 
 # Where one backend's pace figures came from. The published document speaks when
 # it carries a fresh reading for that backend; otherwise the caller's own
@@ -1858,9 +1874,13 @@ def _clock(reading: window_reading.WindowReading, period: str) -> dict[str, Any]
     """
     figure = reading.figure(period)
     if figure is None:
+        reported = set(reading.reported_periods)
+        reported.update(item.period for item in reading.figures)
         return {
             "period": period,
-            "state": UNKNOWN,
+            "state": (
+                NOT_PUBLISHED if reading.known and period not in reported else UNKNOWN
+            ),
             "utilisation": None,
             "age_seconds": None,
             "observed_at": None,
@@ -2041,6 +2061,9 @@ def _group_allowance(
         if elapsed_fraction <= 0
         else float(operative.utilisation) / elapsed_fraction
     )
+    floor_reason = _burn_floor_reason(
+        float(operative.utilisation) * 100.0, elapsed_fraction
+    )
 
     # A banked reset is read from the durable flag before the allowance is
     # derived, so the pace and the hold that reads it both count the extra
@@ -2055,6 +2078,23 @@ def _group_allowance(
     )
     available = bool(reset_state.get("available"))
     credit = 1.0 if available else 0.0
+
+    if floor_reason is not None:
+        allowance = _unknown_allowance(
+            group, floor_reason, utilisation=float(operative.utilisation)
+        )
+        allowance.update(
+            state=OBSERVED,
+            elapsed_hours=elapsed,
+            drain_hours=window_hours,
+            remaining_budget=max(0.0, 1.0 - float(operative.utilisation)),
+            pace_multiple=float(multiple),
+            window_minutes=operative.window_minutes,
+            elapsed_fraction=elapsed_fraction,
+            observed_at=operative.observed_at.isoformat(),
+            resets_at=operative.resets_at,
+        )
+        return _scale_for_banked_reset(allowance, credit=credit)
 
     # Accounts that publish both clocks keep the established next-window
     # derivation. A primary-only account has no shorter burst ceiling to divide
@@ -2673,14 +2713,21 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
         for value in (utilisation, derived, burn, multiple)
     )
     if not measured:
+        measured_utilisation = (
+            float(utilisation)
+            if isinstance(utilisation, (int, float))
+            and not isinstance(utilisation, bool)
+            else None
+        )
         return {
             "role": str(role),
             "bookend": bookend,
             "held": False,
-            "utilisation": None,
+            "utilisation": measured_utilisation,
             "allowance": None,
-            "resets_at": None,
-            "reason": (
+            "resets_at": resets_at,
+            "reason": str(allowance.get("reason") or "")
+            or (
                 f"the {entry.get('group')!r} group's allowance was not read, so "
                 "no overspend can be measured and nothing is held"
             ),
@@ -2897,7 +2944,10 @@ def pace_row(
         if item["group"] == group
     )
     clocks = dict(entry["clocks"])
-    if clocks[CLOCK_FIVE_HOUR]["state"] != OBSERVED:
+    if (
+        clocks[CLOCK_FIVE_HOUR]["state"] != OBSERVED
+        and clocks[CLOCK_SEVEN_DAY]["state"] != OBSERVED
+    ):
         allowance = entry["allowance"]
         if allowance.get("state") == OBSERVED:
             observed = _parse_stamp(allowance.get("observed_at"))
@@ -3243,10 +3293,12 @@ def _rollout_reading(
             reason="the session's rollout receipt carried no keyed quotas"
         )
     figures: list[window_reading.WindowFigure] = []
+    reported_periods: list[str] = []
     for minutes, row in sorted(readings.items()):
         clock = _reported_window_clock(minutes)
         if clock is None:
             continue
+        reported_periods.append(clock)
         used = getattr(row, "used_percent", None)
         if isinstance(used, bool) or not isinstance(used, (int, float)):
             continue
@@ -3266,6 +3318,7 @@ def _rollout_reading(
         )
     return window_reading.WindowReading(
         figures=tuple(figures),
+        reported_periods=tuple(reported_periods),
         observed_at=observed_at,
         age_seconds=(moment - observed_at).total_seconds(),
     )
@@ -3288,17 +3341,15 @@ def _rate_limits_reading(
             continue
         minutes = row.get("window_minutes")
         used = row.get("used_percent")
-        if (
-            isinstance(minutes, bool)
-            or not isinstance(minutes, int)
-            or minutes <= 0
-            or isinstance(used, bool)
-            or not isinstance(used, (int, float))
-        ):
+        if isinstance(minutes, bool) or not isinstance(minutes, int) or minutes <= 0:
             continue
         readings[minutes] = rollout_module.QuotaReading(
             window_minutes=minutes,
-            used_percent=used,
+            used_percent=(
+                used
+                if isinstance(used, (int, float)) and not isinstance(used, bool)
+                else rollout_module.Unmeasured.NO_RATE_LIMIT_VALUE
+            ),
             resets_at=row.get(
                 "resets_at", rollout_module.Unmeasured.NO_RATE_LIMIT_VALUE
             ),
@@ -3326,6 +3377,7 @@ def _receipt_reading(
     windows = receipt.get("quota_windows")
     fallback = _parse_stamp(receipt.get("observed_at"))
     figures: list[window_reading.WindowFigure] = []
+    reported_periods: list[str] = []
     for row in windows if isinstance(windows, list) else ():
         if not isinstance(row, Mapping):
             continue
@@ -3337,6 +3389,7 @@ def _receipt_reading(
         )
         if period is None:
             continue
+        reported_periods.append(period)
         used = row.get("used_percent")
         if isinstance(used, bool) or not isinstance(used, (int, float)):
             continue
@@ -3360,6 +3413,7 @@ def _receipt_reading(
     newest = max(figure.observed_at for figure in figures)
     return window_reading.WindowReading(
         figures=tuple(figures),
+        reported_periods=tuple(reported_periods),
         observed_at=newest,
         age_seconds=(moment - newest).total_seconds(),
     )

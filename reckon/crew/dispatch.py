@@ -77,7 +77,7 @@ from reckon.crew.recovery import (
     stream_paths_newest_first,
 )
 from reckon.crew.refusals import format_refusal
-from reckon.crew.reserve import admit as reserve_admit
+from reckon.crew.reserve import admit_windows as reserve_admit_windows
 from reckon.crew.review import review_store_root
 from reckon.crew.routing import (
     _agent_configuration,
@@ -774,29 +774,17 @@ def _refuse_against_the_bookend_reserve(
     an absent wallet as an unreadable window and would bar every unmetered
     lane from implementation work.
 
-    An unreadable window is not an unread one: where the row carries no
-    utilisation the role's ceiling is judged against the unreadable reading,
-    so the roles the reserve withholds from are refused rather than admitted
-    against a figure nobody read, and a review or verify dispatch is admitted
-    because the reserve is never withheld from it.
+    The row says which periods the source published. An unpublished period has
+    no reserve to judge; a published period whose reading failed is unreadable
+    and still refuses work outside the bookend roles.
     """
     if pace_record.get("group") is None:
         return
-    clock = (pace_record.get("clocks") or {}).get("five_hour") or {}
-    fraction = clock.get("utilisation")
-    utilisation_pct = None if fraction is None else float(fraction) * 100.0
-    verdict = reserve_admit(
+    verdict = reserve_admit_windows(
         (config or {}).get("budget") or {},
         role=role,
-        utilisation_pct=utilisation_pct,
-        unreadable_detail=(
-            None
-            if fraction is not None
-            else (
-                f"the {pace_record.get('lane')!r} lane's five-hour clock "
-                f"reports state {clock.get('state')!r}"
-            )
-        ),
+        clocks=pace_record.get("clocks") or {},
+        lane=str(pace_record.get("lane") or ""),
     )
     if verdict["admitted"]:
         return

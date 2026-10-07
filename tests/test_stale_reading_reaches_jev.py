@@ -92,7 +92,7 @@ def _receipt_record(observed, reset):
             "quota_windows": [
                 {
                     "window_minutes": 10_080,
-                    "used_percent": 2.0,
+                    "used_percent": 6.0,
                     "resets_at": int(reset.timestamp()),
                     "observed_at": observed.isoformat(),
                 }
@@ -196,7 +196,7 @@ def test_absent_reading_stays_null_with_reason(monkeypatch, tmp_path):
 
 def test_fresh_reading_is_unchanged(monkeypatch, tmp_path):
     now = datetime.now(UTC)
-    reset = now + timedelta(days=7) - timedelta(hours=2)
+    reset = now + timedelta(days=7) - timedelta(hours=12)
     records = [_receipt_record(now, reset)]
     monkeypatch.setattr(snapshot.budget.crew, "list_live", list)
     monkeypatch.setattr(snapshot.budget._backends, "probe_budget", lambda **_k: {})
@@ -205,8 +205,8 @@ def test_fresh_reading_is_unchanged(monkeypatch, tmp_path):
     candidates = _candidates(monkeypatch, tmp_path, config, records, view)
     for name in ("codex", "codex-astra"):
         candidate = candidates[name]
-        assert candidate["burn_multiple"] == pytest.approx(1.68, rel=0.02)
-        assert candidate["utilisation_pct"] == pytest.approx(2.0)
+        assert candidate["burn_multiple"] == pytest.approx(0.84, rel=0.02)
+        assert candidate["utilisation_pct"] == pytest.approx(6.0)
         assert candidate["pace_allowance"] is not None
         assert candidate["stale"] is False
         assert candidate["budget_age_s"] == pytest.approx(0, abs=5)

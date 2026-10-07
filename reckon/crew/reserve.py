@@ -1,4 +1,4 @@
-"""Reserve a fraction of each five-hour window for the bookend roles.
+"""Reserve a fraction of each provider-published window for bookend roles.
 
 A local repair is verified by a short metered review, and those reviews are
 exactly what an audit wave starves: the wave ahead of them spends the window.
@@ -30,6 +30,7 @@ admits the bookends, and the refusal says the window could not be read.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from math import isfinite
 from typing import Any
 
 # The roles the reserve exists for. A verify role is admitted on the same
@@ -217,5 +218,80 @@ def admit(
         "utilisation_pct": used,
         "claim_pct": claim,
         "projected_pct": projected,
+        "reason": reason,
+    }
+
+
+def admit_windows(
+    block: Mapping[str, Any] | None,
+    *,
+    role: str | None,
+    clocks: Mapping[str, Mapping[str, Any]],
+    claim_pct: float = 0.0,
+    lane: str | None = None,
+) -> dict[str, Any]:
+    """Judge reported windows and name every unpublished period skipped.
+
+    A source that supplied another readable period but never named this one has
+    no share to reserve in the absent period. A period it named but could not
+    read remains a refusal for work outside the bookend roles. No readable
+    source at all is unreadable, not evidence that every period is absent.
+    """
+    judged: list[str] = []
+    skipped: list[str] = []
+    results: dict[str, dict[str, Any]] = {}
+    for key, clock in clocks.items():
+        period = str(clock.get("period") or key)
+        if clock.get("state") == "not_published":
+            skipped.append(period)
+            continue
+        judged.append(period)
+        fraction = clock.get("utilisation")
+        usable = (
+            clock.get("state") == "observed"
+            and isinstance(fraction, (int, float))
+            and not isinstance(fraction, bool)
+            and isfinite(float(fraction))
+            and float(fraction) >= 0.0
+        )
+        detail = (
+            None
+            if usable
+            else f"the {lane!r} lane's {period.replace('_', '-')} clock reports state {clock.get('state')!r}"
+        )
+        results[period] = admit(
+            block,
+            role=role,
+            utilisation_pct=float(fraction) * 100.0 if usable else None,
+            claim_pct=claim_pct,
+            unreadable_detail=detail,
+        )
+    if not results:
+        results["source"] = admit(
+            block,
+            role=role,
+            utilisation_pct=None,
+            claim_pct=claim_pct,
+            unreadable_detail="no published window could be read",
+        )
+        judged.append("source")
+    first_refusal = next(
+        (result for result in results.values() if not result["admitted"]), None
+    )
+    deciding = first_refusal or next(iter(results.values()))
+
+    def labels(periods: list[str]) -> str:
+        return ", ".join(period.replace("_", "-") for period in periods)
+
+    reason = (
+        f"judged {labels(judged)}; skipped as not published: "
+        f"{labels(skipped) if skipped else 'none'}; {deciding['reason']}"
+    )
+    return {
+        **deciding,
+        "admitted": first_refusal is None,
+        "windows_judged": judged,
+        "windows_skipped": skipped,
+        "window_verdicts": results,
         "reason": reason,
     }
