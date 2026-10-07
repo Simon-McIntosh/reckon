@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.6">
-<meta name="plan-version" content="44">
+<meta name="plan-version" content="45">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -292,7 +292,10 @@
     <div class="r-comment-body"><p>An independent review of run r-20261007T050508320887-a-review-without-times-is-still-kept is stored as a parsed six-dimension record at both granted staging paths; it scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 17, fit 18, reuse 19 (total 112), records reviewed_base_sha 5f53ef9dee837bfda880fdd6c77ee04428cc1163 and reviewed_head_sha 8948df23a079efa0795599965360f99a1fc6c19c, carries added_failure_count null (unmeasured) with added_failure_ids [] because the reviewed manifest names no baseline_suite/after_suite gate logs, and reports two follow-on findings (an unreachable, untested retained refusal branch, and the reviewed manifest's suite-field omission).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T053609428174-review-of-raw-review-reports-are-pruned-once-committed" data-who="reckon-build" data-when="2026-10-07T05:52:43.509Z">
-    <div class="r-comment-body"><p>review of r-20261007T050757595641-raw-review-reports-are-pruned-once-committed scored at C5: goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20 (total 116), reviewed base 5f53ef9de head 5c1d172fe, one follow-on (the gc pass ignores run_id); the reviewed node&#x27;s gate and its negative control both reproduce.</p></div>
+    <div class="r-comment-body"><p>review of r-20261007T050757595641-raw-review-reports-are-pruned-once-committed scored at C5: goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20 (total 116), reviewed base 5f53ef9de head 5c1d172fe, one follow-on (the gc pass ignores run_id); the reviewed node's gate and its negative control both reproduce.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261007T051112533789-a-reviews-lifecycle-is-derived" data-who="reckon-build" data-when="2026-10-07T05:47:33.365Z">
+    <div class="r-comment-body"><p>Added reckon/crew/review_lifecycle.py, which derives landed/superseded/open/answered for any stored plan or run review from the record and its subject&#x27;s state and writes nothing, with HOT_STATES and the review_lifecycles loader; tests/test_review_lifecycle.py covers all four states for both review kinds, the landed&gt;superseded&gt;open precedence, the shipping-moves-to-landed-without-rewriting-records case, follow-on-only answered, an id-less run finding reading by its severity, and the loader&#x27;s path-&gt;state; gate 30 passed EXIT=0. On review, two corrections landed in a follow-up commit (ef91711da, not amending 9a08db18d): _run_open now counts a blocking finding with no id as unanswered, since the imported run store&#x27;s findings carry no id and no run record answers any, and lifecycle&#x27;s keyword was renamed run_promoted -&gt; run_closed to match a run review landing on any ledger row, promoted or closed without promotion.</p></div>
 </div>
 </section>
 </main>
