@@ -1249,10 +1249,13 @@ COMPLETION_TIME_KEY = "completed_at"
 
 # The stage a committed record's dispatch time was resolved from, recorded on
 # the record so a reader can tell a stamp the run itself carried from one
-# reconstructed from the run id's own dispatch instant.
+# reconstructed from the run id's own dispatch instant. A record no source
+# resolves a time for is still committed, and the absence is marked ``unknown``
+# rather than being refused or defaulted to the store clock.
 RUN_RECORD_TIMES_SOURCE = "run-record"
 RECORD_TIMES_SOURCE = "record"
 RUN_ID_TIMES_SOURCE = "run-id"
+UNKNOWN_TIMES_SOURCE = "unknown"
 TIMES_SOURCE_KEY = "times_source"
 
 # A run id is ``r-<YYYYmmdd>T<HHMMSS><ffffff>-<node>`` (see ``runs.new_run_id``),
@@ -1794,6 +1797,46 @@ def store_review(
     return path
 
 
+def _run_record_times_found(
+    project: str,
+    run_id: str,
+    *,
+    root: str | Path | None = None,
+) -> tuple[str, str, bool]:
+    """Return ``(dispatched_at, completed_at, found)`` for a run's own record.
+
+    ``found`` reports whether a record — a committed per-run file or a live
+    pointer — was present for the run at all, independent of whether it carried
+    a stamp. A caller that must tell a run whose record exists yet records no
+    time (a defect) from one with no record anywhere (a time never recorded)
+    reads this flag; the stamps themselves are the same ``run_record_times``
+    returns.
+    """
+    if not run_id:
+        return "", "", False
+    from reckon import ledger
+
+    try:
+        path = ledger.run_path(project, run_id, root)
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, ledger.LedgerError):
+        record = None
+    if not isinstance(record, Mapping):
+        pointer = _reviewed_run_pointer(run_id)
+        if pointer is None:
+            return "", "", False
+        return (
+            str(pointer.get("created_at") or ""),
+            str(pointer.get("completed_at") or ""),
+            True,
+        )
+    return (
+        str(record.get("dispatched_at") or ""),
+        str(record.get("completed_at") or ""),
+        True,
+    )
+
+
 def run_record_times(
     project: str,
     run_id: str,
@@ -1811,26 +1854,8 @@ def run_record_times(
     string for it rather than the store's own clock, because a defaulted time
     is a time nobody recorded.
     """
-    if not run_id:
-        return "", ""
-    from reckon import ledger
-
-    try:
-        path = ledger.run_path(project, run_id, root)
-        record = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, ledger.LedgerError):
-        record = None
-    if not isinstance(record, Mapping):
-        pointer = _reviewed_run_pointer(run_id)
-        if pointer is None:
-            return "", ""
-        return str(pointer.get("created_at") or ""), str(
-            pointer.get("completed_at") or ""
-        )
-    return (
-        str(record.get("dispatched_at") or ""),
-        str(record.get("completed_at") or ""),
-    )
+    dispatched, completed, _found = _run_record_times_found(project, run_id, root=root)
+    return dispatched, completed
 
 
 def run_id_dispatch_time(run_id: str) -> str:
@@ -1908,12 +1933,18 @@ def resolve_record_times(
     2. the record's own ``dispatched_at``/``completed_at`` stamps;
     3. the dispatch instant the review run id encodes.
 
-    ``times_source`` is ``"run-record"``, ``"record"`` or ``"run-id"``. A
-    dispatch resolved only from the run id leaves ``completed_at`` empty only
-    when no earlier source carried a completion, because a run id itself
-    encodes none and the clock is never substituted for one; a record that
-    resolves no dispatch time at all raises, naming the run, rather than being
-    stored with a time nobody recorded.
+    ``times_source`` is ``"run-record"``, ``"record"`` or ``"run-id"``, or
+    ``"unknown"`` when no dispatch time resolves and the review run has no
+    record of its own. A dispatch resolved only from the run id leaves
+    ``completed_at`` empty only when no earlier source carried a completion,
+    because a run id itself encodes none and the clock is never substituted for
+    one. A record whose review run has no record anywhere — a round filed under
+    a derived legacy id, or one naming a run that was never committed — is
+    committed with both stamps empty and ``"unknown"`` under ``times_source``,
+    marking the absence rather than refusing the record or giving it a time
+    nobody recorded. A review run whose own record **does** exist yet carries no
+    dispatch stamp is a defect rather than an unrecorded time, so that write is
+    refused naming the run.
     """
     review_run_id = str(record.get("review_run_id") or "").strip()
     reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
@@ -1927,7 +1958,10 @@ def resolve_record_times(
         dispatched = dispatched or pair[0]
         completed = completed or pair[1]
 
-    absorb(run_record_times(project, review_run_id, root=root))
+    own_run_dispatched, own_run_completed, own_run_record_found = (
+        _run_record_times_found(project, review_run_id, root=root)
+    )
+    absorb((own_run_dispatched, own_run_completed))
     if plan_slug:
         crew_run_id = _plan_review_crew_run_id(project, plan_slug, review_run_id)
         if crew_run_id:
@@ -1950,11 +1984,24 @@ def resolve_record_times(
     if encoded:
         return encoded, completed or own_completed, RUN_ID_TIMES_SOURCE
 
-    raise ValueError(
-        "no dispatch or completion time resolves for review run "
-        f"{review_run_id!r} (reviewed run {reviewed_run_id!r}) — the committed "
-        "record is refused rather than stored with times nobody recorded"
-    )
+    if own_run_record_found:
+        # The review run's own record exists but records no dispatch time, so a
+        # source was consulted and yielded nothing. That is a defect in the
+        # record the run wrote, not a time nobody recorded, so the write is
+        # refused naming the run rather than committed with an unknown time.
+        raise ValueError(
+            "review run "
+            f"{review_run_id!r} (reviewed run {reviewed_run_id!r}) has a run "
+            "record that carries no dispatch time — the committed record is "
+            "refused rather than stored with a time nobody recorded"
+        )
+
+    # No record exists for the review run anywhere, no carried stamp resolves
+    # and the run id encodes no instant, so the times were never recorded. The
+    # record is still committed, with both stamps empty and the absence marked
+    # under ``times_source``; the store clock is never substituted for a stamp
+    # nobody recorded.
+    return "", "", UNKNOWN_TIMES_SOURCE
 
 
 def store_committed_review(
@@ -1979,10 +2026,15 @@ def store_committed_review(
     the same committed file. The times are resolved from the run records, the
     record's own carried stamps, or the dispatch instant the review run id
     encodes — in that order — and the stage used is recorded under
-    ``times_source``. The store clock is never substituted for a stamp, and only
-    a record that resolves no dispatch time at all is refused, naming the run,
-    because a committed review whose times are wrong or missing is exactly the
-    defect the committed store exists to remove.
+    ``times_source``. The store clock is never substituted for a stamp: a
+    record whose review run has no record anywhere is committed with both stamps
+    empty and ``times_source`` ``"unknown"``, marking the absence rather than
+    defaulting it to the clock, because such a record — a round filed under a
+    derived legacy id, or one naming a run that was never committed — has no
+    time to record and is kept rather than lost. A review run whose own record
+    exists but carries no dispatch stamp is refused naming the run, because a
+    source was consulted and yielded nothing: that is a defect in the record the
+    run wrote, not a time nobody recorded.
 
     The body must be a review: it names the plan or the run it reviews (which
     the ``plan_slug``/``reviewed_run_id`` checks above already require) and it

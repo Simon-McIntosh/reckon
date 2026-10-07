@@ -176,19 +176,47 @@ def test_a_plan_review_resolves_the_crew_run_its_report_directory_names(
     )
 
 
-def test_a_record_resolving_no_dispatch_time_is_refused(checkout: Path) -> None:
-    # A run id with no encodable instant, no run record and no carried stamp
-    # resolves no dispatch time, so the write is refused naming the run.
-    with pytest.raises(ValueError, match="r-unencoded-review"):
-        review_module.store_committed_review(
-            {
-                "project": PROJECT,
-                "reviewed_run_id": REVIEWED_RUN,
-                "review_run_id": "r-unencoded-review",
-                "scores": {"evidence": 18},
-            },
-            root=checkout,
-        )
+def test_a_record_resolving_no_time_is_committed_marked_unknown(
+    checkout: Path,
+) -> None:
+    # A record filed under a derived legacy id has no encodable instant in its
+    # id, no run record and no stamps of its own, so no source resolves a time.
+    # It is still committed, with both stamps left empty and the absence marked
+    # under times_source rather than the store clock substituted for a stamp
+    # nobody recorded.
+    body = {
+        "project": PROJECT,
+        "reviewed_run_id": REVIEWED_RUN,
+        "scores": {"evidence": 18},
+    }
+    legacy_id = review_module.derived_legacy_review_run_id(
+        json.dumps(body, sort_keys=True).encode()
+    )
+    record = {**body, "review_run_id": legacy_id}
+    path = review_module.store_committed_review(record, root=checkout)
+    stored = _read(path)
+
+    assert stored[review_module.DISPATCH_TIME_KEY] == ""
+    assert stored[review_module.COMPLETION_TIME_KEY] == ""
+    assert stored[review_module.TIMES_SOURCE_KEY] == review_module.UNKNOWN_TIMES_SOURCE
+    # The store writes its own clock under ``timestamp`` but never substitutes
+    # the clock for a stamp, so the empty stamps are not the stored moment.
+    assert stored["timestamp"] != ""
+    assert stored[review_module.DISPATCH_TIME_KEY] != stored["timestamp"]
+    assert stored[review_module.COMPLETION_TIME_KEY] != stored["timestamp"]
+
+
+def test_a_record_with_resolvable_times_keeps_them(checkout: Path) -> None:
+    # A record whose run id encodes a dispatch instant still resolves that
+    # instant, so the unknown marking applies only when nothing resolves.
+    dispatched, completed, source = review_module.resolve_record_times(
+        PROJECT,
+        {"reviewed_run_id": REVIEWED_RUN, "review_run_id": RUN_REVIEW},
+        root=checkout,
+    )
+    assert dispatched == ENCODED_TS
+    assert completed == ""
+    assert source == review_module.RUN_ID_TIMES_SOURCE
 
 
 def test_run_id_dispatch_time_parses_the_encoded_instant() -> None:
