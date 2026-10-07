@@ -105,9 +105,14 @@ def review_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
 
     A stored record already carries ``findings``; a record that carries only the
     reviewer's emitted ``raw_text`` is parsed through the shared review parser so
-    the two spellings yield one list. A malformed entry is skipped rather than
-    given an invented identity, because an id that does not survive a re-read of
-    the record cannot be answered back.
+    the two spellings yield one list. Every finding is read through
+    :func:`review.finding_claim`: an entry that states no claim is skipped,
+    because an id that names no claim cannot be answered back. A bare string is
+    a finding whose claim is the string and whose id is derived with the string
+    as its text; a mapping takes its text from the first non-empty claim field.
+    The id itself is derived exactly as :func:`finding_id` reads today, from the
+    finding's ``file``, ``line`` and ``text`` key, so an id already acknowledged
+    or resumed keeps resolving.
 
     The severity the finding states is carried through under ``severity``, and
     only then: a finding that stated none has no key here either, so the reader
@@ -122,17 +127,29 @@ def review_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
         return []
     composed: list[dict[str, Any]] = []
     for finding in findings:
-        if not isinstance(finding, Mapping):
+        claim = review_module.finding_claim(finding)
+        if claim is None:
             continue
-        entry: dict[str, Any] = {
-            "id": finding_id(finding),
-            "file": str(finding.get("file") or "").strip(),
-            "line": str(finding.get("line") or "").strip(),
-            "text": str(finding.get("text") or "").strip(),
-        }
-        severity = finding.get("severity")
-        if severity is not None:
-            entry["severity"] = str(severity).strip()
+        if isinstance(finding, Mapping):
+            entry: dict[str, Any] = {
+                "id": finding_id(finding),
+                "file": str(finding.get("file") or "").strip(),
+                "line": str(finding.get("line") or "").strip(),
+                "text": claim,
+            }
+            severity = finding.get("severity")
+            if severity is not None:
+                entry["severity"] = str(severity).strip()
+        else:
+            # A bare string names no file or line, and its id is derived with
+            # the string as the finding's text, so re-reading the record yields
+            # the same id.
+            entry = {
+                "id": finding_id({"text": claim}),
+                "file": "",
+                "line": "",
+                "text": claim,
+            }
         composed.append(entry)
     return composed
 
