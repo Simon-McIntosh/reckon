@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs, which the reviewed manifest does not reach through baseline_suite/after_suite (both declared empty). The delta base arm is the run's final-gate.log (REVISION=bcc5ee1fc498ee12113a0b6013b44a7322b506d6, four-file gate 98 passed EXIT=0); the delta head arm is its shared-contract-head-gate head, shared-contract-head-gate.log (REVISION=974450d7bb3d24ba956c2967fa464b504872598a, 101 passed EXIT=0). I re-ran both arms in scratch extractions to the same result (review-logs/arm-base.log, review-logs/arm-head.log). Neither arm reported a failing test id, so added_failure_count is 0 and added_failure_ids is empty.",
+  "base_log_revision": "bcc5ee1fc498ee12113a0b6013b44a7322b506d6",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:7985 sync composes at reckon/cli.py:490 and recognises at reckon/cli.py:463 via _configure_crew_guards delegating to reckon/hooks/install.py:218-245",
+    "reckon/cli.py:8891 hooks install reaches the same composer through reckon/hooks/install.py:167 install_hook_settings"
+  ],
+  "completed_at": "2026-10-07T09:55:39.846Z",
+  "dispatched_at": "2026-10-07T09:33:49Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/install.py",
+      "line": "240",
+      "severity": "follow-on",
+      "text": "follow-on: the interpreter is derived as script.parents[2]/.venv/bin/python without checking it exists, while _worker_git_guard_path (reckon/cli.py:363) may resolve a guard from a different checkout than the one running sync; a guard under a source tree with no such environment then composes a command naming a missing interpreter, which fails before the guard runs and so fails open \u2014 the outcome the composer exists to prevent."
+    }
+  ],
+  "head_log_revision": "974450d7bb3d24ba956c2967fa464b504872598a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit over bcc5ee1fc498ee12113a0b6013b44a7322b506d6..974450d7bb3d24ba956c2967fa464b504872598a: 3cf782f84 first composes the sync guard and widens the CLI recogniser to two tokens, then 974450d7 deletes the CLI copy and delegates both composition and recognition to reckon/hooks/install.py.",
+    "done_when": "\u00a715's three clauses are met and the delta repairs the one path that broke clause 1 and the duplicate-free half of clause 3 for a settings file touched by both reckon sync and hooks install, verified at head by test_the_sync_installer_wires_the_guard_behind_the_same_opt_in and test_sync_replaces_an_installed_guard_without_duplicating_it.",
+    "goal": "the node goal is that every worker hook is launched by the checkout's own interpreter, and the delta closes the last gap \u2014 reckon/cli.py:490 now composes the sync-installed worker git guard through install.worker_git_guard_group, which names the checkout interpreter before the script.",
+    "manifest": "read; it records the four-file gate 101 passed EXIT=0 at 974450d7 and the shared-contract negative control 1 failed EXIT=1, matching the logs it names.",
+    "write_paths": "read the run's manifest; the delta touches exactly the three declared paths reckon/cli.py, reckon/hooks/install.py and tests/test_worker_git_guard.py, with nothing outside them."
+  },
+  "justifications": {
+    "durability": "reversing the cli.py delegation of 974450d7 makes tests/test_worker_git_guard.py::test_sync_uses_the_installer_guard_group_contract fail (negative-control.log, EXIT=1), so the added tests redden on the regression they guard; one expectation in test_the_sync_installer_wires_the_guard_behind_the_same_opt_in recomputes the interpreter with the production formula, mitigated by its interpreter.is_file() check.",
+    "evidence": "I re-ran the run's named four-file gate in scratch extractions for base bcc5ee1fc 98 passed EXIT=0 and head 974450d7b 101 passed EXIT=0, reproduced the prior defect at base and the reversed-delegation failure at head (review-logs/arm-base.log, arm-head.log, repro-base-prior-findings.log, negative-control.log).",
+    "fit": "the delta follows the file's idiom \u2014 worker_git_guard_group and is_worker_git_guard_group sit beside the other public helpers in reckon/hooks/install.py:218,245 \u2014 and introduces no plan or ticket label.",
+    "goal_fidelity": "reckon/cli.py:490 composes the sync guard from install.worker_git_guard_group, so the sync path the prior review found bare now names the checkout interpreter before reckon/hooks/worker_git_guard.py.",
+    "reuse": "the delta removes duplication rather than adding it \u2014 reckon/cli.py:463,490 now delegate to the single composer and recogniser in reckon/hooks/install.py, leaving one composer and one recogniser for the guard.",
+    "scope_discipline": "git diff --stat bcc5ee1fc..974450d7b lists exactly reckon/cli.py, reckon/hooks/install.py and tests/test_worker_git_guard.py, the three declared write paths, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every worker hook is launched by the checkout's own interpreter, and the delta closes the last gap \u2014 reckon/cli.py:490 now composes the sync-installed worker git guard through install.worker_git_guard_group, which names the checkout interpreter before the script.\nVERDICT done_when: \u00a715's three clauses are met and the delta repairs the one path that broke clause 1 and the duplicate-free half of clause 3 for a settings file touched by both reckon sync and hooks install, verified at head by test_the_sync_installer_wires_the_guard_behind_the_same_opt_in and test_sync_replaces_an_installed_guard_without_duplicating_it.\nVERDICT write_paths: read the run's manifest; the delta touches exactly the three declared paths reckon/cli.py, reckon/hooks/install.py and tests/test_worker_git_guard.py, with nothing outside them.\nVERDICT manifest: read; it records the four-file gate 101 passed EXIT=0 at 974450d7 and the shared-contract negative control 1 failed EXIT=1, matching the logs it names.\nVERDICT diff: read commit by commit over bcc5ee1fc498ee12113a0b6013b44a7322b506d6..974450d7bb3d24ba956c2967fa464b504872598a: 3cf782f84 first composes the sync guard and widens the CLI recogniser to two tokens, then 974450d7 deletes the CLI copy and delegates both composition and recognition to reckon/hooks/install.py.\nCALL_SITES: reckon/cli.py:7985 sync composes at reckon/cli.py:490 and recognises at reckon/cli.py:463 via _configure_crew_guards delegating to reckon/hooks/install.py:218-245, reckon/cli.py:8891 hooks install reaches the same composer through reckon/hooks/install.py:167 install_hook_settings\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:490 composes the sync guard from install.worker_git_guard_group, so the sync path the prior review found bare now names the checkout interpreter before reckon/hooks/worker_git_guard.py.\nSCORE evidence: 18\nJUSTIFICATION evidence: I re-ran the run's named four-file gate in scratch extractions for base bcc5ee1fc 98 passed EXIT=0 and head 974450d7b 101 passed EXIT=0, reproduced the prior defect at base and the reversed-delegation failure at head (review-logs/arm-base.log, arm-head.log, repro-base-prior-findings.log, negative-control.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat bcc5ee1fc..974450d7b lists exactly reckon/cli.py, reckon/hooks/install.py and tests/test_worker_git_guard.py, the three declared write paths, and nothing else.\nSCORE durability: 18\nJUSTIFICATION durability: reversing the cli.py delegation of 974450d7 makes tests/test_worker_git_guard.py::test_sync_uses_the_installer_guard_group_contract fail (negative-control.log, EXIT=1), so the added tests redden on the regression they guard; one expectation in test_the_sync_installer_wires_the_guard_behind_the_same_opt_in recomputes the interpreter with the production formula, mitigated by its interpreter.is_file() check.\nSCORE fit: 19\nJUSTIFICATION fit: the delta follows the file's idiom \u2014 worker_git_guard_group and is_worker_git_guard_group sit beside the other public helpers in reckon/hooks/install.py:218,245 \u2014 and introduces no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta removes duplication rather than adding it \u2014 reckon/cli.py:463,490 now delegate to the single composer and recogniser in reckon/hooks/install.py, leaving one composer and one recogniser for the guard.\nFINDING reckon/hooks/install.py:240 follow-on: the interpreter is derived as script.parents[2]/.venv/bin/python without checking it exists, while _worker_git_guard_path (reckon/cli.py:363) may resolve a guard from a different checkout than the one running sync; a guard under a source tree with no such environment then composes a command naming a missing interpreter, which fails before the guard runs and so fails open \u2014 the outcome the composer exists to prevent.\nreviewed_base_sha: bcc5ee1fc498ee12113a0b6013b44a7322b506d6\nreviewed_head_sha: 974450d7bb3d24ba956c2967fa464b504872598a\n",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T081349225506-worker-hooks-run-under-reckons-interpreter.json",
+  "review_run_id": "r-20261007T093317807898-review-of-worker-hooks-run-under-reckons-interpreter",
+  "reviewed_base_sha": "bcc5ee1fc498ee12113a0b6013b44a7322b506d6",
+  "reviewed_head_sha": "974450d7bb3d24ba956c2967fa464b504872598a",
+  "reviewed_run_id": "r-20261007T081349225506-worker-hooks-run-under-reckons-interpreter",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T09:55:04.679815+00:00",
+  "total": 114
+}
