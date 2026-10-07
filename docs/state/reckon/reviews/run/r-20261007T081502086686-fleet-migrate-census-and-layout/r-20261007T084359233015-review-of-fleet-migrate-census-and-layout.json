@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest declares no baseline_suite, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:812 fleet-node migrate invokes fleet_migrate.migrate"
+  ],
+  "completed_at": "2026-10-07T09:03:05.568Z",
+  "dispatched_at": "2026-10-07T08:44:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_migrate.py",
+      "line": "334",
+      "severity": "follow-on",
+      "text": "follow-on: _read_runs composes the resume command literal 'reckon crew resume --run <id> --advice continue', which recovery.py:5147-5152 already builds in _resume_remedy; the two copies can drift silently."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "807",
+      "severity": "follow-on",
+      "text": "follow-on: the migrate command accepts and documents --confirm but fleet_migrate.py:354 discards it (del confirm), so an operator passing it changes nothing until the cutover/retire owner lands."
+    },
+    {
+      "file": "reckon/crew/fleet_migrate.py",
+      "line": "376",
+      "severity": "follow-on",
+      "text": "follow-on: --session is validated only on the census step (raises) and silently ignored on the layout step; it has effect only once a cutover step exists."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit over 5d270a38..eb58dcabc: 8c9c724a6 adds the fixtures, 3208ae937 the module and CLI, eb58dcabc the layout-preservation repair.",
+    "done_when": "the node's own tests assert the census reproduction, the dry-run and the ledger resumption; the retire --confirm clause belongs to a later cutover/retire node and is a follow-on.",
+    "goal": "build_census (fleet_migrate.py:175) and render_layout (fleet_migrate.py:223) with the ledger loop in migrate (fleet_migrate.py:343) are the census and layout steps the goal names, in one module.",
+    "manifest": "read; base 5d270a38, head eb58dcabc, gate 11 passed EXIT=0, negative control 1 failed EXIT=1; baseline_suite empty so the added-failure count is unmeasured.",
+    "write_paths": "the six fixtures, fleet_migrate.py, cli.py and test_fleet_migrate.py are the whole diff and all lie inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "the tab-order guard fires: reversing complete rendered tab blocks in a scratch copy fails test_recorded_layouts_keep_tab_order_and_pane_identity (1 failed, 10 passed, EXIT=1), which I reproduced and logged; the census refuses a missing session record and a missing transcript (test_census_refuses_missing_session_record_and_transcript) and the reader's start-time key and /proc index match live records; but the production _local_observation path is exercised only against a synthetic /proc and sessions dir, and the census fixtures (the worker's own recording of the fleet) are not independently re-derived from the live node.",
+    "evidence": "the gate is tests/test_fleet_migrate.py; I re-ran it at eb58dcabc in the reviewed worktree and in a scratch copy for 11 passed EXIT=0; the declared negative control reproduces \u2014 reversing complete rendered tab blocks fails test_recorded_layouts_keep_tab_order_and_pane_identity, 1 failed 10 passed EXIT=1; the census reader's key names and its /proc field-22 start-time comparison (fleet_migrate.py:123) match the live ~/.claude/sessions records I read; but the reviewed manifest declares no baseline_suite, so the added-failure count is unmeasured, and _local_observation runs against a synthetic /proc and sessions dir in the gate rather than the live node.",
+    "fit": "the module follows the repo idioms (from __future__ annotations, module docstring, RuntimeError subclass, plain dict payloads) and the CLI registration at reckon/cli.py:807 matches the fleet_node_hold sibling; but the accepted --confirm flag is discarded (reckon/crew/fleet_migrate.py:354, del confirm) while reckon/cli.py:810 advertises it as confirming the retire-step cancellation, so the flag is inert today.",
+    "goal_fidelity": "the node goal is the census and layout steps of reckon fleet-node migrate in one module that owns the migration ledger; build_census (reckon/crew/fleet_migrate.py:175) composes runs.list_live through _read_runs (fleet_migrate.py:317) and resumption.resolve_session (resumption.py:464), reads each live Claude process's record and /proc start time (_local_observation, fleet_migrate.py:80-133), reads one zellij dump-layout per session (fleet_migrate.py:105-114), cites sessions.tsv as a cross-check and reports a live pane missing from it (fleet_migrate.py:212-220), and confirms each transcript exists (fleet_migrate.py:170-172); render_layout (fleet_migrate.py:223) writes one migrate-<session>.kdl per session keeping tab names and order, so a tab-order change raises (fleet_migrate.py:251-254); the ledger's next_step drives resumption (fleet_migrate.py:361-407).",
+    "reuse": "the census composes existing readers, not new ones \u2014 runs.list_live, resumption.resolve_session, fleet_node.query_jobs/find_allocation/placement_argv, fleet_supervisor.state_directory \u2014 as the plan requires; but _read_runs (reckon/crew/fleet_migrate.py:334) re-composes the resume command literal 'reckon crew resume --run <id> --advice continue' that recovery.py:5147-5152 already builds in _resume_remedy, so the two can drift silently.",
+    "scope_discipline": "git diff --stat 5d270a38..eb58dcabc lists exactly the manifest's changed_paths \u2014 reckon/crew/fleet_migrate.py, reckon/cli.py, tests/test_fleet_migrate.py and six fixtures, 966 insertions \u2014 and nothing outside the declared write paths; the worktree is clean, and no fragment or figure was written, matching the build prompt's directive that this node's done-when names no artifact."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is the census and layout steps of reckon fleet-node migrate in one module that owns the migration ledger; build_census composes runs.list_live, resolve_session, the Claude per-process session record and zellij dump-layout, reports a live pane missing from sessions.tsv, and confirms each transcript; render_layout writes one migrate-<session>.kdl per session keeping tab order, tab-bar panes and new_tab_template.\nVERDICT done_when: the census-reproduction, dry-run and resume clauses of the done-when are asserted (test_recorded_layouts_keep_tab_order_and_pane_identity, test_resume_table_matches_layout_panes, test_dry_run_changes_nothing_and_next_invocation_resumes, test_command_dry_run_uses_isolated_state); the retire --confirm clause is outside this node's census-and-layout scope and is declared a follow-on.\nVERDICT write_paths: the manifest declares fleet_migrate.py, tests/test_fleet_migrate.py, tests/fixtures/fleet_migrate, cli.py and a fragment/figure path; git diff over the base lists only the first four plus the fixtures and no fragment or figure.\nVERDICT manifest: read; it records base 5d270a38a650fe5802e2305ef770e0bceb890f80 and head eb58dcabc1445853945542434c4f978b5dc98a4e, the gate 11 passed EXIT=0 and the negative control 1 failed EXIT=1, and declares baseline_suite empty with after_suite 0 failures, so its own added-failure count is unmeasured.\nVERDICT diff: read commit by commit over 5d270a38..eb58dcabc: 8c9c724a6 copies five recorded layout dumps and resume.tsv as fixtures; 3208ae937 adds the census/layout module, the CLI command and the fixtures-backed tests; eb58dcabc repairs the layout writer to preserve the source dump's tab-bar panes, focus and new_tab_template.\nreviewed_base_sha: 5d270a38a650fe5802e2305ef770e0bceb890f80\nreviewed_head_sha: eb58dcabc1445853945542434c4f978b5dc98a4e\nCALL_SITES: reckon/cli.py:812 fleet-node migrate invokes fleet_migrate.migrate\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the node goal is the census and layout steps of reckon fleet-node migrate in one module that owns the migration ledger; build_census (reckon/crew/fleet_migrate.py:175) composes runs.list_live through _read_runs (fleet_migrate.py:317) and resumption.resolve_session (resumption.py:464), reads each live Claude process's record and /proc start time (_local_observation, fleet_migrate.py:80-133), reads one zellij dump-layout per session (fleet_migrate.py:105-114), cites sessions.tsv as a cross-check and reports a live pane missing from it (fleet_migrate.py:212-220), and confirms each transcript exists (fleet_migrate.py:170-172); render_layout (fleet_migrate.py:223) writes one migrate-<session>.kdl per session keeping tab names and order, so a tab-order change raises (fleet_migrate.py:251-254); the ledger's next_step drives resumption (fleet_migrate.py:361-407).\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate is tests/test_fleet_migrate.py; I re-ran it at eb58dcabc in the reviewed worktree and in a scratch copy for 11 passed EXIT=0; the declared negative control reproduces \u2014 reversing complete rendered tab blocks fails test_recorded_layouts_keep_tab_order_and_pane_identity, 1 failed 10 passed EXIT=1; the census reader's key names and its /proc field-22 start-time comparison (fleet_migrate.py:123) match the live ~/.claude/sessions records I read; but the reviewed manifest declares no baseline_suite, so the added-failure count is unmeasured, and _local_observation runs against a synthetic /proc and sessions dir in the gate rather than the live node.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 5d270a38..eb58dcabc lists exactly the manifest's changed_paths \u2014 reckon/crew/fleet_migrate.py, reckon/cli.py, tests/test_fleet_migrate.py and six fixtures, 966 insertions \u2014 and nothing outside the declared write paths; the worktree is clean, and no fragment or figure was written, matching the build prompt's directive that this node's done-when names no artifact.\nSCORE durability: 17\nJUSTIFICATION durability: the tab-order guard fires: reversing complete rendered tab blocks in a scratch copy fails test_recorded_layouts_keep_tab_order_and_pane_identity (1 failed, 10 passed, EXIT=1), which I reproduced and logged; the census refuses a missing session record and a missing transcript (test_census_refuses_missing_session_record_and_transcript) and the reader's start-time key and /proc index match live records; but the production _local_observation path is exercised only against a synthetic /proc and sessions dir, and the census fixtures (the worker's own recording of the fleet) are not independently re-derived from the live node.\nSCORE fit: 18\nJUSTIFICATION fit: the module follows the repo idioms (from __future__ annotations, module docstring, RuntimeError subclass, plain dict payloads) and the CLI registration at reckon/cli.py:807 matches the fleet_node_hold sibling; but the accepted --confirm flag is discarded (reckon/crew/fleet_migrate.py:354, del confirm) while reckon/cli.py:810 advertises it as confirming the retire-step cancellation, so the flag is inert today.\nSCORE reuse: 18\nJUSTIFICATION reuse: the census composes existing readers, not new ones \u2014 runs.list_live, resumption.resolve_session, fleet_node.query_jobs/find_allocation/placement_argv, fleet_supervisor.state_directory \u2014 as the plan requires; but _read_runs (reckon/crew/fleet_migrate.py:334) re-composes the resume command literal 'reckon crew resume --run <id> --advice continue' that recovery.py:5147-5152 already builds in _resume_remedy, so the two can drift silently.\nFINDING reckon/crew/fleet_migrate.py:334 follow-on: _read_runs composes the resume command literal 'reckon crew resume --run <id> --advice continue', which recovery.py:5147-5152 already builds in _resume_remedy; the two copies can drift silently.\nFINDING reckon/cli.py:807 follow-on: the migrate command accepts and documents --confirm but fleet_migrate.py:354 discards it (del confirm), so an operator passing it changes nothing until the cutover/retire owner lands.\nFINDING reckon/crew/fleet_migrate.py:376 follow-on: --session is validated only on the census step (raises) and silently ignored on the layout step; it has effect only once a cutover step exists.",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T081502086686-fleet-migrate-census-and-layout.at-eb58dcabc1445853945542434c4f978b5dc98a4e.json",
+  "review_run_id": "r-20261007T084359233015-review-of-fleet-migrate-census-and-layout",
+  "reviewed_base_sha": "5d270a38a650fe5802e2305ef770e0bceb890f80",
+  "reviewed_head_sha": "eb58dcabc1445853945542434c4f978b5dc98a4e",
+  "reviewed_run_id": "r-20261007T081502086686-fleet-migrate-census-and-layout",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T09:00:30.266237+00:00",
+  "total": 108
+}
