@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T16:29:02.120Z",
+  "dispatched_at": "2026-10-07T16:18:54Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:144",
+      "id": "done_when-1",
+      "reason": "the case encodes a false statement of current behaviour, so the node cannot satisfy the done-when as written without a reader change the section does not name.",
+      "text": "\u00a714's done-when case 2 requires \"a bare-string finding and a `detail`/`title` finding\" to be held \"as blocking, as today\", but `repair.review_findings` (repair.py:103-125) skips any finding that is not a bare `Mapping` before classification, so a bare-string finding is silently discarded today, never blocking \u2014 a node writing that case would find it contradicts the reader it runs against",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:144",
+      "id": "reasoning-1",
+      "reason": "the mechanism as written does not produce the behaviour the section and its done-when assert, so the node would implement dead branches or restructure a reader the plan does not mention.",
+      "text": "\u00a714 says \"Repair's finding readers skip a finding that states none\" and that a rule keyed on `text` alone would wrongly drop 24 real findings \"written as bare strings or under `detail` and `title`\", but those readers consume pre-normalised entries from `review_findings`, which reads only `finding.get(\"text\")` and drops non-mappings \u2014 so a `detail`-only mapping reaches `_finding_kind` with empty text and no severity (blocking by severity-absence, not by the predicate), and a bare string never reaches it at all; the predicate as specified has no reachable consumer for two of its four claim fields",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:247",
+      "id": "wiring-1",
+      "reason": "the dispatch gate names the wrong releasing node, so it reads as a hold condition that does not exist and can delay or mis-scope \u00a714's dispatch.",
+      "text": "followup `f-erkc-014` says \"dispatch once \u00a713's integration has released `review.py`\", but \u00a713's landed commits (6e00dd22f, db761b538) change only `promotion.py`, tests and evidence; `review.py`'s last writers are \u00a712 (a9e9d3226, 2cf84885c) and \u00a79(b) (4133b3e75), both landed, so review.py is already free and \u00a713 releases nothing",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:144",
+      "id": "anchors_resolve-1",
+      "reason": "the 24-finding figure is the sole justification for the string/`summary`/`detail`/`title` branches, and a node unable to re-derive it may correctly narrow the rule the section intends to be broad.",
+      "text": "\u00a714's \"Why\" rests on a census (\"covers 6,927 records with findings\", \"7 findings in 3 files state none\", \"24 real findings\" that a `text`-only rule would drop) with no cited script, directory, log or commit, so the figure that justifies the predicate's breadth cannot be re-derived",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "38bce5d56f4c818768f765954bb5e5aeff3f5c05171acbe11adf2cd97ef2dc14",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 116,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261007T161827687793-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "0b3c28147b1a04e978811a180ab91db1e4cb10a2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a714's census figures (plan.html:144) are cited to no script, directory or record, unlike \u00a71's `~/.cache/imas-ambix-plan-review-evidence/`.",
+    "done_when": "a finding \u2014 \u00a714's done-when second case (plan.html:144) asserts a bare-string finding is \"blocking, as today\", which the code does not do.",
+    "evidence_paths": "pass \u2014 the section names no session scratchpad or node-local path; its node's gate log is the worker's manifest concern, not a plan-declared path.",
+    "naming": "pass \u2014 the new predicate and consumers are named by mechanism; the section-\u00a7 and followup ids are plan prose, not code symbols.",
+    "reasoning": "a finding \u2014 the section names no caller or normaliser for its predicate; the real owner, `repair.review_findings`, flattens findings to id/file/line/text (reading only `text`) and drops non-mappings, so the predicate's \"non-empty string\" and `detail`/`title` branches cannot see the findings the section says they judge.",
+    "single_goal": "pass \u2014 \u00a714 is one node with one mechanism, the claimless-finding predicate and its consumers.",
+    "wiring": "a finding \u2014 followup f-erkc-014 (plan.html:247) gates \u00a714's dispatch on \"\u00a713's integration\", but \u00a713 wrote only `reckon/crew/promotion.py` (6e00dd22f, db761b538) and not `review.py`."
+  },
+  "section_digests": {
+    "_document": "65ca1da17a46bbd1e01ba270ed9d874cbe6db92066a9a933a0162b43bfe321bc",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "d766b3ac056ff0e40058c869ad2a317b721f96eee361f8a2f17b68fdaffb9e96",
+    "s14": "6b12780290cd680bacf493775de38d6e5d6708ea44f24578d1806ebe8e4fcf9c",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T16:30:48.756956+00:00"
+}
