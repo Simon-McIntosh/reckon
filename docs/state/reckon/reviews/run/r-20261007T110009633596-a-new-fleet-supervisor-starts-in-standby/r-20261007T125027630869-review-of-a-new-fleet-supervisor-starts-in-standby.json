@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:main",
+    "reckon/crew/dispatch.py:_write_fleet_request"
+  ],
+  "completed_at": "2026-10-07T12:58:58.322Z",
+  "dispatched_at": "2026-10-07T12:50:54Z",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "1335",
+      "severity": "follow-on",
+      "text": "follow-on: creating the FIFO and opening its read end are now two steps, so a nonblocking writer can observe the path and receive ENXIO before the reader holds it; dispatch.py:_write_fleet_request retries ENXIO until its deadline, so the window is absorbed rather than fatal, but the removed pending-FIFO publish-after-open had closed it entirely."
+    }
+  ],
+  "head_log_revision": "189cb337fe9212e22d01b5b7ae4282c85996eaaa",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit 189cb337f against base dd9d6369c -- 6 insertions, 9 deletions across two files; serve() drops the .requests.pending FIFO and its os.replace publish, creates the request FIFO at its final path and opens the read end immediately, and the evidence fragment flips evidence-verdict from blocked to pass, adds the staged-write inventory line and removes the host-lease integration caveat now owned by the sibling lease node.",
+    "done_when": "the run's measure is its four-file pytest exiting 0; the reviewed manifest's after_suite names gate-committed-direct-fifo.log at 189cb337f with 70 passed and EXIT=0, and the delta's own red/green pair is inventory-before.log (1 failed, EXIT=1 at dd9d6369c) against inventory-committed.log (1 passed, EXIT=0 at 189cb337f).",
+    "goal": "the node's goal is a supervisor that serves requests in standby without publishing the fleet record or starting declared services until a promote request; commit 189cb337f keeps that behaviour and rewrites only serve()'s request-FIFO creation, so reckon/crew/fleet_supervisor.py:1330-1335 still builds the FIFO before the loop with publish_record and services.reload gated on standby.",
+    "manifest": "read the reviewed manifest; status complete, after_suite names gate-committed-direct-fifo.log (189cb337f, 0 failures) and test_logs names inventory-committed.log, but baseline_suite is empty so the base arm is not readable from the manifest field.",
+    "write_paths": "the delta touches only reckon/crew/fleet_supervisor.py and docs/evidence/fragments/the-fleet-moves-to-a-new-node/a-new-fleet-supervisor-starts-in-standby.html, both inside the reviewed node's declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner reddens if the .requests.pending os.replace returns, and tests/test_fleet_supervisor_standby.py fails if serving breaks.",
+    "evidence": "inventory-before.log at dd9d6369c reproduces the defect (staged-write inventory 4, ('reckon/crew/fleet_supervisor.py','serve')) and inventory-committed.log at 189cb337f is green, so the fix's evidence could have failed.",
+    "fit": "the new creation reuses the module's existing suppress/unlink/mkfifo idiom at reckon/crew/fleet_supervisor.py:1331-1335 with a comment stating the mechanism and no plan or ticket token.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:1330-1335 preserves the standby gating while removing the unowned staged write from serve()'s FIFO creation.",
+    "reuse": "the delta removes a fork of the staged-write idiom rather than adding one, leaving the shared writer (reckon/_store.py:write_atomically) the sole owner of staged replacement.",
+    "scope_discipline": "the whole delta is confined to reckon/crew/fleet_supervisor.py and the node's own evidence fragment, both declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a supervisor that serves requests in standby without publishing the fleet record or starting declared services until a promote request; commit 189cb337f keeps that behaviour and rewrites only serve()'s request-FIFO creation, so reckon/crew/fleet_supervisor.py:1330-1335 still builds the FIFO before the loop with publish_record and services.reload gated on standby.\nVERDICT done_when: the run's measure is its four-file pytest exiting 0; the reviewed manifest's after_suite names gate-committed-direct-fifo.log at 189cb337f with 70 passed and EXIT=0, and the delta's own red/green pair is inventory-before.log (1 failed, EXIT=1 at dd9d6369c) against inventory-committed.log (1 passed, EXIT=0 at 189cb337f).\nVERDICT write_paths: the delta touches only reckon/crew/fleet_supervisor.py and docs/evidence/fragments/the-fleet-moves-to-a-new-node/a-new-fleet-supervisor-starts-in-standby.html, both inside the reviewed node's declared write paths.\nVERDICT manifest: read the reviewed manifest; status complete, after_suite names gate-committed-direct-fifo.log (189cb337f, 0 failures) and test_logs names inventory-committed.log, but baseline_suite is empty so the base arm is not readable from the manifest field.\nVERDICT diff: read commit 189cb337f against base dd9d6369c -- 6 insertions, 9 deletions across two files; serve() drops the .requests.pending FIFO and its os.replace publish, creates the request FIFO at its final path and opens the read end immediately, and the evidence fragment flips evidence-verdict from blocked to pass, adds the staged-write inventory line and removes the host-lease integration caveat now owned by the sibling lease node.\nCALL_SITES: reckon/crew/fleet_supervisor.py:main, reckon/crew/dispatch.py:_write_fleet_request\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:1330-1335 preserves the standby gating while removing the unowned staged write from serve()'s FIFO creation.\nSCORE evidence: 18\nJUSTIFICATION evidence: inventory-before.log at dd9d6369c reproduces the defect (staged-write inventory 4, ('reckon/crew/fleet_supervisor.py','serve')) and inventory-committed.log at 189cb337f is green, so the fix's evidence could have failed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole delta is confined to reckon/crew/fleet_supervisor.py and the node's own evidence fragment, both declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner reddens if the .requests.pending os.replace returns, and tests/test_fleet_supervisor_standby.py fails if serving breaks.\nSCORE fit: 19\nJUSTIFICATION fit: the new creation reuses the module's existing suppress/unlink/mkfifo idiom at reckon/crew/fleet_supervisor.py:1331-1335 with a comment stating the mechanism and no plan or ticket token.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta removes a fork of the staged-write idiom rather than adding one, leaving the shared writer (reckon/_store.py:write_atomically) the sole owner of staged replacement.\nFINDING reckon/crew/fleet_supervisor.py:1335 follow-on: creating the FIFO and opening its read end are now two steps, so a nonblocking writer can observe the path and receive ENXIO before the reader holds it; dispatch.py:_write_fleet_request retries ENXIO until its deadline, so the window is absorbed rather than fatal, but the removed pending-FIFO publish-after-open had closed it entirely.\n",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T110009633596-a-new-fleet-supervisor-starts-in-standby.json",
+  "review_run_id": "r-20261007T125027630869-review-of-a-new-fleet-supervisor-starts-in-standby",
+  "reviewed_base_sha": "dd9d6369c337ad70a512a32f9066c51bbf1c4de2",
+  "reviewed_head_sha": "189cb337fe9212e22d01b5b7ae4282c85996eaaa",
+  "reviewed_run_id": "r-20261007T110009633596-a-new-fleet-supervisor-starts-in-standby",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T12:57:34.320666+00:00",
+  "total": 113
+}
