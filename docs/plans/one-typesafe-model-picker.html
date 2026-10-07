@@ -24,7 +24,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="188">
+<meta name="plan-version" content="189">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
@@ -612,7 +612,10 @@
     <div class="r-comment-body"><p>independent review of r-20261007T092514974343-dispatch-context-estimate-is-one-figure stored to both scope paths as a parsed record: six dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 19, durability 18, fit 19, reuse 19; total 111), reviewed_base_sha 8c1fe22f02881a3c6deae6470df18b1776971021 and reviewed_head_sha 63976acbaa544b743471a3b021cff9c8b44cac8c recorded, added_failure_count 0 with no added ids derived from the reviewed run's gate-base.log (195 passed EXIT=0) and gate-head.log (196 passed EXIT=0); two follow-on findings, no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T092417698303-watch-observer-is-host-aware" data-who="reckon-build" data-when="2026-10-07T10:07:53.187Z">
-    <div class="r-comment-body"><p>watch_observer_alive now returns None (unknown) for a registration naming a foreign host, so arming from any node leaves a live producer on another host alone; mechanism: runs.py early-returns None when _seat_names_a_foreign_host matches, keeping today&#x27;s behaviour for a this-host or hostless registration; measure: gate 38 files, head 442 passed EXIT=0 against base 438 passed EXIT=0 (0 added failures, +4 new tests).</p></div>
+    <div class="r-comment-body"><p>watch_observer_alive now returns None (unknown) for a registration naming a foreign host, so arming from any node leaves a live producer on another host alone; mechanism: runs.py early-returns None when _seat_names_a_foreign_host matches, keeping today's behaviour for a this-host or hostless registration; measure: gate 38 files, head 442 passed EXIT=0 against base 438 passed EXIT=0 (0 added failures, +4 new tests).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T092514974343-dispatch-context-estimate-is-one-figure" data-who="reckon-build" data-when="2026-10-07T10:10:16.556Z">
+    <div class="r-comment-body"><p>dispatch_picker_selection now takes a dispatch authority and resolves the same one when a caller does not hold it, threads it into both the request-level estimate and picker.pick() so a dispatcher-granted landing fragment is exempt once, and the main dispatch() call site passes the authority it already resolved — measured on a real dispatch_picker_selection call, the request figure and every offered candidate block read one number, 51535 tokens with the authority against 53821 without it.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>
