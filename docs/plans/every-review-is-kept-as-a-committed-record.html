@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.7">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="49">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -307,7 +307,10 @@
     <div class="r-comment-body"><p>Stored the parsed review of run r-20261007T051112533789-a-reviews-lifecycle-is-derived at both assigned review-record paths: six dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 20, durability 18, fit 17, reuse 17; total 108), reviewed_base_sha 352ff827e7fdb0fb3e01bd9420b5bee8dd74168c and reviewed_head_sha ef91711dad1aa7839143db5fcafd5d4e51ff4aa3, added_failure_count null and added_failure_ids empty because the reviewed manifest arms neither baseline_suite nor after_suite; two follow-on findings recorded.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T050757595641-raw-review-reports-are-pruned-once-committed" data-who="reckon-build" data-when="2026-10-07T06:19:58.738Z">
-    <div class="r-comment-body"><p>crew gc prunes a plan review&#x27;s raw report.md past review.raw_report_retention_days (a non-negative integer in REVIEW_OWNED_KEYS, reader defaults to 30) only when the committed record docs/state/&lt;project&gt;/reviews/plan/&lt;slug&gt;/&lt;run&gt;.json exists, printing every candidate with path, age in days and action (prune under --apply, else withheld naming the missing record); the pass takes garbage_collect&#x27;s run_id, so crew gc --run &lt;id&gt; --apply confines it to the one report directory named by that id and leaves every other run&#x27;s report in place; tests/test_raw_report_retention.py with tests/test_crew_gc.py and tests/test_review_is_earned_by_significant_change.py give 50 passed EXIT=0, and the declared mutation gives EXIT=1</p></div>
+    <div class="r-comment-body"><p>crew gc prunes a plan review's raw report.md past review.raw_report_retention_days (a non-negative integer in REVIEW_OWNED_KEYS, reader defaults to 30) only when the committed record docs/state/&lt;project&gt;/reviews/plan/&lt;slug&gt;/&lt;run&gt;.json exists, printing every candidate with path, age in days and action (prune under --apply, else withheld naming the missing record); the pass takes garbage_collect's run_id, so crew gc --run &lt;id&gt; --apply confines it to the one report directory named by that id and leaves every other run's report in place; tests/test_raw_report_retention.py with tests/test_crew_gc.py and tests/test_review_is_earned_by_significant_change.py give 50 passed EXIT=0, and the declared mutation gives EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261007T062126592323-review-of-raw-review-reports-are-pruned-once-committed" data-who="reckon-build" data-when="2026-10-07T06:33:17.795Z">
+    <div class="r-comment-body"><p>an independent review of run r-20261007T050757595641-raw-review-reports-are-pruned-once-committed covering only the two commits it gained since its prior review (31ea9c1a9 fix confining the raw-report gc pass to the run named by --run, and 2a1cec22f the landing fragment update) is stored as a parsed record at reviews/reckon/r-20261007T050757595641-raw-review-reports-are-pruned-once-committed.json and its .at-2a1cec22fc014f9707f54a176e832f48788b63e9.json twin; reviewed_base_sha 5c1d172fec00cfa750306e034e5fc82c06b11c91, reviewed_head_sha 2a1cec22fc014f9707f54a176e832f48788b63e9, six dimensions scored 118/120, no blocking findings</p></div>
 </div>
 </section>
 </main>
