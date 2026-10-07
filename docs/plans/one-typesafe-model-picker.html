@@ -24,7 +24,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="153">
+<meta name="plan-version" content="157">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
@@ -515,7 +515,19 @@
     <div class="r-comment-body"><p>Explicit and deterministic dispatches launch before their advisory picker; five alternating slow-client pairs measured a 4.235 s median paired reduction, the repaired dispatch gate passed 186/186, and the updated routing, shadow, and supervisor tests passed 27/27 together serially at the final head.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T022329056429-stale-reading-reaches-jev" data-who="reckon-build" data-when="2026-10-07T04:41:54.189Z">
-    <div class="r-comment-body"><p>Carried a stale account-window reading into the picker&#x27;s dispatch candidate (utilisation, burn_multiple, pace_allowance, days_to_reset, resets_at, plus new stale and budget_age_s) instead of nulling it with a reason; live codex candidates show burn_multiple 1.406, pace_allowance 0.665, utilisation_pct 85.0, stale true, budget_age_s 4889.9 s; head gate 258 passed at 106afb36d against base 254, zero added failures.</p></div>
+    <div class="r-comment-body"><p>Carried a stale account-window reading into the picker's dispatch candidate (utilisation, burn_multiple, pace_allowance, days_to_reset, resets_at, plus new stale and budget_age_s) instead of nulling it with a reason; live codex candidates show burn_multiple 1.406, pace_allowance 0.665, utilisation_pct 85.0, stale true, budget_age_s 4889.9 s; head gate 258 passed at 106afb36d against base 254, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T051538986038-review-of-stale-reading-reaches-jev" data-who="reckon-build" data-when="2026-10-07T05:31:55.430Z">
+    <div class="r-comment-body"><p>Review of r-20261007T022329056429-stale-reading-reaches-jev stored at reviews/reckon/r-20261007T022329056429-stale-reading-reaches-jev.at-106afb36dc38c4549adc62554bd60719f4b6e8db.json; scored goal_fidelity 19, evidence 19, scope_discipline 18, durability 19, fit 19, reuse 17 (total 111), reviewed_base_sha 5b947ae9e, reviewed_head_sha 106afb36d, added_failure_count 0 with no added ids; one follow-on finding (two disagreeing staleness derivations reaching Jev).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T055630350553-review-of-codex-banked-reset" data-who="reckon-build" data-when="2026-10-07T06:13:55.308Z">
+    <div class="r-comment-body"><p>An independent review of r-20261007T022200354849-codex-banked-reset is stored as a parsed six-dimension record at both granted paths; it scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 17, fit 18, reuse 19 (total 112), records reviewed_base_sha 5b947ae9eabe806a05523c957cfe14e4b13872ef and reviewed_head_sha 44636a5f08a669dd18c565197e7945874eddb854, carries added_failure_count 0 with added_failure_ids [] derived from the reviewed run's baseline_suite (152 passed EXIT=0 at 5b947ae9) and after_suite (158 passed EXIT=0 at b68f4da6a) gate logs, and reports three follow-on findings (a tautological store-isolation assertion, an unserialized observe read-modify-write, and reset_available not reaching the picker candidate).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T043246695894-lane-and-model-design" data-who="reckon-build" data-when="2026-10-07T04:56:35.066Z">
+    <div class="r-comment-body"><p>Design only, no plan or repository edit: report.md answers the six questions (schema, dispatch surface, picker, history, migration order, call-site census) with census.txt beside it, and names node 'host-flight-collapses-claude' as the one that retires the claude-opus backend block; the lead must approve lane names, bare --model, and when the derived names retire before node 1 dispatches.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T051619983156-review-of-lane-and-model-design" data-who="reckon-build" data-when="2026-10-07T05:30:13.671Z">
+    <div class="r-comment-body"><p>independent review of r-20261007T043246695894-lane-and-model-design stored; the design report scores 111/120 (goal_fidelity 20, evidence 16, scope_discipline 20, durability 15, fit 20, reuse 20) over the empty diff at 65d0bf6e756ce6ab406d2fe0e89047f31b684bb0, with two follow-on findings (report.md:104 mis-cites parse_overrides at reckon/flight.py:2243 vs the real :2260; report.md:5/:278/:314 name a census.txt artifact that was never written).</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>

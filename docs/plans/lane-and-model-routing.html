@@ -23,7 +23,7 @@
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -37,15 +37,15 @@
       <li><strong>The model is already a launch parameter, not an identity.</strong> Codex receives <code>-m &lt;model&gt;</code> and claude receives <code>--model &lt;model&gt;</code>. The <code>claude</code> and <code>claude-haiku</code> blocks are byte-identical after comments, and <code>claude-opus</code> differs from <code>claude</code> in one line, a 40-minute time budget against 25.</li>
       <li><strong>The package never names the duplicate backends.</strong> <code>claude-opus</code>, <code>claude-haiku</code>, <code>codex-astra</code> and <code>codex-luna</code> have 0 references in <code>reckon/</code> and <code>skills/</code>. The names live in configuration (three files), tests (fixtures) and history: 3,123 ledger rows, 2,471 run records and 4,404 review files. That history is never rewritten; readers resolve old names through an alias table.</li>
     </ul>
-    <p>The seven sections below are independently landable in the report's migration order. Each leaves the tree working, and the measure for each configuration step is that the resolved flight for all 14 mounted projects is unchanged.</p>
+    <p>The seven sections below are independently landable in the report's migration order. Each leaves the tree working, and the measure for each configuration step is that the resolved flight of every project in <code>mounts.json</code>, counted when the step runs, is unchanged.</p>
 
     <h2 id="s1" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§1 — Flight schema declares lanes with models inside them</h2>
-    <p>Add a top-level <code>lanes:</code> key to the platform schema. Each lane carries today's backend-block keys (placement, launch, command, sandbox, session_reuse, time_budget, budget_check, budget_group, the local lane's documents, windows and concurrency), plus <code>default_model</code> and <code>models.&lt;key&gt;</code>. Each model carries <code>model</code>, <code>effort</code>, <code>alias</code>, optional rates with <code>as_of</code>, and an optional <code>budget_group</code> that defaults to the lane's. Resolution expands each lane into today's <code>backends:</code> entries, so the 47 call sites that read <code>config["backends"]</code> are untouched. Each expanded entry gains <code>lane</code> and <code>model_key</code>. A lane expands to an entry named after the lane (its default model), and to <code>&lt;lane&gt;-&lt;key&gt;</code> for every model whose key matches a legacy backend name. Derived entries are marked with <code>derived_from</code>, so <code>reckon flight</code> can count how many remain. Override layers, including <code>--set lanes.claude.models.opus.effort=xhigh</code>, merge before expansion.</p>
+    <p>Add a top-level <code>lanes:</code> key to the platform schema. Each lane carries today's backend-block keys (placement, launch, command, sandbox, session_reuse, time_budget, budget_check, budget_group, the local lane's documents, windows and concurrency), plus <code>default_model</code> and <code>models.&lt;key&gt;</code>. Each model carries <code>model</code>, <code>effort</code>, <code>alias</code>, optional rates with <code>as_of</code>, an optional <code>budget_group</code> that defaults to the lane's, and an optional <code>time_budget</code> that overrides the lane's for that model. Resolution expands each lane into today's <code>backends:</code> entries, so the 47 call sites that read <code>config["backends"]</code> are untouched. Each expanded entry gains <code>lane</code> and <code>model_key</code>. A lane expands to an entry named after the lane (its default model), and to <code>&lt;lane&gt;-&lt;key&gt;</code> for every model whose key matches a legacy backend name. Derived entries are marked with <code>derived_from</code>, so <code>reckon flight</code> can count how many remain. Override layers, including <code>--set lanes.claude.models.opus.effort=xhigh</code>, merge before expansion.</p>
     <p><strong>Write paths:</strong> <code>reckon/_flight_schema.py</code>, <code>reckon/flight.py</code>, <code>tests/test_flight_lanes.py</code>.</p>
     <p><strong>Done when:</strong></p>
     <ul>
       <li>the new tests pass, covering a lane expanding to its default-named entry and its derived legacy entries with <code>lane</code>, <code>model_key</code> and <code>derived_from</code>, and a <code>--set</code> on a lane model reaching the expanded entry;</li>
-      <li>a no-value-moves proof shows the resolved flight of all 14 mounted projects byte-identical to the pre-change resolution, because nothing declares <code>lanes:</code> yet;</li>
+      <li>a no-value-moves proof shows the resolved flight of every project in <code>mounts.json</code> byte-identical to the pre-change resolution, because nothing declares <code>lanes:</code> yet;</li>
       <li>a negative control applying the override layer after expansion fails the <code>--set</code> test.</li>
     </ul>
 
@@ -59,9 +59,10 @@
     <p><strong>Write paths:</strong> <code>~/Code/dotfiles/reckon/flight.yaml</code>.</p>
     <p><strong>Done when:</strong></p>
     <ul>
-      <li>the resolved flight is identical for all 14 projects;</li>
+      <li>the resolved flight is identical for every project in <code>mounts.json</code>;</li>
       <li><code>reckon flight</code> reports three entries under lane <code>claude</code>, two of them derived;</li>
-      <li>a dry run of <code>--backend claude --model opus</code> (after §4) or of the derived <code>claude-opus</code> name resolves to the same model, effort, time budget and launch argv the retired block produced.</li>
+      <li>a dry run of <code>--backend claude --model opus</code> (after §4) or of the derived <code>claude-opus</code> name resolves to the same model, effort, time budget and launch argv the retired block produced;</li>
+      <li>a negative control that drops opus's <code>time_budget</code> override makes the opus dry run resolve the lane's 25-minute budget and fail the equivalence check.</li>
     </ul>
 
     <h2 id="s4" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§4 — Dispatch names a model within a lane</h2>
@@ -90,7 +91,7 @@
     <h2 id="s6" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links="">§6 — The codex models fold into one lane</h2>
     <p>Move <code>codex-astra</code> and <code>codex-luna</code> into <code>lanes.codex.models</code> in the host flight and the catalogue, retiring their backend blocks exactly as §3 does for claude. <code>codex-terra</code> stays retired; its alias resolves only for history.</p>
     <p><strong>Write paths:</strong> <code>~/Code/dotfiles/reckon/flight.yaml</code>, <code>docs/state/reckon/model-catalogue.yaml</code>.</p>
-    <p><strong>Done when:</strong> the resolved flight is identical for all 14 projects, and <code>--backend codex --model astra</code> resolves to the same model, effort and argv as the retired <code>codex-astra</code>.</p>
+    <p><strong>Done when:</strong> the resolved flight is identical for every project in <code>mounts.json</code>, and <code>--backend codex --model astra</code> resolves to the same model, effort and argv as the retired <code>codex-astra</code>. Negative control: changing astra's effort in the lane declaration makes that equivalence check fail, so an edit that moves nothing cannot pass it.</p>
 
     <h2 id="s7" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§7 — One read-side resolver for old names</h2>
     <p>One resolver, <code>resolve_name(name) -&gt; (lane, model_key)</code>, reads the catalogue's alias table and is used by the ledger, run records, reviews, <code>review_excluded_backends</code> and the crew views. It accepts backend names, model ids and aliases, because stored reviews already mix those vocabularies. No committed row is rewritten. <code>review_excluded_backends</code> keeps working verbatim and may later be written as lanes.</p>
@@ -100,7 +101,8 @@
       <li>fixture rows written as <code>claude-opus</code>, and as <code>claude</code> with <code>opus</code>, normalise identically;</li>
       <li>all seven legacy names are exercised;</li>
       <li><code>reckon crew ledger</code> and <code>runs</code> report the pair for old rows;</li>
-      <li>the existing check that no routing identifier leaks into <code>reckon/</code> or <code>skills/</code> still passes.</li>
+      <li>the existing check that no routing identifier leaks into <code>reckon/</code> or <code>skills/</code> still passes;</li>
+      <li>a negative control that removes one alias from the table makes that name's fixture row fail to normalise.</li>
     </ul>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
