@@ -189,7 +189,7 @@ reckon crew directory --project <project> --run <id> --node <node>
 reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal <goal> --done-when <measure> --write-path <path> --peer <other-node>=<their-paths> --time-budget <duration> --session <session> --set <override> --dry-run --member <member> --manifest <path> --allow-unreconciled-runs --no-watch
 reckon crew discard --run <id>    reckon crew drain --project <project> --leave <id>=<disposition>
 reckon crew follow --project <project>    reckon crew gc    reckon crew ledger --project <project> --view <view>
-reckon crew gate --pause <reason> | --open    # prints the shared gate document before and after the change
+reckon crew gate (--pause <reason> | --open) [--pretty]    # prints the shared gate document before and after the change
 reckon crew list    reckon crew member add    reckon crew member list --project <project>
 reckon crew observe --run <id>    reckon crew preflight --project <project> --role <role>
 reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --outcomes --since <ISO> --all-projects --checkout-path <path>    # reads routing state or outcome history, dispatches nothing
