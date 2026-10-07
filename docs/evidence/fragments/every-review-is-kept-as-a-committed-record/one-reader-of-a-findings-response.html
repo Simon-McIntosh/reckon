@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="One reader of a finding's stored response">
+  <meta name="plan-summary" content="One private accessor in plan_review.py returns a finding's stored response, and declined_recurrence, the recurrence fold and review_scope read it through it. A test patching the accessor finds each of the three following the patched answer; restoring the inline lookup in review_scope turns it red.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>One reader of a finding's stored response | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>One reader of a finding's stored response</h1>
+
+    <section id="one-reader-of-a-findings-response-anchor">
+      <h2>Measure</h2>
+      <table>
+        <thead>
+          <tr><th>fact</th><th>value</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>search the node runs</td>
+            <td><code>grep -n 'responses.get(' reckon/crew/plan_review.py</code>
+              finds one function, <code>_stored_response</code>; the three
+              callers <code>declined_recurrence</code>,
+              <code>_acted_finding_types</code> and <code>review_scope</code>
+              each read <code>response = _stored_response(record, finding)</code></td>
+          </tr>
+          <tr>
+            <td>gate</td>
+            <td><code>tests/test_one_reader_of_a_findings_response.py</code>
+              with <code>tests/test_plan_review_recurrence_fold.py</code>,
+              <code>tests/test_plan_review_day_summary.py</code>,
+              <code>tests/test_plan_review_store.py</code></td>
+          </tr>
+          <tr><td>head arm</td><td>29 passed, EXIT=0</td></tr>
+          <tr>
+            <td>negative control</td>
+            <td>inline response lookup restored in <code>review_scope</code>:
+              2 failed (<code>test_review_scope_shows_the_accessors_reason</code>,
+              <code>test_only_the_accessor_looks_a_finding_response_up_by_id</code>),
+              27 passed, EXIT=1 — the head arm fails neither</td>
+          </tr>
+          <tr>
+            <td>behaviour held</td>
+            <td>the folds keep the action normalisation
+              <code>str(...).strip().lower()</code>; the existing tests of all
+              three callers pass unchanged;
+              <code>unanswered_findings</code> is unchanged, since the accessor
+              requires a mapping response and the id stripped, which would move
+              its result</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Changed paths</h2>
+      <ul>
+        <li><code>reckon/crew/plan_review.py</code> — a private
+          <code>_stored_response(record, finding)</code> returning the stored
+          response mapping or <code>None</code>, keyed by the finding's stripped
+          id; <code>declined_recurrence</code>,
+          <code>_acted_finding_types</code> and <code>review_scope</code> call it
+          and their inline lookups are gone</li>
+        <li><code>tests/test_one_reader_of_a_findings_response.py</code> — the
+          accessor patched with a sentinel answer, each of the three readers
+          held to it; the sentinel is unreachable through an inline lookup
+          because the stored <code>responses</code> map is empty</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
