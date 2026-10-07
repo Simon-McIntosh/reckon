@@ -796,6 +796,24 @@ def fleet_node_group():
     """Hold, read and place work on the fleet node's whole-node allocation."""
 
 
+@fleet_node_group.command(name="migrate")
+@click.option(
+    "--dry-run", is_flag=True, help="Print the next step without changing state."
+)
+@click.option("--session", help="Limit a cutover step to one zellij session.")
+@click.option(
+    "--confirm", is_flag=True, help="Confirm cancellation at the retire step."
+)
+def fleet_node_migrate(dry_run: bool, session: str | None, confirm: bool) -> None:
+    """Advance the fleet move by one recorded checkpoint."""
+    from reckon.crew.fleet_migrate import MigrationError, migrate
+
+    try:
+        click.echo(migrate(dry_run=dry_run, session=session, confirm=confirm))
+    except MigrationError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
 @fleet_node_group.command(name="hold")
 @click.option(
     "--submit",
@@ -5632,6 +5650,16 @@ def crew_unwatch(project, pretty):
     ),
 )
 @click.option(
+    "--replace",
+    "replace_job",
+    default=None,
+    help=(
+        "Point this host's reservation at an already-running job, replacing "
+        "whatever record is held. Refuses a job that is pending, that belongs "
+        "to another user, or that the scheduler does not know."
+    ),
+)
+@click.option(
     "--session",
     default=None,
     help="Session asking for the reservation; recorded with it when first held.",
@@ -5643,7 +5671,7 @@ def crew_unwatch(project, pretty):
     "pre-project host-global record, which belongs to no project.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_placement(ensure, session, project, pretty):
+def crew_placement(ensure, replace_job, session, project, pretty):
     """Report or hold the one reservation a project places its workers into.
 
     One reservation held once per project, published into the crew state that
@@ -5655,10 +5683,30 @@ def crew_placement(ensure, session, project, pretty):
     and its roster bounds them. Keying it by host made a per-project decision
     carry a fleet-wide ceiling, counting every project's workers against one
     allocation that only one of them held.
+
+    ``--replace`` moves the record to an already-running job of your own, which
+    is what moves the fleet to a new allocation before the old one drains; the
+    ensure path only replaces a record whose own job has left the queue.
     """
     from reckon.crew import runs as runs_module
     from reckon.crew.node import CrewError
 
+    if ensure and replace_job is not None:
+        raise click.ClickException(
+            "--ensure holds a reservation and --replace moves an existing one; "
+            "name only one."
+        )
+    if replace_job is not None:
+        from reckon.crew import placement as placement_module
+
+        try:
+            result = placement_module.replace_reservation(
+                job_id=replace_job, session=session, project=project
+            )
+        except CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit_crew_result(result, pretty)
+        return
     if ensure:
         try:
             result = runs_module.ensure_placement_reservation(

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-moves-to-a-new-node">
+  <meta name="plan-title" content="The fleet moves to a new node">
+  <meta name="plan-summary" content="The fleet batch step's request loop collects exited children on its own bounded interval, so a child that exits while the FIFO is idle is no longer left defunct until the next request arrives.">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-moves-to-a-new-node">
+  <meta name="plan-verifies" content="reckon:the-fleet-moves-to-a-new-node#s4">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fleet,supervisor">
+  <title>Supervisor collects every child — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="fleet-supervisor-collects-every-child" data-reckon="landed" data-when="2026-10-07">
+  <p>The fleet batch step's request loop read its request FIFO with a blocking <code>readline()</code> and swept for exited children only before each request. Requests arrive rarely and the loop's whole life is that read, so a child that exited while the FIFO sat idle stayed defunct until the next request happened to arrive — an exited supervisor could hold a process-table slot for days.</p>
+  <p>The loop now waits on the FIFO with a bounded <code>select</code> (<code>REQUEST_WAIT_SECONDS = 0.5</code>) instead of a blocking read, sweeping for exited children on each interval and reading whatever whole lines the wakeup delivered. The sweep still runs only between requests and never during the synchronous session-start wait <code>_run_session_copy</code> performs on its own child, so it cannot race that wait's collection — the existing session-start cases still pass. A new test, <code>test_an_exited_child_is_collected_with_no_request_arriving</code>, starts a short-lived child under the serving loop and, with no request sent afterwards, requires its pid to leave <code>/proc</code> within the bound (<code>COLLECT_SECONDS = 5.0</code>).</p>
+  <p><strong>Reproduction and negative control.</strong> The bug is reproduced and the discriminating power of the test shown by the declared mutation: with the loop restored to collection between requests only (a blocking wait that reaps after a request lands), the new case fails — <code>EXIT=1</code>, one failing id, <code>test_an_exited_child_is_collected_with_no_request_arriving</code>, which the head arm does not fail; log <code>/home/ITER/mcintos/.cache/reckon-fleet-supervisor-reap/negative-control.log</code>. The mutation was reverted by an edit and the case passes again.</p>
+  <p><strong>Gate.</strong> <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider tests/test_fleet_supervisor.py</code> at the committed revision: <code>19 passed</code>, <code>EXIT=0</code>. The configuration home is pinned inside each case's temporary directory by the suite's autouse fixture, so the reader resolves its declared services file in a temporary tree and starts no service the operator declares; a scan of this user's processes for <code>fleet_supervisor service</code>/<code>fleet_supervisor start</code> after the run found none surviving. Log: <code>/home/ITER/mcintos/.cache/reckon-fleet-supervisor-reap/gate-final.log</code>. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
