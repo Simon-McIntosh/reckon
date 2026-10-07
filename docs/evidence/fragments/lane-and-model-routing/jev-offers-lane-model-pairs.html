@@ -1,0 +1,54 @@
+<article class="landed-report" data-run-id="r-20261007T181806743618-jev-offers-lane-model-pairs" data-node="jev-offers-lane-model-pairs">
+  <h3 id="jev-offers-lane-model-pairs-summary">jev-offers-lane-model-pairs — lane pressure is stated once per lane in a <code>lanes</code> block</h3>
+  <p id="jev-offers-lane-model-pairs-change">
+    <code>reckon/crew/picker/lane_context.py</code> gains a
+    <code>lanes()</code> builder, composed in <code>build()</code> beside
+    <code>return_times</code> and <code>local_lane</code> and keyed by the
+    candidate's lane (<code>family</code>). Each lane carries one
+    <code>availability</code>, <code>utilisation_pct</code>,
+    <code>burn_multiple</code>, <code>pace_allowance</code>,
+    <code>resets_at</code>, <code>days_to_reset</code>,
+    <code>worker_slots</code>, <code>congestion</code> and
+    <code>reset_available</code>, so three models on one account read as one
+    wallet rather than three. The account figures are read from the declared
+    budget group's own allowance in the composed budget snapshot (falling back
+    to the figures the member already carries), so neither the pace nor the
+    burn is re-derived here. <code>build_state</code> in
+    <code>reckon/crew/picker/prompts.py</code> lifts the block by name into the
+    rendered state, and <code>questions.jinja</code> now states that the pick
+    has two linked parts, that models in one lane share one window, that
+    confidence is confidence in the joint pick, and that unknown facts are null.
+  </p>
+  <p id="jev-offers-lane-model-pairs-measure">
+    <strong>Measure.</strong> Gate built from the head tree:
+    <code>tests/test_picker_lanes.py</code>, every <code>tests/test_picker*.py</code>,
+    <code>tests/test_pick_candidates_one_pass.py</code> and
+    <code>tests/test_jev_weighs_context.py</code>, run in the foreground with the
+    main checkout's <code>.venv/bin/python -m pytest -p no:cacheprovider -n 8</code>.
+    Base arm at revision <code>1b98398693513aceaac6bd8fd3f23d1ae939c62a</code> (the
+    new test file did not exist at base): 155 passed, EXIT=0. Head arm: 158
+    passed, EXIT=0 — a delta of +3, zero added failures. Logs
+    <code>gate-base.log</code> and <code>gate-head.log</code> under the run
+    directory, each ending in an <code>EXIT=</code> line. The golden render
+    fixture in <code>tests/test_picker_helpers_have_one_owner.py</code> was
+    regenerated from the head tree because the state gains the <code>lanes</code>
+    block; every other figure is byte-identical to the base render.
+  </p>
+  <p id="jev-offers-lane-model-pairs-replay">
+    <strong>Replay and once-per-lane.</strong> A replay of 60 recorded dispatches
+    through the new questions with a stub client that takes the first offered
+    pair reaches a refused or logged-out model on 0 of them
+    (<code>refused_model_picks: 0</code>), with 60 Jev calls and 0 fallbacks;
+    agreement with the recorded lane is reported for reading only. The
+    once-per-lane test renders one lane holding three models and asserts the
+    <code>lanes</code> block has exactly one entry keyed by the lane, and parses
+    as JSON for a hostile model name as well as a normal one.
+  </p>
+  <p id="jev-offers-lane-model-pairs-negative-control">
+    <strong>Negative control.</strong> Keying the <code>lanes</code> block by
+    <code>&lt;lane&gt;:&lt;model&gt;</code> instead of the lane (repeating pressure
+    per model) reddens the once-per-lane test. Log
+    <code>negative-control.log</code> under the run directory, ending in an
+    <code>EXIT=</code> line.
+  </p>
+  </article>

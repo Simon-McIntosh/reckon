@@ -1,4 +1,4 @@
-"""One owner per picker helper, and an unchanged rendered picker state.
+"""One owner per picker helper, and a rendered picker state pinned to bytes.
 
 Two design-review findings asked that duplicated picker helpers and the
 run-time-profile cache have a single owner. The helpers live once in
@@ -7,9 +7,10 @@ profile cache goes through :func:`reckon.capabilities.cached_pick_input`. One
 owner must not mean one behaviour: merging three copies of ``_number`` also
 merged their return types, and the picker state renders the float cast as
 ``300.0`` where the base rendered ``300``. So the rendered state is pinned
-against the base revision's own bytes, not against a second render of the new
-code -- a check that renders the code twice moves with the code it is meant to
-hold still.
+against frozen bytes, not against a second render of the new code -- a check
+that renders the code twice moves with the code it is meant to hold still. The
+frozen bytes carry the ``lanes`` block that states each lane's pressure once;
+every other figure is unchanged from the base revision's render.
 """
 
 from __future__ import annotations
@@ -25,14 +26,15 @@ from reckon.crew.picker.types import Candidate
 
 NOW = datetime(2026, 10, 2, 2, 1, 0, tzinfo=UTC)
 
-#: The picker state rendered by the reviewed run's base revision (``4e2f6823c``)
-#: for the fixture built below, committed verbatim as a test fixture. The head
-#: must reproduce these bytes exactly, so a single owner whose ``_number``
-#: changed an integer figure into ``300.0`` is caught rather than followed. The
-#: bytes were produced by running the base tree's own code over the same frozen
-#: fixture (ledger rows, profile-cache directory, lane document and live-worker
-#: list all fixed), never transcribed by hand.
-GOLDEN_STATE = r"""{"node":{"role":"implement","spec_level":"guided","capability":{},"goal":"g","done_when":"d","estimated_context":0,"estimated_hours":null,"attempts":0,"write_path_count":0,"negative_control_declared":false},"orchestrator_comment":"one owner","candidates":{"clive":{"backend":"clive","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null},"amine":{"backend":"amine","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null}},"return_times":{"clive":{"p50_s":300,"p90_s":500,"runs":3,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"amine":{"p50_s":null,"p90_s":null,"runs":null,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false}},"local_lane":{"admission":"admitting","expected_wait_s":null,"running":2,"waiting":0,"headroom":14,"worker_slots":53,"tokens_per_second":89.425,"read_at":"2026-10-02T02:01:00+00:00"}}"""
+#: The picker state rendered by this head's code for the fixture built below,
+#: committed verbatim as a test fixture. It extends the reviewed run's base
+#: revision (``4e2f6823c``) bytes with the ``lanes`` block that states each
+#: lane's pressure once, so it was regenerated from the head tree over the same
+#: frozen fixture (ledger rows, profile-cache directory, lane document and
+#: live-worker list all fixed); every other figure is byte-identical to the
+#: base. The bytes were produced by running the tree's own code, never
+#: transcribed by hand.
+GOLDEN_STATE = r"""{"node":{"role":"implement","spec_level":"guided","capability":{},"goal":"g","done_when":"d","estimated_context":0,"estimated_hours":null,"attempts":0,"write_path_count":0,"negative_control_declared":false},"orchestrator_comment":"one owner","candidates":{"clive":{"backend":"clive","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null},"amine":{"backend":"amine","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null}},"return_times":{"clive":{"p50_s":300,"p90_s":500,"runs":3,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"amine":{"p50_s":null,"p90_s":null,"runs":null,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false}},"lanes":{"f":{"availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"resets_at":null,"days_to_reset":null,"worker_slots":null,"congestion":null,"reset_available":null}},"local_lane":{"admission":"admitting","expected_wait_s":null,"running":2,"waiting":0,"headroom":14,"worker_slots":53,"tokens_per_second":89.425,"read_at":"2026-10-02T02:01:00+00:00"}}"""
 
 #: Helper names that must not be re-defined inside the picker package, each
 #: mapped to the one function in run_time_profile that owns its behaviour.
@@ -197,12 +199,12 @@ def _render(tmp_path, monkeypatch):
 
 
 def test_rendered_state_matches_the_base_revision_bytes(tmp_path, monkeypatch):
-    """The head renders exactly the bytes the base revision rendered.
+    """The head renders exactly the frozen bytes for this fixture.
 
-    The golden bytes were produced by the base tree's own code over this same
-    frozen fixture, so the comparison is a real before/after check: it fails if
-    any picker figure changes -- here, an integer wall-second figure rendering
-    as a float -- rather than only if the new code disagrees with itself.
+    The golden bytes were produced by the tree's own code over this same frozen
+    fixture, so the comparison is a real before/after check for every figure:
+    an integer wall-second figure rendering as a float still fails it, and the
+    added ``lanes`` block is pinned byte for byte beside the rest.
     """
 
     rendered = _render(tmp_path, monkeypatch)

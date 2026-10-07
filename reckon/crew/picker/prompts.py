@@ -60,6 +60,15 @@ _GLOSSARY: dict[str, str] = {
         "when the lane reports none."
     ),
     "days_to_reset": "Days until the lane's window resets; null when unknown.",
+    "lanes": (
+        "One pressure block per lane, however many models the lane holds. A lane "
+        "is a subscription or host whose models share one account window, so its "
+        "utilisation, burn, pace allowance, reset, worker slots, congestion and "
+        "banked-reset flag are stated here once and are the same for every model "
+        "in it. availability is the lane's serving state aggregated over those "
+        "models. Read a model's own serving observation from its candidate entry; "
+        "read the shared spending policy from its lane."
+    ),
     "context": (
         "A candidate's context block. window_tokens is the input window that "
         "gates the lane; estimated_tokens is this node's deterministic input "
@@ -175,6 +184,7 @@ def build_state(
             candidate.backend: _candidate_state(candidate) for candidate in candidates
         },
         "return_times": lane["return_times"],
+        "lanes": lane["lanes"],
         "local_lane": lane["local_lane"],
     }
 
