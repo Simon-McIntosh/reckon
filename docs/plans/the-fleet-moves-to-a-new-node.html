@@ -23,7 +23,7 @@
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="50">
+<meta name="plan-version" content="51">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -620,6 +620,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261007T110009633596-a-new-fleet-supervisor-starts-in-standby" data-who="reckon-build" data-when="2026-10-07T12:50:06Z">
     <div class="r-comment-body"><p>[standby supervisor evidence](docs/evidence/fragments/the-fleet-moves-to-a-new-node/a-new-fleet-supervisor-starts-in-standby.html#a-new-fleet-supervisor-starts-in-standby-measure) — standby served requests without publishing the fleet record or starting a service; promotion published the record and started the configured service; staged-write inventory 1 passed and named gate 70 passed, both EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases" data-who="reckon-build" data-when="2026-10-07T12:01:00Z">
+    <div class="r-comment-body"><p>A request-response barrier puts the standby no-lease check after startup; the committed four-file gate passed 16 tests (EXIT=0), while standby-start and promotion-claim mutations each failed the lease test (EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261007T115412517943-review-of-the-producer-seat-holds-across-hosts" data-who="reckon-build" data-when="2026-10-07T12:03:00.389Z">
     <div class="r-comment-body"><p>review of r-20261007T112749535190-the-producer-seat-holds-across-hosts stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T112749535190-the-producer-seat-holds-across-hosts.at-d7d2802880b6252e748dd40d4b3cb291cdd9ad99.json — 6 dimensions scored (goal_fidelity 18, evidence 16, scope_discipline 19, durability 18, fit 16, reuse 20; total 107), reviewed_base_sha 4b55e8626 reviewed_head_sha d7d280288, added_failure_count null (reviewed manifest names no gate arms), two follow-on findings.</p></div>

@@ -1,0 +1,683 @@
+{
+  "agent": {
+    "alias": "sol6",
+    "backend": "codex",
+    "effort": "high",
+    "launch": "cli",
+    "model": "gpt-6-sol",
+    "sandbox": "worktree-full"
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "codex",
+  "base_sha": "01406ceaf5717ee05a6989b1f0fbab4ee6c5f2cd",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "detail": "backend reports token usage but no headroom",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_write_input_tokens": 0,
+      "cache_write_input_tokens_cumulative": 0,
+      "cached_input_tokens": 5643776,
+      "cached_input_tokens_cumulative": 5643776,
+      "input_tokens": 5778724,
+      "input_tokens_cumulative": 5778724,
+      "output_tokens": 31010,
+      "output_tokens_cumulative": 31010,
+      "reasoning_output_tokens": 14474,
+      "reasoning_output_tokens_cumulative": 14474
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 86,
+    "files": 1,
+    "removed": 0
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 15,
+        "name": "_wait_for",
+        "path": "tests/test_fleet_supervisor_standby.py"
+      },
+      "run_function": {
+        "line": 15,
+        "name": "_wait_for",
+        "path": "tests/test_standby_promotion_claims_leases.py"
+      },
+      "window_line": 17
+    },
+    {
+      "existing_function": {
+        "line": 30,
+        "name": "test_standby_serves_then_promotes_record_and_declared_service",
+        "path": "tests/test_fleet_supervisor_standby.py"
+      },
+      "run_function": {
+        "line": 30,
+        "name": "test_standby_claims_declared_service_lease_only_on_promotion",
+        "path": "tests/test_standby_promotion_claims_leases.py"
+      },
+      "window_line": 37
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "4c6d6126b431f3e101245b47bb2323a0254d3327",
+    "7ebe719f0e91a8c14c43c7149b259bb1889f80b4"
+  ],
+  "completed_at": "2026-10-07T12:01:00Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-10-07T11:32:23Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest -p",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider tests/test_standby_promotion_claims_leases.py tests/test_fleet_supervisor_standby.py tests/test_fleet_supervisor_runs_declared_services.py tests/test_host_lease.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases/base-standby-absolute.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.29545454545454547,
+    "plan": "the-fleet-moves-to-a-new-node",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "codex",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "no projected exhaustion is available for 'codex'; the burn projection needs a numeric utilisation bounded by a known window, and without one no horizon comparison is made",
+    "horizon_ends_at": "2026-10-07T12:11:53.352414+00:00",
+    "horizon_seconds": 2400,
+    "metered": true,
+    "observed_at": "2026-10-07T11:31:52Z",
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": "2026-10-14T05:14:59Z",
+    "seconds_until_reset": 582186,
+    "state": "quiet",
+    "utilisation_pct": 6.0
+  },
+  "lane_declaration": {
+    "backend": "codex",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-10-07T11:31:52Z",
+    "read_at": "2026-10-07T11:31:53Z",
+    "resolved_backend": "codex",
+    "utilisation_pct": 6.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "generating": "unknown",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "backend declares no lane document",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": "unknown"
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-07T12:01:00Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "missing_rollout",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases/manifest.md",
+  "member": "disposable-r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_standby_promotion_claims_leases.py::test_standby_claims_declared_service_lease_only_on_promotion"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_standby_promotion_claims_leases.py::test_standby_claims_declared_service_lease_only_on_promotion"
+    ],
+    "declaration": "make the promoted supervisor start its declared service without claiming its host lease; the lease-holder case must fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases/promoted-lease-negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases/promoted-lease-negative-control.log",
+    "test_paths": [
+      "tests/test_standby_promotion_claims_leases.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-promoted-standby-supervisor-claims-its-service-leases",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "detail": "the dispatching harness exposed no authoring-turn token usage",
+        "status": "unknown",
+        "tokens": null
+      },
+      "harness": null,
+      "runtime_session_id": null,
+      "session_id": "fleet-move-20261007"
+    },
+    "done_when": "tests/test_standby_promotion_claims_leases.py starts a supervisor in standby with one declared demo service and finds no host lease held for it; after a promote request the service's HostLease holder names this host, this pid and the configured job; every configuration, runtime and state path is temporary; gate: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider tests/test_standby_promotion_claims_leases.py tests/test_fleet_supervisor_standby.py tests/test_fleet_supervisor_runs_declared_services.py tests/test_host_lease.py exits 0",
+    "estimated_hours": 0.75,
+    "goal": "prove that a standby fleet supervisor claims no declared-service host lease until promotion and claims each one when promoted",
+    "id": "a-promoted-standby-supervisor-claims-its-service-leases",
+    "lane_declaration": {
+      "backend": "codex",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-10-07T11:31:52Z",
+      "read_at": "2026-10-07T11:31:53Z",
+      "resolved_backend": "codex",
+      "utilisation_pct": 6.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "generating": "unknown",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "backend declares no lane document",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": "unknown"
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases/manifest.md",
+    "negative_control": "make the promoted supervisor start its declared service without claiming its host lease; the lease-holder case must fail",
+    "plan": "the-fleet-moves-to-a-new-node",
+    "requested_backend": "codex",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§10",
+    "spec_level": "exact",
+    "time_budget": "40m",
+    "token_budget": null,
+    "write_paths": [
+      "tests/test_standby_promotion_claims_leases.py",
+      "docs/evidence/fragments/the-fleet-moves-to-a-new-node/a-promoted-standby-supervisor-claims-its-service-leases.html",
+      "docs/figures/the-fleet-moves-to-a-new-node/a-promoted-standby-supervisor-claims-its-service-leases"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "codex",
+    "member": null,
+    "node": "a-promoted-standby-supervisor-claims-its-service-leases",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-07T11:32:08.044134+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "clive",
+    "comment": "",
+    "confidence": 0.83,
+    "decision_source": "jev",
+    "effort": "high",
+    "excluded": [
+      {
+        "availability": "not-probed",
+        "backend": "native",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "in-harness-backend"
+        ],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "local",
+    "jev_latency_ms": 383.511,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 536.026,
+    "model": "deepseek-v4.1-flash",
+    "offered": [
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "budget_age_s": 450713.163265,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 50392,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-haiku",
+        "budget_age_s": 450713.163265,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 50392,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-opus",
+        "budget_age_s": 450713.163265,
+        "budget_reason": null,
+        "burn_multiple": 0.88,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 50392,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 0.0,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": 0.132,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00+00:00",
+        "stale": true,
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "clive",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "open",
+          "running": 2,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 0
+        },
+        "context": {
+          "estimated_tokens": 50392,
+          "headroom_pct": 78.1,
+          "peak_utilisation_p50_pct": 34.7,
+          "peak_utilisation_p90_pct": 82.2,
+          "peak_utilisation_runs": 956,
+          "window_tokens": 230144
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "outcomes": {
+          "failed": 19,
+          "not-run": 17,
+          "passed": 629,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": 17
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "budget_age_s": null,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 50392,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "outcomes": {
+          "failed": 5,
+          "not-run": 0,
+          "passed": 28,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "stale": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-astra",
+        "budget_age_s": 117.569265,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 50392,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.737805321006944,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 10,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 6.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-luna",
+        "budget_age_s": 117.569265,
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "context": {
+          "estimated_tokens": 50392,
+          "headroom_pct": null,
+          "peak_utilisation_p50_pct": null,
+          "peak_utilisation_p90_pct": null,
+          "peak_utilisation_runs": null,
+          "window_tokens": null
+        },
+        "days_to_reset": 6.737805321006944,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-14T05:14:59+00:00",
+        "stale": false,
+        "utilisation_pct": 6.0,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "claude": 0,
+      "claude-haiku": 0,
+      "claude-opus": 0,
+      "clive": 0.85,
+      "codex": 0.02,
+      "codex-astra": 0.08,
+      "codex-luna": 0.01,
+      "hold": 0.04
+    },
+    "rendered_token_estimate": 1613,
+    "usage": {
+      "cost": 0.000181608,
+      "input_tokens": 4324,
+      "output_tokens": 89
+    }
+  },
+  "plan": "the-fleet-moves-to-a-new-node",
+  "plan_impl_at_dispatch": 0.29545454545454547,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "7ebe719f0e91a8c14c43c7149b259bb1889f80b4",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "4c6d6126b431f3e101245b47bb2323a0254d3327",
+    "reviewed_head_sha": "7ebe719f0e91a8c14c43c7149b259bb1889f80b4",
+    "scores": {
+      "durability": 18,
+      "evidence": 18,
+      "fit": 16,
+      "goal_fidelity": 19,
+      "reuse": 16,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 107
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§10",
+  "session": "fleet-move-20261007",
+  "session_harness": "codex",
+  "session_id": "01a11622-f2e4-7d10-888d-b091e502c998",
+  "session_model": "gpt-6-sol",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 1,
+  "throughput": {
+    "cumulative_cached_input_tokens": 5643776,
+    "cumulative_input_tokens": 11422500,
+    "detail": "turn tokens recorded, but no span was supplied to rate them",
+    "generated_tokens": 45484
+  },
+  "time_budget": "40m",
+  "tool_steps": 67.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 1717,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-07T12:01:03Z",
+    "last_record_type": "turn.completed",
+    "launched_at": "2026-10-07T11:54:05Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261007T113142316387-a-promoted-standby-supervisor-claims-its-service-leases",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 329,
+    "worker_pid": 1832397
+  },
+  "worker_seconds": 1717,
+  "worker_seconds_source": "wall_fallback",
+  "worktree_retention": null
+}
