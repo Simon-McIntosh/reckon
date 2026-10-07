@@ -1054,6 +1054,24 @@ def isolated_reckon_home(request, tmp_path_factory, monkeypatch):
     return home
 
 
+# The personal skills directory ``reckon sync`` links into and ``reckon doctor``
+# reads. Without an override both resolve the operator's real
+# ``~/.claude/skills``: a test that exercises either moves, repoints or reports
+# on the operator's own skill links, and a test's outcome then depends on
+# ambient state. The fixture points the override at a per-test temporary
+# directory, so a run under test never leaves its own tree.
+CLAUDE_SKILLS_DIR_ENV = "RECKON_CLAUDE_SKILLS_DIR"
+
+
+@pytest.fixture(autouse=True)
+def isolated_claude_skills_dir(tmp_path, monkeypatch):
+    """No test's sync or doctor reads or writes the real ~/.claude/skills."""
+    skills = tmp_path / "claude-skills"
+    skills.mkdir()
+    monkeypatch.setenv(CLAUDE_SKILLS_DIR_ENV, str(skills))
+    return skills
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _refuse_real_scheduler(tmp_path_factory):
     """Put a refusing stub for every scheduler verb first on PATH for the session.
