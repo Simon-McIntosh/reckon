@@ -1,7 +1,1 @@
-{"node":{"role":{{ node.role|json }},"spec_level":{{ node.spec_level|json }},"capability":{{ capability|json }},"goal":{{ node.goal|json }},"done_when":{{ node.done_when|json }},"estimated_context":{{ estimated_context|json }},"estimated_hours":{{ node.estimated_hours|json }},"attempts":{{ attempts|default(0)|json }}},"orchestrator_comment":{{ comment|json }},"candidates":{
-{%- for c in candidates %}
-{{ c.backend|json }}:{"availability":{{ c.availability|json }},"utilisation_pct":{{ c.utilisation_pct|json }},"burn_multiple":{{ c.burn_multiple|json }},"pace_allowance":{{ c.pace_allowance|json }},"resets_at":{{ c.resets_at|json }},"worker_slots":{{ c.worker_slots|json }},"congestion":{{ c.congestion|json }},"outcomes_14_days":{{ c.outcomes|json }}}{% if not loop.last %},{% endif %}
-{%- endfor %}},"days_to_reset":{
-{%- for c in candidates %}
-{{ c.backend|json }}:{{ c.days_to_reset|json }}{% if not loop.last %},{% endif %}
-{%- endfor %}},"return_times":{{ lane.return_times|json }},"local_lane":{{ lane.local_lane|json }}}
+{{ state|tojson }}
