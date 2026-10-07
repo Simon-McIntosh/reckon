@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:7861 sync -> _sync_crew_host_plugin",
+    "reckon/cli.py:8193 doctor -> _personal_skills_dir",
+    "reckon/cli.py:267 _sync_crew_host_plugin -> _personal_skills_dir"
+  ],
+  "completed_at": "2026-10-07T04:51:04.853Z",
+  "dispatched_at": "2026-10-07T04:28:08Z",
+  "findings": [
+    {
+      "file": "tests/test_doctor_session_host_link.py",
+      "line": "422",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion _entry_signature(real) == before cannot fail, because _run_sync monkeypatches Path.home to a temporary home, so a regressed sync (the declared mutation) writes the link under that temporary home and never under the operator's real ~/.claude/skills the assertion reads; it thus guards nothing while making the test read state outside the repository, which can flake if a concurrent live session repoints that entry mid-test."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "8176",
+      "severity": "follow-on",
+      "text": "follow-on: doctor's Skills-presence check still resolves Path.home()/\".claude\"/\"skills\" instead of _personal_skills_dir(), so the autouse fixture tests/conftest.py:1071 does not isolate it; a future doctor test that relies on the fixture rather than patching Path.home would read the operator's real skills directory, which is the goal this node states and the done-when names only for the link check."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the single commit 9bdf6250a against base 6ab102dd1; it adds _personal_skills_dir and CLAUDE_SKILLS_DIR_ENV, routes _sync_crew_host_plugin (cli.py:267) and the doctor link check (cli.py:8193) through it, adds the autouse fixture tests/conftest.py:1071, and adds tests/test_doctor_session_host_link.py:397.",
+    "done_when": "the done_when names tests/test_doctor_session_host_link.py and the negative control; the manifest records 17 passed EXIT=0 and a mutation log ending EXIT=1, and I re-ran the gate at head 9bdf6250a independently as 17 passed EXIT=0.",
+    "goal": "the node's goal is to keep every test's reckon sync and doctor away from the real ~/.claude/skills; reckon/cli.py:152 _personal_skills_dir resolves it from RECKON_CLAUDE_SKILLS_DIR and reckon/cli.py:267 (_sync_crew_host_plugin) and reckon/cli.py:8193 (doctor link check) now route through it, so both named sites stop reaching the operator's real directory.",
+    "manifest": "read; it states the gate result, names the negative-control log whose last line is EXIT=1, records the sole failing id test_sync_leaves_the_real_skills_directory_untouched, and carries a follow-on for reckon-install-skills at reckon/cli.py:8651.",
+    "write_paths": "read the declared scope (reckon/cli.py, tests/conftest.py, tests/test_doctor_session_host_link.py, the evidence fragment, the figures dir); every path in the diff is inside it and the unused figures directory was not created, which the contract permits."
+  },
+  "justifications": {
+    "durability": "the guard at tests/test_doctor_session_host_link.py:420 genuinely fails under the declared mutation, but the companion assertion at :422 (_entry_signature(real) == before) is inert because _run_sync monkeypatches Path.home, so the code under test cannot reach the real entry the assertion claims to protect.",
+    "evidence": "I re-ran the node's own gate tests/test_doctor_session_host_link.py at head 9bdf6250a (log review-head-gate.log) as 17 passed EXIT=0, and the manifest's negative-control log reproduces 1 failed, 16 passed, EXIT=1 at tests/test_doctor_session_host_link.py:420, the id the manifest names.",
+    "fit": "the added names (_personal_skills_dir, CLAUDE_SKILLS_DIR_ENV, isolated_claude_skills_dir) describe mechanism with no version, plan or ticket identifier and no attribution, matching reckon/cli.py:141-162 idiom, but tests/conftest.py:1063 re-spells the env-var name as its own literal instead of importing reckon/cli.py:149's constant, so a rename there would silently stop the fixture isolating tests.",
+    "goal_fidelity": "reckon/cli.py:152 and its two named call sites deliver the done-when, but reckon/cli.py:8176 keeps the doctor Skills-presence check on Path.home()/\".claude\"/\"skills\" and ignores the override, so the goal's \"every test's doctor\" holds only because the sibling tests/test_doctor.py:94 patches Path.home, not because the new fixture isolates it.",
+    "reuse": "a search of reckon/*.py for \".claude/skills\" found no existing resolver for the personal skills directory (reckon/serve.py:333 resolves the unrelated html-docs asset path), so _personal_skills_dir at reckon/cli.py:152 extends no owner and forks none.",
+    "scope_discipline": "git diff --stat 6ab102dd1..9bdf6250a touches exactly the four declared paths (reckon/cli.py, tests/conftest.py, tests/test_doctor_session_host_link.py, the evidence fragment) and nothing else; the declared figures directory is unused as the done-when names no artifact."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to keep every test's reckon sync and doctor away from the real ~/.claude/skills; reckon/cli.py:152 _personal_skills_dir resolves it from RECKON_CLAUDE_SKILLS_DIR and reckon/cli.py:267 (_sync_crew_host_plugin) and reckon/cli.py:8193 (doctor link check) now route through it, so both named sites stop reaching the operator's real directory.\nVERDICT done_when: the done_when names tests/test_doctor_session_host_link.py and the negative control; the manifest records 17 passed EXIT=0 and a mutation log ending EXIT=1, and I re-ran the gate at head 9bdf6250a independently as 17 passed EXIT=0.\nVERDICT write_paths: read the declared scope (reckon/cli.py, tests/conftest.py, tests/test_doctor_session_host_link.py, the evidence fragment, the figures dir); every path in the diff is inside it and the unused figures directory was not created, which the contract permits.\nVERDICT manifest: read; it states the gate result, names the negative-control log whose last line is EXIT=1, records the sole failing id test_sync_leaves_the_real_skills_directory_untouched, and carries a follow-on for reckon-install-skills at reckon/cli.py:8651.\nVERDICT diff: read the single commit 9bdf6250a against base 6ab102dd1; it adds _personal_skills_dir and CLAUDE_SKILLS_DIR_ENV, routes _sync_crew_host_plugin (cli.py:267) and the doctor link check (cli.py:8193) through it, adds the autouse fixture tests/conftest.py:1071, and adds tests/test_doctor_session_host_link.py:397.\nCALL_SITES: reckon/cli.py:7861 sync -> _sync_crew_host_plugin, reckon/cli.py:8193 doctor -> _personal_skills_dir, reckon/cli.py:267 _sync_crew_host_plugin -> _personal_skills_dir\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/cli.py:152 and its two named call sites deliver the done-when, but reckon/cli.py:8176 keeps the doctor Skills-presence check on Path.home()/\".claude\"/\"skills\" and ignores the override, so the goal's \"every test's doctor\" holds only because the sibling tests/test_doctor.py:94 patches Path.home, not because the new fixture isolates it.\nSCORE evidence: 20\nJUSTIFICATION evidence: I re-ran the node's own gate tests/test_doctor_session_host_link.py at head 9bdf6250a (log review-head-gate.log) as 17 passed EXIT=0, and the manifest's negative-control log reproduces 1 failed, 16 passed, EXIT=1 at tests/test_doctor_session_host_link.py:420, the id the manifest names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 6ab102dd1..9bdf6250a touches exactly the four declared paths (reckon/cli.py, tests/conftest.py, tests/test_doctor_session_host_link.py, the evidence fragment) and nothing else; the declared figures directory is unused as the done-when names no artifact.\nSCORE durability: 17\nJUSTIFICATION durability: the guard at tests/test_doctor_session_host_link.py:420 genuinely fails under the declared mutation, but the companion assertion at :422 (_entry_signature(real) == before) is inert because _run_sync monkeypatches Path.home, so the code under test cannot reach the real entry the assertion claims to protect.\nSCORE fit: 18\nJUSTIFICATION fit: the added names (_personal_skills_dir, CLAUDE_SKILLS_DIR_ENV, isolated_claude_skills_dir) describe mechanism with no version, plan or ticket identifier and no attribution, matching reckon/cli.py:141-162 idiom, but tests/conftest.py:1063 re-spells the env-var name as its own literal instead of importing reckon/cli.py:149's constant, so a rename there would silently stop the fixture isolating tests.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/*.py for \".claude/skills\" found no existing resolver for the personal skills directory (reckon/serve.py:333 resolves the unrelated html-docs asset path), so _personal_skills_dir at reckon/cli.py:152 extends no owner and forks none.\nFINDING tests/test_doctor_session_host_link.py:422 follow-on: the assertion _entry_signature(real) == before cannot fail, because _run_sync monkeypatches Path.home to a temporary home, so a regressed sync (the declared mutation) writes the link under that temporary home and never under the operator's real ~/.claude/skills the assertion reads; it thus guards nothing while making the test read state outside the repository, which can flake if a concurrent live session repoints that entry mid-test.\nFINDING reckon/cli.py:8176 follow-on: doctor's Skills-presence check still resolves Path.home()/\".claude\"/\"skills\" instead of _personal_skills_dir(), so the autouse fixture tests/conftest.py:1071 does not isolate it; a future doctor test that relies on the fixture rather than patching Path.home would read the operator's real skills directory, which is the goal this node states and the done-when names only for the link check.",
+  "review_run_id": "r-20261007T042732715106-review-of-sync-tests-keep-the-real-skills-dir",
+  "reviewed_base_sha": "6ab102dd11c04efc3235a29f547cbe2ce0a46c07",
+  "reviewed_head_sha": "9bdf6250adf0e69d250b09e7e31629625abbef38",
+  "reviewed_run_id": "r-20261007T040504698629-sync-tests-keep-the-real-skills-dir",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:47:45.504443+00:00",
+  "total": 113
+}
