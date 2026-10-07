@@ -4332,7 +4332,9 @@ def _gate_text_reader(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _read_text_under_deadline(path: Path, *, timeout: float) -> str:
+def _read_text_under_deadline(
+    path: Path, *, timeout: float, reader: Callable[[Path], str] | None = None
+) -> str:
     """Read ``path`` under its own deadline, raising on timeout or ``OSError``.
 
     The read runs on a daemon thread so a stalled filesystem cannot hold the
@@ -4345,7 +4347,7 @@ def _read_text_under_deadline(path: Path, *, timeout: float) -> str:
 
     def work() -> None:
         try:
-            outcome["text"] = _gate_text_reader(path)
+            outcome["text"] = (reader or _gate_text_reader)(path)
         except BaseException as exc:  # noqa: BLE001 - re-raised to the caller
             outcome["error"] = exc
 
@@ -4432,8 +4434,58 @@ def _gate_path_check(backend: Mapping[str, Any], declared: str) -> dict[str, Any
     }
 
 
+def fleet_gate_path() -> Path:
+    """The shared crew document that can hold launches on every backend."""
+    return crew_home() / "fleet-gate.json"
+
+
+def _fleet_gate_text_reader(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def _dispatch_fleet_gate() -> dict[str, Any]:
+    """Read the fleet gate under the same deadline as a backend gate."""
+    path = fleet_gate_path()
+    try:
+        text = _read_text_under_deadline(
+            path,
+            timeout=LANE_GATE_READ_DEADLINE_SECONDS,
+            reader=_fleet_gate_text_reader,
+        )
+    except FileNotFoundError:
+        base = {"state": "open", "paused": False, "reason": None, "detail": ""}
+    except (_GateReadDeadline, OSError) as exc:
+        base = {
+            "state": "unreadable",
+            "paused": None,
+            "reason": None,
+            "detail": f"fleet gate {str(path)!r} cannot be read — {exc}",
+        }
+    else:
+        try:
+            base = _gate_rows_from_payload(json.loads(text), path)
+        except ValueError as exc:
+            base = {
+                "state": "unreadable",
+                "paused": None,
+                "reason": None,
+                "detail": f"fleet gate {str(path)!r} is not valid JSON — {exc}",
+            }
+    if base["state"] == "paused":
+        base["detail"] = f"fleet gate is paused: {base['reason'] or 'no reason given'}"
+    elif base["state"] == "unreadable" and "fleet gate" not in base["detail"]:
+        base["detail"] = f"fleet gate {str(path)!r}: {base['detail']}"
+    return {
+        "gate": "fleet",
+        "gate_path": str(path),
+        **base,
+        "path_check": "fleet-wide",
+        "path_check_detail": "",
+    }
+
+
 def _dispatch_lane_gate(backend: Mapping[str, Any]) -> dict[str, Any]:
-    """Read the gate file a backend declares, and say which row applied.
+    """Read the fleet gate, then the gate file a backend declares.
 
     The gate file is the authority for whether the lane admits work: a JSON
     object whose ``paused`` is a boolean, with an optional ``reason`` string.
@@ -4456,6 +4508,9 @@ def _dispatch_lane_gate(backend: Mapping[str, Any]) -> dict[str, Any]:
     path comparison, and a comparison that cannot be made records ``skipped``
     in ``path_check`` without holding the dispatch on its own.
     """
+    fleet_gate = _dispatch_fleet_gate()
+    if fleet_gate["state"] in _LANE_GATE_WAITING_STATES:
+        return fleet_gate
     declared = str(backend.get("gate_document") or "").strip()
     if not declared:
         return {
@@ -5449,6 +5504,9 @@ def plan_dispatch(
             f"spec level {node.spec_level!r} is not one of exact, guided, open, "
             "or empty (undeclared)"
         )
+    fleet_gate = _dispatch_fleet_gate()
+    if fleet_gate["state"] in _LANE_GATE_WAITING_STATES:
+        raise LanePaused(fleet_gate)
     require_worker_scratch_headroom(config)
     # Proven here rather than at worktree creation so that a dry run, whose
     # documented job is to validate the call, cannot report a dispatchable
@@ -7119,11 +7177,11 @@ def dispatch(
     # The lane gate is read before anything is created: a paused gate, one that
     # cannot be answered, or a declared path that differs from the lane
     # document's published one holds the dispatch here, so no pointer and no
-    # worktree is left behind for a worker nobody may launch. The reading was
-    # taken in plan_dispatch against the resolved backend, so ``--local`` and an
-    # explicit ``--backend`` both reach it, and a held backend that falls back
-    # to another is read on the backend it actually resolved to.
-    lane_gate = resolution.lane_gate or {}
+    # worktree is left behind for a worker nobody may launch. Re-reading the
+    # resolved backend here catches a pause added after plan_dispatch; both
+    # ``--local`` and an explicit ``--backend`` reach that resolved backend.
+    lane_gate = _dispatch_lane_gate(backend)
+    resolution.lane_gate = lane_gate
     if lane_gate.get("state") in _LANE_GATE_WAITING_STATES:
         raise LanePaused(lane_gate)
 
@@ -10043,6 +10101,9 @@ def supervised_launch(
     dispatch path writes it, so a fleet spawn always finds its stderr path on
     disk.
     """
+    gate = _dispatch_fleet_gate()
+    if gate["state"] in _LANE_GATE_WAITING_STATES:
+        raise LanePaused(gate)
     record = read_pointer(run_directory.name)
     attempt = int(record.get("attempt") or 1) + 1
     stream_name = Path(log_path).name
@@ -12052,6 +12113,22 @@ def _carry_declared_placement(
         backend["placement"] = placement
 
 
+def _carry_declared_gate_documents(
+    backend: dict[str, Any],
+    record: Mapping[str, Any],
+    config: Mapping[str, Any] | None,
+) -> None:
+    """Use the current lane's gate declarations when rebuilding a resumed run."""
+    configured = ((config or {}).get("backends") or {}).get(
+        str(record.get("backend") or "")
+    )
+    if not isinstance(configured, Mapping):
+        return
+    for key in ("gate_document", "lane_document"):
+        if configured.get(key):
+            backend[key] = configured[key]
+
+
 def _carry_fence_unprotected(
     record: dict[str, Any],
     plan: _backends.LaunchPlan | None,
@@ -12119,6 +12196,10 @@ def resume_plan(
         )
     backend = _backend_settings(record, config)
     _carry_declared_placement(backend, record, config)
+    _carry_declared_gate_documents(backend, record, config)
+    lane_gate = _dispatch_lane_gate(backend)
+    if lane_gate["state"] in _LANE_GATE_WAITING_STATES:
+        raise LanePaused(lane_gate)
     verdict = _budget_verdict(
         project=resume_project,
         root=resume_root,
@@ -12512,6 +12593,9 @@ def change_lane(
                 for finding in resolution.validation.findings
             )
         )
+    lane_gate = resolution.lane_gate or {}
+    if lane_gate.get("state") in _LANE_GATE_WAITING_STATES:
+        raise LanePaused(lane_gate)
     competence = resolution.competence or _competence_verdict(
         resolution=resolution,
         project=str(record.get("project") or ""),
