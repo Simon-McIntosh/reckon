@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="The content-review hot guard in require_plan_reviewed is falsifiable">
+  <meta name="plan-summary" content="A test shows the dispatch gate admitting a node whose newest content review is landed with an unanswered finding, and still refusing when that review is hot. Deleting the content branch's is_hot guard turns the admit case red.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The content-review hot guard in require_plan_reviewed is falsifiable | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The content-review hot guard in require_plan_reviewed is falsifiable</h1>
+
+    <section id="the-content-review-hot-guard-is-falsifiable-anchor">
+      <h2>Measure</h2>
+      <table>
+        <thead>
+          <tr><th>fact</th><th>value</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>gate</td>
+            <td><code>tests/test_review_gate_content_branch_reads_the_hot_set.py</code>
+              with <code>tests/test_review_gate_reads_the_hot_set.py</code>,
+              <code>tests/test_plan_review_gate.py</code></td>
+          </tr>
+          <tr><td>head arm</td><td>31 passed, EXIT=0</td></tr>
+          <tr>
+            <td>negative control</td>
+            <td>guard removed from the content branch of
+              <code>require_plan_reviewed</code>: 1 failed
+              (<code>test_the_gate_admits_a_landed_content_review_with_an_unanswered_finding</code>),
+              30 passed, EXIT=1 — the head arm fails no test</td>
+          </tr>
+          <tr>
+            <td>refusal polarity</td>
+            <td>landed content review: gate admits; the same review left hot:
+              gate refuses on <code>content-orphan-finding</code> as unanswered</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Changed paths</h2>
+      <ul>
+        <li><code>tests/test_review_gate_content_branch_reads_the_hot_set.py</code> —
+          the admit case and the hot-review control, reusing the fixtures of
+          <code>tests/test_review_gate_reads_the_hot_set.py</code></li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
