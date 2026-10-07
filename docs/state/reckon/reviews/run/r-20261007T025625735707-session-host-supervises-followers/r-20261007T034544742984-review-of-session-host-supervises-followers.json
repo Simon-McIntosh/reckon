@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite/after_suite gate logs, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:4743"
+  ],
+  "completed_at": "2026-10-07T04:01:49.175Z",
+  "dispatched_at": "2026-10-07T03:46:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "309",
+      "severity": "follow-on",
+      "text": "follow-on: a request skipped because a live follower this host did not start holds the pair is never recorded in self._children, so tick() never revisits it; when that follower later exits, the host does not take over and the session is left unwatched."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "4743",
+      "severity": "follow-on",
+      "text": "follow-on: no test drives the `crew host` CLI verb or its --fd/--fifo/--owner-pid options; the gate runs `python -m reckon.crew.session_host` directly, so the added CLI plumbing is unverified."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "79",
+      "severity": "follow-on",
+      "text": "follow-on: the owner-identity environment name and JSON encoding are duplicated here and inline at session_host.py:343, rather than reusing reckon/crew/runs.py:2873 and reckon/crew/runs.py:2917 which own that encoding."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "247",
+      "severity": "follow-on",
+      "text": "follow-on: the child-stderr filename is `<pid>-<start>.json.log` (the record stem plus .log), not the `<claude-pid>-<start>.log` path the plan section names."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 0dbf9865; two commits, four files, +1183/-13, every changed file inside the declared write scope and every line the node's own authorship.",
+    "done_when": "the section's done-when names five observable facts; tests/test_session_host.py asserts each (one child per pair at :291, a killed child restarted at :316, a hand-armed live follower left alone at :331, no host stdout at :348, no child surviving the host's SIGTERM at :361 or its owner's exit at :378), and my re-run of the gate reads 9 passed EXIT=0.",
+    "goal": "the node's goal is the section-4 deliverable, a hidden `reckon crew host` that supervises one `crew follow` per project and session for one Claude session; reckon/crew/session_host.py:210 SessionHost implements it and reckon/cli.py:4743 exposes the verb.",
+    "manifest": "read; status complete, commits 87cc79c61 and 241b80161, changed_paths and commits populated, negative_control_log names a log whose last line is EXIT=1 with one failing id the head arm does not fail; baseline_suite/after_suite are absent, so the added-failure count is unmeasured rather than zero.",
+    "write_paths": "read the manifest's declared paths; the diff is four files, all inside them (reckon/crew/session_host.py, reckon/cli.py, tests/test_session_host.py, the evidence fragment); the declared figures directory docs/figures/a-follower-lives-as-long-as-its-session/session-host-supervises-followers was not emitted."
+  },
+  "justifications": {
+    "durability": "the declared negative control (no parent-death signal, owner-liveness stop removed) reddens exactly tests/test_session_host.py:378 test_no_child_survives_its_owners_exit at 1 failed EXIT=1, so the teardown guard is falsified; the other assertions read independent process facts (a follower-written marker, /proc liveness, the host's stdout) rather than a value the test handed in.",
+    "evidence": "tests/test_session_host.py asserts all five done-when clauses as 9 passed EXIT=0, but the roughly eighty lines added at reckon/cli.py:4743 (the `crew host` verb and its --fd/--fifo plumbing) are reached by no test, because the gate drives the module directly with `python -m reckon.crew.session_host`.",
+    "fit": "session_host.py follows the surrounding crew idiom (a dataclass, a hidden CLI verb with lazy imports, a mechanism docstring) and carries no plan, version or ticket label on any added line.",
+    "goal_fidelity": "session_host.py:210 runs one crew follow per (project, session) with stdout inherited and stderr to a log, restarts a dead child through fleet_supervisor.next_backoff, and stops every child on owner end or signal, which is the section's deliverable.",
+    "reuse": "the restart schedule reuses fleet_supervisor.next_backoff, but the owner-identity mechanism is re-declared at session_host.py:79 and :343 instead of extending its owner reckon/crew/runs.py:2873 _FOLLOWER_OWNER_ENV and runs.py:2917 _format_follower_owner.",
+    "scope_discipline": "the four changed files are all inside the declared write paths, and the only departure is the declared docs/figures/... directory left unemitted, which is under-delivery rather than an out-of-scope write."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is the section-4 deliverable, a hidden `reckon crew host` that supervises one `crew follow` per project and session for one Claude session; reckon/crew/session_host.py:210 SessionHost implements it and reckon/cli.py:4743 exposes the verb.\nVERDICT done_when: the section's done-when names five observable facts; tests/test_session_host.py asserts each (one child per pair at :291, a killed child restarted at :316, a hand-armed live follower left alone at :331, no host stdout at :348, no child surviving the host's SIGTERM at :361 or its owner's exit at :378), and my re-run of the gate reads 9 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared paths; the diff is four files, all inside them (reckon/crew/session_host.py, reckon/cli.py, tests/test_session_host.py, the evidence fragment); the declared figures directory docs/figures/a-follower-lives-as-long-as-its-session/session-host-supervises-followers was not emitted.\nVERDICT manifest: read; status complete, commits 87cc79c61 and 241b80161, changed_paths and commits populated, negative_control_log names a log whose last line is EXIT=1 with one failing id the head arm does not fail; baseline_suite/after_suite are absent, so the added-failure count is unmeasured rather than zero.\nVERDICT diff: read commit by commit against base 0dbf9865; two commits, four files, +1183/-13, every changed file inside the declared write scope and every line the node's own authorship.\nCALL_SITES: reckon/cli.py:4743\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: session_host.py:210 runs one crew follow per (project, session) with stdout inherited and stderr to a log, restarts a dead child through fleet_supervisor.next_backoff, and stops every child on owner end or signal, which is the section's deliverable.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_session_host.py asserts all five done-when clauses as 9 passed EXIT=0, but the roughly eighty lines added at reckon/cli.py:4743 (the `crew host` verb and its --fd/--fifo plumbing) are reached by no test, because the gate drives the module directly with `python -m reckon.crew.session_host`.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four changed files are all inside the declared write paths, and the only departure is the declared docs/figures/... directory left unemitted, which is under-delivery rather than an out-of-scope write.\nSCORE durability: 18\nJUSTIFICATION durability: the declared negative control (no parent-death signal, owner-liveness stop removed) reddens exactly tests/test_session_host.py:378 test_no_child_survives_its_owners_exit at 1 failed EXIT=1, so the teardown guard is falsified; the other assertions read independent process facts (a follower-written marker, /proc liveness, the host's stdout) rather than a value the test handed in.\nSCORE fit: 19\nJUSTIFICATION fit: session_host.py follows the surrounding crew idiom (a dataclass, a hidden CLI verb with lazy imports, a mechanism docstring) and carries no plan, version or ticket label on any added line.\nSCORE reuse: 15\nJUSTIFICATION reuse: the restart schedule reuses fleet_supervisor.next_backoff, but the owner-identity mechanism is re-declared at session_host.py:79 and :343 instead of extending its owner reckon/crew/runs.py:2873 _FOLLOWER_OWNER_ENV and runs.py:2917 _format_follower_owner.\nFINDING reckon/crew/session_host.py:309 follow-on: a request skipped because a live follower this host did not start holds the pair is never recorded in self._children, so tick() never revisits it; when that follower later exits, the host does not take over and the session is left unwatched.\nFINDING reckon/cli.py:4743 follow-on: no test drives the `crew host` CLI verb or its --fd/--fifo/--owner-pid options; the gate runs `python -m reckon.crew.session_host` directly, so the added CLI plumbing is unverified.\nFINDING reckon/crew/session_host.py:79 follow-on: the owner-identity environment name and JSON encoding are duplicated here and inline at session_host.py:343, rather than reusing reckon/crew/runs.py:2873 and reckon/crew/runs.py:2917 which own that encoding.\nFINDING reckon/crew/session_host.py:247 follow-on: the child-stderr filename is `<pid>-<start>.json.log` (the record stem plus .log), not the `<claude-pid>-<start>.log` path the plan section names.",
+  "review_run_id": "r-20261007T034544742984-review-of-session-host-supervises-followers",
+  "reviewed_base_sha": "0dbf9865e3be487063ab5fd1109ae1db59f087af",
+  "reviewed_head_sha": "241b8016123a1adeb3d43382b78f2704ea8249c5",
+  "reviewed_run_id": "r-20261007T025625735707-session-host-supervises-followers",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T03:59:39.453019+00:00",
+  "total": 106
+}
