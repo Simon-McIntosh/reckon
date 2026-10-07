@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "skills/reckon-build/SKILL.md:345 names the session-host-first rule",
+    "tests/test_skill_contracts.py:1243 asserts the ordering",
+    "skills/reckon-build/references/sprint-orchestration.md:815 names the delivery distinction"
+  ],
+  "completed_at": "2026-10-07T09:09:27.575Z",
+  "dispatched_at": "2026-10-07T08:40:01Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "follow-on: the run reached its declared EXIT=0 by adding (\"budget-reset\",) to STATE_PHRASES in a file outside its granted write paths (commit 47630d8eb) instead of requesting a scope extension."
+    },
+    {
+      "file": "docs/plans/a-follower-lives-as-long-as-its-session.html",
+      "line": "129",
+      "severity": "follow-on",
+      "text": "follow-on: \u00a77's done-when names the user-global ~/.agents/AGENTS.md rule, which still tells a coordinator to stop and re-arm a follower with no session-host qualification; it is outside this node's grant and remains unmet."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1243",
+      "severity": "follow-on",
+      "text": "follow-on: the ordering guard reads only SKILL.md's producer-and-follower section, so the same session-host-first ordering in references/orchestrator-harness/claude-code.md and references/sprint-orchestration.md \u00a715/\u00a717 is unguarded."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1236",
+      "severity": "follow-on",
+      "text": "follow-on: _producer_follower_paragraphs split on the literal markers and raises IndexError if either is reworded, and the lookbehind exempting the host paragraph matches only the exact phrase 'nothing re-arm' immediately preceded."
+    },
+    {
+      "file": ".config/reckon/crew/runs/r-20261007T074228172964-skills-name-session-host-delivery/manifest.md",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "follow-on: the landing line ends with an unsubstituted template placeholder, a fragment reading placeholder with a budget-reset token, in a durable record a reader is meant to trust."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 8362b726d..d29492dbf, the delta gained since the prior review at 8362b726d: SKILL.md and sprint-orchestration.md repair the 'host' -> Claude Code wording, test_crew_help_names_its_state.py adds the budget-reset STATE_PHRASES entry, test_skill_contracts.py adds a 49-line ordering guard, and the evidence fragment records both. Over the whole run 9cf1c0ef5..d29492dbf six files change +172/-29.",
+    "done_when": "the gate the node named (tests/test_skill_contracts.py and tests/test_crew_help_names_its_state.py) now ends 66 passed EXIT=0 and I reproduced that at head d29492dbf, and the ordering guard reddens under my own mutation of SKILL.md; the global-rule half of the done-when is unmet but lies outside the node's write grant. Reaching EXIT=0 required editing tests/test_crew_help_names_its_state.py:19 - outside the granted write paths and disclosed there and in the manifest.",
+    "goal": "\u00a77's goal - the three skill files name session-host delivery first and the Monitor fallback second with its -p lifetime - is delivered in all three (skills/reckon-build/SKILL.md:345, references/orchestrator-harness/claude-code.md:39, references/sprint-orchestration.md:815), and the resume fixed the one sentence where 'host' stood for Claude Code; the plan's own done-when also names the user-global ~/.agents/AGENTS.md rule, which this node cannot edit and leaves unchanged.",
+    "manifest": "read; it names commits 8362b726d, ad0a6e9b0, 4d10ebb6a, 47630d8eb and d29492dbf, the gate 2 failed/63 passed -> 66 passed EXIT=0, two manifest-named negative controls, and the out-of-scope edit; its landing line nonetheless ends with an unsubstituted template placeholder.",
+    "write_paths": "the node declares six write paths; 9cf1c0ef5..d29492dbf changes five of them plus tests/test_crew_help_names_its_state.py, which is not declared and is an out-of-scope edit the manifest and evidence fragment disclose."
+  },
+  "justifications": {
+    "durability": "the resume added test_the_session_host_paragraph_precedes_the_fallback_rearm_guidance, which I confirmed fails when the fallback's re-arm paragraph is moved above the session-host paragraph, so the ordering the prior review found unguarded is now guarded; the equivalent prose in claude-code.md and sprint-orchestration.md still has no assertion behind it.",
+    "evidence": "the run's own head-gate.log names revision d29492dbf and reads 66 passed EXIT=0, and an independent run of the same gate in the reviewed worktree reproduced 66 passed EXIT=0; the ordering negative control is genuine - I rebuilt the mutation in a scratch tree and the guard failed with the same 2>3 index assertion - but the clean exit is partly owed to an out-of-scope edit.",
+    "fit": "the wording repair makes all three files agree with the plan's explicit Claude-Code/session-host distinction (\u00a71), and the new test follows the surrounding normalized()/ROOT/regex idiom of tests/test_skill_contracts.py rather than inventing one.",
+    "goal_fidelity": "all three skill files name session-host delivery first and the Monitor fallback (--lifetime 29m; 9m in -p) second and no sentence tells a host-delivered coordinator to re-arm, but the done-when's fourth target, the user-global ~/.agents/AGENTS.md rule, is unchanged and cannot be reached from this node's grant.",
+    "reuse": "the change extends the existing CREW_VERBS_OWNER at tests/test_skill_contracts.py:906 by one exemption and adds one test beside the other skill-contract checks; it forks no definition and copies no reference text.",
+    "scope_discipline": "five of the six declared paths are respected, but tests/test_crew_help_names_its_state.py:19 was edited (commit 47630d8eb) to reach the node's own literal EXIT=0 and lies outside the granted write paths; the edit is disclosed in the manifest and the evidence fragment, yet a scope extension should have been requested before writing it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a77's goal - the three skill files name session-host delivery first and the Monitor fallback second with its -p lifetime - is delivered in all three (skills/reckon-build/SKILL.md:345, references/orchestrator-harness/claude-code.md:39, references/sprint-orchestration.md:815), and the resume fixed the one sentence where 'host' stood for Claude Code; the plan's own done-when also names the user-global ~/.agents/AGENTS.md rule, which this node cannot edit and leaves unchanged.\nVERDICT done_when: the gate the node named (tests/test_skill_contracts.py and tests/test_crew_help_names_its_state.py) now ends 66 passed EXIT=0 and I reproduced that at head d29492dbf, and the ordering guard reddens under my own mutation of SKILL.md; the global-rule half of the done-when is unmet but lies outside the node's write grant. Reaching EXIT=0 required editing tests/test_crew_help_names_its_state.py:19 - outside the granted write paths and disclosed there and in the manifest.\nVERDICT write_paths: the node declares six write paths; 9cf1c0ef5..d29492dbf changes five of them plus tests/test_crew_help_names_its_state.py, which is not declared and is an out-of-scope edit the manifest and evidence fragment disclose.\nVERDICT manifest: read; it names commits 8362b726d, ad0a6e9b0, 4d10ebb6a, 47630d8eb and d29492dbf, the gate 2 failed/63 passed -> 66 passed EXIT=0, two manifest-named negative controls, and the out-of-scope edit; its landing line nonetheless ends with an unsubstituted template placeholder.\nVERDICT diff: read 8362b726d..d29492dbf, the delta gained since the prior review at 8362b726d: SKILL.md and sprint-orchestration.md repair the 'host' -> Claude Code wording, test_crew_help_names_its_state.py adds the budget-reset STATE_PHRASES entry, test_skill_contracts.py adds a 49-line ordering guard, and the evidence fragment records both. Over the whole run 9cf1c0ef5..d29492dbf six files change +172/-29.\nCALL_SITES: skills/reckon-build/SKILL.md:345 names the session-host-first rule, tests/test_skill_contracts.py:1243 asserts the ordering, skills/reckon-build/references/sprint-orchestration.md:815 names the delivery distinction\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: all three skill files name session-host delivery first and the Monitor fallback (--lifetime 29m; 9m in -p) second and no sentence tells a host-delivered coordinator to re-arm, but the done-when's fourth target, the user-global ~/.agents/AGENTS.md rule, is unchanged and cannot be reached from this node's grant.\nSCORE evidence: 18\nJUSTIFICATION evidence: the run's own head-gate.log names revision d29492dbf and reads 66 passed EXIT=0, and an independent run of the same gate in the reviewed worktree reproduced 66 passed EXIT=0; the ordering negative control is genuine - I rebuilt the mutation in a scratch tree and the guard failed with the same 2>3 index assertion - but the clean exit is partly owed to an out-of-scope edit.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: five of the six declared paths are respected, but tests/test_crew_help_names_its_state.py:19 was edited (commit 47630d8eb) to reach the node's own literal EXIT=0 and lies outside the granted write paths; the edit is disclosed in the manifest and the evidence fragment, yet a scope extension should have been requested before writing it.\nSCORE durability: 17\nJUSTIFICATION durability: the resume added test_the_session_host_paragraph_precedes_the_fallback_rearm_guidance, which I confirmed fails when the fallback's re-arm paragraph is moved above the session-host paragraph, so the ordering the prior review found unguarded is now guarded; the equivalent prose in claude-code.md and sprint-orchestration.md still has no assertion behind it.\nSCORE fit: 19\nJUSTIFICATION fit: the wording repair makes all three files agree with the plan's explicit Claude-Code/session-host distinction (\u00a71), and the new test follows the surrounding normalized()/ROOT/regex idiom of tests/test_skill_contracts.py rather than inventing one.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the existing CREW_VERBS_OWNER at tests/test_skill_contracts.py:906 by one exemption and adds one test beside the other skill-contract checks; it forks no definition and copies no reference text.\nFINDING tests/test_crew_help_names_its_state.py:19 follow-on: the run reached its declared EXIT=0 by adding (\"budget-reset\",) to STATE_PHRASES in a file outside its granted write paths (commit 47630d8eb) instead of requesting a scope extension.\nFINDING docs/plans/a-follower-lives-as-long-as-its-session.html:129 follow-on: \u00a77's done-when names the user-global ~/.agents/AGENTS.md rule, which still tells a coordinator to stop and re-arm a follower with no session-host qualification; it is outside this node's grant and remains unmet.\nFINDING tests/test_skill_contracts.py:1243 follow-on: the ordering guard reads only SKILL.md's producer-and-follower section, so the same session-host-first ordering in references/orchestrator-harness/claude-code.md and references/sprint-orchestration.md \u00a715/\u00a717 is unguarded.\nFINDING tests/test_skill_contracts.py:1236 follow-on: _producer_follower_paragraphs split on the literal markers and raises IndexError if either is reworded, and the lookbehind exempting the host paragraph matches only the exact phrase 'nothing re-arm' immediately preceded.\nFINDING .config/reckon/crew/runs/r-20261007T074228172964-skills-name-session-host-delivery/manifest.md:10 follow-on: the landing line ends with an unsubstituted template placeholder, a fragment reading placeholder with a budget-reset token, in a durable record a reader is meant to trust.\nREVISION: d29492dbff7cb418b08ef29364ad71ff6666688c\nreviewed_base: 8362b726d0644f108185f311db49fa30b6151b14",
+  "review_run_id": "r-20261007T083914036867-review-of-skills-name-session-host-delivery",
+  "reviewed_base_sha": "8362b726d0644f108185f311db49fa30b6151b14",
+  "reviewed_head_sha": "d29492dbff7cb418b08ef29364ad71ff6666688c",
+  "reviewed_run_id": "r-20261007T074228172964-skills-name-session-host-delivery",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T09:04:04.039789+00:00",
+  "total": 107
+}
