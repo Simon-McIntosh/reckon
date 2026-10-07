@@ -22,7 +22,7 @@
 <meta name="plan-capability-reasoning" content="standard">
 <meta name="plan-capability-verification" content="strict">
 <meta name="plan-capability-risk" content="low">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;}">
 </head>
@@ -70,6 +70,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261007T012443732680-review-of-alkpl-first-landing-in-progress" data-who="reckon-build" data-when="2026-10-07T01:37:32.052Z">
     <div class="r-comment-body"><p>§2 review of r-20261007T011520837409-alkpl-first-landing-in-progress: the stored record scores all six dimensions (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 20; total 114), records reviewed_base_sha f5ac35887 and reviewed_head_sha e241c435b, and carries added_failure_count 0 with no ids; verdict — the §2 change is correct, in scope, guarded, and ready to promote.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20261007T0600-status-key-fix" data-who="reckon-build" data-when="2026-10-07T06:00:00Z">
+    <div class="r-comment-body">§2 left a regression that reckon-eb (session dec28616) found and fixed. _record_landing_comment's result always carried a status key, so test_promotion_splits_narrative_from_run_measurements, which pins the result's keys, went red on main. Commit f2ebe7ee2 reports status: in-progress only when the write flipped a draft or pending plan, so every other landing returns the shape callers already read. tests/test_crew_promotion.py and tests/test_first_landing_marks_plan_in_progress.py pass, 54 tests.</div>
 </div>
 </section>
 </main>
