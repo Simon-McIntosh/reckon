@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:02:29.447Z",
+  "dispatched_at": "2026-10-04T16:44:16Z",
+  "findings": [
+    {
+      "anchor": "reckon/cli.py:2048",
+      "id": "reuse_search-1",
+      "reason": "the plan would otherwise budget a node to build plan/section/member resolution that already runs inside `plan_dispatch`, when the real change is one line resolving the mount before the existing call.",
+      "text": "the dry-run branch already calls `crew_module.plan_dispatch(...)`, the same resolver the launch path calls, so the plan's premise that the dry run \"does not resolve the plan and section\" and that \"every one of them\" resolution \"is skipped today\" is false for the current tree; the only resolution actually skipped is the repo-mount resolution, skipped because the dry-run branch passes the raw `--repo` (None when the flag is absent) while `dispatch()` resolves the mount first at dispatch.py:6458",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:2046",
+      "id": "duplicate_owner-1",
+      "reason": "the write path and file scope are wrong; the plan should name `reckon/cli.py::crew_dispatch` (and `plan_dispatch` at 5064 where that is genuinely the existing seam) as the file to extend.",
+      "text": "\u00a72 declares its write path as `reckon/crew/dispatch.py`, but the dry run's stopping point and every refusal document are the `if dry_run:` branch of `crew_dispatch` in `reckon/cli.py` (lines 2046-2256); a node scoped to `dispatch.py` cannot add the resolution to the path the dry run actually stops at",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:5181",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a73 says \"decide which is right and make both obey\" without naming the owner; the fix is to widen `plan_dispatch`'s guard at 5181 to match `dispatch()`, and the plan should name that owner rather than let a worker add a third resolution path.",
+      "text": "member resolution has two owners today: `plan_dispatch` resolves a roster member only when a member is named AND a lane is named (dispatch.py:5181), while `dispatch` resolves it unconditionally (dispatch.py:6825), which is the same-shape-different-input asymmetry \u00a73 measures",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f461c00bfc5f76ab04900976b07b68e0648510077eaaecdf9fd4f6222130054f",
+  "plan_slug": "a-dry-run-must-resolve-what-the-real-call-resolves",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T164401411737-plan-review-of-a-dry-run-must-resolve-what-the-real-call-resolves",
+  "reviewed_blob_sha": "f922b208c33bf53820cf54d429763fdb03d86b98",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan proposes no new module; the deep module it should lean on already exists as `plan_dispatch`, a pure no-side-effect resolver, and the plan does not spread complexity across wrappers.",
+    "duplicate_owner": "a finding \u2014 the plan names `reckon/crew/dispatch.py` as its write path, but the dry-run decision lives in the command branch `reckon/cli.py::crew_dispatch`, and member resolution already has two owners in dispatch.py.",
+    "reuse_search": "a finding \u2014 the plan never cites `plan_dispatch` (reckon/crew/dispatch.py:5064), which the dry run ALREADY calls (reckon/cli.py:2048), so its prior-art account (\"every one of them is skipped today\") is inaccurate.",
+    "thin_wrapper": "a finding \u2014 the plan proposes the dry run perform resolutions that `plan_dispatch` already performs, without saying those resolutions must be reached by handing it the resolved repo rather than re-added."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.378941+00:00"
+}

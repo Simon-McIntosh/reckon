@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:02:48.664Z",
+  "dispatched_at": "2026-10-05T01:47:16Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-lane-can-say-where-it-stands.html",
+      "id": "reuse_search-1",
+      "reason": "naming the existing consumer turns \u00a77 from an open question into a specific producer to wire, which changes what the node builds.",
+      "text": "\u00a77 asks whether reckon should verify a declared window against the endpoint it dispatches into, yet cites none of the mechanisms that already address its subject \u2014 the wired consumer `_context_fit_verdict` at `reckon/crew/routing.py:3259`, the producer-by-design `reckon/crew/context_budget.py::refusal_census` (written, unwired), and the unwired endpoint probe `reckon/crew/serving_origin.py::check_serving_origin` \u2014 so the section reads as if nothing exists where three mechanisms do",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:3259",
+      "id": "duplicate_owner-1",
+      "reason": "the node should wire `refusal_census` into the existing slot rather than build a second checker, which is a smaller change than \u00a77's open question implies.",
+      "text": "\u00a77 proposes a guard that would fire on an endpoint-vs-declared disagreement, but that guard is already written (`_context_fit_verdict`, `reckon/crew/routing.py:3238`, reading `effective_input_window` at `:3259`); the only missing piece is a producer for that slot, and `reckon/crew/context_budget.py::refusal_census` is the census the consumer's own docstring names as the source, so a fresh guard beside it would duplicate a live consumer whose only gap is an unwired producer",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "46d0abb12e395b7a3dbcf7e2c541754c520d3605059370804cc759e1581dc9b9",
+  "plan_slug": "a-lane-can-say-where-it-stands",
+  "plan_version": 49,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014700575937-plan-review-of-a-lane-can-say-where-it-stands",
+  "reviewed_blob_sha": "f25155ea9d9867ac22f6bbdb24f05e2471a0a4a3",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the landed reading is one deep method,",
+    "duplicate_owner": "a finding \u2014 \u00a77's \"guard fires on the disagreement\"",
+    "interface_budget": "pass \u2014 public_definitions 1470, cli_options 317,",
+    "reuse_search": "a finding \u2014 \u00a77 contemplates verifying the declared window",
+    "thin_wrapper": "pass \u2014 \u00a73 inverts transport ownership into the existing"
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.395821+00:00"
+}

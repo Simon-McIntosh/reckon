@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:18:06.264Z",
+  "dispatched_at": "2026-10-06T10:10:11Z",
+  "findings": [
+    {
+      "anchor": "docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/scan_binding.py:1",
+      "id": "reuse_search-1",
+      "reason": "the census and measure sections should name the owner they extend (or state why it cannot carry the job), which changes \u00a72/\u00a73's deliverable text and prevents a third parallel reader.",
+      "text": "\u00a72 commissions a sentence census and \u00a73 a transcript token measure with no recorded search for prior machinery; the token measure re-derives an account `reckon/crew/metering.py` already holds, and the census re-derives the skill-text assertions `tests/test_skill_contracts.py` holds, so the plan could have extended both",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-other-references/sentence_counts.py:1",
+      "id": "deep_module-1",
+      "reason": "\u00a73 must re-run the census against the rewritten skill, and with two tokenisers the before/after counts the \u22644,000- and \u226412,000-word ceilings are judged against are not comparable, so the plan should say which counter is canonical before the rewrite.",
+      "text": "the \u00a72 capability is spread across seven scripts in four figure directories \u2014 `classify-rules-in-the-skill/{scan_binding.py,reconcile_coverage.py,render_dispositions.py}`, `classify-rules-in-the-other-references/{sentence_counts.py,rows.py,render.py}`, `classify-rules-reconcile/reconcile_skill.py` \u2014 of which two (`scan_binding.py`, `sentence_counts.py`) independently implement the identical stated sentence-splitting method and two (`reconcile_coverage.py`, `reconcile_skill.py`) independently reconcile candidates to rows, with no shared module and no single entry point",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/figures/the-crew-contract-fits-one-read/classify-rules-reconcile/reconcile_skill.py:3",
+      "id": "deep_module-2",
+      "reason": "\u00a73's re-census needs a reconciler that still runs at the post-rewrite tree, so \u00a72's coverage check should be one placeable script rather than a scratch-bound one-off.",
+      "text": "the reconciler hardcodes an absolute worktree path (`/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/classify-rules-reconcile`) and reads its inputs from a `/tmp/reckon-crew-scratch/...` directory, so it is a one-shot script that cannot run against the rewritten text \u00a73 produces and cannot be re-run by any later reader of the fragment",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/research/data/crew-contract-baseline/measure.py:1",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend `reckon/crew/metering.py` (or name why its transcript grammar cannot carry a skill-load window) so \u00a73's grade is reconcilable with the metering the rest of reckon reports.",
+      "text": "the token measure the \u00a73 done-when is graded by reads Claude Code transcripts under `~/.claude/projects` and sums `input_tokens + cache_creation_input_tokens + cache_read_input_tokens` per request, which is exactly the Claude-grammar account owned by `reckon/crew/metering.py:62` (`_CLAUDE_INPUT_FIELDS`) and the first-turn transcript read owned by `reckon/crew/carryover_census.py`; it extends neither, so the \u00a73 target (~half the baseline, ~10,242 tokens) is computed by a second account that cannot be reconciled with the run-ledger figures those owners produce",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1c5bf20aeb14f3a9faff89c3f00bf9b8d5f982df96960e824c0f9e74fecdece1",
+  "plan_slug": "the-crew-contract-fits-one-read",
+  "plan_version": 26,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T100953012899-plan-review-of-the-crew-contract-fits-one-read",
+  "reviewed_blob_sha": "eb2a1bdee102efd4e036f832f605d41bd33588f0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the \u00a72 classification capability is spread across seven shallow per-figure scripts rather than one module with a small interface, so the \"before\" count a \u00a73 rewrite must be compared against is produced by scripts with no common entry point.",
+    "duplicate_owner": "a finding \u2014 the token measure the \u00a73 done-when is graded by re-implementts the Claude-grammar transcript account that `reckon/crew/metering.py` already owns, rather than extending it.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; the plan adds no member of any family, because the scripts it introduces live under `docs/figures/` and `docs/research/data/`, outside the `reckon/` tree `reckon/interface_counts.py` parses, and \u00a73 removes prose rather than writing reckon code.",
+    "reuse_search": "a finding \u2014 \u00a72 and \u00a73 add a sentence census and a per-session transcript token measure without recording any search for an existing mechanism; \u00a73 names only `tests/test_skill_contract_parity.py`, and neither the census nor the token instrument cites an existing owner for the job it does.",
+    "thin_wrapper": "pass \u2014 \u00a73 deletes prose rather than layering over it, and the plan proposes no new wrapper around existing machinery; there is no thin layer to justify."
+  },
+  "section_digests": {
+    "_document": "c18a9db7471afbb1d263984b72da36606d623e979322a1663f2e31a336e55def",
+    "s1": "e03f606afdb78e6b308ef1299a7b868ec09052b4842de46205b30106103e5991",
+    "s2": "698a2a8583161b33608967bafc3c61641856bd4c995bb3e303796723932345e7",
+    "s3": "55c86e04c5aae2cb268f9567ce641cae99945fa16a350c250d4170d30ed1c947",
+    "s4": "bc54d1886f4d3949bffdaf93118a6be518f17b34653992dc9521ee8e03739257"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.203049+00:00"
+}

@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T20:16:33.949Z",
+  "dispatched_at": "2026-10-04T20:13:36Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/runs.py:3320",
+      "id": "duplicate_owner-1",
+      "reason": "the plan would land one consolidation node that renders both units through `reckon/service.py` instead of a per-copy assertion; the author already concedes the duplication is a defect, so this substitutes the remedy rather than adding scope.",
+      "text": "\u00a79 and \u00a710 add watcher-unit rendering (`WATCH_UNIT_TEMPLATE` and `render_watch_unit` at `reckon/crew/runs.py:3320`/`:3397`, plus the unit_path/write_unit manager at `:3433`/`:3457` and `ensure_watcher_service` at `:3546`) beside the service-module owner's `UNIT_TEMPLATE`/`render_unit`/`write_unit`/`unit_path`/`ServiceError` in `reckon/service.py:24`/`:130`/`:230`/`:89`, and the two rendered units are structurally the same `[Unit]`+`[Service]` body with `PATH`/`ExecStart`/`StandardOutput`/`StandardError`/`Restart`/`[Install]`; \u00a79 itself names the two-copy unit text \"its own defect\", yet its remedy asserts both copies carry `Restart=always` (a test that enumerates the generators) rather than extending the owner, so the two templates must still be hand-synchronised and the plan guarantees only that drift is detected, never that it cannot occur",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:2638",
+      "id": "thin_wrapper-1",
+      "reason": "the adapter could be replaced by unifying the decision vocabulary (teaching the append the stored spelling, or retiring the view's rename), which is a different node than the write-side shim \u00a712 schedules.",
+      "text": "\u00a712 adds `_decision_as_stored` (and `_decision_options_as_choices`) at `reckon/_store.py:2638`/`:2586` to fold a caller's `question`/`options` onto the stored `title`/`choices` at the write boundary, while the same vocabulary pair is already mapped the other way at the read boundary in `reckon/mcp_views.py:2423` (`\"question\": value.get(\"title\")`, `\"options\": list(value.get(\"choices\"))`), so one mismatch is bridged by two directional shims in two modules and the plan states no reason the engine cannot accept the stored spelling directly or the view emit it, leaving two spellings of the same decision to drift apart",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bacb1cfa21228f67dec033cff2e6699debc09ca155c41d5378494ac9e49624ae",
+  "plan_slug": "crew-runtime-positive-controls",
+  "plan_version": 333,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T201322308747-plan-review-of-crew-runtime-positive-controls",
+  "reviewed_blob_sha": "7e9438706dfbee120df51ecff0e9c8df7ee3c0d4",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the substantive mechanisms are single entry points that hide their behaviour rather than a spread of shallow wrappers: `check_serving_origin` (`reckon/crew/serving_origin.py:31`) hides discovery, budget and the bounded HTTP probe behind one call; the wait work extends the existing readers in `reckon/crew/recovery.py` (`_wait_terminal_names_a_live_state`, `_wait_declaration_signature`); and the negative-control trigger hides behind `is_test_path`/`negative_control_finding` in `reckon/crew/node.py`.",
+    "duplicate_owner": "a finding \u2014 the plan duplicates the systemd unit owner instead of extending it: `reckon/service.py` already owns unit construction (`UNIT_TEMPLATE`, `render_unit`, `write_unit`, `unit_path`, `ServiceError`) and the watcher work adds a second generator and manager in `reckon/crew/runs.py`.",
+    "reuse_search": "pass \u2014 the plan searches the codebase section by section and cites the mechanism it extends or the prior art it must be judged against; \u00a713 is the clearest case, naming `reckon/flight.py`'s existing endpoints-document reader (`_probe_serving`/`probe_availability`) and requiring the node to state why it could not be reused before authoring `reckon/crew/serving_origin.py`, and \u00a74 extends the existing wait reader in `reckon/crew/recovery.py` rather than adding a parallel one.",
+    "thin_wrapper": "a finding \u2014 \u00a712 adds `_decision_as_stored` in `reckon/_store.py` to translate a caller's `question`/`options` onto the stored `title`/`choices` at the write boundary, while the same vocabulary pair is already translated the other way at the read boundary in `reckon/mcp_views.py`, so one mismatch is bridged by two directional shims in two modules and the plan gives no reason the engine cannot speak the stored spelling directly."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.920190+00:00"
+}

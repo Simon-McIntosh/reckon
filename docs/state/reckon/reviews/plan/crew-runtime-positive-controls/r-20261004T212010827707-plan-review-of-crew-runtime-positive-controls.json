@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:24:22.594Z",
+  "dispatched_at": "2026-10-04T21:20:25Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/review.py:1339",
+      "id": "reuse_search-1",
+      "reason": "citing the resolver to call turns a new resolution implementation into a call to one owner, which is the whole point of the section.",
+      "text": "\u00a760 says store_review \"validates neither sha\" and adds resolution, but names no existing resolver to reuse; the codebase already answers \"does this revision name a commit\" in reports._commit_resolves_in, promotion._commit_canonical_id and recovery._resolve_commit, and asks it a fifth time rather than reusing one of them",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/review.py:1339",
+      "id": "duplicate_owner-1",
+      "reason": "the section should name recovery._review_head_and_tree as the owner of the reviewed head and reports._commit_resolves_in as the resolver, or it ships a second and third copy of the same question.",
+      "text": "\u00a760 also promises the refusal \"names the reviewed worktree's actual head\", which is the job of recovery._review_head_and_tree / _reviewed_run_head (reckon/crew/recovery.py:357, :1528); a sha-resolution check written into store_review beside those owners forks review-head resolution a third time",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/service.py:89",
+      "id": "duplicate_owner-2",
+      "reason": "the owner to extend is reckon/service.py (promote the XDG-aware directory resolver there and let systemd_user_dir delegate), otherwise the plan as written introduces a crew<->service dependency cycle.",
+      "text": "\u00a761's done-when says \"every unit path resolves through systemd_user_dir()\" (reckon/crew/paid_lanes.py:750), but the unit-path/installed/write_unit/systemctl/linger facility it is consolidating lives in reckon/service.py, and paid_lanes already imports reckon.service (reckon/crew/paid_lanes.py:841, :906); routing service.unit_path through a crew module inverts that dependency",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:3424",
+      "id": "duplicate_owner-3",
+      "reason": "the section already names the owner and the reuse target, so the finding is that the plan is correct here, not that it needs to change.",
+      "text": "SystemdUserWatchService already delegates active/lingering/enable_linger/start to reckon.service but keeps its own unit_path (hardcoding ~/.config/systemd/user) and a verbatim copy of service.write_unit's unchanged-content check; \u00a761 identifies this correctly, so this line records that the plan's own citation is accurate and the fix named (extend reckon/service.py, parameterised by unit name) is the right remedy",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "1902546549d66cf6af4bd9c8b515df40b5e70688eb74d7178cb96abae5f5cdbe",
+  "plan_slug": "crew-runtime-positive-controls",
+  "plan_version": 340,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T212010827707-plan-review-of-crew-runtime-positive-controls",
+  "reviewed_blob_sha": "b7ba0cdc76eedc832a3ca44d3f541c5872277dda",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no implementable section adds a module; \u00a760 and \u00a721 extend existing functions (store_review, promotion's shortfall report) and \u00a761 removes a module rather than adding one, so no new surface is spread over shared machinery.",
+    "duplicate_owner": "a finding \u2014 \u00a760 adds a fifth commit-resolution site instead of extending an owner, and \u00a761 names systemd_user_dir() (a crew module) as the resolver owner when the generic facility lives in reckon/service.py.",
+    "reuse_search": "a finding \u2014 \u00a760 proposes a new commit-resolution check in store_review (reckon/crew/review.py:1339) without citing the four resolvers that already exist for exactly this question (reckon/crew/reports.py:1494 _commit_resolves_in, reckon/crew/promotion.py:443 _commit_canonical_id, reckon/crew/recovery.py:378 _resolve_commit and :1461 _resolve_abbreviated_commit).",
+    "thin_wrapper": "pass \u2014 \u00a761 explicitly justifies routing the watcher's render/write/control through reckon/service.py rather than forking it, and the retained SystemdUserWatchService is the documented injectable fake-manager seam (reckon/crew/runs.py:3424), so the plan extends an owner instead of forwarding to one."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.908527+00:00"
+}

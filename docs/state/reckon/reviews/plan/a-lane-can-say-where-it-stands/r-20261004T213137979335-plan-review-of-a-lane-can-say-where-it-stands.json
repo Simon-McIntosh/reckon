@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:39:37.218Z",
+  "dispatched_at": "2026-10-04T21:31:51Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/paid_lanes.py:1",
+      "id": "duplicate_owner-1",
+      "reason": "the honest change is a new source in gather_sources feeding the existing document rather than a parallel dialect read; the cadence and the coordinator-burn measurement \u00a75 wants are exactly what the timer the plan calls missing already provides.",
+      "text": "\u00a71 records the preflight surface as carrying the whole shape a heartbeat needs and missing only an input, but `paid_lanes` already IS that heartbeat for metered accounts: one document per account, republished by its own systemd timer every five minutes, reconciling each window by recency and carrying utilisation, reset, burn, projected exhaustion, source and observed-at, with staleness marked per window. The plan instead landed a parallel account reader (`Dialect.read_account_surface` + `probe_budget`, wired into the pre-flight at reckon/budget.py:813) alongside the existing document path the pre-flight already reads at reckon/budget.py:1456, and never added the fresh account-surface read as a source in `paid_lanes.gather_sources`. Two account-position paths can now disagree inside one pre-flight, which is the plan's own \u00a75b defect (an unstated denominator) arriving as an unstated source.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/context_budget.py:187",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a77 should cite the measured-boundary owner and say how endpoint-advertised `context_length` differs from a recorded refusal, or extend it; otherwise the section proposes as open a guard that is already half-built and unconnected to it.",
+      "text": "\u00a77 leaves open whether reckon should verify a declared window against the endpoint it dispatches into, and its sidecar even notes effective_input_window \"is partly built but not shown to fire\", yet \u00a77 never names it or its owner. `context_budget.refusal_census` already computes the lowest input the endpoint was observed refusing per lane, `_flight_schema.py:307` persists it as `effective_input_window`, and `_context_fit_verdict` (reckon/crew/routing.py:3212) already gates on min(declared, effective) so a lane whose endpoint enforces less than it declares is refused.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-lane-can-say-where-it-stands.html#where-the-probe-lives",
+      "id": "reuse_search-1",
+      "reason": "naming window_reading would force the plan to reconcile two readers of one quantity \u2014 stream-sourced versus account-sourced \u2014 which is the composition the plan needs to state.",
+      "text": "the prior-art reuse map (comment c-run-r-20260914T125344512535) was delivered and did locate the probe/transport seam, but the plan's citations stop at _backends/budget/dispatch and omit `reckon/crew/window_reading.py`, which already reads a stream's newest metered window (five_hour/seven_day, utilisation, reset, observation age) and states in its own docstring that it \"deliberately\" does not consult the account surface because that read fails. A plan adding an account-surface transport for the same metered-window quantity should say why the existing stream reader is not the reading, and the omission is what let the paid-lanes duplicate above go unseen.",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4a928a68db8337c76a607318bc13d83de6a89f5fa727955c8b0ab451e53d0584",
+  "plan_slug": "a-lane-can-say-where-it-stands",
+  "plan_version": 49,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T213137979335-plan-review-of-a-lane-can-say-where-it-stands",
+  "reviewed_blob_sha": "f25155ea9d9867ac22f6bbdb24f05e2471a0a4a3",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the dialect's budget surface is spread across three entry points (budget_probe / read_probe / read_account_surface) with probe_budget choosing among them, instead of one interface a caller can hold as the one place a headroom figure comes from.",
+    "duplicate_owner": "a finding \u2014 \u00a71/\u00a72 add a second metered-account reader beside the paid-lanes document, and \u00a77 re-derives a boundary that effective_input_window/refusal_census already own.",
+    "reuse_search": "a finding \u2014 the plan's reuse map covers the _backends/budget/dispatch/probe seams but never cites reckon/crew/paid_lanes.py, the module that already publishes one document per metered account refreshed on its own clock, nor reckon/crew/window_reading.py.",
+    "thin_wrapper": "pass \u2014 \u00a73 gives the justification the item asks for: the existing probe exchange is a request written to a held-open stdin, which cannot express an HTTPS read, so the dialect owning its own transport is a deepening rather than a passthrough."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.399952+00:00"
+}

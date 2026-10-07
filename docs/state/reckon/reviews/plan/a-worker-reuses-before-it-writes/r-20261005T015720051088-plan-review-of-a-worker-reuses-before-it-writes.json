@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:11:06.347Z",
+  "dispatched_at": "2026-10-05T01:57:36Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:463",
+      "id": "deep_module-1",
+      "reason": "\u00a71 states the standard as \"deep modules behind small interfaces,\" and the section's own design violates it; the author would either fold a caller's quirk back into the caller or justify the union in \u00a73.",
+      "text": "`write_json_atomically` exposes seven keyword knobs (`fsync`, `indent`, `sort_keys`, `mode`, `fsync_directory`, `create_parents`, `ensure_ascii`) each mirroring one caller's prior behaviour; \u00a73's own text (\"each of the 14 callers sets [fsync] to match what it does today\") commits to a parameter per caller",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:463",
+      "id": "duplicate_owner-1",
+      "reason": "the acceptance criterion cannot observe the duplicate it exists to remove; \u00a73 must either name these as retained exceptions with their reason in the section text or extend the census detector, and the owner to extend is `reckon/_store.py:_write_through_sibling_temporary`.",
+      "text": "the plan names one atomic-JSON writer but leaves `reckon/project_state.py:165 _durable_replace` (nine call sites, fsyncs the directory after the rename) and `reckon/crew/follow_checkpoint.py:242 _replace_atomically` as parallel atomic-replace implementations, and \u00a73's done-when (\"the census re-run \u2026 reports one implementation per concept\") is measured by a detector that comment `c-20260928T235000-writer-inventory-gaps` states \"looks for `write` and `write_text` but not `write_bytes` \u2026 and cannot see a rename made inside a helper\"",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/interface_counts.py:1",
+      "id": "duplicate_owner-2",
+      "reason": "the census is a frozen research artifact with pinned snapshots, so a port with a parity assertion is a defensible choice; the plan only needs the ownership stated, which is a one-line edit rather than a design change.",
+      "text": "the plan's \u00a75 counter is a port of the crew-pattern review's census (`rec` docstring: \"Ported from the review's census so the counts agree\"), leaving two owners of the same AST public-surface rule (`docs/research/data/crew-pattern-review/code-depth/census.py:135 definitions()` and `reckon/interface_counts.py`); the plan asserts parity but names neither as the owner of the other",
+      "type": "duplicate_owner",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/interface_counts.py:45",
+      "id": "interface_budget-1",
+      "reason": "the rubric holds every surface-adding section to the rule it writes for others, so \u00a75 must state what the counter retires (or why nothing can be), which is a \u00a75 text change.",
+      "text": "\u00a75's module adds five public definitions (`COUNT_KEYS`, `count_revision`, `count_revision_cached`, `counts`, `read_trees`; the section's own comment records +9 public surface) to the `public_definitions` family (now 1470) and names nothing retired or merged; \u00a75 is the section that establishes the \"name what it retires or merges\" rule for other sections",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c85f932dcb775582107cb9d7718ed54660e2d6f03d942ba184d1eef53de8ada8",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 76,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T015720051088-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "063ede5fc51f35c78e1bc77efd8a0fd0a44e7f4e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the plan's centrepiece writer hides real machinery (sibling temporary, fsync, chmod, rename) but exposes one keyword per caller quirk, so its interface is the union of its callers' policies rather than a policy it hides.",
+    "duplicate_owner": "a finding \u2014 the plan installs `reckon/_store.py:write_json_atomically` as the single atomic-JSON owner while two parallel atomic-replace owners survive, and its own \u00a73 done-when is measured by a census instrument its comments document as blind to exactly these.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_* (mcp_views) 33, refusal_families 23; the landed \u00a75 adds `reckon/interface_counts.py` (five public definitions, its own comment records +9 to `public_definitions`) without naming anything it retires or merges, or stating why nothing can be, even though \u00a75 is the section that establishes that rule.",
+    "reuse_search": "pass \u2014 \u00a71 cites the structural census (44 `fromisoformat` callers, 14 atomic JSON writers) and the crew pattern review \u00a77, \u00a73 reuses the same mechanism it consolidates into (`metering.run_streams`, `reckon/_store.py`), and \u00a74 reuses the existing `reckon/clones.py` rather than adding a second detector.",
+    "thin_wrapper": "pass \u2014 the only added thin layers are the function-local `metering.run_streams` delegates in `reckon/crew/promotion.py:3421` and its ledger sibling, and the plan states the reason (a module-level import of `metering` from the `reckon.crew` facade raises a circular import), so the wrapper is justified rather than parallel."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.759606+00:00"
+}

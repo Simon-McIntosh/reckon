@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:18:49.187Z",
+  "dispatched_at": "2026-10-06T10:10:34Z",
+  "findings": [
+    {
+      "anchor": "reckon/ledger.py:789",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a72 must name the existing picker index and state whether it retires, merges into the run store, or is retained, or the design ships two indexes it cannot reconcile.",
+      "text": "the plan makes run_store.db \"the index\" (singular), but ledger._run_index_path already builds a second SQLite index of the plan's own run list under cache_root(\"pick-input\") as ledger-<identity>.sqlite (_RUN_INDEX_VERSION 3, built by _indexed_data at reckon/ledger.py:866 and read by ledger.load at reckon/ledger.py:1066 and by reckon/mcp_views.py:1749); two caches of one authority drift silently and \u00a72's \"the index is disposable\" accounts for one of them only",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/run_store.py:341",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a72 makes readers \"go through load or through the index\" but leaves this second path resolver in place, so run-store membership and ledger.load can disagree about which checkout a project owns; the plan should say the resolver is the ledger's, not the store's.",
+      "text": "run_store._ledger_roots resolves each project's owning checkout by walking docs/state and flight.mounted_project_docs() itself, duplicating the placement that ledger._run_ledger_root (reckon/ledger.py:632) and ledger_path (reckon/ledger.py:618) already own and that the plan's preamble says every path resolves through",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/run_store.py:95",
+      "id": "duplicate_owner-3",
+      "reason": "\u00a74 must say whether the index tables are dropped or become the sole home, or two copies of the roster drift exactly as the plan's own \u00a77 hold-rewrite incident shows.",
+      "text": "the plan's \u00a74 moves the roster to crew/members.json and holds to crew/holds.json as new files, while run_store already defines members and holds tables of its own (reckon/run_store.py:95-106) and an append_member writer (reckon/run_store.py:514, no production caller) beside the aggregate lists the plan is retiring, so a roster and holds would exist in up to three stores with no stated owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:711",
+      "id": "duplicate_owner-4",
+      "reason": "the plan's stated falsifier is false against the codebase today, and a historical-head reader has no per-run-file reader defined for a head where crew.json is absent, so \u00a72 must define how a committed-head reader reconstructs runs after \u00a73's split.",
+      "text": "\u00a72's falsifier asserts \"outside reckon/ledger.py, no site under reckon/ opens crew.json\", but velocity._read_ledger reads docs/state/<project>/crew.json from a historical git blob (reckon/velocity.py:711 and :1178; other sites reckon/cli.py:302, reckon/crew/obligations.py:462 with the pointer at :453, reckon/mcp.py:4170); velocity and obligations read the run list directly and cannot be repointed to ledger.load(), which reads the working tree rather than an arbitrary committed head",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:302",
+      "id": "duplicate_owner-5",
+      "reason": "\u00a74 removes a file four unrelated readers use as a sentinel without naming them, so the plan lands a silent project-detection regression it never enumerates.",
+      "text": "\u00a74 says \"the same commit then deletes crew.json\", but crew.json's mere existence is a project-detection sentinel at reckon/cli.py:302, reckon/hooks/native_agent_guard.py:92, reckon/hooks/worker_message_guard.py:89 and reckon/crew/dispatch.py:5852 (each an `(entry / \"crew.json\").is_file()` probe), so deleting the file silently stops those paths recognising a project",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:1064",
+      "id": "thin_wrapper-1",
+      "reason": "either extend load's own index or state why the store must be a separate database; a parallel index is the honest change only with that justification written down.",
+      "text": "the plan introduces run_store.db as the keyed index over the committed files, but ledger.load already takes use_index and answers from _indexed_data, so the plan adds a layer over an index that already exists and never justifies why the existing load index cannot be extended to serve the keyed questions",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "the-ledger-is-one-file-per-run.html#s3",
+      "id": "interface_budget-1",
+      "reason": "with public_definitions 1481, cli_options 317, mcp_views 33 and refusal_families 23 the sections must account for the surface they add, and \u00a73 in particular adds a verb no lineage retires.",
+      "text": "\u00a73 adds the crew split-runs verb and its --dry-run flag (registered leaf, reckoned in tests/test_crew_help_names_its_state.py:44-47), and \u00a71 adds a refusal family (refuse when the target run file exists, or when crew.json still holds a matching runs row), without either section naming what it retires or merges or why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7b9a403081bb8cff4a83cd7b9c9ff994e63fa294af74747fb37c1beb9caedc09",
+  "plan_slug": "the-ledger-is-one-file-per-run",
+  "plan_version": 60,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T101015798627-plan-review-of-the-ledger-is-one-file-per-run",
+  "reviewed_blob_sha": "40c4eb30298ffce107ebd2b1b7f6052bcdc35715",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 ledger.load hides the union of the aggregate rows and the per-run files plus the conflicting-copy refusal behind one call, and run_store.RunStore hides schema, migration and rebuild behind get_run/records; the plan keeps that depth rather than fragmenting it.",
+    "duplicate_owner": "a finding \u2014 the plan adds per-run readers and authors beside owners that already exist: a second run index (reckon/ledger.py:789) and a second ledger-owner placement walk (reckon/run_store.py:341), neither named, and its \u00a72 falsifier (\"outside reckon/ledger.py no site opens crew.json\") is already false, so the reader census is incomplete.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds the crew split-runs verb with --dry-run (cli_options) and \u00a71 adds a new refusal (refusal_families: target path exists, or an aggregate row with the same id), and neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites ledger_path, _run_ledger_root, mounts.json, run_store.DETAIL_FIELDS and its own reader audit, but never names the two existing pieces it reuses or forks: ledger.serialize_run (reckon/ledger.py:674) and the picker index ledger._run_index_path (reckon/ledger.py:789), so \"the one serialiser\" and \"the index\" read to an implementer as greenfield machinery.",
+    "thin_wrapper": "a finding \u2014 the plan designates ~/.config/reckon/crew/run_store.db as \"the index\" while ledger.load already carries an index path of its own (use_index -> _indexed_data, reckon/ledger.py:1064), and the plan never says why that existing index cannot be extended instead of adding a second one to populate and reconcile."
+  },
+  "section_digests": {
+    "_document": "f2ca385f9ef9c202b4f03051746dc1b1bc7f4825214aadfa90f3743961ec0ac7",
+    "s1": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s2": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s3": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s4": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s5": "60e425e1d2d0d1a1f973eb32c4d3e72fa080e1a616ff0f462d20aefbd1fc522d",
+    "s6": "a344122c7f73694668e843366730c1d1cc881b97ba06225f376f01012af5936b",
+    "s7": "6128dbd3b5deb9351318b08d168c55ae2e7290f079a109ee1241b2fb4a938b62"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.227006+00:00"
+}

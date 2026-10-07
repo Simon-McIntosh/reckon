@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T09:37:10.669Z",
+  "dispatched_at": "2026-10-06T09:20:23Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-cutover-is-measured-against-its-baseline.html#s4",
+      "id": "reuse_search-1",
+      "reason": "\u00a74's done-when items 1, 2, 3 and 6 (zellij survives viewer loss, runtime dir + cross-session messaging, step reaps a detached child, `uv run --no-sync` through the launcher) become verification of an existing shipped module rather than construction, which changes the plan's scope, its dependencies and its effort estimate.",
+      "text": "\u00a74 proposes building \"a launcher\" that runs zellij inside the allocation's batch step, creates a private node-local runtime directory on `/tmp` and points `XDG_RUNTIME_DIR` at it, and starts each session as an own-step; that is exactly `reckon/crew/fleet_supervisor.py:1` (its module docstring and its `session`/`spawn`/`reload`/`stop` FIFO), driven by the sbatch batch script at `reckon/crew/fleet_node.py:127`\u2013`:153` \u2014 and \u00a74's own audit line (\"the launcher that runs zellij inside the batch step is not built\") is stale against the shipped code.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/placement.py:52",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must name which allocation owner it extends (fleet_node's `sbatch` submission, or a change of placement's scheduler away from `salloc --no-shell`), because the re-hold path it names structurally cannot satisfy \u00a74's requirement and the author would otherwise discover this at first implementation.",
+      "text": "the plan's \u00a74 requires that \"the re-hold path that `the-fleet-shares-one-allocation` uses must create the batch script that starts the zellij server\", but that path is `placement.ensure_reservation` (`reckon/crew/placement.py:583`) which submits `salloc` with `RESERVATION_NO_SHELL_OPTION` (`reckon/crew/placement.py:52`\u2013`:54`) \u2014 an allocation with no batch step, hence nowhere to start a zellij server at all; the mechanism that already submits an allocation whose batch step runs the supervisor is `reckon/crew/fleet_node.py` (`generate_hold_script` at `:127`, `submit` at `:167`), and `placement._adopt_live_fleet_allocation` (`reckon/crew/placement.py:488`) already reaches across to it.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/host.py:105",
+      "id": "duplicate_owner-2",
+      "reason": "the plan should extend the cgroup-resolution owner (`host.host_facts` / `summary._user_slice_dir`) to expose the throttled counters, so that \"which cgroup\" is decided once and both sides of the report read the counter file through the same owner; a parallel reader duplicates the resolution and the two can disagree about which cgroup was sampled.",
+      "text": "\u00a71 and \u00a75 measure the throttled fraction \"read from whichever cgroup is running them at the time, naming the counter file it read on each side\", but the decision of *which cgroup* a process runs in is already owned by `reckon/host.py` (`_own_cgroup_components` `:105`, `_cgroup_names_job` `:105`, `_inside_the_job`) and `reckon/crew/summary.py` (`LOGIN_CGROUP_ROOT` `:82`, `SELF_CGROUP_PATH` `:87`, `_user_slice_dir` `:191`); no `cpu.stat`/`nr_throttled`/`throttled_usec` reader exists anywhere in reckon (grep of `reckon/` returns only an unrelated comment), so the plan adds a reader rather than extending the owner.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/placement.py:231",
+      "id": "thin_wrapper-1",
+      "reason": "the proof is only valid against the composer that actually placed the worker; naming one owner removes the ambiguity, or everything else the plan re-wraps over this twice-implemented invocation without saying why neither existing composer can be extended.",
+      "text": "placement into the shared allocation already has two composers of the same `srun --overlap --jobid=<id>` step invocation: `placement.step_prefix`/`reservation_step_argv` (`reckon/crew/placement.py:231`, `:840`, used by dispatch) and `fleet_node.placement_argv` (`reckon/crew/fleet_node.py:326`, used by `reckon fleet-node place` at `reckon/cli.py:633`); \u00a73/\u00a75's proof (\"a live worker's job id is the job id of the published reservation\") has to read the same owner that placed the worker, and the plan names neither.",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fd7c5226d87facaaf7a8d4f75aa6b4c12d70b50e9ac780c31dce03a8de1a7be7",
+  "plan_slug": "a-cutover-is-measured-against-its-baseline",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T092002624351-plan-review-of-a-cutover-is-measured-against-its-baseline",
+  "reviewed_blob_sha": "b48dc00d8bc89ed4a94eefbfd3005a2d8510a999",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan proposes no new module; its launcher maps onto the existing deep module `reckon/crew/fleet_supervisor.py`, whose FIFO interface (`session`/`spawn`/`reload`/`stop`) hides the batch step, zellij servers and runtime directory behind four verbs.",
+    "duplicate_owner": "a finding \u2014 \u00a74 requires the re-hold path to create a batch script that starts the zellij server, but the path it names submits `salloc --no-shell` (no batch step), while the batch-step owner `reckon/crew/fleet_node.py` already exists and is not cited.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a75 is operational (place the fleet, measure, prove) and no section names a new public definition, CLI option, MCP view or refusal family it adds.",
+    "reuse_search": "a finding \u2014 the plan proposes a \"launcher\" (\u00a74) and a throttled-fraction cgroup reader (\u00a71) without citing the mechanisms that already implement them, `reckon/crew/fleet_supervisor.py` and `reckon/host.py`.",
+    "thin_wrapper": "a finding \u2014 the plan's placement/measurement proof leans on machinery that already has two composers of the same `srun --overlap --jobid=` invocation (`placement.step_prefix` and `fleet_node.placement_argv`) without naming which one owns the step it proves."
+  },
+  "section_digests": {
+    "_document": "1b607790efcb1fd4c13a3970c5ea35124c875040f70dc0f103e661e4c56f77b7",
+    "s1": "d787a9b8dc9e2794ebb8b2e89aa8408879b9180661297ea86090009ff8db0592",
+    "s2": "f65283167215cce20fcad582dea36b87bb47fe0a98997fb46b389d28922cd7a3",
+    "s3": "7c96eb818a552ee9f52fdf60105065edc3064f336a61858eea606107b62abbfa",
+    "s4": "52277fa3bbfe41b7c36b14bd017f5679393f1ade5f8c15b54f463afe407be83d",
+    "s5": "0f29d874bdedcb9a054c5938b1da44c465c61cbe5efc4d9db379911c9de42c4b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.300108+00:00"
+}

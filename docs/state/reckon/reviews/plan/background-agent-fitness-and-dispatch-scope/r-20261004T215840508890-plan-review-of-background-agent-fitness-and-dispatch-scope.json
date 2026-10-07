@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T22:04:52.737Z",
+  "dispatched_at": "2026-10-04T21:58:53Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/lane_document.py:524",
+      "id": "reuse_search-1",
+      "reason": "the author would drop \u00a72f as pending and record it landed, and route any residual change through the lane_document.py owner.",
+      "text": "\u00a72f's done-when (\"a lane document is reported field by field, each present value carried and each absent one marked absent \u2026 requiring headroom to read 4 rather than unknown\") describes behaviour already shipped by `read_lane_reading_fields` and `dispatch._lane_reading_carry` (dispatch.py:3916, commit 1a64dede3 \"a lane reading withholds the figure it cannot read, not all of them\", ancestor of HEAD); the plan cites the stale site `dispatch.py:1890` and never names lane_document.py, so a node dispatched from this done-when would rebuild a landed fix.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:3140",
+      "id": "reuse_search-2",
+      "reason": "the author would verify the landed behaviour and either close \u00a72g or narrow it to the one unmet clause (the refusal reporting which inputs it counted and their sizes).",
+      "text": "\u00a72g's done-when (\"a file named only in prose is not charged \u2026 a declared write path is still charged\") describes behaviour already shipped by `_context_file_inputs`, which charges only `_declared_input_files` and skips prose mentions (commit 318ec2b6a \"count only declared files toward a node's context estimate\", ancestor of HEAD); the plan proposes the fix as pending without noting it is in.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/flight.py:974",
+      "id": "thin_wrapper-1",
+      "reason": "the author would either extend `by_capability_class` with the lane-admission verdict or state why that overlay cannot carry it, which decides whether the change is a config-schema extension or a new parallel mechanism.",
+      "text": "\u00a72 adds a per-class lane-admission rule \"in the flight configuration beside the backend it governs\" with no justification for a new key; flight config already validates and resolves per-class overlays `by_capability_class` and `by_spec_level` for exactly this role/lane routing, and the plan's own \u00a72 text says the rule is read \"where the role and spec level are already resolved\" \u2014 the resolution point it names is the existing overlay.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py:4932",
+      "id": "duplicate_owner-1",
+      "reason": "the author would extend promotion.py's existing predicate rather than specify a second flag, removing a duplicate owner for one gate.",
+      "text": "\u00a72's done-when asks for \"a review-required flag that `crew complete` honours by refusing promotion without a scored review from another lane\", but promotion.py already owns that gate: `_refuse_unreviewed_promotion` computes a `review_required` predicate and refuses an unreviewed promotable run, and the plan's own \u00a73 comment records that `crew complete` already refuses an unreviewed promotion and names the review it wants.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/node.py:975",
+      "id": "duplicate_owner-2",
+      "reason": "the author would either fold the five prescription properties into node.py's validator (the owner of node-property judgement and the D07 refusal renderer) or record why the lane-fitness verdict must be a separate judge over one node record.",
+      "text": "\u00a72's `judge_prescribed` re-implements node-property judgement that node.py already owns: `negative_control_finding` (node.py:975) plus `NEGATIVE_CONTROL_FIELD`/`is_test_path`/`parse_duration` are the node's negative-control and fence properties, and `validate_node` (node.py:1103) already returns a `NodeValidation.findings` list reporting every failed property, while prescription.py returns a parallel `{prescribed, failures, detail}` structure over the same record and imports node.py's helpers.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c251db1a9203159d690fd0ccdabff977fbe44d5727b9e947483eca8e00800f48",
+  "plan_slug": "background-agent-fitness-and-dispatch-scope",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T215840508890-plan-review-of-background-agent-fitness-and-dispatch-scope",
+  "reviewed_blob_sha": "a6d334a1e043f3f6bba076b29b20cbc9da9fe1de",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `judge_prescribed` (prescription.py:130) hides five properties behind one function returning a three-key verdict, and lane_document.read_lane_reading_fields hides the field resolution behind one call; the design does not spread complexity across shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a72's \"review-required flag that crew complete honours\" duplicates the review gate promotion.py already owns, and \u00a72's one-artifact/negative-control properties duplicate the node-property judge node.py already owns.",
+    "reuse_search": "a finding \u2014 the plan proposes \u00a72f per-field lane reading and \u00a72g prose-vs-declared context charging, both of which already exist in the tree (reckon/crew/lane_document.py and routing.py `_context_file_inputs`), and cites neither owner.",
+    "thin_wrapper": "a finding \u2014 \u00a72 proposes a per-class lane-admission rule in flight config without saying why the existing `by_capability_class` / `by_spec_level` dispatch overlay (flight.py:974) cannot carry it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.843463+00:00"
+}

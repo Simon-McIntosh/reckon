@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:17:00.685Z",
+  "dispatched_at": "2026-10-06T10:08:16Z",
+  "findings": [
+    {
+      "anchor": "reckon/archive.py:147",
+      "id": "reuse_search-1",
+      "reason": "each proposed mechanism's milestone should be restated as \"extend <owner>\" against the file that already implements it, and M1's premise (\"impl is a settable scalar the server does not auto-compute\") is factually obsolete on section-record plans.",
+      "text": "\u00a73.3/M3 records the archive sweep as \"automated sweep still pending\", but `run_archive_pass` (invoked by `reckon archive --project P --older-than-days N --apply`, reckon/cli.py:8159) already implements exactly that policy: `find_archive_candidates` selects done/superseded docs older than the threshold and `apply_archive_candidates` sets `plan-archived=1` (reckon/archive.py:61,112). The plan builds rather than cites. Other unlisted-existing mechanisms: \u00a73.1's impl invariant already exists \u2014 `_store.py:2384` refuses an author-set `impl` on a section-record plan and derives it via `_plan_html.py:678 derive_impl_from_sections`; \u00a73.1's write-time-refusal-with-audit-severity shape already exists in `reckon/mcp.py:1903 _unwired_plan_refusal` + `reckon/_schema.py:320 unwired_plan_message` + `reckon/roadmap.py:1009 _unwired_plan_findings`; \u00a73.3's \"dashboard default view shows ONLY live docs\" is already the SPA default (`docs/ui/shell.jsx:339` filters archived; `reckon/serve.py:2216 include_archived=False`); \u00a73.4's pre-flight \"does an existing plan own this lifecycle?\" already exists as `skills/reckon-create/SKILL.md:299` step 3 (\"Search existing plan and research titles/summaries before creating a new resource\").",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:2384",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend the section-derived mechanism rather than add a parallel impl-guard, or state why the owner cannot cover the shipped-with-zero-impl case.",
+      "text": "\u00a73.1 proposes a write-time invariant forcing `impl` to be set with status\u2192shipped/done, but the impl-set rule already has an owner: `_store.py:2384` (via `_plan_html.py:678 derive_impl_from_sections`) computes `impl` from section records and refuses a direct set with a naming error (\"impl is computed from the section records on this plan \u2026 It is not authorable \u2014 move a section's status instead\"). A second invariant beside this one forks the rule.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/project_state.py:2175",
+      "id": "duplicate_owner-2",
+      "reason": "the plan must target `_close_sprint_with_carry_forward` as the extension point and reconcile its predicate with the item-held predicate already enforced there, or the two close gates will disagree.",
+      "text": "\u00a73.5 proposes a sprint-close gate via \"reckon-edit close-sprint intent\", but sprint-close already has a live owner and a live closability refusal: `_close_sprint_with_carry_forward` refuses to close a sprint with incomplete, unheld items and carries held work forward. The gate the plan wants (unresolved followups / unset impl / uncollapsed sections) is a different predicate on the same close path, so it must be added there \u2014 and the plan names the wrong owner (reckon-edit, not the project-state close path).",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/lifecycle.py:1",
+      "id": "deep_module-1",
+      "reason": "naming one owning module (and the invariants it exports) collapses six shallow, separately-gated milestones into one deep surface and stops each mechanism from re-deciding what \"finished\" means.",
+      "text": "the plan scatters one concept (finished work must be recorded finished) across \u00a73.1 (server write-time), \u00a73.2 (CLI audit + schedule), \u00a73.3 (archive + dashboard), \u00a73.4 (skill pre-flight), \u00a73.5 (close path), \u00a73.6 (fleet backfill) with no module named to own the invariants; a `reckon/lifecycle.py` (\"Derived lifecycle state for plans and sprint items\") and `reckon/doccheck.py:491 audit_lifecycle` already exist and would be the single home that hides the section-record, status and followup rules behind one interface.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "skills/reckon-create/SKILL.md:299",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to extend the existing Step 3 pre-flight into a checkable gate, not add a parallel prompt.",
+      "text": "\u00a73.4 adds a pre-flight question to `reckon-create`, a thin layer over the existing pre-flight search at SKILL.md:299 (step 3 already tells the author to search existing plan/research titles before creating). The plan does not say why that search cannot simply be strengthened or made refusing (e.g. surfaced as a roadmap/audit finding, matching the `unwired-plan` precedent) rather than wrapper-ed as a new conversational prompt a worker may skip.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp.py:1903",
+      "id": "interface_budget-1",
+      "reason": "the section must account for its added refusal/warning surface in its own text \u2014 naming what it supersedes or stating why the existing `unwired-plan`-style channel cannot carry these invariants.",
+      "text": "\u00a73.1's \"reject-on-write\" branch and \u00a73.5's \"refuses to close\" both add to the refusal family, and \u00a73.1's \"auto-set with warning\" branch adds to the warning family, yet \u00a73 gives no sentence naming what these retire or merge. The neighbouring precedent shows what is missing: `unwired_plan_message` (reckon/_schema.py:320) shipped its invariant as one message + one audit finding with a severity ramp, retiring no surface but stating so.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bd89aac03c9bf6e0cf43b9e9cb4045093f0aa089160583a59ec0032bd94bc68b",
+  "plan_slug": "plan-lifecycle-hygiene",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T100759604232-plan-review-of-plan-lifecycle-hygiene",
+  "reviewed_blob_sha": "f51893071814db94a0dc2e1c3397737441991392",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the plan has no single owner for lifecycle invariants: one concept (a plan that is finished must be recorded finished) is spread as six milestones across five enforcement sites over the same audit/refusal machinery, with no module named to hide the spread.",
+    "duplicate_owner": "a finding \u2014 three of the plan's mechanisms duplicate infrastructure with a live owner: the impl-set rule, the sprint-close gate, and the archive sweep.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a73.1 (reject-on-write) and \u00a73.5 (refuse-to-close) each add enforcement surface to the refusal/warning family and neither names what it retires or merges, or states why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan proposes four mechanisms that already exist in reckon (archive sweep, impl-set invariant, write-time refusal-with-audit-severity, plan-creation pre-flight search) and cites none of them.",
+    "thin_wrapper": "a finding \u2014 \u00a73.4 adds a pre-flight question to `reckon-create` on top of the existing title/summary search without saying why that search cannot be extended."
+  },
+  "section_digests": {
+    "_document": "bd721cdcf653b7a69a5e2aadd59073366a4ac2b4c2320b198752517add543757",
+    "s1": "8d42e19d638ceffa0eb5cb0027bce987a21d4029d88c4f1910a0153a8257f1ca",
+    "s2": "d34108441311aad3e5fcef8f57ef22a4616fd38f681ea019d71159b4cb7842c8",
+    "s3": "3e1f080af7f9a848db77d13bef4af775f22ffc4c21dd802d15f919af01ab8d0f",
+    "s4": "f1688bfa2937b6c436ecfc09672ee165041051153deae7c14c660c8ce34dc3ec",
+    "s5": "5ba3b760b5d08babed48f243db62326f4753efb01e0ddff955c03eaddc24cae8",
+    "s6": "26ab0f96456d9d7c3793475d346b8b54d2741d1249e5f8a758ed94e15de906c1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.074042+00:00"
+}

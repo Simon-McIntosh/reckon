@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:42:33.820Z",
+  "dispatched_at": "2026-10-04T21:35:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/agent-plan-authoring.html#s3",
+      "id": "reuse_search-1",
+      "reason": "\u00a73 is the document's normative core; it must add the `gates` row and a \u00a74 template or it teaches an incomplete contract that the write guard (`_SECTION_RECOGNISED_SPELLING`, `reckon/_plan_html.py:1270`) and read warning will later refuse, which is the misparse class this plan exists to prevent.",
+      "text": "\u00a73 claims to enumerate \"every tag, and WHY\" for the machine-readable contract but lists five body sections; `reckon/_plan_html.py:190` defines six (`SECTION_IDS = (\"gates\", \"decisions\", \"followups\", \"questions\", \"research\", \"comments\")`) and `reckon/_plan_html.py:1271` gives `gates` its canonical spelling `<div class=\"r-gate\" data-id=\"...\">`; \u00a74 supplies a copy-paste template for every section except `gates`",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/agent-plan-authoring.html#s9",
+      "id": "reuse_search-2",
+      "reason": "the owner's landing note records that the byte-equality form this plan proposes is fragile (write_state normalises whitespace/attr-order), so \u00a79 must cite the landed test and its revised invariant instead of recommending a form already superseded in-repo.",
+      "text": "\u00a79 recommends adding a CI round-trip parity test asserting `render(parse(html)) == html`; that test already exists at `tests/test_schema.py:243` (`test_state_round_trip`), together with the state-level invariant and the byte-identity guard (`tests/test_schema.py:234` and `:215`)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/agent-plan-authoring.html#s9",
+      "id": "reuse_search-3",
+      "reason": "an advisory recommendation that names already-superseded work invites a node to rebuild the exemplar; the plan should mark it met (as its own resolved followup `f-apa-prompt` already does) so the remaining scope is legible.",
+      "text": "\u00a79 recommends \"one self-describing exemplar in-repo: `docs/_exemplar-plan.html`\"; that file already exists and both `skills/reckon-create/SKILL.md` and `skills/reckon-edit/SKILL.md` already point to it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/agent-plan-authoring.html#s6",
+      "id": "reuse_search-4",
+      "reason": "\u00a76 is the document's statement of the lifecycle model; describing impl as a raw item count misstates the mechanism an author must satisfy via section effort and status.",
+      "text": "\u00a76 defines `impl fraction = shipped-items / items`, but the owner at `reckon/_plan_html.py:318` (`derive_impl_from_sections`) computes impl by section `effort_hours` (done over done-plus-remaining implementable, deferred sections outside the denominator), and returns nothing when records do not cover declarations",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/agent-plan-authoring.html#s6",
+      "id": "duplicate_owner-1",
+      "reason": "a second, per-phase archive path forks the landing-record mechanism the coordinator and build skills already write to, so the plan should defer to the existing owner and drop the `docs/archive/<slug>-<phase>.html` convention.",
+      "text": "\u00a76 (\"Per-stage archival\") proposes writing a NEW file per phase under `docs/archive/<slug>-<phase>.html` (`-shipped.html`, `-12-5-landed.html`), and \u00a74's collapse-on-landing template links a section-sized record `archive/SLUG-12-5-landed.html`; the existing owner of that concern is the cumulative record `docs/evidence/archive/<slug>-landed.html` \u2014 `reckon/evidence.py:498`, appended through `append_evidence` (`reckon/mcp.py:1714`) and `reckon/_store.py:3351`, with `AGENTS.md` (plan-lifecycle-hygiene \u00a73) mandating one coherent record per plan and forbidding section-sized files",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ea2880fd2efc8c17aff0358b4eb7343ddc74a1ad52be769e2e1169ee2929e614",
+  "plan_slug": "agent-plan-authoring",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T213530066500-plan-review-of-agent-plan-authoring",
+  "reviewed_blob_sha": "367e2f26059a42bedd670d02021cb86dca8095f5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan introduces no module; it documents and reuses the single existing parser/renderer pair (`reckon/_plan_html.py`).",
+    "duplicate_owner": "a finding \u2014 \u00a76/\u00a74 propose a per-phase archive under `docs/archive/` beside the existing cumulative landing-record owner `docs/evidence/archive/<slug>-landed.html`.",
+    "reuse_search": "a finding \u2014 \u00a73's stated contract omits the `gates` section (one of six the parser recognises) and \u00a79 re-proposes a round-trip parity test and an in-repo exemplar that already exist (`tests/test_schema.py`, `docs/_exemplar-plan.html`).",
+    "thin_wrapper": "pass \u2014 no new wrapper over existing machinery is proposed; \u00a78 keeps the MCP as the existing version-safe writer rather than layering a second one over it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.793612+00:00"
+}

@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:42:10.435Z",
+  "dispatched_at": "2026-10-05T14:38:35Z",
+  "findings": [
+    {
+      "anchor": "reckon/interface_counts.py:454",
+      "id": "duplicate_owner-1",
+      "reason": "the counter assertion must be dropped or reframed to guard something reachable (assert the reader returns `None` for the missing pair, or that `read_trees` never yields a `None`), rather than claiming to cover a branch its consumer cannot produce.",
+      "text": "the counter re-filters `None` out of the shared reader's result (`if text is not None`) although `read_trees` builds its specs from `ls-tree -r` at the same revision it then reads (interface_counts.py:448-450), so every listed path yields bytes and the `None` key can never occur; \u00a711's planned assertion that \"the counter's result for the first commit omits the missing path\" is therefore satisfied without the filter executing, and the negative control it names (raise in the reader's missing-object branch) reddens only the reader half \u2014 deleting the counter's filter leaves the test green, so the branch stays unguarded",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "69b03f26b71d653a0e6cd16c03590910745981d7a466271ab0f8449e0bc571a3",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 119,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T143817002832-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "84ff31c97f41665b15fb95221add4bd43c3fb1fb",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a711 adds no module; it extends the existing `tests/test_one_blob_reader_serves_velocity_and_the_counter.py`, so there is no new interface to weigh against the behaviour it hides.",
+    "duplicate_owner": "a finding \u2014 \u00a711 plans to guard the counter's own absence filter (`reckon/interface_counts.py:454`), but absence handling is owned by `reckon/velocity.py:read_blobs` and the counter cannot reach that branch, so the planned guard is inert.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a711 adds no definition, CLI option, MCP view or refusal family and says so in its own text (\"No definition is added\").",
+    "reuse_search": "pass \u2014 \u00a711 cites the mechanism it extends (`read_blobs` at reckon/velocity.py:360 and its one-reader test), and a search of tests/ confirms no existing test passes a `(revision, path)` pair a revision does not carry, so the missing-object branch is genuinely uncovered and the plan is not rebuilding an existing check.",
+    "thin_wrapper": "pass \u2014 \u00a711 introduces no wrapper over existing machinery; it is a test addition with no production surface, so the \"why not extend the owner\" question does not arise."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.666983+00:00"
+}

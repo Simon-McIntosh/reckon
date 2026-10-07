@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-05T00:32:42.275Z",
+  "dispatched_at": "2026-10-05T00:30:03Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion.py",
+      "id": "reuse_search-1",
+      "reason": "\u00a721's done-when should name the existing resolver it extends or deduplicates, which decides whether the new branch is a fix or a second implementation.",
+      "text": "\u00a721 proposes a new report path for an unresolvable declared sha without citing the landed check-manifest resolver (`reckon/crew/reports.py:1526` `_commit_resolves_in`, used by `audit_manifest`) that already resolves and reports every named commit in the same `commits:` field",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/reports.py:1526",
+      "id": "duplicate_owner-1",
+      "reason": "naming `reckon/crew/reports.py` as the owner to extend keeps one resolver and lets \u00a721's report reuse check-manifest's, rather than deepen the fork.",
+      "text": "`_commit_resolves_in` is implemented twice (here, and `reckon/crew/promotion.py:477` atop promotion's `_commit_canonical_id`), so the \"does this citation resolve\" mechanism has two owners; \u00a721 would extend the promotion copy for a field the reports owner already audits",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/fleet_supervisor.py:419",
+      "id": "duplicate_owner-2",
+      "reason": "the `/fleet` config dir is a different consumer from the systemd-unit path, so folding it in would widen \u00a762 past the dependency-inversion defect it names.",
+      "text": "`config_directory` recomputes the same XDG_CONFIG_HOME-or-`~/.config` base that \u00a762 is moving into a neutral module (`systemd_user_dir`), a second copy of the base resolution \u00a762 exists to consolidate",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "5dfbe9c1403842220956c61cfad74dcc7ca78b4e06217c09bcafcde9a33e85bf",
+  "plan_slug": "crew-runtime-positive-controls",
+  "plan_version": 348,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T002947835091-plan-review-of-crew-runtime-positive-controls",
+  "reviewed_blob_sha": "d416e0b2d917fb2244b33257af2b272eec0553d1",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no remaining section introduces a module; \u00a721 and \u00a762 both extend existing owners, and \u00a762 relocates a helper into the module that should own it rather than adding surface.",
+    "duplicate_owner": "a finding \u2014 \u00a721 extends promotion's citation handling while reckon/crew/reports.py:1526 (`_commit_resolves_in`, used by audit_manifest) already owns that behaviour, and promotion.py:477 is itself a second copy of that resolver.",
+    "reuse_search": "a finding \u2014 \u00a721 adds a report path in reckon/crew/promotion.py without citing the landed check-manifest resolver (reckon/crew/reports.py:1526 `_commit_resolves_in`, used by `audit_manifest`) that already resolves and reports every named commit in the same `commits:` field.",
+    "thin_wrapper": "pass \u2014 \u00a761 lands the watcher on reckon/service.py's functions parameterised by unit name rather than keeping a parallel class with copied logic, which is the extension the item asks for; no unjustified wrapper is proposed."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.890819+00:00"
+}

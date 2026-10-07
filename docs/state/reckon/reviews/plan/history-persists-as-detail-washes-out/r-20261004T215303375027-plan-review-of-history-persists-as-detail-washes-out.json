@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T22:03:38.607Z",
+  "dispatched_at": "2026-10-04T21:53:17Z",
+  "findings": [
+    {
+      "anchor": "reckon/run_store.py:1",
+      "id": "duplicate_owner-1",
+      "reason": "naming `reckon/ledger.py` as the index owner lets the plan extend the one index built from the files and drop `run_store.db` entirely, instead of maintaining two rebuildable indexes over the same rows.",
+      "text": "the plan's \u00a77 declares per-run files the record and \"the SQLite store \u2026 an index built from them\", but `reckon/ledger.py` already maintains a rebuildable SQLite index over those same per-run files (`_run_index_path` at reckon/ledger.py:785, `index_stamp` at :793, `_indexed_data` at :864), keyed on the picker projection; `reckon/run_store.py` adds a second database (`run_store.db`, keys `member/node/project/completed_at/backend`) over one corpus \u2014 two indexes, two shapes, two migration paths, exactly the split that made the old single file cost a full read",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:1469",
+      "id": "duplicate_owner-2",
+      "reason": "the plan should extend the roster owner at `reckon/ledger.py` rather than carry a parallel table, since the two will drift the first time a member is written on one side only.",
+      "text": "\u00a72 proposes that members and holds \"become their own tables\", implemented as the `members`/`holds` tables in `reckon/run_store.py` (`append_member` at run_store.py:514), but the roster is owned by `reckon/ledger.py` (`members` at ledger.py:1469, `register_member` at ledger.py:1746; the companion plan moved it to `crew/members.json`), which every dispatch already reads; a second roster table is a fork with no reader wired to it",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html#s4",
+      "id": "thin_wrapper-1",
+      "reason": "the plan should delete the export stage and state that the per-run file IS the export, removing a second writer of the same record that would otherwise need to be kept in step with the promotion path.",
+      "text": "\u00a74 keeps a separate \"export\" mechanism \u2014 a committed file \"written whenever it changes\", \"reconstructible from the database at any time\" \u2014 but \u00a77 makes the per-run file the record written at promotion by `ledger.append_run` (reckon/ledger.py); the export stage is a thin layer over that existing write and its stated reconstructive direction (file rebuilt from the database) is the reverse of \u00a77's (index rebuilt from the files); the plan never says why `ledger.append_run`/`ledger.write` cannot carry the record",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f089ee0c97dbfd4951fd430e12176fadfff2a4321c2a62981eb3d246b608d335",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T215303375027-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "14c34eeb6c577e885cdc85594a188ed8e6ef14be",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/run_store.py` hides schema creation, in-place migration, cache refresh and the durable/detail split behind a small interface (`append`, `sync_run`, `get_run`, `get_detail`, `compare`, `import_ledger`); it is deeper than the file scan it replaces.",
+    "duplicate_owner": "a finding \u2014 the plan's \u00a77 store is a second SQLite index over the per-run files, duplicating the rebuildable index that `reckon/ledger.py` now owns.",
+    "reuse_search": "pass \u2014 \u00a77 reuses the existing writer and reader (`ledger.append_run`, `ledger.load`), the crew.json `runs` list and the companion plan rather than proposing a new serialiser, and \u00a71 measured the existing ledger's shape rather than assuming it.",
+    "thin_wrapper": "a finding \u2014 the plan its \u00a74 \"export\" stage retained beside \u00a77's per-run write, a thin layer over `ledger.append_run` whose direction \u00a77 already reversed."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.002782+00:00"
+}

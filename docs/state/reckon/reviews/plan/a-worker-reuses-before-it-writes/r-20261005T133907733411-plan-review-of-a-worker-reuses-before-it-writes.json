@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T13:43:25.044Z",
+  "dispatched_at": "2026-10-05T13:39:37Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:542",
+      "id": "reuse_search-1",
+      "reason": "the reuse premise for the cache is false, so the section must either state that the sha-keyed cache is a distinct mechanism that stays on the counter, or name the velocity helper it actually intends.",
+      "text": "\u00a710's reuse map names an owner that does not exist: it says \"the revision-keyed cache helpers ... stay on velocity, stay private, and are imported by the counter\", but velocity's only cache helpers are `_velocity_cache_path`/`_load_captured_history`/`_store_captured_history` (keyed by repository path, holding a captured-history window) and `_ledger_cache_path`/`_load_ledger_cache`/`_store_ledger_cache`; none is revision-keyed, and the counter's sha-keyed cache (`reckon/interface_counts.py:503-538`) is the only revision-keyed cache in the package. A worker implementing the section literally has nothing on velocity to import for that half",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/interface_counts.py:45",
+      "id": "deep_module-1",
+      "reason": "the section should share the tokenisation rule that is genuinely duplicated (`token_lines`/`docstring_spans`) and leave the interface-shape predicates (`definitions`, `interfaces`) with the counter that owns them, rather than gathering six leaf functions into a left-overs module.",
+      "text": "the proposed \"one module named for what they do\" is a bundle of two unrelated mechanisms that share no importer: `interface_counts` uses `definitions`, `call_name`, `literal_strings` and `interfaces`, while `clones` uses only `token_lines` and `docstring_spans` \u2014 the two consumers import disjoint halves, and the plan's own premise that \"one normalisation rule now lives in three places\" is true for `token_lines` alone, which `interface_counts` never calls. A module whose name cannot be one capability, because it holds six, adds surface without hiding shared behaviour",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:521",
+      "id": "duplicate_owner-1",
+      "reason": "the owning file is `reckon/velocity.py`, and the honest change is to promote the blob reader and cache root there to a stable (non-underscore) name the counter imports, so the shared mechanism has a public home instead of a private one.",
+      "text": "the repair has the counter import velocity's underscore-private helper (`_velocity_cache_root`, already reached at `reckon/interface_counts.py:498` via the module-private `_cache_root`) and the plan says every lifted velocity helper \"keeps its leading underscore and is never counted\"; a cross-module import of a `_`-name keeps the shared mechanism private, makes the counter's dependency on velocity invisible to the interface counts, and repeats the very fork-hidden-in-a-private-helper pattern this plan exists to remove",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "905ca96c2e601d78c3f733dd8b6238f2e65f919475548fef861591072ff272fe",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 112,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T133907733411-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "39d4c0f5f075c9bb85c775bb9f931365ab662b6b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the single \"module named for what they do\" bundles six leaf predicates whose two consumers import disjoint halves, so it hides no shared behaviour and adds a module of surface without depth.",
+    "duplicate_owner": "a finding \u2014 the repair reaches the counter into velocity's underscore-private helpers (as `interface_counts._cache_root` already reaches for `velocity._velocity_cache_root`, `reckon/velocity.py:521`) instead of promoting the shared mechanism on its owner's interface, so the shared machinery stays private and uncounted.",
+    "interface_budget": "pass \u2014 the section accounts for its own surface: the four public predicate names move to the new module and are retired from the counter, so public_definitions does not grow, and every lifted velocity helper keeps its leading underscore.",
+    "reuse_search": "a finding \u2014 \u00a710 asserts velocity already owns the \"revision-keyed cache\" the counter re-implements, but velocity's cache helpers are keyed by repository path and hold a captured-history window, while the only sha-keyed cache is the counter's own `_cache_path`/`_load_cached`/`_store_cached` in `reckon/interface_counts.py:503-538`.",
+    "thin_wrapper": "pass \u2014 the extraction of velocity's `cat-file --batch` loop into one private helper is an extension of the mechanism that already exists in `velocity._plan_metas`, not a parallel layer, and the plan says why the census copy cannot be the runtime owner."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.690019+00:00"
+}

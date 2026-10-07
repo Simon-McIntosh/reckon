@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:16:10.934Z",
+  "dispatched_at": "2026-10-06T10:00:12Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:2034",
+      "id": "reuse_search-1",
+      "reason": "\u00a72 must reconcile its topic-as-unit rule with the pre-existing per-node subtree allocation and \u00a73 must write the rule into the prompt that already carries a conflicting figure path, or neither section states what dispatch will actually enforce.",
+      "text": "the plan's topic-directory allocation rule never cites the figure-specific allocation machinery that already exists in dispatch: `_landing_fragment_paths` allocates every node its own `docs/figures/<plan>/<node-id>/` subtree (reckon/crew/dispatch.py:2032-2034), granted into the node's write scope by `_grant_landing_write_paths` (reckon/crew/dispatch.py:2044-2083), and `_shared_landing_paths` (reckon/crew/dispatch.py:1955-2003) already names `docs/figures/<plan>` as the plan-wide figure topic; the same missed census continues at reckon/crew/prompts.py:167 (the plan-node landing contract tells the worker to write figures under its own `docs/figures/<plan>/<node-id>/`) and reckon/crew/prompts.py:204 (the brief contract says `docs/figures/<topic>/`) \u2014 three existing figure-path surfaces \u2014 so \u00a71's claim that existing guidance covers \"only where to put them\" under `docs/figures/<topic>/` is understated and \u00a73's list of the two surfaces a worker reads omits the dispatch prompt a worker actually reads",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:1986",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a72 asserts a rule that the mechanism it names as \"already half-implementing\" it actively negates at the plan-wide topic, so the section must either extend `_shared_landing_paths` (remove the plan figure topic from the shared set) or restate its unit as the per-node subtree the code enforces.",
+      "text": "\u00a72 states the figure topic directory is claimed by exactly one node and a second declarer is refused, but the existing owner of figure-topic treatment, `_shared_landing_paths` (reckon/crew/dispatch.py:1955-2003), already defines the plan-wide figure topic `docs/figures/<plan>` as a \"shared landing path\" every node holds, and `_raise_repository_scope_conflict` exempts any peer claim whose absolute path is in that shared set (`if claim.absolute_path.resolve() in shared: continue`, reckon/crew/dispatch.py:2705), so a second node declaring the plan's own figure topic is admitted rather than refused \u2014 the guard \u00a72 rests on does not fire for the plan-level topic, which is the ordinary case for a plan's own figures",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/figures-are-allocated-by-topic-directory.html#s2",
+      "id": "interface_budget-1",
+      "reason": "a section that adds a refusal family must name the retirement or the impossibility in its own text, and the section's stated rule would otherwise be silently inert against the current sibling-admitting guard, which the open decision's own \"yes-if-filenames-are-disjoint\" branch confirms is the live behaviour.",
+      "text": "\u00a72 adds a refusal family: \"the claim covers the tree\" refuses a second node writing a disjoint filename inside a claimed topic, which the current dispatch admits (reckon/crew/dispatch.py:2707-2710 admits disjoint sibling leaves under a common prefix), and \u00a72 asserts this while leaving the sibling-writers decision open, recording no interface surface retired or merged (no public definition, CLI option or MCP view is named as replaced) and no reason nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c9f441933106318a705f051bb5d12e28bec27deceaf8778fc9ef6be56cf042f9",
+  "plan_slug": "figures-are-allocated-by-topic-directory",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T095952334177-plan-review-of-figures-are-allocated-by-topic-directory",
+  "reviewed_blob_sha": "d9f4ce83ee9b77de9326231fa4579347af44854f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design adds no module; it is a stated rule, a pinning test set and a mechanism comment, so there is no interface smaller than the behaviour it hides to judge for depth.",
+    "duplicate_owner": "a finding \u2014 \u00a72 declares the figure topic an exclusive claim, but the mechanism that owns figure-topic treatment, `_shared_landing_paths` (reckon/crew/dispatch.py:1955), already assigns the plan-wide figure topic non-exclusive shared-landing semantics and exempts it from the very refusal \u00a72 relies on (reckon/crew/dispatch.py:2705).",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a72's exclusivity rule adds a refusal family (refusing a disjoint filename under a claimed topic) without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a71/\u00a72 propose the topic directory as the figure allocation unit and characterise existing guidance as covering only \"where to put them\", but a figure-specific allocation owner already exists and is nowhere named (reckon/crew/dispatch.py:2034), and a second figure-path surface the plan's census omits (reckon/crew/prompts.py:167).",
+    "thin_wrapper": "pass \u2014 no wrapper is proposed; the rule attaches to the existing dispatch claim check rather than a parallel mechanism, which is the honest form."
+  },
+  "section_digests": {
+    "_document": "3e66e88dbdff7e4d2b31d04d4e65dd98f370662f7b143083c5fcf13ba55100ba",
+    "s1": "81e11885bab24eca5d2add124eb93ad04bc0cb9928be450ecd7fbc6d2e3d7d5f",
+    "s2": "9126d7c792519922d642abdb62ea54421c43ca7c9a6edf5d8c2232b3d3695c5e",
+    "s3": "7dbfe22d50b38e1e594b4e842e4f8dedaa357fa971f992228ab0bddf5001060e",
+    "s4": "d8c93fa9d1e1f71e85bf4f4399830562c99354c041587e8c5198c39dd4b67f0d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.977840+00:00"
+}

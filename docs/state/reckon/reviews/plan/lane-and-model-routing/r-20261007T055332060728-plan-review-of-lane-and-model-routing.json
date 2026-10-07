@@ -1,0 +1,105 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T06:11:04.030Z",
+  "dispatched_at": "2026-10-07T05:53:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:58",
+      "id": "reasoning-1",
+      "reason": "without a per-model time_budget key added to \u00a71's schema, the \u00a73 node either loses the 40-minute budget (regressing the retired block's behaviour) or discovers mid-build that its declared write paths cannot express the change.",
+      "text": "\u00a73 retires claude-opus by turning its one real difference, the 40-minute time budget, into \"a per-model override on opus\", but \u00a71 (line 43) declares the per-model key set as only model, effort, alias, rates/as_of and budget_group \u2014 time_budget is listed among the LANE-level keys, so the schema \u00a71 builds has no home for a per-model budget and \u00a73 cannot preserve opus's 40m against the lane's 25m",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:93",
+      "id": "done_when-1",
+      "reason": "\u00a73 and \u00a76 both assert \"resolved flight unchanged\" as their headline measure, which is exactly the assertion a no-op satisfies, so without a declared control (or a positive assertion that the blocks were actually collapsed \u2014 \u00a73 has one, \u00a76 has none) the gate cannot distinguish a completed fold from an untouched tree.",
+      "text": "\u00a76's done-when is the identity check (resolved flight identical for all 14 projects) plus a dry-run equivalence, and names no negative control; a worker that makes no edit passes the identity check outright, and \u00a73 and \u00a77 likewise declare no control that shows their guard fires",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:40",
+      "id": "reasoning-2",
+      "reason": "the node must resolve the population it proves over; a hardcoded count that has already drifted leaves a project unverified (or blocks the node on a mismatch), and it is the same fuse the repo's own test-visibility rule warns against \u2014 derive the count at measure time rather than writing it down.",
+      "text": "the no-value-moves measure for \u00a71, \u00a73 and \u00a76 is stated as \"all 14 mounted projects\", but ~/.config/reckon/mounts.json carries 15 project mounts, so the literal is a moving count written into the measure's population",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "75c2e8f80f04c214626e5a1b14b5c69a83e2033f2c5588eb0d452fa6ac3d9b67",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 2,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T06:45:28.121706+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-07T06:45:34.299241+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-07T06:45:40.394580+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T06:45:34.299241+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T06:45:28.121706+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T06:45:40.394580+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v2.json",
+  "review_run_id": "r-20261007T055332060728-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "71e9703411d4e58c13a8f1eba087a4d864aa2071",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited report, the design run r-20261007T043246695894, revision 65d0bf6e7, and the write paths (reckon/_flight_schema.py, reckon/flight.py, reckon/crew/picker/snapshot.py, docs/state/reckon/model-catalogue.yaml) all resolve; one-typesafe-model-picker#s6 resolves with the house .html extension.",
+    "done_when": "a finding \u2014 \u00a73, \u00a76 and \u00a77 name no negative control, and \u00a76's only structural check (resolved flight identical) passes on a no-op.",
+    "evidence_paths": "pass \u2014 the cited artifact (the design report at ~/.config/reckon/crew/reports/reckon/lane-and-model-design/report.md) is on a durable path, and no section names a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new test and symbol names (test_flight_lanes.py, test_dispatch_names_a_model.py, test_old_names_resolve.py) are mechanism-named, with no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a73's mechanism depends on a per-model time_budget key that \u00a71's schema does not declare, and the measure's population \"14 mounted projects\" is a hardcoded count that no longer matches the mounted set.",
+    "single_goal": "pass \u2014 each of \u00a71\u2013\u00a77 names one deliverable (schema, catalogue, host-flight collapse, dispatch flag, picker pairs, codex fold, resolver).",
+    "wiring": "pass \u2014 the plan's only cross-plan dependency, \u00a75's hold on the picker's prompt work, is declared as gate g-lmr-1 gating s5 with required evidence one-typesafe-model-picker#s6, and that anchor resolves correctly (the jev-prompt run's own evidence fragment declares plan-verifies reckon:one-typesafe-model-picker#s6)."
+  },
+  "section_digests": {
+    "_document": "6bff2d25983b1148aaba112eff199817b059c3d350f0c891d7d884f9388e54c3",
+    "s0": "c87a031496ceeb7c309d68bb084ea3465777d9dbc5e7f2923a898144730c9400",
+    "s1": "f587e7a85e3f8b62ead97cff9d65b8743cb2e86f4bf4eeb7c1e5c0fa52b05ec9",
+    "s2": "11886c052315abac46df56285908fe2c17d0c7a0884bcb3a615ab76913b2b0b0",
+    "s3": "e95b915d0c8344a110ce780a590d2fd64e624fee034132293d1b77237199c3d8",
+    "s4": "a9149501a3d5192976bf2036a74780936250f3edc562efa9c5ae06f1927e955c",
+    "s5": "4c7eec7f54da60354e334c6a230b2b036047497d3dd8fa8f2904fdadf808a725",
+    "s6": "151b4c4c007acd9f24ac1871fd4032a8765673a0db3a03122663f970e7cdefd1",
+    "s7": "97fb44c3f929af4a870272ed00321019776fb21f115d0e405b7dde5d675bb5af"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:45:16.662911+00:00"
+}

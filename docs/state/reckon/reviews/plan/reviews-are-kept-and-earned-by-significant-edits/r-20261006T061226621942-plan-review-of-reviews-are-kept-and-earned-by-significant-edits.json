@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T06:16:55.088Z",
+  "dispatched_at": "2026-10-06T06:12:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/reviews-are-kept-and-earned-by-significant-edits.html#s2",
+      "id": "reuse_search-1",
+      "reason": "naming `read_state` as the classifier's input makes it extend the existing parser instead of re-parsing HTML for the same units, and closes the one reuse gap in an otherwise complete search map (`plan_review.py` fingerprint, `measure_review_cycles.py`, `review_tiers.py`, `recovery.py`), `dispatch._done_when_plan_overlap_warning`).",
+      "text": "the classifier is specified as taking two plan documents, but `_plan_html.read_state` already parses questions, options, the chosen value, gates, section records and links into a state mapping the classifier must compare; \u00a72 cites only `structured_section_spans` for the done-when reader and never names `read_state` as the classified structure",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:71",
+      "id": "duplicate_owner-1",
+      "reason": "a second hand-kept scalar list drifts from the fingerprint's, so a `plan-review-hold` meta or a future server scalar would move the fingerprint and earn a review of content nobody changed \u2014 exactly the defect \u00a71 measures.",
+      "text": "\u00a72 defines bookkeeping as \"the server-managed scalars the fingerprint already normalises out\" and \u00a79 adds `plan-review-hold` \"normalised out of the fingerprint like the other server scalars\", but neither section names `PLAN_METADATA_SCALARS`/`PLAN_DERIVED_SCALARS` (with `RUN_COMMENT_PREFIX`) as the owner the classifier must read, and `classify_revision` has no named home module",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/reviews-are-kept-and-earned-by-significant-edits.html#s7",
+      "id": "interface_budget-1",
+      "reason": "under cli_options 317 each added option/op must be accounted for in the section's own text; \u00a72 already models the required move (\"moves to it rather than keeping its own\"), so \u00a73/\u00a77/\u00a79 are the inconsistent ones and would gain one accounting line each.",
+      "text": "\u00a77 adds a migration command with `--write`, \u00a73 adds `--force` to `crew review-plan`, and \u00a79 adds `hold_review`/`release_review` to the `edit_plan` op vocabulary, and no section names what interface it retires or merges, or states why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6993800b4a4c13348abdd009d12a4a60fac0345ac84f48c2a5a72000d4ef724a",
+  "plan_slug": "reviews-are-kept-and-earned-by-significant-edits",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T061226621942-plan-review-of-reviews-are-kept-and-earned-by-significant-edits",
+  "reviewed_blob_sha": "6c5aa24f870d60ca358f145339994349b9f9e225",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `classify_revision` hides a document diff and three classes behind one function, and \u00a75's store reader hides committed-vs-staging resolution and the join behind `select_review_for_head`/`list_plan_reviews`; both are deep, not spread.",
+    "duplicate_owner": "a finding \u2014 \u00a72's bookkeeping class and \u00a79's `plan-review-hold` both re-derive the fingerprint's exclusion set owned by `reckon/crew/plan_review.py:71`, without naming it as the owner to extend.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds `--force`, \u00a77 adds a migration command with `--write`, \u00a79 adds two `edit_plan` ops, and none names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a72 specifies `classify_revision(before, after)` without citing `reckon/_plan_html.py:852 read_state`, the parser that already yields the decision questions/options/choice, gates, declarations and links the classifier must diff.",
+    "thin_wrapper": "pass \u2014 \u00a73 extends the existing gate (`reckon/crew/routing.py:2601 require_plan_reviewed`), sweep and `crew review-plan` verb rather than adding a parallel path, and \u00a78 extends `_review_dispatch_fields` in place; no unjustified wrapper is added."
+  },
+  "section_digests": {
+    "_document": "b968158d6ed6d7c5bca69a7c431ae08f3a4a4efec44f5640794d1ae03457d37a",
+    "s1": "0ba8c28847dd312ac0b6361f32e77e12806157aeea836689b50d904d0a5c5551",
+    "s10": "4853a348b0f71d51c1d1d19aeea408b9b666aada4840fa2c126b725b188e7d6e",
+    "s2": "a86b21782b8593e0f7ce3bd531cc1e167c4f9006669a05804b09099d12cc83d5",
+    "s3": "a216bc1505b61e91517f192930d9e981be113e766cb3a97a37210ce057c921e1",
+    "s4": "f4923adcdd86ed5486e8078580258ba033da9b1f161ad8c4dc41cac7e3640979",
+    "s5": "799e607c26d894218dad8ab885b1c3ea83b3e34f36c882c894068a7502211c6b",
+    "s6": "dba00f77adf3d5d90bf244b30e6460d0cafdc9b2b6d72ef3a3fc335700937927",
+    "s7": "1ade30f48b87d9c219c1cbacf45a6adcd11f1383ec9458af1fe84c8df4935f2e",
+    "s8": "dd7a5a5667dafc9eb379ff85838d0d4ba399698c86c7ba7996b61b238183f3c9",
+    "s9": "7cf24d91f42f6c84b098c772fdea72eba01efe0cf11a0cbe1631ea9b20bb7730"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.137685+00:00"
+}

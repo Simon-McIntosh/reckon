@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:23:40.109Z",
+  "dispatched_at": "2026-10-05T02:18:36Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/prompts.py:203",
+      "id": "reuse_search-1",
+      "reason": "\u00a73's premise is factually incomplete and its done-when is satisfiable while every dispatched worker keeps reading unextended, partly contradicting guidance from its own prompt.",
+      "text": "\u00a73 asserts reckon-create \"is the only place figures are currently described\" and names two surfaces to extend, but the runtime worker prompt reaches every dispatched worker with the same figure guidance: `BRIEF_LANDING_CONTRACT` (line 203-205) and `PLAN_LANDING_CONTRACT` (line 166-169) tell a worker to place figures under `docs/figures/<topic>/` and, in the plan case, `docs/figures/<plan>/<node-id>/` \u2014 a sub-path, not the topic the \u00a73 rule requires declaring. The landed commit 08e9f5b1 touched only `skills/reckon-create/SKILL.md` and `skills/reckon-build/references/worker-protocol.md`, so the surface that actually governs a capture node still states a figure path that contradicts the new allocation rule.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "skills/reckon-build/references/worker-protocol.md:1",
+      "id": "reuse_search-2",
+      "reason": "the rule landed in the right file, so this is a wording defect in \u00a73 that a one-line correction fixes without altering the design.",
+      "text": "\u00a73 names the second surface as \"the ship references\" and commit 08e9f5b1 records the path as `skills/reckon-ship/references/worker-protocol.md`, but no `reckon-ship` skill exists; the file the rule actually landed in is `skills/reckon-build/references/worker-protocol.md`. The rule is written correctly but the plan misnames the surface it extends, so a reader following \u00a73 looks for a skill that is not there.",
+      "type": "reuse_search",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "b943622c86151a2c2e41bd214679fbd147c58eb0a2563f55dc67637ee149e572",
+  "plan_slug": "figures-are-allocated-by-topic-directory",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T021815012405-plan-review-of-figures-are-allocated-by-topic-directory",
+  "reviewed_blob_sha": "d9f4ce83ee9b77de9326231fa4579347af44854f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module; \u00a72 pins the existing dispatch directory-claim machinery (`_directory_claim_overlaps`, `reckon/crew/dispatch.py:2382`) behind the walk it already had rather than hiding new behaviour behind new surface.",
+    "duplicate_owner": "pass \u2014 the allocation unit's owner is the dispatch directory-claim walk (`_directory_claim_overlaps` / `_scopes_overlap`, `reckon/crew/runs.py:693`), which the plan verifies and pins; no second placement or path-resolution path is forked.",
+    "interface_budget": "pass \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; the plan adds no member to any of these families (\u00a72's landed node changed no runtime code and introduced no new refusal kind), so there is no added surface to account for.",
+    "reuse_search": "a finding \u2014 the plan searched two surfaces but missed `reckon/crew/prompts.py`, whose landing contracts carry figure-placement guidance into every worker prompt.",
+    "thin_wrapper": "pass \u2014 no wrapper is added; the plan explicitly declines to reimplement the containment guard and adds only tests plus a mechanism comment."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.981978+00:00"
+}

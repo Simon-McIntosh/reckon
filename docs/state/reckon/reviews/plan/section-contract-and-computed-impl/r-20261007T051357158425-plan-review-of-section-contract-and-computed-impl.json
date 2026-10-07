@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T05:22:01.852Z",
+  "dispatched_at": "2026-10-07T05:14:22Z",
+  "findings": [
+    {
+      "anchor": "reckon/roadmap.py:2990, reckon/roadmap.py:233",
+      "id": "duplicate_owner-1",
+      "reason": "the plan's own rule (\"changes a caller only where it is asking whether a section exists\") forces `:2990` onto the changed list because it enumerates the plan's sections for readiness, and the retirement of `_declared_stages` must name `:233`; without both the node lands a sixth site of the defect it is closing and an unaddressed break, and a census that reports one of three sites is what the six-site pattern recurs from.",
+      "text": "the plan enumerates the callers it keeps on the narrow reader but misses two instances of the defect it is closing. `reckon/roadmap.py:2990` builds its own section-identity union (`plan_section_anchors(plan) | set(section_blockers) | declarations-when-decisions`) that omits typed section records, so a record-only section never appears in the readiness split \u2014 the same \"which sections does this plan have\" question \u00a715 exists to answer with one set, and the plan lists it as merely \"uses it too\" under \"keeps its narrower meaning\" without saying whether it validates existence. `reckon/roadmap.py:233` calls the retiring `_declared_stages` from `_gate_section_refs`'s fallback branch; the plan names only the function and `declared_for` (291) and does not account for this third call site, so deleting the function as proposed does not compile through a site the plan never lists",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:230",
+      "id": "duplicate_owner-2",
+      "reason": "the section's stated outcome (\"one function answers 'does this section exist' for refs, gates and decision scopes alike\") is unmet while this gate-text path keeps a second answer, so the plan must say this site calls `declared_section_identities` too.",
+      "text": "the `_gate_section_refs` fallback at `:233` reads the identity question through `_declared_stages(target)` where `declared_for` is None, so a gate-text section named on a target that carries a typed record but no gate or comment anchor binds to nothing; the plan's fix retires the function this branch depends on but never states what replaces the branch's answer",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f4266f5cb226d8f3fd30fba4db172b51a0e32ebe62189786d4d0a9bbe6fde79a",
+  "plan_slug": "section-contract-and-computed-impl",
+  "plan_version": 96,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261007T051357158425-plan-review-of-section-contract-and-computed-impl",
+  "reviewed_blob_sha": "e2b8b117e5a0c7cb9306ad7783319abd8f6de41b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a715 adds no module; it hides the authored-identity union behind the one function that already computes it, so the behaviour (which sections a target declares) is served by a single call sites already name, not a spread of new wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a715 names `_declared_stages` (`reckon/roadmap.py:181`) as the duplicate to retire and the owner to extend (`declared_section_identities`), which is correct, but its census of remaining sites of the same defect is incomplete: two callers of the identity question are left unnamed.",
+    "interface_budget": "pass \u2014 public_definitions 1522, cli_options 323, mcp_views 33, refusal_families 23; \u00a715 adds no public definition, CLI option, MCP view or refusal family (it reuses the existing `missing-dependency-section` code) and states in its own text that it retires one private duplicate, so it accounts for its interface surface.",
+    "reuse_search": "pass \u2014 \u00a715 searched and cites the existing owner rather than building a new helper: `declared_section_identities` (`reckon/_schema.py:678`) already returns the gate/comment anchors, the `section_declarations` keys and the typed record ids, and already decides decision scopes through `decision_section_refusals` (`_schema.py:602`, called at `reckon/_store.py:2770` and `reckon/roadmap.py:2601`); the section routes four ref-validation sites to it and adds no definition.",
+    "thin_wrapper": "pass \u2014 the section explicitly \"adds no helper\" and retires the one private duplicate (`_declared_stages`, `reckon/roadmap.py:181`) instead of layering a second union over it."
+  },
+  "section_digests": {
+    "_document": "b3e317a55bc99281c91004c633bd3436b967d639d0093042e8382fda5f2f34d5",
+    "s-contract": "f366889c6bd9e5d22c7648ad207d192fc7c57f306226260bbdc61af42facde89",
+    "s0": "1ab5310dfc352b1616d26748ecb2ede37e4b22edb08cff5d38882e0df7bfd38b",
+    "s1": "575abaabf78815d603a63f305f24849afc2e8a23b5095750aed026d129f109b7",
+    "s10": "442596316d5529c8e0ca2beebb4bd78b7a641c0012f4ab842e9c391891981252",
+    "s11": "2423a9472cd4dd20745063fdbfc9bd8389d08ec30fc7d92d6a0c5a1cfab9d904",
+    "s12": "0c57a8f87c50a8febc414f1c7fd4f8da6acde27dfa801ce3e75d0db1113bf0a0",
+    "s13": "dfb28dd89d9b23c2ba7291cc31ac355152fe3555df28c0b193a1329b8dfe99bd",
+    "s14": "5551d29212c13ac5d360581bd825e4ba6459ab51ed4d4ddd72c8ff47f5b0995d",
+    "s15": "15e65fb8aedf7502e1e61ce73695c51cf7a257a6aaa7e218055ef588c67bb00e",
+    "s2": "c9627911571ffeb5980e8f440e0c1ac40ee62252c5479ea760ee8c3373285d68",
+    "s3": "b7b0969a15e31246b5ffd2220eab300b4752861359a2aaa1557d143e28ccf28a",
+    "s4": "11761fc55a617bd8eb281c58e0956ec1b69c571d7b5f74ada9bad6e60bb73d77",
+    "s5": "e08114c9520b269de48455c63a6cf7fd4a97eba7999c6040e6d76f3423f7ec79",
+    "s6": "e5c5a0ebc8e55b3b7a9eb8df4ab33868a03a73f8441a8e786055a21d2abf826f",
+    "s7": "4787d243806ca8c941d78507bba2a2a639f320cffe5e2121afa19a45d02da464",
+    "s8": "7817fd2791828ef8e2ed19e683bdac919bad6f6d1f947640c52ac9ab6c4a68ca",
+    "s9": "e0631b1543405b216abf712de58f8a5b04e1a54e9ba4ab7fb4e49133431dcbd5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:15:33.876801+00:00"
+}

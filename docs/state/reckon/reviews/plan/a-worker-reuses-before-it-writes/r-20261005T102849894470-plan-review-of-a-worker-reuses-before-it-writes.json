@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T10:35:53.276Z",
+  "dispatched_at": "2026-10-05T10:29:19Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:455",
+      "id": "deep_module-1",
+      "reason": "the detection rule must be widened (or the done-when's counts corrected) before \u00a79 is implementable, since as written its own acceptance assertions cannot hold.",
+      "text": "\u00a79's done-when requires the inventory to report the promoted primitive in `_store.py` and, at the base revision, all four `serve.py` sites, but the stated source-binding rule (\"a name bound in the same function body from `with_name`, `with_suffix`, a `/` join on a `.parent`, `NamedTemporaryFile`, `mkstemp` or `mkdtemp`\") does not match two binding forms the plan itself must detect: the primitive's own `temporary` is bound from the helper `_open_sibling_temporary` (a tuple assignment, not one of the listed constructors), and `serve.py:503`/`serve.py:567` bind `temporary = Path(handle.name)` from a `NamedTemporaryFile` handle, which the rule reaches only through neither a `str()` wrapper nor a `/`-join \u2014 so the owner primitive would read as compliant and the two publishers would not be reported, falsifying both the head assertion (\"exactly three functions\") and the base inventory requirement.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/interface_counts.py:1",
+      "id": "duplicate_owner-1",
+      "reason": "the plan claims one owner while creating a second executable copy; it should either name which owner is authoritative and how the pin re-run stays in step, or correct the \"frozen\" justification that licenses the copy.",
+      "text": "\u00a79 lifts the staged-write predicate out of the census's `primitive_concepts` and lands it as a new function on `reckon/interface_counts.py`, justified because the census is \"the frozen code-depth census under docs/research\", but that census is a live instrument: \u00a72's done-when appends a pin to `snapshots.json` and re-runs `census.py` at the new head, so after \u00a79 there are two executable owners of the same detection rule (`census.primitive_concepts` and the new `interface_counts` function) with no stated reconciliation.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c2c3fdb801f4b0400f3f35813a5f550ea3b53fbc13d3b247f7056b36b774500d",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 93,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T102849894470-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "8941896ed263a426a0fd3e21b5b91dae86fd4c37",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a78's `write_atomically` is a genuinely deep primitive (it hides temporary creation, rename, fsync, exact mode and directory flush behind one call) and \u00a79 adds no per-caller wrapper, but \u00a79's inventory rule as written is too shallow to name the owner primitive it is built around.",
+    "duplicate_owner": "a finding \u2014 \u00a79 re-implements the census's staged-write predicate as a new owner in `reckon/interface_counts.py` on the ground that the census is \"frozen\", while \u00a72 of the same plan re-runs `census.py` at each new pin.",
+    "interface_budget": "pass \u2014 supplied counts public_definitions 1474, cli_options 317, mcp_views 33, refusal_families 23. \u00a78 and \u00a79 each add exactly one public definition (`write_atomically`; the ported inventory rule) and each states that the retired forks are underscore-private and uncounted, so the public_definitions family cannot shrink \u2014 the \"state why nothing can be\" branch of the rule.",
+    "reuse_search": "pass \u2014 \u00a78 names the owner it extends (`_store._write_through_sibling_temporary`) and \u00a79 names the three mechanisms it reuses or rules out (the census `primitive_concepts` predicate in `docs/research/data/crew-pattern-review/code-depth/census.py`, `interface_counts.read_trees`/`definitions`, and `clones.functions_in`), and I confirmed each exists and holds what the plan says.",
+    "thin_wrapper": "pass \u2014 the one retained layer, `write_json_atomically`, is kept as \"the one place a document is serialised, and is not a second owner\", a stated reason, satisfying the item; \u00a79 adds no new function to any migrating module."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.719269+00:00"
+}

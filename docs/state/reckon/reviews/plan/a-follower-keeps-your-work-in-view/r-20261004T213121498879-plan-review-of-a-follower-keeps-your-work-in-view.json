@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:40:49.081Z",
+  "dispatched_at": "2026-10-04T21:31:34Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery.py:9407",
+      "id": "duplicate_owner-1",
+      "reason": "the honest change is to add the follower-liveness signal to `overdue_unreconciled_runs` (or unify the two predicates) so one owner answers \"which terminal pointers is nobody returning to\", instead of a parallel `reckon crew forgotten` that drifts from the fence that already refuses on the same population.",
+      "text": "\u00a75 builds a new `forgotten` derivation in recovery.py, but `overdue_unreconciled_runs` already returns exactly \"terminal pointers past a threshold, not excused by a closure disposition\" (filtering scoring/promotable/completed_unpromoted/blocked/paused over `list_live`), and the dispatch fence already consumes it at `reckon/crew/dispatch.py:6724`; \u00a75's own negative control asserts dispatch retains NO such coupling, contradicting the existing one",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/lane_document.py:303",
+      "id": "duplicate_owner-2",
+      "reason": "the implementing node should call `read_lane_document` and branch on its returned `unknown_fields`/`stale`/resolved fields, not re-derive the presence semantics; a forked reader is how the idle-shape rule and the router's published shape drift apart.",
+      "text": "the \u00a74 headroom rule in comment c-20260923T0200 (\"key on which fields are present rather than on their values\"; `concurrent_requests` absent \u2192 read `concurrent_requests_instant`; document missing/older than shelf life/unreadable \u2192 dispatch nothing, record lane unreadable) is already implemented by `read_lane_document`/`read_lane_counts` (`_FIELD_KEYS` at lane_document.py:83, `blank_report` at :255, freshness/shelf-life in the returned report), yet the plan names only the `advise-the-lane-never-force-it` plan and never cites this module",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:3215",
+      "id": "duplicate_owner-3",
+      "reason": "i.e. hoist/supersede `_needs_you_runs` into the recovery.py function \u00a72 adds and delete the cli copy, or the \"live view returns the same list\" parity \u00a72 tests will be an assertion over two independent implementations that drift on the next state-vocabulary change.",
+      "text": "\u00a72's needs-you list re-implements `_needs_you_runs(project, session=...)`, which already selects the owning session's runs in `FLEET_BLOCKED_STATES \u222a FLEET_UNPROMOTED_STATES` from live pointers via `_watch_snapshot`; the plan does not cite it, so a worker following \u00a72 literally leaves two list builders over the same snapshots",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/cli.py:3257",
+      "id": "reuse_search-1",
+      "reason": "\u00a73 should define drain from `_fleet_counts(..., session=...).get(\"working\", 0)==0` and its queued sibling, reusing the one partition owner, so the drain definition cannot disagree with the trailing figures the same pane renders.",
+      "text": "\u00a73's drain predicate (\"the owning session's working and queued runs reach zero\") restates `_population_has_live_work(project, session=...)`, which already walks the owning session's live pointers and reports whether any non-terminal phase remains; the plan cites neither it nor the session-scoped `_fleet_counts(snapshots, session=...)` (`reckon/crew/recovery.py:10352`), which computes the `working` count it wants",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/ticker.py:247",
+      "id": "reuse_search-2",
+      "reason": "\u00a72 should consume the fleet classification sets (the same ones `_fleet_counts` and `_needs_you_runs` use), not the ticker's display set plus patches, or the needs-you line and the trailing figures will classify the same run differently.",
+      "text": "\u00a72 names the source of truth for its states as `NEEDS_ACTION` in `reckon/crew/ticker.py`, which is the display vocabulary; `recovery.py` already derives the classification sets (`FLEET_BLOCKED_STATES = NEEDS_ACTION - WAITING_STATES` at recovery.py:10349, `FLEET_UNPROMOTED_STATES = (\"complete\",\"completed_unpromoted\",\"departed\")` at :10341), which is why \u00a72 must then bolt on \"or is unpromoted, or needs help\" to patch the missing terms",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "08d13ac4ce189d09bc8385bd319012b5b13c46a1b01a2df0b2172681918618f6",
+  "plan_slug": "a-follower-keeps-your-work-in-view",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T213121498879-plan-review-of-a-follower-keeps-your-work-in-view",
+  "reviewed_blob_sha": "48eeff747edb21471590652f13afa097f09bef3c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a72 places the list composition in `reckon/crew/recovery.py` beside the fleet partition and has both the follower and the live MCP view consume it, which is the deep shape (one classifier, many readers). The depth is real provided \u00a72 supersedes `_needs_you_runs` rather than standing beside it (see duplicate_owner).",
+    "duplicate_owner": "a finding \u2014 \u00a75 derives a \"forgotten\" list in `recovery.py \u00a75` rather than extending `overdue_unreconciled_runs`, and \u00a74 re-derives the lane-document idle-shape rule already owned by `lane_document.py`; \u00a72 re-derives `_needs_you_runs` and reintroduces the needs-action vocabulary from `NEEDS_ACTION` beside the fleet state sets.",
+    "reuse_search": "a finding \u2014 the plan adds a needs-you list (\u00a72), a forgotten-runs list (\u00a75) and a lane-headroom rule (\u00a74) without citing the existing owners that already compute each: `_needs_you_runs` (`reckon/cli.py:3215`), `overdue_unreconciled_runs` (`reckon/crew/recovery.py:9407`) and `read_lane_document` (`reckon/crew/lane_document.py:303`).",
+    "thin_wrapper": "pass \u2014 \u00a74 extends the existing `_sweep_lapsed_holds`\u2192`sweep` path by threading the owning session rather than wrapping it, and \u00a75's `reckon crew forgotten` is an ordinary thin CLI verb over a recovery derivation. No layer is added over machinery that cannot be extended in place."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.387417+00:00"
+}

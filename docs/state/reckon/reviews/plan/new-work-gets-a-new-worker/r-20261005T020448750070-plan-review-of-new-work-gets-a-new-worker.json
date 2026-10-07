@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:17:08.513Z",
+  "dispatched_at": "2026-10-05T02:05:19Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:11426",
+      "id": "reuse_search-1",
+      "reason": "\u00a79 should be collapsed to its one live item (the \u00a77 stopgap lift) or a node pays to rebuild work already merged.",
+      "text": "\u00a79's \"next, in order\" lists \u00a73 then \u00a74 as open work, but \u00a73's cross-harness resume (\"a run redispatched to another harness and then resumed breaks\") is already implemented by the harness-ownership check in `_task_session_resolution` (dispatch.py:11484, `owner != harness` withholds) and `_current_harness_session` (dispatch.py:11592), and both \u00a73 and \u00a74 are declared done and recorded met by the 2026-10-01 currency audit \u2014 so a node dispatched against \u00a79 re-derives landed machinery",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:11587",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to call `runs.capture_run_session` at those four sites and delete the shim, rather than keep a parallel entry point named for the contract this plan retires.",
+      "text": "`_capture_member_session(record)` forwards unchanged to `capture_run_session` (reckon/crew/runs.py:79) and carries the retired \"member\" vocabulary the plan's whole design removes, yet is reached from `reckon/crew/promotion.py:5365`, `:8169`, `:8680` and `dispatch.py:11125`",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0fc2e13e23a77fef323fbf81a67c01745bd3d948aa790977a0e8495643a06562",
+  "plan_slug": "new-work-gets-a-new-worker",
+  "plan_version": 47,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T020448750070-plan-review-of-new-work-gets-a-new-worker",
+  "reviewed_blob_sha": "f3a695f38ba1738c129bac598c1bf652ef0e42bd",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the dispatch-time decision is one entry point, `_task_session_resolution` (dispatch.py:11426), hiding the record shape (committed rows + live pointers), the task-identity join and the disqualification, behind a two-key return and delegating resolution to `resume.resolve_session`.",
+    "duplicate_owner": "pass \u2014 the design extends the session-resolution owner (`reckon/crew/resumption.py:464 resolve_session`) and the member-liveness owner (`reckon/crew/node.py:357 member_in_flight_verdict`) rather than forking either; `_prior_same_task_run` (dispatch.py:11347) is about run selection, not a second session reader.",
+    "interface_budget": "pass \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; the implementable sections add no public definition, CLI option, MCP view or refusal family \u2014 \u00a72's absence names are `point` reasons recorded on the run (`session_absence`), not refusal codes \u2014 and the sections do name what they retire (the roster session write and the shared session member).",
+    "reuse_search": "a finding \u2014 the plan searched broadly (\u00a71's 34-row reuse map; \u00a72\u2212\u00a76 reuse `resumption.resolve_session`, `runs.capture_run_session`, `node.member_in_flight_verdict` and `rollout.read_rollout_receipt`). \u00a79, however, schedules as implementable the \u00a73 and \u00a74 work whose mechanism already exists at `dispatch.py:11484`/`dispatch.py:11592` and which section declarations `s3=done`, `s4=done` record as landed.",
+    "thin_wrapper": "a finding \u2014 `_capture_member_session` is a pure forwarder over the run-capture owner with no behaviour and no justification."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.032663+00:00"
+}

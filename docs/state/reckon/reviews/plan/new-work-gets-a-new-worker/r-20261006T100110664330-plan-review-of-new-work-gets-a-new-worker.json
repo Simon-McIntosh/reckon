@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:14:21.443Z",
+  "dispatched_at": "2026-10-06T10:01:32Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:11277",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a72 (now \u00a79's carried work) should extend `context_budget`'s predicate and `_backends.parse_events`/`classify_stream_failure` instead of hardcoding the refusal strings, so a dialect or context-budget change cannot leave the withheld-session check matching on a stale literal.",
+      "text": "`_session_too_large_to_continue` opens a run's stream itself (dispatch.py:11293-11321), iterates lines with `json.loads`, and hardcodes the context-refusal vocabulary `\"Prompt is too long\"` and `\"blocking_limit\"`. That vocabulary already has owners: `reckon/crew/context_budget.py:25` holds `_CONTEXT_REFUSAL_TEXT = \"Prompt is too long\"`, and `reckon/crew/recovery.py:4979` classifies `terminal_reason == \"blocking_limit\"`. The stream-line parsing it duplicates is owned by `reckon/_backends.py:parse_events` (3513) and the dialect-level classifiers `classify_stream_failure` (reckon/_backends.py:1096, 1367, 3798), which already expose the same event vocabulary. This is a census of the duplicated context-refusal vocabulary \u2014 the sites are `context_budget.py:25` (owner), `recovery.py:4979`, and the new `dispatch.py:11316-11321` \u2014 plus the duplicated `json.loads` stream loop at `dispatch.py:11287` against the owner `_backends.parse_events`.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0a99a9a3d19604f63810c3521b3cb5c8f0ee407b38df50650078472e016e2dca",
+  "plan_slug": "new-work-gets-a-new-worker",
+  "plan_version": 47,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T100110664330-plan-review-of-new-work-gets-a-new-worker",
+  "reviewed_blob_sha": "f3a695f38ba1738c129bac598c1bf652ef0e42bd",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the whole task-keyed continuation decision sits behind one entry point, `_task_session_resolution` (dispatch.py:11414), which hides selection (`_prior_same_task_run`), live-writer withholding (`_prior_session_still_held`) and harness ownership, delegating session resolution to the existing `resolve_session`. The interface is narrower than what it hides.",
+    "duplicate_owner": "a finding \u2014 the context-refusal vocabulary is re-implemented in the plan's \u00a72 code instead of extending its owner; owned by `reckon/crew/context_budget.py` (and the `blocking_limit` classifier at `reckon/crew/recovery.py:4979`).",
+    "interface_budget": "pass \u2014 supplied counts public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23. The two remaining sections add to none of these: \u00a77 flips `session_reuse` in the host and project layers without adding a definition, CLI option, MCP view or refusal family, and \u00a79 is an ordering note that names no new surface. The landed sections account for what they retire rather than accreted surface: \u00a72 removes the member-keyed resolver `_member_session_resolution`, and \u00a73 retires the four roster session fields (`session_id`, `session_model`, `sessions`, `session_owners`) from the member schema.",
+    "reuse_search": "pass \u2014 \u00a71 is itself the reuse search (a 34-row map of every session-carry site with file:line, class and asserting tests; falsifier names `dispatch.py:3622-3634`, the redispatch `continued` branch, `crew resume`, `dispatch_review_for_run` and the reckon-ship Continuity rule), and \u00a72 extends the existing dispatch decision in `reckon/crew/dispatch.py` (`_task_session_resolution`, dispatch.py:11414, delegating to `reckon/crew/resumption.py:resolve_session`) rather than forking a parallel resolver.",
+    "thin_wrapper": "pass \u2014 the plan added no thin layer over existing machinery: \u00a72 removed the member-keyed resolver `_member_session_resolution` instead of wrapping it, \u00a73 retires the roster session fields, \u00a77 is a one-line `session_reuse` configuration flip, and \u00a79 adds no code. There is no new wrapper needing a justification."
+  },
+  "section_digests": {
+    "_document": "f2a54d1fd221ce26a23074d660288ac2c1a76de025abb36d5318c64d9c3dc571",
+    "s1": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s2": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s3": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s4": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s5": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s6": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s7": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s8": "e7c8f9518519552098b55b1826ee16e97b986001f47d42c07440dc2a4d559e71",
+    "s9": "9bf545205641e1d550ff7dd622b064a3e3b029ef013519fe991543ae7ab7cfe9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.028155+00:00"
+}

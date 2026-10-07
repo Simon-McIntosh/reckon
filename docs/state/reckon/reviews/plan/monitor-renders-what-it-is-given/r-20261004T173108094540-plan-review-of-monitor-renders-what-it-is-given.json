@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:41:56.076Z",
+  "dispatched_at": "2026-10-04T17:31:25Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/resumption.py:577",
+      "id": "duplicate_owner-1",
+      "reason": "it contradicts the plan's own \u00a710 principle (one derived fact = one owner, never two surfaces held in step), so \u00a76 should extract the launcher's guard composition into one function both `resume_plan` and the sweep consult, or record why the read-only budget variant makes that impossible.",
+      "text": "the sweep's dry run now composes the launcher's refusal from a mirrored guard sequence (launch == \"cli\", process alive, budget verdict, window refusal) rather than consulting one shared refusal, so `resume_plan` (dispatch.py:11804) and `_launcher_refusal` (resumption.py:577) are two owners of the same policy, kept identical by `tests/test_dry_run_predicts_the_launcher.py` instead of by construction; the plan's \u00a76 rejected the rename option for fixing wording rather than harm, but did not extend the owner by extracting a single refusal both doors call",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/monitor-renders-what-it-is-given.html#s2",
+      "id": "reuse_search-1",
+      "reason": "this is plan-prose rot, not a design defect; it would not change what \u00a72/\u00a73/\u00a74 build, though a reader following the plan should be pointed at the function names rather than fixed lines.",
+      "text": "\u00a72's evidence table cites `recovery.py:1890-1897`, `:2630-2656`, `:2653`, `:2655`, `:1660`, `:1679`, while the live functions sit far from those lines (the classifier's `wait_condition_state`/`wait_observed` are emitted near recovery.py:9071, the event copy near :10186 and :10713), so the citations no longer resolve to the code they name",
+      "type": "reuse_search",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "b27686f6d95f8763805bbdd12c787c21ee009babdb0afe5b1a55c26945f48e8e",
+  "plan_slug": "monitor-renders-what-it-is-given",
+  "plan_version": 29,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T173108094540-plan-review-of-monitor-renders-what-it-is-given",
+  "reviewed_blob_sha": "0f737d52466ff06829cf14ff5b6e6a22b0526dc8",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module; \u00a73 and \u00a74 extend the existing snapshot\u2192event pipeline (recovery.py) and the ticker's row renderer in place, and the two new ticker predicates (`declares_a_wait`, `probe_has_run`) read the event's own facts rather than re-deriving the classifier's verdict.",
+    "duplicate_owner": "a finding \u2014 \u00a76 adds `_launcher_refusal` at `reckon/crew/resumption.py:577`, a second implementation of the resume-refusal policy whose owner is `resume_plan` at `reckon/crew/dispatch.py:11804`; drift between the two doors is held only by a parity test, which is the \"two implementations of one truth\" the plan's own \u00a710 explicitly refuses to create.",
+    "reuse_search": "pass \u2014 the plan cites the concrete mechanisms it extends (recovery.py's snapshot\u2192event composer and its `_spend_facts` docstring contract, ticker.py's row renderer, `resume_plan`'s guards, `_readonly_budget_verdict`, and `work-scheduling-surface` \u00a73's coverage figure), and `reckon/roadmap.py` emits no `coverage` field today, so \u00a710's gate names a real unlanded dependency rather than a rebuild of something already present.",
+    "thin_wrapper": "pass \u2014 the one layer the plan adds, carrying five facts from the snapshot into the transition event (\u00a73), is required because the ticker is fed transition events rather than the snapshot, and the plan states that boundary; \u00a76's layer over the launcher is counted once, under duplicate_owner."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.023880+00:00"
+}

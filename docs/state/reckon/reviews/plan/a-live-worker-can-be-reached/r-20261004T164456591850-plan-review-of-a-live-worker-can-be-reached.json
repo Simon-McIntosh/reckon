@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T16:55:52.063Z",
+  "dispatched_at": "2026-10-04T16:45:11Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-can-be-reached.html:113",
+      "id": "reuse_search-1",
+      "reason": "citing the two existing run-directory message surfaces would force the design to state whether the inbox extends one of them or genuinely needs a third, which is the decision \u00a77 currently leaves open.",
+      "text": "\u00a74 proposes \"a coordinator writes a message into the run's own directory; the worker's prompt contract obliges it to read that directory at checkpoints\" and \u00a77 names only \"the prompt-composing module\" and \"the CLI module\", citing neither `reckon/crew/resumption.py:809` (which already writes a coordinator instruction, `resume-<turn>-advice.txt`, into the run directory and hands it to the worker) nor the durable per-run peer channel at `reckon/crew/dispatch.py:3026` (`_channel_root` \u2192 `run_dir(run_id)/peer-channel`) exposed through `peer_ask`/`peer_read` with the PEER CHANNEL prompt block at `reckon/crew/prompts.py:619`. A plan adding a subsystem over machinery it never searched is a finding, and the plan's own recorded comment at line 244 already concluded \"the existing peer-channel block is the one place the contract already does a blocking directory read, so the inbox should reuse it\" \u2014 a conclusion the design section does not carry.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-can-be-reached.html:171",
+      "id": "thin_wrapper-1",
+      "reason": "requiring the justification would either delete the wrapper in favour of extending the peer channel or record the concrete property (mid-turn read at a checkpoint) that the existing machinery cannot supply, which the plan now asserts without stating.",
+      "text": "the \u00a77 inbox is a second reader/writer over the same per-run directory the peer channel (`reckon/crew/dispatch.py:3026`) and resumption advice (`reckon/crew/resumption.py:809`) already use, and the plan gives no reason those cannot be extended \u2014 e.g. admit the coordinator as a channel sender, or add a one-way \"instruction\" kind beside the peer channel's \"question\" \u2014 so the honest change is an extension of an existing mechanism, not a parallel channel.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-can-be-reached.html:113",
+      "id": "duplicate_owner-1",
+      "reason": "naming the owner lets the author extend one durable per-run channel (adding a coordinator-sender and an instruction kind) rather than shipping a forked mailbox that drifts from the peer channel's durability and NEEDS-HELP semantics.",
+      "text": "the plan re-implements per-run-directory message placement and delivery instead of extending the owner: `reckon/crew/resumption.py` (`_write_resume_prompt`, `resume-<turn>-advice.txt`, the existing coordinator-writes-into-the-run-directory path) and `reckon/crew/dispatch.py` (`_channel_root`, `_write_json`, `peer_ask`, `peer_read`, the existing durable per-run message channel), with the worker-side read contract owned by the PEER CHANNEL block in `reckon/crew/prompts.py:619`.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-can-be-reached.html:171",
+      "id": "deep_module-1",
+      "reason": "\u00a74's own done-when requires that an unread inbox be distinguishable from silence, which cannot be specified without one module owning the mailbox record and its read/receipt state.",
+      "text": "the inbox has no owning module: the write side is \"the CLI module\" (`reckon/crew/dispatch.py`) and the read side is the prompt-contract in `reckon/crew/prompts.py`, so the mailbox shape, the at-checkpoint read obligation and the \"unread inbox must be visible\" rule from \u00a74's done-when are spread across two files with no interface naming what a message is, where it is stored, or how a worker tells \"no message\" from \"message not yet read\".",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6b4e39ec68c6394e47ccaeb7582ce5743bd8155474257eb6432bfe44e7eff38f",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T164456591850-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "42ba36a3c3727bd6d2ad2e6ab37678c007ef4b71",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 no module owns the inbox; the design splits it into a prompt-contract obligation in `reckon/crew/prompts.py` and a coordinator-side writer in \"the CLI module\" (`reckon/crew/dispatch.py`), leaving the mailbox's shape, delivery contract and unread-visibility rule spread across two files with no single owner.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements per-run-directory message placement and delivery rather than extending the owner, which is `reckon/crew/resumption.py` for the run-directory advice write and `reckon/crew/dispatch.py` (`_channel_root`, `peer_ask`, `peer_read`) for the durable per-run channel.",
+    "reuse_search": "a finding \u2014 the plan's live design (\u00a74 inbox + \u00a77) proposes a new coordinator\u2192worker message channel in the run directory without citing the two existing mechanisms it most resembles: the run-directory advice file written by `reckon/crew/resumption.py` and the durable per-run peer channel in `reckon/crew/dispatch.py` with its PEER CHANNEL prompt block in `reckon/crew/prompts.py`.",
+    "thin_wrapper": "a finding \u2014 the coordinator-side writer is a thin layer over the run directory and the plan never says why the existing run-directory write path or the peer channel cannot be extended instead."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.416477+00:00"
+}

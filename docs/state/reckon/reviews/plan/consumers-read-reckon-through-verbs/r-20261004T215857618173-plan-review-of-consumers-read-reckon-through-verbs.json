@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T22:05:24.185Z",
+  "dispatched_at": "2026-10-04T21:59:11Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/runs.py:819",
+      "id": "duplicate_owner-1",
+      "reason": "the verb should call `scope_claims` (and the wider `_repository_scope_claims` in dispatch.py for the cross-repository inventory) rather than re-derive the join, or the plan must justify why neither reader can be extended to take a `--path` filter.",
+      "text": "\u00a73's `crew claims [--path P]` derives every claim from `node.write_paths`, which is exactly what the existing public `scope_claims(project, repo)` already returns with `run_id`, `node_id`, `path`, `declared_path`, `derived_from` and the binding verdict; \u00a73's own write paths name `reckon/crew/lane_document.py` and `worktree_fleet.py` but not `reckon/crew/runs.py`, so a second claim reader would be built beside the owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:1402",
+      "id": "duplicate_owner-2",
+      "reason": "`field=value` and the `check-manifest` gate belong on `repair_manifest_status` (extended to accept a field map and to run the check before the replace), so the plan should add `reckon/crew/runs.py` to \u00a74's scope and generalize the existing function rather than fork its asdelivered/atomic logic.",
+      "text": "\u00a74's `crew repair-manifest --run R --set field=value` keeps `manifest.md.asdelivered`, applies a shape, and atomically replaces the file, which is precisely what the existing `repair_manifest_status` already does (`AS_DELIVERED_SUFFIX` at runs.py:1346, `os.replace` at runs.py:1447); \u00a74's declared write paths are `reckon/cli.py`, the sync implementation, the skills and tests, and omit `reckon/crew/runs.py`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_views.py:671",
+      "id": "thin_wrapper-1",
+      "reason": "either the verb reuses the MCP field mapping (so the two surfaces cannot drift) or the plan must state the concrete field-level divergence that forbids sharing, which is the reason the wrapper is justified.",
+      "text": "\u00a73's `crew lanes` prints a lane-document reading that `_lane_document_fields`/`_attach_lane_document` already compose into every row; the plan says the verb is \"expressly distinct from the endpoint/quota payload of MCP view=\\\"lanes\\\"\" but does not say why that builder cannot back the CLI verb as well",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/schema/flight.yaml:1",
+      "id": "reuse_search-1",
+      "reason": "the plan should name the generation/round-trip pattern the new schema follows (and whether the regen script is generalized or a sibling added), because the committed-artifacts-plus-round-trip convention is the mechanism this repository uses to keep a schema and its consumers in step.",
+      "text": "\u00a76 proposes a new LinkML result schema beside `flight.yaml` and an aggregate validation test, but cites neither the existing generation harness (`scripts/regen_flight_schema.py`, which emits both the committed Pydantic module and the served JSON Schema with a round-trip test) nor how a second schema's generated artifacts and round-trip are to be produced",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "351569db421acc3da03eff9922bc7d7109e2817ef5bf217e87bcd50709807a80",
+  "plan_slug": "consumers-read-reckon-through-verbs",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T215857618173-plan-review-of-consumers-read-reckon-through-verbs",
+  "reviewed_blob_sha": "afa07c06d3e44c2d6eb9d48cc3a6cdd8bd41a234",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is proposed that concentrates behaviour; the design extends existing deep readers (`reckon/crew/lane_document.py`, `reckon/crew/runs.py`) behind a thin uniform CLI surface, which is the intended shape.",
+    "duplicate_owner": "a finding \u2014 \u00a73 re-implements a claim inventory that `reckon/crew/runs.py:scope_claims` already reads from the same `node.write_paths`, and \u00a74 adds a manifest-repair verb beside `reckon/crew/runs.py:repair_manifest_status`, which already keeps `manifest.md.asdelivered` and atomically replaces the file.",
+    "reuse_search": "a finding \u2014 \u00a72 landed a verb that reuses the crew store's own resolvers, but \u00a73 and \u00a74 add a claims reader and a manifest-repair verb without citing the claim registry and repair function the codebase already owns.",
+    "thin_wrapper": "a finding \u2014 \u00a73's `crew lanes` wraps `read_lane_document_file()` while MCP `view=\"lanes\"` already renders that same reading through `_lane_document_fields`, and the plan asserts distinctness instead of saying why the MCP builder cannot back both surfaces."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.859792+00:00"
+}

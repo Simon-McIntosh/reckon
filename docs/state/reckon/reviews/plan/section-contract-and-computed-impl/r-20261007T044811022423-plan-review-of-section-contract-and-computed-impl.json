@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T05:13:05.886Z",
+  "dispatched_at": "2026-10-07T05:04:05Z",
+  "findings": [
+    {
+      "anchor": "reckon/_schema.py:678",
+      "id": "duplicate_owner-1",
+      "reason": "the section must instruct the node to broaden `declared_section_identities` (the owner) and point the four ref sites and `declared_for` at it, not author a parallel helper; authoring a second helper is the fork the item exists to prevent.",
+      "text": "\u00a715 proposes \"one helper beside plan_section_anchors that returns a plan's full section identity set\" (plan.html s15), whose set is exactly \"the gate and comment anchors, the section_declarations keys and the typed section record ids\" \u2014 that helper already exists as `declared_section_identities` (reckon/_schema.py:678), which unions `plan_section_anchors(plan)`, the `section_declarations` mapping and the typed records from `plan[\"sections\"]`, and is already consumed by `reckon/_store.py:2770` (feeding `decision_section_refusals`) and `reckon/roadmap.py:2601`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:181",
+      "id": "duplicate_owner-2",
+      "reason": "the plan must name one owner to keep (relocating `_declared_stages` beside `plan_section_anchors` in `_schema.py`, or deleting it in favour of `declared_section_identities`) so `declared_for` and the ref sites cannot drift into counting different populations of the same set.",
+      "text": "census of the same defect type: the identity-union already has two implementations, `reckon/_schema.py:678 declared_section_identities` and `reckon/roadmap.py:181 _declared_stages` (which \u00a715 shows it saw, spelling it `_declared_stages` in the `declared_for` sentence), and \u00a715 adds a third; the plan's own text says `_declared_stages` \"unions ... with the declaration keys\" and does not say which of the three survives",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_schema.py:692",
+      "id": "reuse_search-1",
+      "reason": "misclassifying the one site that already does the right thing means the node would \"audit\" the correct owner into staying wrong, and the fix as written would leave a duplicate owner behind.",
+      "text": "\u00a715's audit clause lists `_schema.py:692` among the sites to \"leave on anchors unless it validates existence\" (plan.html s15), but line 692 is the body of `declared_section_identities`, whose stated purpose is to validate section existence for the decision-scope path (`decision_section_refusals` via `reckon/_store.py:2770`); leaving it on `plan_section_anchors` reproduces for decision scopes for decision scopes exactly the defect \u00a715 reports for dependency refs",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_schema.py:754",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to extend `declared_section_identities` and route the four ref sites plus `declared_for` through it; the wrapper exists only because the owner was not found.",
+      "text": "the proposed helper adds no behaviour `plan_section_anchors`, `declared_section_identities` or `_declared_stages` lacks; \u00a715 gives no justification that the existing machinery cannot be extended",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_schema.py:678",
+      "id": "interface_budget-1",
+      "reason": "resolving the duplicate_owner finding (broaden `declared_section_identities`, do not add a helper) removes the added definition entirely, so the interface-budget remedy is the same edit as the owner-extension fix and does not change the plan a second time.",
+      "text": "public_definitions 1506, cli_options 317, mcp_views 33, refusal_families 23; \u00a715's \"one helper beside plan_section_anchors\" is a new public module-level definition and the section names nothing it retires or merges and states no reason nothing can be",
+      "type": "interface_budget",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "8d28ae130effb91ec9f9921600a26eb02262e3c2916e6860ccdb60b130774c6b",
+  "plan_slug": "section-contract-and-computed-impl",
+  "plan_version": 94,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261007T044811022423-plan-review-of-section-contract-and-computed-impl",
+  "reviewed_blob_sha": "8190bbf479e86ad1479f535990e9bf1dc317dfeb",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a715 is sound as a shape (one set answers \"does this section exist\"), but it introduces a new module-level helper whose whole body is a union already performed by two existing functions, so it is surface without depth rather than a deep module hiding the set-membership rule.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements the declared-section helper rather than extending its owner (`reckon/_schema.py:678`), and a second copy (`reckon/roadmap.py:181 _declared_stages`) already exists, so the change would leave three owners of one set.",
+    "interface_budget": "a finding \u2014 public_definitions 1506, cli_options 317, mcp_views 33, refusal_families 23; \u00a715 adds a public module-level definition (`one helper`) and names nothing it retires or merges, and nothing in the plan's own text explains why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a715 cites `plan_section_anchors`, `declared_for`, `_declared_stages` and every `plan_section_anchors` call site, but misses `declared_section_identities` (`reckon/_schema.py:678`), the existing owner that already returns the full authored section-identity set, so the search that concludes \"author one helper\" was run without finding the machinery that already is that helper.",
+    "thin_wrapper": "a finding \u2014 the proposed \"one helper beside plan_section_anchors\" forwards to `plan_section_anchors` plus the declaration keys plus the typed-record ids, and \u00a715 states no reason the existing owner (`reckon/_schema.py:678`) cannot be extended instead."
+  },
+  "section_digests": {
+    "_document": "b3e317a55bc99281c91004c633bd3436b967d639d0093042e8382fda5f2f34d5",
+    "s-contract": "f366889c6bd9e5d22c7648ad207d192fc7c57f306226260bbdc61af42facde89",
+    "s0": "1ab5310dfc352b1616d26748ecb2ede37e4b22edb08cff5d38882e0df7bfd38b",
+    "s1": "575abaabf78815d603a63f305f24849afc2e8a23b5095750aed026d129f109b7",
+    "s10": "442596316d5529c8e0ca2beebb4bd78b7a641c0012f4ab842e9c391891981252",
+    "s11": "2423a9472cd4dd20745063fdbfc9bd8389d08ec30fc7d92d6a0c5a1cfab9d904",
+    "s12": "0c57a8f87c50a8febc414f1c7fd4f8da6acde27dfa801ce3e75d0db1113bf0a0",
+    "s13": "dfb28dd89d9b23c2ba7291cc31ac355152fe3555df28c0b193a1329b8dfe99bd",
+    "s14": "5551d29212c13ac5d360581bd825e4ba6459ab51ed4d4ddd72c8ff47f5b0995d",
+    "s15": "c57c94638472b70a93eefac80b68a365e2b3550147b13a1bba1801a66883875a",
+    "s2": "c9627911571ffeb5980e8f440e0c1ac40ee62252c5479ea760ee8c3373285d68",
+    "s3": "b7b0969a15e31246b5ffd2220eab300b4752861359a2aaa1557d143e28ccf28a",
+    "s4": "11761fc55a617bd8eb281c58e0956ec1b69c571d7b5f74ada9bad6e60bb73d77",
+    "s5": "e08114c9520b269de48455c63a6cf7fd4a97eba7999c6040e6d76f3423f7ec79",
+    "s6": "e5c5a0ebc8e55b3b7a9eb8df4ab33868a03a73f8441a8e786055a21d2abf826f",
+    "s7": "4787d243806ca8c941d78507bba2a2a639f320cffe5e2121afa19a45d02da464",
+    "s8": "7817fd2791828ef8e2ed19e683bdac919bad6f6d1f947640c52ac9ab6c4a68ca",
+    "s9": "e0631b1543405b216abf712de58f8a5b04e1a54e9ba4ab7fb4e49133431dcbd5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:15:33.879146+00:00"
+}

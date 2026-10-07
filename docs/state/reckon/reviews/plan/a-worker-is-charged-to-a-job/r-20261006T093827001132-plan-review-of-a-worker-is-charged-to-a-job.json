@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T09:54:55.548Z",
+  "dispatched_at": "2026-10-06T09:38:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html#s0",
+      "id": "reuse_search-1",
+      "reason": "",
+      "text": "- the plan records a search only for the scheduler verbs and never opens the admission path in reckon/crew/dispatch.py, so it proposes a new binding bound without naming the mechanism that already decides what may be dispatched. WOULD_CHANGE_THE_PLAN: yes. REASON: the plan's claim that the roster is the only concurrency authority is a prior-art statement the code refutes, so running the search changes how sections 3 and 5 are written.",
+      "type": "reuse_search",
+      "would_change": null
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:667",
+      "id": "duplicate_owner-1",
+      "reason": "",
+      "text": "- sections 3 and 5 add a reservation roster cap as a concurrency ceiling, but a concurrency ceiling already owns this decision in _refuse_over_concurrency_ceiling, whose own docstring says the retired roster key never binds. The plan asserts the opposite of the owner beside it. WOULD_CHANGE_THE_PLAN: yes. REASON: two concurrency ceilings with no text reconciling them leave a reader unable to tell which is authoritative; the plan should extend the bound model in dispatch.py or say why the roster is a distinct third axis.",
+      "type": "duplicate_owner",
+      "would_change": null
+    },
+    {
+      "anchor": "reckon/crew/placement.py:756",
+      "id": "duplicate_owner-2",
+      "reason": "",
+      "text": "- the placement's roster population is derived by roster_occupants over the live-pointer list, duplicating the live-run population the admission path already builds in _live_runs_across_backends at reckon/crew/dispatch.py:600. WOULD_CHANGE_THE_PLAN: yes. REASON: a second reader of the live-placed population can drift from the first on which projects and which liveness reading count.",
+      "type": "duplicate_owner",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html#s1",
+      "id": "interface_budget-1",
+      "reason": "",
+      "text": "- section 1 introduces a PlacementConfig definition and the requirements, state_query and reason_query field family plus a job-id field on the run record, and says only that this is an addition rather than a difference in shape. WOULD_CHANGE_THE_PLAN: yes. REASON: the section grows a public interface family without naming a definition it retires or merges, or stating why nothing can be.",
+      "type": "interface_budget",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html#s3",
+      "id": "interface_budget-2",
+      "reason": "",
+      "text": "- section 3 adds a reckon crew placement CLI option and states only that it mirrors reckon crew watch --ensure, which is reuse of a pattern, not a retirement or merge of the option it adds. WOULD_CHANGE_THE_PLAN: yes. REASON: the section adds to cli_options, 317 this week, without naming what it retires or merges, or why nothing can be.",
+      "type": "interface_budget",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "a970722ce57a55a7486457936589db2dd5513562560513b75e1f6c9c7af5cb40",
+  "plan_slug": "a-worker-is-charged-to-a-job",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T093827001132-plan-review-of-a-worker-is-charged-to-a-job",
+  "reviewed_blob_sha": "591ab43915c5432840b8e7a0b5d8607c6cf06c70",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass. The placement machinery hides the reservation lifecycle, its publication path, the roster count and the refusal text behind ensure_reservation, read_reservation, reservation_step_* and roster_occupants. Consumers call those rather than re-deriving any of it.",
+    "duplicate_owner": "a finding. The plan mints a second concurrency ceiling, the reservation roster, in reckon/crew/placement.py beside the existing one in reckon/crew/dispatch.py, and never names the existing owner.",
+    "interface_budget": "a finding. Counts: public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23. Section 1 adds a PlacementConfig definition and a new job-id field on the run record without naming what it retires or merges, or why nothing can be. Section 3 adds a reckon crew placement CLI option the same way.",
+    "reuse_search": "a finding. The plan searched only for srun, sbatch and SLURM, and for the launch path. It never opens the existing admission path in reckon/crew/dispatch.py that already bounds worker population, so it asserts prior art the code refutes.",
+    "thin_wrapper": "pass. The wrap prefixes the already-resolved argv, and the plan states the interface is carried through unchanged with absence meaning today's login-node launch. That is the justification the item asks for."
+  },
+  "section_digests": {
+    "_document": "a2ac2eb5004eb36477b2b50b2f22f253b3d72fb8d082df78275634af45b0f407",
+    "s-contract": "6c2b86636b5d6c1f87051d9d3f776896057e3f539cd1ddacd2be71dcb8a94200",
+    "s0": "684e9d028bd94c15a6f23c838815a01d6f51c5f3100fa847b8134ec9232ec0df",
+    "s1": "e5f377a019315c5f8e8d019bf5caed7ee4eb0ee12f35bbc0bc0a9889940cda85",
+    "s2": "d2a6c7aa20c956f1d5cfbfabc0fec3210fad1df400fe0ea8e73c163e6a9a8b51",
+    "s2b": "fedf3e8e34497454f9ed3ad04693376d980447b2290b0216701ed1a6858cbbd8",
+    "s3": "4581863bc7044f5e9e9677ce3a54c9b5aaf92025cf2b32c4d4973e4e6b8881a0",
+    "s4": "6c1927e32109c00db5fdccd88bee4f743f8e9828e62490c11c4ad46a74720f44",
+    "s5": "0838626070b0f7c934aa09ee6663f71434a715619089d65e487ab76bf8d0c8df",
+    "s6": "5bea8900e9fded0b44d31c5f9267cd7550998d8c6861398aa5ba9e61dd27d228",
+    "s7": "a8e38789e85f0eb9fc677ba1ebe1ceb231d9333df7660618a1198313f10bb213",
+    "s8": "bce275f8870a562d83a7640171c814c79e6cb0ab0e2eaa8252ed072f522b3be0",
+    "s9": "e929fc5d2971a64d971ebfa0dc025df6808da0b054d096bcb39f3d5f2b0ba841"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.547068+00:00"
+}

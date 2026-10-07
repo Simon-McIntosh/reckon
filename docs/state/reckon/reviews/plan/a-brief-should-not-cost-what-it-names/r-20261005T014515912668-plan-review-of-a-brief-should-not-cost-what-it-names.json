@@ -1,0 +1,90 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T01:58:05.250Z",
+  "dispatched_at": "2026-10-05T01:45:34Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/routing.py:3378",
+      "id": "reuse_search-1",
+      "reason": "\u00a72 collapses to adding write-path-vs-mention provenance to an existing renderer, and \u00a78, which restates \u00a72, is deleted outright.",
+      "text": "\u00a72 and \u00a78 add a refusal that names the dominant contributing input, but `_context_refusal_detail` (with `_context_contributors`) already renders \"largest contributing files: <path> (<n> tokens)\" at the refusal's top level and is asserted by `tests/test_context_estimate_reads_declared_files.py:151`",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:3123",
+      "id": "reuse_search-2",
+      "reason": "\u00a73's premise \"today they cost the same [as full]\" is false \u2014 a bare mention already costs zero \u2014 so the section scopes to the missing reference-cost constant, not a new extractor.",
+      "text": "\u00a73's \"charge a mention at a reference cost and a prohibition always\" already exists: `_declared_input_files`/`_paths_a_clause_charges` charge only declaration clauses and withhold negated paths, and `tests/test_context_estimate_reads_declared_files.py:105` asserts a merely-named file is charged 0 while `:135` charges a declared input at full",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:3344",
+      "id": "reuse_search-3",
+      "reason": "the section exists only because a literal grep missed the mechanism under a different name; verifying the mechanism removes \u00a78.",
+      "text": "\u00a78's own evidence line (\"grep for `per_file`/`per-file` in `reckon/crew/routing.py` found none\", \u00a78 done-when) is a naming-convention absence claim: the per-file breakdown is present as `repository_files.named_files`/`write_paths` with `estimated_tokens`, consumed by `_context_contributors`, and reported by \u00a72's mechanism",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:2018",
+      "id": "reuse_search-4",
+      "reason": "\u00a77 re-opens a design settled in `f6e41cc7d`/`dcb91f926` and reintroduces the plan-wide shared-directory merge conflict it was meant to avoid.",
+      "text": "\u00a77's premise that `docs/figures/<plan>/` \"is not in that set\" and that an illustrating node \"writes outside its fence\" is false at HEAD: `_landing_fragment_paths` grants each node `docs/figures/<plan>/<node-id>/` by default, `_grant_landing_write_paths` adds it into `node.write_paths`, and `tests/test_shared_landing_paths.py` asserts the disjoint per-node scopes",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html#s8",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to extend the existing renderer and delete the parallel section, so \u00a78's scope disappears.",
+      "text": "\u00a78 wraps the estimator's existing breakdown in a second section without saying why `_context_refusal_detail` cannot be extended instead",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:2056",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must extend the existing grant owner, not fork placement with a second, conflicting rule.",
+      "text": "\u00a77 re-implements path placement by proposing a new shared figures-directory grant instead of extending the owner `_grant_landing_write_paths`/`_landing_fragment_paths`, which already grants a figures path per node",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html#s4",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the added option and refusal family in its own text before the surface grows.",
+      "text": "public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a74 adds an opt-out CLI/dispatch option and a new \"opted-out AND declared write path\" refusal, and the section names nothing it retires or merges, nor why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html#s5",
+      "id": "interface_budget-2",
+      "reason": "\u00a75's own done-when needs the marker to survive promotion, so it must name the run-record/promotion owner it grows, not add unexplained surface.",
+      "text": "the same counts; \u00a75 adds a reduced-brief marker to the run/ledger record and names no existing run-record field it retires, merges or extends",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5d59cbf274ea2b926ac9d5f66208daf31975989527f73dd475e5971db2569bba",
+  "plan_slug": "a-brief-should-not-cost-what-it-names",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014515912668-plan-review-of-a-brief-should-not-cost-what-it-names",
+  "reviewed_blob_sha": "90e0b84fab6d9ce9808b4862574214c8ce0e2a71",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is proposed; \u00a72/\u00a74/\u00a75/\u00a78 extend existing functions in `routing.py` and `dispatch.py` rather than spreading a subsystem across shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a77 re-proposes a shared `docs/figures/<plan>/` grant rather than extending the per-node grant owner `reckon/crew/dispatch.py`.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a74 adds a CLI option and a refusal family, and \u00a75 adds a run-record field, neither naming what it retires or merges.",
+    "reuse_search": "a finding \u2014 the plan re-proposes the dominant-term refusal and the mention/reference distinction that already exist in `reckon/crew/routing.py`, and \u00a77's premise is already false at HEAD in `reckon/crew/dispatch.py`.",
+    "thin_wrapper": "a finding \u2014 \u00a78 is a second reporting section over the estimator that \u00a72 already covers and the refusal already renders; it does not justify why `_context_refusal_detail` cannot be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.292829+00:00"
+}

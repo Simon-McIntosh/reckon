@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:41:12.263Z",
+  "dispatched_at": "2026-10-04T17:32:12Z",
+  "findings": [
+    {
+      "anchor": "reckon/project_state.py:1277",
+      "id": "reuse_search-1",
+      "reason": "the plan's central premise (\"the derivation simply does not read status\") is already false, so \u00a74's repair target and \u00a75's two regression tests would be written against behaviour the code no longer has; re-measure before dispatch.",
+      "text": "the plan's \u00a71 claims `read_plan(index)` calls `_derive_default_sprint_focus`, \"which walks composed order ... never reads sprint status at all\", but no such function exists; the live resolver `focus_sprint_id` reads stored status before falling back to the composed-order walk, landed in `bec9f24a7` (2026-09-25), so \u00a73's measured \"shipped sprint elected as active\" describes pre-repair behaviour",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:2298",
+      "id": "reuse_search-2",
+      "reason": "this sub-item should be dropped or reframed as verification, releasing node scope and the \u00a75 test that would otherwise re-assert an existing behaviour.",
+      "text": "the plan's \u00a74 third item, that an unresolvable member slug \"must be reported as a broken reference rather than silently counted as unfinished\", is already implemented as the `unresolved-sprint-item` and `unresolved-plan-sprint` findings emitted from both `resolved_sprint_items` and `declared_sprint_rows`",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:1984",
+      "id": "reuse_search-3",
+      "reason": "the plan's `ambiguous-active-sprint` decision and its \u00a75 clause would re-impose an exclusivity the maintainers reversed three days before the plan was last modified; the author must decide against the landed design, not the plan's.",
+      "text": "the plan's \u00a73/\u00a74/\u00a75 treat more than one stored `active` sprint as an invariant violation the read must refuse, on the premise that \"two actives cannot arise from the `push` op\", but commit `0ad5a1719` (2026-09-25) deliberately made `active` a non-exclusive scheduling hint so several crews may each hold one, and `focus_sprint_id` elects deterministically (live crew \u2192 stored active \u2192 unfinished) instead of refusing",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/project_state.py:1580",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should name `focus_sprint_id` as the owner to extend and test, since a parallel reader is exactly the duplicate-authority defect the plan exists to remove.",
+      "text": "\u00a74 proposes \"the composed read must consult stored status rather than walking composed order\" as the active-sprint repair, but `compose_project_state` already sets `active_sprint_id = focus_sprint_id(...)` in both the distributed (line 1580) and legacy (line 1495) branches, and roadmap imports the same `focus_sprint_id` (reckon/roadmap.py:60), so one owner already serves both surfaces; implemented as written this forks a second reader beside the composed read",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5fbe2e1e3ca7dfded0d146b2b3d44927d2bab1a5c0aa25ad2b9989d3c6ff6acd",
+  "plan_slug": "one-fact-has-one-reader",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T173155404044-plan-review-of-one-fact-has-one-reader",
+  "reviewed_blob_sha": "0eafb1f5f5422f5728a4a1902d4e4496f834fdcb",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module; its \"one authority per fact, every surface resolves through it\" is the deep-module shape `focus_sprint_id` already provides, imported by roadmap (reckon/roadmap.py:60).",
+    "duplicate_owner": "a finding \u2014 \u00a74 proposes the composed read resolve the active sprint as new work, but reckon/project_state.py already owns that derivation (`focus_sprint_id`, `compose_project_state`) and roadmap already consumes it.",
+    "reuse_search": "a finding \u2014 the plan's prior-art account names `_derive_default_sprint_focus`, which exists nowhere; the real resolver `focus_sprint_id` (reckon/project_state.py:1277) already consults stored status, and an unresolvable member slug is already reported (`unresolved-sprint-item`, reckon/roadmap.py:2298).",
+    "thin_wrapper": "pass \u2014 the plan proposes changing what the existing composed read consults, not adding a thin new layer over it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.053730+00:00"
+}

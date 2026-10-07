@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T01:56:58.973Z",
+  "dispatched_at": "2026-10-05T01:50:46Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-owns-its-own-record.html#s2",
+      "id": "reuse_search-1",
+      "reason": "a node built against \u00a72 would re-add the shared grant the code retired, reintroducing the merge conflict the fragment default exists to remove.",
+      "text": "\u00a72 proposes that dispatch \"adds three paths to every node ... the node's own plan file, its cumulative evidence record, and a figures directory\", but the codebase has moved past that design: `_shared_landing_paths` no longer grants them (\"They are no longer granted by default ... the per-node fragment default removes\"), and `_grant_landing_write_paths` (dispatch.py:2056) already grants each node its own fragment. The plan rebuilds a superseded grant and never opens the function that owns it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:2018",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should name `_landing_fragment_paths` as the owner and extend it, rather than describing a parallel grant that would report two answers for what a node's figure scope is.",
+      "text": "\u00a72's \"a figures directory for the node\" is already the behaviour of `_landing_fragment_paths`, which returns `docs/figures/<plan>/<node-id>/` and the matching evidence anchor `docs/evidence/fragments/<plan>/<node-id>.html`; the plan forks a second figure-grant path beside the owner instead of stating the fragment it extends",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/prompts.py:110",
+      "id": "thin_wrapper-1",
+      "reason": "the plan targets a removed file and would add surface beside the live gate; it should extend the shipped allowance or state why it cannot.",
+      "text": "\u00a74 makes \"a figure is a named deliverable, not a courtesy\", but the shipped contract already keys the figure allowance on the done-when through `_artifact_allowance`/`FIGURE_NAME_PATTERN` (prompts.py:110-137): a done-when naming no artifact withholds the figure. \u00a74 adds a second figure clause beside that one, and it names `skills/reckon-ship`, which is absent from `skills/` (the skill set is reckon-build/reckon-create/reckon-edit/reckon-roadmap/reckon-sprint/reckon-status/reckon-sync), without justifying why `_artifact_allowance` cannot be extended",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-owns-its-own-record.html#s3",
+      "id": "interface_budget-1",
+      "reason": "with cli_options 317 and refusal_families 23 already carrying this surface, a section that adds both without accounting for what it retires fails the one section-level rule the item holds to.",
+      "text": "\u00a73 adds `--no-record REASON` as a new CLI option and a recordless-landing refusal as a new refusal family, and \u00a75 adds a follower/drain artifact listing; the sections name no interface each retires or merges, and \u00a73 cites `--no-commit` only as a shape to imitate, adding a second opt-out flag rather than folding into the existing one",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-owns-its-own-record.html#s3",
+      "id": "deep_module-1",
+      "reason": "naming the single owner of \"a run's landing record\" would let the dispatch grant, the promotion refusal and the listing read one interface, instead of three surfaces that can disagree about what a record is.",
+      "text": "the plan's guarantees are split across three files with no owning interface: \u00a72's enforcement lands in dispatch.py, \u00a73's refusal in promotion.py at `crew complete`, \u00a75's listing in the recovery/follower views, and \u00a76 itself notes the \u00a73 gate must be \"written as one pass over that function rather than two\" with another plan's gate \u2014 the record contract that all three encode is nowhere named as a module",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4a5e4f8df0c995a913c2aa9268411bab49ca7e9fa9401b341284c74331df5ba7",
+  "plan_slug": "a-worker-owns-its-own-record",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T015028566189-plan-review-of-a-worker-owns-its-own-record",
+  "reviewed_blob_sha": "6de94611cfd6dc10e7362ac464f6c4ff8dbf7d3d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the plan adds four shallow surfaces (a dispatch grant, a dispatch brief-refusal, a promotion refusal, a listing view) across dispatch.py, promotion.py, prompts.py and a view, with no module owning the record contract; the record-shape behaviour is spread rather than hidden behind one interface.",
+    "duplicate_owner": "a finding \u2014 \u00a72's per-node figures directory duplicates the grant already owned by `_landing_fragment_paths` (reckon/crew/dispatch.py:2018-2047), which resolves `docs/figures/<plan>/<node-id>/`.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds a CLI option (`--no-record`) and a new refusal family and \u00a75 adds a listing view, and neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan never cites `_landing_fragment_paths` (reckon/crew/dispatch.py:2018), the per-node fragment grant the codebase already ships, and its \u00a72 rule restates a shared-landing grant that dispatch.py:1973-1983 explicitly retired because \"a grant every node holds is exactly the merge conflict the per-node fragment default removes\".",
+    "thin_wrapper": "a finding \u2014 \u00a74 writes new figure-contract text beside the shipped `_artifact_allowance`/`FIGURE_NAME_PATTERN` gate (reckon/crew/prompts.py:110-137) and cites `skills/reckon-ship`, which does not exist, without saying why the existing clause cannot be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.576029+00:00"
+}

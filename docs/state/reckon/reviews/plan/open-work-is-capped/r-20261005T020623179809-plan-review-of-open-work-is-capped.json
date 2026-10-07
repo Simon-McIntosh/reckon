@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:15:59.829Z",
+  "dispatched_at": "2026-10-05T02:06:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/open-work-is-capped.html#s3",
+      "id": "reuse_search-1",
+      "reason": "the plan would gain a reuse map naming velocity.plan_census and roadmap._progress (and why the live inventory is used instead of the git-history census), which is exactly the section a first implementation node needs.",
+      "text": "\u00a73 proposes a new pending-plan census plus an impl ranking with no reuse search naming what already does both; the velocity view \u00a73 depends on already reports a per-project pending count, and roadmap already derives each plan's impl",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/open-work-is-capped.html#s3",
+      "id": "thin_wrapper-1",
+      "reason": "forcing the author either to extend the census owner or to state why a separate check is required changes what the plan tells the implementation node to build.",
+      "text": "the cap is a thin policy layer over the existing pending census, and the section never says why the census cannot be extended to answer \"is this project over its limit\" instead of a parallel check at creation",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:409",
+      "id": "duplicate_owner-1",
+      "reason": "naming the owner lets the author extend plan_census (or expose a lightweight live-inventory variant for the create path) rather than fork a second pending census that can drift from the one the velocity gate reports.",
+      "text": "\u00a73 re-derives the pending census (`_pending_plans`/`_plans_nearest_to_closing`, reckon/mcp.py:3273 and :3294) rather than extending the owner `plan_census`, whose CLOSED_STATUSES + archive definition \u00a71 explicitly adopts, and duplicates the impl reader already owned by reckon/roadmap.py:99 `_progress`",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "58815bdc2123d7f20976ebef35f449acbeb0e0a6dc20ab72bbfdd03b11133228",
+  "plan_slug": "open-work-is-capped",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T020623179809-plan-review-of-open-work-is-capped",
+  "reviewed_blob_sha": "43dccb12742da7e95698c3be68d8ddfdb7dfe487",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 one config key `pending_plan_limit` drives a single create-path policy in reckon/mcp.py, and the census, the impl ranking and the warning composition are hidden behind one interface rather than exposed as new public surface.",
+    "duplicate_owner": "a finding \u2014 \u00a73 re-implements a pending-plan census and impl-progress ranking rather than extending the owners, reckon/velocity.py:409 `plan_census` (whose CLOSED_STATUSES + archive definition \u00a71 itself adopts) and reckon/roadmap.py:99 `_progress`.",
+    "interface_budget": "pass \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a73 adds no public definition, CLI option, MCP view or refusal family (the cap check is four module-private helpers in reckon/mcp.py) and, when it relocked to warn mode, retired the refuse-with-override refusal surface.",
+    "reuse_search": "a finding \u2014 \u00a73 adds a per-project pending-plan census and an impl ranking without searching for, or citing, the mechanisms that already produce both (reckon/velocity.py plan_census, reckon/roadmap.py _progress).",
+    "thin_wrapper": "a finding \u2014 \u00a73 lays a thin cap/warn policy over the existing pending-plan census without saying why that census cannot carry the check at creation, which is the honest place to extend it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.061831+00:00"
+}

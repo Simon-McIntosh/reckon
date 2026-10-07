@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:07:36.031Z",
+  "dispatched_at": "2026-10-06T09:57:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html \u00a72 (harness-home carry)",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is one table (`harness_home_files`) with a widened key list and the neighbour assertion updated, which the carry node can still do before it merges; a second table doubles the surface the fence's seed must read and is exactly the \"many small wrappers over the same machinery\" the item exists to catch.",
+      "text": "`harness_home_adjacent_files` is a second flight table over the same `seed_harness_home` path as `harness_home_files`, and the plan's stated reason for a parallel table is that the sibling list is \"pinned exactly by a neighbour file's assertions\" (`reckon/flight.py:270`, `reckon/flight.py:289`, `reckon/_backends.py:2145`); a test that pins an existing declaration is the thing to update, not a reason to fork the declaration surface it pins",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/worker_git_shim.py:611",
+      "id": "duplicate_owner-1",
+      "reason": "the live pointer is shared infrastructure owned by `reckon/crew/runs.py`; the plan should extend that owner with one worktree-resolver (returning `None` for the shim/guard's non-raising case) and have all three consumers call it, because three resolvers already drifted once (the shim's traversal guard and the guard's basename reduction were separate fixes to the same read) and the \u00a76 node that qualifies the lanes is the natural owner of the consolidation.",
+      "text": "`_run_worktree` re-reads a run's live pointer (`from reckon.crew.runs import pointer_path` then `json.loads(pointer_path(run_id).read_text())` at `reckon/worker_git_shim.py:619-627`), bypassing the owner `reckon/crew/runs.py:580 read_pointer`; the same resolution is a third copy at `reckon/hooks/worker_git_guard.py:152`, which goes further and recomputes the live directory itself (`_config_home()/\"crew\"/\"live\"`, duplicated from `reckon/crew/runs.py:79 live_dir`), while a fourth consumer, `reckon/mcp.py:436`, correctly delegates to `read_run_pointer`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html \u00a72\u2013\u00a74",
+      "id": "interface_budget-1",
+      "reason": "the item requires each additive section to account for its interface growth in its own text; here the two CLI options and the new refusal family are unaccounted for, so the author should state which surface each replaces or why none can be, and `--no-fence` in particular should say it is the exemption to the \u00a73 fail-closed rule rather than a second policy knob.",
+      "text": "with public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23 supplied this week, the plan adds `reckon/cli.py:1826 --no-fence`, `reckon/cli.py:7419 --include-git-guard`, the flight keys `protected_paths`, `unprotected_paths`, `harness_home_files` and `harness_home_adjacent_files` (`reckon/schema/flight.yaml:235,248,40,57`), and a new `run_scoped_write` refusal family (`reckon/mcp.py`), and no section names what it retires or merges, or states why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a1232d581ba16f81461eda661449ef06cdba28fb16e7818dc5ce01c6acf8fe3a",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 123,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T095733737273-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "a9cac7fa2abae4dcbf3b5419cf28292a4d8b5d7e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the fence is one deep interface (`reckon._backends.launch_plan`), and the measured claim that \"the wrap sits at the one point every dialect and every entry path \u2014 dispatch, resume and redispatch \u2014 builds its argv\" is the depth claim the rubric asks for; the ~ten helpers (`protected_paths`, `resolved_destination`, `protected_read_only_binds`, `fence_argv`, `fenced_write_roots`, `worktree_git_write_roots`) are private to that entry rather than a second public surface.",
+    "duplicate_owner": "a finding \u2014 a run's live-pointer \u2192 worktree resolution is re-implemented in two consumers beside its owner in `reckon/crew/runs.py`, and one of them re-derives the live directory itself; the census is below.",
+    "interface_budget": "a finding \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; no section that adds to a family names what it retires or merges, or states why nothing can be, and the plan adds at least two CLI options and a new refusal family.",
+    "reuse_search": "pass \u2014 the design cites the machinery it extends rather than proposing blind: \u00a71 names the existing `worktree-full` sandbox tier and `reckon/_backends.py` as the tie-in point, and \u00a72's `fenced_write_roots` is taken \"from the single `delivery_write_roots` set, not a second list, so no node's existing scope check changes\"; the reuse was performed (`delivery_write_roots` at `reckon/_backends.py:85` is shared by `sandbox_write_roots` and `fenced_write_roots`).",
+    "thin_wrapper": "a finding \u2014 the harness-home carry adds a second declaration table (`harness_home_adjacent_files`) beside `harness_home_files`, justified in the plan only by \"that table's claude list is pinned exactly by a neighbour file's assertions\" \u2014 a test-shaped reason, not a machinery-shaped one."
+  },
+  "section_digests": {
+    "_document": "817cad5dc0ac8ac0c11fe54d03968d17eb183f0be6f66ab08b31898c1cabd03f",
+    "s1": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s2": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s3": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s4": "6f7c9f0c3606669a6ab3c375cf22674bf6c0dcae67c05816f5c4f942ae632abe",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.524131+00:00"
+}

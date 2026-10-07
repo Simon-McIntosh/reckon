@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T09:16:33.869Z",
+  "dispatched_at": "2026-10-07T09:00:45Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:122",
+      "id": "reasoning-1",
+      "reason": "`_target_path` is a helper of `store_plan_review`, so a node told to change `store_plan_review` reaches it; naming the public pair does not send the node down a wrong mechanism, it only under-locates the edit.",
+      "text": "\u00a78 node 1 pins its change to `plan_review_path` and `store_plan_review`, but the rule that decides the plain path versus the `.at-<suffix>` sibling lives in the private helper `_target_path` (plan_review.py:438-464), which compares `_stored_blob8(plain)` against the record's blob and returns the plain path for identical bytes; `plan_review_path` only formats a path from an already-chosen blob sha and `store_plan_review` merely delegates, so neither carries the collision the node exists to close",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "99d2cf835031448baa145e4dc7bcb2603599a89a3ee546eda4cd8fbba830ea22",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 59,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T09:19:03.300373+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T09:19:03.300373+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v59.json",
+  "review_run_id": "r-20261007T090022878954-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "252cd17771de6c2bce53c1daef67491d0c059899",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `plan_review_path` (plan_review.py:371), `store_plan_review` (:467), `plan_review._candidate_paths` (:514), `_store_delivered_report` (:1731), `review.store_committed_review` (review.py:1989) and `scripts/import_host_reviews.py` all resolve, and the cited \u00a723 of `a-plan-is-reviewed-before-it-is-built` exists and is done.",
+    "done_when": "pass \u2014 \u00a78's two nodes each carry a measurable done-when with a declared negative control (node 1: a store that writes the second review to the version path turns the two-review test red; node 2: an import that skips report directories fails the delivered-report test), and the census replaces a copied figure with a search the done-when runs.",
+    "evidence_paths": "pass \u2014 \u00a78's evidence lands on durable paths: node 2's census is measured against each project's `origin` and its records are committed beside the ledger, node 1's gate is a repository test; neither writes a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a78 names no plan label, stage name, ticket number or version tag in any symbol, and its prose states the mechanism (`_candidate_paths` globs the `.at-*` family) rather than a tracker reference.",
+    "reasoning": "a finding \u2014 the three checks hold (the two stated causes match the cited code: `_target_path` overwrites on identical bytes and `store_delivered_reviews` runs only from dispatch/`--answer`; the run-keyed name does produce the done-when; the caller chain `store_delivered_reviews` \u2192 `_store_delivered_report` \u2192 `store_plan_review` is named), but the rule node 1 must change is named in the wrong place.",
+    "single_goal": "pass \u2014 \u00a78's earlier two-deliverable defect is answered: it now states \"Two changes, as two nodes\" and gives each an independently closable done-when, matching the plan's model in which a section dispatches several crew nodes (\u00a73 landed six).",
+    "wiring": "pass \u2014 the changed section \u00a78 is reached by its open followup f-erkc-006, which names the store precondition gate `g-erkc-1` (closed, passed) and the \u00a75 import script it extends; no depends-on/informs/gates relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "ec6b06a5bc182310043764a87f7ca2fbc10ccc0c8989fcd3c6b1f68fd061333d",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "c6b40339524825df2f0358edb7238db04cd3560ce33a763f01adeb14675eadc3",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "a7fcc45c1a0d087b629ba0370de67f49444253b8bc50ca049cf5f402e4284625"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T09:18:40.178977+00:00"
+}

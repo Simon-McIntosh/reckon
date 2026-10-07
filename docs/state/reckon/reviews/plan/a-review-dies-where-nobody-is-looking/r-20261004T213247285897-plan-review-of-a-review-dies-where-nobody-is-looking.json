@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:47:54.371Z",
+  "dispatched_at": "2026-10-04T21:33:01Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/context_budget.py:46",
+      "id": "reuse_search-1",
+      "reason": "naming the owner turns \u00a79's detector into an extension of measure_context_budget (which today counts only boundary records, not the consecutive `system/status: compacting` rows shape 5 is made of) instead of a new reader that will drift from it.",
+      "text": "\u00a79's measure proposes dispatch \"detects shape 5 from the stream as N compacting records with no boundary within T seconds\", but measure_context_budget in this file already opens the run stream and parses its compaction records (with a compaction record type constant `system/compact_boundary` at context_budget.py:26, counting boundaries and reading compact_metadata.pre_tokens), and the plan cites neither it nor death_census.py, so it does not show it searched before proposing a second stream parser.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-dies-where-nobody-is-looking.html#s9",
+      "id": "deep_module-1",
+      "reason": "the deep shape is one reader with an arm per shape (death_census.classify at death_census.py:128 already returns completed/dead/running from one pair of facts), which deletes the per-shape detectors rather than adding them.",
+      "text": "\u00a79 says \"each remaining death shape gets a harness-level prevention\" and lists inherited-session, compaction-threshold and bounded-turn handlers, each re-reading the stream for its own signal, rather than one classification pass whose result names the honest recovery; that the plan itself enumerates five death shapes at \u00a79's own comment (killed mid-thinking, first-turn refusal, compaction-never-completes) makes the spread five detectors over one stream.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-dies-where-nobody-is-looking.html#s9",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a79 should state the compaction threshold as a derived value of the single effective-window figure, or justify the second key; two independent keys for one wall can be set apart so a caller sets one while the refusal check reads the other \u2014 the divergence \u00a77 exists to close.",
+      "text": "\u00a79's prevention candidate \"a compaction threshold set below the effective boundary\" adds a second tunable for the lane's input wall beside the effective_input_window slot \u00a77 landed in the flight schema, and does not say why that one declaration cannot carry the threshold.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/death_census.py:128",
+      "id": "duplicate_owner-1",
+      "reason": "the compaction shape belongs as one more block in the existing stream observer and one more arm of classify_pointer/death_census; a parallel classifier is the ordering fork \u00a73's own lock at recovery.py already guards against, and it will read a run through a different path than the sweep does.",
+      "text": "\u00a79's \"dispatch detects shape 5 ... and ends the run as its own classification. Recovery then starts a fresh session\" re-implements terminal-shape classification: death_census.classify already reads a run's terminal stream for the result record and process liveness, and recovery.classify_pointer already consumes per-shape blocks the stream observer writes (_stream_budget recovery.py:4722, _stream_refusal_block recovery.py:4742, _stream_exhaustion_block recovery.py:4777), so a dispatch-side shape-5 classifier forks the reading.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:2174",
+      "id": "duplicate_owner-2",
+      "reason": "the comment does give a reason the project-wide key cannot serve \u2014 the rule must travel with the run across coordinator restarts \u2014 so this refines the node rather than redirecting it; the placement correction is to record the constraint inside the same candidate composer, which the plan can take as a note, not a rewrite.",
+      "text": "\u00a74's per-run `local_only` constraint (comment c-20260923T1345) adds a second review-lane-selection input beside the existing review_excluded_backends flight key (recovery.py:1199, _review_excluded_backends recovery.py:2010) and `_review_lane_candidates`, which already composes the review lane from the owning run's recorded backend.",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "127017eea4ca47f99927007f96a70a4a6aa2ef551148d8b9b10fc6ee7ea5edc6",
+  "plan_slug": "a-review-dies-where-nobody-is-looking",
+  "plan_version": 99,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T213247285897-plan-review-of-a-review-dies-where-nobody-is-looking",
+  "reviewed_blob_sha": "a2a537a19b5323c7df86cb2433c37c6d8ee37218",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a79's \"each remaining death shape gets a harness-level prevention\" spreads one classification concern across a handler per shape rather than one deep classifier whose interface answers how a run ended.",
+    "duplicate_owner": "a finding \u2014 \u00a79 re-implemented by name: its shape-5 detection duplicates context_budget.py's compaction parser and its \"ends the run as its own classification\" duplicates death_census.classify / recovery.classify_pointer.",
+    "reuse_search": "a finding \u2014 \u00a79 adds a dispatch-side compaction-shape detector and per-shape preventions without citing reckon/crew/context_budget.py or reckon/crew/death_census.py, the modules that already parse compaction records and terminal stream shape.",
+    "thin_wrapper": "a finding \u2014 \u00a79's \"compaction threshold set below the effective boundary\" layers a second tunable over the effective-window declaration landed in \u00a77 with no reason that declaration cannot carry it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.455950+00:00"
+}

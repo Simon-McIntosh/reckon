@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:40:47.900Z",
+  "dispatched_at": "2026-10-05T16:37:36Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:656",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a713 must either add the two velocity call sites to its stated scope (route them through the same runner) or narrow its done-when; as written the node it dispatches can never satisfy its own gate.",
+      "text": "\u00a713 routes `velocity.git` (reckon/velocity.py:148) and `read_blobs` (reckon/velocity.py:373) through the new core runner but leaves `_is_ancestor` (reckon/velocity.py:656) and `_blob_sha` (reckon/velocity.py:665) calling `subprocess.run([\"git\", ...])` directly, so the module still invokes subprocess after the migration; the section's done-when asserts `grep -rn 'subprocess' reckon/velocity.py` reports no invoking function, which those two sites falsify, making the gate unachievable as written",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7dee1f7f29aac17c7249be33e8c1e0fb4d7f5116d39e35d412154bbda682f52e",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 138,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T163718852380-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "33881db572cc59a2a39cef496f0d52bd48c1dfce",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a713 hides the five-way cache-resolution ordering behind one `cache_root(kind)` with a kind-keyed table, and the byte-mode/180-second-timeout/never-raising contract behind one runner call, so a caller names its kind rather than re-deriving the cascade.",
+    "duplicate_owner": "a finding \u2014 \u00a713's scope migrates `velocity.git` and `read_blobs` only, leaving `_is_ancestor` (reckon/velocity.py:656) and `_blob_sha` (reckon/velocity.py:665) invoking `subprocess.run([\"git\", ...])` directly beside the runner the section creates, so the section's own done-when (`grep -rn 'subprocess' reckon/velocity.py` reports no invoking function) cannot pass.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23. \u00a712 accounts net-zero (adds the velocity sources reader, retires `revised_python`); \u00a713 accounts net +1 (adds the runner and `cache_root`, retires `pick_input_cache_root`, reckon/capabilities.py:1143). Neither section adds a CLI option, an MCP view, or a dispatch refusal family, so nothing else is owed under the rule.",
+    "reuse_search": "pass \u2014 \u00a713 names the mechanisms it would duplicate and verifies them against the tree: `velocity.git` (reckon/velocity.py:147), `routing._git` with its `check` keyword (reckon/crew/routing.py:473), `service._run` (reckon/service.py:206), the detector's `_git`/`revised_python`/`_cache_root` (reckon/clones.py:644/652/389), and all five cache cascades, and it declines `service._run` for a layering reason that holds (reckon/service.py:24 imports `reckon.crew.paid_lanes` at module scope).",
+    "thin_wrapper": "pass \u2014 the two retained wrappers are each justified in the section's own text: `routing._git` as error-domain translation into `CrewError` (reckon/crew/routing.py:473) and `velocity.git` as the bytes-and-raise contract its four decoding callers keep (reckon/velocity.py:147)."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.610579+00:00"
+}

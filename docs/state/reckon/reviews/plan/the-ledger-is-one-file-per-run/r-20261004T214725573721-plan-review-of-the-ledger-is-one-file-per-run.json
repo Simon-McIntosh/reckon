@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:56:53.269Z",
+  "dispatched_at": "2026-10-04T21:47:40Z",
+  "findings": [
+    {
+      "anchor": "reckon/ledger.py:785",
+      "id": "duplicate_owner-1",
+      "reason": "",
+      "text": "\u2014 `_run_index_path` builds a per-project SQLite cache `ledger-<hash>.sqlite` that `load` already consults (via `_indexed_data`, `use_index=True`), rebuilding it from the files when stale; the plan's entire \u00a72 model (\"files are authority, the index is a disposable cache rebuilt when it misses\") is this mechanism, yet the plan calls only `run_store.db` \"the index\" and never names this cache.",
+      "type": "duplicate_owner",
+      "would_change": null
+    },
+    {
+      "anchor": "reckon/run_store.py:118",
+      "id": "duplicate_owner-2",
+      "reason": "",
+      "text": "\u2014 the plan demotes `~/.config/reckon/crew/run_store.db` to \"an index ... never committed ... rebuilt from the files\", but that store is already read by `reckon/budget.py:509,545` (`RunStore`), `reckon/crew/carryover_census.py:450`, `reckon/crew/death_census.py:172` and written by `reckon/crew/promotion.py:2395` (`import_ledger`), so the plan's claim \"today a shadow nothing reads\" is false.",
+      "type": "duplicate_owner",
+      "would_change": null
+    },
+    {
+      "anchor": "reckon/ledger.py:962",
+      "id": "duplicate_owner-3",
+      "reason": "",
+      "text": "\u2014 the rule that two copies of one run count once only when their canonical serialisations agree, and that a disagreement refuses the whole read naming the id and both paths, is implemented twice: in `_indexed_data`'s SQL conflict query (`ledger.py:962-982`) and again in `load`'s uncached union (`ledger.py:1081-1085`), each with its own comparison.",
+      "type": "duplicate_owner",
+      "would_change": null
+    },
+    {
+      "anchor": "reckon/ledger.py:1049",
+      "id": "deep_module-1",
+      "reason": "",
+      "text": "\u2014 the read side is a single `load` with two boolean modes (`use_index`, `headers_only`), a second `_indexed_data(picker_only=)` mode, and a `picker_runs` entry point (`ledger.py:842`) that bypasses `load` and falls back to it \u2014 four caller-selected projections over the same machinery.",
+      "type": "deep_module",
+      "would_change": null
+    },
+    {
+      "anchor": "reckon/ledger.py:2997",
+      "id": "reuse_search-1",
+      "reason": "",
+      "text": "\u2014 `index_lag` is defined as \"the number of run files whose id is absent from the index\", computed against `run_store.indexed_run_ids` while the reader-side cache (`_run_index_path`) is untouched; the plan offers no mapping of the two index families and no search result showing the store's prior-art consumers.",
+      "type": "reuse_search",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "3e66cea0d1a13bfe9dc57af2c6204f25192d6addc9660391c590f02bb3073faa",
+  "plan_slug": "the-ledger-is-one-file-per-run",
+  "plan_version": 60,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T214725573721-plan-review-of-the-ledger-is-one-file-per-run",
+  "reviewed_blob_sha": "40c4eb30298ffce107ebd2b1b7f6052bcdc35715",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the reader surface is spread across one function with three boolean modes plus a bypass path over two caches, rather than one deep `load` that hides the index choice.",
+    "duplicate_owner": "a finding \u2014 the plan names `run_store.db` as \"the index\" but a second SQLite cache over the same rows already backs `load`, and the union/conflict invariant is implemented twice.",
+    "reuse_search": "a finding \u2014 the plan searched `reckon/ledger.py` and `reckon/run_store.py` and cites the serialiser and `DETAIL_FIELDS`, but its premise that `run_store.db` is \"a shadow nothing reads\" is false and it never maps the store's existing consumers, so the \"index\" it demotes already has readers whose contract it changes.",
+    "thin_wrapper": "pass \u2014 no unjustified thin wrapper was found."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.237830+00:00"
+}

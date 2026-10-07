@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:22:33.568Z",
+  "dispatched_at": "2026-10-05T02:14:22Z",
+  "findings": [
+    {
+      "anchor": "docs/research/data/crew-contract-baseline/measure.py:23",
+      "id": "reuse_search-1",
+      "reason": "\u00a73's done-when turns on a token figure, so the plan must either extend the existing transcript/token reader or state in its text why a separate reader is required, before the rewrite node is dispatched.",
+      "text": "the module's own docstring describes per-request input accounting as `input_tokens + cache_creation_input_tokens + cache_read_input_tokens` and reads coordinator transcripts under `~/.claude/projects`, both of which reckon/velocity.py already implements in `transcript_index` (:1319) and its token accumulation (:1395\u2013:1401), and which reckon/crew/metering.py derives for run streams; the plan's \u00a73 text names none of them",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:1395",
+      "id": "duplicate_owner-1",
+      "reason": "the reviewer's job is to name the owner to extend, and extending velocity.py to expose a pre-dispatch skill-load figure is cheaper and keeps one accounting path instead of two that will drift.",
+      "text": "measure.py is a second reader of the same coordinator transcripts and the same three input-token fields that velocity.py already reads and sums, and it independently computes a median where velocity.py carries a distribution helper; the owning mechanism is reckon/velocity.py (`transcript_index`, token accumulation, distribution) and the plan re-implements it under docs/research/data/",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/scan_binding.py:67",
+      "id": "deep_module-1",
+      "reason": "a plan whose evidence rests on nine ad-hoc counters cannot be re-run or reviewed by a third party without re-deriving the whole pipeline, and naming one module with a small interface is exactly the depth the review exists to require.",
+      "text": "the classification machine is split across scan_binding.py, reconcile_coverage.py, render_dispositions.py, the other-references dir's sentence_counts.py, rows.py and render.py, the reconcile dir's reconcile_skill.py, and the baseline dir's measure.py and figure.py: nine scripts, no exported record type, no single entry point; a reader wanting \"the classification of file X\" must run a script under one figure dir and match its stdout in another",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/reconcile_coverage.py:32",
+      "id": "thin_wrapper-1",
+      "reason": "importing the counter's `sentences_with_lines` and `clean` would remove a subprocess boundary, a duplicated tokeniser, and a stdout format that is itself an untested interface.",
+      "text": "this script invokes scan_binding.py through `subprocess.run([sys.executable, str(SCAN)])`, parses the counter's stdout with a regex, and on line 25 defines its own `tokens()` tokeniser to compare against the fragment; it is a wrapper over the counter that re-implements the counter's normalisation rather than importing it, and the plan states no reason the counter could not be an importable module",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-other-references/sentence_counts.py:47",
+      "id": "duplicate_owner-2",
+      "reason": "the plan should extend one owner (scan_binding.py's tokeniser, or a shared module it imports) so the \u00a73 word-count and the \u00a72 sentence counts cannot disagree about what a sentence is.",
+      "text": "`sentences()` here and `sentences_with_lines()` at scan_binding.py:67 are two independent implementations of the same method (drop fenced blocks and headings, neutralise list markers and table pipes, protect the same abbreviation set, split on sentence-final punctuation) written a directory apart for the same plan; \u00a73's word-count gate will need a third caller of it",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9cd651bdfb15456627d74073afcefa8cf0f9e9bba08347a53b9d70738217e745",
+  "plan_slug": "the-crew-contract-fits-one-read",
+  "plan_version": 26,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T021356904708-plan-review-of-the-crew-contract-fits-one-read",
+  "reviewed_blob_sha": "eb2a1bdee102efd4e036f832f605d41bd33588f0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the \u00a72 evidence machinery is spread across nine scripts in five directories under docs/figures/the-crew-contract-fits-one-read/, each re-deriving markdown sentence splitting or row parsing, so no module hides the record shape, the store and the join.",
+    "duplicate_owner": "a finding \u2014 the same sentence tokeniser is duplicated between scan_binding.py and sentence_counts.py; the plan should name one owner to extend rather than fork a third copy for \u00a73's word-count gate.",
+    "interface_budget": "pass \u2014 the plan is a documentation rewrite; it adds no CLI option, no MCP view and no refusal family, and \u00a73's rewrite retires prose (rows marked delete-as-enforced) rather than adding interface surface, so there is nothing for its sections to retire or merge against the supplied counts.",
+    "reuse_search": "a finding \u2014 the plan's \u00a73 token-spend measure re-accounts coordinator-transcript input tokens without citing the token accounting and transcript reader that already exist in reckon/velocity.py and reckon/crew/metering.py.",
+    "thin_wrapper": "a finding \u2014 reconcile_coverage.py shells out to scan_binding.py and re-parses its stdout, wrapping the counter instead of extending it, and re-implements the counter's tokeniser inline; the plan never states why the counter cannot be an imported module."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.210389+00:00"
+}

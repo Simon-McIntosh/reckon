@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T09:51:36.793Z",
+  "dispatched_at": "2026-10-06T09:39:39Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch.py:3602",
+      "id": "deep_module-1",
+      "reason": "the plan already specifies the advisory as one carry behind the dispatch, so the helper spread is an implementation artifact the plan's text does not mandate and a single refactor closes it without altering the design.",
+      "text": "the advisory is spread across seven shallow helpers \u2014 `_lane_advisory_lane` (3602), `_lane_advisory_costs` (3613), `_lane_advisory_cheaper_lane` (3695), `_lane_advisory_ledger_runs` (3770), `_lane_advisory_horizon_seconds` (3786), `_lane_advisory_instant` (3797) and `_dispatch_lane_advisory` (3805) \u2014 none of which is the interface a reader or a test faces; the behaviour they jointly hide (cost derivation, horizon comparison, lane naming, the quiet/emitted/unknown states) is one decision and would be deeper behind a single module boundary named by that decision.",
+      "type": "deep_module",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/capabilities.py:892",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should require the clause be read through `routing_surface()` rather than re-derived, so the advisory cannot diverge from the routing figure a coordinator sees.",
+      "text": "\u00a76 requires the cheaper-lane clause be \"derived from the routing figures at the time of dispatch\", but `_lane_advisory_costs` (`reckon/crew/dispatch.py:3613`) forks that derivation, re-implementing rework detection and the charged median through the private helpers `capabilities_module._routing_outcome_exclusion` (3636), `_write_paths` (3658), `_paths_overlap` (3653), `_input_tokens` (3656), `_coordinator_input_tokens` (3657), `_median_or_none` (3675) and `_charged_cost` (3687) instead of consuming the public `routing_surface()` owner at `reckon/capabilities.py:892`; a private-helper fork drifts from the routing view a caller reads the moment any one of those helpers changes, which is the exact drift the plan's own comment claims the carry avoids.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e8a8e08b21a6d634e3e66ddb018652a4b6d733f2d277ee1c3f385e4564bd57bc",
+  "plan_slug": "advise-the-lane-never-force-it",
+  "plan_version": 32,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T093918935747-plan-review-of-advise-the-lane-never-force-it",
+  "reviewed_blob_sha": "ee54dd5abfbd62aba42cb858024baf26c1576a25",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the advisory the plan describes as one carry is implemented as seven small `_lane_advisory_*` helpers over the same lane machinery in `reckon/crew/dispatch.py`, which adds surface without adding depth.",
+    "duplicate_owner": "a finding \u2014 \u00a76 requires the cheaper-lane clause to be \"derived from the routing figures\", but the landed derivation re-implements rework-charged cost per durable node by reaching into private helpers of `reckon/capabilities.py` rather than extending the public owner `routing_surface()`.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; \u00a77 states the plan \"adds no new command and no new tool\" and explains why nothing can be retired (the advisory rides a call already being made and draws its shared-window count from a directory that already exists), which is the account the item requires.",
+    "reuse_search": "pass \u2014 the plan names the mechanisms it extends rather than inventing: the dispatch payload and its single lane reading, the pre-flight's projected exhaustion, the gate-enforcement advisory mode, the coordinator directory (`reckon/crew/directory.py:105`, which \u00a74 cites as \"the join already exists\"), and the ledger routing figures.",
+    "thin_wrapper": "pass \u2014 \u00a72 justifies why the advisory cannot be an extension of the pre-flight (\"the pre-flight cannot satisfy the requirement that the advisory arrive unasked, because it has to be invoked\u2026\"), so its landed shape is recorded where it will be read."
+  },
+  "section_digests": {
+    "_document": "77b0c1f712232f7d6066a3aea4049a36368e146905eb0065771f5b01e48810e6",
+    "s1": "53880524f285e0d6d219a8e7173572bdcf3dc186b0e4653f1cd893ebb4401a55",
+    "s2": "0fe8e2119819d08b3f688c609ad51301d8bba4ac966a809a343e38ad78721653",
+    "s3": "7cb52cb2b3b860da335912b88bc0ff98af449bf6f3881f04498f1bc6e0804c2f",
+    "s4": "e705266e83dc2dca4607faa81a29d0fc8908a3b15d7a80139c9363f386e11883",
+    "s5": "ff9e8d384dd507a6f25430a6d885bead5c064744baf52de901a5db4eb0671628",
+    "s6": "69f5fbd963e00b194d4caa096f0c8457c0138a4b60a4a5708ae30ad05af8d186",
+    "s7": "5fb29854c174e44ff17434b03ea4b02b127cb2a5b08852504692a63a4438c08e",
+    "s8": "ba8a1b5a91dec29017e988bb46722fd10d3bb060b49d5708a8c4e180f5452ffd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.771134+00:00"
+}

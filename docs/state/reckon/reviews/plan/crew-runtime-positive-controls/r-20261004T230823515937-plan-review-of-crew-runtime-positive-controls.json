@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T23:11:18.836Z",
+  "dispatched_at": "2026-10-04T23:08:37Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/runs.py:3424",
+      "id": "duplicate_owner-1",
+      "reason": "the plan already carries this as \u00a761 with the owner named (`reckon/service.py`) and the remedy stated (one resolver, one installer), so the review confirms rather than changes it.",
+      "text": "`SystemdUserWatchService` reimplements `reckon/service.py`'s `unit_path`/`installed`/`write_unit` and hardcodes `~/.config/systemd/user`, while `paid_lanes.systemd_user_dir()` (`reckon/crew/paid_lanes.py:750`) resolves `XDG_CONFIG_HOME` the way the manager does, so three sites disagree and a unit can be written where systemd never reads it",
+      "type": "duplicate_owner",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/crew/reports.py:1526",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a722 must name the owner that `check-manifest` reuses rather than add a third resolver, or the citation check forks and the two existing copies drift as they already have.",
+      "text": "`_commit_resolves_in` is defined a second time here, duplicating `reckon/crew/promotion.py:477` (which delegates to `_commit_canonical_id`), and \u00a722 proposes adding a third commit-resolution path inside `reckon/cli.py`'s `check-manifest` (which today resolves no commit)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/resumption.py:836",
+      "id": "duplicate_owner-3",
+      "reason": "\u00a716 measured this pair directly and chose to keep two readers with the differing return shapes stated (tri-state for the row, boolean for the sweep); the finding is recorded, not a change.",
+      "text": "a second wait-condition probe `_run_condition_probe` duplicates `reckon/crew/recovery.py`'s `_run_wait_condition_probe`, which \u00a716 measured as \"a contract with two readers\"",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "7ea30c95c7fe838d86cbf01423d063d82551f04958a28e80587757b5c437403b",
+  "plan_slug": "crew-runtime-positive-controls",
+  "plan_version": 345,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T230823515937-plan-review-of-crew-runtime-positive-controls",
+  "reviewed_blob_sha": "30138185dde3cadcdcb98d84a5dc15c9d64184e8",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan hides behaviour behind narrow interfaces rather than spreading it: `check_serving_origin` returns one receipt dict hiding launcher query + timeout + HTTP probe; \u00a761 consolidates the watcher service onto one resolver and one installer (`reckon/service.py`) parameterised by unit name; the rest extend an existing reader with one added guard.",
+    "duplicate_owner": "a finding \u2014 two concrete forked mechanisms remain: the watcher service reimplements `reckon/service.py`, and `_commit_resolves_in` is defined twice (promotion and reports) while \u00a722 proposes a third commit-resolution path in `check-manifest`.",
+    "reuse_search": "pass \u2014 the plan searches and cites the mechanism it extends at every new-machinery node: \u00a73 names `watcher_state` in `reckon/crew/runs.py`; \u00a74 names the wait reader in `reckon/crew/recovery.py`; \u00a76 names the four repository-resolving surfaces (`dispatch.py`, `resumption.py`, `ledger.py`, `promotion.py`); \u00a713 records `reckon/flight.py`'s endpoint reader (`_probe_serving`, `reckon/flight.py:1518`) as prior art before adding `serving_origin.py`; \u00a716 names both probe readers; \u00a761 names `reckon/service.py:unit_path` and `paid_lanes.systemd_user_dir()`.",
+    "thin_wrapper": "pass \u2014 the only wrapping proposed is justified where it appears: \u00a761 routes `SystemdUserWatchService` through `reckon/service.py` rather than copying it, and \u00a713 adds a new module only after \u00a713's own prior-art note shows `flight.py` compares the document to the configured model and not to the resolved launcher; \u00a710 reuses `reckon.crew.dispatch`'s producer rather than authoring a second one."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.895597+00:00"
+}

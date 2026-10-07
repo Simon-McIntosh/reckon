@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:05:25.903Z",
+  "dispatched_at": "2026-10-04T21:01:33Z",
+  "findings": [
+    {
+      "anchor": "reckon/serve.py:703",
+      "id": "reuse_search-1",
+      "reason": "the done-when must measure the live read (or a fixture that reproduces its cost) or \u00a73 closes against a number that never moved the defect it names.",
+      "text": "\u00a73's done-when measures \"GET /crew answers in under one second on a fixture of 40 live pointers\", but the failure it exists to close is a live measurement (\u00a71 recorded 6.5\u20137.7 s per request, and the post-landing review measured the live read at 1.8\u20132.2 s); a fixture of 40 local pointers cannot reproduce a cost driven by mounted trees and real streams, and the landing review found the 40-pointer test also passed at the base revision, so the clause can be marked done with \u00a71's latency failure still live",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:764",
+      "id": "duplicate_owner-1",
+      "reason": "the fallback is reached only for a pointer the classifier records no phase for, so it does not fork the phase of any live run; naming it would not change the plan.",
+      "text": "the phase read keeps the old stream-age derivation (`_stream_is_terminal` plus `crew.LOG_STALE_AFTER_SECONDS`) as a fallback beside `crew.classify_pointer`, the owner of that judgement, so `_crew_rows` now carries two phase derivations",
+      "type": "duplicate_owner",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/serve.py:688",
+      "id": "duplicate_owner-2",
+      "reason": "the two serve different contracts (the plan-state `read_state` sprint/effort read versus the generic title/meta read), so the sibling reader is justified and the plan would not change.",
+      "text": "the latency landing added `_read_crew_plan_details` with its own `memoized(\"crew-plan-details\", \u2026)` key, a second memoized plan-head reader beside `_read_head_meta` (serve.py:936, `memoized(\"head_meta\", \u2026)`), rather than a single memoized head reader both callers share",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "b358fd4a6b35efaec23ea9e1ca3f5cf60966b6dec0c7e026703f34f9eb8a68da",
+  "plan_slug": "the-restarted-server-meets-its-shipped-measures",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T210119123099-plan-review-of-the-restarted-server-meets-its-shipped-measures",
+  "reviewed_blob_sha": "a861739795a91de612e9f443434aa67162766e97",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module; \u00a73 extends `_crew_rows` in place and consumes the record `crew.classify_pointer` already returns.",
+    "duplicate_owner": "a finding \u2014 the \u00a73 landing leaves a stream-age phase derivation beside `crew.classify_pointer` (serve.py:764) and adds `_read_crew_plan_details` (serve.py:688) as a second memoized plan-head reader beside `_read_head_meta` (serve.py:936).",
+    "reuse_search": "a finding \u2014 \u00a72 and \u00a73's phase read extend existing owners (roadmap._north_star_rows, crew.classify_pointer), but \u00a73's sub-second /crew clause is a fixture measure that passes at the base revision and does not reproduce the live 6.5\u20137.7 s read \u00a71 recorded, and the plan names no mechanism it will extend for the live read.",
+    "thin_wrapper": "pass \u2014 no thin layer is proposed over existing machinery; the phase and navigation changes edit the existing route rather than wrapping a parallel one."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.334067+00:00"
+}

@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:54:54.234Z",
+  "dispatched_at": "2026-10-05T16:50:18Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:566",
+      "id": "deep_module-1",
+      "reason": "\u00a713 must state that `cache_root` takes an optional explicit directory beside the kind (or plumb the override through), or the consolidated interface cannot carry the behaviour it absorbs and the override callers and their tests break.",
+      "text": "\u00a713 consolidates the cache roots behind `cache_root(kind)` with a caller naming \"only its kind\", but the roots it replaces accept an explicit override directory that a kind-only signature cannot carry: `_velocity_cache_path` (reckon/velocity.py:566), `clone_matches` (reckon/clones.py:522 via `_cache_root`, reckon/clones.py:389) and `interface_counts._cache_path` (reckon/interface_counts.py:466) each take a caller-supplied root, and `pick_input_cache_path` (reckon/capabilities.py:1167) keeps one too; three tests pass it (`tests/test_the_clone_cache_stays_bounded.py:135`, `tests/test_a_partial_scan_keeps_the_whole_cache.py:141`, `tests/test_one_function_resolves_a_citation.py:73`), so a kind-only `cache_root` either drops that capability or forces each caller to keep a private resolver \u2014 the duplicate this section exists to remove",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/velocity.py:147",
+      "id": "duplicate_owner-1",
+      "reason": "the section states the tradeoff and scopes the followup to the sixty-three direct callers that give the module its consumer set, so the placement is a deliberately recorded risk rather than an unexamined default.",
+      "text": "\u00a713 keeps the single git runner on `reckon/velocity.py`, a feature/report module, and makes it public for \u00a712's detector and for `routing._git` to import, which is the same \"unrelated consumer imports a velocity report\" coupling the same section rejects for the cache cascade (\"should not import a velocity report to find a cache directory\"); the run's own followup then has to re-point every caller \u00a712 and \u00a713 create",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "4e96f0b43ec04e8859b6baab0b67d71b1dafa71b8802ccf3fb722dca9b4c134b",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 140,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T164959952078-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "89643f10e861ba94a0203f9fed0372a8611bd55f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the new cache-path module's stated interface, `cache_root(kind)` where \"a caller names only its kind\", is smaller than the behaviour it must hide.",
+    "duplicate_owner": "pass \u2014 the section names every copy and its destination (velocity's one `git`, the detector's `_git`/`_cache_root`, the five cascades, the counter's `ls-tree`) and names the owning followup (`git-access-has-one-owner`) for the sixty-three direct invocations it does not consolidate here, so no duplicate is left unowned.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a712 states +1 (velocity sources reader) and \u22121 (`clones.revised_python`) and \u00a713 states +1 (`cache_root`) and \u22121 (`capabilities.pick_input_cache_root`), each naming the symbol it retires, and neither section adds a CLI option or MCP view.",
+    "reuse_search": "pass \u2014 both sections state the prior art they extend and the code confirms it: \u00a713 names `velocity.git` (reckon/velocity.py:147, raising/bytes/180 s), `routing._git` (reckon/crew/routing.py:473, process/CrewError), `service._run` (reckon/service.py:206) and declines it with a verified layering reason (`reckon/service.py:24` imports `reckon.crew.paid_lanes` at module scope while `reckon/velocity.py` imports no crew module), and lists the five cache cascades by name; \u00a712 names `read_blobs` (reckon/velocity.py:360), `_plan_documents` (reckon/velocity.py:306) and `read_trees` (reckon/interface_counts.py:441).",
+    "thin_wrapper": "pass \u2014 `routing._git` is retained with a stated reason (translation into the crew layer's `CrewError`, not a second runner) and `pick_input_cache_path` keeps a leaf-naming job beyond forwarding; both are named rather than added silently."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.600409+00:00"
+}

@@ -1,0 +1,108 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T10:23:11.196Z",
+  "dispatched_at": "2026-10-07T10:10:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/one-typesafe-model-picker.html:118",
+      "id": "reasoning-1",
+      "reason": "a build node reading the decision log finds two live, mutually exclusive answers on whether a caller may name a lane, and \u00a71's line 43 (\"The orchestrator does not pick\") inherits the superseded one, so the plan's own authority model is undecided.",
+      "text": "decision `selection-authority` (data-choice `router-decides-orchestrator-comments`, \"resolved\" 2026-10-02) states the orchestrator influences the pick \"never by naming a lane\", while decision `local-is-authoritative` (2026-10-06, line 137) states \"An explicit --local (or --backend) is authoritative\" and `picker-chooses-the-lane` (2026-10-07, line 141) says \"A named lane stays authoritative\"; both decisions are recorded as decided and neither marks the earlier one superseded",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/one-typesafe-model-picker.html:22",
+      "id": "wiring-1",
+      "reason": "the plan's own \u00a71 asserts a relationship the wiring omits, so the DAG a coordinator reads shows no edge to a plan the text says this one absorbs, and `plan-informs` on the same target as `plan-after` states the ordering in both directions.",
+      "text": "the header declares `plan-after=\"the-local-lane-is-the-default\"` and `plan-informs=\"a-window-paces-the-lane,the-local-lane-is-the-default\"` but no relationship to `advise-the-lane-never-force-it`, which \u00a71 (line 44) names as one of the three plans this one \"is meant to absorb the routing parts of\"",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/one-typesafe-model-picker.html:169",
+      "id": "anchors_resolve-1",
+      "reason": "the two gates are closed/passed and their `required_evidence` still names the anchor, so a reader loses a convenience link rather than a claim; the same prose-in-href pattern appears in other plans, so this is cosmetic and conventional rather than a mis-citation.",
+      "text": "gate `g-otmp-design-note`'s `r-gate-evidence` href is the whole sentence \"docs/evidence/fragments/one-typesafe-model-picker/picker-prototype.html names the single route Choice \u2026 (merge a78d94752, review 90/100).\" rather than a path, and gate `g-otmp-router-built` (line 174) does the same starting \"123 ledger rows under docs/state/reckon/runs/ \u2026\"; the surface renders each as `<a href={gate.evidence}>Evidence</a>` (docs/ui/plan.jsx:113)",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "2b4e23abaef3d2ef2d98c9a0cf433486343247df2a11c086b26141fe81d636ea",
+  "plan_slug": "one-typesafe-model-picker",
+  "plan_version": 183,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-07T10:28:35.239614+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-07T10:28:42.822195+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "Both gates are closed and passed, so no build reads them; the evidence field holds a sentence by the gate schema, and rendering it as an href is a surface defect in docs/ui/plan.jsx, not plan content.",
+      "when": "2026-10-07T10:28:50.789268+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "Both gates are closed and passed, so no build reads them; the evidence field holds a sentence by the gate schema, and rendering it as an href is a surface defect in docs/ui/plan.jsx, not plan content.",
+      "when": "2026-10-07T10:28:50.789268+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T10:28:35.239614+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T10:28:42.822195+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-one-typesafe-model-picker.v183.json",
+  "review_run_id": "r-20261007T101017141775-plan-review-of-one-typesafe-model-picker",
+  "reviewed_blob_sha": "496a533411645037178c4012e661d5d25534eb2c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the two `r-gate-evidence` anchors carry whole evidence sentences as their href value rather than a path, so the surface renders them as links that resolve to nothing; every intra-plan href (`s2`, `s6-fallout`, `s6-jev-chooses-the-lane`) and every cited evidence fragment otherwise resolves.",
+    "done_when": "pass \u2014 each section states a measurable done-when with a falsifiable control: \u00a76's week comparison publishes success rate, metered spend, fallback rate and confidence against deterministic routing, and the reversal condition (success no lower, spend no higher, zero refused-model dispatches) is a target that can fail and reverse the switch.",
+    "evidence_paths": "pass \u2014 gate evidence and every fragment cited sit under docs/evidence/fragments/one-typesafe-model-picker/ or docs/evidence/archive/, and the followups point at durable report directories, not session scratchpads.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag is required in any symbol or comment the plan prescribes; the `f-otmp-*` and `s6-*` identifiers appear only as plan data (followup and anchor ids), which is where they belong.",
+    "reasoning": "a finding \u2014 the Decisions section records two answers that contradict each other on whether a coordinator may name a lane, and \u00a71's authority sentence carries the superseded side.",
+    "single_goal": "pass \u2014 each section names one deliverable (\u00a72 disposition of codex-spark, \u00a74 the Jev design note, \u00a711 the catalogue move, and so on).",
+    "wiring": "a finding \u2014 \u00a71 states the plan overlaps `advise-the-lane-never-force-it` and \"is meant to absorb the routing parts of all three\", but the header declares no relationship to that plan (which exists at docs/plans/advise-the-lane-never-force-it.html), and `plan-informs` lists `the-local-lane-is-the-default`, the same plan the header already names in `plan-after`."
+  },
+  "section_digests": {
+    "_document": "57adb270e137572c90f0842952a4d34293b9ba12b68d30b1e67bd1c3bcdbacea",
+    "s1": "0106d68d58d60a21eb06926f50f3877778bf717c284b3619f01ec4d16b69a18c",
+    "s10": "f8cea7db03e6ce1a59ee44f2b9bafe7cdd9ef466468807c3d5318193033ccbc9",
+    "s11": "1d394a8f1735f908f234eebae944b87de35bf29d61262044f141232459adc254",
+    "s2": "eacf32d1b5ac595aa7c3d40ee1b27dd2d2950ad725cff0f6d45bcd2ffe6f12bd",
+    "s3": "73993936e3a3367541ef63991298fd7d60aa3f241a9f1d68739b3cd180903ed2",
+    "s4": "3261b375216071d2db98d8de24e80697fd3d9d749a2e1fe7039eb2b09042d16f",
+    "s5": "bdd5ce075a9b03d3484f04421703d7210a276d0a6d8bd81ff277a411b0b6f6ac",
+    "s6": "1165482cbe98832408cc4d70e2324421e85cdc1d710cca0eff7ffa780d159838",
+    "s7": "6708dba8a743eb29f1233c04ff4d9cffe1b0db6f989cfa377622eb4ead6f8f65",
+    "s8": "02a3718052487fea0ed2e112ef68038773eae6a9ea8287e9dbd31e00b39bde71",
+    "s9": "9fdaa963d17c4033bdace1de49ee9b3f118e183f06473d4c47bf74e2c24cdbc1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T10:27:41.926257+00:00"
+}

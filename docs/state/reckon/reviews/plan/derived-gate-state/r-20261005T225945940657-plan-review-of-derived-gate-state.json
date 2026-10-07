@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T23:02:40.449Z",
+  "dispatched_at": "2026-10-05T23:00:05Z",
+  "findings": [
+    {
+      "anchor": "reckon/lifecycle.py:52",
+      "id": "deep_module-1",
+      "reason": "the plan \u00a72 claims gates render \"downstream sections \u2026 blocked\", so the derivation must scope by `gated_sections` or the plan describes blocking it does not implement.",
+      "text": "`unpassed_gate_blockers` returns every unpassed execution gate as a plan-level blocker and carries each gate's `gated_sections` in the row but computes no section-scoped blocking, so a gate naming its sections still blocks the whole plan; the section edges built separately in `reckon/roadmap.py:270` (`_gate_section_edges`) do scope correctly, leaving the plan-level list and the section edges disagreeing",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/lifecycle.py:32",
+      "id": "duplicate_owner-1",
+      "reason": "`reckon/lifecycle.py` already owns the primitives and should own the composition too; the three-way spread is what let `mcp._inventory_row` strip gates before `build_roadmap` and empty `ready_now` (f-dgs-003), so a single owner removes the class rather than one instance.",
+      "text": "the blocking list is composed three times, each re-joining `unresolved_dependencies` + explicit blockers + `unpassed_gate_blockers(execution_gates(...))` and re-deriving readiness: `reckon/serve.py:2155` (`_derive_lifecycle`), `reckon/mcp_views.py:2473` (`_blocking`), and `reckon/roadmap.py:2815` (`build_roadmap`)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_schema.py:1075",
+      "id": "interface_budget-1",
+      "reason": "the section adds interface surface (public fields, public definitions and a second readiness family) without the retirement or the why-nothing-can-be that the interface_budget rule requires it to state in its own text.",
+      "text": "\u00a72's gate field list is \"a stable id, the section they anchor to, the sections they gate, status, the measure, the required evidence, the verdict and an evidence link\", but the landed `Gate` model adds `transition`, `gating_plan` and `decision` fields with the `GATE_TRANSITIONS = (\"plan-terminal\", \"decision-lockable\")` taxonomy and its consumers (`execution_gates`, `closure_blockers`, `pending_transition_gates`, `plan_level_decisions`), none named in \u00a72 and none retired",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "44511c70cb509aeb57468054347df3fd21262123054299412ff8fd171ff70d3a",
+  "plan_slug": "derived-gate-state",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T225945940657-plan-review-of-derived-gate-state",
+  "reviewed_blob_sha": "0a83b55979a2ee47cb50c8d2ede558393000210c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the gate derivation advertises section scoping it does not implement, so the whole-plan-blocking behaviour cannot be hidden behind the module and every consumer gets it wrong (evidenced by the 2026-09-24 `c-20260924T050731349444` report on `host-dashboard-covers-every-agent-process`, reproduced in the snapshot).",
+    "duplicate_owner": "a finding \u2014 the blocking composition is hand-assembled in three consumers instead of calling one owner in `reckon/lifecycle.py`; the primitives are shared but the composition is not, which is the shape that produced the measured `ready_now` emptying in followup f-dgs-003.",
+    "interface_budget": "a finding \u2014 public_definitions 1480, cli_options 317, mcp_views 33, refusal_families 23; \u00a72 adds a gate taxonomy (`transition`, `gating_plan`, `decision`, `GATE_TRANSITIONS`, `closure_blockers`, `pending_transition_gates`) that its own gate-field list omits and for which no retirement or merge is named.",
+    "reuse_search": "pass \u2014 the plan searched the mechanisms it extends and cites them: it reuses the `blocking`/`effective_status` derivation (`reckon/lifecycle.py`), the `roadmap` readiness path, `doccheck`/`reckon audit` staleness thresholds, and the decisions/followups parser-schema-renderer triple, and its decision `gate-representation` explicitly weighed and rejected the `gate-flavoured-followups` alternative.",
+    "thin_wrapper": "pass \u2014 the gate ops extend the existing `edit_plan` op dispatch (`_OP_VOCAB`, `_OP_APPLIERS` in `reckon/_store.py`) rather than wrapping it, and `retire_prose`'s placement at the edit-transaction layer is justified because `apply_ops` is pure and cannot see authored prose (recorded reuse map, `c-run-r-20260902T123246142844`)."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.942529+00:00"
+}

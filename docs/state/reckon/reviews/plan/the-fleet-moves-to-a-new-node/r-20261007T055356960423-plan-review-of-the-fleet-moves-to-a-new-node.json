@@ -1,0 +1,97 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T06:12:09.740Z",
+  "dispatched_at": "2026-10-07T05:54:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-fleet-moves-to-a-new-node.html:418",
+      "id": "wiring-1",
+      "reason": "without it the build order can place \u00a714 after or without the operational sections that depend on it, sending the cutover nodes down the path the plan's own \u00a714 says is broken.",
+      "text": "\u00a714 fixes the producer seat that the plan says the login-node-driven move needs, yet it is absent from the followup's ordered sections (\u00a72-\u00a78, \u00a79, then the gate-held operations) and from the rehearsal gate's gated-sections; a builder sequencing from the followup can run \u00a711-\u00a713 while two fleet nodes run side by side and hit the very producer hang \u00a714 repairs",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-fleet-moves-to-a-new-node.html:375",
+      "id": "done_when-1",
+      "reason": "a coordinator closing sections on their done-whens has no first section to close, and the probe's validation belongs to one section's done-when rather than both.",
+      "text": "\u00a710's done-when requires \"the second probe rehearsal passes on the new node\" (\u00a79's second probe), while \u00a79 states the second probe runs \"once \u00a710 has held it\"; the two sections each name the other's completion, so neither can be closed before the other",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9cf1ca6c4e180ac9718dc15eda069a91fc251c87031cf4bd52cecb475786714f",
+  "plan_slug": "the-fleet-moves-to-a-new-node",
+  "plan_version": 6,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-07T06:13:34.164841+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-07T06:13:38.659026+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-07T06:13:46.749792+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T06:13:38.659026+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T06:13:46.749792+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-fleet-moves-to-a-new-node.v6.json",
+  "review_run_id": "r-20261007T055356960423-plan-review-of-the-fleet-moves-to-a-new-node",
+  "reviewed_blob_sha": "1e6c5fdafa2cc87aef0cfce15adc0506ae455ec0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the evidence href /reckon/what-loaded-the-fleet-node resolves to docs/research/what-loaded-the-fleet-node.html by untyped-slug resolution; fleet_node.generate_hold_script, fleet_supervisor._reap_finished_children, runs.list_live, placement.ensure_reservation, `reckon crew placement` and `fleet-node place` all exist; the census dir census-20261007T035424Z/ holds ledger.json and layouts/.",
+    "done_when": "a finding \u2014 \u00a79 and \u00a710 each name the other's completion in their done-whens, so neither closes first (lines 349-351 and 375).",
+    "evidence_paths": "pass \u2014 the census (line 51) and the migrate ledger (line 245) sit under ~/.local/state/fleet/migration/ on shared storage, and \u00a79's rehearsal ledger is linked from the landed evidence.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach symbols or comments; the decision key `thread-cap` and the \u00a7-cross-references are plan-internal identities.",
+    "reasoning": "pass \u2014 \u00a72's root cause matches the cited research record (that doc's \"no trigger watches D state or load\" and \"unattributable\"), and each mechanism runs on a named production caller (generate_hold_script execs the supervisor; dispatch reads the backend's declared gate_document as LanePaused).",
+    "single_goal": "pass \u2014 each section names one deliverable; \u00a73's three bullets are one thread-cap change asserted at two entry points plus its verification, and \u00a78 is one migrate command.",
+    "wiring": "a finding \u2014 \u00a714 (\"One producer per project across hosts\") is declared implementable and the plan itself asserts it. It appears in neither the followup's sequencing (line 488) nor the gate's gated-sections (line 424, \"s11,s12,s13\")."
+  },
+  "section_digests": {
+    "_document": "7cc6d3b0e7fdfe5c1ce4876a3c53de26c79fe629f82cab2f4914d16358d494d7",
+    "s1": "1382e02d27e170b0adc11be67e10bf98716d01607de5f230983b1abd8e9d0c13",
+    "s10": "2f6d04525255117e1711fc1c4bfb52998716d3fcbbbdc6a0491ebb8d8d8e0698",
+    "s11": "6fff6713f3b71d9cd9bab053c049e58aecba49a20c41fead1995bb560cf396e4",
+    "s12": "442723eb7aaa618a8c9c39c97b14df5b983354875fd0f42dcb8ae90a1a21f1aa",
+    "s13": "768205f2157cfd7239b4051f079ed4a244c59e254a7fa230bba1d270ce21bbe6",
+    "s14": "9870ce85807ff76b8ebe6e81f94c39b2420d071d84a53bf3ff207b23948aaade",
+    "s2": "7b7daead8ae69142fed6fc6427f831844ab4ab609745c6ae932a95949b726487",
+    "s3": "f98db3f0f32bc272f316b86e8b36a421ae696cd89c99c13adfa9d9c0e0c3a771",
+    "s4": "fc1c562338a9051a8f6b83632dbeecfd1b4263662316d10bc28c515de7313234",
+    "s5": "a6c5be7702eaa856043b2361c94fdb02be545388f218d8edffce74edb32da561",
+    "s6": "a3e2f3f6819383cd0a386243b8708a30332d58e4fb8329260b61360e4e062cf8",
+    "s7": "e7408d41aca73ee1ab4f5fcaab56d97a540de80201bbd49cab1d8fe44b6e8f38",
+    "s8": "6b64a63e594b9df70af58459a2aa09bd29823174c81350f0a05fd79ef72fac7b",
+    "s9": "aa113ebe6587938af5fd07a697f2b8f7e5dc6f196e87dacd22d0d2c6bb20df9f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:13:30.718213+00:00"
+}

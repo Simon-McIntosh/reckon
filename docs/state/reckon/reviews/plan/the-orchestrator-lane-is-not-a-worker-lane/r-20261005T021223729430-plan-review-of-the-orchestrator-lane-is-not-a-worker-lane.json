@@ -1,0 +1,74 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:20:31.925Z",
+  "dispatched_at": "2026-10-05T02:12:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-orchestrator-lane-is-not-a-worker-lane.html:50",
+      "id": "reuse_search-1",
+      "reason": "the plan should name the mechanism it extends for the stop, the discharge and the declaration, or the author rebuilds what already exists.",
+      "text": "\u00a71 proposes a dispatch-boundary stop, a discharge, and a new config declaration without citing any existing mechanism it searched; the same shape already lives in `_unmetered_dispatch_alternatives` and `_lane_declaration_finding` (`reckon/crew/dispatch.py:3538` and `:3577`), the discharge registry `reckon/crew/refusals.py:19`, and the lane gate/hold (`reckon/crew/dispatch.py:4248`, `reckon/crew/hold.py`)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-orchestrator-lane-is-not-a-worker-lane.html:57",
+      "id": "reuse_search-2",
+      "reason": "naming the existing orchestrator-class owner forces a decision to extend it or a stated reason why a bare boolean must stand beside it.",
+      "text": "the declaration `serves_orchestrators` is proposed as a new per-backend key although flight already models the orchestrator capability class as a routing overlay (`roles.by_capability_class.orchestrator`, `reckon/schema/flight.yaml:738`); the plan does not say why that place cannot carry the fact",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-orchestrator-lane-is-not-a-worker-lane.html:69",
+      "id": "thin_wrapper-1",
+      "reason": "the section should extend the existing override/reason mechanism or say why it cannot, rather than add a fourth allow-flag with its own recording path.",
+      "text": "\u00a72 adds `--allow-orchestrator-lane REASON` as a thin layer over the stop, beside the existing per-dispatch override family (`--allow-execution-mismatch`, `--allow-unreconciled-runs`, `--allow-unreviewed-plan` in `reckon/cli.py:1759`), and gives no reason the recording of a per-dispatch reason cannot reuse that override surface",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:4381",
+      "id": "duplicate_owner-1",
+      "reason": "one predicate-filtered candidate-lane helper should serve both callers so the enumeration cannot drift from the one the advisory already uses.",
+      "text": "the discharge is computed by `_orchestrator_lane_discharge_candidates`, which iterates `config[\"backends\"]`, filters by a per-backend predicate, calls `resolve_role_override` and keeps `launch in (\"cli\",\"in-harness\")` \u2014 a line-for-line duplicate of `_unmetered_dispatch_alternatives`; the owner of \"name configured lanes that can resolve this node\" is `reckon/crew/dispatch.py:3538`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/refusals.py:19",
+      "id": "duplicate_owner-2",
+      "reason": "a discharge kept out of the registry is invisible to the census the plan quotes, so the section must register it there or say why the stop sits outside the refusal-registry owner.",
+      "text": "\u00a71 arrives with a discharge while the discharge registry that the plan's own \"42 refusal sites against 5 discharges\" census is drawn from is `DISPATCH_REFUSAL_REMEDIES`; the plan composes its discharge text inside `_dispatch_orchestrator_lane_stop` instead of registering it with that owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-orchestrator-lane-is-not-a-worker-lane.html:69",
+      "id": "interface_budget-1",
+      "reason": "the sections must account for the interface surface they add, or state why nothing can be retired or merged.",
+      "text": "with cli_options 317 and refusal_families 23 supplied, \u00a72 adds the CLI option `--allow-orchestrator-lane` and \u00a71 as designed adds a refusal family, and neither section names a member it retires or merges (cli_options 317\u2192318, refusal_families 23\u219224)",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "cb4cb156f81a1d8b4336092810de5643e803ef6367eba2c0faf0eed07c3575da",
+  "plan_slug": "the-orchestrator-lane-is-not-a-worker-lane",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T021223729430-plan-review-of-the-orchestrator-lane-is-not-a-worker-lane",
+  "reviewed_blob_sha": "b1cad325c5f79043b33c7ea29d7c9c6a127182f6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the fence is one predicate plus one stop composed in resolution, and it delegates lane resolution to `resolve_role_override` (`reckon/crew/routing.py:187`) rather than hiding behaviour behind a spread of parallel wrappers.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements candidate-lane enumeration instead of extending its owner, `reckon/crew/dispatch.py:3538`.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a72 adds the `--allow-orchestrator-lane` CLI option and \u00a71 as designed adds a refusal family, and neither section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites only its sibling plan as prior art and names no codebase mechanism it searched, while `reckon/crew/dispatch.py:3538` `_unmetered_dispatch_alternatives`, `reckon/crew/refusals.py:19` `DISPATCH_REFUSAL_REMEDIES`, `reckon/crew/dispatch.py:4248` `_dispatch_lane_gate`/`reckon/crew/hold.py`, and the flight `roles`\u2192`by_capability_class.orchestrator` overlay (`reckon/schema/flight.yaml:738`) already exist beside what it adds.",
+    "thin_wrapper": "a finding \u2014 the plan adds a stop-and-discharge layer beside the existing lane-advisory layer without saying why that layer cannot be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.269735+00:00"
+}

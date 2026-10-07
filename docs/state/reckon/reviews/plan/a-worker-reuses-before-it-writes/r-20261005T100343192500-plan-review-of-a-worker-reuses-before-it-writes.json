@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T10:09:35.239Z",
+  "dispatched_at": "2026-10-05T10:03:59Z",
+  "findings": [
+    {
+      "anchor": "reckon/serve.py:498",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must extend `_store._write_through_sibling_temporary` to carry binary payloads (a mode/type keyword) or name these sites as retained exceptions, otherwise \u00a79's \"every file-write site becomes a call to the promoted primitive\" is unachievable and the binary sites fork a second writer.",
+      "text": "\u00a79 routes the two byte-writing asset publishers (`reckon/serve.py:498-503` writes `response.read()` bytes, `:562-567` writes `.encode()` bytes) and the byte thumbnail cache (`:2320-2323`, `write_bytes`) onto the promoted primitive \"with its payload as the render callback\", but that primitive opens its handle in text mode and types its callback as `Callable[[TextIO], None]` (`reckon/_store.py:409`), so a bytes payload cannot pass; `reckon/ledger.py:1032-1037` (sqlite rebuild) fails the same way",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "a-worker-reuses-before-it-writes#s8",
+      "id": "interface_budget-1",
+      "reason": "the section must name the one new public symbol (and its relationship to `write_json_atomically`) so the +1 accounting is checkable against `reckon/interface_counts.py` at the merged head.",
+      "text": "\u00a78 asserts \"the public_definitions family grows by exactly one, the promoted primitive\", but does not state the promoted primitive's public name, and leaves the already-public `write_json_atomically` (`reckon/_store.py:463`) as a public adapter over it, so the section both fails to name the surface it adds and risks counting two public entry points to one mechanism",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3bc9454b5dbe4f78acb2a1a71daf660f8e7c6626a02af59ca162da1f01c1939c",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 90,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T100343192500-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "49de1ef0ebe6da4573aee9f5e43bcedb5ae123ad",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the promoted primitive hides substantial behaviour (unique `O_EXCL` sibling, umask-vs-chmod mode handling, optional fsync, atomic rename, optional directory fsync) behind one render-callback function (`reckon/_store.py:419-460`); \u00a78 adds no scatter of shallow wrappers and \u00a79 adds one function, so the design concentrates depth rather than spreading it.",
+    "duplicate_owner": "a finding \u2014 \u00a79 directs every file-write site onto the promoted `_store._write_through_sibling_temporary`, whose interface is text-only (`os.fdopen(descriptor, \"w\", encoding=\"utf-8\")` at `reckon/_store.py:409`, `render: Callable[[TextIO], None]`), yet the very sites \u00a79 enumerates in `serve.py` and `ledger.py` carry bytes, so the design will fork a second bytes path instead of extending the owner.",
+    "interface_budget": "a finding \u2014 public_definitions 1474, cli_options 317, mcp_views 33, refusal_families 23; \u00a78 adds one public definition and states why the family cannot shrink (the retired forks are private and uncounted), and \u00a77 adds none, but \u00a78's claim that the promoted primitive grows the family \"by exactly one\" is unsupported by the plan's own text, which never names the new public name and leaves the pre-existing public adapter `write_json_atomically` (`reckon/_store.py:463`) beside it.",
+    "reuse_search": "pass \u2014 the plan names the exact existing machinery by file and symbol before proposing anything: \u00a78 cites `reckon/_store.py:_write_through_sibling_temporary` (verified at `reckon/_store.py:419`, with `write_json_atomically` a thin adapter over it at `:511`), \u00a79 cites `reckon/interface_counts.py:read_trees`/`definitions` (`:326`,`:76`), explicitly rejects `reckon/clones.py:functions_in` with a reason (\"returns token windows and holds no call\"), and quotes the census predicate \u2014 which I opened and confirmed at `docs/research/data/crew-pattern-review/code-depth/census.py:262-274`, nested under the JSON-encoding branch exactly as \u00a79 states.",
+    "thin_wrapper": "pass \u2014 \u00a78 states in its own text that \"the repair extends the owner rather than adding beside it\", and \u00a79 states \"No new function is added to any migrating module\" with the private helpers deleted; a site that needs a missing behaviour is directed to extend the primitive once rather than wrap it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.731271+00:00"
+}

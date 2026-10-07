@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:24:21.019Z",
+  "dispatched_at": "2026-10-05T02:19:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html#s5",
+      "id": "reuse_search-1",
+      "reason": "\u00a75 should name and extend `_figure_retention` rather than describe a new gate and defer the invariant to another plan.",
+      "text": "\u00a75 states the rotation invariant by reference to a companion plan's reaper, but the test it needs already exists as `_figure_retention` in `reckon/crew/routing.py:1312`, which tells \"recorded\" from \"explicitly-absent\" from \"missing\" and is precisely the \"do not delete detail whose derived figure was never computed\" check",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html#s7",
+      "id": "reuse_search-2",
+      "reason": "the section must cite the existing index mechanism it extends (or say why none can be) before proposing a rebuilt index, or it will ship a third one.",
+      "text": "\u00a77 node 2 proposes \"the index \u2026 rebuilt from the files, with an equal answer set\" as if it were new, but two such indexes already exist: `reckon/metadata_index.py` is the repo's established \"index derived from files, persisted under a cache root, rebuilt on demand\" pattern, and `reckon/ledger.py:786 _run_index_path` already builds a per-project index from the run files",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/history-persists-as-detail-washes-out.html#s7",
+      "id": "duplicate_owner-1",
+      "reason": "the section must name `reckon/ledger.py:786` as the index owner to extend, or state why a second SQLite index beside it is needed, or the two will drift and a reader will get different answers from the index the plan names and the index the code uses.",
+      "text": "\u00a77 makes the SQLite store the index over the per-run files, but `reckon/ledger.py:786 _run_index_path` already derives an index (`cache/ledger-<sha>.sqlite`) from those same files and is the one `ledger.load`/`indexed_headers` read through, so the design leaves two indexes owning one history",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "928a05c615cc1c12c655c07610f9ea4989089954d606686d337fee2594caca3b",
+  "plan_slug": "history-persists-as-detail-washes-out",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T021841628666-plan-review-of-history-persists-as-detail-washes-out",
+  "reviewed_blob_sha": "14c34eeb6c577e885cdc85594a188ed8e6ef14be",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a72's embedded store hides its schema, five query indexes, insert and migration behind a small append/compare/import interface (`reckon/run_store.py`), and \u00a77 keeps `ledger.append_run`/`ledger.load` as the record interface over the per-run files, so the design's interface is smaller than what it hides.",
+    "duplicate_owner": "a finding \u2014 \u00a77 re-designates the SQLite store as \"an index derived from [the per-run files]\", but `reckon/ledger.py:786 _run_index_path` already builds exactly such an index over the same rows, and \u00a77 names neither it nor `reckon/run_store.py` as the owner to extend.",
+    "interface_budget": "pass \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; the live sections (\u00a75 rotation, the open `detail-horizon` decision) add no CLI option, MCP view, or refusal family, and \u00a77's `ledger.append_run`/`ledger.load` and its duplicate-promotion refusal already exist in `reckon/ledger.py`, so nothing new is added without being accounted for.",
+    "reuse_search": "a finding \u2014 \u00a75's rotation invariant (\"nothing removed before the figures derived from it exist\") is already owned by `reckon/crew/routing.py:1312 _figure_retention`, and \u00a77's \"an index derived from the [per-run files] and rebuilt on demand\" already exists twice over, in `reckon/metadata_index.py` and `reckon/ledger.py:786 _run_index_path`; the plan cites none of the three.",
+    "thin_wrapper": "pass \u2014 \u00a77 does not wrap the existing readers; it re-points `ledger.load` and the `runs` reader at the per-run files, which is an extension of the existing reader rather than a parallel one."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.998898+00:00"
+}

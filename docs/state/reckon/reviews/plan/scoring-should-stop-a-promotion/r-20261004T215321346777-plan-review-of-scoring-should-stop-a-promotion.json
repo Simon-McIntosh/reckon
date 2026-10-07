@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T22:02:01.561Z",
+  "dispatched_at": "2026-10-04T21:53:35Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/review.py:147",
+      "id": "duplicate_owner-1",
+      "reason": "the honest change is a fourth item tuple and a fourth prompt loader in `review.py`, not a parallel module.",
+      "text": "\u00a76 adds `reckon/crew/figure_review.py` and `reckon/crew/prompts/figure-review.md`, a fourth review kind kept out of the module that already owns review kinds; `review.py` holds `REVIEW_ITEMS` (line 100), `PLAN_REVIEW_ITEMS` (line 147), `PLAN_DESIGN_REVIEW_ITEMS` (line 157) and the per-kind prompt loaders at lines 263-273, so the owner of \"what checks does this review kind answer\" is that module.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:2464",
+      "id": "thin_wrapper-1",
+      "reason": "a figure subject on the existing dispatcher deletes the wrapper entirely.",
+      "text": "the dispatch path at line 2464 (`dispatch_subject = record[\"subject\"] ...`) and the subject branch at line 2269 (`if record.get(\"subject\") == \"plan\"`) already select the review kind and route it to a recorder; \u00a76's `figure_review.py` would simply call through to that path, adding no behaviour the existing subject dispatcher lacks.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:687",
+      "id": "duplicate_owner-2",
+      "reason": "a second registry of review kinds is the fork the duplicate_owner item exists to catch, and it names the file to extend.",
+      "text": "`_REPORT_RUBRIC_ITEMS` (line 687) maps a review kind to its item tuple and is the registry a new kind belongs in; \u00a76 introduces its own module beside it rather than adding a kind, giving two places that answer \"which checklist does this review use\".",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/scoring-should-stop-a-promotion.html#s6",
+      "id": "deep_module-1",
+      "reason": "folding it into `review.py` as a kind removes a module that would hide nothing and keeps the figure checklist in the one place the other checklists live.",
+      "text": "the module \u00a76 proposes carries only a prompt path, a subject selector and a call to the existing dispatcher and store, which is smaller than the interface it presents; the described figure judgement is visual prose that belongs in a prompt, not behind a module.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/scoring-should-stop-a-promotion.html#s6",
+      "id": "reuse_search-1",
+      "reason": "citing the owner would convert a new module into an extension, which is the difference the reuse_search item exists to force.",
+      "text": "\u00a76's prior-art account names no existing review kind; the codebase already reviews three kinds (code, plan content, plan design review) through one schema and one store, and \u00a76 does not say why a figure review is a different shape rather than a fourth kind.",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7e3f421c3c3e452a9a511522cdc391f801b22d8b28820f3b0efe8f5dc1c006fd",
+  "plan_slug": "scoring-should-stop-a-promotion",
+  "plan_version": 206,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T215321346777-plan-review-of-scoring-should-stop-a-promotion",
+  "reviewed_blob_sha": "b70ef94316578ab79394de20a719df940da2d87a",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a76's proposed `reckon/crew/figure_review.py` hides little: its judgement is prose in a prompt file, its dispatch delegates to `recovery.dispatch_review_for_run`, and its record goes to the existing review store, so it adds surface rather than depth.",
+    "duplicate_owner": "a finding \u2014 the review-kind owner is `reckon/crew/review.py` (item tuples and per-kind prompt loaders) plus `reckon/crew/recovery.py` (`dispatch_review_for_run` and its subject branch), with the report store and rubric registry in `reckon/crew/plan_review.py`; \u00a76 forks that owner rather than extending it.",
+    "reuse_search": "a finding \u2014 \u00a72 and \u00a73 clearly cite the machinery the plan extends (the \u00a73 reflex reuses `resumption.sweep` and `dispatch_awaiting_reviews`; \u00a72 reuses the existing scope, impl-move and negative-control refusals), but \u00a76 proposes a new review module and prompt without naming the existing review-kind mechanism it most resembles.",
+    "thin_wrapper": "a finding \u2014 `figure_review.py` is a thin layer over the review-subject dispatch that already exists, and the plan does not say why that mechanism cannot carry a fourth review kind instead."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.175589+00:00"
+}

@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:09:48.483Z",
+  "dispatched_at": "2026-10-05T01:58:41Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/refusals.py:18",
+      "id": "reuse_search-1",
+      "reason": "\u00a74 would rebuild a refusal\u2192discharge registry and a source-enumerating census that already exist; the plan should extend them to the promotion path, which changes what \u00a74's first node does.",
+      "text": "\u00a74 (\"every refusal names its discharge\") proposes a registry of refusal\u2192discharge and a test that enumerates refusal sites from source, but `DISPATCH_REFUSAL_REMEDIES` already maps 23 families (D01\u2013D23) to a named resolving action and `format_refusal` renders it, and `tests/test_crew_refusal_visibility.py` already walks the refusal source with `ast` (`_formatter_family_calls`) and asserts the census is partitioned without gaps \u2014 the plan cites neither, and calls its own description of this exact mechanism new (\"this is the case that has no surface at all today\")",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py:1116",
+      "id": "reuse_search-2",
+      "reason": "\u00a75's defect does not reproduce against HEAD and its proposed repair is already in the tree, so \u00a79's \"\u00a75 goes first and is the only section that can start today\" node must be re-scoped or retired.",
+      "text": "\u00a75 describes the guard as `if recorded != 0 and re.search(r\"\\bcommand not found\\b\", log_text)` and proposes requiring the log's own completion evidence as the repair, but the tree already does exactly this \u2014 `_log_shows_the_command_ran` returns True on `_RUNNER_SUMMARY` or a non-126/127 recorded exit, and the refusal at :1233 fires only when that returns False; the change landed in `6e4d93d29` \"require a positive record before trusting a quoted diagnostic\" on 2026-09-19, five days before the plan's last edit",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/claims.py:1",
+      "id": "duplicate_owner-1",
+      "reason": "a forked scope-amendment path would drift from the owner that already carries the safety refusal (\u00a76b's \"a repair that opens the guard is worse than the defect\"), so the section should extend `claims.py` rather than add a parallel writer.",
+      "text": "\u00a76b finds that `write_paths` is captured once at dispatch and nothing on the resume path updates it, and proposes recording the granted extension on the run; `reckon/crew/claims.py` already exists to \"narrow or release one run's write claim without hand-editing its pointer\", rewrites `node[\"write_paths\"]` at `_amend` (:219), and its docstring says it is merely \"not wired to a command\" pending a subcommand surface \u2014 the plan names `node.py` and `resumption.py` but not `claims.py`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "an-orchestrator-can-discharge-a-refusal.html#s4",
+      "id": "interface_budget-1",
+      "reason": "the section must state the interface it retires or merges \u2014 the existing per-refusal waivers are the obvious retirement/merge candidate the section does not address, and \u00a72's own count of five is already stale against the eight in the tree.",
+      "text": "the `discharge-surface-shape` decision proposes \"one keyed waiver \u2014 `--waive <refusal-id> <reason>`\" and \u00a76b proposes `--accept-path` gain a second form, adding to cli_options (317) and potentially to refusal_families (23), while the tree already carries at least eight discharge flags on `crew complete` (`--waive-suite-delta`, `--waive-boundary-refusal`, `--waive-resume-path`, `--waive-unreviewed-promotion`, `--waive-negative-control`, `--waive-live-run`, `--accept-path`, `--no-commit`); no section names which of those a keyed waiver retires or merges, nor says why none can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c51232de34d5eaf45f35a18e770c1f55b71eb746dca5d3e9b7ba50d7137d73b1",
+  "plan_slug": "an-orchestrator-can-discharge-a-refusal",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T015823470920-plan-review-of-an-orchestrator-can-discharge-a-refusal",
+  "reviewed_blob_sha": "27fd999a39bcee02cca833ebbc5b91a895021b6b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan proposes no new module; it asks that each refusal carry its discharge as a property of the refusal rather than a judgement at the call site, which is the deep-module instinct, and the module that should hide it already exists and is named under `duplicate_owner`.",
+    "duplicate_owner": "a finding \u2014 \u00a74's discharge taxonomy and its source-enumeration census duplicate the registry-and-formatter owned by `reckon/crew/refusals.py` and its census test `tests/test_crew_refusal_visibility.py`; and \u00a76b's \"record the granted extension on the run\" duplicates `reckon/crew/claims.py`, which already rewrites a live pointer's `node.write_paths`, safety refusal and all, and is documented as awaiting only a command surface.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a74's `discharge-surface-shape` decision offers a new keyed `--waive <refusal-id>` CLI option and \u00a76b adds a second form of `--accept-path`, and no section names what those retire or merge, or states why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan never cites `reckon/crew/refusals.py`, whose 23-family remedy registry (D01\u2013D23) and `format_refusal` are the exact shape \u00a74 proposes to build, nor `tests/test_crew_refusal_visibility.py`, whose AST walk enumerates refusal sites from source \u2014 the very falsifier \u00a74 writes down as new; and \u00a75's repair already landed in `reckon/crew/promotion.py` at commit `6e4d93d29` (2026-09-19), an ancestor of HEAD.",
+    "thin_wrapper": "pass \u2014 \u00a76 reaches for the existing `scope-conflict` refusal and `crew directory` join rather than wrapping them, and \u00a76b names the files to extend (`node.py`, `resumption.py`) rather than a wrapper over them; the plan itself rejects the annotate-the-call-site option as the weaker of its two shapes."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.805694+00:00"
+}

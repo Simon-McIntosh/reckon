@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T01:57:27.873Z",
+  "dispatched_at": "2026-10-05T01:49:04Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html#s6 (snapshot line 161)",
+      "id": "reuse_search-1",
+      "reason": "the section should be collapsed to its unlanded residue (nova's declaration and one real wave close) and its owner named.",
+      "text": "\u00a76 delivers \"project configuration declares its suite command and a whole-run budget\" and a tier-none/light hold on a bad run, but that machinery already exists and is live: the review.suite flight key (reckon/schema/flight.yaml:897), the runner and hold predicate (reckon/crew/standing_suite.py) and the gate wiring (reckon/crew/promotion.py:4992 _require_standing_suite) \u2014 the section cites none of them, so an implementer reading it verbatim rebuilds a subsystem the plan has already landed",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/standing_suite.py:1",
+      "id": "duplicate_owner-1",
+      "reason": "an unnamed owner invites a second suite-config path beside the landed one, which is the duplicate this item exists to catch.",
+      "text": "\u00a76 is written as if the standing suite is new work, but the owner already ships it: signature command + whole-run budget declared in `review.suite`, one JSON record per run under the project state dir, hold_reason for tiers none/light, and a waiver path; reckon itself already declares the suite in docs/state/reckon/flight.yaml \u2014 the section must name reckon/crew/standing_suite.py as the mechanism to extend, not re-specify it",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html#s6 (snapshot line 161)",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the interface surface it adds, whether by naming a retirement or by collapsing to the landed key it reuses.",
+      "text": "\u00a76 adds a project suite-configuration surface (the review.suite slot and the ReviewSuite class, both already landed) and states no retirement, merge or \"nothing can be\" for the added public definition surface",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "32b3bad8f1eac26b5f4929a1f4545f063917821b876a608245d7379975821257",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 140,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T014843982010-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "76f13662bd151ba6c96d44fab218af0a8a0c10a6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the tier rule is hidden behind review_tier()/changes_runtime_source() in a 106-line reckon/review_tiers.py and the round composition behind compose_repair_for_run() in reckon/crew/repair.py (538 lines), each a small interface over substantial behaviour.",
+    "duplicate_owner": "a finding \u2014 \u00a76 re-states a standing-suite declaration and a tier-none/light promotion hold that reckon/crew/standing_suite.py already owns and that promotion._require_standing_suite already wires into the gate, and the section names no owner to extend.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a76 adds a project suite-configuration surface (review.suite / the ReviewSuite class) without naming what it retires or merges, or why nothing can be, where \u00a72 does name its retirement (the role check in _require_review_waiver).",
+    "reuse_search": "a finding \u2014 \u00a72 and \u00a73 carry real reuse maps that name the mechanisms they extend (reckon/path_classes.py for the tier classifier, recover/repair for the reflex), but \u00a76 proposes a project suite declaration and hold that already exist in the tree it ships from, and the section cites no owner.",
+    "thin_wrapper": "pass \u2014 neither new module forwards to an existing mechanism without adding behaviour: the resolver adds the tier rule (spec level, size ceiling, elevated risk) over path_classes' path classification, and repair.py mints stable finding ids and round identity rather than wrapping the dispatch path."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.467379+00:00"
+}

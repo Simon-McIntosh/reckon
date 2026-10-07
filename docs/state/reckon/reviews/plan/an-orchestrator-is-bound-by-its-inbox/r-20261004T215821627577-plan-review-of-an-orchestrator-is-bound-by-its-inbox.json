@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T22:04:56.164Z",
+  "dispatched_at": "2026-10-04T21:58:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html:253",
+      "id": "reuse_search-1",
+      "reason": "the plan would either extend the watcher/supervisor edge or state why it cannot, instead of standing up a parallel subsystem on the strength of an unverified absence claim.",
+      "text": "\u00a77 claims \"the design has no push edge at all\" and that neither the worker-exit process nor the manifest is \"wired\", but the tree already has both a per-run supervisor collecting worker exit (`reckon/crew/fleet_supervisor.py`, `reckon/crew/supervisor_main.py`) and a watcher that emits classified run transitions (`watch_ticker` at `reckon/crew/recovery.py:11109`, consumed by `cli.py` `watch_follow`); the section cites neither and names no reason they cannot be extended",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html:253",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to make the existing watcher tick deliver the finishing classification it already computes, or to say why a dispatch-scoped wait cannot reuse it; the plan's \u00a72 already routes through the watcher tick, so a second edge is a fork of the path \u00a72 depends on.",
+      "text": "\u00a77's completion signal adds no classification the follow/watch delivery lacks and gives no justification for a second edge beside it",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-is-bound-by-its-inbox.html:253",
+      "id": "duplicate_owner-1",
+      "reason": "the finding names the file to extend, so the author can wire the existing supervisor/watcher rather than build a third notification path, and can confirm the territory against the follower plan that already owns the coordinator-facing push.",
+      "text": "\u00a77 duplicates shared machinery without naming the owner: worker exit is already collected by the per-run supervisor (`fleet_supervisor.py:1` docstring: \"per-run supervisors that hold a dispatched worker's parentage so its exit can be collected after its dispatcher is gone\"), and terminal-run delivery is owned by `watch_ticker` (`reckon/crew/recovery.py:11109`) and the sibling plan `a-follower-keeps-your-work-in-view` \u00a76 (\"Push the reader's own obligations\"), to which this plan already moved \u00a74",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6e43923ec1a8f6f58c11f268b3088eb37e4995948073060a479681129d01e903",
+  "plan_slug": "an-orchestrator-is-bound-by-its-inbox",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T215821627577-plan-review-of-an-orchestrator-is-bound-by-its-inbox",
+  "reviewed_blob_sha": "3b852a8fed35529866575a0a2226e05a36702c01",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no spread of shallow wrappers. \u00a73 lands its review record behind one module, `reckon/crew/plan_review.py`, which hides the content fingerprint, the store keying, the finding-response model and cross-plan recurrence counting behind a small public interface, and explicitly reuses the crew review store root rather than forking one; \u00a72 extends the existing recovery sweep instead of wrapping it.",
+    "duplicate_owner": "a finding \u2014 \u00a77 re-implements a completion/notification edge that already has an owner: the per-run supervisor that \"holds a dispatched worker's parentage so its exit can be collected\" and the watch ticker that already delivers classified transitions.",
+    "reuse_search": "a finding \u2014 \u00a72, \u00a73, \u00a74 and \u00a75 are unusually well grounded (each cites the mechanism it extends \u2014 recovery.py:145, ticker.py, runs.py:1823, mcp_views.py:967, and \u00a71 carries an explicit reuse-map comment), but \u00a77 \u2014 the newest and implementable section \u2014 proposes a completion-signal edge while asserting \"the design has no push edge at all\" and cites no existing mechanism in the tree or a reason none can be extended.",
+    "thin_wrapper": "a finding \u2014 \u00a77's \"optional completion signal the orchestrator can wait on\" is a thin layer over the classified terminal transitions the watcher/follower already deliver, and the plan does not state why that machinery cannot carry a finishing classification."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.826956+00:00"
+}

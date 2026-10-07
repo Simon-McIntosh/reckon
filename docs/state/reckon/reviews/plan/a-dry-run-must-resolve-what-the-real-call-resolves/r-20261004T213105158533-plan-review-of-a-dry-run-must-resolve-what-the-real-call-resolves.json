@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:42:49.334Z",
+  "dispatched_at": "2026-10-04T21:31:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dry-run-must-resolve-what-the-real-call-resolves.html:88",
+      "id": "reuse_search-1",
+      "reason": "the plan's premise is stale and its fix is one call-site resolution plus one guard, so a worker sent to \"move the stopping line\" in dispatch.py broadly would edit the wrong seam.",
+      "text": "\u00a72 asserts every read-only resolution \"is simply not reached when `dry_run` is set\", but the dry-run branch already calls `plan_dispatch` (reckon/cli.py:2052) and that function already resolves the plan section and its review (reckon/crew/dispatch.py:5529-5543) whenever `repo is not None`; the real remaining gap is only that the dry-run call site passes the raw `--repo` while the real path resolves the project mount first (`repo_root = resolve_project_repository(project, repo)`, dispatch.py:6586), and that the section gate is skipped when `repo is None` (dispatch.py:5486)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dry-run-must-resolve-what-the-real-call-resolves.html:92",
+      "id": "reuse_search-2",
+      "reason": "a second parity harness will drift from the first; the plan should extend the existing comparison file rather than add parallel ones.",
+      "text": "\u00a72 and \u00a73 each propose a new test file (test_dry_run_resolves_the_real_call.py, test_member_resolution_is_single_valued.py) for assertions that already exist: tests/test_dispatch_result_matches_launch.py:561 asserts every dry-run refusal carries error/detail, :385 asserts an unresolvable member is refused with nothing bound, and tests/test_dry_run_reaches_admission.py and tests/test_dry_run_predicts_the_launcher.py:159 already hold admission and launcher/refusal parity",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dry-run-must-resolve-what-the-real-call-resolves.html:82",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is a stop point on `dispatch()`, the module that owns the sequence, not a parallel dry branch that must be kept in step.",
+      "text": "\u00a72's \"move the line the dry run stops at\" is realised by adding resolution work to the cli.py dry branch, a thin forwarder that re-emits each refusal, and the plan never says why the real path cannot be extended instead, although `shadow()` already demonstrates the pattern it needs (a `dry_run` argument that calls `plan_dispatch` and returns before dispatch, reckon/crew/dispatch.py:6097)",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/cli.py:2050",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a72's done-when asserts the two payloads \"equal\", which institutionalises the duplicate; `dispatch()` owns the refusal semantics and should be extended with the stop point rather than mirrored.",
+      "text": "the dry-run block emits twelve separate refusal documents (`_with_resolved_overrides`, cli.py:2077-2255) carrying the same `error` keys and exit codes the live-path handlers derive from `dispatch()`'s exceptions (cli.py:2280-2464: budget-hold 3, plan-unavailable/plan-review-missing 4, competence-refusal 5, watcher-required 8, tmp-headroom 75), so the mapping has two owners",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dry-run-must-resolve-what-the-real-call-resolves.html:95",
+      "id": "duplicate_owner-2",
+      "reason": "the mechanism cannot meet its own done-when; the dry run must execute `dispatch()`'s resolution sequence up to the worktree boundary, not `plan_dispatch` alone.",
+      "text": "\u00a72's done-when requires the dry run to \"refuse what the real call refuses\", but its mechanism is `plan_dispatch`, which never raises the dispatch()-internal precondition refusals: the unreconciled-run refusal is raised in `dispatch()` after `plan_dispatch` returns and before any worktree exists (reckon/crew/dispatch.py:6724-6746), so a dry run extended only at `plan_dispatch` still answers `ok` for a dispatch that would exit 6",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4a20c0137ff7de09967156b348a54f76a31f00c3ff0b4c2b8755d19b1dd8de9d",
+  "plan_slug": "a-dry-run-must-resolve-what-the-real-call-resolves",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T213105158533-plan-review-of-a-dry-run-must-resolve-what-the-real-call-resolves",
+  "reviewed_blob_sha": "f922b208c33bf53820cf54d429763fdb03d86b98",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design edits the existing resolver rather than introducing a new module, so it adds no shallow module; the surface it does add is a parallel path in cli.py, which duplicate_owner names, not a new module.",
+    "duplicate_owner": "a finding \u2014 the dry-run branch in reckon/cli.py re-implements the refusal-to-exit-code mapping owned by `reckon/crew/dispatch.py:dispatch()` (6511), and `plan_dispatch` alone cannot reach the dispatch()-internal refusals the done-when demands.",
+    "reuse_search": "a finding \u2014 the plan proposes making the dry run \"reach\" resolutions it says are skipped, but the dry-run branch already calls the shared resolver `plan_dispatch` (reckon/crew/dispatch.py:5192) and already runs the plan/section visibility gate (reckon/crew/dispatch.py:5529); the plan cites neither, so both its premise and its fix target are misplaced.",
+    "thin_wrapper": "a finding \u2014 \u00a72 keeps the cli.py dry-run branch as a thin parallel resolution path that forwards to `plan_dispatch` while re-listing every refusal, without saying why the real path's own function cannot gain a stop-before-worktree mode."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.375313+00:00"
+}

@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T02:06:19.044Z",
+  "dispatched_at": "2026-10-05T01:56:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/scoring-should-stop-a-promotion.html#s2g",
+      "id": "reuse_search-1",
+      "reason": "naming those two owners turns \u00a72g from a new subsystem into an extension of review.py and recovery.py, and removes the risk of a second declaration the existing falsifier does not cover.",
+      "text": "\u00a72g selects profiles by \"a run's changed paths\" and declares each profile's required elements \"in one place that the prompt and the parser both read\", but names neither owner; `reckon/crew/recovery.py:1614` (`_changed_paths_between`) already computes a run's changed paths, and `reckon/crew/review.py:100` (`REVIEW_ITEMS`) with `:82` (`REVIEW_DIMENSIONS`) is already the single declaration that the prompt (`reckon/crew/prompts/review.md`) and the parser both read and that the existing prompt-schema falsifier pins",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/scoring-should-stop-a-promotion.html#s11",
+      "id": "reuse_search-2",
+      "reason": "\u00a711 is a change to the obligation, and without naming obligations.py as the owner it reads as new machinery rather than a modification of the existing duty item.",
+      "text": "\u00a711 has no write paths and names no owner, while `reckon/crew/obligations.py` already carries the mechanism it describes: `_reflex_review_in_flight` (:106) reads whether the reflex's recorded dispatch still holds a live run, `_queued_review_fields` (:283) composes the queued window, and `_review_duty_item` (:323) decides the review-missing/queued kind \u2014 the plan should state whether \u00a711 extends these or adds beside them",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/capability.py:102",
+      "id": "duplicate_owner-1",
+      "reason": "a second capability reader beside the owner drifts from it; the image requirement should be a value in capability.py's requirement vocabulary so one refusal mechanism serves both the window-fit and image-fit cases.",
+      "text": "\u00a76 proposes a dispatch refusal for a lane that cannot read an image, \"in the same way a context-fit refusal already rejects a node too large for its window\", but places it in a new `reckon/crew/figure_review.py` and prompts a new `figure-review.md` without naming `reckon/capability.py`, which already owns lane/worker capability requirements (`assess_execution_fit` :102, `worker_satisfies` :227, `match_worker` :265, `REQUIREMENT_LEVELS` :23)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/scoring-should-stop-a-promotion.html#s6",
+      "id": "interface_budget-1",
+      "reason": "the interface_budget rule requires the section to account for the surface it adds; \u00a76 currently presents the added role, prompt and refusal as net-new with no retirement statement.",
+      "text": "\u00a76 introduces a new reviewer role plus `reckon/crew/prompts/figure-review.md` and a new refusal family (lane lacks image capability) against refusal_families 23, and its text names no existing surface it retires or merges, or why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "cec1907132e7342bd4c55863dc36974171d8bbe6aced5443592976318dc904a0",
+  "plan_slug": "scoring-should-stop-a-promotion",
+  "plan_version": 206,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T015547707079-plan-review-of-scoring-should-stop-a-promotion",
+  "reviewed_blob_sha": "b70ef94316578ab79394de20a719df940da2d87a",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/crew/review.py` stays the one deep module for the review schema, parser and store, and \u00a74/\u00a72g extend it rather than fanning the behaviour across new wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a76 adds a capability-based lane refusal without naming what owns capability requirements.",
+    "interface_budget": "a finding \u2014 public_definitions 1470, cli_options 317, mcp_views 33, refusal_families 23; \u00a76 adds a reviewer role, an additional prompt file and a new refusal family for a lane lacking image capability, and names nothing it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a72g adds a six-profile subsystem whose two inputs, the run's changed paths and a single prompt/parser element declaration, both already have owners the section does not cite.",
+    "thin_wrapper": "pass \u2014 where the plan could have added a parallel path it extends an existing one instead: the review pass joins `resumption.sweep` rather than a new sweep (\u00a73), and \u00a72j reuses the existing `crew check-manifest` verb by adding a prompt instruction rather than a second command."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.170082+00:00"
+}

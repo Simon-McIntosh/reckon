@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:18:40.339Z",
+  "dispatched_at": "2026-10-06T10:09:00Z",
+  "findings": [
+    {
+      "anchor": "tests/spa_browser_harness.py:34",
+      "id": "duplicate_owner-1",
+      "reason": "the plan's \u00a76 done-when asks for four captures \"with their computed geometry\", and each capture's fixture re-lists a subset of the canonical stylesheets by hand, so a stylesheet added to the SPA renders in the browser and not in the capture; the plan should derive stylesheet paths from `docs/index.html` (a `authored_stylesheet_paths()` sibling to `authored_ui_module_paths`) or state why it cannot.",
+      "text": "`_SPA_STYLESHEETS` re-declares the authored stylesheet set whose owner is the canonical SPA index `docs/index.html` (its 12 `<link>` elements, lines 8-19) and has already drifted from it: the harness list omits `ui/home.css`, which `docs/index.html:17` loads; the harness already derives its *script* order from the index via `authored_ui_module_paths` (tests/spa_browser_harness.py:65-79) but not its stylesheet order, so the one list it copies is the one that can drift; the same hand-listed subsets are re-declared at tests/test_spa_crew_geometry.py:107-114 and tests/test_spa_sprints_geometry.py:313-320",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2001f32f17cadf7d765b6ca9b0e40f7bb91db3c6a874a7888799b1229b2a9ae7",
+  "plan_slug": "rendered-evidence-on-this-host",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T100844587445-plan-review-of-rendered-evidence-on-this-host",
+  "reviewed_blob_sha": "a15cf9d9e44a7b6e0398e1f1b11c8099fb0fdf55",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `file_spa` / `write_file_spa_document` (tests/spa_browser_harness.py:557-638) hide runtime-asset loading, JSX compilation through the production compiler, stylesheet and composed-state inlining, and temp-dir lifecycle behind one context manager yielding the existing `ServedSpa` probe interface; the interface is smaller than what it hides.",
+    "duplicate_owner": "a finding \u2014 the canonical stylesheet set is owned by `docs/index.html` and the shared harness re-declares a hand-maintained subset that has already drifted, a defect that recurs in the geometry fixtures.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; every name this plan adds (`write_file_spa_document`, `file_spa`, the `BrowserProbeError` classifications) lives under `tests/`, and the counted families are read from the `reckon/` package tree only (`reckon/interface_counts.py:1-16`), so no family is added and no retirement or merge is owed in text.",
+    "reuse_search": "pass \u2014 \u00a75 enumerates the probe classifier and the skip boundary already in the tree and \u00a76 names the shared harness, choosing to add a second delivery path inside it (\"a second delivery path in the harness rather than a second harness\") rather than a second harness; the inlined-document writer further reuses `reckon.serve.client_runtime_assets` and `compile_*` rather than re-carrying its own runtimes.",
+    "thin_wrapper": "pass \u2014 \u00a76 states why the existing harness cannot be used as it stands (it serves over `http://127.0.0.1`, the one scheme the host browser cannot reach), so the new path is a justified second delivery mechanism rather than a forwarding layer over machinery that could simply have been extended."
+  },
+  "section_digests": {
+    "_document": "cddead2fdaced6fc5d1b0e3d2c7936db29a5e041f99b26c151e1295f06a42370",
+    "s1": "c532cb28669f8dc6c95d6ae1810a51aa453084bd72769bb5e5e7eaed2a896f7f",
+    "s2": "7f2c598903729d337d7ca590566a8bdb68068d62931c8eb77be1cb8271629967",
+    "s3": "de05cff2ab0496fd58dfe6e0ddfb6858e4b1bec3b587e07656d5cc4a6c3c702a",
+    "s4": "c0ca44321e2d68a956dc19c6075c7e2d09331619bb16cf41cb26e10303013581",
+    "s5": "68556551ba0fadec50904a6768661db90243745eb58686be7374003948cc2c93",
+    "s6": "7c8f46b67c7d2e4683bc971db546b60502b026a266e0149715aea4e2ace77d6c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.116718+00:00"
+}

@@ -1,0 +1,59 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T21:59:40.353Z",
+  "dispatched_at": "2026-10-04T21:48:37Z",
+  "findings": [
+    {
+      "anchor": "reckon/serve.py:1117",
+      "id": "reuse_search-1",
+      "reason": "\u00a73/\u00a76 should cite the existing persisted-cache pattern and build on `reckon/_store.py` so the new stores are one mechanism, not a third and fourth.",
+      "text": "the plan proposes persisted stores (\u00a73 index, \u00a76 thumb cache) and \u00a71 asserts \"every cache lives in process memory\", yet serve.py already persists two config-home caches under the `_config_home()`/\"cache\" convention the new stores reuse; the plan names neither them nor their owner",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/metadata_index.py:591",
+      "id": "deep_module-1",
+      "reason": "\u00a73/\u00a78 must name one authoritative git-aware stamp rule and require agent readers to supply the repository, or a merged row's stamps differ by caller.",
+      "text": "`_make_stamp(repo_dir=None)` silently yields `_stat_stamps` while the served path uses the git-aware `stamps_for`, so the \u00a78 claim that an agent reader uses \"the same module and the same persisted file\" is not by itself enough to make the \u00a73 index and the discovery payload agree on one file's created/edited, a divergence two review records already reproduced",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:2290",
+      "id": "thin_wrapper-1",
+      "reason": "the node's write paths list serve.py and not figures.py, so the plan should move the thumbnail into the figure owner or state why it stays in the server.",
+      "text": "`_render_thumbnail` and its cache (`_thumbnail_cache_path`, serve.py:2278) place figure behaviour in serve.py rather than in `reckon/figures.py`, which already owns the PNG/GIF/SVG readers and the figure inventory; \u00a76 gives no reason figures.py cannot be extended",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/metadata_index.py:501",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a73 should reuse `figures.figure_rows` (or have figures.py emit the index row) so the two figure-row shapes cannot drift apart.",
+      "text": "`_figure_row` re-implements `figures.figure_rows` (reckon/figures.py:116): the same slug/href/type/title/dims derivation, reaching into the private `_DIMS_BY_SUFFIX`, `_capture_metadata` and `_titleize`, and the two rows already disagree \u2014 `figure_rows` carries `for_plan`/`caption`/`download` the index row omits",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "29a228b4e3a37f9b598452cab73fc704532aaecd38c3f92b9d1843738b743c29",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 39,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T214823958640-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "8d2bf0c1c7630630032814d3b68886689eae6c6f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the metadata_index interface does not hide which stamp rule applies: `_make_stamp` returns `_stat_stamps` when no repository is supplied (metadata_index.py:591), so a reader answering from the index without a repo derives different created/edited than the served path.",
+    "duplicate_owner": "a finding \u2014 `metadata_index._figure_row` duplicates `figures.figure_rows` and names `reckon/figures.py` as the owner to extend.",
+    "reuse_search": "a finding \u2014 \u00a73's index and \u00a76's thumb cache are new persisted config-home stores, but the plan cites only the in-process caches (\u00a71) and never names the two persisted caches already in serve.py (git-creation at serve.py:1117, git-last-modified at serve.py:1322) or their owner `reckon/_store.py`.",
+    "thin_wrapper": "a finding \u2014 \u00a76 adds a thumbnail pipeline and its disk cache in serve.py beside `reckon/figures.py`, the figure owner, without saying why figures.py cannot be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.312554+00:00"
+}

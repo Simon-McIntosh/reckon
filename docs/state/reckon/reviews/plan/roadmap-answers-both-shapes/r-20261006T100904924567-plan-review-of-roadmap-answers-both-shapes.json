@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T10:18:22.498Z",
+  "dispatched_at": "2026-10-06T10:09:22Z",
+  "findings": [
+    {
+      "anchor": "reckon/roadmap.py:1907",
+      "id": "reuse_search-1",
+      "reason": "the recommended \"denominator first\" ordering rests on this precedent, and a reader who checks it finds the member-level mechanism absent, which is exactly what the reuse map exists to surface before the node is cut.",
+      "text": "\u00a74 justifies the denominator repair as \"an abandoned or superseded member leaves the completion denominator the way a deferred one does\", but no member-level deferred exclusion exists: `_dependency_closures`'s successor `resolve_graph_target` sets `total = len(member_keys)` over every traversed node (roadmap.py:1907) and counts only `COMPLETED_STATUSES` as shipped (roadmap.py:1859); a member carrying the schema's `deferred` concept stays in the total, and no plan status in `STATUS_ENUM` (reckon/_schema.py:97-109) is `deferred`. The only \"deferred leaves the denominator\" rule in the codebase is section-scoped, in `derive_impl_from_sections` (reckon/_plan_html.py:678, \"Deferred sections sit outside the denominator\"). The plan cites a precedent from a different scope and owner without naming it, so the stated reason for the first candidate is a false analogy",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_schema.py:754",
+      "id": "reuse_search-2",
+      "reason": "either the second candidate needs `plan_section_anchors` extended in the same change (a scope the plan does not declare) or it should be dropped from this plan; leaving it in without the prerequisite produces an undispatchable section.",
+      "text": "\u00a74's second candidate (\"a stage-scoped dependency resolves membership to the section\") depends on section identities resolving, which its own \u00a74 comment (c-20260915-stage-refs-are-unused-because-they-are-broken) documents as broken: `plan_section_anchors` (reckon/_schema.py:754) derives a plan's sections from gate sections and comment-mapping keys only and reads neither `section_declarations` nor authored `<h2 id>` values, so a declared-but-ungated section is invisible to stage-ref validation. The plan carries this as \"separate defect ... repaired on its own merits\", but the candidate as written cannot be implemented until that owner is extended, and the plan names neither the owner nor the prerequisite",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:2004",
+      "id": "duplicate_owner-1",
+      "reason": "the finding names both owners so \u00a74 can state that it extends both (or argues why one surface is exempt); without it \u00a74's single done-when silently fixes half the duplicate and the two figures drift.",
+      "text": "two owners compute a closure completion figure across the same plan graph, and \u00a74 says only \"the completion figure\" without naming which: `resolve_graph_target` (reckon/roadmap.py:1743) returns `shipped_of_total` at roadmap.py:1929, while `_dependency_endpoints` (reckon/roadmap.py:2004) independently computes `completion` and `shipped_fraction` at roadmap.py:2102-2112 and is surfaced as the payload's `endpoints` array (roadmap.py:3365, re-exported at reckon/mcp_views.py:1141). A denominator repair applied to one and not the other leaves the endpoint view reporting a capped fraction \u2014 the measured `lane-aware-dispatch` case would still read short in `endpoints` even after `graph:<handle>` is fixed",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "31c352e3742c8e7539a12db463963beb2f78621f3ae3aef48e673733e31e9814",
+  "plan_slug": "roadmap-answers-both-shapes",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T100904924567-plan-review-of-roadmap-answers-both-shapes",
+  "reviewed_blob_sha": "110eb6c8c7bb4cb2517cd35bb5d9b62ac5b7eac2",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module; \u00a72 and \u00a73 extend the existing `resolve_graph_target`/`_dependency_endpoints` readers in `reckon/roadmap.py`, and \u00a74 proposes a change inside the same closure owner rather than a new interface.",
+    "duplicate_owner": "a finding \u2014 two owners already compute a closure completion figure, and \u00a74 names neither, so a repair aimed at one leaves the other capped.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; no section of this plan adds to any family. `endpoint-without-handle` is a `category: \"dag\"` wiring finding emitted by `_finding` (reckon/roadmap.py:963), not a code passed to `format_refusal`, and `endpoint_closures` is a JSON payload field on an existing read, so neither lands in `refusal_families`, `public_definitions`, `cli_options` nor `mcp_views`.",
+    "reuse_search": "a finding \u2014 \u00a74's denominator rule rests on a \"deferred leaves the denominator\" precedent that does not exist at the scope \u00a74 needs it, and its stage-scoped candidate depends on a section-identity resolver the plan neither names nor marks as a prerequisite.",
+    "thin_wrapper": "pass \u2014 nothing proposed is a thin layer over a mechanism the plan could instead extend; the two landed sections and \u00a74 all edit the machinery that already computes the fact."
+  },
+  "section_digests": {
+    "_document": "2435044908cda9a0759d4abdc1c84fc0999caacc7dbd9482aae60344787e6071",
+    "s1": "442576d54055982daad76691ef72d4165fcced004d251c2719a60a0353a43b72",
+    "s2": "6804c18b252a8f7dcf20300cb237ee9f0eae6d9ca5c34006ce7ec386292b2f01",
+    "s3": "67f6cbc81833d8663fdda44f80a2225c40d25d1e1ea64fc15a2dd341470183af",
+    "s4": "40071a102d401fb164080bb668f222d31f7538b16663b9876378dc8c8bacb62a",
+    "s5": "7603a5bdc262208de0752281a1df9560dc6c1b788d5a8648bc6662fa1a9a9d7a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.143491+00:00"
+}

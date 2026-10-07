@@ -1,0 +1,67 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:27:28.588Z",
+  "dispatched_at": "2026-10-04T17:16:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-owns-its-own-record.html",
+      "id": "reuse_search-1",
+      "reason": "\u00a72 must be rewritten against the fragment model (or closed as superseded) before any node is cut, or an implementing node will rebuild the shared-path grant the fragment default exists to remove.",
+      "text": "\u00a72 (\"crew dispatch adds three paths to every node ... the node's own plan file, its cumulative evidence record, and a figures directory\") describes a grant that shipped as `86aafc6a` and was then replaced: `reckon/crew/dispatch.py:1964` now computes those three as the *detection* set only, and its docstring states \"They are no longer granted by default, because a grant every node holds is exactly the merge conflict the per-node fragment default removes\"; the default is instead the node-keyed fragment at `reckon/crew/dispatch.py:2015` (`docs/evidence/fragments/<plan>/<node-id>.html`, `docs/figures/<plan>/<node-id>/`), landed by `f6e41cc7d` on 2026-09-28 \u2014 after the plan's 2026-09-24 revision. The plan's \u00a72 premise is therefore not merely unbuilt but the design the code moved away from",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-owns-its-own-record.html",
+      "id": "reuse_search-2",
+      "reason": "\u00a74 is largely shipped; the plan should record the existing allowance rule and reduce \u00a74 to the gap that actually remains, if any.",
+      "text": "\u00a74 (\"the contract text ... names the figure as a deliverable\") already exists in `reckon/crew/prompts.py:127` (`_artifact_allowance` withholds a figure unless the done-when names one) and the figure convention `docs/figures/<plan>/<node-id>/` is already in `reckon/crew/prompts.py:166`; the plan cites neither",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-owns-its-own-record.html",
+      "id": "deep_module-1",
+      "reason": "the plan should name one derivation (dispatch's scope machinery) that the gate and the views consume, so the three surfaces cannot drift; \u00a76 already asks for the two `crew complete` gates to be one pass, and the same consolidation applies one layer down.",
+      "text": "the node's landing paths are a single fact (plan file, evidence fragment, figure fragment for that node id) that \u00a72, \u00a73 and \u00a75 each need, yet the plan gives them no single home: \u00a72 re-derives them in dispatch, \u00a73 re-derives them in the promotion gate, \u00a75 re-derives artifact locations in the views",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-owns-its-own-record.html",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a75 should state that it extends `run_dir()` and the recovery unmerged-commit walk rather than adding a parallel locator, or the two will disagree on what \"unmerged\" and \"run directory\" mean.",
+      "text": "\u00a75 (\"Gate logs move under the run directory\") and its \"follower and drain views list figures committed in unmerged worktrees\" propose a new listing over machinery whose owners exist: `run_dir(run_id)` at `reckon/crew/runs.py:69` already owns run-directory paths, and `reckon/crew/recovery.py:3908` (`_commits_missing_from` / `unmerged_commits`) already enumerates a worktree's unmerged commits",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:1964",
+      "id": "duplicate_owner-1",
+      "reason": "a forked landing-path derivation drifts from the owner that computes claims and peer conflicts, and the fragment default is the shipped answer; the honest change is to extend `_shared_landing_paths`/`_landing_fragment_paths`, not to add a grant beside them.",
+      "text": "\u00a72's default grant of the plan file, cumulative evidence record and figures topic duplicates the landing-path owner `_shared_landing_paths` (and the fragment default beside it, `_landing_fragment_paths` at `reckon/crew/dispatch.py:2015`); the plan forks a second notion of a node's landing paths instead of extending the one the exclusive-claim, peer-disclosure and conflict machinery already reads",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e5358fb3b3edf45f0b90bc60eb7df4ea235cd23ce2128d9a3d3be74e2fb34f41",
+  "plan_slug": "a-worker-owns-its-own-record",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T171609846708-plan-review-of-a-worker-owns-its-own-record",
+  "reviewed_blob_sha": "6de94611cfd6dc10e7362ac464f6c4ff8dbf7d3d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the three record mechanisms (\u00a72 grant/refusal, \u00a73 promotion gate, \u00a75 view listing) each re-derive the node's landing paths with no single owner, spreading one behaviour across four surfaces.",
+    "duplicate_owner": "a finding \u2014 \u00a72 re-implements the landing-path grant that `reckon/crew/dispatch.py` already owns as `_shared_landing_paths` / `_landing_fragment_paths`.",
+    "reuse_search": "a finding \u2014 the plan proposes granting three shared landing paths to every node, a mechanism that was built and then deliberately replaced by the per-node fragment default the plan never cites.",
+    "thin_wrapper": "a finding \u2014 \u00a75 layers a gate-log relocation and a stranded-artifact listing over `run_dir()` and the recovery unmerged-commit machinery without saying why those owners cannot be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.588586+00:00"
+}

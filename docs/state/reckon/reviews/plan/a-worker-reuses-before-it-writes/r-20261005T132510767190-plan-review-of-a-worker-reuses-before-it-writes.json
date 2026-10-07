@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T13:31:04.442Z",
+  "dispatched_at": "2026-10-05T13:25:45Z",
+  "findings": [
+    {
+      "anchor": "reckon/interface_counts.py:443",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend velocity's batched reader and cache helpers (or lift one shared reader) instead of forking a second copy that adds public surface and can drift from the owner.",
+      "text": "`_read_blobs` re-implements the batched `git cat-file --batch` blob reader already owned by `reckon/velocity.py:358 _plan_metas`, and `_cache_path`/`_load_cached`/`_store_cached` (reckon/interface_counts.py:503-538) re-implement the revision-keyed cache plumbing in `reckon/velocity.py:542-613`, reaching into velocity only for the cache root",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/research/data/crew-pattern-review/code-depth/census.py:135",
+      "id": "duplicate_owner-2",
+      "reason": "naming the owner lets the author share one predicate rather than pay for \u00a710's drift-guard assertion, which exists only because the predicate was copied.",
+      "text": "the census owns the counting predicates `definitions`, `call_name`, `literal_strings`, `interfaces`, `token_lines` and `docstring_spans`, and the plan forked them byte-identically into `reckon/interface_counts.py:76-424` and `reckon/clones.py:72-116`, so three copies of one normalisation rule now drift independently",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/interface_counts.py:1",
+      "id": "thin_wrapper-1",
+      "reason": "if the census is reachable by path, one package module can own the predicate and the research script (or a vendored copy) import it, which removes both the fork and the \u00a710 parity node it motivates.",
+      "text": "this module (and `reckon/clones.py:1`) justifies its port by saying a package caller cannot import the census under `docs/`, yet the plan's \u00a710 test loads that exact census by path via `importlib.util.spec_from_file_location` (tests/test_staged_write_inventory.py:75-90), so the stated reason for the fork is not true",
+      "type": "thin_wrapper",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "91b8c3931453e23413f869bdb2c589d54d5d1a3647a38717a6b74429c30e7ce0",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 110,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T132510767190-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "7bac0aae2bf5621d992f9571bcdc80a114e0a834",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/_timestamps.py` (two functions over 91 lines), `reckon/_observations.py:optional_number`, `reckon/_store.py:write_atomically` and `reckon/clones.py` each hide substantial behaviour behind an interface smaller than what they hide.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements a batched revision-blob reader and cache already owned by `reckon/velocity.py`, and forks the census's counting predicates into two runtime modules, so a shared predicate now has three drifting copies.",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; the sections that add surface (\u00a74, \u00a75) each name what they retire or why nothing can be (comments c-20261005T0930-s4 / -s5), \u00a72 and \u00a73 name their mass retirements, and \u00a710 adds no definition.",
+    "reuse_search": "pass \u2014 the plan grounds its counts in the crew-pattern-review code-depth census (\u00a71) and extends the existing `reckon/_store.py` envelope writer rather than adding a parallel store (\u00a73), so it cites what it searched.",
+    "thin_wrapper": "a finding \u2014 `reckon/interface_counts.py` and `reckon/clones.py` are thin ports over the census whose stated justification (\"a package caller cannot import from `docs/`\") is contradicted by the plan's own \u00a710 test, which imports that census by path."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:19.701475+00:00"
+}

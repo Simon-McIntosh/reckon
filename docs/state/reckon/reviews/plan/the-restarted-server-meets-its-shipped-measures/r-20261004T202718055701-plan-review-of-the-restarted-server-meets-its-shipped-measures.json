@@ -1,0 +1,35 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T20:30:34.405Z",
+  "dispatched_at": "2026-10-04T20:27:32Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery.py:7789",
+      "id": "duplicate_owner-1",
+      "reason": "naming `classify_pointer` as the owner (as the landed change did) tells the implementation node to extend the one phase judgement so `/crew` cannot read a run differently from the crew live view, instead of re-deriving phase from the stream file.",
+      "text": "\u00a73 states \"reckon/serve.py derives a run's working phase from its stream file\" and prescribes a launching phase, but the phase judgement it wants is already owned by `classify_pointer` / `_observed_phase`, whose docstring says the same call serves both `recover` and the MCP read; a node reading only the \u00a73 text could add a second phase derivation in serve.py beside the owner, and the two would be free to disagree",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7252016f76f069173c1c78443c58b62b39ea64042a2e662a7488bdd60c0d9f8a",
+  "plan_slug": "the-restarted-server-meets-its-shipped-measures",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T202718055701-plan-review-of-the-restarted-server-meets-its-shipped-measures",
+  "reviewed_blob_sha": "4a5b2d572524cdfdb0be3a66750137a30bca2909",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module. It extends three existing deep mechanisms rather than spreading complexity across new wrappers: `crew.classify_pointer` / `_observed_phase` (`reckon/crew/recovery.py`), `_crew_rows` (`reckon/serve.py`), and `_north_star_rows` (`reckon/roadmap.py`).",
+    "duplicate_owner": "a finding \u2014 \u00a73's design section describes deriving a run's phase inside `reckon/serve.py` without naming the module that already owns phase classification, `reckon/crew/recovery.py:classify_pointer`.",
+    "reuse_search": "pass \u2014 the design cites the landed write path (`north_stars` in `reckon/_store.py`, commit e8efbc7) for \u00a72, names `reckon/serve.py`'s stream-file derivation as the thing to change for \u00a73, and leans on the existing discovery/sprint route for \u00a74; \u00a72 is a pure adoption of machinery that already exists \u2014 `project_state.py` validates north-stars, `roadmap.py` reports direction coverage and undeclared directions, and `serve.py`/`mcp_views.py` already return them.",
+    "thin_wrapper": "pass \u2014 no thin layer is proposed over existing machinery; \u00a72's \"read of the project resource\" is the existing read, and \u00a73/\u00a74 change existing functions in place rather than wrapping them."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.338602+00:00"
+}

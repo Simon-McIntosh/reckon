@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T17:21:17.253Z",
+  "dispatched_at": "2026-10-04T17:06:08Z",
+  "findings": [
+    {
+      "anchor": "tests/test_follower_checks_its_owner.py:668",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should name tests/conftest.py:984 as the owner to extend (it already owns acquire_basetemp_lock/release_basetemp_lock and the lock-record helpers), collapsing three copies into one \u2014 the duplicate is exactly the recurring \"state reader/lock re-implemented per file\" this item exists to catch.",
+      "text": "the exclusive lock that holds the shared source-edit window (`fcntl.flock` on `/tmp/reckon-follower-source-change.lock`) is copied verbatim from tests/test_follower_bounds_its_lifetime.py:408 into tests/test_follower_checks_its_owner.py by node 91b8f1d7 and into tests/test_follow_lifetime_survives_reload.py by node 91e3fd05, so one locking discipline now lives in three places",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/conftest.py:664",
+      "id": "duplicate_owner-2",
+      "reason": "if the producer's argv changes the scan silently stops matching and the session check passes vacuously, so the plan's \"no producer outlives the suite\" measure would report freedom from leaks it can no longer see; the plan should bind the check to the owner's argv rather than a copied literal.",
+      "text": "the session producer check identifies a crew watch process by matching the literal argv tokens `b\"watch\"` and `b\"--project\"`, duplicating the producer argv shape owned by reckon/crew/dispatch.py:1123 `_watch_producer_argv`, instead of deriving the match from that owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "32a966e663dec57658331e9a74fdb483bcd0f6c28e2386f29a6ebef2b5969376",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 269,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T170554239130-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "3c0d55e8d8fa0611d4b11ce5ce90db94e47345d0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the one new guard lands inside tests/conftest.py and hides the /proc process scan, the environment-home binding and the bounded reap grace behind leaked_watch_producers / reapable_watch_pids, rather than spreading them across fixtures.",
+    "duplicate_owner": "a finding \u2014 the plan's \u00a73 load-robustness nodes copy a byte-identical exclusive-lock helper into two test files instead of extending tests/conftest.py, which already owns the suite's lock record, acquire_basetemp_lock and release_basetemp_lock.",
+    "reuse_search": "pass \u2014 every node cites the mechanism it extends with file and line (\u00a72 names format_watch_transition in reckon/crew/recovery.py, WATCH_ATTENTION_STATES in reckon/crew/runs.py, the launcher seam at reckon/crew/dispatch.py:4100, and the seat-record reaper in tests/conftest.py), so no subsystem is proposed without a named prior art.",
+    "thin_wrapper": "pass \u2014 the proposed changes extend their owners (narrow the reexec-carrier arm in reckon/crew/dispatch.py, wrap the spawn's OSError at the same file's launcher seam, make the ticker per call in reckon/crew/recovery.py); no layer is added over machinery that could simply be extended."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T11:53:20.359830+00:00"
+}
