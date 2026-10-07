@@ -43,11 +43,14 @@ def _drop_comments(scope: Tag) -> None:
 def _reference_search_text(html_text: str) -> str:
     """The retired search walk, corrected for the transparent section record.
 
-    Every marked element is dropped except a ``section`` carrying the section
-    marker, whose interior is that section's authored prose: the marked
-    collections nested inside it are dropped and its remaining text is kept. A
-    marked ``div`` or ``p`` — a landed note — is retained, as the retired walk
-    retained it. The result is the plan's search text.
+    Every marked element is dropped except one carrying the section marker,
+    whose interior is that section's authored prose: the marked collections
+    nested inside it are dropped and its remaining text is kept. The marker
+    sits on a ``section`` element or on the section's own heading element — a
+    ``h2`` for a level-two section — and both are transparent to the reader, so
+    a heading's authored text is search text. A marked ``div`` or ``p`` — a
+    landed note — is retained, as the retired walk retained it. The result is
+    the plan's search text.
     """
     soup = BeautifulSoup(html_text or "", "html.parser")
     scope = soup.body or soup
@@ -57,7 +60,7 @@ def _reference_search_text(html_text: str) -> str:
     for element in list(scope.select(f"[{RECKON_ATTRIBUTE}]")):
         if element.name in ("div", "p"):
             continue
-        if element.name == "section" and machinery_kind(element.attrs) == "section":
+        if machinery_kind(element.attrs) == "section":
             for nested in list(element.select(f"[{RECKON_ATTRIBUTE}]")):
                 if nested.name not in ("div", "p"):
                     nested.decompose()
