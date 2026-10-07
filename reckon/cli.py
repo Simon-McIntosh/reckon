@@ -4700,6 +4700,74 @@ _ATTENTION_DEPRECATION = (
 )
 
 
+@crew.command(name="host", hidden=True)
+@click.option(
+    "--owner-pid",
+    type=int,
+    default=None,
+    help="The Claude process this host lives for; defaults to the parent."
+)
+@click.option(
+    "--owner-start",
+    default=None,
+    help="The owner's kernel start time, so a reused pid is not mistaken for it.",
+)
+@click.option(
+    "--follower-command",
+    default=None,
+    hidden=True,
+    help="JSON argv run per request in place of this checkout's crew follow.",
+)
+@click.option(
+    "--fifo",
+    "fifo_path",
+    default=None,
+    hidden=True,
+    help="Read requests from this FIFO path rather than the inherited stdin.",
+)
+@click.option(
+    "--fd",
+    "fd_number",
+    type=int,
+    default=None,
+    hidden=True,
+    help="Read requests from this inherited descriptor.",
+)
+def crew_host(owner_pid, owner_start, follower_command, fifo_path, fd_number):
+    """Supervise this session's crew followers; run by the plugin, not by hand.
+
+    Hidden from help because only the plugin entry point runs it. It reads one
+    JSON request per line naming a ``project`` and a ``session``, and runs one
+    ``crew follow`` per pair, restarting a child that exits while the host does.
+    Its stdout is the pane, so it writes nothing there and lets its children
+    speak.
+    """
+    import json as json_module
+    import os as os_module
+
+    from reckon.crew import session_host as session_host_module
+
+    owner: dict[str, object] | None = None
+    if owner_pid is not None:
+        owner = {
+            "pid": owner_pid,
+            "start_time": owner_start
+            or (session_host_module.process_start_time(owner_pid) or ""),
+        }
+    follower_argv = (
+        json_module.loads(follower_command) if follower_command else None
+    )
+    requests = None
+    if fd_number is not None:
+        requests = os_module.fdopen(fd_number, "r", encoding="utf-8", errors="replace")
+    elif fifo_path:
+        descriptor = os_module.open(fifo_path, os_module.O_RDWR)
+        requests = os_module.fdopen(descriptor, "r", encoding="utf-8", errors="replace")
+    return session_host_module.run(
+        owner=owner, follower_argv=follower_argv, requests=requests
+    )
+
+
 @crew.command(name="follow")
 @click.option("--project", required=True, help="Project whose watch stream to follow.")
 @click.option(
