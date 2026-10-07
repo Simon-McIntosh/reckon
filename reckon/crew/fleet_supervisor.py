@@ -74,6 +74,7 @@ from typing import Any
 
 from reckon import service
 from reckon._store import write_json_atomically
+from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease
 from reckon.crew.routing import signal_worker
 
 RUNTIME_DIR_ENV = "FLEET_RUNTIME_DIR"
@@ -107,10 +108,8 @@ REQUEST_READ_BYTES = 65536
 # fixed size is enough to give every tab a size, so it is attached while the
 # tabs are created and taken off again once they exist.
 #
-# Removable once a zellij release carries the upstream fix for per-client tab
-# sizing (zellij-org/zellij#5612), which sizes a tab from the client that will
-# attach to it rather than from the one that created the session; 0.45.1 is the
-# newest release and still needs this.
+# Removable when zellij sizes each tab from the client that attaches to it
+# rather than from the background client that created the session.
 SIZED_CLIENT_COLUMNS = 200
 SIZED_CLIENT_ROWS = 50
 # A layout's tabs do not all appear at once: the recorded application on this
@@ -601,6 +600,7 @@ class _ServiceState:
     delay: float = FIRST_BACKOFF_SECONDS
     next_attempt: float | None = None
     started_at: float | None = None
+    last_renewed: float | None = None
 
 
 class DeclaredServices:
@@ -631,7 +631,23 @@ class DeclaredServices:
         self._log_limit = log_limit
         self._log_keep = log_keep
         self._states: dict[str, _ServiceState] = {}
+        self._leases: dict[str, HostLease] = {}
+        self._host = _short_hostname()
         self._guard = threading.Lock()
+
+    def _lease(self, name: str) -> HostLease:
+        lease = self._leases.get(name)
+        if lease is None:
+            lease = HostLease(
+                state_directory(self._environ),
+                name,
+                self._host,
+                os.getpid(),
+                self._environ.get("FLEET_JOB_ID")
+                or self._environ.get("SLURM_JOB_ID", ""),
+            )
+            self._leases[name] = lease
+        return lease
 
     def reload(self) -> None:
         """Apply the declared services: start newly named, stop removed ones.
@@ -657,11 +673,22 @@ class DeclaredServices:
                     state.argv = list(argv)
                 if state.pid is not None or state.next_attempt is not None:
                     continue
+                lease = self._lease(name)
+                if not lease.claim():
+                    holder = lease.holder()
+                    if holder is not None:
+                        log(
+                            f"declared service {name} held by {holder.host} "
+                            f"pid {holder.pid} job {holder.job or '?'}"
+                        )
+                    state.next_attempt = self._clock() + LEASE_RENEW_SECONDS
+                    continue
                 pid = recorded_service_pid(self._runtime, name)
                 if pid is not None and lock_held(name, self._runtime):
                     state.pid = pid
                     state.owned = False
                     state.started_at = self._clock()
+                    state.last_renewed = self._clock()
                     log(f"declared service {name} already running as pid {pid}")
                     continue
                 service_pid_path(self._runtime, name).unlink(missing_ok=True)
@@ -677,6 +704,15 @@ class DeclaredServices:
         if not SAFE_NAME.fullmatch(name or "") or not argv:
             log(f"refused service start: {name!r}")
             return None
+        lease = self._lease(name)
+        if not lease.claim():
+            holder = lease.holder()
+            if holder is not None:
+                log(
+                    f"declared service {name} held by {holder.host} "
+                    f"pid {holder.pid} job {holder.job or '?'}"
+                )
+            return None
         log_path = service_log_directory(self._environ) / f"{name}.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
         try:
@@ -690,6 +726,7 @@ class DeclaredServices:
                     start_new_session=True,
                 )
         except OSError as exc:
+            lease.release()
             log(f"declared service {name} could not start: {exc}")
             return None
         service_pid_path(self._runtime, name).write_text(
@@ -704,6 +741,7 @@ class DeclaredServices:
         state.pid = process.pid
         state.owned = True
         state.started_at = self._clock()
+        state.last_renewed = self._clock()
         state.next_attempt = None
         return process.pid
 
@@ -733,12 +771,15 @@ class DeclaredServices:
         end within the grace is killed, still by that pid and never by pattern.
         """
         state = self._states.pop(name, None)
+        lease = self._leases.pop(name, None)
         pid_path = service_pid_path(self._runtime, name)
         pid = state.pid if state is not None else None
         if pid is None:
             pid = recorded_service_pid(self._runtime, name)
         if not lock_held(name, self._runtime):
             pid_path.unlink(missing_ok=True)
+            if lease is not None:
+                lease.release()
             return
         if pid is None:
             log(f"declared service {name} runs with no recorded pid; not stopped")
@@ -752,9 +793,10 @@ class DeclaredServices:
                 signal_worker(pid, signal.SIGKILL, reason="fleet-service-stop")
                 break
             time.sleep(SERVICE_POLL_SECONDS)
-        if state is not None and state.owned:
-            self._collect_locked(pid)
+        self._collect_locked(pid)
         pid_path.unlink(missing_ok=True)
+        if lease is not None:
+            lease.release()
 
     def _collect_locked(self, pid: int) -> None:
         """Collect a child this image started, so it leaves no dead slot."""
@@ -779,6 +821,20 @@ class DeclaredServices:
         now = self._clock() if now is None else now
         with self._guard:
             for name, state in list(self._states.items()):
+                lease = self._leases.get(name)
+                if (
+                    state.pid is not None
+                    and lease is not None
+                    and (
+                        state.last_renewed is None
+                        or now - state.last_renewed >= LEASE_RENEW_SECONDS
+                    )
+                ):
+                    if not lease.renew():
+                        log(f"declared service {name} lost its shared lease; stopping")
+                        self._stop_locked(name)
+                        continue
+                    state.last_renewed = now
                 log_path = service_log_directory(self._environ) / f"{name}.log"
                 trim_service_log(log_path, limit=self._log_limit, keep=self._log_keep)
                 if state.pid is not None and not self._alive(name, state):
@@ -790,6 +846,9 @@ class DeclaredServices:
                     state.pid = None
                     state.owned = False
                     state.started_at = None
+                    state.last_renewed = None
+                    if lease is not None:
+                        lease.release()
                     state.next_attempt = now + delay
                     log(f"declared service {name} exited; restart in {delay:.0f}s")
                 if state.next_attempt is not None and now >= state.next_attempt:
