@@ -7271,9 +7271,9 @@ def _plan_remaining_sections(state: Mapping[str, Any]) -> list[str]:
             if is_implementable_section(classification)
             and str(section).strip() not in landed
         )
-    from reckon._schema import plan_section_anchors
+    from reckon._schema import declared_section_identities
 
-    return sorted(plan_section_anchors(state) - landed)
+    return sorted(declared_section_identities(state) - landed)
 
 
 _IMPL_MOVE_EXEMPT_CLASSIFICATIONS = frozenset({"negative-result", "correct-refusal"})
