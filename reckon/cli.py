@@ -1162,6 +1162,37 @@ def crew():
     """
 
 
+@crew.command(name="gate")
+@click.option("--pause", default=None, metavar="REASON")
+@click.option("--open", "open_gate", is_flag=True)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_gate(pause, open_gate, pretty):
+    """Pause or open launches across every backend in the shared crew state."""
+    from reckon.crew.dispatch import _dispatch_fleet_gate, fleet_gate_path
+
+    if (pause is None and not open_gate) or (pause is not None and open_gate):
+        raise click.ClickException("name exactly one of --pause REASON or --open")
+    if pause is not None and not pause.strip():
+        raise click.ClickException("--pause requires a reason")
+    before = _dispatch_fleet_gate()
+    if before["state"] == "unreadable":
+        raise click.ClickException(before["detail"])
+    path = fleet_gate_path()
+    document = {"paused": not open_gate, "reason": pause.strip() if pause else None}
+    write_json_atomically(path, document)
+    after = _dispatch_fleet_gate()
+    if after["state"] == "unreadable":
+        raise click.ClickException(after["detail"])
+    _emit_crew_result(
+        {
+            "gate_path": str(path),
+            "before": {"paused": before["paused"], "reason": before["reason"]},
+            "after": {"paused": after["paused"], "reason": after["reason"]},
+        },
+        pretty,
+    )
+
+
 def _crew_modules():
     """Import the crew and flight helpers on demand."""
     from reckon import crew as crew_module
@@ -2220,6 +2251,24 @@ def crew_dispatch(
             _emit_dry_run_request_error(pretty, str(exc))
             raise click.exceptions.Exit(1) from exc
 
+    from reckon.crew.dispatch import _dispatch_fleet_gate
+
+    fleet_gate = _dispatch_fleet_gate()
+    if fleet_gate["state"] in {"paused", "unreadable"}:
+        held = {
+            "ok": False,
+            "error": "lane-paused",
+            "detail": _lane_paused_detail(fleet_gate),
+            "reason": fleet_gate.get("reason"),
+            "lane_gate": fleet_gate,
+        }
+        if dry_run:
+            held = _with_resolved_overrides(
+                {**held, "dry_run": True}, override_resolution
+            )
+        _emit(held, pretty)
+        raise click.exceptions.Exit(75)
+
     # The picker's own filter reads only cached observations, so a model the
     # account does not serve stays eligible for it when no probe has been
     # recorded. Ask the picker once here, then apply the same deterministic
@@ -2317,6 +2366,22 @@ def crew_dispatch(
                 route=route,
                 picker_selection=picker_selection,
             )
+        except LanePaused as exc:
+            _emit(
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "lane-paused",
+                        "detail": _lane_paused_detail(exc.gate),
+                        "reason": exc.gate.get("reason"),
+                        "lane_gate": exc.gate,
+                    },
+                    override_resolution,
+                ),
+                pretty,
+            )
+            raise click.exceptions.Exit(75) from exc
         except crew_module.BudgetHold as exc:
             _emit(
                 _with_resolved_overrides(
@@ -6706,6 +6771,8 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
     if reason and not backend:
         raise click.UsageError("--reason requires --backend")
     crew_module, flight_module = _crew_modules()
+    from reckon.crew.dispatch import LanePaused
+
     try:
         record = crew_module.read_pointer(run_id)
         project = str(record.get("project") or "")
@@ -6728,6 +6795,18 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
             _emit_crew_result(moved, pretty)
             return
         plan = crew_module.resume_plan(run_id, advice, config=config)
+    except LanePaused as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "lane-paused",
+                "detail": _lane_paused_detail(exc.gate),
+                "reason": exc.gate.get("reason"),
+                "lane_gate": exc.gate,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(75) from exc
     except crew_module.BudgetHold as exc:
         _emit(
             {
@@ -6807,6 +6886,8 @@ def crew_redispatch(
 ):
     """Move one working run to another backend without replacing its identity."""
     crew_module, flight_module = _crew_modules()
+    from reckon.crew.dispatch import LanePaused
+
     try:
         record = crew_module.read_pointer(run_id)
         project = str(record.get("project") or "")
@@ -6826,6 +6907,18 @@ def crew_redispatch(
             estimated_hours=estimated_hours,
             launch=not print_only,
         )
+    except LanePaused as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "lane-paused",
+                "detail": _lane_paused_detail(exc.gate),
+                "reason": exc.gate.get("reason"),
+                "lane_gate": exc.gate,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(75) from exc
     except crew_module.BudgetHold as exc:
         _emit(
             {
