@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="The import dry run lists the records it would import">
+  <meta name="plan-summary" content="The host review import's dry run now lists each actionable record — by review run id, subject and plan version — beside their count, from the same decision the write path uses, so the listed set and the written set cannot drift.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The import dry run lists the records it would import | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The import dry run lists the records it would import</h1>
+
+    <section id="the-import-dry-run-lists-what-it-imports-anchor">
+      <h2>Landing</h2>
+      <p><code>scripts/import_host_reviews.py</code> extracts the actionable
+        decision — a recognised record whose committed path is absent — into
+        <code>_actionable_records</code>, which both <code>_print_actionable</code>
+        (the dry run's listing) and <code>_import_records</code> (the write path)
+        call, so the listed set and the written set are one set by construction.
+        The dry run prints <code>records to import: N</code> and one
+        <code>importable&nbsp;&lt;review-run-id&gt;&nbsp;&lt;subject&gt;</code>
+        line per record, the subject naming the plan slug and version or the
+        reviewed run. Gate: <code>tests/test_import_dry_run_lists_what_it_imports.py</code>
+        and <code>tests/test_import_host_reviews.py</code>, <strong>14 passed,
+        EXIT=0</strong>. Negative control — removing the dry run's listing —
+        <strong>2 failed, EXIT=1</strong>.</p>
+    </section>
+  </main>
+</body>
+</html>
