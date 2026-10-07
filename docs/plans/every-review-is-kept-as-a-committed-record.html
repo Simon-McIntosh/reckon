@@ -24,8 +24,8 @@
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.95">
-<meta name="plan-version" content="114">
+<meta name="plan-impl" content="0.97">
+<meta name="plan-version" content="115">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -493,7 +493,10 @@
     <div class="r-comment-body"><p>Promotion now commits a promoted plan-review run's record under the composed review run id its report directory carries: _staging_review_record_by_run falls through, when its review-store index lookup finds nothing, to the delivered report whose dispatch.json names the promoting run (joined via review._plan_review_crew_run_id), stores its unstored delivery through plan_review.store_delivered_reviews so a refused report records store_error on its sidecar and promotion still completes, and returns the record; gate 15 passed EXIT=0, negative control 3 failed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261007T153606364671-review-of-a-promoted-plan-review-is-committed" data-who="reckon-build" data-when="2026-10-07T15:48:06.908Z">
-    <div class="r-comment-body"><p>Attached an independent review of run r-20261007T145624673678-a-promoted-plan-review-is-committed (reckon:every-review-is-kept-as-a-committed-record §13 node 1) reviewing base 4ba05277 head db761b538: a parsed six-dimension record (goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20, reuse 20; total 119) stored at both fenced paths, with one follow-on (the join&#x27;s negative branches are untested) and no blocking finding; added_failure_count null (unmeasured, the reviewed manifest declares no baseline_suite/after_suite arm).</p></div>
+    <div class="r-comment-body"><p>Attached an independent review of run r-20261007T145624673678-a-promoted-plan-review-is-committed (reckon:every-review-is-kept-as-a-committed-record §13 node 1) reviewing base 4ba05277 head db761b538: a parsed six-dimension record (goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20, reuse 20; total 119) stored at both fenced paths, with one follow-on (the join's negative branches are untested) and no blocking finding; added_failure_count null (unmeasured, the reviewed manifest declares no baseline_suite/after_suite arm).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-20261007T155300Z" data-who="reckon-build" data-when="2026-10-07T15:53:00Z">
+    <div class="r-comment-body"><p>Node (1) landed (<code>a-promoted-plan-review-is-committed</code>, <code>6e00dd22f</code>, then <code>db761b538</code>; reviewed 115, then 119/120). When the promoting run's own id finds no record, promotion now finds the delivered report whose <code>dispatch.json</code> names that run, through <code>review._plan_review_crew_run_id</code>. It stores the report through <code>store_delivered_reviews</code> when unstored, and commits the record under its own review run id.</p><p>The first review found two follow-ons, repaired in the worker's resumed second attempt. A report the store refuses had aborted the promotion; it is now recorded on its sidecar, and promotion continues. And a second <code>dispatch.json</code> parser had been forked; it is now deleted. The declared mutation, a lookup by the promoting run's id alone, reddens 3 cases. The 94-file population went from 860 to 863 passed, with 0 failures at either head. The gate files at the merged head gave 15 passed. The installed checkout carries the fix, so plan reviews promoted from now on are committed. Node (2), the per-project import and census, is running in reckon, nova, imas-ambix, imas-codex and imas-ink.</p></div>
 </div>
 </section>
 </main>
