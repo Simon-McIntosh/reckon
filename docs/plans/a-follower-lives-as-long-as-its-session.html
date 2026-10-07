@@ -25,7 +25,7 @@
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -285,7 +285,10 @@
     <div class="r-comment-body"><p>Attached an independent review to run r-20261007T025625735707-session-host-supervises-followers at head 241b80161 against base 0dbf9865: §4's session host (reckon/crew/session_host.py, hidden `crew host` at reckon/cli.py:4743) implements all five done-when clauses, the re-run gate reads 9 passed EXIT=0 and the declared negative control reads 1 failed EXIT=1; stored a parsed record scoring goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 19, reuse 15 (total 106) with four follow-on findings and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261007T040017523273-review-of-dispatch-asks-the-session-host" data-who="reckon-build" data-when="2026-10-07T04:24:27.307Z">
-    <div class="r-comment-body"><p>stored a parsed independent review of run r-20261007T033207052069-dispatch-asks-the-session-host to both granted paths -- 6 dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 18; total 109), reviewed_base_sha 2565ffc2e553f2832d3a141a4f186b171ccba6a4 and reviewed_head_sha 8775e225d03dfd26b1d2bd776f6cd84745805be5, added_failure_count null (the reviewed manifest names no baseline_suite gate log) with added_failure_ids []; one follow-on finding on the reviewed manifest&#x27;s malformed orientation_base_sha</p></div>
+    <div class="r-comment-body"><p>stored a parsed independent review of run r-20261007T033207052069-dispatch-asks-the-session-host to both granted paths -- 6 dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 18; total 109), reviewed_base_sha 2565ffc2e553f2832d3a141a4f186b171ccba6a4 and reviewed_head_sha 8775e225d03dfd26b1d2bd776f6cd84745805be5, added_failure_count null (the reviewed manifest names no baseline_suite gate log) with added_failure_ids []; one follow-on finding on the reviewed manifest's malformed orientation_base_sha</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261007T033207052069-dispatch-asks-the-session-host" data-who="reckon-build" data-when="2026-10-07T03:59:35.307Z">
+    <div class="r-comment-body"><p>dispatch asks the calling Claude session&#x27;s host for a follower before refusing -- a JSON request naming project and session is written through _write_fleet_request with no wait to &lt;runtime&gt;/reckon-session-host/&lt;CLAUDE_PID&gt;-&lt;start&gt;.fifo, and the payload&#x27;s delivery field reads host when the host attached the session (arming line emptied) or monitor otherwise; tests/test_dispatch_session_host.py 2 passed EXIT=0, negative control (skip the host request) makes the admitted-with-host case fail EXIT=1</p></div>
 </div>
 </section>
 </main>
