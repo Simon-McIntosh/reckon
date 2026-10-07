@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run is a read-only map node: its manifest carries no suite arm (baseline_suite and after_suite are empty because no pytest suite ran and no code moved). added_failure_count is therefore derived as 0 with added_failure_ids [] from the absence of any suite arm, not from a suite delta. The node's own gate is check_map.py, whose positive arm is map-gate.log (EXIT=0) and negative arm is map-negative.log (EXIT=1). I independently reproduced both at head f55383af: rerunning check_map.py against the committed map prints base_statement_count=396 placed_count=396 expected_names=396, max_estimated_tokens=34535, module_level_edges=0, EXIT=0; deleting a member from a scratch copy prints placed_count=395, missing={'_LAUNCHED_WORKERS':1}, EXIT=1.",
+  "base_log_revision": "d01750d7820528e2039869f8cb15c3f76870f8d2",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-07T09:31:47.604Z",
+  "dispatched_at": "2026-10-07T09:17:26Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-module-fits-a-worker-window/dispatch-split-map.html",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "the fragment reports 396 statements placed and 153,299 base tokens but does not reconcile these with \u00a73's own figure 'the module's 320 top-level definitions'. Independent count at base d01750d78: 396 non-import top-level statements = 309 functions + 12 classes (321 definitions) + 74 assignments + 1 __main__ guard. The map's scope (all statements) is the brief's, and is the correct one for a pure move, but the plan's '320 definitions' figure is stale against the base and a reader comparing map to plan sees an apparent 76-statement gap. Recommend the coordinator refresh \u00a73's count when recording the outcome."
+    },
+    {
+      "file": "docs/evidence/fragments/every-module-fits-a-worker-window/dispatch-split-map.json",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the size estimate is re-derived as a literal math.ceil(bytes / 3.5) in the builder and the checker rather than calling reckon.crew.routing._tokens_for_bytes, which the brief names as the definition of the measure. The two are numerically identical (_tokens_for_bytes is math.ceil(max(0, byte_count)/3.5)) and every recomputed figure matches, so no value is wrong; this is a reuse nit only, and the checker's independent re-derivation of each estimate from the AST is what makes the map trustworthy."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "not applicable to a read-only map node; no production code path is changed, so there are no call sites to trace.",
+    "diff": "git diff d01750d78..f55383af4 --name-status lists exactly two added files: docs/evidence/fragments/every-module-fits-a-worker-window/dispatch-split-map.json and .html; 2018 insertions, 0 deletions. No file under reckon/, tests/ or scripts/ is touched. Head is a clean two-commit descendant of base (15d12cd92 the map, f55383af4 the fragment).",
+    "done_when": "\u00a73's done-when for the map half is 'every definition placed once, every produced module at or under 40,000 estimated tokens, and no import cycle'. check_map.py re-derives statement placement and each module's token estimate from the AST at the map's own base and asserts equality with the JSON; I reproduced it at head (EXIT=0) and falsified it by removing a member (EXIT=1). The remaining \u00a73 clauses (scripts/check_pure_move.py at the move head, the guard with dispatch.py un-allowlisted, the suite delta) belong to the later move and guard nodes, not to this map node.",
+    "goal": "The node's goal is a read-only split map for reckon/crew/dispatch.py: every non-import top-level statement placed exactly once, every produced module at or under 40,000 estimated tokens, no module-level import cycle, and an external census of imports, patches and text-by-path reads. The delta delivers both files and all four properties hold on independent recount (396 statements, 396 placed uniquely, largest module reckon/crew/dispatch_launch.py 34,535 tokens, zero module-level edges and hence no cycle).",
+    "manifest": "read; the reviewed run's manifest is complete with orientation, two commits, both write paths, tests (the check_map.py command with EXIT=0 and the deletion rerun with EXIT=1), test_logs and negative_control_log declared. baseline_suite and after_suite are empty, correct for a map node that runs no suite; head is clean and both commits carry a conventional subject and a body with no plan identifier and no AI attribution.",
+    "write_paths": "both files in the delta are exactly the node's two declared write paths; no out-of-scope path is added, modified or deleted by this delta."
+  },
+  "justifications": {
+    "durability": "Both deliverables are committed locally in two focused commits each carrying a subject and a body, and the run directory holds the builder, the two gate logs and the negative-control log on a durable path. The map JSON carries its own base sha and a commands list so a later reader can rerun the census. Held off a full 20 because the checker itself (check_map.py) lives only in the run directory and not in the repo, so reproducing the map's verification requires the run-directory path; the brief assigned scripts/check_pure_move.py to a separate guard node, so this is expected for this node rather than a defect.",
+    "evidence": "The evidence is strong and independently reproduced. The positive gate check_map.py at head f55383af exits 0 (396/396, max 34535, 0 module-level edges, census 182 imports/82 patches/2 source_reads/7 module_state), reproduced by me from the committed map. The negative control is genuinely falsifiable: I removed a different member (_LAUNCHED_WORKERS) than the manifest's (DONE_WHEN_PLAN_TEXT_SPAN_WORDS) from a scratch copy and the checker reported missing={'_LAUNCHED_WORKERS':1}, EXIT=1 - so the checker is not fail-open and its failure does not depend on the one member the manifest chose. Census spot-checks pass: 'dispatch' is present keyed to 6 files each containing the token, and _start_watch_producer maps to the four setattr sites I found by git grep. Held one point because the census counts (182 imports, 82 patches) rest on build_map.py's own scan, which check_map.py does not independently re-derive the census for beyond three named membership asserts; I spot-checked rather than exhaustively re-derived.",
+    "fit": "The fragment follows the evidence-fragment template and carries the correct meta (docs-project reckon, reckon-type evidence, plan-evidence-for every-module-fits-a-worker-window, plan-verifies every-module-fits-a-worker-window#s3, plan-verdict mapped); the producer names describe concerns (dispatch_admission, dispatch_sessions) rather than part numbers, versions or the word 'core'; comments in build_map.py describe the mechanism (import-time expressions only, synthetic imports as an upper bound) with no plan label, ticket or attribution.",
+    "goal_fidelity": "The map's stated goal is fully met on independent verification. I recounted the base module's statements with my own ast walk (396, matching the JSON's placed_count), confirmed the multiset of members across the 11 modules is 396 unique names with no duplicate and no omission, confirmed the largest module (reckon/crew/dispatch_launch.py, 145 members) at 34,535 stored tokens against a 117,882-byte source with no module over 40,000, and confirmed zero module-level edges across all produced modules (88 function-level edges are recorded for the launch/session and plan clusters). The HTML fragment carries the module table, the seam account, the module-level-edge statement, the two back-references (dispatch_sessions.resume_plan/change_lane -> dispatch.FENCE_WORKERS) and the 70-path repoint list required by the brief. Held one point off for the plan/map count reconciliation above, which is a map-side omission (no cross-reference to \u00a73's 320) rather than a defect in the placement.",
+    "reuse": "The census half the plan insists on reuses the repository's importer index - build_map.py imports _import_targets from reckon.served_code rather than writing a second name scan - which is exactly \u00a73's stated requirement. The checker re-derives placement and token estimates from the same AST the builder parsed. The only reuse cost is the literal math.ceil(bytes/3.5) standing in for reckon.crew.routing._tokens_for_bytes (numerically identical) and the builder being a run-directory script rather than a reusable helper probably belongs to the guard node.",
+    "scope_discipline": "Perfect. git diff d01750d78..f55383af4 --name-status lists exactly the node's two declared write paths, both added; no code, test or script is touched; the node moved no code and renamed nothing under reckon/. Head is a clean descendant of base with no unrelated commits."
+  },
+  "project": "reckon",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T084916687254-dispatch-split-map.at-f55383af43c4b03e5e46683de201639b2fe05d29.json",
+  "review_run_id": "r-20261007T091654541187-review-of-dispatch-split-map",
+  "reviewed_base_sha": "d01750d7820528e2039869f8cb15c3f76870f8d2",
+  "reviewed_head_sha": "f55383af43c4b03e5e46683de201639b2fe05d29",
+  "reviewed_run_id": "r-20261007T084916687254-dispatch-split-map",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T09:31:10.000000+00:00",
+  "total": 113
+}

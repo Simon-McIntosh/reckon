@@ -1,0 +1,21 @@
+<section data-reckon="evidence-fragment" id="skills-name-session-host-delivery">
+  <h2 id="skills-name-session-host-delivery-heading">§7 — The skills say what the session host now does</h2>
+  <p id="skills-name-session-host-delivery-landing">
+    Session-host delivery is named first and the <code>Monitor</code> fallback second in
+    <code>skills/reckon-build/SKILL.md</code> (producer-and-follower section),
+    <code>references/orchestrator-harness/claude-code.md</code> (arming the fleet watch, and what a
+    session owns) and <code>references/sprint-orchestration.md</code> §15 and §17: with the
+    <code>reckon-crew-host</code> plugin linked, dispatch arms the follower through the session host
+    (<code>watch.delivery</code> reads <code>host</code>, <code>arming_line</code> empty) and nothing
+    re-arms it; the <code>Monitor</code> tool with <code>--lifetime 29m</code> — <code>--lifetime 9m</code>
+    in a <code>-p</code> session — is the fallback for Codex sessions, sessions without the plugin, and
+    <code>-p</code> sessions. <code>CREW_VERBS_OUTSIDE_ORCHESTRATION</code> in
+    <code>tests/test_skill_contracts.py</code> lists <code>('crew','host')</code> with its reason, and
+    <code>test_the_session_host_paragraph_precedes_the_fallback_rearm_guidance</code> reddens if the
+    fallback's re-arm guidance is moved above the session-host paragraph. The sentences that named the
+    harness itself now name Claude Code, kept apart from the session host.
+    Measure: gate <code>tests/test_skill_contracts.py</code> + <code>tests/test_crew_help_names_its_state.py</code>
+    went from 2 failed / 63 passed (base 9cf1c0ef5) to 1 failed / 65 passed; the residual failure is
+    <code>budget-reset</code> in the out-of-scope <code>test_crew_help_names_its_state.py</code>.
+  </p>
+</section>

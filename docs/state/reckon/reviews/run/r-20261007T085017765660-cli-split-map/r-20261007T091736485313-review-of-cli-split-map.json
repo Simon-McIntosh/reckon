@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:source_code_stamp",
+    "reckon/crew/runs.py:follower_code_stamp"
+  ],
+  "completed_at": "2026-10-07T09:38:53.055Z",
+  "dispatched_at": "2026-10-07T09:18:08Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.json",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the census (imports, patches, source_reads, module_state) is the artefact the move node's repoint work depends on, yet the node's gate only asserts each census section is present and never re-derives it, so a stale or mis-keyed census would be accepted silently; the HTML's figures reconcile exactly with the census and an independent AST scan agrees in magnitude, but no check the worker ran establishes the census against the tree."
+    },
+    {
+      "file": "docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.html",
+      "line": "52",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment declares a deliberate exception to the brief's mutable-state rule, keeping the Click registries main and crew in cli_entry.py and crew_dispatch_commands.py while their decorating commands live in the other produced modules, which the brief permits only as a recorded finding; it is recorded, and the crew grouping is contiguous in base source order, but because Click help order follows decorator import order the move node must confirm the facade import order reproduces the base help text byte for byte, which section 4 makes its done-when and which no check here establishes."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T085017765660-cli-split-map/check-cli-map.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the map's only falsifiable check is this run-directory script, not a committed instrument, so the placement, bound and edge invariants it enforces have no durable guard once the run directory is cleaned; the same parse-a-revision-out-of-git capability already has an owner in reckon/interface_counts.py:read_trees, which the checker does not extend."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read at 2b8510dd..4ba1e93f; one landed change, 4,095 insertions across the two fragment files and nothing else.",
+    "done_when": "the node's gate check-cli-map.py asserts that every non-import top-level statement of the base module is placed exactly once, that every produced module and the remainder are under 40,000 estimated tokens, and that there is no module-level cycle; the manifest records it at EXIT=0 and I reproduced EXIT=0 with the attributes claimed (218/218 statements, maximum 32,748 tokens, 5 module-level edges, no cycle).",
+    "goal": "the node was dispatched to map one module's split (reckon/cli.py) per section 4 and section 8; the landed change adds docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.json and cli-split-map.html carrying base 2b8510dd, module reckon/cli.py, seven module entries and the four-section census, so the map the goal names exists.",
+    "manifest": "read; it records the checker at EXIT=0 and the drop-one control at EXIT=1, 218 statements, a 32,748-token maximum, 5 module-level edges, 53 imported names, 124 patch sites and 8 source reads; every figure I could check (504 read sites, 124 patch sites over 64 files, 8 source reads, 67 repoint paths) reconciles with the artefacts, though its baseline_suite and after_suite fields are empty because the map node ran no test arms.",
+    "write_paths": "the manifest declares docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.json and .html and the diff names exactly those two paths, so the change sits inside its fence."
+  },
+  "justifications": {
+    "durability": "the only check that reddens on a regression of the map (a dropped member lowers placement to 217/218 and check-cli-map.py exits 1) lives in the run directory and is not committed, so no durable test fails if the JSON later drifts from cli.py.",
+    "evidence": "check-cli-map.py independently re-derives placement, source bytes, the token estimate and both edge layers from the base tree and reproduces EXIT=0 with the drop-one control at EXIT=1, but it checks the census only for presence, so the census the move node consumes is asserted by no reproducing check.",
+    "fit": "the produced module names (reckon/cli_entry.py, reckon/project_setup_commands.py, reckon/crew_dispatch_commands.py, reckon/crew_follow_commands.py, reckon/crew_run_commands.py, reckon/project_maintenance_commands.py) each describe one concern and carry no part number, version or the word core.",
+    "goal_fidelity": "docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.json carries the brief's keys (base, module, modules of 7 with concern/members/estimated_tokens, edges, census, commands) and the HTML table mirrors the JSON row for row.",
+    "reuse": "the change adds no definition to judge, and a capability search over reckon/ and scripts/ found no owner of a module-split map; the one overlap is that the map's checker re-implements the parse-a-revision-out-of-git walk that reckon/interface_counts.py:read_trees already owns.",
+    "scope_discipline": "git diff --name-status 2b8510dd 4ba1e93f lists exactly the two declared fragment paths and no other file, and no file under reckon/, tests/ or scripts/ is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node was dispatched to map one module's split (reckon/cli.py) per section 4 and section 8; the landed change adds docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.json and cli-split-map.html carrying base 2b8510dd, module reckon/cli.py, seven module entries and the four-section census, so the map the goal names exists.\nVERDICT done_when: the node's gate check-cli-map.py asserts that every non-import top-level statement of the base module is placed exactly once, that every produced module and the remainder are under 40,000 estimated tokens, and that there is no module-level cycle; the manifest records it at EXIT=0 and I reproduced EXIT=0 with the attributes claimed (218/218 statements, maximum 32,748 tokens, 5 module-level edges, no cycle).\nVERDICT write_paths: the manifest declares docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.json and .html and the diff names exactly those two paths, so the change sits inside its fence.\nVERDICT manifest: read; it records the checker at EXIT=0 and the drop-one control at EXIT=1, 218 statements, a 32,748-token maximum, 5 module-level edges, 53 imported names, 124 patch sites and 8 source reads; every figure I could check (504 read sites, 124 patch sites over 64 files, 8 source reads, 67 repoint paths) reconciles with the artefacts, though its baseline_suite and after_suite fields are empty because the map node ran no test arms.\nVERDICT diff: read at 2b8510dd..4ba1e93f; one landed change, 4,095 insertions across the two fragment files and nothing else.\nCALL_SITES: reckon/crew/obligation_snapshot.py:source_code_stamp, reckon/crew/runs.py:follower_code_stamp\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.json carries the brief's keys (base, module, modules of 7 with concern/members/estimated_tokens, edges, census, commands) and the HTML table mirrors the JSON row for row.\nSCORE evidence: 15\nJUSTIFICATION evidence: check-cli-map.py independently re-derives placement, source bytes, the token estimate and both edge layers from the base tree and reproduces EXIT=0 with the drop-one control at EXIT=1, but it checks the census only for presence, so the census the move node consumes is asserted by no reproducing check.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 2b8510dd 4ba1e93f lists exactly the two declared fragment paths and no other file, and no file under reckon/, tests/ or scripts/ is touched.\nSCORE durability: 14\nJUSTIFICATION durability: the only check that reddens on a regression of the map (a dropped member lowers placement to 217/218 and check-cli-map.py exits 1) lives in the run directory and is not committed, so no durable test fails if the JSON later drifts from cli.py.\nSCORE fit: 18\nJUSTIFICATION fit: the produced module names (reckon/cli_entry.py, reckon/project_setup_commands.py, reckon/crew_dispatch_commands.py, reckon/crew_follow_commands.py, reckon/crew_run_commands.py, reckon/project_maintenance_commands.py) each describe one concern and carry no part number, version or the word core.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change adds no definition to judge, and a capability search over reckon/ and scripts/ found no owner of a module-split map; the one overlap is that the map's checker re-implements the parse-a-revision-out-of-git walk that reckon/interface_counts.py:read_trees already owns.\nFINDING docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.json:1 follow-on: the census (imports, patches, source_reads, module_state) is the artefact the move node's repoint work depends on, yet the node's gate only asserts each census section is present and never re-derives it, so a stale or mis-keyed census would be accepted silently; the HTML's figures reconcile exactly with the census and an independent AST scan agrees in magnitude, but no check the worker ran establishes the census against the tree.\nFINDING docs/evidence/fragments/every-module-fits-a-worker-window/cli-split-map.html:52 follow-on: the fragment declares a deliberate exception to the brief's mutable-state rule, keeping the Click registries main and crew in cli_entry.py and crew_dispatch_commands.py while their decorating commands live in the other produced modules, which the brief permits only as a recorded finding; it is recorded, and the crew grouping is contiguous in base source order, but because Click help order follows decorator import order the move node must confirm the facade import order reproduces the base help text byte for byte, which section 4 makes its done-when and which no check here establishes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T085017765660-cli-split-map/check-cli-map.py:1 follow-on: the map's only falsifiable check is this run-directory script, not a committed instrument, so the placement, bound and edge invariants it enforces have no durable guard once the run directory is cleaned; the same parse-a-revision-out-of-git capability already has an owner in reckon/interface_counts.py:read_trees, which the checker does not extend.",
+  "review_run_id": "r-20261007T091736485313-review-of-cli-split-map",
+  "reviewed_base_sha": "2b8510dd2d3e47915192f68472acb04aea8c52d1",
+  "reviewed_head_sha": "4ba1e93fb71de1f5ff55be3f124503dfc7b856e9",
+  "reviewed_run_id": "r-20261007T085017765660-cli-split-map",
+  "role": "review",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T09:33:48.029363+00:00",
+  "total": 103
+}

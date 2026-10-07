@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="dispatch-split-map"><meta name="plan-title" content="Dispatch module split map">
+<meta name="plan-summary" content="Statement placement, dependency edges and external references for the dispatch module move"><meta name="plan-recorded-at" content="2026-10-07"><meta name="plan-verdict" content="mapped">
+<meta name="plan-evidence-for" content="every-module-fits-a-worker-window"><meta name="plan-verifies" content="every-module-fits-a-worker-window#s3">
+<title>Dispatch module split map | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="dispatch-split-map" id="dispatch-split-map">
+<h1>Dispatch module split map</h1>
+<p>Base <code>d01750d7820528e2039869f8cb15c3f76870f8d2</code> has 536,544 UTF-8 bytes in <code>reckon/crew/dispatch.py</code>, or 153,299 context-fit tokens at ceil(bytes / 3.5). The map assigns all 396 non-import top-level statements once. The largest projected module, <code>reckon/crew/dispatch_launch.py</code>, is 34,535 tokens including its needed imports. The original import surface is 25,703 tokens, with conservative one-name-per-line re-exports.</p>
+<table id="dispatch-split-map-modules"><caption>Produced siblings and the original remainder; estimated tokens include source statements and imports.</caption><thead><tr><th>Path</th><th>Concern</th><th>Members</th><th>Estimated tokens</th></tr></thead><tbody>
+<tr><td><code>reckon/crew/dispatch_sections.py</code></td><td>Project and plan section resolution</td><td>12</td><td>3,912</td></tr>
+<tr><td><code>reckon/crew/dispatch_accounting.py</code></td><td>Coordinator transcript and spend accounting</td><td>8</td><td>1,967</td></tr>
+<tr><td><code>reckon/crew/dispatch_watch.py</code></td><td>Watcher arming and session host follower delivery</td><td>25</td><td>6,744</td></tr>
+<tr><td><code>reckon/crew/dispatch_claims.py</code></td><td>Repository scope and dispatch claim arbitration</td><td>54</td><td>17,536</td></tr>
+<tr><td><code>reckon/crew/dispatch_peer.py</code></td><td>Adjacent peer discovery and question channels</td><td>25</td><td>5,869</td></tr>
+<tr><td><code>reckon/crew/dispatch_admission.py</code></td><td>Capacity, lane gates, placement and write authority</td><td>57</td><td>19,180</td></tr>
+<tr><td><code>reckon/crew/dispatch_picker.py</code></td><td>Picker inputs, route selection and shadow reporting</td><td>16</td><td>4,506</td></tr>
+<tr><td><code>reckon/crew/dispatch_plan.py</code></td><td>Plan dispatch composition, admission preflight and result type</td><td>14</td><td>15,950</td></tr>
+<tr><td><code>reckon/crew/dispatch.py</code> (original)</td><td>Dispatch and shadow entry points and the compatibility import surface</td><td>6</td><td>25,703</td></tr>
+<tr><td><code>reckon/crew/dispatch_launch.py</code></td><td>Worker launch, reaping and supervisor lifecycle</td><td>145</td><td>34,535</td></tr>
+<tr><td><code>reckon/crew/dispatch_sessions.py</code></td><td>Run observation, resume and lane changes</td><td>34</td><td>21,657</td></tr>
+</tbody></table>
+<h2 id="dispatch-split-map-seams">Grouping and import order</h2>
+<p>Project and plan section resolution stay in <code>dispatch_sections.py</code>; coordinator transcript and spend readers form <code>dispatch_accounting.py</code>. Watch arming and follower delivery keep their process lifetime logic in <code>dispatch_watch.py</code>. Repository claims stay with their arbitration state in <code>dispatch_claims.py</code>; adjacent-peer messaging has its own <code>dispatch_peer.py</code>.</p>
+<p>Budget and concurrency holds, lane advice, gate reads, placement checks and write authority form the admission seam. Picker input and route selection remain together. Plan composition, its result type and preflight helpers share <code>dispatch_plan.py</code>. The original keeps shadow entry points and <code>dispatch()</code>, so it remains the import surface. The launch sibling keeps the worker set, run map, lock, event, reaper holder and every writer beside supervisor and scratch cleanup. Observation, resume and lane changes form the session sibling.</p>
+<p><strong>Module-level edges from produced modules:</strong> none. The original imports exports from each produced sibling: <code>reckon/crew/dispatch_sections.py</code>, <code>reckon/crew/dispatch_accounting.py</code>, <code>reckon/crew/dispatch_watch.py</code>, <code>reckon/crew/dispatch_claims.py</code>, <code>reckon/crew/dispatch_peer.py</code>, <code>reckon/crew/dispatch_admission.py</code>, <code>reckon/crew/dispatch_picker.py</code>, <code>reckon/crew/dispatch_plan.py</code>, <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/dispatch_sessions.py</code>. All cross-group references identified inside functions are recorded in the JSON map and can use local imports, including the launch/session cycle. The two produced-module back-references are <code>dispatch_sessions.resume_plan → dispatch.FENCE_WORKERS</code> and <code>dispatch_sessions.change_lane → dispatch.FENCE_WORKERS</code>. Each reads that existing switch through a function-level import, preserving patches to the original while avoiding a module-level cycle. <code>change_lane()</code> and <code>dispatch()</code> obtain <code>plan_dispatch()</code> from <code>dispatch_plan.py</code>. The original entry guard resolves <code>_peer_command</code> from the peer sibling before execution.</p>
+<h2 id="dispatch-split-map-repoints">Test paths for the move</h2>
+<p>The following 70 test or fixture paths patch a moved definition, patch an imported binding read by moved code, or read source that moves. The JSON census gives every patch line and source read. Repoint the patch at the module whose caller now resolves the name; preserve patches that still target a caller remaining in the original.</p>
+<details id="dispatch-split-map-repoint-list"><summary>Show test and fixture paths</summary><ul>
+<li><code>tests/conftest.py</code> — <code>require_worker_scratch_headroom</code></li>
+<li><code>tests/test_a_brief_points_rather_than_quotes.py</code> — <code>_done_when_plan_overlap_warning</code>, <code>_resolved_plan_section_text</code>, <code>new_run_id</code></li>
+<li><code>tests/test_a_held_member_is_read.py</code> — <code>list_live</code>, <code>member_in_flight_verdict</code></li>
+<li><code>tests/test_a_racing_loser_outlives_a_withdrawn_winner.py</code> — <code>_racing_claim_current</code>, <code>_racing_clock</code>, <code>_racing_pause</code>, <code>mounted_repository_projects</code></li>
+<li><code>tests/test_a_terminal_worker_exits_within_its_grace.py</code> — <code>_WORKER_MANIFEST_QUIET_SECONDS</code>, <code>_reap_worker_on_its_terminal_manifest</code>, <code>_start_supervisor</code>, <code>_supervisor_manifest_baseline_ns</code>, <code>_worker_manifest_done_status</code>, <code>_worker_manifest_is_whole</code></li>
+<li><code>tests/test_arm_lock_is_never_held_by_a_follower.py</code> — <code>_start_watch_producer</code>, <code>_watch_executable</code>, <code>watch_state</code></li>
+<li><code>tests/test_arming_guard_knows_a_test_session.py</code> — <code>_current_and_ancestor_argvs</code>, <code>_declared_basetemp</code></li>
+<li><code>tests/test_attempt_exit_waits_for_its_worker.py</code> — <code>_reap_the_launched_worker</code></li>
+<li><code>tests/test_brief_beside_a_plan_section.py</code> — <code>_done_when_plan_overlap_warning</code>, <code>require_plan_reviewed</code>, <code>require_plan_section_visible</code></li>
+<li><code>tests/test_concurrent_dispatch_of_one_node.py</code> — <code>_repository_scope_claims</code></li>
+<li><code>tests/test_crew.py</code> — <code>_can_write_worktree</code>, <code>observe</code></li>
+<li><code>tests/test_crew_cli_repository.py</code> — <code>_spawn</code>, <code>watch_state</code></li>
+<li><code>tests/test_crew_coordinator_spend.py</code> — <code>_coordinator_accounting</code></li>
+<li><code>tests/test_crew_dispatch_guard.py</code> — <code>_ensure_watch_producer</code>, <code>_raise_repository_scope_conflict</code>, <code>watch_state</code></li>
+<li><code>tests/test_crew_dispatch_watcher_required.py</code> — <code>_start_watch_producer</code></li>
+<li><code>tests/test_crew_interrupted_phase.py</code> — <code>observe</code></li>
+<li><code>tests/test_crew_lane_agnostic_placement.py</code> — <code>_current_host_facts</code></li>
+<li><code>tests/test_crew_lane_change.py</code> — <code>_budget_verdict</code>, <code>_signal_process_group</code>, <code>_spawn</code>, <code>change_lane</code>, <code>process_alive</code></li>
+<li><code>tests/test_crew_launch_resolution.py</code> — <code>watch_state</code></li>
+<li><code>tests/test_crew_obligations.py</code> — <code>observe</code></li>
+<li><code>tests/test_crew_peers.py</code> — <code>_inotify_descriptor</code></li>
+<li><code>tests/test_crew_placed_liveness.py</code> — <code>_mutate_pointer</code>, <code>_placed_record_identity</code>, <code>_placement_job_alive</code>, <code>_placement_job_state</code>, <code>scheduler_job_reason</code></li>
+<li><code>tests/test_crew_placement.py</code> — <code>_current_host_facts</code></li>
+<li><code>tests/test_crew_recovery.py</code> — <code>process_alive</code></li>
+<li><code>tests/test_crew_refusal_visibility.py</code> — <code>_utc_now</code></li>
+<li><code>tests/test_crew_repository_from_the_project.py</code> — <code>watch_state</code></li>
+<li><code>tests/test_direct_resume_needs_an_observed_death.py</code> — <code>_budget_verdict</code>, <code>plan_dispatch</code>, <code>resolve_dispatch_ledger_root</code></li>
+<li><code>tests/test_dispatch_counts_worker_slots.py</code> — <code>_budget_verdict</code>, <code>plan_dispatch</code>, <code>resolve_dispatch_ledger_root</code></li>
+<li><code>tests/test_dispatch_holds_while_the_lane_is_paused.py</code> — <code>LANE_GATE_READ_DEADLINE_SECONDS</code>, <code>_gate_text_reader</code></li>
+<li><code>tests/test_dispatch_launch_is_not_its_own_conflict.py</code> — <code>_refuse_over_concurrency_ceiling</code></li>
+<li><code>tests/test_dispatch_names_its_backend.py</code> — <code>_dispatch_lane_observation</code></li>
+<li><code>tests/test_dispatch_result_matches_launch.py</code> — <code>_repository_tree_snapshot</code></li>
+<li><code>tests/test_dispatch_returns_without_worker.py</code> — <code>_write_json</code></li>
+<li><code>tests/test_dispatch_spawns_through_the_fleet.py</code> — <code>FLEET_SPAWN_ACK_BOUND_SECONDS</code>, <code>_spawn_detached_supervisor</code></li>
+<li><code>tests/test_dispatch_speed.py</code> — <code>_picker_ledger_rows</code></li>
+<li><code>tests/test_dispatch_stdout_is_one_document.py</code> — <code>_start_supervisor</code></li>
+<li><code>tests/test_dispatch_timestamps_reuse_the_parser.py</code> — <code>source read</code></li>
+<li><code>tests/test_every_attempt_is_supervised.py</code> — <code>_budget_verdict</code>, <code>plan_dispatch</code>, <code>resolve_dispatch_ledger_root</code></li>
+<li><code>tests/test_every_dry_run_refusal_carries_the_echo.py</code> — <code>dispatch_picker_selection</code>, <code>resolve_project_repository</code></li>
+<li><code>tests/test_fenced_launch_resolves_the_backend.py</code> — <code>watch_state</code></li>
+<li><code>tests/test_fenced_resume_reaches_its_harness.py</code> — <code>_names_the_fence</code></li>
+<li><code>tests/test_follower_bounds_its_lifetime.py</code> — <code>_start_watch_producer</code></li>
+<li><code>tests/test_lane_advisory_on_dispatch.py</code> — <code>_dispatch_lane_observation</code>, <code>_lane_advisory_ledger_runs</code>, <code>plan_dispatch</code></li>
+<li><code>tests/test_ledger.py</code> — <code>_raise_repository_scope_conflict</code></li>
+<li><code>tests/test_no_member_dispatch_runs_alone.py</code> — <code>_ensure_watch_producer</code>, <code>watch_state</code></li>
+<li><code>tests/test_orchestrator_lane_fence.py</code> — <code>_dispatch_orchestrator_lane_stop</code>, <code>_publish_launch_claim</code></li>
+<li><code>tests/test_picker_in_dispatch.py</code> — <code>PICKER_DISPATCH_TIMEOUT_SECONDS</code>, <code>_budget_verdict</code>, <code>_refuse_against_the_bookend_reserve</code></li>
+<li><code>tests/test_picker_pick_within_bound.py</code> — <code>PICKER_DISPATCH_TIMEOUT_SECONDS</code></li>
+<li><code>tests/test_picker_route_keeps_availability_refusal.py</code> — <code>_picker_verdict_inputs</code>, <code>dispatch_picker_selection</code></li>
+<li><code>tests/test_refused_dispatch_leaves_no_pointer.py</code> — <code>_repository_tree_snapshot</code>, <code>_wire_peer_channels</code></li>
+<li><code>tests/test_resume_and_lane_change_follow_their_own_attempt.py</code> — <code>_budget_verdict</code>, <code>plan_dispatch</code>, <code>resolve_dispatch_ledger_root</code></li>
+<li><code>tests/test_resume_reaps_its_child.py</code> — <code>_reap_launched_workers</code></li>
+<li><code>tests/test_routing_picker_key.py</code> — <code>new_run_id</code></li>
+<li><code>tests/test_shared_landing_paths.py</code> — <code>_ensure_watch_producer</code>, <code>watch_state</code></li>
+<li><code>tests/test_spawn_retries_a_vanished_bind.py</code> — <code>subprocess</code></li>
+<li><code>tests/test_stored_phase_advances.py</code> — <code>_publish_stored_phase</code>, <code>_record_stop_before_spawn</code>, <code>_supervisor_spawn_worker</code></li>
+<li><code>tests/test_supervisor_outlives_its_launcher.py</code> — <code>_SUPERVISOR_LAUNCHER_SOURCE</code></li>
+<li><code>tests/test_terminal_stored_phase_has_one_writer.py</code> — <code>_terminal_phase_survives</code></li>
+<li><code>tests/test_the_dispatch_brief_reads_the_section_prose.py</code> — <code>section_prose</code>, <code>source read</code></li>
+<li><code>tests/test_the_host_line_allows_a_separate_partition_job.py</code> — <code>_worker_host_line</code></li>
+<li><code>tests/test_the_lane_override_is_explicit_and_recorded.py</code> — <code>_budget_verdict</code></li>
+<li><code>tests/test_time_fence_follows_the_attempt.py</code> — <code>_budget_verdict</code>, <code>plan_dispatch</code>, <code>resolve_dispatch_ledger_root</code></li>
+<li><code>tests/test_unmanaged_producer_keeps_a_log.py</code> — <code>WATCHER_LOAD_BOUND_SECONDS</code>, <code>_ensure_watch_producer</code>, <code>_spawn_through_fleet</code>, <code>_watch_executable</code></li>
+<li><code>tests/test_unmeasured_horizon_never_refuses.py</code> — <code>change_lane</code></li>
+<li><code>tests/test_unprotected_paths_reach_every_launch.py</code> — <code>_budget_verdict</code>, <code>plan_dispatch</code>, <code>resolve_dispatch_ledger_root</code></li>
+<li><code>tests/test_watch_arming_isolation.py</code> — <code>_watch_executable</code></li>
+<li><code>tests/test_watcher_arming_fallback.py</code> — <code>_ensure_watch_producer</code></li>
+<li><code>tests/test_worker_env_export.py</code> — <code>_process_start_time</code>, <code>_signal_process_group</code>, <code>_start_supervisor</code>, <code>process_alive</code></li>
+<li><code>tests/test_worker_path_carries_shims.py</code> — <code>_persisted_worker_environment</code></li>
+<li><code>tests/test_worker_scratch_lives_with_its_run.py</code> — <code>_removable_scratch_target</code></li>
+</ul></details>
+<p>The source readers are <code>tests/test_dispatch_timestamps_reuse_the_parser.py</code> and <code>tests/test_the_dispatch_brief_reads_the_section_prose.py</code>. The first reads <code>dispatch.__file__</code> for <code>_lane_reading_carry</code> and timestamp imports; the second inspects <code>_plan_section_text</code>. Their assertions must point at the new owners.</p>
+</article></main></body></html>
