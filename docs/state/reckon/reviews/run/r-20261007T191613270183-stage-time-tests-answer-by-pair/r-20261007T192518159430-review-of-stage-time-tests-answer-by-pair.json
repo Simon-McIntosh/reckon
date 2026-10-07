@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d2140c1f79977fee66979f4b4c4545d0fd3c96cd",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-07T19:30:48.616Z",
+  "dispatched_at": "2026-10-07T19:25:55Z",
+  "findings": [],
+  "head_log_revision": "d8cd397b1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none -- the landed change is confined to tests/test_pick_records_its_stage_times.py, so no runtime code reaches it; a search of reckon/crew/picker for the stub's answer shape (the reply dict consumed by pick() at reckon/crew/picker/__init__.py:196) found only the production _answer helper there, which the test stub mimics rather than extends.",
+    "diff": "read commit by commit against base d2140c1f79977fee66979f4b4c4545d0fd3c96cd: b75c2854b edits only the _answer stub in tests/test_pick_records_its_stage_times.py (11 added, 3 deleted), d8cd397b1 and df3f8deda add and then correct docs/evidence/fragments/lane-and-model-routing/stage-time-tests-answer-by-pair.html; git diff --name-only lists exactly those two files, both inside the declared write paths.",
+    "done_when": "the done_when is base-arm red at the two declared ids, head-arm green over the 19-file gate, and a negative control that reddens the declared id; the manifest records base-gate.log 3 failed/155 passed EXIT=1 and head-gate.log 158 passed EXIT=0, and I re-ran tests/test_pick_records_its_stage_times.py at head (4 passed) and reproduced the negative control in a scratch copy (2 failed, 2 passed, EXIT=1).",
+    "goal": "the goal is that the stage-timing tests answer Jev by the offered lane-and-model key; tests/test_pick_records_its_stage_times.py:78-96 now derives the reply key with picker.prompts.option_key(candidate) and keys both the choice and the distribution by it, so the stub answers in the offered <lane>:<model> form rather than a bare backend name.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T191613270183-stage-time-tests-answer-by-pair/manifest.md; status complete with three commits, a tests line naming the 19-file gate, test_logs naming base-gate.log and head-gate.log, and a negative_control_log whose EXIT=1 is real; its zero-added-failures claim reconciles with the two logs (see added_failure_ids).",
+    "write_paths": "the manifest declares tests/test_pick_records_its_stage_times.py, docs/evidence/fragments/lane-and-model-routing/stage-time-tests-answer-by-pair.html and docs/figures/lane-and-model-routing/stage-time-tests-answer-by-pair; git diff --name-only d2140c1f7..df3f8deda lists exactly the first two and no third file, and no plan-meta line was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_pick_records_its_stage_times.py:150 asserts selection.action == \"route\", which fails if the stub regresses; I reinstated the regression in a scratch copy (key = candidate.backend) and it reddened test_a_pick_records_every_stage and test_an_unwritable_log_leaves_the_pick_unchanged (2 failed, 2 passed, EXIT=1), so the guard was shown to fire rather than merely observed green.",
+    "evidence": "the done_when's three limbs are all recorded: base-gate.log d2140c1f7 3 failed/155 passed EXIT=1, head-gate.log d8cd397b1 158 passed EXIT=0, negative-control.log 2 failed/2 passed EXIT=1; I corroborated the head file (4 passed) and reproduced the negative control myself, and the added-failure count derivable from the two gate logs is 0.",
+    "fit": "tests/test_pick_records_its_stage_times.py:78-96 uses the module's existing names (picker.prompts.option_key, _candidate) and a docstring that states the mechanism (the choice and distribution are keyed by the offered pair), with no plan or ticket identifier and no author attribution in the source.",
+    "goal_fidelity": "tests/test_pick_records_its_stage_times.py:88 computes key = picker.prompts.option_key(candidate or _candidate()) and returns it as both answers.route.choice and the probabilities key, which is exactly the offered lane-and-model key pick() compares against at reckon/crew/picker/__init__.py:200.",
+    "reuse": "the stub consumes the owner rather than duplicating it -- it calls reckon/crew/picker/prompts.py:192 option_key, the same function pick() resolves the answer against, so no key string is hand-typed and no second key-derivation exists; no new definition was added.",
+    "scope_discipline": "git diff --name-only d2140c1f7..df3f8deda lists only tests/test_pick_records_its_stage_times.py and docs/evidence/fragments/lane-and-model-routing/stage-time-tests-answer-by-pair.html, both declared write paths; the fragment-only final commit df3f8deda leaves the test file byte-identical to what the head gate ran."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the stage-timing tests answer Jev by the offered lane-and-model key; tests/test_pick_records_its_stage_times.py:78-96 now derives the reply key with picker.prompts.option_key(candidate) and keys both the choice and the distribution by it, so the stub answers in the offered <lane>:<model> form rather than a bare backend name.\nVERDICT done_when: the done_when is base-arm red at the two declared ids, head-arm green over the 19-file gate, and a negative control that reddens the declared id; the manifest records base-gate.log 3 failed/155 passed EXIT=1 and head-gate.log 158 passed EXIT=0, and I re-ran tests/test_pick_records_its_stage_times.py at head (4 passed) and reproduced the negative control in a scratch copy (2 failed, 2 passed, EXIT=1).\nVERDICT write_paths: the manifest declares tests/test_pick_records_its_stage_times.py, docs/evidence/fragments/lane-and-model-routing/stage-time-tests-answer-by-pair.html and docs/figures/lane-and-model-routing/stage-time-tests-answer-by-pair; git diff --name-only d2140c1f7..df3f8deda lists exactly the first two and no third file, and no plan-meta line was touched.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T191613270183-stage-time-tests-answer-by-pair/manifest.md; status complete with three commits, a tests line naming the 19-file gate, test_logs naming base-gate.log and head-gate.log, and a negative_control_log whose EXIT=1 is real; its zero-added-failures claim reconciles with the two logs.\nVERDICT diff: read commit by commit against base d2140c1f79977fee66979f4b4c4545d0fd3c96cd: b75c2854b edits only the _answer stub in tests/test_pick_records_its_stage_times.py (11 added, 3 deleted), d8cd397b1 and df3f8deda add and then correct the evidence fragment; git diff --name-only lists exactly those two files, both inside the declared write paths.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_pick_records_its_stage_times.py:88 computes key = picker.prompts.option_key(candidate or _candidate()) and returns it as both answers.route.choice and the probabilities key, which is exactly the offered lane-and-model key pick() compares against at reckon/crew/picker/__init__.py:200.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done_when's three limbs are all recorded -- base-gate.log d2140c1f7 3 failed/155 passed EXIT=1, head-gate.log d8cd397b1 158 passed EXIT=0, negative-control.log 2 failed/2 passed EXIT=1; I corroborated the head file (4 passed) and reproduced the negative control myself, and the added-failure count derivable from the two gate logs is 0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only d2140c1f7..df3f8deda lists only tests/test_pick_records_its_stage_times.py and docs/evidence/fragments/lane-and-model-routing/stage-time-tests-answer-by-pair.html, both declared write paths; the fragment-only final commit df3f8deda leaves the test file byte-identical to what the head gate ran.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_pick_records_its_stage_times.py:150 asserts selection.action == \"route\", which fails if the stub regresses; I reinstated the regression in a scratch copy (key = candidate.backend) and it reddened test_a_pick_records_every_stage and test_an_unwritable_log_leaves_the_pick_unchanged (2 failed, 2 passed, EXIT=1), so the guard was shown to fire rather than merely observed green.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_pick_records_its_stage_times.py:78-96 uses the module's existing names (picker.prompts.option_key, _candidate) and a docstring that states the mechanism, with no plan or ticket identifier and no author attribution in the source.\nSCORE reuse: 20\nJUSTIFICATION reuse: the stub consumes the owner rather than duplicating it -- it calls reckon/crew/picker/prompts.py:192 option_key, the same function pick() resolves the answer against, so no key string is hand-typed and no second key-derivation exists; no new definition was added.",
+  "review_run_id": "r-20261007T192518159430-review-of-stage-time-tests-answer-by-pair",
+  "reviewed_base_sha": "d2140c1f79977fee66979f4b4c4545d0fd3c96cd",
+  "reviewed_head_sha": "df3f8deda41a321a97d53bd7142fdc1b247fa588",
+  "reviewed_run_id": "r-20261007T191613270183-stage-time-tests-answer-by-pair",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T19:30:00.000000+00:00",
+  "total": 118
+}
