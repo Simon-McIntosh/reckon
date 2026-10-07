@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log (classification.json records both null), so the added-failure count was not taken; I re-ran the gate independently at head db761b538 and it read 15 passed EXIT=0, but that is the after arm alone",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:8013",
+    "reckon/crew/promotion.py:8161",
+    "tests/test_reviews_read_the_committed_store_first.py:224"
+  ],
+  "completed_at": "2026-10-07T15:48:06.908Z",
+  "dispatched_at": "2026-10-07T15:36:44Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "8016",
+      "severity": "follow-on",
+      "text": "follow-on: _plan_review_record_for_promoting_run's negative branches are untested \u2014 a node that is not a plan review (promotion.py:8029), a plan with no delivered report naming the promoting run, and the already-stored path (promotion.py:8053 where store is skipped) have no case; only the matched-and-unstored path is exercised. The behavior is reached indirectly by run-review tests, so this is a coverage gap rather than a defect."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s) of the changed functions plus 1 test call site",
+    "diff": "read commit by commit against base 4ba05277; 6e00dd22 adds the plan-review join to promotion.py plus 251 lines of tests and the fragment, and db761b538 (the repair of the earlier review's two findings) replaces the forked dispatch parse with review._plan_review_crew_run_id and the direct plan_review._store_delivered_report call with plan_review.store_delivered_reviews, deleting _report_dispatch_names_run.",
+    "done_when": "the plan's section 13 done-when (1) requires a test that promotes a plan-review run whose record carries a different review run id from the run and whose delivered report is unstored at promotion, and finds that record in the committed plan tree, failing when promotion looks it up by the promoting run's id alone; tests/test_a_promoted_plan_review_is_committed.py covers exactly that in three cases (commit under COMPOSED_RUN_ID and rides the ledger row's commit; the delivered report reads stored after promotion; a refused delivery leaves promotion running with store_error on the sidecar), the declared negative control reddens three ids, and I re-ran the gate at head db761b538: 15 passed, EXIT=0.",
+    "goal": "the node's goal is that promoting a plan-review run commits the record its delivered report holds, storing that report first when unstored, under the composed review run id the record carries; promotion.py:7990 _staging_review_record_by_run falls through, when the review-store index lookup for the promoting run id finds nothing, to promotion.py:8016 _plan_review_record_for_promoting_run, which matches the delivered report whose dispatch.json names the promoting run (joined through review._plan_review_crew_run_id), stores it when unstored through plan_review.store_delivered_reviews, and returns the record keyed by its own composed id; run-review promotion is unchanged because the index lookup still runs first.",
+    "manifest": "read; it declares no baseline_suite or after_suite arm (classification.json records both null), so the added-failure count reads unmeasured; the gate command, its 15 passed EXIT=0 result, test_logs, and negative_control_log (last line EXIT=1) are recorded.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, tests/test_a_promoted_plan_review_is_committed.py, tests/test_reviews_read_the_committed_store_first.py, the evidence fragment and a figures directory; git show --stat over 6e00dd22 and db761b538 lists only reckon/crew/promotion.py, tests/test_a_promoted_plan_review_is_committed.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-promoted-plan-review-is-committed.html, every one inside the declared paths, and the worktree is clean at db761b538."
+  },
+  "justifications": {
+    "durability": "the changed behavior is guarded by three cases: the composed-id commit and its ride on the ledger row's commit, the unstored-to-stored transition, and the refusal path (a composed-but-undelivered report records store_error and leaves promotion running); the declared negative control reddens exactly the three and leaves the other 12 green. Docked one because _plan_review_record_for_promoting_run's negative branches (a node that is not a plan review, no delivered report naming the run, and the already-stored path) carry no test.",
+    "evidence": "the section 13 done-when's check is the gate file; I re-ran it independently at head db761b538 from the reviewed worktree (tests/test_a_promoted_plan_review_is_committed.py + tests/test_reviews_read_the_committed_store_first.py + tests/test_every_review_round_is_committed.py), getting 15 passed in 41.76s EXIT=0, matching the recorded gate.log; negative-control.log shows the declared mutation (look the record up by the promoting run's id alone) reddening the three new ids (3 failed, EXIT=1) and related.log records 55 passed EXIT=0.",
+    "fit": "the two added names, _plan_review_record_for_promoting_run and the reworked _staging_review_record_by_run, describe mechanism; the local `from reckon.crew import recovery` matches the module's lazy-import idiom, the top-level plan_review import is grouped with the existing review import, and nothing carries a version, plan, ticket or author identifier.",
+    "goal_fidelity": "promotion.py:8005 returns the index hit when record_for_review_run finds one; promotion.py:8013 otherwise routes to _plan_review_record_for_promoting_run, which promotion.py:8037-8046 matches the delivered report whose _plan_review_crew_run_id equals the promoting run, promotion.py:8054 stores it when unstored, and promotion.py:8062 returns the record keyed by the report's own composed review_run_id; test_a_promoted_plan_review_commits_the_record_its_report_names asserts the record commits under COMPOSED_RUN_ID with promoted id PROMOTING_RUN_ID differing, exactly the section 13 node (1) goal.",
+    "reuse": "both findings of the earlier review at 6e00dd22 are repaired; the forked dispatch.json parse (_report_dispatch_names_run) is deleted in favour of review._plan_review_crew_run_id, the one owner of that read, and the unpoliced _store_delivered_report call is replaced by plan_review.store_delivered_reviews, the existing refusal-recording reader; the join still reuses plan_review.delivered_reports and record_for_review_run rather than adding a scanner.",
+    "scope_discipline": "git show --stat lists, across both commits, only reckon/crew/promotion.py, tests/test_a_promoted_plan_review_is_committed.py and the landing fragment, all inside the manifest's declared write paths; the worktree is clean at db761b538 and no plan or shared index was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that promoting a plan-review run commits the record its delivered report holds, storing that report first when unstored, under the composed review run id the record carries; promotion.py:7990 _staging_review_record_by_run falls through, when the review-store index lookup for the promoting run id finds nothing, to promotion.py:8016 _plan_review_record_for_promoting_run, which matches the delivered report whose dispatch.json names the promoting run (joined through review._plan_review_crew_run_id), stores it when unstored through plan_review.store_delivered_reviews, and returns the record keyed by its own composed id; run-review promotion is unchanged because the index lookup still runs first.\nVERDICT done_when: the plan's section 13 done-when (1) requires a test that promotes a plan-review run whose record carries a different review run id from the run and whose delivered report is unstored at promotion, and finds that record in the committed plan tree, failing when promotion looks it up by the promoting run's id alone; tests/test_a_promoted_plan_review_is_committed.py covers exactly that in three cases, the declared negative control reddens three ids, and I re-ran the gate at head db761b538: 15 passed, EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, tests/test_a_promoted_plan_review_is_committed.py, tests/test_reviews_read_the_committed_store_first.py, the evidence fragment and a figures directory; git show --stat over 6e00dd22 and db761b538 lists only the promotion module, the new test file and the fragment, all inside the declared paths, and the worktree is clean at db761b538.\nVERDICT manifest: read; it declares no baseline_suite or after_suite arm, so the added-failure count reads unmeasured; the gate command, its 15 passed EXIT=0 result, test_logs and negative_control_log are recorded.\nVERDICT diff: read commit by commit against base 4ba05277; 6e00dd22 adds the plan-review join to promotion.py plus tests and the fragment, and db761b538 replaces the forked dispatch parse with review._plan_review_crew_run_id and the direct _store_delivered_report call with plan_review.store_delivered_reviews, deleting _report_dispatch_names_run.\nCALL_SITES: reckon/crew/promotion.py:8013, reckon/crew/promotion.py:8161, tests/test_reviews_read_the_committed_store_first.py:224\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: promotion.py:8005 returns the index hit when record_for_review_run finds one; promotion.py:8013 otherwise routes to _plan_review_record_for_promoting_run, which matches the delivered report whose _plan_review_crew_run_id equals the promoting run, stores it when unstored, and returns the record keyed by the report's own composed review_run_id; test_a_promoted_plan_review_commits_the_record_its_report_names asserts the record commits under COMPOSED_RUN_ID with PROMOTING_RUN_ID differing.\nSCORE evidence: 20\nJUSTIFICATION evidence: I re-ran the gate independently at head db761b538 from the reviewed worktree and it read 15 passed in 41.76s EXIT=0, matching gate.log; negative-control.log shows the declared mutation reddening the three new ids (3 failed, EXIT=1) and related.log records 55 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat lists only reckon/crew/promotion.py, tests/test_a_promoted_plan_review_is_committed.py and the landing fragment, all inside the declared write paths; the worktree is clean at db761b538.\nSCORE durability: 19\nJUSTIFICATION durability: three cases guard the changed behavior (composed-id commit riding the ledger row's commit, unstored-to-stored, and the refusal path recording store_error); the declared negative control reddens exactly the three and leaves the other 12 green; docked one because the join's negative branches are untested.\nSCORE fit: 20\nJUSTIFICATION fit: the added names describe mechanism, the local from reckon.crew import recovery matches the module's lazy-import idiom, and nothing carries a version, plan, ticket or author identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: both findings of the earlier review at 6e00dd22 are repaired; the forked dispatch.json parse is deleted in favour of review._plan_review_crew_run_id, and the unpoliced _store_delivered_report call is replaced by plan_review.store_delivered_reviews, the existing refusal-recording reader; the join reuses plan_review.delivered_reports and record_for_review_run.\nFINDING reckon/crew/promotion.py:8016 follow-on: _plan_review_record_for_promoting_run's negative branches are untested \u2014 a node that is not a plan review, a plan with no delivered report naming the run, and the already-stored path have no case; only the matched-and-unstored path is exercised, so this is a coverage gap rather than a defect.\n",
+  "review_run_id": "r-20261007T153606364671-review-of-a-promoted-plan-review-is-committed",
+  "reviewed_base_sha": "4ba052773c7373c0ecbdbc885f221069cd214d79",
+  "reviewed_head_sha": "db761b53859d4b03fc3c8219f3fd3c4b17021064",
+  "reviewed_run_id": "r-20261007T145624673678-a-promoted-plan-review-is-committed",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T15:45:10.000000+00:00",
+  "total": 119
+}

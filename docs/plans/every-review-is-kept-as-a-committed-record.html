@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.95">
-<meta name="plan-version" content="113">
+<meta name="plan-version" content="114">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -490,7 +490,10 @@
     <div class="r-comment-body"><p>reviewed run r-20261007T145624673678-a-promoted-plan-review-is-committed at base 4ba052773c7373c0ecbdbc885f221069cd214d79 head 6e00dd22fa8b6f3bdb52291571e743ea07818a46 (single commit 6e00dd22 "fix(promotion): commit a promoted plan review under its report's run id") and stored a parsed six-dimension record at both granted review-store paths scoring goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20, reuse 16 (total 115) with two follow-ons (promotion.py:8046 unguarded _store_delivered_report can abort promotion on a report with no RUBRIC/FINDING line; promotion.py:8054 duplicates review.py:1890's dispatch.json reader); added_failure_count null (unmeasured, no baseline_suite/after_suite in the reviewed manifest)</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261007T145624673678-a-promoted-plan-review-is-committed" data-who="reckon-build" data-when="2026-10-07T15:35:13.518Z">
-    <div class="r-comment-body"><p>Promotion now commits a promoted plan-review run&#x27;s record under the composed review run id its report directory carries: _staging_review_record_by_run falls through, when its review-store index lookup finds nothing, to the delivered report whose dispatch.json names the promoting run (joined via review._plan_review_crew_run_id), stores its unstored delivery through plan_review.store_delivered_reviews so a refused report records store_error on its sidecar and promotion still completes, and returns the record; gate 15 passed EXIT=0, negative control 3 failed EXIT=1.</p></div>
+    <div class="r-comment-body"><p>Promotion now commits a promoted plan-review run's record under the composed review run id its report directory carries: _staging_review_record_by_run falls through, when its review-store index lookup finds nothing, to the delivered report whose dispatch.json names the promoting run (joined via review._plan_review_crew_run_id), stores its unstored delivery through plan_review.store_delivered_reviews so a refused report records store_error on its sidecar and promotion still completes, and returns the record; gate 15 passed EXIT=0, negative control 3 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261007T153606364671-review-of-a-promoted-plan-review-is-committed" data-who="reckon-build" data-when="2026-10-07T15:48:06.908Z">
+    <div class="r-comment-body"><p>Attached an independent review of run r-20261007T145624673678-a-promoted-plan-review-is-committed (reckon:every-review-is-kept-as-a-committed-record §13 node 1) reviewing base 4ba05277 head db761b538: a parsed six-dimension record (goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20, reuse 20; total 119) stored at both fenced paths, with one follow-on (the join&#x27;s negative branches are untested) and no blocking finding; added_failure_count null (unmeasured, the reviewed manifest declares no baseline_suite/after_suite arm).</p></div>
 </div>
 </section>
 </main>
