@@ -13,7 +13,7 @@ import time
 from collections.abc import Iterable, Iterator, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import click
 
@@ -57,6 +57,218 @@ def _skills_source() -> Path:
             return candidate
     searched = ", ".join(str(path) for path in candidates)
     raise click.ClickException(f"reckon skills are missing; searched: {searched}")
+
+
+# ── Session-host plugin link ────────────────────────────────────────────────
+#
+# The session-host plugin is loaded by Claude Code in place as
+# ``reckon-crew-host@skills-dir`` when its directory is a personal-scope skill
+# dir. Personal scope is the only scope whose plugin monitors Claude Code
+# starts, so the link is user-level: one link serves every repository that runs
+# reckon, and each session picks it up at its next start.
+
+CREW_HOST_PLUGIN_NAME = "reckon-crew-host"
+_CREW_HOST_PLUGIN_REL = Path("plugins") / "crew-host"
+
+# The link states a reader meets, in the order the checks name them.
+CREW_HOST_MISSING = "missing"
+CREW_HOST_DANGLING = "dangling"
+CREW_HOST_WORKTREE = "worktree"
+CREW_HOST_ELSEWHERE = "elsewhere"
+CREW_HOST_VALID = "valid"
+
+
+class CrewHostLink(NamedTuple):
+    """The state of the session-host plugin link and how it got there."""
+
+    state: str
+    detail: str
+    dest: Path
+    target: Path | None
+
+
+def _reckon_checkout() -> Path:
+    """The checkout this reckon package was imported from.
+
+    A worker runs from a linked worktree, so this is the worktree root there
+    and the main checkout everywhere else. ``_main_checkout`` collapses the two
+    when the question is which tree a link should name.
+    """
+    return Path(__file__).resolve().parents[1]
+
+
+def _git_capture(cwd: Path, *args: str) -> str | None:
+    """Return git stdout when the command succeeds, and None otherwise."""
+    result = subprocess.run(
+        ["git", "-C", str(cwd), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        return None
+    return result.stdout.strip() or None
+
+
+def _main_checkout(checkout: Path) -> Path:
+    """The main checkout a linked worktree belongs to, or ``checkout`` itself.
+
+    ``reckon.crew.node.repository_identity`` owns this resolution: a linked
+    worktree shares its repository's git common directory, whose parent is the
+    main checkout root, so a worker running reckon from its own worktree still
+    names the tree a user-level link must point at.
+    """
+    from reckon.crew.node import repository_identity
+
+    resolved = repository_identity(checkout)
+    return resolved if resolved is not None else checkout.resolve()
+
+
+def _in_linked_worktree(path: Path) -> bool:
+    """Whether ``path`` lives in a linked git worktree rather than a main tree.
+
+    ``repository_identity`` answers which repository a path belongs to but
+    collapses a worktree into its main checkout, so it cannot say whether the
+    path it was given was the worktree. Comparing the path's own git toplevel
+    against that collapsed root does: they differ exactly in a linked worktree.
+    """
+    from reckon.crew.node import repository_identity
+
+    probe = path if path.is_dir() else path.parent
+    main = repository_identity(probe)
+    toplevel = _git_capture(probe, "rev-parse", "--show-toplevel")
+    if main is None or not toplevel:
+        return False
+    return Path(toplevel).resolve() != main
+
+
+def crew_host_link_state(skills_dir: Path, checkout: Path) -> CrewHostLink:
+    """Report the state of the session-host plugin link.
+
+    ``skills_dir`` is the personal skills directory (``~/.claude/skills``) and
+    ``checkout`` is the main checkout whose ``plugins/crew-host`` the link
+    should name. A link resolving into a worker worktree of the same repository
+    is reported as ``worktree`` rather than as a merely wrong target, because
+    the fix differs: the worktree link is one a reclaim would break.
+    """
+    dest = skills_dir / CREW_HOST_PLUGIN_NAME
+    source = (checkout / _CREW_HOST_PLUGIN_REL).resolve()
+
+    if not dest.is_symlink():
+        if dest.exists():
+            return CrewHostLink(
+                CREW_HOST_ELSEWHERE,
+                f"{dest} is not a symlink (note: a plugin must be linked)",
+                dest,
+                None,
+            )
+        return CrewHostLink(CREW_HOST_MISSING, f"no link at {dest}", dest, None)
+
+    raw_target = os.readlink(dest)
+    target = Path(raw_target)
+    if not target.is_absolute():
+        target = dest.parent / target
+
+    if not dest.exists():
+        return CrewHostLink(
+            CREW_HOST_DANGLING,
+            f"{dest} → {raw_target} (target missing)",
+            dest,
+            target,
+        )
+
+    resolved = dest.resolve()
+    if _in_linked_worktree(resolved):
+        return CrewHostLink(
+            CREW_HOST_WORKTREE,
+            f"{dest} → {resolved} (a worker worktree)",
+            dest,
+            resolved,
+        )
+    if resolved != source:
+        return CrewHostLink(
+            CREW_HOST_ELSEWHERE,
+            f"{dest} → {resolved} (expected {source})",
+            dest,
+            resolved,
+        )
+    return CrewHostLink(CREW_HOST_VALID, f"{dest} → {resolved}", dest, resolved)
+
+
+def link_crew_host_plugin(source: Path, skills_dir: Path) -> str:
+    """Ensure ``skills_dir/reckon-crew-host`` links to ``source``.
+
+    Idempotent: a link already naming the source is left alone. An existing
+    symlink naming a different target is repointed. A real directory or file in
+    the way is refused, because replacing it would discard whatever it holds.
+    """
+    dest = skills_dir / CREW_HOST_PLUGIN_NAME
+    skills_dir.mkdir(parents=True, exist_ok=True)
+    if dest.is_symlink():
+        current = Path(os.readlink(dest))
+        if not current.is_absolute():
+            current = dest.parent / current
+        if current == source:
+            return "ok"
+        dest.unlink()
+        dest.symlink_to(source, target_is_directory=True)
+        return "repointed"
+    if dest.exists():
+        raise click.ClickException(
+            f"{dest} exists and is not a symlink; remove it before linking "
+            f"{CREW_HOST_PLUGIN_NAME}"
+        )
+    dest.symlink_to(source, target_is_directory=True)
+    return "linked"
+
+
+def _sync_crew_host_plugin() -> None:
+    """Link the main checkout's session-host plugin during a sync.
+
+    Run from a worker worktree this refuses and links nothing: the worktree is
+    reclaimed when the run ends, so a link naming it would resolve to nothing.
+    The refusal is reported and the rest of the sync proceeds, because the
+    remaining scaffold is checkout-independent and a worker still needs it.
+    """
+    running = _reckon_checkout()
+    main = _main_checkout(running)
+    if running.resolve() != main:
+        click.echo(
+            f"  session-host plugin: refused — running from a worker worktree "
+            f"({running}); run sync from the main checkout {main}"
+        )
+        return
+
+    source = main / _CREW_HOST_PLUGIN_REL
+    if not (source / ".claude-plugin" / "plugin.json").is_file():
+        click.echo(f"  session-host plugin: not built under {source} — skipped")
+        return
+
+    skills_dir = Path.home() / ".claude" / "skills"
+    action = link_crew_host_plugin(source, skills_dir)
+    click.echo(
+        f"  session-host plugin: {action} {skills_dir / CREW_HOST_PLUGIN_NAME} → {source}"
+    )
+
+
+def _claude_plugin_validate(dest: Path) -> str | None:
+    """Validate a linked plugin with ``claude plugin validate`` when available.
+
+    Returns ``None`` when the Claude CLI is not on PATH (nothing to run), an
+    empty string when it validates, and its message when it does not.
+    """
+    exe = shutil.which("claude")
+    if not exe:
+        return None
+    result = subprocess.run(
+        [exe, "plugin", "validate", str(dest)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode == 0:
+        return ""
+    return (result.stderr or result.stdout).strip() or f"exit {result.returncode}"
 
 
 def _crew_guard_path(filename: str) -> Path:
@@ -7625,6 +7837,9 @@ def sync(
     else:
         click.echo("  skipped native-agent guard — project has no crew state")
 
+    # ── Session-host plugin link (user-level) ───────────────────────────────
+    _sync_crew_host_plugin()
+
     click.echo(
         f"\nDone. Visit http://localhost:8765/{proj_name}/ once the server is running."
     )
@@ -7951,6 +8166,32 @@ def doctor():
         else:
             click.echo(f"  ✗  {skill}  →  run: reckon install-skills", err=False)
             ok = False
+
+    # ── Session-host plugin check ────────────────────────────────────────────
+    click.echo("\nSession host plugin")
+    plugin_checkout = _main_checkout(_reckon_checkout())
+    link = crew_host_link_state(skills_dir, plugin_checkout)
+    if link.state == CREW_HOST_VALID:
+        message = _claude_plugin_validate(link.dest)
+        if message:
+            click.echo(f"  ✗  {CREW_HOST_PLUGIN_NAME} invalid: {message}")
+            click.echo(f"       run: claude plugin validate {link.dest}")
+            ok = False
+        elif message is None:
+            click.echo(f"  ✓  {CREW_HOST_PLUGIN_NAME} → {link.target}")
+            click.echo("       claude not on PATH — plugin validate skipped")
+        else:
+            click.echo(f"  ✓  {CREW_HOST_PLUGIN_NAME} → {link.target}")
+    elif link.state == CREW_HOST_MISSING:
+        # A link that was never made is the ordinary state of a checkout that
+        # has not run sync yet, so it is reported with its fix but does not
+        # fail the run; the broken states below resolve to nothing or to the
+        # wrong tree, which no sync will repair on its own.
+        click.echo(f"  ·  {CREW_HOST_PLUGIN_NAME} not linked  →  run: reckon sync")
+    else:
+        click.echo(f"  ✗  {CREW_HOST_PLUGIN_NAME} {link.state}: {link.detail}")
+        click.echo("       run: reckon sync")
+        ok = False
 
     # ── mounts.json check ───────────────────────────────────────────────────
     click.echo("\nMounts")
