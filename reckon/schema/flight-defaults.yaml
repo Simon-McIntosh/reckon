@@ -139,13 +139,13 @@ review:
   # and the flight module's own validator checks its shape.
   plan_change_threshold: 0.30
 
-# The plan-review gate ships advisory, whatever every other gate here does.
-# Almost no plan carries a stored review yet, and the node that writes one is
-# not built, so an enforced plan-review gate would stop every build on a review
-# nobody can produce — and be turned off rather than answered. In report mode a
-# missing or unanswered review is recorded on the dispatch result as a warning
-# and the dispatch proceeds; `enforce` refuses exactly as the gate's own
-# refusal describes. Set `enforce` once the review-writing node exists.
+# The plan-review gate ships advisory, whatever every other gate here does: a
+# repository adopting reckon carries no stored plan reviews, and an enforced
+# gate would refuse its first build before its authors had composed one with
+# `reckon crew review-plan`. In report mode a missing or unanswered review is
+# recorded on the dispatch result as a warning and the dispatch proceeds;
+# `enforce` refuses exactly as the gate's own refusal describes. A host or
+# project layer sets `enforce` once its authors review plans as they write them.
 plan_review_gate: report
 
 # The ceiling sits at full utilisation, so only a backend that actually reported

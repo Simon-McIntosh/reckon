@@ -124,7 +124,7 @@ def test_a_refused_store_records_its_reason_on_the_sidecar_and_in_the_refusal(
                 "plan_slug": "fixture",
                 "reviewed_blob_sha": "a" * 40,
                 "plan_fingerprint": plan_review.plan_fingerprint(plan_path),
-                "rubric": "plan_review",
+                "rubric": "plan_design_review",
                 "report_path": str(report_path),
             }
         ),
@@ -162,7 +162,7 @@ def test_a_plan_covered_section_by_section_reads_as_reviewed_with_its_plan(
             "project": "sample",
             "plan_slug": "fixture",
             "plan_version": 1,
-            "rubric": "plan_review",
+            "rubric": "plan_design_review",
             "reviewed_blob_sha": "a" * 40,
             "plan_fingerprint": "stale-whole-document-digest",
             "findings": [],
@@ -217,7 +217,7 @@ def test_a_delivery_refused_once_clears_its_reason_when_it_stores(
                 "plan_slug": "fixture",
                 "reviewed_blob_sha": "a" * 40,
                 "plan_fingerprint": plan_review.plan_fingerprint(plan_path),
-                "rubric": "plan_review",
+                "rubric": "plan_design_review",
                 "report_path": str(report_path),
             }
         ),

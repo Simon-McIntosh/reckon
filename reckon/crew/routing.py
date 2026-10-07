@@ -2566,12 +2566,12 @@ def _plan_review_exempt(node: TaskNode) -> bool:
 def _plan_review_verdict(enforce: bool, detail: str) -> str | None:
     """Refuse in enforce mode; otherwise return the warning to record.
 
-    Report-only is the shipped default, because the node that dispatches a plan
-    review is not built yet and a gate that stopped every build on that account
-    would be turned off rather than answered. In report-only mode the dispatch
-    proceeds and the same sentence an enforced refusal would carry is recorded
-    on the dispatch result as a warning, so the fact is visible without being
-    fatal and the wording does not drift between the two modes.
+    Report-only is the shipped default, so a repository adopting reckon is not
+    stopped before its authors have composed a first review; a host or project
+    layer selects enforcement. In report-only mode the dispatch proceeds and the
+    same sentence an enforced refusal would carry is recorded on the dispatch
+    result as a warning, so the fact is visible without being fatal and the
+    wording does not drift between the two modes.
     """
     if enforce:
         raise PlanReviewMissingError(detail)
@@ -2669,6 +2669,24 @@ def require_plan_reviewed(
         return None
 
     refusals = plan_review.store_delivered_reviews(project, node.plan)
+    design = plan_review.newest_design_review(project, node.plan)
+    if design is None:
+        # The design review is the plan's one search of the codebase for
+        # machinery it could reuse, so it is owed once, at any version; a design
+        # review also covers the content it read, so composing it first answers
+        # both requirements for a plan that has neither.
+        design_invocation = plan_review.review_invocation(
+            project, node.plan, rubric=plan_review.DESIGN_RUBRIC
+        )
+        return _plan_review_verdict(
+            enforce,
+            f"plan {node.plan!r} in project {project!r} carries no stored review "
+            "under the design rubric; "
+            f"{_refused_store_detail(refusals)}"
+            "a plan is searched against the codebase for machinery it could reuse "
+            "once, before its first implementation node; compose that review with "
+            f"`{design_invocation}`",
+        )
     _records, uncovered, changes = plan_review.review_coverage(
         project, node.plan, plan=resource.path
     )
@@ -2684,6 +2702,12 @@ def require_plan_reviewed(
             f"`{plan_review.review_invocation(project, node.plan)}`",
         )
     unanswered = plan_review.unanswered_findings(record)
+    if design.get("review_path") != record.get("review_path"):
+        unanswered += [
+            finding
+            for finding in plan_review.unanswered_findings(design)
+            if finding not in unanswered
+        ]
     if unanswered:
         return _plan_review_verdict(
             enforce,

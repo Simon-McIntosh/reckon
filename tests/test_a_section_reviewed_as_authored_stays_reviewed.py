@@ -59,7 +59,7 @@ def _subject(path, *, run_id="review-authored-content"):
         "plan_path": str(path),
         "repo": str(path.parents[2]),
         "session": "coordinator",
-        "rubric": "content",
+        "rubric": "design",
         "local": True,
         "run_id": run_id,
     }

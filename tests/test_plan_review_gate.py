@@ -142,7 +142,7 @@ def _store_answered_review(plan_path: Path, config_home: Path) -> None:
             "project": "sample",
             "plan_slug": "fixture",
             "plan_version": 1,
-            "rubric": "plan_review",
+            "rubric": "plan_design_review",
             "reviewed_blob_sha": "a" * 40,
             "plan_fingerprint": plan_review.plan_fingerprint(plan_path),
             "findings": [
@@ -182,7 +182,7 @@ def _store_unanswered_review(plan_path: Path, config_home: Path) -> str:
             "project": "sample",
             "plan_slug": "fixture",
             "plan_version": 1,
-            "rubric": "plan_review",
+            "rubric": "plan_design_review",
             "reviewed_blob_sha": "b" * 40,
             "plan_fingerprint": plan_review.plan_fingerprint(plan_path),
             "findings": [
@@ -213,7 +213,7 @@ def test_unreviewed_implementation_is_refused_with_a_composed_remedy(
     refusal = str(excinfo.value)
     assert "fixture" in refusal
     assert (
-        "`reckon crew review-plan --project sample --plan fixture --rubric content "
+        "`reckon crew review-plan --project sample --plan fixture --rubric design "
         "--session <session> --local`" in refusal
     )
 
@@ -562,3 +562,122 @@ def test_a_mode_outside_the_declared_set_is_refused_naming_the_key(
     refusal = str(excinfo.value)
     assert "plan_review_gate" in refusal
     assert "report" in refusal and "enforce" in refusal
+
+
+# ── The plan's one design review ────────────────────────────────────────────
+
+
+def _store_review(
+    config_home: Path,
+    *,
+    rubric: str,
+    version: int,
+    fingerprint: str,
+    run_id: str,
+    finding: str | None = None,
+    answered: bool = True,
+) -> None:
+    findings = [] if finding is None else [{"id": finding, "type": "x", "text": "t"}]
+    responses = (
+        {finding: {"action": "acted", "reason": ""}} if finding and answered else {}
+    )
+    plan_review.store_plan_review(
+        {
+            "project": "sample",
+            "plan_slug": "fixture",
+            "plan_version": version,
+            "rubric": rubric,
+            "reviewed_blob_sha": run_id[-1] * 40,
+            "plan_fingerprint": fingerprint,
+            "findings": findings,
+            "responses": responses,
+            "review_run_id": run_id,
+        },
+        base_dir=config_home / "crew" / "reviews",
+    )
+
+
+def test_a_content_review_alone_owes_the_design_review(
+    reviewed_project: tuple[Path, Path, Path],
+) -> None:
+    config_home, repo, plan_path = reviewed_project
+    _store_review(
+        config_home,
+        rubric="content",
+        version=1,
+        fingerprint=plan_review.plan_fingerprint(plan_path),
+        run_id="r-content-1",
+    )
+
+    with pytest.raises(node_module.PlanReviewMissingError) as excinfo:
+        _plan(_node(config_home), repo, mode="enforce")
+
+    assert "--rubric design" in str(excinfo.value)
+
+
+def test_an_earlier_design_review_and_a_covering_content_review_admit(
+    reviewed_project: tuple[Path, Path, Path],
+) -> None:
+    config_home, repo, plan_path = reviewed_project
+    _store_review(
+        config_home,
+        rubric="design",
+        version=0,
+        fingerprint="an-earlier-version",
+        run_id="r-design-0",
+        finding="reuse-1",
+    )
+    _store_review(
+        config_home,
+        rubric="content",
+        version=1,
+        fingerprint=plan_review.plan_fingerprint(plan_path),
+        run_id="r-content-1",
+    )
+
+    resolution = _plan(_node(config_home), repo, mode="enforce")
+
+    assert resolution.validation.ok is True
+
+
+def test_an_unanswered_design_finding_stays_owed_past_a_newer_content_review(
+    reviewed_project: tuple[Path, Path, Path],
+) -> None:
+    config_home, repo, plan_path = reviewed_project
+    _store_review(
+        config_home,
+        rubric="design",
+        version=0,
+        fingerprint="an-earlier-version",
+        run_id="r-design-0",
+        finding="reuse-1",
+        answered=False,
+    )
+    _store_review(
+        config_home,
+        rubric="content",
+        version=1,
+        fingerprint=plan_review.plan_fingerprint(plan_path),
+        run_id="r-content-1",
+    )
+
+    with pytest.raises(node_module.PlanReviewMissingError) as excinfo:
+        _plan(_node(config_home), repo, mode="enforce")
+    assert "reuse-1" in str(excinfo.value)
+
+    answered = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "review-plan",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--answer",
+            "reuse-1",
+            "--acted",
+        ],
+    )
+    assert answered.exit_code == 0, answered.output
+    assert _plan(_node(config_home), repo, mode="enforce").validation.ok is True

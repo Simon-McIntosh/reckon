@@ -147,6 +147,10 @@ DESIGN_RUBRIC = "design"
 # this placeholder for the reader to fill in rather than leaving the flag out.
 SESSION_PLACEHOLDER = "<session>"
 
+# A stored record spells the design rubric as the verb's flag or as the item-set
+# name the report parser resolves the flag to, one of review.PLAN_REVIEW_RUBRICS.
+_DESIGN_RUBRIC_NAMES = (DESIGN_RUBRIC, "plan_design_review")
+
 
 def review_invocation(
     project: str,
@@ -980,6 +984,42 @@ def list_plan_reviews(
         key=lambda item: (str(item.get("timestamp") or ""), item["review_path"])
     )
     return records
+
+
+def is_design_review(record: Mapping[str, Any]) -> bool:
+    """Whether a stored record was composed under the design rubric.
+
+    A record spells its rubric as the verb's flag or as the item-set name the
+    report parser resolves it to; both spellings are read. A record naming no
+    rubric is not counted, because nothing shows a reviewer searched the
+    codebase for it.
+    """
+    rubric = str(record.get("rubric") or "").strip()
+    return rubric in _DESIGN_RUBRIC_NAMES
+
+
+def newest_design_review(
+    project: str,
+    plan_slug: str,
+    *,
+    base_dir: str | Path | None = None,
+) -> dict[str, Any] | None:
+    """The newest stored design review of a plan at any version, or None.
+
+    A plan carries one prior-art and depth review before its first
+    implementation node, and it is not repeated for each later edit: an edit
+    is a revision of a design already searched against the codebase, which the
+    content review that covers it reads. So any version counts here, while
+    coverage of the content about to be built is judged separately.
+    """
+    records = [
+        record
+        for record in list_plan_reviews(project, base_dir=base_dir)
+        if record.get("plan_slug") == plan_slug and is_design_review(record)
+    ]
+    return max(
+        records, key=lambda record: int(record.get("plan_version") or 0), default=None
+    )
 
 
 def finding_ids(record: Mapping[str, Any]) -> list[str]:

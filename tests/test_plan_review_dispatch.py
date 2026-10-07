@@ -247,6 +247,22 @@ def test_enforce_mode_stores_a_delivered_report_then_refuses_by_the_finding(
 ) -> None:
     config_home, repo, plan_path = reviewed_project
     fingerprint = plan_review.plan_fingerprint(plan_path)
+    # The plan's one design review, answered and of an earlier version, so the
+    # gate judges the delivered content report on its own findings.
+    plan_review.store_plan_review(
+        {
+            "project": "sample",
+            "plan_slug": "fixture",
+            "plan_version": 0,
+            "rubric": "plan_design_review",
+            "reviewed_blob_sha": "d" * 40,
+            "plan_fingerprint": "an-earlier-version",
+            "findings": [],
+            "responses": {},
+            "review_run_id": "r-design-review",
+        },
+        base_dir=config_home / "crew" / "reviews",
+    )
     _deliver_report(plan_path)
 
     expected_error = getattr(node_module, "PlanReviewMissingError", crew.CrewError)

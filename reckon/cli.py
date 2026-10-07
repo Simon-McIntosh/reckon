@@ -2803,7 +2803,13 @@ def crew_shadow(run_id, session, wave, backend, overrides, member, dry_run, pret
 def crew_review_plan(
     project, plan_slug, session, rubric, local, dry_run, pretty, answer, acted, declined
 ):
-    """Dispatch a plan review or answer a finding on its newest stored record."""
+    """Review one plan's current content, or answer a finding its review raised.
+
+    A review is composed under the content rubric when an author finishes
+    writing and under the design rubric once before the plan's first
+    implementation node. An answer is written to the newest stored review that
+    raised the finding, acted on or declined with a reason.
+    """
     from reckon.crew import plan_review, recovery
     from reckon.crew.node import CrewError
 
@@ -2842,6 +2848,13 @@ def crew_review_plan(
                 )
                 _emit({"error": "crew_error", "detail": detail}, pretty)
                 raise click.exceptions.Exit(1)
+            if answer not in plan_review.finding_ids(record):
+                # A finding of the plan's one design review stays owed after a
+                # later content review becomes the newest record, so it is
+                # answered on the design review that raised it.
+                design = plan_review.newest_design_review(project, plan_slug)
+                if design is not None and answer in plan_review.finding_ids(design):
+                    record = design
             path = plan_review.record_response(
                 record,
                 answer,
