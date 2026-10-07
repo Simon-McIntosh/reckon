@@ -13,13 +13,15 @@ reads or writes the operator's crew home.
 from __future__ import annotations
 
 import json
+import shlex
 import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from click.testing import CliRunner
 
-from reckon import _plan_html, flight, mcp
+from reckon import _plan_html, cli, flight, mcp
 from reckon.crew import plan_review, recovery, routing
 from reckon.crew.node import PlanReviewMissingError, TaskNode
 
@@ -41,7 +43,10 @@ CONFIG = {
 
 SNAPSHOT_RUN_ID = "an-edit-tells-its-author-a-review-is-owed"
 DONE_WHEN = "charlie ships and nothing regresses"
-_INVOCATION = "reckon crew review-plan --project sample --plan fixture --local"
+_INVOCATION = (
+    "reckon crew review-plan --project sample --plan fixture --rubric content "
+    "--session <session> --local"
+)
 
 
 def _words(prefix: str, count: int = 12) -> str:
@@ -192,6 +197,32 @@ def test_a_done_when_edit_owes_a_review_of_its_section(sectioned):
     assert result["ok"], result
     assert _owed_units(result) == {"c"}
     assert result["review_invocation"] == _INVOCATION
+
+
+def test_the_owed_invocation_is_one_the_verb_accepts(sectioned):
+    _, repo, path = sectioned
+    _review(path)
+    result = mcp._edit_plan_tool(
+        "sample",
+        "fixture",
+        expected_version=_version(path),
+        mode="text",
+        old_html=f"<p><strong>Done when</strong>: {DONE_WHEN}.</p>",
+        new_html="<p><strong>Done when</strong>: charlie ships and nothing breaks.</p>",
+        checkout_path=str(repo),
+    )
+    assert result["ok"], result
+    invocation = result["review_invocation"]
+    assert plan_review.SESSION_PLACEHOLDER in invocation
+    argv = shlex.split(
+        invocation.replace(plan_review.SESSION_PLACEHOLDER, "coordinator")
+    )
+    assert argv[0] == "reckon"
+
+    outcome = CliRunner().invoke(cli.main, [*argv[1:], "--dry-run"])
+
+    assert outcome.exit_code == 0, outcome.output
+    assert json.loads(outcome.output)["dry_run"] is True
 
 
 def test_the_gate_and_the_edit_name_the_same_units(sectioned):

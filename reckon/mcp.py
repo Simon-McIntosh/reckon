@@ -446,8 +446,8 @@ def _stale_plan_review(project: str, plan_slug: str) -> tuple[int, str] | None:
     version = int(newest.get("plan_version") or 0)
     detail = (
         f"the newest stored review of {project}:{plan_slug} is version {version} "
-        "and no longer covers the plan; run `crew review-plan --project "
-        f"{project} --plan {plan_slug}` to compose a review of the current content"
+        f"and no longer covers the plan; run `{plan_review.review_invocation(project, plan_slug)}` "
+        "to compose a review of the current content"
     )
     return version, detail
 
@@ -481,7 +481,7 @@ def _review_owed_fields(
     """
     from reckon.crew import plan_review
 
-    invocation = f"reckon crew review-plan --project {project} --plan {slug} --local"
+    invocation = plan_review.review_invocation(project, slug)
     if written_path is None:
         return {
             "review_owed": None,

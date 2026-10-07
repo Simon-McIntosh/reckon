@@ -218,7 +218,6 @@ def resolve_role_override(
     return str(backend_name), effective
 
 
-
 def _section_record(
     plan_path: str | Path, section: str
 ) -> tuple[Mapping[str, Any], str]:
@@ -2681,7 +2680,8 @@ def require_plan_reviewed(
             f"of the content about to be built; uncovered units: {', '.join(sorted(uncovered))}; "
             f"{_uncovered_change_detail(uncovered, changes)}"
             f"{_refused_store_detail(refusals)}"
-            "a plan is reviewed before it is built",
+            "a plan is reviewed before it is built; compose one with "
+            f"`{plan_review.review_invocation(project, node.plan)}`",
         )
     unanswered = plan_review.unanswered_findings(record)
     if unanswered:
@@ -2689,7 +2689,8 @@ def require_plan_reviewed(
             enforce,
             f"the review of plan {node.plan!r} leaves {len(unanswered)} "
             f"finding(s) unanswered: {', '.join(unanswered)}; answer each by "
-            "acting on it or declining it with a reason",
+            "acting on it or declining it with a reason, as in "
+            f"`{plan_review.answer_invocation(project, node.plan, unanswered[0])}`",
         )
     return None
 

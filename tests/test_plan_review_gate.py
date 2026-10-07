@@ -212,7 +212,10 @@ def test_unreviewed_implementation_is_refused_with_a_composed_remedy(
 
     refusal = str(excinfo.value)
     assert "fixture" in refusal
-    assert "composed plan-review dispatch" in refusal
+    assert (
+        "`reckon crew review-plan --project sample --plan fixture --rubric content "
+        "--session <session> --local`" in refusal
+    )
 
 
 def test_answered_advisory_findings_admit_the_implementation(
@@ -310,6 +313,7 @@ def test_a_finding_left_unanswered_refuses_the_build_by_name(
     refusal = str(excinfo.value)
     assert finding_id in refusal
     assert "unanswered" in refusal
+    assert f"--answer {finding_id} --acted" in refusal
 
 
 def test_report_only_mode_records_a_missing_review_and_lets_the_dispatch_run(

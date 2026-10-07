@@ -56,6 +56,7 @@ import difflib
 import hashlib
 import json
 import re
+import shlex
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -132,6 +133,49 @@ PLAN_DERIVED_SCALARS: tuple[str, ...] = (
 
 # Content and design reviews share their rubric vocabulary with the report
 # parser in reckon.crew.review, which owns the names and item sets.
+
+# ── The two review moments ─────────────────────────────────────────────────
+# A content review is the rubber-duck read an author composes once a writing
+# session ends; a design review is the prior-art and depth read a plan carries
+# before its first implementation node. Spelled as the ``review-plan`` verb
+# takes them.
+CONTENT_RUBRIC = "content"
+DESIGN_RUBRIC = "design"
+
+# Dispatching a review needs the coordinator session its completion is
+# delivered to, which no composing surface knows, so a composed command names
+# this placeholder for the reader to fill in rather than leaving the flag out.
+SESSION_PLACEHOLDER = "<session>"
+
+
+def review_invocation(
+    project: str,
+    plan_slug: str,
+    *,
+    rubric: str = CONTENT_RUBRIC,
+    session: str = "",
+) -> str:
+    """The command that composes a review of a plan, as every surface prints it.
+
+    One composer, so a write's ``review_owed`` note, the stale-review hint and
+    the dispatch gate's refusals hand their reader the same command, and one the
+    verb accepts once the session is filled in.
+    """
+    named = shlex.quote(session) if session else SESSION_PLACEHOLDER
+    return (
+        f"reckon crew review-plan --project {shlex.quote(project)} "
+        f"--plan {shlex.quote(plan_slug)} --rubric {rubric} --session {named} --local"
+    )
+
+
+def answer_invocation(project: str, plan_slug: str, finding_id: str) -> str:
+    """The command that answers one finding, acted on or declined with a reason."""
+    return (
+        f"reckon crew review-plan --project {shlex.quote(project)} "
+        f"--plan {shlex.quote(plan_slug)} --answer {shlex.quote(finding_id)} "
+        "--acted (or --declined '<reason>')"
+    )
+
 
 # ── The promotion-comment exclusion ─────────────────────────────────────────
 # A promotion appends one comment per promoted run to the section the run
