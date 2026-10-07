@@ -46,6 +46,12 @@ MODULE_ARGV = [sys.executable, "-m", "reckon.crew.fleet_supervisor"]
 WAIT_SECONDS = 20.0
 POLL_SECONDS = 0.05
 
+# How long a reader is given to collect an exited child while no request is
+# arriving. The reader's own collection interval is far shorter, so a reader
+# that collects on its interval answers well inside this bound, and a reader
+# that collects only between requests never answers at all.
+COLLECT_SECONDS = 5.0
+
 # A child that proves it ran and then stays alive, so the pid the reader
 # records can be read while the process it names is still there.
 LIVE_CHILD = (
@@ -53,6 +59,10 @@ LIVE_CHILD = (
     "open(sys.argv[1], 'w', encoding='utf-8').write('ran\\n')\n"
     "time.sleep(60)\n"
 )
+
+# A child that proves it ran and then exits on its own, so the reader holds an
+# exited child it must collect without a request arriving.
+EXITING_CHILD = "import sys\nopen(sys.argv[1], 'w', encoding='utf-8').write('ran\\n')\n"
 
 # A child that records the environment it was handed and exits.
 ENV_DUMP_CHILD = (
@@ -401,6 +411,65 @@ def test_a_spawn_line_runs_the_stub_and_records_its_live_pid(reader, tmp_path) -
     # one and the equality above would say nothing.
     written = _fleet_state_snapshot(reader.state)
     assert written["record_sha256"] is not None, written
+
+
+def test_an_exited_child_is_collected_with_no_request_arriving(
+    reader, tmp_path
+) -> None:
+    """An exited child is collected on the reader's own interval, not on a request.
+
+    The reader spends its life reading the request FIFO, and requests are rare,
+    so a child that exits while the FIFO is idle would be collected only when
+    the next request happened to arrive -- leaving an exited supervisor defunct
+    for as long as the reader waits. The child here ends on its own and no
+    request follows it, so the pid leaving the process table is the reader
+    collecting it rather than a request prompting the sweep. The marker proves
+    the child ran, and /proc is shown reading the reader's own live pid before
+    the child's absence is read from it, so the disappearance is a collected
+    child and not one that never started.
+    """
+    run_directory = tmp_path / "run"
+    marker = tmp_path / "child-ran"
+    stub = tmp_path / "stub.py"
+    stub.write_text(EXITING_CHILD, encoding="utf-8")
+    spec = _write_spec(run_directory, [sys.executable, str(stub), str(marker)])
+
+    reader.start()
+    reader_pid = reader.opened[0][0].pid
+    _send(reader.runtime, f"spawn r-test {spec}")
+    spawned = _wait_for_spawned(run_directory)
+    child_pid = int(spawned["pid"])
+    _wait_for(
+        marker.exists,
+        message=(
+            "the spawned child never recorded that it ran, so there is no exit "
+            "to collect and its pid is invisible for a reason other than "
+            f"collection; log={_reader_log(reader.log)!r}"
+        ),
+    )
+    # The instrument is shown reading a present pid before an absence is read
+    # from it: the reader itself is under /proc now, so an empty result for the
+    # child is a collection rather than an instrument that cannot see anything.
+    assert Path(f"/proc/{reader_pid}").exists(), (
+        f"the reader's own pid {reader_pid} is not visible under /proc, so the "
+        "child's absence would say nothing about collection"
+    )
+
+    # No further request is sent: the reader must collect the child on its own
+    # interval. Under a sweep that runs only between requests, the reader sits
+    # in its blocking read and the exited child's pid stays in /proc.
+    child = Path(f"/proc/{child_pid}")
+    started = time.monotonic()
+    _wait_for(
+        lambda: not child.exists(),
+        message=(
+            f"the exited child {child_pid} was still visible under /proc after "
+            f"{time.monotonic() - started:.1f}s with no request arriving, so the "
+            "reader did not collect it on its own interval"
+        ),
+        timeout=COLLECT_SECONDS,
+    )
+    assert time.monotonic() - started < COLLECT_SECONDS
 
 
 def test_the_readers_runtime_directory_is_not_world_readable(reader) -> None:
