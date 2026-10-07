@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/velocity.py:read_sources",
+    "reckon/velocity.py:_plan_metas",
+    "reckon/crew/plan_review.py:_read_reviewed_blob_texts"
+  ],
+  "completed_at": "2026-10-07T13:21:54.612Z",
+  "dispatched_at": "2026-10-07T13:14:49Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T130318278063-one-owner-for-the-batched-object-read/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the tests line carries the literal placeholder PYTHONPATH=<worktree> rather than an absolute path, so the recorded gate command is not reproducible as written even though one-owner-gate.log holds the real one."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T130318278063-one-owner-for-the-batched-object-read/one-owner-gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the header names revision 217a050c (the base) though the gate measured the working tree carrying the 1123e4910 change, so the log does not identify the code behind its 22-passed result."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T130318278063-one-owner-for-the-batched-object-read/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest carries no baseline_suite or after_suite arm, so the added-failure count for this run is unmeasured and this record stores added_failure_count null rather than zero."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1476",
+      "severity": "follow-on",
+      "text": "follow-on: the except clause catches (OSError, subprocess.CalledProcessError) but read_blobs' shared parse at reckon/velocity.py:416-423 uses data.index and int(), whose ValueError on malformed batch output previously broke out of the fork's find-based loop and now propagates; the path is a single-process read of the project's own object store so the reachability is low, but the consolidation moved plan_review onto the stricter reader without widening the guard."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 217a050c97c59da88b3d7b415e3cdb0f269a768f; reckon/velocity.py::read_blobs now accepts a bare object name as a spec beside a (revision, path) pair, reckon/crew/plan_review.py::_read_reviewed_blob_texts calls it and deletes the forked payload build, header/size parse and missing-object handling, and a new 103-line test file adds the bare-object coverage, +126/-34 over the three files.",
+    "done_when": "section 9(a) done-when is that the fork is gone and a test shows read_blobs returning a bare blob's bytes and None for a missing one and fails when the bare-object entry is reverted; tests/test_read_blobs_reads_bare_objects.py:58,67,79 do exactly that, the gate log records 22 passed EXIT=0 with those tests collected, and one-owner-negative-control.log shows all three red at EXIT=1 when the entry is reverted.",
+    "goal": "the brief and plan section 9(a) ask that reckon/velocity.py::read_blobs gain an entry reading bare object names and reckon/crew/plan_review.py::_read_reviewed_blob_texts call it, deleting its forked parse; the diff builds the payload per-spec at reckon/velocity.py:407-409 (bare string or pair) and plan_review.py:1475 calls read_blobs(repo, unique), so the fork is gone, which is the brief's stated change.",
+    "manifest": "read; it records commit 1123e491063b50a1e3fb06e35d0a0d413227c3fa as head, the three changed paths, a 22-passed EXIT=0 gate and a red negative control, but its tests line carries the literal placeholder PYTHONPATH=<worktree> rather than the absolute tree, and its baseline_suite and after_suite arms are absent.",
+    "write_paths": "the reviewed manifest declares reckon/velocity.py, reckon/crew/plan_review.py, tests/test_read_blobs_reads_bare_objects.py, the section 9 evidence fragment and the figure directory; the diff of 1123e4910 touches only the first three, all inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_read_blobs_reads_bare_objects.py:64,75-76,102-103 assert bare-sha bytes and None-for-missing against bytes written by the test's own git, and one-owner-negative-control.log shows all three redden when velocity.py's bare-object entry is reverted.",
+    "evidence": "one-owner-gate.log records 22 passed EXIT=0 and one-owner-negative-control.log is red EXIT=1 with the three named tests failing, but the gate log's header line names revision 217a050c (the base) rather than the reviewed head 1123e4910 and the manifest carries no baseline_suite/after_suite arms.",
+    "fit": "reckon/velocity.py:407-410 keeps the surrounding run_git/check_returncode idiom and adds no forbidden name, and the shared parse loop it consolidates onto is the one already at reckon/velocity.py:415-421.",
+    "goal_fidelity": "reckon/velocity.py:407-410 constructs the batch payload per spec and reckon/crew/plan_review.py:1475 calls read_blobs(repo, unique) with bare shas, deleting the forked parse the goal named.",
+    "reuse": "reckon/crew/plan_review.py:1475 extends the existing owner reckon/velocity.py::read_blobs and deletes the duplicate protocol, and test_one_blob_reader_serves_velocity_and_the_counter.py::test_the_batched_read_happens_in_one_function still pins --batch to that one function.",
+    "scope_discipline": "git diff 217a050c 1123e4910 --stat lists only reckon/velocity.py, reckon/crew/plan_review.py and tests/test_read_blobs_reads_bare_objects.py, all declared write paths, and no plan, index or out-of-scope file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the brief and plan section 9(a) ask that reckon/velocity.py::read_blobs gain an entry reading bare object names and reckon/crew/plan_review.py::_read_reviewed_blob_texts call it, deleting its forked parse; the diff builds the payload per-spec at reckon/velocity.py:407-409 (bare string or pair) and plan_review.py:1475 calls read_blobs(repo, unique), so the fork is gone, which is the brief's stated change.\nVERDICT done_when: section 9(a) done-when is that the fork is gone and a test shows read_blobs returning a bare blob's bytes and None for a missing one and fails when the bare-object entry is reverted; tests/test_read_blobs_reads_bare_objects.py:58,67,79 do exactly that, the gate log records 22 passed EXIT=0 with those tests collected, and one-owner-negative-control.log shows all three red at EXIT=1 when the entry is reverted.\nVERDICT write_paths: the reviewed manifest declares reckon/velocity.py, reckon/crew/plan_review.py, tests/test_read_blobs_reads_bare_objects.py, the section 9 evidence fragment and the figure directory; the diff of 1123e4910 touches only the first three, all inside the declared set.\nVERDICT manifest: read; it records commit 1123e491063b50a1e3fb06e35d0a0d413227c3fa as head, the three changed paths, a 22-passed EXIT=0 gate and a red negative control, but its tests line carries the literal placeholder PYTHONPATH=<worktree> rather than the absolute tree, and its baseline_suite and after_suite arms are absent.\nVERDICT diff: read commit by commit against base 217a050c97c59da88b3d7b415e3cdb0f269a768f; reckon/velocity.py::read_blobs now accepts a bare object name as a spec beside a (revision, path) pair, reckon/crew/plan_review.py::_read_reviewed_blob_texts calls it and deletes the forked payload build, header/size parse and missing-object handling, and a new 103-line test file adds the bare-object coverage, +126/-34 over the three files.\nCALL_SITES: reckon/velocity.py:read_sources, reckon/velocity.py:_plan_metas, reckon/crew/plan_review.py:_read_reviewed_blob_texts\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/velocity.py:407-410 constructs the batch payload per spec and reckon/crew/plan_review.py:1475 calls read_blobs(repo, unique) with bare shas, deleting the forked parse the goal named.\nSCORE evidence: 15\nJUSTIFICATION evidence: one-owner-gate.log records 22 passed EXIT=0 and one-owner-negative-control.log is red EXIT=1 with the three named tests failing, but the gate log's header line names revision 217a050c (the base) rather than the reviewed head 1123e4910 and the manifest carries no baseline_suite/after_suite arms.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 217a050c 1123e4910 --stat lists only reckon/velocity.py, reckon/crew/plan_review.py and tests/test_read_blobs_reads_bare_objects.py, all declared write paths, and no plan, index or out-of-scope file is touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_read_blobs_reads_bare_objects.py:64,75-76,102-103 assert bare-sha bytes and None-for-missing against bytes written by the test's own git, and one-owner-negative-control.log shows all three redden when velocity.py's bare-object entry is reverted.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/velocity.py:407-410 keeps the surrounding run_git/check_returncode idiom and adds no forbidden name, and the shared parse loop it consolidates onto is the one already at reckon/velocity.py:415-421.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/plan_review.py:1475 extends the existing owner reckon/velocity.py::read_blobs and deletes the duplicate protocol, and test_one_blob_reader_serves_velocity_and_the_counter.py::test_the_batched_read_happens_in_one_function still pins --batch to that one function.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T130318278063-one-owner-for-the-batched-object-read/manifest.md:11 follow-on: the tests line carries the literal placeholder PYTHONPATH=<worktree> rather than an absolute path, so the recorded gate command is not reproducible as written even though one-owner-gate.log holds the real one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T130318278063-one-owner-for-the-batched-object-read/one-owner-gate.log:1 follow-on: the header names revision 217a050c (the base) though the gate measured the working tree carrying the 1123e4910 change, so the log does not identify the code behind its 22-passed result.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T130318278063-one-owner-for-the-batched-object-read/manifest.md:1 follow-on: the reviewed manifest carries no baseline_suite or after_suite arm, so the added-failure count for this run is unmeasured and this record stores added_failure_count null rather than zero.\nFINDING reckon/crew/plan_review.py:1476 follow-on: the except clause catches (OSError, subprocess.CalledProcessError) but read_blobs' shared parse at reckon/velocity.py:416-423 uses data.index and int(), whose ValueError on malformed batch output previously broke out of the fork's find-based loop and now propagates; the path is a single-process read of the project's own object store so the reachability is low, but the consolidation moved plan_review onto the stricter reader without widening the guard.\nREVIEWED_BASE_SHA: 217a050c97c59da88b3d7b415e3cdb0f269a768f\nREVIEWED_HEAD_SHA: 1123e491063b50a1e3fb06e35d0a0d413227c3fa",
+  "review_run_id": "r-20261007T131420467870-review-of-one-owner-for-the-batched-object-read",
+  "reviewed_base_sha": "217a050c97c59da88b3d7b415e3cdb0f269a768f",
+  "reviewed_head_sha": "1123e491063b50a1e3fb06e35d0a0d413227c3fa",
+  "reviewed_run_id": "r-20261007T130318278063-one-owner-for-the-batched-object-read",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T13:20:10.321044+00:00",
+  "total": 109
+}
