@@ -279,6 +279,34 @@ def test_flipping_impl_between_authored_and_computed_leaves_every_unit_covered(
     assert _coverage(store, authored)[1] == set()
 
 
+# ── commits: a landing's provenance leaves the design review standing ────────
+
+
+def test_a_landing_commits_leaves_every_unit_covered_but_a_prose_edit_does_not(
+    store,
+) -> None:
+    base = _plan()
+    _store_review(store, base)
+
+    # The landing beat sets ``commits``; excluding it means neither the document
+    # unit's digest nor any section's moves, so the stored review still covers.
+    landed = _plan(commits=["0" * 40, "1" * 40])
+    assert landed != base
+    assert plan_review._section_digests(landed) == plan_review._section_digests(base)
+    assert plan_review.plan_fingerprint(landed) == plan_review.plan_fingerprint(base)
+    records, uncovered = _coverage(store, landed)
+    assert uncovered == set()
+    assert records
+
+    # An authored prose edit beside the commits write is not swallowed by the
+    # exclusion: the section it changes is reported uncovered.
+    edited = landed.replace("Build beta.", "Choose a wholly different design for beta.")
+    assert edited != landed
+    records, uncovered = _coverage(store, edited)
+    assert uncovered == {"b"}
+    assert records
+
+
 # ── The metadata-scalar sweep over every live plan ──────────────────────────
 
 _METADATA_EDITS = (
@@ -292,6 +320,7 @@ _METADATA_EDITS = (
     ("sprint", "plan-sprint", "S99"),
     ("tags", "plan-tags", "x,y"),
     ("archived", "plan-archived", "1"),
+    ("commits", "plan-commits", "0" * 40),
 )
 
 

@@ -16,7 +16,8 @@ a version that no longer exists, and the dispatch gate would refuse every later
 build with no review able to clear it. So the fingerprint normalises out exactly
 the server-managed metadata scalars — the plan's version, modified stamp,
 implementation fraction, status, ROI, effort, owner, sprint, tags and archive
-flag — and digests the authored content: the sections' prose and the document
+flag — together with the ``commits`` the landing beat records — and digests the
+authored content: the sections' prose and the document
 unit's decisions, gates, dependencies and other authored state. Comments and
 followups are normalised out beside the metadata scalars, both the authored and
 the promotion's landing ones, because they record work done and next steps
@@ -72,10 +73,15 @@ from reckon.crew import review as _review_store
 parse_review_report = _review_store.parse_plan_review_report
 
 # ── The fingerprint exclusion set ───────────────────────────────────────────
-# These are the server-managed metadata scalars: written by the store or the web
-# surface, never authored as plan content. A change to any of them neither
-# requires a review nor invalidates one, so they are normalised out of the
-# digest. Every other key of the parsed plan is authored content and stays in.
+# These are the bookkeeping scalars: written by the store, the web surface or
+# the landing beat, never authored as plan content. A change to any of them
+# neither requires a review nor invalidates one, so they are normalised out of
+# the digest. ``commits`` belongs here although the landing beat writes it rather
+# than the store: it records which commits landed the plan, which is provenance
+# rather than the design a review reads, and the beat sets it on every landing.
+# Left in, each landing would move the ``_document`` digest and make the next
+# dispatch refuse with ``plan-review-missing``. Every other key of the parsed
+# plan is authored content and stays in.
 PLAN_METADATA_SCALARS: tuple[str, ...] = (
     "version",
     "modified",
@@ -87,6 +93,7 @@ PLAN_METADATA_SCALARS: tuple[str, ...] = (
     "sprint",
     "tags",
     "archived",
+    "commits",
 )
 
 # ── The derived-field exclusions ────────────────────────────────────────────
