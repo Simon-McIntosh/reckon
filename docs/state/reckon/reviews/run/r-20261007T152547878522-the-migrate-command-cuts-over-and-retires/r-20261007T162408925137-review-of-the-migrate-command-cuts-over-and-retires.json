@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/fleet_migrate.py:174",
+    "reckon/crew/fleet_migrate.py:192",
+    "reckon/crew/fleet_migrate.py:420",
+    "reckon/crew/fleet_migrate.py:456"
+  ],
+  "completed_at": "2026-10-07T16:42:09.233Z",
+  "dispatched_at": "2026-10-07T16:24:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_migrate.py",
+      "line": "132",
+      "severity": "follow-on",
+      "text": "follow-on: the cutover PID coercion restored here (coerce_pid=True, fleet_migrate.py:132-136, called from _local_session_processes at fleet_migrate.py:456) has no test \u2014 neither local-reader test writes a numeric pid as a string (test_fleet_migrate_cutover.py:259 and test_fleet_migrate.py:260 both use an integer pid). The capability was silently dropped by 42c2ad36 and only restored by 8bd17f310, which is itself the proof that nothing covers it: a record with \"pid\": \"4321\" now matches again, but a future reader refactor can drop it a second time with the suite green."
+    },
+    {
+      "file": "tests/test_crew_recover.py",
+      "line": "478",
+      "severity": "follow-on",
+      "text": "follow-on: test_the_follow_loop_sweeps_on_a_cadence_not_every_iteration is a monitor of the machine rather than a unit test \u2014 _follow_watch_lines reaches _check_consumer, which calls runs.follower_owner() and reads the RECKON_FOLLOWER_OWNER environment variable (runs.py:2956) for an owner pid it then probes for liveness; nothing in this test injects that owner, so the loop ends after one pass when the stamped pid is dead (one sweep, not the three asserted). It fails deterministically in a session whose RECKON_FOLLOWER_OWNER names a finished process and passes when the variable is unset, so the gate result is a function of the reviewing session's environment, not of the code."
+    }
+  ],
+  "head_log_revision": "8bd17f310466988b00cc4277891ba226fb24d957",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 call sites of the two new shared readers: _local_observation calls _listed_sessions (fleet_migrate.py:174) and _live_claude_records (fleet_migrate.py:192), _active_sessions calls _listed_sessions (fleet_migrate.py:420), and _local_session_processes calls _live_claude_records (fleet_migrate.py:456); both prior reuse follow-ons now route through one owner each.",
+    "diff": "read both commits against the prior reviewed head 50522014b: 42c2ad36b extracts _listed_sessions (fleet_migrate.py:88) and _live_claude_records (fleet_migrate.py:109) and rewires the census and cutover readers, and 8bd17f310 restores the cutover path's int(pid) coercion through coerce_pid=True; together 96 insertions and 57 deletions, one file only.",
+    "done_when": "the section done_when asks for a dry run at every step, a resume-after-interrupt, and a retire that cancels nothing without --confirm; these commits are a reuse refactor that changes no step semantics.",
+    "goal": "the node goal is the \u00a78 cutover and retire steps; this range is a follow-up that removes the two duplicated readers the earlier review flagged (fleet_migrate.py:397 and :364), leaving the cutover pane verification and the --confirm-gated retire unchanged.",
+    "manifest": "read; it records the eight-file gate at 8bd17f31 as 165 passed EXIT=0 in gate-review-final.log and the retire no-confirm mutation red at EXIT=1 in negative-control-review-final.log.",
+    "write_paths": "read the manifest's declared paths (fleet_migrate.py, recovery.py, cli.py, the two test files and the evidence fragment); the range touches exactly reckon/crew/fleet_migrate.py, all inside them."
+  },
+  "justifications": {
+    "durability": "the reuse debt is genuinely retired (one zellij reader, one process-start join), but the cutover string-pid coercion restored in this range is untested: 42c2ad36 dropped it and 8bd17f310 put it back with no test either way (test_fleet_migrate_cutover.py:259 and test_fleet_migrate.py:260 use integer pids).",
+    "evidence": "the head gate is reproducible: an independent run at 8bd17f31 with RECKON_FOLLOWER_OWNER unset ends 165 passed EXIT=0, matching gate-review-final.log; the negative control at the same revision reddens test_retire_refuses_steps_and_sessions_then_requires_confirmation at EXIT=1.",
+    "fit": "the new helpers follow the module's private-helper and injected-callable idiom (invoke=subprocess.run, callables defaulted at the signature), keep the ledger-write and error-raising patterns, and carry no plan, ticket or version label.",
+    "goal_fidelity": "fleet_migrate.py:800-880 still ends the old session and compares each pane's (tab, conversation, cwd) against the new-node census, and fleet_migrate.py:919-948 still checks worker steps and zellij sessions before a --confirm-gated scancel; _listed_sessions returns each session's exited flag so the census filter (endswith -fleet) and the active-session filter (not exited) each keep their own semantics.",
+    "reuse": "both prior follow-ons are resolved: _local_observation and _active_sessions now share _listed_sessions, and _local_observation and _local_session_processes share the _live_claude_records process-start join, so the procStart field index and the record keys live in one place; the cutover command-string read remains local to _local_session_processes, which is where it is used.",
+    "scope_discipline": "the range 50522014b..8bd17f310 touches exactly reckon/crew/fleet_migrate.py (96 insertions, 57 deletions, one file) and nothing else, inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: this range is a follow-up to the \u00a78 cutover and retire work that removes the two duplicated readers the earlier review flagged; the cutover pane verification at fleet_migrate.py:800 and the --confirm-gated retire at fleet_migrate.py:919 are unchanged.\nVERDICT done_when: the section done_when asks for a dry run at every step, a resume-after-interrupt, and a retire that cancels nothing without --confirm; these commits change no step semantics.\nVERDICT write_paths: the range touches exactly reckon/crew/fleet_migrate.py, all inside the declared write paths.\nVERDICT manifest: read; the gate at 8bd17f31 is 165 passed EXIT=0 in gate-review-final.log and the retire no-confirm mutation is red at EXIT=1 in negative-control-review-final.log.\nVERDICT diff: read both commits against 50522014b; 42c2ad36b extracts _listed_sessions and _live_claude_records and rewires the census and cutover readers, 8bd17f310 restores the cutover int(pid) coercion through coerce_pid=True; 96 insertions, 57 deletions, one file.\nCALL_SITES: reckon/crew/fleet_migrate.py:174, reckon/crew/fleet_migrate.py:192, reckon/crew/fleet_migrate.py:420, reckon/crew/fleet_migrate.py:456\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: fleet_migrate.py:800-880 ends the old session and compares each pane's (tab, conversation, cwd) against the census, and fleet_migrate.py:919-948 checks worker steps and zellij sessions before a --confirm-gated scancel; _listed_sessions preserves each caller's filter (census keeps -fleet, active keeps not-exited).\nSCORE evidence: 18\nJUSTIFICATION evidence: the head gate reproduces \u2014 an independent run at 8bd17f31 with RECKON_FOLLOWER_OWNER unset ends 165 passed EXIT=0, matching gate-review-final.log \u2014 and the negative control at 8bd17f31 reddens test_retire_refuses_steps_and_sessions_then_requires_confirmation at EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the range touches exactly reckon/crew/fleet_migrate.py, 96 insertions and 57 deletions, all inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the reuse debt is retired, but the cutover string-pid coercion restored by 8bd17f310 is untested \u2014 42c2ad36 dropped it and the later commit restored it with no test covering either direction.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers use the module's private-helper and injected-callable idiom with no plan, ticket or version label.\nSCORE reuse: 18\nJUSTIFICATION reuse: both prior follow-ons are resolved \u2014 _listed_sessions and _live_claude_records each have one definition and both prior copies now route through them.\nFINDING reckon/crew/fleet_migrate.py:132 follow-on: the cutover PID coercion (coerce_pid=True, called from fleet_migrate.py:456) has no test; 42c2ad36 silently dropped it and 8bd17f310 restored it, so a future refactor can drop it again with the suite green.\nFINDING tests/test_crew_recover.py:478 follow-on: test_the_follow_loop_sweeps_on_a_cadence_not_every_iteration reads RECKON_FOLLOWER_OWNER through _check_consumer and ends after one pass when that owner pid is dead, so the gate result depends on the reviewing session's environment, not the code.\n",
+  "review_run_id": "r-20261007T162408925137-review-of-the-migrate-command-cuts-over-and-retires",
+  "reviewed_base_sha": "50522014beeb295e8a88e9b494f57c7c7cede25c",
+  "reviewed_head_sha": "8bd17f310466988b00cc4277891ba226fb24d957",
+  "reviewed_run_id": "r-20261007T152547878522-the-migrate-command-cuts-over-and-retires",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261007T162408925137-review-of-the-migrate-command-cuts-over-and-retires",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T16:47:57.550602+00:00",
+  "total": 109
+}
