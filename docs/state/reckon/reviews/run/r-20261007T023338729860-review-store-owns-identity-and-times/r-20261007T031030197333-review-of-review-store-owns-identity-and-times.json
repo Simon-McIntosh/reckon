@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c4bc055a4c0a77f54435fbdb48ea2f147bdbc599",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:8760 store_committed_review",
+    "reckon/crew/recovery.py:1847 store_review",
+    "reckon/crew/plan_review.py:1023 store_plan_review",
+    "reckon/crew/plan_review.py:1268 store_plan_review",
+    "scripts/import_host_reviews.py:346 store_committed_review"
+  ],
+  "completed_at": "2026-10-07T03:33:16.783Z",
+  "dispatched_at": "2026-10-07T03:11:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1275",
+      "severity": "follow-on",
+      "text": "follow-on: names_a_review_subject is defined here and called from nowhere in the tree (grep over `.py`, `.md` and `.html` finds only the definition and the evidence fragment's listing), so it is dead code; the subject check the writers actually enforce is the inline reviewed_run_id / plan_slug+plan_version test in store_review and store_committed_review, which is what names_a_review_subject looks like it was written to replace."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1944",
+      "severity": "follow-on",
+      "text": "follow-on: resolve_record_times promises (docstring, review.py:1897-1900) that 'every source still contributes a completion it carries', but the record branch (review.py:1936) and the run-id branch (review.py:1944) return a completed stamp taken from the record or left empty, discarding any completion an earlier run-record absorb supplied; reproduced by giving the review run's own record completed_at with no dispatched_at - the resolution returns dispatched from the run id and completed '' with times_source run-id, so a completion that a run record did carry is silently dropped."
+    }
+  ],
+  "head_log_revision": "770a2578f5b3fd280c49862c2cc530ff1f29307e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s) of the changed writers",
+    "diff": "read incrementally against base c4bc055a: 770a2578 adds the times ladder, the material predicate, the shared derivation and the three guards plus 306 lines of tests; c38bb011 adds the evidence fragment; every changed path is the manifest's own.",
+    "done_when": "the brief's done-when names items 1,2,4 plus keeping the named suites green; tests/test_review_store_owns_identity_and_times.py has 12 cases covering the run-id dispatch, the record-stamp source, the sidecar crew-run resolution, the no-time refusal, the shared derivation and all three writer refusals, and I re-ran the selection at c38bb011 (40 passed, 2 failed, both pre-existing).",
+    "goal": "the goal is that the review store owns a record's identity, times and what it accepts; review.py:1869 resolve_record_times and :1828 run_id_dispatch_time implement the times ladder, :1830 derived_legacy_review_run_id the identity, and the carries_review_material guard in store_review:1760, store_committed_review:2008 and plan_review:440 the acceptance.",
+    "manifest": "read; it records the head and base arms at 40/2 and 29/2 with the two shared ids, times_source values, the negative-control log whose last line is EXIT=1, and a follow-on for the two test_plan_review_store failures that I confirmed pre-date the node.",
+    "write_paths": "the manifest declares six write paths plus a figures directory; the two commits touch exactly those six and no figure was needed, so the diff is inside scope."
+  },
+  "justifications": {
+    "durability": "the declared negative control (make store_committed_review refuse when the run records carry no times) reddens test_a_run_review_with_no_run_record_takes_the_encoded_dispatch_time and test_a_plan_review_with_no_run_record_takes_its_own_stamps (2 failed, 9 passed, EXIT=1); each of the three writers has its own refusal test, the shared derivation is pinned by test_the_import_script_derives_the_legacy_id_through_the_store, and the plan-review sidecar resolution by test_a_plan_review_resolves_the_crew_run_its_report_directory_names; the dropped-completion edge below is untested.",
+    "evidence": "the branch's gate is tests/test_review_store_owns_identity_and_times.py with four siblings; I re-ran both arms in a scratch extraction of c38bb011: head 40 passed, 2 failed, EXIT=1, base 29 passed, 2 failed, EXIT=1, the same two ids (test_plan_review_store.py::test_metadata_only_edit_keeps_the_fingerprint and ::test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it), so the delta is zero; I confirmed those ids pre-date the node (d499c73e9, which added commits to PLAN_METADATA_SCALARS, is an ancestor of the base c4bc055a), and the added-failure count from the reviewed run's own base-arm.log and gate.log reads 0 ids via review.added_failures_from_gate_logs.",
+    "fit": "the added names describe mechanism - run_id_dispatch_time, resolve_record_times, carries_review_material, derived_legacy_review_run_id, times_source - with no version, plan or ticket identifier and no attribution, and the docstrings follow the module's idiom; but names_a_review_subject (review.py:1275) is added and called from nowhere in the tree.",
+    "goal_fidelity": "the brief's items 1, 2 and 4 are all delivered: review.py:1869 resolve_record_times resolves a record's dispatch and completion in the order run-records, the record's own carried stamps, then the dispatch instant the review run id encodes (review.py:1828 run_id_dispatch_time), writing the stage under times_source (review.py:2019-2024) and refusing only when no dispatch resolves (review.py:1947-1951); a plan review resolves the crew run its report directory's dispatch.json sidecar names (review.py:1851-1871); the store clock is never substituted, and I reproduced the run-id path independently (dispatched 2026-10-06T12:00:00+00:00, completion empty, times_source run-id).",
+    "reuse": "the change folds the import script's private copies back onto one owner: the legacy-id derivation moves into review.py:1830 derived_legacy_review_run_id and the material predicate into review.py:1306 carries_review_material, with scripts/import_host_reviews.py:154 and :176 calling them and both private helpers deleted (test asserts module.review_store is review_module), and plan_review.store_plan_review:440 reuses the same predicate.",
+    "scope_discipline": "the diffstat over 770a2578 and c38bb011 lists exactly reckon/crew/review.py, reckon/crew/plan_review.py, scripts/import_host_reviews.py, tests/test_review_store_owns_identity_and_times.py, tests/test_review_records_have_a_committed_root.py and the evidence fragment - all inside the manifest's declared write paths; the declared figures directory was not created because the done-when names no artifact."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the store resolves a committed record's dispatch and completion itself, from the run records, the record's own stamps, then the instant the review run id encodes, never the store clock, and accepts records only; review.py:1869 resolve_record_times, :1828 run_id_dispatch_time, :1306 carries_review_material and :1830 derived_legacy_review_run_id.\nVERDICT done_when: tests/test_review_store_owns_identity_and_times.py covers the times ladder, the sidecar crew-run resolution, the refusal when no dispatch resolves, the shared derivation and all three writer refusals; I re-ran the branch selection at c38bb011 (40 passed, 2 failed, both pre-existing) and the base (29 passed, 2 failed, same ids).\nVERDICT write_paths: the two commits touch exactly the manifest's declared paths - review.py, plan_review.py, scripts/import_host_reviews.py, the new test, test_review_records_have_a_committed_root.py and the evidence fragment - with no out-of-scope file.\nVERDICT manifest: read; head 40/2 and base 29/2 with the shared ids, times_source run-record|record|run-id, negative control EXIT=1, and it correctly reports the two test_plan_review_store failures as a peer-caused out-of-scope follow-on.\nVERDICT diff: read 770a2578 and c38bb011 against c4bc055a; the first adds the ladder, the material guard and the shared derivation, the second the evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:8760 store_committed_review, reckon/crew/recovery.py:1847 store_review, reckon/crew/plan_review.py:1023 store_plan_review, reckon/crew/plan_review.py:1268 store_plan_review, scripts/import_host_reviews.py:346 store_committed_review\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the brief's items 1, 2 and 4 are all delivered: review.py:1869 resolve_record_times resolves a record's dispatch and completion in the order run-records, the record's own carried stamps, then the dispatch instant the review run id encodes (review.py:1828 run_id_dispatch_time), writing the stage under times_source (review.py:2019-2024) and refusing only when no dispatch resolves (review.py:1947-1951); a plan review resolves the crew run its report directory's dispatch.json sidecar names (review.py:1851-1871); the store clock is never substituted, and I reproduced the run-id path independently (dispatched 2026-10-06T12:00:00+00:00, completion empty, times_source run-id).\nSCORE evidence: 19\nJUSTIFICATION evidence: the branch's gate is tests/test_review_store_owns_identity_and_times.py with four siblings; I re-ran both arms in a scratch extraction of c38bb011: head 40 passed, 2 failed, EXIT=1, base 29 passed, 2 failed, EXIT=1, the same two ids (test_plan_review_store.py::test_metadata_only_edit_keeps_the_fingerprint and ::test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it), so the delta is zero; I confirmed those ids pre-date the node (d499c73e9, which added commits to PLAN_METADATA_SCALARS, is an ancestor of the base c4bc055a), and the added-failure count from the reviewed run's own base-arm.log and gate.log reads 0 ids via review.added_failures_from_gate_logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diffstat over 770a2578 and c38bb011 lists exactly reckon/crew/review.py, reckon/crew/plan_review.py, scripts/import_host_reviews.py, tests/test_review_store_owns_identity_and_times.py, tests/test_review_records_have_a_committed_root.py and the evidence fragment - all inside the manifest's declared write paths; the declared figures directory was not created because the done-when names no artifact.\nSCORE durability: 19\nJUSTIFICATION durability: the declared negative control (make store_committed_review refuse when the run records carry no times) reddens test_a_run_review_with_no_run_record_takes_the_encoded_dispatch_time and test_a_plan_review_with_no_run_record_takes_its_own_stamps (2 failed, 9 passed, EXIT=1); each of the three writers has its own refusal test, the shared derivation is pinned by test_the_import_script_derives_the_legacy_id_through_the_store, and the plan-review sidecar resolution by test_a_plan_review_resolves_the_crew_run_its_report_directory_names; the dropped-completion edge below is untested.\nSCORE fit: 19\nJUSTIFICATION fit: the added names describe mechanism - run_id_dispatch_time, resolve_record_times, carries_review_material, derived_legacy_review_run_id, times_source - with no version, plan or ticket identifier and no attribution, and the docstrings follow the module's idiom; but names_a_review_subject (review.py:1275) is added and called from nowhere in the tree.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change folds the import script's private copies back onto one owner: the legacy-id derivation moves into review.py:1830 derived_legacy_review_run_id and the material predicate into review.py:1306 carries_review_material, with scripts/import_host_reviews.py:154 and :176 calling them and both private helpers deleted (test asserts module.review_store is review_module), and plan_review.store_plan_review:440 reuses the same predicate.\nFINDING reckon/crew/review.py:1275 follow-on: names_a_review_subject is defined here and called from nowhere in the tree (grep over `.py`, `.md` and `.html` finds only the definition and the evidence fragment's listing), so it is dead code; the subject check the writers actually enforce is the inline reviewed_run_id / plan_slug+plan_version test in store_review and store_committed_review, which is what names_a_review_subject looks like it was written to replace.\nFINDING reckon/crew/review.py:1944 follow-on: resolve_record_times promises (docstring, review.py:1897-1900) that 'every source still contributes a completion it carries', but the record branch (review.py:1936) and the run-id branch (review.py:1944) return a completed stamp taken from the record or left empty, discarding any completion an earlier run-record absorb supplied; reproduced by giving the review run's own record completed_at with no dispatched_at - the resolution returns dispatched from the run id and completed '' with times_source run-id, so a completion that a run record did carry is silently dropped.\n",
+  "review_run_id": "r-20261007T031030197333-review-of-review-store-owns-identity-and-times",
+  "reviewed_base_sha": "c4bc055a4c0a77f54435fbdb48ea2f147bdbc599",
+  "reviewed_head_sha": "c38bb011143a0cd1dacef1b2cc0327cf7d3fa197",
+  "reviewed_run_id": "r-20261007T023338729860-review-store-owns-identity-and-times",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T03:25:50.885245+00:00",
+  "total": 117
+}
