@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>A run review naming its run's plan is committed under its run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="committed-store-files-run-reviews-under-their-run-landing">
+      <p><code>store_committed_review</code> now tests the reviewed run before the plan, so a run review that carries its run's <code>plan_slug</code> and no <code>plan_version</code> is filed under <code>run/&lt;reviewed-run-id&gt;/&lt;review-run-id&gt;.json</code> rather than in the plan tree at version 0; a plan review still routes to <code>plan/&lt;slug&gt;/</code> only when it carries an integer <code>plan_version</code> and no reviewed run. Gate <code>tests/test_committed_store_files_run_reviews_under_their_run.py</code> with <code>tests/test_review_records_have_a_committed_root.py</code> and <code>tests/test_every_review_round_is_committed.py</code>: 17 passed, <code>EXIT=0</code>; negative control restores the plan-first order and fails <code>test_a_run_review_with_its_runs_plan_slug_lands_in_the_run_tree</code>, 1 failed, <code>EXIT=1</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
