@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/picker/snapshot.py:502",
+    "reckon/crew/routing.py:3819"
+  ],
+  "completed_at": "2026-10-07T20:17:20.266Z",
+  "dispatched_at": "2026-10-07T20:11:50Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "3725",
+      "severity": "follow-on",
+      "text": "follow-on: stamp_of records only the directory listings and the resolved plan file, so an edit to a sibling candidate's plan-slug or reckon-type metadata that changes which plan resolves is not detected and a stale figure is served, where the removed walk stamped every non-archived plan file's identity and did detect it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T195144635612-estimated-hours-reads-one-plan/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded gate command carries the placeholder \"<66-file gate: ...>\" in place of the literal command list, so the gate behind the 736/1 result cannot be re-run from the record."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the single commit f6d378cd8 against base 00e8e3f59; it adds _docs_scan_directories and rewrites _estimated_hours to cache through capabilities.cached_pick_input_stamped, plus the new test file and a one-line landing fragment.",
+    "done_when": "the done-when requires identical (hours, source) across the enumerated node shapes, a walk-count test, an edit-stamp test, a live perf measure whose after-median is under 50 ms, and a negative control; tests/test_estimated_hours_reads_one_plan.py asserts the first three and the manifest records the perf figures and the red control.",
+    "goal": "the node goal is \"A pick finds the node's plan without walking the whole docs tree\"; reckon/crew/routing.py:3671 _estimated_hours now resolves via resources.resolve_resource and caches on the directory listings a resolve reads and the resolved plan file, with reckon/crew/picker/snapshot.py:502 as the production caller.",
+    "manifest": "read; it records the head gate at 736 passed with one pre-existing failure against the base at 715 passed with two, judges by delta, and names the base/head/perf/control logs on disk.",
+    "write_paths": "read the manifest's four declared paths; the diff's three paths (reckon/crew/routing.py, tests/test_estimated_hours_reads_one_plan.py and docs/evidence/fragments/one-typesafe-model-picker/estimated-hours-reads-one-plan.html) are all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_estimated_hours_reads_one_plan.py:189 reddens when the walk is restored (negative-control.log) and :211 fails if the resolved file's stamp is not read, though no test covers a sibling candidate's metadata edit.",
+    "evidence": "the gate result and the perf figures are recorded with their logs, but gate-head.log:3 and the manifest's tests field record the command as an unsubstituted \"<gate-list>\"/\"<66-file gate>\" placeholder, so the exact gate that produced the result cannot be re-run from the record.",
+    "fit": "reckon/crew/routing.py:3641 _docs_scan_directories follows the module's private-helper docstring idiom and carries no plan or stage label.",
+    "goal_fidelity": "reckon/crew/routing.py:3671 replaces the per-call docs.rglob(\"*.html\") with a resolve cached on directory listings and the resolved plan file, and perf-base.log/perf-after.log record the live median falling 177.9 ms to 0.5 ms at an identical figure.",
+    "reuse": "the change extends the existing capabilities.cached_pick_input_stamped and ledger._file_identity owners and mirrors routing.context_census; reckon/crew/routing.py:3661 re-states the INFRA_DIRS and evidence-fragment prune resources.identify_resource applies, for which no scan-directory owner exists.",
+    "scope_discipline": "the diff's three paths (reckon/crew/routing.py, tests/test_estimated_hours_reads_one_plan.py, docs/evidence/fragments/one-typesafe-model-picker/estimated-hours-reads-one-plan.html) are declared-path members and no other file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"A pick finds the node's plan without walking the whole docs tree\"; reckon/crew/routing.py:3671 _estimated_hours now resolves via resources.resolve_resource and caches on the directory listings a resolve reads and the resolved plan file, with reckon/crew/picker/snapshot.py:502 as the production caller.\nVERDICT done_when: the done-when requires identical (hours, source) across the enumerated node shapes, a walk-count test, an edit-stamp test, a live perf measure whose after-median is under 50 ms, and a negative control; tests/test_estimated_hours_reads_one_plan.py asserts the first three and the manifest records the perf figures and the red control.\nVERDICT write_paths: read the manifest's four declared paths; the diff's three paths (reckon/crew/routing.py, tests/test_estimated_hours_reads_one_plan.py and docs/evidence/fragments/one-typesafe-model-picker/estimated-hours-reads-one-plan.html) are all inside them.\nVERDICT manifest: read; it records the head gate at 736 passed with one pre-existing failure against the base at 715 passed with two, judges by delta, and names the base/head/perf/control logs on disk.\nVERDICT diff: read the single commit f6d378cd8 against base 00e8e3f59; it adds _docs_scan_directories and rewrites _estimated_hours to cache through capabilities.cached_pick_input_stamped, plus the new test file and a one-line landing fragment.\nCALL_SITES: reckon/crew/picker/snapshot.py:502, reckon/crew/routing.py:3819\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:3671 replaces the per-call docs.rglob(\"*.html\") with a resolve cached on directory listings and the resolved plan file, and perf-base.log/perf-after.log record the live median falling 177.9 ms to 0.5 ms at an identical figure.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate result and the perf figures are recorded with their logs, but gate-head.log:3 and the manifest's tests field record the command as an unsubstituted \"<gate-list>\"/\"<66-file gate>\" placeholder, so the exact gate that produced the result cannot be re-run from the record.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's three paths (reckon/crew/routing.py, tests/test_estimated_hours_reads_one_plan.py, docs/evidence/fragments/one-typesafe-model-picker/estimated-hours-reads-one-plan.html) are declared-path members and no other file is touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_estimated_hours_reads_one_plan.py:189 reddens when the walk is restored (negative-control.log) and :211 fails if the resolved file's stamp is not read, though no test covers a sibling candidate's metadata edit.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/routing.py:3641 _docs_scan_directories follows the module's private-helper docstring idiom and carries no plan or stage label.\nSCORE reuse: 17\nJUSTIFICATION reuse: the change extends the existing capabilities.cached_pick_input_stamped and ledger._file_identity owners and mirrors routing.context_census; reckon/crew/routing.py:3661 re-states the INFRA_DIRS and evidence-fragment prune resources.identify_resource applies, for which no scan-directory owner exists.\nFINDING reckon/crew/routing.py:3725 follow-on: stamp_of records only the directory listings and the resolved plan file, so an edit to a sibling candidate's plan-slug or reckon-type metadata that changes which plan resolves is not detected and a stale figure is served, where the removed walk stamped every non-archived plan file's identity and did detect it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T195144635612-estimated-hours-reads-one-plan/manifest.md:11 follow-on: the recorded gate command carries the placeholder \"<66-file gate: ...>\" in place of the literal command list, so the gate behind the 736/1 result cannot be re-run from the record.",
+  "review_run_id": "r-20261007T201123040138-review-of-estimated-hours-reads-one-plan",
+  "reviewed_base_sha": "00e8e3f59202ecb512bbc53ed700c52680899ebd",
+  "reviewed_head_sha": "f6d378cd8b13eadd7d390e2a3ba80aeec9da3175",
+  "reviewed_run_id": "r-20261007T195144635612-estimated-hours-reads-one-plan",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T20:16:13.194761+00:00",
+  "total": 104
+}
