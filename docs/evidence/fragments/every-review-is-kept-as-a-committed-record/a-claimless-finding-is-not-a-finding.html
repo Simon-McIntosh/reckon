@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>Landing: a claimless finding is not a finding | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-claimless-finding-is-not-a-finding-landing">
+      <p>Added <code>review.finding_claim</code> as the one predicate for a finding's claim text and routed <code>repair.review_findings</code> through it, so a bare-string finding becomes a finding, a <code>summary</code>/<code>detail</code>/<code>title</code> finding carries its claim, and a claimless entry is dropped rather than repaired; each id stays derived from <code>file</code>, <code>line</code> and the <code>text</code> key, and <code>stored_record</code> reports a record carrying any claimless finding into the read-failure region, which the obligation sweep renders as an <code>unreadable-review-record</code>. Gate (the new file with the repair tests and the committed-store-first test) 47 passed, EXIT=0; negative control (accept a mapping with no claim field): 4 failed, EXIT=1.</p>
+    </section>
+  </main>
+</body>
+</html>

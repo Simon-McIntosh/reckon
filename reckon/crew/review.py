@@ -144,6 +144,60 @@ def declared_severity(finding: Mapping[str, Any]) -> str | None:
     return word if word in FINDING_SEVERITIES else None
 
 
+# ── The claim a finding states ──────────────────────────────────────────────
+# A finding is only answerable if it says something: an acknowledgement or a
+# resume names the finding's id and its text, so an entry carrying neither a
+# claim nor a severity is a placeholder a reader cannot act on. The keys below
+# are the fields a stored finding may state its claim under, in the order a
+# finding carrying more than one is read: the review parser writes ``text``,
+# while hand-written evidence and legacy reviews state the same claim as
+# ``summary``, ``detail`` or ``title``. The order is fixed so one finding yields
+# one claim text wherever it is read.
+FINDING_CLAIM_FIELDS: tuple[str, ...] = ("text", "summary", "detail", "title")
+
+
+def finding_claim(finding: Any) -> str | None:
+    """Return the claim a finding states, or ``None`` when it states none.
+
+    A finding states a claim either as a non-empty string — a bare string in a
+    record's ``findings`` list — or as a mapping carrying a non-empty value
+    under one of :data:`FINDING_CLAIM_FIELDS`. Every other shape states nothing:
+    a mapping whose claim fields are all absent or empty, a number, a list, or
+    a null. The one reader of a stored finding's claim, so the normaliser that
+    answers a finding and the report that names a malformed record cannot
+    disagree about which entries are findings at all. A claimless entry is
+    left out rather than given an invented id, because an id that names no
+    claim cannot be answered back.
+    """
+    if isinstance(finding, str):
+        text = finding.strip()
+        return text or None
+    if isinstance(finding, Mapping):
+        for key in FINDING_CLAIM_FIELDS:
+            value = finding.get(key)
+            if value is None:
+                continue
+            text = str(value).strip()
+            if text:
+                return text
+    return None
+
+
+def claimless_findings(review: Mapping[str, Any]) -> list[Any]:
+    """Return the entries in a record's ``findings`` list that state no claim.
+
+    Only the record's own ``findings`` list is read: a record carrying a
+    reviewer's ``raw_text`` is parsed into findings elsewhere, and the
+    malformation this reports is about what the record stored rather than about
+    what a parser could derive from it. A record with no list, or with no such
+    entry, yields an empty list.
+    """
+    findings = review.get("findings")
+    if not isinstance(findings, list):
+        return []
+    return [finding for finding in findings if finding_claim(finding) is None]
+
+
 # ── The plan rubrics ────────────────────────────────────────────────────────
 # A plan review reads a plan's authored content before it is built; a plan
 # design review reads that plan against the codebase it would extend. Each item
@@ -2305,6 +2359,37 @@ def _note_skipped_record(
     target.append(entry)
 
 
+def _note_malformed_record(
+    path: Path | None,
+    record: Mapping[str, Any] | None,
+    *,
+    skipped: list[dict[str, str]] | None = None,
+) -> None:
+    """Report a selected record carrying any claimless finding as malformed.
+
+    A record is malformed when any entry in its ``findings`` list states no
+    claim: such a finding cannot be answered back, so the repair reader drops it
+    and the record's remaining findings repair as usual. The file is named to
+    the caller's ``skipped`` list, or to the collection region a
+    :func:`collect_read_failures` caller opened around the read, so a sweep that
+    opens the region turns the malformation into an ``unreadable-review-record``
+    obligation rather than the finding silently vanishing from repair. A read
+    that names neither is nobody's finding and is dropped, the same rule
+    :func:`_note_skipped_record` applies. The reason carries the count so a
+    reader sees how much of the record was unanswerable.
+    """
+    if path is None or record is None:
+        return
+    claimless = claimless_findings(record)
+    if not claimless:
+        return
+    _note_skipped_record(
+        path,
+        ValueError(f"{len(claimless)} finding(s) in this record state no claim"),
+        into=skipped,
+    )
+
+
 def _select_stored_record(
     paths: Iterable[Path],
     reviewed_head_sha: str | None,
@@ -2356,6 +2441,7 @@ def _record_with_merged_answers(
     *,
     committed: Path | None,
     base_dir: str | Path | None = None,
+    skipped: list[dict[str, str]] | None = None,
 ) -> tuple[Path | None, dict[str, Any] | None]:
     """Return the selected record carrying every copy's answers.
 
@@ -2372,6 +2458,11 @@ def _record_with_merged_answers(
     path this review run is filed under is merged last, so a committed answer
     wins a tie against a staging sibling's copy of it, the order a re-store
     merges its own merge sources in.
+
+    A merged record carrying any claimless finding is reported as malformed to
+    the caller's ``skipped`` list or the open collection region, so a reader
+    that opened :func:`collect_read_failures` names the file rather than the
+    malformation vanishing from repair.
     """
     path, record = selected
     if record is None:
@@ -2394,6 +2485,7 @@ def _record_with_merged_answers(
             sources.append(committed_record)
     merged = dict(record)
     merged.update(_merge_record_answers(sources))
+    _note_malformed_record(path, merged, skipped=skipped)
     return path, merged
 
 
@@ -2486,6 +2578,7 @@ def stored_record(
                     committed_selected,
                     committed=committed,
                     base_dir=base_dir,
+                    skipped=skipped,
                 )
     directory = review_store_root(base_dir) / project
     candidates = [review_path(project, reviewed_run_id, base_dir)]
@@ -2501,6 +2594,7 @@ def stored_record(
             ),
             committed=committed,
             base_dir=base_dir,
+            skipped=skipped,
         )
     if committed_selected is not None:
         # The committed tree holds records for this run and no staging file of
@@ -2512,6 +2606,7 @@ def stored_record(
             committed_selected,
             committed=committed,
             base_dir=base_dir,
+            skipped=skipped,
         )
     # No file of this run's own exists, so the store's records are searched for
     # one whose content names the run it reviews — the shape a hand-written
@@ -2525,6 +2620,7 @@ def stored_record(
         ),
         committed=committed,
         base_dir=base_dir,
+        skipped=skipped,
     )
 
 
