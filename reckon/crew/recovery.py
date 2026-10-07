@@ -11331,9 +11331,15 @@ def watch_ticker(
             return True
         if sleeper is not time.sleep:
             # A supplied sleeper may advance a simulated clock or return
-            # immediately. One call remains one poll interval in that case.
+            # immediately. Give it one bounded call per poll interval so a
+            # simulated long sleep cannot skip the lease renewal entirely.
             sleeper(
-                max(0.0, min(interval, remaining) if remaining is not None else interval)
+                max(
+                    0.0,
+                    min(interval, remaining, LEASE_RENEW_SECONDS)
+                    if remaining is not None
+                    else min(interval, LEASE_RENEW_SECONDS),
+                )
             )
             if not runs.renew_watch_host_lease(project):
                 return True
