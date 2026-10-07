@@ -24,8 +24,8 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="149">
-<meta name="plan-modified" content="2026-10-06">
+<meta name="plan-version" content="150">
+<meta name="plan-modified" content="2026-10-07">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -137,6 +137,18 @@
 <div class="r-dec" data-key="local-is-authoritative" data-choice="An explicit --local (or --backend) is authoritative; Jev never overrides a lane the caller named" data-by="lead" data-when="2026-10-06T10:11:25+00:00">
     <p class="r-dec-q">local-is-authoritative</p>
     <p class="r-dec-rat">Lead ruling, 2026-10-06: keep the --local override. Jev routes only dispatches that name no lane and otherwise records a shadow selection, which now runs off the dispatch&#x27;s critical path.</p>
+    </div>
+<div class="r-dec" data-key="picker-chooses-the-lane" data-choice="Dispatch with no lane named by default; the picker chooses the lane or holds. A named lane stays authoritative." data-by="lead" data-when="2026-10-07T04:34:16+00:00">
+    <p class="r-dec-q">picker-chooses-the-lane</p>
+    <p class="r-dec-rat">Lead ruling, 2026-10-07: let Jev make more decisions. Previously 1,102 of 1,104 promoted dispatches named their lane, so Jev only shadowed. The user-global routing rule was rewritten at dotfiles 063d530, and reckon&#x27;s skills and composed remedies follow in new-work-names-no-lane.</p>
+    </div>
+<div class="r-dec" data-key="lane-is-a-subscription" data-choice="A lane is a subscription or host (claude, codex, local) with models chosen inside it; claude-opus is retired as a separate lane once model selection exists" data-by="lead" data-when="2026-10-07T04:34:16+00:00">
+    <p class="r-dec-q">lane-is-a-subscription</p>
+    <p class="r-dec-rat">Lead ruling, 2026-10-07: it should be possible to name a lane and a model within it, and claude-opus duplicates claude. The claude lanes run on the subscription (apiKeySource none, no OpenRouter), so their harness cost is not spend. Design first in lane-and-model-design; the subscription cost fix lands in subscription-lanes-record-no-spend.</p>
+    </div>
+<div class="r-dec" data-key="banked-codex-reset" data-choice="One banked codex reset can be flagged available; it adds one window of allowance, never stacks, and clears when used or when detected" data-by="lead" data-when="2026-10-07T04:34:16+00:00">
+    <p class="r-dec-q">banked-codex-reset</p>
+    <p class="r-dec-rat">Lead ruling, 2026-10-07. Built in codex-banked-reset.</p>
     </div>
 </section>
 
