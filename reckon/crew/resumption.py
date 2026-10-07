@@ -55,8 +55,10 @@ from reckon._store import write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.crew.dispatch import (
     BudgetHold,
+    LanePaused,
     _actionable_budget_hold,
     _backend_settings,
+    _require_fleet_gate_open,
     project_mount_repository,
     record_resumption,
     resolve_project_repository,
@@ -604,6 +606,10 @@ def _launcher_refusal(
         return CrewError(
             f"run {run_id!r} still has a live process; observe or stop it before resuming"
         )
+    try:
+        _require_fleet_gate_open()
+    except LanePaused as exc:
+        return exc
     verdict = _readonly_budget_verdict(record, config=config)
     if verdict["held"]:
         return _actionable_budget_hold(verdict, config=config)
@@ -684,6 +690,13 @@ def _refusal_entry(entry: Mapping[str, Any], exc: BaseException) -> dict[str, An
     refusal with the same reason and the same detail — a prediction that reads
     differently from the thing it predicts is not a prediction.
     """
+    if isinstance(exc, LanePaused):
+        return {
+            **entry,
+            "reason": "lane-paused",
+            "detail": str(exc),
+            "lane_gate": dict(exc.gate),
+        }
     if isinstance(exc, BudgetHold):
         return {
             **entry,
@@ -735,6 +748,7 @@ def _spawn(plan: Any, *, log_path: Path, stderr_path: Path, prompt_path: Path) -
     """
     from reckon.crew.dispatch import supervised_launch
 
+    _require_fleet_gate_open()
     directory = Path(log_path).parent
     record = read_pointer(directory.name)
     worktree = str(record.get("worktree") or "")
@@ -813,6 +827,7 @@ def _resume(
     stderr_path = directory / f"resume-{turn}.stderr.log"
     attempt_started_at = _utc_now()
     manifest_baseline_mtime_ns = _manifest_mtime_ns(record.get("manifest_path") or "")
+    _require_fleet_gate_open()
     if launcher is None:
         pid = _spawn(
             plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path

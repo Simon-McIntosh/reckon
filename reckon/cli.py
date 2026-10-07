@@ -6797,7 +6797,7 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
     if reason and not backend:
         raise click.UsageError("--reason requires --backend")
     crew_module, flight_module = _crew_modules()
-    from reckon.crew.dispatch import LanePaused
+    from reckon.crew.dispatch import LanePaused, _require_fleet_gate_open
 
     try:
         record = crew_module.read_pointer(run_id)
@@ -6863,9 +6863,23 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
         current.get("manifest_path") or ""
     )
     attempt_started_at = crew_module._utc_now()
-    pid = crew_module._spawn(
-        plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
-    )
+    try:
+        _require_fleet_gate_open()
+        pid = crew_module._spawn(
+            plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
+        )
+    except LanePaused as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "lane-paused",
+                "detail": _lane_paused_detail(exc.gate),
+                "reason": exc.gate.get("reason"),
+                "lane_gate": exc.gate,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(75) from exc
     crew_module.record_resumption(
         run_id,
         pid=pid,

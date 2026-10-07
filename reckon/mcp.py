@@ -4799,8 +4799,19 @@ def _crew_recover(
                 "run_id": run_id,
                 "detail": str(exc),
             }
+    from reckon.crew.dispatch import LanePaused, _require_fleet_gate_open
+
     try:
         plan = crew_module.resume_plan(run_id, advice, config=config)
+    except LanePaused as exc:
+        return {
+            "ok": False,
+            "error": "lane-paused",
+            "run_id": run_id,
+            "detail": str(exc),
+            "reason": exc.gate.get("reason"),
+            "lane_gate": exc.gate,
+        }
     except crew_module.BudgetHold as exc:
         return {
             "ok": False,
@@ -4827,9 +4838,20 @@ def _crew_recover(
         current.get("manifest_path") or ""
     )
     attempt_started_at = crew_module._utc_now()
-    pid = crew_module._spawn(
-        plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
-    )
+    try:
+        _require_fleet_gate_open()
+        pid = crew_module._spawn(
+            plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
+        )
+    except LanePaused as exc:
+        return {
+            "ok": False,
+            "error": "lane-paused",
+            "run_id": run_id,
+            "detail": str(exc),
+            "reason": exc.gate.get("reason"),
+            "lane_gate": exc.gate,
+        }
     crew_module.record_resumption(
         run_id,
         pid=pid,
