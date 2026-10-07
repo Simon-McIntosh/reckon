@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate arms. repro-base.log (base arm) reports 2 failed, 1 passed: tests/test_dispositions_and_answers_survive_promotion.py::test_an_answer_to_a_promoted_plan_review_reaches_the_committed_copy and ::test_a_disposition_after_promotion_lands_in_a_commit. gate-committed-source.log (head arm, revision ff436d058823f83d1550660b0957c73a5da19ac3) reports 37 passed, EXIT=0 with no FAILED or ERROR id. Head failing ids minus base failing ids is empty, so added_failure_count 0, added_failure_ids [].",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:8765",
+    "reckon/cli.py:6134",
+    "reckon/cli.py:2939"
+  ],
+  "completed_at": "2026-10-07T12:38:54.978Z",
+  "dispatched_at": "2026-10-07T12:30:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1667",
+      "severity": "follow-on",
+      "text": "follow-on: the fix commit folds an unrelated reformat of the previous_run_id assignment into the diff, which is change the goal does not imply; it stays inside the declared path and does not alter behaviour."
+    }
+  ],
+  "head_log_revision": "ff436d058823f83d1550660b0957c73a5da19ac3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read ea059eb6 and ff436d05 against base a33cc311; ea059eb6 adds the answer merge plus the committed-copy writers, ff436d05 adds the committed file already at the target path as a merge source and the re-store case, together 640 insertions across four declared files.",
+    "done_when": "the plan's three cases are tests/test_dispositions_and_answers_survive_promotion.py::test_promotion_carries_a_disposition_from_a_staging_sibling, ::test_an_answer_to_a_promoted_plan_review_reaches_the_committed_copy and ::test_a_disposition_after_promotion_lands_in_a_commit; gate-committed-source.log records 37 passed EXIT=0 at ff436d058823f83d1550660b0957c73a5da19ac3.",
+    "goal": "the node goal is that a disposition or an answer written around promotion is not shadowed; the landed change makes the committed review record merge dimension_dispositions, responses and response_events out of every staging copy and the committed file, and makes the answer and disposition writers write and land the committed copy (reckon/crew/review.py:2217, reckon/crew/plan_review.py:1384).",
+    "manifest": "read; it records commits ea059eb6de585b944fb481847c5bb45fb1ad49d2 and ff436d058823f83d1550660b0957c73a5da19ac3, the 37-passed gate at ff436d058, a red negative control and a clean tree, but its baseline_suite and after_suite arms are null so this record derives the added-failure pair from the arm logs the manifest names.",
+    "write_paths": "the manifest declares reckon/crew/review.py, reckon/crew/plan_review.py, reckon/crew/promotion.py, the test file, the section evidence fragment and a figure directory; the diff touches review.py, plan_review.py, the test file and the fragment, all inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_dispositions_and_answers_survive_promotion.py:242 asserts the committed record carries a sibling's disposition, :364 asserts a re-store keeps the answer, and negative-control.log shows test_promotion_carries_a_disposition_from_a_staging_sibling reddens at 1 failed, 35 passed when the merge is disabled.",
+    "evidence": "gate-committed-source.log records 37 passed EXIT=0 at ff436d058 with its module and tree named, and repro-base.log records the three cases red before the change (2 failed, 1 passed), but the manifest's baseline_suite and after_suite arms are null so the added-failure pair is read from the named arm logs rather than a structured arm pair.",
+    "fit": "the new writer at reckon/crew/review.py:2232 reuses ledger._commit_state_write as the brief requires, and the module's private helpers follow the _committed_record_at and _merge_record_answers naming the surrounding store functions use.",
+    "goal_fidelity": "reckon/crew/review.py:2217-2227 merges answer fields from every staging copy and the committed file already at the target path, and reckon/crew/plan_review.py:1384-1394 writes and lands the committed copy, which is deliverable (1) and (2) of the plan section.",
+    "reuse": "the search over reckon for a merge of review answer fields found none; reckon/crew/review.py:2059 is the first owner of that capability and it extends the existing review store through _review_run_index and ledger._commit_state_write rather than duplicating a helper.",
+    "scope_discipline": "the diff a33cc311..ff436d05 touches only reckon/crew/review.py, reckon/crew/plan_review.py, tests/test_dispositions_and_answers_survive_promotion.py and the section evidence fragment, all declared, but reckon/crew/plan_review.py:1667 folds an unrelated single-line reformat of previous_run_id into the fix."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a disposition or an answer written around promotion is not shadowed; the landed change makes the committed review record merge dimension_dispositions, responses and response_events out of every staging copy and the committed file, and makes the answer and disposition writers write and land the committed copy (reckon/crew/review.py:2217, reckon/crew/plan_review.py:1384).\nVERDICT done_when: the plan's three cases are tests/test_dispositions_and_answers_survive_promotion.py::test_promotion_carries_a_disposition_from_a_staging_sibling, ::test_an_answer_to_a_promoted_plan_review_reaches_the_committed_copy and ::test_a_disposition_after_promotion_lands_in_a_commit; gate-committed-source.log records 37 passed EXIT=0 at ff436d058823f83d1550660b0957c73a5da19ac3.\nVERDICT write_paths: the manifest declares reckon/crew/review.py, reckon/crew/plan_review.py, reckon/crew/promotion.py, the test file, the section evidence fragment and a figure directory; the diff touches review.py, plan_review.py, the test file and the fragment, all inside the declared set.\nVERDICT manifest: read; it records commits ea059eb6de585b944fb481847c5bb45fb1ad49d2 and ff436d058823f83d1550660b0957c73a5da19ac3, the 37-passed gate at ff436d058, a red negative control and a clean tree, but its baseline_suite and after_suite arms are null so this record derives the added-failure pair from the arm logs the manifest names.\nVERDICT diff: read ea059eb6 and ff436d05 against base a33cc311; ea059eb6 adds the answer merge plus the committed-copy writers, ff436d05 adds the committed file already at the target path as a merge source and the re-store case, together 640 insertions across four declared files.\nCALL_SITES: reckon/crew/promotion.py:8765, reckon/cli.py:6134, reckon/cli.py:2939\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:2217-2227 merges answer fields from every staging copy and the committed file already at the target path, and reckon/crew/plan_review.py:1384-1394 writes and lands the committed copy, which is deliverable (1) and (2) of the plan section.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-committed-source.log records 37 passed EXIT=0 at ff436d058 with its module and tree named, and repro-base.log records the three cases red before the change (2 failed, 1 passed), but the manifest's baseline_suite and after_suite arms are null so the added-failure pair is read from the named arm logs rather than a structured arm pair.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff a33cc311..ff436d05 touches only reckon/crew/review.py, reckon/crew/plan_review.py, tests/test_dispositions_and_answers_survive_promotion.py and the section evidence fragment, all declared, but reckon/crew/plan_review.py:1667 folds an unrelated single-line reformat of previous_run_id into the fix.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispositions_and_answers_survive_promotion.py:242 asserts the committed record carries a sibling's disposition, :364 asserts a re-store keeps the answer, and negative-control.log shows test_promotion_carries_a_disposition_from_a_staging_sibling reddens at 1 failed, 35 passed when the merge is disabled.\nSCORE fit: 18\nJUSTIFICATION fit: the new writer at reckon/crew/review.py:2232 reuses ledger._commit_state_write as the brief requires, and the module's private helpers follow the _committed_record_at and _merge_record_answers naming the surrounding store functions use.\nSCORE reuse: 19\nJUSTIFICATION reuse: the search over reckon for a merge of review answer fields found none; reckon/crew/review.py:2059 is the first owner of that capability and it extends the existing review store through _review_run_index and ledger._commit_state_write rather than duplicating a helper.\nFINDING reckon/crew/plan_review.py:1667 follow-on: the fix commit folds an unrelated reformat of the previous_run_id assignment into the diff, which is change the goal does not imply; it stays inside the declared path and does not alter behaviour.\nREVIEWED_BASE_SHA: a33cc311bcf12343795c3b1a7c631176acc0099e\nREVIEWED_HEAD_SHA: ff436d058823f83d1550660b0957c73a5da19ac3\n",
+  "review_run_id": "r-20261007T122948442035-review-of-dispositions-and-answers-survive-promotion",
+  "reviewed_base_sha": "a33cc311bcf12343795c3b1a7c631176acc0099e",
+  "reviewed_head_sha": "ff436d058823f83d1550660b0957c73a5da19ac3",
+  "reviewed_run_id": "r-20261007T115357305934-dispositions-and-answers-survive-promotion",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T12:40:32.319293+00:00",
+  "total": 107
+}
