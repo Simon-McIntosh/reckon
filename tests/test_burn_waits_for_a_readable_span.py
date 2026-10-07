@@ -89,3 +89,33 @@ def test_a_mature_week_projects_at_the_existing_rate(
     assert candidate["pace_allowance"] == pytest.approx(
         elapsed_fraction * 1.1, rel=0.001
     )
+
+
+@pytest.mark.parametrize(
+    ("used_percent", "elapsed_fraction"),
+    [(1.0, 0.06), (6.0, 0.01)],
+)
+def test_account_burn_needs_both_existing_floors(
+    used_percent: float, elapsed_fraction: float
+) -> None:
+    window_seconds = 10_080 * 60
+    remaining = int(window_seconds * (1 - elapsed_fraction))
+    assert budget._burn_multiple(used_percent, 10_080, remaining) is None
+
+    moment = datetime(2030, 1, 3, tzinfo=UTC)
+    state = budget.BudgetState(
+        backend="codex",
+        headroom="known",
+        utilisation_pct=used_percent,
+        burn_multiple=(used_percent / 100) / elapsed_fraction,
+        rate_limit_period_minutes=10_080,
+        resets_at=(moment + timedelta(seconds=remaining)).isoformat(),
+        seconds_until_reset=remaining,
+        observed_at=moment.isoformat(),
+    )
+    projected = budget._with_projected_exhaustion(state, now=moment)
+    assert projected.headroom == "known"
+    assert projected.utilisation_pct == used_percent
+    assert projected.burn_multiple is None
+    assert projected.projected_exhaustion_at is None
+    assert "to project" in projected.detail
