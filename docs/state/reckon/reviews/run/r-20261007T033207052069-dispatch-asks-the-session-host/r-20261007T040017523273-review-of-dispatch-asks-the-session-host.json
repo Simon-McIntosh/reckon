@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:2488 crew_dispatch",
+    "reckon/crew/dispatch.py:7313 watcher-admission call",
+    "reckon/crew/dispatch.py:5940 dry-run preview admission"
+  ],
+  "completed_at": "2026-10-07T04:24:27.307Z",
+  "dispatched_at": "2026-10-07T04:01:37Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T033207052069-dispatch-asks-the-session-host/manifest.md",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: orientation_base_sha is a 42-character value that resolves to no git object, so a reader taking the field for the base cannot locate it; the real parent is 2565ffc2e553f2832d3a141a4f186b171ccba6a4."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 2565ffc2; the single commit 8775e225d adds four private helpers and a delivery field to reckon/crew/dispatch.py, a 268-line test file and a 35-line evidence fragment, and deletes nothing.",
+    "done_when": "the done_when names tests/test_dispatch_session_host.py; its gate-head.log records 2 passed EXIT=0, and re-running that file here reproduced 2 passed EXIT=0.",
+    "goal": "the node's goal is to make crew dispatch ask the calling session's host for a follower before refusing; reckon/crew/dispatch.py:7293-7302 adds exactly that ask-and-wait branch in dispatch().",
+    "manifest": "read; status complete, commit 8775e225d, gate-head.log 2 passed EXIT=0 and gate-negative.log 1 failed EXIT=1; its orientation_base_sha field is a malformed 42-character value that resolves to no git object.",
+    "write_paths": "read the manifest's declared paths; the diff touches reckon/crew/dispatch.py, tests/test_dispatch_session_host.py and docs/evidence/fragments/a-follower-lives-as-long-as-its-session/dispatch-asks-the-session-host.html, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_session_host.py:234-238 fail if the request stops reaching the FIFO or the host-delivered arming line is not emptied, and the reviewed negative control reddens that case by skipping the host request.",
+    "evidence": "tests/test_dispatch_session_host.py:234-238 and :267 assert the FIFO request and both delivery verdicts, but only the $XDG_RUNTIME_DIR branch of the three-candidate runtime chain the done_when names is exercised.",
+    "fit": "reckon/crew/dispatch.py:1252-1336 adds a named constant and three private helpers with mechanism docstrings, matching the module's idiom with no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/dispatch.py:7293 gates the ask on launch_kind == \"cli\", a session and an unattached watch, and leaves the refusal unchanged when no host answers.",
+    "reuse": "reckon/crew/dispatch.py:1321 reuses _write_fleet_request and :1294 _process_start_time, and a search of reckon/crew for a session-host runtime resolver found only fleet_supervisor.runtime_directory, which names the batch step's own runtime dir rather than this XDG-based chain.",
+    "scope_discipline": "every path the diff touches is inside the manifest's declared write paths, and no file outside them changed."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make crew dispatch ask the calling session's host for a follower before refusing; reckon/crew/dispatch.py:7293-7302 adds exactly that ask-and-wait branch in dispatch().\nVERDICT done_when: the done_when names tests/test_dispatch_session_host.py; its gate-head.log records 2 passed EXIT=0, and re-running that file here reproduced 2 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared paths; the diff touches reckon/crew/dispatch.py, tests/test_dispatch_session_host.py and docs/evidence/fragments/a-follower-lives-as-long-as-its-session/dispatch-asks-the-session-host.html, all inside them.\nVERDICT manifest: read; status complete, commit 8775e225d, gate-head.log 2 passed EXIT=0 and gate-negative.log 1 failed EXIT=1; its orientation_base_sha field is a malformed 42-character value that resolves to no git object.\nVERDICT diff: read commit by commit against base 2565ffc2; the single commit 8775e225d adds four private helpers and a delivery field to reckon/crew/dispatch.py, a 268-line test file and a 35-line evidence fragment, and deletes nothing.\nCALL_SITES: reckon/cli.py:2488 crew_dispatch, reckon/crew/dispatch.py:7313 watcher-admission call, reckon/crew/dispatch.py:5940 dry-run preview admission\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:7293 gates the ask on launch_kind == \"cli\", a session and an unattached watch, and leaves the refusal unchanged when no host answers.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_dispatch_session_host.py:234-238 and :267 assert the FIFO request and both delivery verdicts, but only the $XDG_RUNTIME_DIR branch of the three-candidate runtime chain the done_when names is exercised.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path the diff touches is inside the manifest's declared write paths, and no file outside them changed.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispatch_session_host.py:234-238 fail if the request stops reaching the FIFO or the host-delivered arming line is not emptied, and the reviewed negative control reddens that case by skipping the host request.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:1252-1336 adds a named constant and three private helpers with mechanism docstrings, matching the module's idiom with no plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/dispatch.py:1321 reuses _write_fleet_request and :1294 _process_start_time, and a search of reckon/crew for a session-host runtime resolver found only fleet_supervisor.runtime_directory, which names the batch step's own runtime dir rather than this XDG-based chain.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T033207052069-dispatch-asks-the-session-host/manifest.md:3 follow-on: orientation_base_sha is a 42-character value that resolves to no git object, so a reader taking the field for the base cannot locate it; the real parent is 2565ffc2e553f2832d3a141a4f186b171ccba6a4.\n",
+  "review_run_id": "r-20261007T040017523273-review-of-dispatch-asks-the-session-host",
+  "reviewed_base_sha": "2565ffc2e553f2832d3a141a4f186b171ccba6a4",
+  "reviewed_head_sha": "8775e225d03dfd26b1d2bd776f6cd84745805be5",
+  "reviewed_run_id": "r-20261007T033207052069-dispatch-asks-the-session-host",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:17:39.074438+00:00",
+  "total": 109
+}
