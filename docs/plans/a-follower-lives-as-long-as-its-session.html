@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.89">
-<meta name="plan-version" content="49">
+<meta name="plan-impl" content="0.9">
+<meta name="plan-version" content="50">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -150,7 +150,7 @@ the host test because nothing removes the FIFO once the entry point has become <
 and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 
     <h2 id="s10">§10 — A dry run predicts the host&#x27;s delivery</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> <code>reckon crew dispatch --dry-run</code> from a session whose host is waiting reports the delivery the real dispatch would get, rather than refusing <code>watcher-required</code>, and writes nothing to the host's FIFO. Measured 2026-10-07: the dry run of <code>session-end-census</code> refused <code>watcher-required</code> (exit 8), and the identical real dispatch was admitted with <code>delivery: host</code>, because the dry run reaches the watcher admission without asking the host. A coordinator that validates with a dry run is told to arm a Monitor watch it does not need.</p>
 <p><strong>Done when</strong> a test in <code>tests/test_dispatch_session_host.py</code> runs a dry-run dispatch for an unattached session whose calling Claude process has a waiting host FIFO, finds no <code>watcher-required</code> refusal and a predicted delivery of <code>host</code>, and finds no byte written to the FIFO. The same test fails on the current code with <code>watcher-required</code>, which is its negative control.</p>
 
@@ -209,10 +209,16 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session</pre>
     <p class="r-fu-outcome">§3–§7 landed and §8 proved the session-length follower in two live sessions; three gaps the proof measured remain as §9, §10 and §11</p>
     </article>
-<article class="r-fu" data-id="f-afl-002" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-07T13:50:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afl-002" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-07T13:50:00Z" data-recommends-skill="" data-resolved-at="2026-10-07T17:03:46+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Close the gaps the live proof measured</h4>
     <div class="r-fu-body"><p>§9 removes stale FIFOs from both the entry point and the host, §10 makes a dry run predict host delivery, and §11 records when a host stopped. §9 and §11 both edit the host's stop path, so they run in sequence.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §9</pre>
+    <p class="r-fu-outcome">§10 and §11 landed and closed; §9's code landed at 9dfb2a1e with its live census still to read; §12 was added from the §9 review and is now buildable</p>
+    </article>
+<article class="r-fu" data-id="f-afl-003" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-07T17:25:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Give the FIFO path one owner, then read §9&#x27;s live census</h4>
+    <div class="r-fu-body"><p>§12 is buildable now: the dry-run node that held <code>reckon/crew/dispatch.py</code> and <code>tests/test_dispatch_session_host.py</code> has landed, and those are the files §12 changes. §9 stays open until its live census reads <code>stale_fifos=0</code>. That census needs two Claude sessions started after merge <code>9dfb2a1e</code>, one that dispatched and one that did not, to have ended. A session started earlier runs the old entry point and will leave its FIFO.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §12</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -320,6 +326,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261007T161404007100-review-of-a-dry-run-predicts-host-delivery" data-who="reckon-build" data-when="2026-10-07T16:33:27.465Z">
     <div class="r-comment-body"><p>Independent incremental review of r-20261007T151956577480-a-dry-run-predicts-host-delivery over the commits it gained since it was reviewed (413c5a02589e0f2dd76581801483bc2ff0076a79..97f58edfa6b706e28ddf5a7fd69399fe002c03c0): the repair mirrors both real host-admission arms in the dry run and extracts the shared _open_request_fifo, scoring goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 19 (total 113); one carried-forward follow-on (a wedged host reads as live).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-07T17:25:00Z">
+    <div class="r-comment-body"><p>Landed at merge <code>5fbbc90a</code>. A dry-run dispatch reads a waiting host's liveness with the same non-blocking open the real request uses, closed without a byte, and mirrors the real admission's host-attached branch, so it predicts the delivery the real dispatch reaches. A session with no host still refuses <code>watcher-required</code>. The open is one helper, <code>_open_request_fifo</code>, shared with <code>_write_fleet_request</code>. The merge kept main's retry on a FIFO not yet created. A repair round (resumed by the coordinator) added the attached-by-host branch, which the first build lacked. Reviews 110/120 and 113/120, 0 added failures. Population of 227 importing test modules: 0 deterministic added failures, after a test-isolation fix (<code>5d74eac6</code>) stopped the suite reaching the live session's host. A wedged host still holding its FIFO open is predicted as live; a dry run cannot tell without writing, and the docstring says so. Section closed by tick, not collapse. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/a-dry-run-predicts-host-delivery.html">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-07T16:25:00Z">
     <div class="r-comment-body"><p>Landed at merge <code>750f677a</code>. <code>SessionHost.stop</code> takes a reason and writes <code>stopped_at</code> and <code>stop_reason</code> (<code>owner ended</code> or <code>signalled</code>) into the host's final record, stamped when the host notices. Gate: 17 passed, and both new tests fail on the base code. Population of 8 importing test files: 129 passed at base, 131 at the merged head, 0 added. Review 111/120. Its one finding was a text-less placeholder that names no defect; the repair round it started was stopped, and the plan-review session owns the guard. Section closed by tick, not collapse. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/the-session-host-records-when-it-stopped.html">evidence</a></p></div>
