@@ -36,6 +36,15 @@ set -euo pipefail
 # session a child of it; the new session sets its own.
 for v in $(compgen -e | grep -E '^(CLAUDE|CLAUDECODE)'); do unset "$v"; done
 
+# Cap each compute-library thread pool at the declared width, keeping a value
+# the environment already sets. A pane started outside the allocation's batch
+# step would otherwise open a pool as wide as the node's cores, and the thread
+# count multiplies across every process the pane starts. A process that needs
+# more threads raises its own variable.
+for v in OMP_NUM_THREADS OPENBLAS_NUM_THREADS MKL_NUM_THREADS NUMEXPR_NUM_THREADS VECLIB_MAXIMUM_THREADS; do
+    export "$v=${!v:-8}"
+done
+
 transcript_exists() {
     compgen -G "$HOME/.claude/projects/*/$1.jsonl" >/dev/null
 }
