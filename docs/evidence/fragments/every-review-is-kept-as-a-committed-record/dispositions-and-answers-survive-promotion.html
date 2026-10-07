@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>Landing: a disposition or an answer survives promotion | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: a disposition or an answer survives promotion</h1>
+    </header>
+
+    <section id="dispositions-and-answers-survive-promotion-landing-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li><code>reckon/crew/review.py</code> &mdash; <code>store_committed_review</code> merges <code>dimension_dispositions</code>, <code>responses</code> and <code>response_events</code> from every staging copy of the record it commits (<code>_staging_copies_of_record</code> keyed by the review run id; <code>_merge_record_answers</code> takes the latest entry per key by its own stamp and unions events in time order) and from the committed file already at the target path (<code>_committed_record_at</code>), so re-storing a round from an answerless body does not overwrite the answer the committed file holds. New <code>commit_record_write</code> commits a write to a record under the committed tree through <code>ledger._commit_state_write</code> for that one path; <code>record_dimension_disposition</code> calls it after writing.</li>
+        <li><code>reckon/crew/plan_review.py</code> &mdash; <code>_committed_copy_of</code> resolves the committed file a promoted plan review already has; <code>record_response</code> rewrites and commits that copy when it exists, and writes staging only when the review has no committed copy.</li>
+        <li><code>tests/test_dispositions_and_answers_survive_promotion.py</code> (new; four cases, the last holding a re-store of a promoted round to keeping the answer the committed file holds).</li>
+      </ul>
+    </section>
+
+    <section id="dispositions-and-answers-survive-promotion-landing-measure">
+      <h2>Measure</h2>
+      <ul>
+        <li>Base arm, the three cases run before the change: 2 failed, 1 passed &mdash; a disposition in a staging sibling is dropped by promotion, an answer to a promoted plan review is invisible through <code>read_plan_review(..., plan=...)</code>, and a disposition after promotion is left uncommitted (<code>HEAD</code> unchanged). Log: <code>repro-base.log</code>.</li>
+        <li>Gate, the four declared files run in the foreground under <code>--basetemp</code> in this run's directory: head <code>36 passed</code>, <code>EXIT=0</code>. Log: <code>gate.log</code>.</li>
+        <li>Negative control, the declared mutation (stop carrying <code>dimension_dispositions</code> from staging into the committed record at promotion): <code>1 failed, 35 passed</code>, <code>EXIT=1</code> &mdash; <code>test_promotion_carries_a_disposition_from_a_staging_sibling</code> fails and the head arm does not. Log: <code>negative-control.log</code>.</li>
+        <li>Re-store round gate, the same four files after adding the committed-file merge source: <code>37 passed</code>, <code>EXIT=0</code>. Log: <code>gate-committed-source.log</code>.</li>
+        <li>Re-store round mutation (leave the committed file out of the merge sources): <code>1 failed, 3 passed</code>, <code>EXIT=1</code> &mdash; only <code>test_re_storing_a_promoted_plan_review_keeps_its_answer</code> fails, so the case is the one holding the re-store to keeping the answer.</li>
+      </ul>
+    </section>
+
+    <section id="dispositions-and-answers-survive-promotion-landing-records">
+      <h2>Records</h2>
+      <p>Logs are under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T115357305934-dispositions-and-answers-survive-promotion/</code>.
+      A merged-head regression run over the review surface (127 tests) passed with <code>EXIT=0</code> (<code>regress.log</code>). A second regression over the review-store and plan-review files (102 tests) passed with <code>EXIT=0</code> (<code>regress-committed-source.log</code>).</p>
+    </section>
+  </main>
+</body>
+</html>
