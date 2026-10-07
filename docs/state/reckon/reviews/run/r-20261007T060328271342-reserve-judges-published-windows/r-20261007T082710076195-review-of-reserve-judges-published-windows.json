@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's growth arms. At this review's read the declared arms were baseline_suite 49bfadd (1 failure: tests/test_pace_replay.py::test_a_new_window_replays_a_withheld_allowance) and after_suite 3d1120eb (0 failures). After this review was dispatched the run advanced and re-armed at baseline_suite b36653d352e1ef3ad1aabeceef78a5005d4b97ce (3 failures: tests/test_codex_banked_reset.py::test_pace_counts_a_banked_reset_from_the_same_reading, tests/test_stale_reading_reaches_jev.py::test_stale_recorded_reading_reaches_candidate_with_figures_and_age, tests/test_stale_reading_reaches_jev.py::test_fresh_reading_is_unchanged) and after_suite 9c8c5058 (0 failures). Head failures minus base failures is empty either way, so added_failure_count is 0. A reader recomputing via annotate_review_of_run sees null, because the reviewed manifest's baseline_suite and after_suite each carry a two-element log_path list that is not valid JSON, so no arm reads; recorded as a finding.",
+  "base_log_revision": "49bfadd96586943f4a20f2c94b2dd02d89938aa0",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_refuse_against_the_bookend_reserve -> reserve.admit_windows (the launch-only reserve gate on the dispatch path)",
+    "reckon/crew/pace_replay.py:_recomputed_allowance -> budget._burn_floor_reason / budget._unknown_allowance (the replay of a recorded pace row)",
+    "reckon/budget.py:pace_row and _group_allowance (the pace/allowance the picker reads and the reserve's clocks are built from)"
+  ],
+  "completed_at": "2026-10-07T08:43:07.562Z",
+  "dispatched_at": "2026-10-07T08:27:39Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T060328271342-reserve-judges-published-windows/manifest.md",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "the declared baseline_suite arm (49bfadd) is the immediate parent of the head (3d1120eb), so the armed delta covers only the final pace_replay commit. The node's earlier source commits (4068856 reserve/window_reading/dispatch, 1e5be5b and e0dcf7c budget) are not measured against any pre-work base; the only gate run at the node's true base bf090ea1 (base-gate.log) ran the narrow pre-node gate and exited 0, so it shows no red for the new reserve tests. 'judged by delta' is therefore established for the last commit only. Not blocking: the reserve tests and the negative controls do exercise the earlier commits' behaviour."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T060328271342-reserve-judges-published-windows/manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "both negative-control logs were recorded at revision 1e5be5ba, which precedes the landed head 3d1120eb and the reserve negative-utilisation commit 910a22b. The logs carry a non-zero EXIT= and a failing target test id, so the mutations fired, but they were applied to a mid-node revision rather than the landed one, so they do not demonstrate the declared mutations against the code being promoted. Recomputed at head the outcomes should be unchanged (910a22b only adds a >=0 guard), but that is an expectation, not a recorded fact."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T060328271342-reserve-judges-published-windows/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "the reviewed run kept working after this review was dispatched and advanced from head 3d1120eb (the revision this record names, and the head this review's fence is keyed to) to 9c8c5058 via b36653d35 (merge of main) and 9c8c5058 (mature banked and picker reading fixtures). This review covers the diff up to 3d1120eb only; a delta review of b36653d35..9c8c5058 is owed before that head promotes. Both new commits are a merge and a test-only change, so the reserve and budget source reviewed here is unchanged by them."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "three production sites: the launch-only reserve gate on dispatch, the pace replay of a recorded row, and the budget pace/allowance the picker reads; each reaches the landed change",
+    "diff": "read commit by commit against base bf090ea1 (via the node's own commit set, since 36fcbfb merged main): reserve.py gains admit_windows and a reported_periods field flows through window_reading/budget._clock; dispatch switches to admit_windows; budget applies the declared burn floors on the account, group-allowance and projected-exhaustion paths; pace_replay reuses the budget floor shape",
+    "done_when": "the done-when names the reserve/budget/dispatch gate and a negative control that treats an absent window as unreadable; the manifest records the gate (base 1 failed/365 passed at 49bfadd, head 366 passed/0 failed at 3d1120eb) and both negative controls; the gate ran and its logs end in EXIT lines",
+    "goal": "the reserve check judges only the windows a lane publishes \u2014 an unpublished (never-reported) period is skipped while a published-but-unreadable period is still refused, and the burn/pace projection is withheld below the existing floors rather than projecting from a minutes-old window",
+    "manifest": "read; status complete, commits list the ten node commits ending at head 3d1120eb, changed_paths lists all twelve touched files, negative_control_log declared with its note; the orientation_write_paths line still lists only the three original paths (it is the pre-resume snapshot), and baseline_suite.log_path is a two-element list rather than a single path",
+    "write_paths": "the fence was widened across four coordinator resumes (budget.py, window_reading.py, pace_repo.py, and the burn/replay/budget/picker test files); every path in the net diff is inside the final fence"
+  },
+  "justifications": {
+    "durability": "tests/test_reserve_judges_published_windows.py pins the behaviour as a class: the week-only lane state is 'not_published' (asserted), the skip does not weaken the check (0.81 refused, pytest.raises matches 'seven-day'), a published five-hour window with a failed read stays 'unknown' and is refused ('could not be read'), and bookend roles keep 100%. A negative reported utilisation is refused. The negative-control logs show the guard reddens when the rule is reverted, so these assertions fail under the regression they guard.",
+    "evidence": "the gate ran in the foreground with base and head logs that name revision, tree and command and end in EXIT (head 366 passed EXIT=0, base 1 failed/365 passed EXIT=1); both negative-control logs carry a non-zero EXIT= and a failing target id. Deduction to 14: the armed base arm is the head's parent rather than the node's pre-work base, and both negative controls were run at a mid-node revision, so the delta and the mutations do not cover the landed tree as a whole.",
+    "fit": "the change matches the surrounding idiom: reserve.py keeps its block and returns the established verdict dict with added window_verdicts/judged/skipped keys, budget.py routes every projection through the one _burn_floor_reason helper, and pace_replay.py reuses budget._unknown_allowance rather than re-deriving the withheld shape. Symbols name the mechanism (admit_windows, NOT_PUBLISHED, _reported_periods); no plan, ticket, gate or version identifier and no attribution appears in the diff.",
+    "goal_fidelity": "the goal is met: reckon/crew/reserve.py:234 admit_windows skips clocks whose state is 'not_published' while still refusing a clock whose state is unreadable, and reckon/budget.py:_clock marks a period 'not_published' only when the reading is known and the period was never reported; dispatch.py:_refuse_against_the_bookend_reserve now judges every applicable clock. The node also lands the early-window burn fix handed over with the same followup, authorised by the coordinator's resume. Deduction: the node's stated goal is narrower than the landed diff, so a reader of the goal alone under-predicts the change.",
+    "reuse": "the new admit_windows extends the existing admit rather than duplicating the ceiling arithmetic, and pace_replay.py imports budget._burn_floor_reason and budget._unknown_allowance from their owner instead of forking the floors. window_reading reports reported_periods on the one reading dataclass every source builds, so no source-specific copy of the reported/absent distinction exists.",
+    "scope_discipline": "every path in the net diff is inside the fence the coordinator widened across four resumes; no file outside the fence is touched and no unrelated commit is present. The manifest's orientation_write_paths under-lists because it is the pre-resume snapshot, which is a stale field rather than a scope breach."
+  },
+  "project": "reckon",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T060328271342-reserve-judges-published-windows.at-3d1120eb45382ebac03fb00c325cde230ad5b54f.json",
+  "review_run_id": "r-20261007T082710076195-review-of-reserve-judges-published-windows",
+  "reviewed_base_sha": "bf090ea1aafb28ce44fd30498c7f80908ecb12c9",
+  "reviewed_head_sha": "3d1120eb45382ebac03fb00c325cde230ad5b54f",
+  "reviewed_run_id": "r-20261007T060328271342-reserve-judges-published-windows",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T08:55:00+00:00",
+  "total": 105
+}
