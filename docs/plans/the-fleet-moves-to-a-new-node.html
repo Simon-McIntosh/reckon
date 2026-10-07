@@ -23,7 +23,7 @@
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -520,7 +520,10 @@
     <div class="r-comment-body"><p>Run <code>r-20261007T065728317601-fleet-supervisor-collects-every-child</code> landed at <code>e58cd3c81</code>: the supervisor's request loop waits on its FIFO with a bounded select and collects exited children every 0.5 s with no request arriving, which also collects service children adopted after a reload. The first review scored 112 and asked for a project-neutral comment and a test of the partial-read reassembly; the fix attempt was re-reviewed at 116. Its remaining follow-on, a test helper that opens the FIFO without retrying when the reader has not yet opened it, is accepted as minor.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T065728317601-fleet-supervisor-collects-every-child" data-who="reckon-build" data-when="2026-10-07T08:12:54.105Z">
-    <div class="r-comment-body"><p>The fleet batch step&#x27;s request loop now waits on its request FIFO with a bounded select (REQUEST_WAIT_SECONDS = 0.5) instead of a blocking read, so it collects exited children on its own interval and no longer depends on a request arriving, and it reassembles a request split across reads from a pending buffer so it is handled once and whole; proven by test_an_exited_child_is_collected_with_no_request_arriving and test_a_request_split_across_reads_is_handled_once_and_whole, gate 20 passed with EXIT=0, evidence in docs/evidence/fragments/the-fleet-moves-to-a-new-node/fleet-supervisor-collects-every-child.html.</p></div>
+    <div class="r-comment-body"><p>The fleet batch step's request loop now waits on its request FIFO with a bounded select (REQUEST_WAIT_SECONDS = 0.5) instead of a blocking read, so it collects exited children on its own interval and no longer depends on a request arriving, and it reassembles a request split across reads from a pending buffer so it is handled once and whole; proven by test_an_exited_child_is_collected_with_no_request_arriving and test_a_request_split_across_reads_is_handled_once_and_whole, gate 20 passed with EXIT=0, evidence in docs/evidence/fragments/the-fleet-moves-to-a-new-node/fleet-supervisor-collects-every-child.html.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261007T084717269959-review-of-fleet-supervisor-collects-every-child" data-who="reckon-build" data-when="2026-10-07T09:15:21.491Z">
+    <div class="r-comment-body"><p>Independent delta review of run r-20261007T065728317601-fleet-supervisor-collects-every-child stored at reviewed_base_sha 5db90a224..reviewed_head_sha e58cd3c8: all 6 dimensions scored (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 20, reuse 19; total 116) — the delta&#x27;s two repairs verified (comment de-historicised; new split-read case passes at head and fails under a pending-buffer mutation), one follow-on recorded.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261007T073256147577-review-of-fleet-health-names-a-stall" data-who="reckon-build" data-when="2026-10-07T07:55:00.053Z">
     <div class="r-comment-body"><p>independent review stored for run r-20261007T065615607875-fleet-health-names-a-stall at base 3befbf4f / head 660b2e36: six dimensions scored 19 goal_fidelity, 17 evidence, 19 scope_discipline, 16 durability, 17 fit, 19 reuse (total 107), added_failure_count null and added_failure_ids [] (unmeasured: the reviewed manifest names no baseline_suite/after_suite gate log), with a CALL_SITES line naming one production caller and two follow-on findings.</p></div>

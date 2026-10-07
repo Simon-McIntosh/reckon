@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log, so the reviewed run's own added-failure delta was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-07T09:15:21.491Z",
+  "dispatched_at": "2026-10-07T08:47:49Z",
+  "findings": [
+    {
+      "file": "tests/test_fleet_supervisor.py",
+      "line": "140",
+      "severity": "follow-on",
+      "text": "follow-on: _send_chunks opens the request FIFO with O_WRONLY|O_NONBLOCK and no ENXIO retry, unlike _send (blocking) and _try_send (which answers ENXIO), so if the reader has created the FIFO but not yet opened its end the helper raises OSError and the case errors instead of failing on a defect; guard the open the way _try_send does so the case cannot be flaky under load."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read against base 5db90a224: a comment rewrite in fleet_supervisor.py (92-97) and a new split-read case with its APPENDING_CHILD and _send_chunks helpers in tests/test_fleet_supervisor.py; no production behaviour change and no merge absorption in the range.",
+    "done_when": "both repairs verified: the interval comment (fleet_supervisor.py:92-97) names no project or date, and test_a_request_split_across_reads_is_handled_once_and_whole (tests/test_fleet_supervisor.py:502) passes at head (1 passed, EXIT=0) and fails under a mutation that drops the pending buffer (1 failed, EXIT=1).",
+    "goal": "the delta's goal is to close the two follow-ons from the earlier review of this node \u2014 de-historicise the request-loop interval comment and cover the pending-buffer split-read path \u2014 and it delivers both within the node's stated scope.",
+    "manifest": "read; status complete, commits 59b5dbf6/5db90a224/e58cd3c8, negative_control_log a bare path, but baseline_suite and after_suite are absent, so the run's added-failure delta is unmeasured and the declared negative control targets the earlier reap case, not the new split-read case.",
+    "write_paths": "read the run's declared write paths and the delta diff; both changed paths (reckon/crew/fleet_supervisor.py, tests/test_fleet_supervisor.py) are among them and match the dispatch's stated scope."
+  },
+  "justifications": {
+    "durability": "The new case asserts observable behaviour: it writes one request line to the new case's marker only when the reader reassembles it, so a reader that acted on each half separately would show zero or two runs in the marker, and I reproduced the mutation and the case reddens on it. Held at 19 because the new helper _send_chunks (tests/test_fleet_supervisor.py:140) opens the FIFO with O_WRONLY|O_NONBLOCK and no ENXIO retry, so a reader that has created the FIFO but not yet opened its end would make the helper raise rather than wait, a latent race the fixture's poll usually hides.",
+    "evidence": "I re-ran the head arm in a scratch tree extracted at e58cd3c8 (the import resolved to the scratch module): the full file 20 passed EXIT=0 and the new case alone 1 passed EXIT=0; I then falsified it with a mutation that drops the pending buffer and treats each read as a complete line, and the same case fails EXIT=1 with the reader's own log showing the two halves acted on separately, an id the head arm passes, so the case discriminates. Held at 18 because the reviewed manifest names no baseline_suite/after_suite and its declared negative control targets the earlier reap case, so the run's own evidence for the delta is a head gate alone and this review supplied the mutation the run did not.",
+    "fit": "Every name the delta adds describes mechanism (APPENDING_CHILD, _send_chunks, test_a_request_split_across_reads_is_handled_once_and_whole) with no version, plan or ticket identifier and no attribution, and the rewritten comment (fleet_supervisor.py:92-97) drops the project name and the dated incident the prior review flagged; the added lines contain neither.",
+    "goal_fidelity": "The delta 5db90a224..e58cd3c8 delivers exactly the two repairs the prior review asked for on the node whose goal is that the supervisor collect exited children on its own interval: the request-loop interval comment (fleet_supervisor.py:92-97) now states only the mechanism with no project name or dated incident, and tests/test_fleet_supervisor.py:502 adds a case covering the pending-buffer reassembly the collection change introduced.",
+    "reuse": "The delta reuses the module's own REQUEST_FIFO_NAME and adds one small helper rather than a bespoke loop; _send_chunks is a third FIFO-open-for-write spelling beside _send and _try_send, which it cannot reuse because it must hold one descriptor across staged writes, so the overlap is three lines and one purpose; held at 19 for that.",
+    "scope_discipline": "git diff --stat 5db90a224..e58cd3c8 lists exactly two paths, reckon/crew/fleet_supervisor.py (+5/-6, a comment rewrite) and tests/test_fleet_supervisor.py (+67), both named in the run's declared write paths; no shared index, sprint state, other plan or out-of-scope file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta's goal is to close the two follow-ons from the earlier review of this node \u2014 de-historicise the request-loop interval comment and cover the pending-buffer split-read path \u2014 and it delivers both within the node's stated scope.\nVERDICT done_when: both repairs verified: the interval comment (fleet_supervisor.py:92-97) names no project or date, and test_a_request_split_across_reads_is_handled_once_and_whole (tests/test_fleet_supervisor.py:502) passes at head (1 passed, EXIT=0) and fails under a mutation that drops the pending buffer (1 failed, EXIT=1).\nVERDICT write_paths: read the run's declared write paths and the delta diff; both changed paths (reckon/crew/fleet_supervisor.py, tests/test_fleet_supervisor.py) are among them and match the dispatch's stated scope.\nVERDICT manifest: read; status complete, commits 59b5dbf6/5db90a224/e58cd3c8, negative_control_log a bare path, but baseline_suite and after_suite are absent, so the run's added-failure delta is unmeasured and the declared negative control targets the earlier reap case, not the new split-read case.\nVERDICT diff: read against base 5db90a224: a comment rewrite in fleet_supervisor.py (92-97) and a new split-read case with its APPENDING_CHILD and _send_chunks helpers in tests/test_fleet_supervisor.py; no production behaviour change and no merge absorption in the range.\nVERDICT call_sites: the delta's only source change is a comment, so it introduces no production call site; none is an explicit zero.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The delta 5db90a224..e58cd3c8 delivers exactly the two repairs the prior review asked for on the node whose goal is that the supervisor collect exited children on its own interval: the request-loop interval comment (fleet_supervisor.py:92-97) now states only the mechanism with no project name or dated incident, and tests/test_fleet_supervisor.py:502 adds a case covering the pending-buffer reassembly the collection change introduced.\nSCORE evidence: 18\nJUSTIFICATION evidence: I re-ran the head arm in a scratch tree extracted at e58cd3c8 (the import resolved to the scratch module): the full file 20 passed EXIT=0 and the new case alone 1 passed EXIT=0; I then falsified it with a mutation that drops the pending buffer and treats each read as a complete line, and the same case fails EXIT=1 with the reader's own log showing the two halves acted on separately, an id the head arm passes, so the case discriminates. Held at 18 because the reviewed manifest names no baseline_suite/after_suite and its declared negative control targets the earlier reap case, so the run's own evidence for the delta is a head gate alone and this review supplied the mutation the run did not.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 5db90a224..e58cd3c8 lists exactly two paths, reckon/crew/fleet_supervisor.py (+5/-6, a comment rewrite) and tests/test_fleet_supervisor.py (+67), both named in the run's declared write paths; no shared index, sprint state, other plan or out-of-scope file is touched.\nSCORE durability: 19\nJUSTIFICATION durability: The new case asserts observable behaviour: it writes one request line to the new case's marker only when the reader reassembles it, so a reader that acted on each half separately would show zero or two runs in the marker, and I reproduced the mutation and the case reddens on it. Held at 19 because the new helper _send_chunks (tests/test_fleet_supervisor.py:140) opens the FIFO with O_WRONLY|O_NONBLOCK and no ENXIO retry, so a reader that has created the FIFO but not yet opened its end would make the helper raise rather than wait, a latent race the fixture's poll usually hides.\nSCORE fit: 20\nJUSTIFICATION fit: Every name the delta adds describes mechanism (APPENDING_CHILD, _send_chunks, test_a_request_split_across_reads_is_handled_once_and_whole) with no version, plan or ticket identifier and no attribution, and the rewritten comment (fleet_supervisor.py:92-97) drops the project name and the dated incident the prior review flagged; the added lines contain neither.\nSCORE reuse: 19\nJUSTIFICATION reuse: The delta reuses the module's own REQUEST_FIFO_NAME and adds one small helper rather than a bespoke loop; _send_chunks is a third FIFO-open-for-write spelling beside _send and _try_send, which it cannot reuse because it must hold one descriptor across staged writes, so the overlap is three lines and one purpose; held at 19 for that.\nFINDING tests/test_fleet_supervisor.py:140 follow-on: _send_chunks opens the request FIFO with O_WRONLY|O_NONBLOCK and no ENXIO retry, unlike _send (blocking) and _try_send (which answers ENXIO), so if the reader has created the FIFO but not yet opened its end the helper raises OSError and the case errors instead of failing on a defect; guard the open the way _try_send does so the case cannot be flaky under load.\n",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T065728317601-fleet-supervisor-collects-every-child.at-e58cd3c81e8964af57217a654f925906f83b804f.json",
+  "review_run_id": "r-20261007T084717269959-review-of-fleet-supervisor-collects-every-child",
+  "reviewed_base_sha": "5db90a2247b02ad049d34cf1f9cadc801c70060d",
+  "reviewed_head_sha": "e58cd3c81e8964af57217a654f925906f83b804f",
+  "reviewed_run_id": "r-20261007T065728317601-fleet-supervisor-collects-every-child",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T09:13:00.935580+00:00",
+  "total": 116
+}
