@@ -331,7 +331,11 @@ def test_live_run_census_uses_resumption_reader(
 
     def resolve(run_id, **kwargs):
         calls.append((run_id, kwargs["project"]))
-        return {"resolved": True, "session_id": "conversation-example"}
+        return {
+            "resolved": True,
+            "session_id": "conversation-example",
+            "source": "live-pointer",
+        }
 
     monkeypatch.setattr(fleet_migrate.runs, "list_live", list_live)
     monkeypatch.setattr(fleet_migrate, "resolve_session", resolve)
