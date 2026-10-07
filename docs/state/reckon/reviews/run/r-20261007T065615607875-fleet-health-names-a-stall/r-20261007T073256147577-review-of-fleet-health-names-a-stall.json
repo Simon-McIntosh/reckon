@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:170 DEFAULT_HEALTH_SAMPLER"
+  ],
+  "completed_at": "2026-10-07T07:55:00.053Z",
+  "dispatched_at": "2026-10-07T07:33:28Z",
+  "findings": [
+    {
+      "file": "tests/test_fleet_health.py",
+      "line": "265",
+      "severity": "follow-on",
+      "text": "follow-on: the rate-limit test does not exercise the ten-minute rate limit the plan's done-when names; the harness drives one pass per process, so the assertion len(snapshots)==1 holds for any single triggering pass and would stay true if the ten-minute guard were removed, so it re-asserts the D-state case rather than the limit it names."
+    },
+    {
+      "file": "bin/fleet-health",
+      "line": "123",
+      "severity": "follow-on",
+      "text": "follow-on: the change removes the file's terminating newline; the base blob ends the final line with a newline while the head ends it without one, and the new tests/test_fleet_health.py is likewise written without a trailing newline, against the repository's file hygiene."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit over 3befbf4f0e..660b2e3660: 9c0e50f3b adds the two triggers, the fixture override paths and the thread/wait columns; 660b2e36 updates the fragment's landed-commit meta.",
+    "done_when": "the done-when names tests/test_fleet_health.py; the gate ran that file for 9 passed EXIT=0 and both the manifest and gate-head.log record it, and I reproduced it.",
+    "goal": "the node goal is to make fleet-health save a process table when the D-state count or the load crosses a threshold, recording the thread count and wait channel of every process; bin/fleet-health:105-106 adds both thresholds beside the existing three and bin/fleet-health:110-116 writes the table with NLWP and WCHAN and appends the node-wide D-state listing.",
+    "manifest": "read; it records base 3befbf4f0e405d0ccf32f60c6d374666a6b3554c and head 660b2e3660a0f342930b77cd94447f2fb66b5a92, the gate 9 passed EXIT=0 and the negative control 3 failed EXIT=1, and declares baseline_suite and after_suite absent so its own added-failure count is unmeasured.",
+    "write_paths": "the manifest declares bin/fleet-health, tests/test_fleet_health.py and the node's evidence fragment; git diff over the base lists exactly those three and no figure directory."
+  },
+  "justifications": {
+    "durability": "the declared negative control fires, since removing the D-state trigger line leaves the three D-state cases failing (3 failed, 6 passed, EXIT=1) which I reproduced; but tests/test_fleet_health.py:265 is an added assertion that cannot fail on the rate limit it claims to guard.",
+    "evidence": "the gate is tests/test_fleet_health.py, re-run by me at the head revision for 9 passed EXIT=0; but the done-when's rate-limit clause is not asserted, since tests/test_fleet_health.py:265 cannot observe the ten-minute limit from a single --once pass.",
+    "fit": "the change follows the FLEET_* variable and comment idiom of bin/fleet-health, but it drops that file's terminating newline (bin/fleet-health:123) and tests/test_fleet_health.py is written without one.",
+    "goal_fidelity": "bin/fleet-health:105-106 fires on the D-state and load triggers and bin/fleet-health:110-116 writes the thread-count and wait-channel columns and the node-wide D-state listing, all the goal names.",
+    "reuse": "the D-state trigger reuses the sample column bin/fleet-health already reads and the existing threshold idiom, and a search over bin/, reckon/ and scripts/ found no other owner of a node-wide D-state or load threshold.",
+    "scope_discipline": "git diff --stat 3befbf4f0e..660b2e3660 lists only bin/fleet-health, tests/test_fleet_health.py and the node's evidence fragment, all inside the manifest's declared write paths; no figure was written because the done-when names none."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make fleet-health save a process table when the D-state count or the load crosses a threshold, recording the thread count and wait channel of every process; bin/fleet-health:105-106 adds both thresholds beside the existing three and bin/fleet-health:110-116 writes the table with NLWP and WCHAN and appends the node-wide D-state listing.\nVERDICT done_when: the done-when names tests/test_fleet_health.py; the gate ran that file for 9 passed EXIT=0 and both the manifest and gate-head.log record it, and I reproduced it.\nVERDICT write_paths: the manifest declares bin/fleet-health, tests/test_fleet_health.py and the node's evidence fragment; git diff over the base lists exactly those three and no figure directory.\nVERDICT manifest: read; it records base 3befbf4f0e405d0ccf32f60c6d374666a6b3554c and head 660b2e3660a0f342930b77cd94447f2fb66b5a92, the gate 9 passed EXIT=0 and the negative control 3 failed EXIT=1, and declares baseline_suite and after_suite absent so its own added-failure count is unmeasured.\nVERDICT diff: read commit by commit over 3befbf4f0e..660b2e3660: 9c0e50f3b adds the two triggers, the fixture override paths and the thread/wait columns; 660b2e36 updates the fragment's landed-commit meta.\nreviewed_base_sha: 3befbf4f0e405d0ccf32f60c6d374666a6b3554c\nreviewed_head_sha: 660b2e3660a0f342930b77cd94447f2fb66b5a92\nCALL_SITES: reckon/crew/fleet_supervisor.py:170 DEFAULT_HEALTH_SAMPLER\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: bin/fleet-health:105-106 fires on the D-state and load triggers and bin/fleet-health:110-116 writes the thread-count and wait-channel columns and the node-wide D-state listing, all the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate is tests/test_fleet_health.py, re-run by me at the head revision for 9 passed EXIT=0; but the done-when's rate-limit clause is not asserted, since tests/test_fleet_health.py:265 cannot observe the ten-minute limit from a single --once pass.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 3befbf4f0e..660b2e3660 lists only bin/fleet-health, tests/test_fleet_health.py and the node's evidence fragment, all inside the manifest's declared write paths; no figure was written because the done-when names none.\nSCORE durability: 16\nJUSTIFICATION durability: the declared negative control fires, since removing the D-state trigger line leaves the three D-state cases failing (3 failed, 6 passed, EXIT=1) which I reproduced; but tests/test_fleet_health.py:265 is an added assertion that cannot fail on the rate limit it claims to guard.\nSCORE fit: 17\nJUSTIFICATION fit: the change follows the FLEET_* variable and comment idiom of bin/fleet-health, but it drops that file's terminating newline (bin/fleet-health:123) and tests/test_fleet_health.py is written without one.\nSCORE reuse: 19\nJUSTIFICATION reuse: the D-state trigger reuses the sample column bin/fleet-health already reads and the existing threshold idiom, and a search over bin/, reckon/ and scripts/ found no other owner of a node-wide D-state or load threshold.\nFINDING tests/test_fleet_health.py:265 follow-on: the rate-limit test does not exercise the ten-minute rate limit the plan's done-when names; the harness drives one pass per process, so the assertion len(snapshots)==1 holds for any single triggering pass and would stay true if the ten-minute guard were removed, so it re-asserts the D-state case rather than the limit it names.\nFINDING bin/fleet-health:123 follow-on: the change removes the file's terminating newline; the base blob ends the final line with a newline while the head ends it without one, and the new tests/test_fleet_health.py is likewise written without a trailing newline, against the repository's file hygiene.",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T065615607875-fleet-health-names-a-stall.at-660b2e3660a0f342930b77cd94447f2fb66b5a92.json",
+  "review_run_id": "r-20261007T073256147577-review-of-fleet-health-names-a-stall",
+  "reviewed_base_sha": "3befbf4f0e405d0ccf32f60c6d374666a6b3554c",
+  "reviewed_head_sha": "660b2e3660a0f342930b77cd94447f2fb66b5a92",
+  "reviewed_run_id": "r-20261007T065615607875-fleet-health-names-a-stall",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T07:50:04.940859+00:00",
+  "total": 107
+}

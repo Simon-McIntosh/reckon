@@ -23,7 +23,7 @@
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -503,6 +503,26 @@
     <pre class="r-fu-prompt">/reckon-build the-fleet-moves-to-a-new-node §2</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-20261007-thread-caps-landed" data-who="reckon-build" data-when="2026-10-07T07:50:00Z">
+    <div class="r-comment-body"><p>Run <code>r-20261007T065825928483-fleet-processes-get-bounded-thread-pools</code> committed <code>6cdb51f2a</code>: the generated hold script and <code>bin/fleet-claude</code> export the five compute-library thread variables at 8, each as a parameter expansion that keeps a value already set. 42 tests pass at that revision, and the declared negative control fails the hold-script case. Independent review 117 of 120. Its one follow-on finding is accepted: the section's third done-when, a thread count measured on the new node, is deferred to the stand-up and is not produced here, so the section stays implementable until that measurement lands.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261007T065825928483-fleet-processes-get-bounded-thread-pools" data-who="reckon-build" data-when="2026-10-07T07:27:24.406Z">
+    <div class="r-comment-body"><p>fleet-processes-get-bounded-thread-pools: capped every compute-library thread pool at 8 (OMP_NUM_THREADS, OPENBLAS_NUM_THREADS, MKL_NUM_THREADS, NUMEXPR_NUM_THREADS, VECLIB_MAXIMUM_THREADS) in the generated hold script and in bin/fleet-claude, each keeping a value the submitting environment already sets; gate 42 passed, EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261007T072906538986-review-of-fleet-processes-get-bounded-thread-pools" data-who="reckon-build" data-when="2026-10-07T07:52:37.768Z">
+    <div class="r-comment-body"><p>review-of-fleet-processes-get-bounded-thread-pools: attached an independent review of run r-20261007T065825928483-fleet-processes-get-bounded-thread-pools at head 6cdb51f2a (base b8cc7f0f6); scored all six dimensions, total 117/120. Reproduced head 42 passed EXIT=0, base 38 passed EXIT=0, negative control 1 failed EXIT=1, second caller 4 passed EXIT=0. One follow-on: section 3's third done-when (the migration-node thread-count measurement) is deferred and unproduced.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261007T072805118264-review-of-fleet-supervisor-collects-every-child" data-who="reckon-build" data-when="2026-10-07T07:55:56.517Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261007T065728317601-fleet-supervisor-collects-every-child (base b8cc7f0f, head 5db90a224) stored as a parsed record scoring all six dimensions (goal_fidelity 20, evidence 18, scope_discipline 20, durability 18, fit 17, reuse 19; total 112); the change is confirmed correct and the one discriminating test is reproduced, with two follow-on findings recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261007T073256147577-review-of-fleet-health-names-a-stall" data-who="reckon-build" data-when="2026-10-07T07:55:00.053Z">
+    <div class="r-comment-body"><p>independent review stored for run r-20261007T065615607875-fleet-health-names-a-stall at base 3befbf4f / head 660b2e36: six dimensions scored 19 goal_fidelity, 17 evidence, 19 scope_discipline, 16 durability, 17 fit, 19 reuse (total 107), added_failure_count null and added_failure_ids [] (unmeasured: the reviewed manifest names no baseline_suite/after_suite gate log), with a CALL_SITES line naming one production caller and two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261007T073459603891-review-of-the-reservation-can-be-replaced" data-who="reckon-build" data-when="2026-10-07T08:02:07.931Z">
+    <div class="r-comment-body"><p>independent review of run r-20261007T065930311978-the-reservation-can-be-replaced (head 5af5e8561, base b8cc7f0f6) is stored as a parsed record scoring all six dimensions (goal_fidelity 18, evidence 16, scope_discipline 20, durability 16, fit 17, reuse 5; total 92), carrying added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own pre/post gate logs, with two follow-on findings</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

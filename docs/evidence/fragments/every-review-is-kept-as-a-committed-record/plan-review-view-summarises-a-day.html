@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="The plan-review view summarises a day">
+  <meta name="plan-summary" content="crew(view=&quot;plan-review&quot;) folds the committed records into a per-plan day summary: the reviews run split by rubric and, per re-review, the previous review it is compared with, the sections new since it, the largest share any existing section changed, and whether the per-section rule fires.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The plan-review view summarises a day | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The plan-review view summarises a day</h1>
+
+    <section id="plan-review-view-summarises-a-day-anchor">
+      <h2>What changed</h2>
+      <p><code>plan_review.review_day_summary(project, since, until, plan=None)</code>
+        (new, in <code>reckon/crew/plan_review.py</code>) folds the committed
+        records over an inclusive <code>since</code> and exclusive <code>until</code>
+        — <code>list_plan_reviews</code> is the one reader, never a directory walk.
+        A review is placed by its dispatch instant: the committed
+        <code>dispatched_at</code> stamp, or the instant its
+        <code>review_run_id</code> encodes when the record carries none. For each
+        plan with a review in the window it reports the reviews run split by
+        rubric, and for each re-review — a review with any earlier review of the
+        same plan, under any rubric, at any time — the previous review it is
+        compared with, the sections new since it, the largest share any existing
+        section changed, and whether the per-section rule fires: a new section, or
+        any section changed by at least the project's
+        <code>plan_change_threshold</code> (read through
+        <code>flight.plan_review_change_threshold</code>). Each review's authored
+        bytes come from the repository object store with one
+        <code>git cat-file --batch</code> per project (the batching
+        <code>reckon.velocity.read_blobs</code> uses), falling back to the snapshot
+        <code>_snapshot_evidence</code> already reads; a record with neither is
+        listed <code>unmeasured</code> with no firing verdict rather than counted
+        as a zero change. The change behind each re-review is measured with the
+        module's own <code>_prose_texts</code> and <code>_edit_share</code>, so the
+        summary and the coverage gate cannot drift.</p>
+      <p><code>crew(view="plan-review")</code> carries the fold under
+        <code>day_summary</code> when <code>since</code> is passed, with
+        <code>plan</code> optional and narrowing the summary to one plan;
+        <code>plan</code> stays required without <code>since</code>, so the existing
+        <code>missing_plan</code> refusal is unchanged for every current caller. No
+        view, tool argument or CLI option was added. The summary reports; it never
+        refuses, stores or rewrites a record.</p>
+      <p>Real-data measure, 2026-10-06 (read-only, run id window up to
+        <code>r-20261006T055800475236</code>, threshold 0.30): the fold over the
+        four mounted projects' committed trees reports 87 re-reviews, 4 with a new
+        section, 14 firings, 0 unmeasured. The throwaway evidence script
+        (<code>section_change.py</code> over the host report directories) reports
+        96 re-reviews and 15 firings for the same window; the fold sees fewer
+        because it reads the committed records rather than the script's host report
+        directories, and a runner-up review whose predecessor is not committed as a
+        record is not a re-review here. Of the 86 runs the two readers share, the
+        firing verdict differs on four: it fires in the script and not in the fold
+        for <code>r-20261006T012931206272-plan-review-of-jt60sa-machine-map</code>
+        and <code>r-20261006T014907201002-plan-review-of-artifacts-carry-no-worktree-paths</code>,
+        and in the fold and not in the script for
+        <code>r-20261006T033057910745-plan-review-of-a-plan-is-reviewed-before-it-is-built</code>
+        and <code>r-20261006T050249615320-plan-review-of-jt60sa-discovery-completion</code>.
+        The two readers split a section at different boundaries and tokenise
+        differently; the fold's split and tokens are the ones the coverage gate
+        uses.</p>
+      <p>Gate: <code>tests/test_plan_review_day_summary.py</code> with
+        <code>tests/test_plan_review_store.py</code>,
+        <code>tests/test_every_review_round_is_committed.py</code>,
+        <code>tests/test_review_plan_command.py</code> and
+        <code>tests/test_the_surfaces_pass_the_plan.py</code> — 56 passed, 0 failed,
+        EXIT=0, on the working tree now committed as <code>5a18a56e3</code>.
+        Declared negative control (drop the new-section clause from the firing rule,
+        <code>fires = bool(new_sections) or largest &gt;= threshold</code> →
+        <code>fires = largest &gt;= threshold</code>) — 2 failed
+        (<code>test_a_new_section_fires_and_the_change_share_measures_the_rest</code>,
+        <code>test_totals_count_re_reviews_new_sections_firings_and_unmeasured</code>),
+        9 passed, EXIT=1. This gate measures only this node's own change; verifying
+        the merged result belongs to a separately dispatched test node.</p>
+    </section>
+  </main>
+</body>
+</html>

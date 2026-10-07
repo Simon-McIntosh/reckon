@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:5490 (the crew MCP tool registered over _crew)",
+    "reckon/mcp.py:4398 (the since branch inside _crew reachable through that tool)"
+  ],
+  "completed_at": "2026-10-07T08:15:57.311Z",
+  "dispatched_at": "2026-10-07T07:56:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1340",
+      "severity": "follow-on",
+      "text": "follow-on: _read_reviewed_blob_texts re-implements the batched object-store read that reckon/velocity.py:395 read_blobs already owns \u2014 the same payload build, the same per-spec newline/size parse, the same missing handling \u2014 and only differs in keying by a bare blob sha rather than a (revision, path) pair; the owner could have been extended (read_blobs has no sha-keyed entry point) rather than forked, so a later change to the batch protocol lands in two places. The rest of the fold reuses the module's existing owners, so this is the one duplication."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base b8cc7f0f6; the single feature commit 5a18a56e3 adds the fold and its helpers to plan_review.py and the since branch to mcp.py, the second commit 9f36f69d8 adds only the evidence fragment, and no file outside the declared scope is touched.",
+    "done_when": "the done-when names tests/test_plan_review_day_summary.py with four sibling files and a real-data log; the manifest records 56 passed EXIT=0, the two-failed negative control and the real-day log, and I reproduced the named test file at head (11 passed, EXIT=0).",
+    "goal": "the node goal is the per-day review summary; reckon/crew/plan_review.py:1419 review_day_summary reports, per plan, the reviews run split by rubric (plan_review.py:1499 by_rubric) and, per re-review, the previous review (plan_review.py:1483 previous_run_id), the sections new since it, the largest section change (plan_review.py:1491 max_section_change) and whether the rule fires, all read from list_plan_reviews (plan_review.py:1460), so the goal's four facts are all present.",
+    "manifest": "read; it records commits 5a18a56e3 and 9f36f69d8, the gate log logs/gate-day-summary.log (56 passed, EXIT=0) and logs/negative-control-drop-new-section-clause.log (2 failed, EXIT=1), but both baseline_suite and after_suite are empty, so no baseline arm is recorded.",
+    "write_paths": "the manifest declares reckon/crew/plan_review.py, reckon/mcp.py, tests/test_plan_review_day_summary.py, one evidence fragment and one figures directory; git diff --stat b8cc7f0f6..9f36f69d8 names exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "test_the_rule_reads_the_threshold... at tests/test_plan_review_day_summary.py:266 asserts the rule fires at threshold 0.30 and not at 0.60 against shares computed from the fixture, and the declared negative control (drop the new-section clause) reddens two tests at EXIT=1, so reverting the clause fails the suite.",
+    "evidence": "the gate runs tests/test_plan_review_day_summary.py with four sibling files at 56 passed EXIT=0 in logs/gate-day-summary.log and I reproduced the named file at head (11 passed); the manifest's baseline_suite and after_suite are empty, so the run records no baseline arm against which an added-failure count could be taken.",
+    "fit": "the added symbols (review_day_summary, _instant, _record_dispatch_instant, _read_reviewed_blob_texts, _review_prose) are mechanism names with no plan, ticket or version id and no attribution, and the section banner at plan_review.py:1294 follows the module's existing idiom.",
+    "goal_fidelity": "plan_review.py:1419 review_day_summary returns per plan reviews_run, by_rubric (plan_review.py:1499), and per re-review previous_run_id, new_sections, max_section_change and fires, folded from list_plan_reviews (plan_review.py:1460) exactly as the goal states.",
+    "reuse": "plan_review.py:1340 _read_reviewed_blob_texts re-implements the one-pass cat-file --batch parse loop that reckon/velocity.py:395 read_blobs already owns, extending neither the owner nor a wrapper of it, though it correctly reuses _prose_texts, _edit_share and _snapshot_evidence for the change measure.",
+    "scope_discipline": "git diff --stat b8cc7f0f6..9f36f69d8 lists exactly the four files the manifest declares, and the declared figures path was left unused rather than filled with an unrequired artifact."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is the per-day review summary; reckon/crew/plan_review.py:1419 review_day_summary reports, per plan, the reviews run split by rubric (plan_review.py:1499 by_rubric) and, per re-review, the previous review (plan_review.py:1483 previous_run_id), the sections new since it, the largest section change (plan_review.py:1491 max_section_change) and whether the rule fires, all read from list_plan_reviews (plan_review.py:1460), so the goal's four facts are all present.\nVERDICT done_when: the done-when names tests/test_plan_review_day_summary.py with four sibling files and a real-data log; the manifest records 56 passed EXIT=0, the two-failed negative control and the real-day log, and I reproduced the named test file at head (11 passed, EXIT=0).\nVERDICT write_paths: the manifest declares reckon/crew/plan_review.py, reckon/mcp.py, tests/test_plan_review_day_summary.py, one evidence fragment and one figures directory; git diff --stat b8cc7f0f6..9f36f69d8 names exactly those four files and nothing else.\nVERDICT manifest: read; it records commits 5a18a56e3 and 9f36f69d8, the gate log logs/gate-day-summary.log (56 passed, EXIT=0) and logs/negative-control-drop-new-section-clause.log (2 failed, EXIT=1), but both baseline_suite and after_suite are empty, so no baseline arm is recorded.\nVERDICT diff: read commit by commit against base b8cc7f0f6; the single feature commit 5a18a56e3 adds the fold and its helpers to plan_review.py and the since branch to mcp.py, the second commit 9f36f69d8 adds only the evidence fragment, and no file outside the declared scope is touched.\nCALL_SITES: reckon/mcp.py:5490 (the crew MCP tool registered over _crew), reckon/mcp.py:4398 (the since branch inside _crew reachable through that tool)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: plan_review.py:1419 review_day_summary returns per plan reviews_run, by_rubric (plan_review.py:1499), and per re-review previous_run_id, new_sections, max_section_change and fires, folded from list_plan_reviews (plan_review.py:1460) exactly as the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate runs tests/test_plan_review_day_summary.py with four sibling files at 56 passed EXIT=0 in logs/gate-day-summary.log and I reproduced the named file at head (11 passed); the manifest's baseline_suite and after_suite are empty, so the run records no baseline arm against which an added-failure count could be taken.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b8cc7f0f6..9f36f69d8 lists exactly the four files the manifest declares, and the declared figures path was left unused rather than filled with an unrequired artifact.\nSCORE durability: 18\nJUSTIFICATION durability: test_the_rule_reads_the_threshold... at tests/test_plan_review_day_summary.py:266 asserts the rule fires at threshold 0.30 and not at 0.60 against shares computed from the fixture, and the declared negative control (drop the new-section clause) reddens two tests at EXIT=1, so reverting the clause fails the suite.\nSCORE fit: 18\nJUSTIFICATION fit: the added symbols (review_day_summary, _instant, _record_dispatch_instant, _read_reviewed_blob_texts, _review_prose) are mechanism names with no plan, ticket or version id and no attribution, and the section banner at plan_review.py:1294 follows the module's existing idiom.\nSCORE reuse: 10\nJUSTIFICATION reuse: plan_review.py:1340 _read_reviewed_blob_texts re-implements the one-pass cat-file --batch parse loop that reckon/velocity.py:395 read_blobs already owns, extending neither the owner nor a wrapper of it, though it correctly reuses _prose_texts, _edit_share and _snapshot_evidence for the change measure.\nFINDING reckon/crew/plan_review.py:1340 follow-on: _read_reviewed_blob_texts re-implements the batched object-store read that reckon/velocity.py:395 read_blobs already owns \u2014 the same payload build, the same per-spec newline/size parse, the same missing handling \u2014 and only differs in keying by a bare blob sha rather than a (revision, path) pair; the owner could have been extended (read_blobs has no sha-keyed entry point) rather than forked, so a later change to the batch protocol lands in two places. The rest of the fold reuses the module's existing owners, so this is the one duplication.",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T065816697716-plan-review-view-summarises-a-day.at-9f36f69d82c1b9a1041b6694db1039e07b5692a6.json",
+  "review_run_id": "r-20261007T075551375016-review-of-plan-review-view-summarises-a-day",
+  "reviewed_base_sha": "b8cc7f0f622a96640b0d5320ce81a7b280b33466",
+  "reviewed_head_sha": "9f36f69d82c1b9a1041b6694db1039e07b5692a6",
+  "reviewed_run_id": "r-20261007T065816697716-plan-review-view-summarises-a-day",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 10,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T08:11:03.313418+00:00",
+  "total": 101
+}

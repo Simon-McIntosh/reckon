@@ -47,6 +47,20 @@ ACCOUNT_ENV = "FLEET_ACCOUNT"
 CPUS_ENV = "FLEET_CPUS"
 MEMORY_ENV = "FLEET_MEMORY"
 
+# Compute-library thread pools size themselves from the node's core count unless
+# the environment caps them, so every heavy process the fleet starts opened a
+# pool as wide as the node and the thread count multiplied. Each library
+# variable is capped at one declared width unless the submitting environment
+# already sets it; a process that needs more threads raises its own variable.
+DEFAULT_THREAD_CAP = 8
+THREAD_CAP_VARIABLES = (
+    "OMP_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",
+)
+
 # The scheduler spells an unbounded wall clock with this token, both in a
 # request and in the remaining time it reports.
 UNBOUNDED_TIME = "UNLIMITED"
@@ -140,11 +154,23 @@ def generate_hold_script(size: FleetSize, *, log_path: str | os.PathLike[str]) -
         "#SBATCH --exclusive",
         f"#SBATCH --comment={FLEET_COMMENT}",
     ]
-    body = dedent(
-        """
+    thread_caps = "\n".join(
+        f'export {name}="${{{name}:-{DEFAULT_THREAD_CAP}}}"'
+        for name in THREAD_CAP_VARIABLES
+    )
+    body = (
+        dedent(
+            """
         set -euo pipefail
 
         export TMPDIR=/tmp
+
+        # Cap each compute-library thread pool at the declared width, keeping a
+        # value the submitting environment already set. A heavy process
+        # otherwise opens a pool as wide as the node's cores, and the thread
+        # count multiplies across every process the allocation starts. A
+        # process that needs more threads raises its own variable.
+        {thread_caps}
 
         # The batch step is the one process tree on the node that outlives every
         # login node: a step ends when its login-side client does. The fleet
@@ -157,7 +183,10 @@ def generate_hold_script(size: FleetSize, *, log_path: str | os.PathLike[str]) -
         echo "[$(date)] Holding $(hostname) for the interactive agent fleet"
         exec sleep infinity
         """
-    ).strip()
+        )
+        .strip()
+        .format(thread_caps=thread_caps)
+    )
     return "\n".join([*headers, "", body, ""])
 
 

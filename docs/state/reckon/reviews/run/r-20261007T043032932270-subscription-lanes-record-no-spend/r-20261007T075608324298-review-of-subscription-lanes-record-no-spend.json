@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0090375ca20867f919986a8bf86699f405d976b1",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/capabilities.py:237",
+    "reckon/crew/picker/outcomes.py:368",
+    "reckon/ledger.py:2088",
+    "reckon/ledger.py:2117"
+  ],
+  "completed_at": "2026-10-07T08:19:30.167Z",
+  "dispatched_at": "2026-10-07T07:56:38Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "2058",
+      "severity": "follow-on",
+      "text": "follow-on: `_resolved_flight_config` calls `flight.resolve()` with no project, so a project-layer override of a lane's `budget_group` never reaches `backend_budget_group`, while the docstring at reckon/ledger.py:2070 and the evidence fragment claim a \"host or project override\" is honoured; reproduced by pointing RECKON_HOME at a host layer, a project layer declaring claude on claude-metered and a catalogue declaring claude-sub, where ledger.backend_budget_group(\"claude\") returns \"claude-sub\"."
+    },
+    {
+      "file": "tests/test_subscription_lanes_record_no_spend.py",
+      "line": "205",
+      "severity": "follow-on",
+      "text": "follow-on: `test_capabilities_route_rows_label_a_subscription_lane` is named and documented for derive_routing's row `billing` key but calls only capabilities._backend_billing and capabilities._cost_usd directly, so a regression that dropped or mis-keyed the `billing` field in capabilities.derive_routing's assembled rows would redden no test."
+    }
+  ],
+  "head_log_revision": "1d88ab2f4bd2311b8c530657279e3a9c4c3de8c5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit from 99aefbacc; 1d88ab2f4 rewrites the ledger lookup (+268/-56 across reckon/ledger.py, reckon/crew/budget_group.py and the two test files) and 3d2d4ecb7 updates only the evidence fragment (+14/-5).",
+    "done_when": "the done_when is the node gate over tests/test_ledger*.py and tests/test_subscription_lanes_record_no_spend.py; the manifest records the head arm at gate-head.log (328 passed, EXIT=0 at 1d88ab2f4) against a base arm at gate-base.log (319 passed, EXIT=0 at 0090375ca), so the added-failure count the prior review left unmeasured is now measured as 0.",
+    "goal": "the delta's goal is to repair the prior review's two substantive follow-ons on this run \u2014 catch flight.FlightConfigError so one malformed catalogue cannot stop every promotion, and read a lane's budget group from resolved flight config through the module that owns the declaration \u2014 and both gained commits (1d88ab2f4, 3d2d4ecb7) do so in reckon/ledger.py and reckon/crew/budget_group.py.",
+    "manifest": "read; status complete, commits 3d2d4ecb7/1d88ab2f4 present, baseline_suite and after_suite both completed with empty failure_ids, and negative-control.log ends EXIT=1 with four red test ids.",
+    "write_paths": "read the manifest's declared paths; the gained commits touch only reckon/crew/budget_group.py, reckon/ledger.py, tests/test_ledger.py, tests/test_subscription_lanes_record_no_spend.py and the evidence fragment, all inside the declared scope, with tests/test_ledger.py reached by the coordinator's documented widening."
+  },
+  "justifications": {
+    "durability": "tests/test_subscription_lanes_record_no_spend.py:117 and :131 add independent assertions \u2014 a host declaration beating the catalogue and a malformed catalogue leaving the lane metered \u2014 but capabilities.derive_routing's assembled row billing is still asserted by no test.",
+    "evidence": "the reviewed manifest now arms both gate logs (gate-base.log 319 passed, gate-head.log 328 passed), so the added failures annotate as 0 measured rather than unmeasured, and negative-control.log shows four tests red with EXIT=1.",
+    "fit": "the change follows the surrounding module idiom and carries no plan or ticket label, but reckon/ledger.py:2070 claims a project override the code cannot honour and reckon/ledger.py:2085 still says the lookup \"reads the catalogue\" after it was changed to read resolved config.",
+    "goal_fidelity": "reckon/ledger.py:2058 resolves flight config and reckon/ledger.py:2065 delegates to budget_group.declared_group_for, and both prior follow-ons are repaired, but the \"project override\" half of the stated goal is not delivered.",
+    "reuse": "reckon/ledger.py:2065 now delegates the backend-to-group lookup to its owner reckon/crew/budget_group.py:106 (declared_group_for) instead of forking it, repairing the duplication the prior review found.",
+    "scope_discipline": "every path in the two gained commits is inside the manifest's declared write paths, and the one widened path (tests/test_ledger.py) is documented as an authorised edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta's goal is to repair the prior review's two substantive follow-ons on this run \u2014 catch flight.FlightConfigError so one malformed catalogue cannot stop every promotion, and read a lane's budget group from resolved flight config through the module that owns the declaration \u2014 and both gained commits (1d88ab2f4, 3d2d4ecb7) do so in reckon/ledger.py and reckon/crew/budget_group.py.\nVERDICT done_when: the done_when is the node gate over tests/test_ledger*.py and tests/test_subscription_lanes_record_no_spend.py; the manifest records the head arm at gate-head.log (328 passed, EXIT=0 at 1d88ab2f4) against a base arm at gate-base.log (319 passed, EXIT=0 at 0090375ca), so the added-failure count the prior review left unmeasured is now measured as 0.\nVERDICT write_paths: read the manifest's declared paths; the gained commits touch only reckon/crew/budget_group.py, reckon/ledger.py, tests/test_ledger.py, tests/test_subscription_lanes_record_no_spend.py and the evidence fragment, all inside the declared scope, with tests/test_ledger.py reached by the coordinator's documented widening.\nVERDICT manifest: read; status complete, commits 3d2d4ecb7/1d88ab2f4 present, baseline_suite and after_suite both completed with empty failure_ids, and negative-control.log ends EXIT=1 with four red test ids.\nVERDICT diff: read commit by commit from 99aefbacc; 1d88ab2f4 rewrites the ledger lookup (+268/-56 across reckon/ledger.py, reckon/crew/budget_group.py and the two test files) and 3d2d4ecb7 updates only the evidence fragment (+14/-5).\nCALL_SITES: reckon/capabilities.py:237, reckon/crew/picker/outcomes.py:368, reckon/ledger.py:2088, reckon/ledger.py:2117\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:2058 resolves flight config and reckon/ledger.py:2065 delegates to budget_group.declared_group_for, and both prior follow-ons are repaired, but the \"project override\" half of the stated goal is not delivered.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed manifest now arms both gate logs (gate-base.log 319 passed, gate-head.log 328 passed), so the added failures annotate as 0 measured rather than unmeasured, and negative-control.log shows four tests red with EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the two gained commits is inside the manifest's declared write paths, and the one widened path (tests/test_ledger.py) is documented as an authorised edit.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_subscription_lanes_record_no_spend.py:117 and :131 add independent assertions \u2014 a host declaration beating the catalogue and a malformed catalogue leaving the lane metered \u2014 but capabilities.derive_routing's assembled row billing is still asserted by no test.\nSCORE fit: 15\nJUSTIFICATION fit: the change follows the surrounding module idiom and carries no plan or ticket label, but reckon/ledger.py:2070 claims a project override the code cannot honour and reckon/ledger.py:2085 still says the lookup \"reads the catalogue\" after it was changed to read resolved config.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/ledger.py:2065 now delegates the backend-to-group lookup to its owner reckon/crew/budget_group.py:106 (declared_group_for) instead of forking it, repairing the duplication the prior review found.\nFINDING reckon/ledger.py:2058 follow-on: `_resolved_flight_config` calls `flight.resolve()` with no project, so a project-layer override of a lane's `budget_group` never reaches `backend_budget_group`, while the docstring at reckon/ledger.py:2070 and the evidence fragment claim a \"host or project override\" is honoured; reproduced by pointing RECKON_HOME at a host layer, a project layer declaring claude on claude-metered and a catalogue declaring claude-sub, where ledger.backend_budget_group(\"claude\") returns \"claude-sub\".\nFINDING tests/test_subscription_lanes_record_no_spend.py:205 follow-on: `test_capabilities_route_rows_label_a_subscription_lane` is named and documented for derive_routing's row `billing` key but calls only capabilities._backend_billing and capabilities._cost_usd directly, so a regression that dropped or mis-keyed the `billing` field in capabilities.derive_routing's assembled rows would redden no test.\nreviewed_base_sha: 99aefbaccf7ef806de3df6d52d64fee9be41a739\nreviewed_head_sha: 3d2d4ecb700456b32ab2fdc81d14f931ec8a1dcb",
+  "review_run_id": "r-20261007T075608324298-review-of-subscription-lanes-record-no-spend",
+  "reviewed_base_sha": "99aefbaccf7ef806de3df6d52d64fee9be41a739",
+  "reviewed_head_sha": "3d2d4ecb700456b32ab2fdc81d14f931ec8a1dcb",
+  "reviewed_run_id": "r-20261007T043032932270-subscription-lanes-record-no-spend",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T08:17:25.014286+00:00",
+  "total": 104
+}

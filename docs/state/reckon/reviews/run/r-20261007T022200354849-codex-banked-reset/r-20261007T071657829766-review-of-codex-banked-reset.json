@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "5b947ae9eabe806a05523c957cfe14e4b13872ef",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/budget.py:_group_allowance",
+    "reckon/cli.py:crew_budget_reset"
+  ],
+  "completed_at": "2026-10-07T07:53:04.577Z",
+  "dispatched_at": "2026-10-07T07:17:27Z",
+  "findings": [
+    {
+      "file": "tests/test_codex_banked_reset.py",
+      "line": "194",
+      "severity": "follow-on",
+      "text": "follow-on: the concurrency test does not fail when the lock it names is reverted \u2014 with _locked reduced to a passthrough in a scratch copy it passed 20 of 20 runs (and 10 of 10 with the lock present), so a regression that removes the lock is not caught; the timing assertion `assert not finished.wait(timeout=0.2)` at this line is satisfied in both states."
+    },
+    {
+      "file": "reckon/crew/budget_reset.py",
+      "line": "74",
+      "severity": "follow-on",
+      "text": "follow-on: the docstring claims the reentrant _PROCESS_LOCK keeps a nested same-thread call from deadlocking on the file lock, but a reentrant lock admits the nested call, which then opens a second descriptor and blocks on flock; the stated purpose is the inverse of what the code does and no lock here is non-reentrant."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022200354849-codex-banked-reset/manifest.md",
+      "line": "24",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's artifacts gate and evidence_inputs still read base 152 passed / head 158 passed while its own baseline_suite and after_suite fields and the gate logs record 205 and 212, so a reader trusting the summary is misled about the run's gate population."
+    }
+  ],
+  "head_log_revision": "6b8d37db13b62694b00b6f6cb8e7278aa35287ba",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the single gained commit 6b8d37db1: it removes the available parameter from _scale_for_banked_reset so reset_available is added only when a reset is counted, wraps the three store writers in a new _locked context manager, adds a _same_observation early return, and adds one concurrency test.",
+    "done_when": "done_when item 2 asks the reading carry reset_available and the pace reflect the extra window; tests/test_codex_banked_reset.py:84-104 asserts reset_available is absent without a flag and that the derived and effective_limit double and burn halves with one; the manifest records the gate over the named files.",
+    "goal": "the goal is that a banked codex reset adds one window of allowance until used; the gained commit serialises every store read-check-write under a lock (reckon/crew/budget_reset.py:69-87) and keeps a no-flag group's allowance byte-identical (reckon/budget.py:1977), both repairing that mechanism.",
+    "manifest": "read; it records base 205 EXIT=0 and head 212 EXIT=0 in its suite fields but its artifacts and evidence_inputs prose still say 152/158, contradicting its own gate logs.",
+    "write_paths": "the node was fenced to reckon/budget.py, reckon/cli.py, reckon/crew/budget_reset.py, tests/test_codex_banked_reset.py and two doc paths; the gained diff 44636a5f0..6b8d37db1 lists exactly the first, third and fourth."
+  },
+  "justifications": {
+    "durability": "tests/test_codex_banked_reset.py:90 fails if reset_available is set for a no-flag group, but the concurrency test at :162-219 passed 20 of 20 runs in a scratch copy with _locked reduced to a passthrough and 10 of 10 with the lock present, so it does not distinguish the two and the lock change it names is effectively unguarded.",
+    "evidence": "gate-head.log records 212 passed EXIT=0 at 6b8d37db and gate-base.log 205 passed EXIT=0 at 5b947ae9, but the reviewed manifest's artifacts and evidence_inputs prose still reports 152/158, so two of its own numbers disagree with its logs.",
+    "fit": "reckon/crew/budget_reset.py:69-87 follows the flock contextmanager idiom of reckon/ledger.py:1251, but its docstring says the reentrant _PROCESS_LOCK stops a nested call deadlocking when a reentrant lock is exactly what admits the nested call that then blocks on a second flock.",
+    "goal_fidelity": "reckon/budget.py:1983 adds reset_available only when credit>0 and reckon/crew/budget_reset.py:155-247 hold one lock across the store's read-check-write, so a no-flag group stays replay-equal and a concurrent clear cannot be resurrected.",
+    "reuse": "the lock reuses fcntl.flock as the repo's other per-module lock helpers do; reckon/_store.py:315 _serialized_path_lock is the nearest owner but is private and keyed differently, so this extends the idiom and forks no shared capability.",
+    "scope_discipline": "the diff over 44636a5f0..6b8d37db1 changes only reckon/budget.py, reckon/crew/budget_reset.py and tests/test_codex_banked_reset.py, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 44636a5f08a669dd18c565197e7945874eddb854\nreviewed_head_sha: 6b8d37db13b62694b00b6f6cb8e7278aa35287ba\nVERDICT goal: the goal is that a banked codex reset adds one window of allowance until used; the gained commit serialises every store read-check-write under a lock (reckon/crew/budget_reset.py:69-87) and keeps a no-flag group's allowance byte-identical (reckon/budget.py:1977), both repairing that mechanism.\nVERDICT done_when: done_when item 2 asks the reading carry reset_available and the pace reflect the extra window; tests/test_codex_banked_reset.py:84-104 asserts reset_available is absent without a flag and that the derived and effective_limit double and burn halves with one; the manifest records the gate over the named files.\nVERDICT write_paths: the node was fenced to reckon/budget.py, reckon/cli.py, reckon/crew/budget_reset.py, tests/test_codex_banked_reset.py and two doc paths; the gained diff 44636a5f0..6b8d37db1 lists exactly the first, third and fourth.\nVERDICT manifest: read; it records base 205 EXIT=0 and head 212 EXIT=0 in its suite fields but its artifacts and evidence_inputs prose still say 152/158, contradicting its own gate logs.\nVERDICT diff: read the single gained commit 6b8d37db1: it removes the available parameter from _scale_for_banked_reset so reset_available is added only when a reset is counted, wraps the three store writers in a new _locked context manager, adds a _same_observation early return, and adds one concurrency test.\nCALL_SITES: reckon/budget.py:_group_allowance, reckon/cli.py:crew_budget_reset\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/budget.py:1983 adds reset_available only when credit>0 and reckon/crew/budget_reset.py:155-247 hold one lock across the store's read-check-write, so a no-flag group stays replay-equal and a concurrent clear cannot be resurrected.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log records 212 passed EXIT=0 at 6b8d37db and gate-base.log 205 passed EXIT=0 at 5b947ae9, but the reviewed manifest's artifacts and evidence_inputs prose still reports 152/158, so two of its own numbers disagree with its logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff over 44636a5f0..6b8d37db1 changes only reckon/budget.py, reckon/crew/budget_reset.py and tests/test_codex_banked_reset.py, all inside the declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_codex_banked_reset.py:90 fails if reset_available is set for a no-flag group, but the concurrency test at :162-219 passed 20 of 20 runs in a scratch copy with _locked reduced to a passthrough and 10 of 10 with the lock present, so it does not distinguish the two and the lock change it names is effectively unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/budget_reset.py:69-87 follows the flock contextmanager idiom of reckon/ledger.py:1251, but its docstring says the reentrant _PROCESS_LOCK stops a nested call deadlocking when a reentrant lock is exactly what admits the nested call that then blocks on a second flock.\nSCORE reuse: 18\nJUSTIFICATION reuse: the lock reuses fcntl.flock as the repo's other per-module lock helpers do; reckon/_store.py:315 _serialized_path_lock is the nearest owner but is private and keyed differently, so this extends the idiom and forks no shared capability.\nFINDING tests/test_codex_banked_reset.py:194 follow-on: the concurrency test does not fail when the lock it names is reverted \u2014 with _locked reduced to a passthrough in a scratch copy it passed 20 of 20 runs (and 10 of 10 with the lock present), so a regression that removes the lock is not caught; the timing assertion `assert not finished.wait(timeout=0.2)` at this line is satisfied in both states.\nFINDING reckon/crew/budget_reset.py:74 follow-on: the docstring claims the reentrant _PROCESS_LOCK keeps a nested same-thread call from deadlocking on the file lock, but a reentrant lock admits the nested call, which then opens a second descriptor and blocks on flock; the stated purpose is the inverse of what the code does and no lock here is non-reentrant.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022200354849-codex-banked-reset/manifest.md:24 follow-on: the manifest's artifacts gate and evidence_inputs still read base 152 passed / head 158 passed while its own baseline_suite and after_suite fields and the gate logs record 205 and 212, so a reader trusting the summary is misled about the run's gate population.",
+  "review_run_id": "r-20261007T071657829766-review-of-codex-banked-reset",
+  "reviewed_base_sha": "44636a5f08a669dd18c565197e7945874eddb854",
+  "reviewed_head_sha": "6b8d37db13b62694b00b6f6cb8e7278aa35287ba",
+  "reviewed_run_id": "r-20261007T022200354849-codex-banked-reset",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T07:50:06.793757+00:00",
+  "total": 104
+}
