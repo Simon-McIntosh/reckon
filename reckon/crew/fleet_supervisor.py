@@ -91,12 +91,11 @@ START_MODE = "start"
 
 # The request loop reads its FIFO with a bounded wait rather than a blocking
 # read, so the sweep for exited children runs on its own interval instead of
-# only when a request happens to arrive. Requests are rare, and the loop's whole
+# only when a request happens to arrive. Requests are rare and the loop's whole
 # life is a read, so a child that exits while the FIFO is idle would otherwise
-# stay defunct until the next request: measured on this machine, an imas-ambix
-# service child started on 2 October was still a zombie under the supervisor
-# days later. The interval is short enough that an exited child is collected
-# within a second of its own exit, and it costs one wakeup per interval.
+# stay defunct until the next request arrives. The interval is short enough that
+# an exited child is collected within a second of its own exit, and it costs one
+# wakeup per interval.
 REQUEST_WAIT_SECONDS = 0.5
 REQUEST_READ_BYTES = 65536
 

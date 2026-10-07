@@ -64,6 +64,12 @@ LIVE_CHILD = (
 # exited child it must collect without a request arriving.
 EXITING_CHILD = "import sys\nopen(sys.argv[1], 'w', encoding='utf-8').write('ran\\n')\n"
 
+# A child that appends a line to a marker each time it runs, so a request acted
+# on more than once shows as more than one line in the marker.
+APPENDING_CHILD = (
+    "import sys\nopen(sys.argv[1], 'a', encoding='utf-8').write('ran\\n')\n"
+)
+
 # A child that records the environment it was handed and exits.
 ENV_DUMP_CHILD = (
     "import os, sys\n"
@@ -129,6 +135,27 @@ def _kill_pid(pid: int) -> None:
 def _send(runtime: Path, line: str) -> None:
     with open(runtime / "requests", "w", encoding="utf-8") as handle:
         handle.write(line + "\n")
+
+
+def _send_chunks(runtime: Path, chunks: list[str]) -> None:
+    """Write one request line to the FIFO in several writes.
+
+    A read on a FIFO returns what is available rather than waiting for a whole
+    line, so a request written in pieces can reach the reader split across two
+    reads. Each piece is written on the reader's own open descriptor and given a
+    pause, so the reader's bounded wait wakes and reads between them rather than
+    the pieces coalescing in the kernel buffer.
+    """
+    descriptor = os.open(
+        runtime / fleet_supervisor.REQUEST_FIFO_NAME,
+        os.O_WRONLY | os.O_NONBLOCK,
+    )
+    try:
+        for chunk in chunks:
+            os.write(descriptor, chunk.encode())
+            time.sleep(0.3)
+    finally:
+        os.close(descriptor)
 
 
 def _try_send(runtime: Path, line: str) -> bool:
@@ -470,6 +497,46 @@ def test_an_exited_child_is_collected_with_no_request_arriving(
         timeout=COLLECT_SECONDS,
     )
     assert time.monotonic() - started < COLLECT_SECONDS
+
+
+def test_a_request_split_across_reads_is_handled_once_and_whole(
+    reader, tmp_path
+) -> None:
+    """A request written in pieces is reassembled and acted on exactly once.
+
+    A read on the FIFO returns what is available rather than a whole line, so a
+    request can arrive split across two of the reader's bounded reads. The
+    reader holds a pending buffer and acts only on complete lines, so the two
+    halves are joined into one line and handled once. The stub appends a line to
+    its marker each time it runs, so a reader that acted on the halves
+    separately would either start no child (each half is malformed) or two (the
+    marker holding more than one line); one whole request shows as one line.
+    """
+    run_directory = tmp_path / "run"
+    marker = tmp_path / "child-ran"
+    stub = tmp_path / "stub.py"
+    stub.write_text(APPENDING_CHILD, encoding="utf-8")
+    spec = _write_spec(run_directory, [sys.executable, str(stub), str(marker)])
+
+    reader.start()
+    line = f"spawn r-test {spec}"
+    # Split the line in the middle of the spec path, so neither half is a
+    # request on its own and only the joined line names the spec.
+    cut = len(line) // 2
+    _send_chunks(reader.runtime, [line[:cut], line[cut:] + "\n"])
+    _wait_for(
+        marker.exists,
+        message=(
+            "the split request was never acted on, so its halves were not "
+            f"reassembled into one line; log={_reader_log(reader.log)!r}"
+        ),
+    )
+    # Give a second handling, were there one, time to land before counting.
+    time.sleep(1.0)
+    assert marker.read_text(encoding="utf-8").split() == ["ran"], (
+        "the request was handled more than once, so its two halves were acted "
+        f"on separately: {marker.read_text(encoding='utf-8')!r}"
+    )
 
 
 def test_the_readers_runtime_directory_is_not_world_readable(reader) -> None:
