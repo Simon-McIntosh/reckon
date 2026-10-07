@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured zero: base-gate.log (145 passed, no FAILED/ERROR lines) and head-gate-final.log (151 passed, no FAILED/ERROR lines) were both read; the head log added no failing node id over the base log",
+  "base_log_revision": "111a3fb70c470f0571600e3a7e6fb23d1af0a51c",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/paid_lanes.py:main"
+  ],
+  "completed_at": "2026-10-07T07:03:39.327Z",
+  "dispatched_at": "2026-10-07T06:37:28Z",
+  "findings": [
+    {
+      "file": "reckon/crew/paid_lanes.py",
+      "line": "565",
+      "severity": "follow-on",
+      "text": "follow-on: _probe_reading maps a probe window's length to its named clock with an inline literal {300: five_hour, 10080: seven_day}.get(int(minutes), primary), re-implementing a capability reckon/budget.py already owns (WINDOW_MINUTES_CLOCK at reckon/budget.py:2885 with _reported_window_clock at reckon/budget.py:2896, the same translation used at reckon/budget.py:867), and its own raw.values()/window_minutes iteration duplicates budget._quota_windows at reckon/budget.py:842; the addition duplicates rather than extends the owner, so the two readers can drift."
+    },
+    {
+      "file": "reckon/crew/paid_lanes.py",
+      "line": "623",
+      "severity": "follow-on",
+      "text": "follow-on: the probe trigger is any(block.get(stale) ...) and _unknown_window at reckon/crew/paid_lanes.py:309 always carries stale False, so a subscription account whose published reading is entirely absent or unknown is never probed; the publisher only refreshes an account that already carries a stale figure, leaving Jev and preflight reading an unknown account indefinitely."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "follow-on: the manual end-to-end reading records codex, codex-astra and codex-luna with source rollout (a fresh 0.303 s observation, never probed) and the only live probe attempt is claude-opus, which failed with HTTP 403, so the fragment does not exhibit a successful refresh through the probe; the goal behaviour is demonstrated only against the stubbed probe in tests/test_publisher_refreshes_stale_windows.py, and the production default document could not be written under the worker fence."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T052613021938-publisher-refreshes-stale-windows/head-gate-final.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's log names revision a9899a9b5197b516dfa9b92adb925b85d477bd6c (the code commit) while the reviewed head is b8c3d413400caf02453ac0ded43fd6c7b19a694b (a docs-only commit on top), so the 151-passed result is evidence about the code at a9899a9b5 and is carried to the reviewed head only because the intervening commit changes a document and no source."
+    }
+  ],
+  "head_log_revision": "a9899a9b5197b516dfa9b92adb925b85d477bd6c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against 111a3fb70; reckon/crew/paid_lanes.py gains a lock-guarded publish_document that claims a probe before running it, translates the account probe block into window figures and republishes with source probe, retains provider-defined primary windows in account_entry, and main now routes through publish_document.",
+    "done_when": "the declared gate ran to its summary line in both arms (base 145 passed EXIT=0, head 151 passed EXIT=0) and the new tests/test_publisher_refreshes_stale_windows.py asserts refresh-once, one-probe-per-horizon, failed-probe retention with reason, and never-probe-when-fresh.",
+    "goal": "the goal is to refresh a subscription account's stale window through the existing account probe; reckon/crew/paid_lanes.py:583 publish_document probes a backend group whose published reading is stale and republishes the probe reading with source probe at line 671.",
+    "manifest": "read; it records base 145 passed EXIT=0 and head 151 passed EXIT=0, the negative control red (1 failed EXIT=1), its commit list and its three changed paths.",
+    "write_paths": "the diff over 111a3fb70..b8c3d413 touches exactly the three declared write paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_publisher_refreshes_stale_windows.py reddens on the declared mutation (negative-control.log: test_stale_subscription_window_is_refreshed_once_for_its_account FAILED, probe_calls 0 != 1) and its assertions compare the published figure against an independently supplied probe answer (usedPercent 0.0 -> utilisation 0.0) and against the source reading (0.85 retained on failure), not against a value the test itself passes to the code.",
+    "evidence": "the gate is recorded, not claimed: base-gate.log (revision 111a3fb70, 145 passed, EXIT=0) and head-gate-final.log (revision a9899a9b5, 151 passed, EXIT=0) both ran to their summary lines with no FAILED/ERROR lines, and the negative control reddens at EXIT=1; the gap is that a successful refresh is shown only against a stubbed probe, the one live probe attempt failed with HTTP 403, and the head log names a9899a9b5 rather than the reviewed head.",
+    "fit": "the added names describe mechanism (publish_document, _probe_reading, _previous_probe_candidates, the probe claim block) and the docstrings explain why the probe is claimed before it runs; no added symbol, comment or filename carries a version, a plan label or an attribution.",
+    "goal_fidelity": "reckon/crew/paid_lanes.py:583 publish_document detects a stale subscription window, calls the existing account probe through _backends.probe_budget at line 662, rate-limits it to one attempt per DEFAULT_STALE_SECONDS horizon (line 68) with a durable pre-written claim, and republishes the reading with source probe at line 671 while retaining the aged reading and a failure reason when the probe fails.",
+    "reuse": "_probe_reading re-implements the minutes-to-clock translation and keyed-window normalisation that reckon/budget.py already owns (WINDOW_MINUTES_CLOCK at reckon/budget.py:2885, _reported_window_clock at reckon/budget.py:2896, _quota_windows at reckon/budget.py:842) rather than extending that owner; the probe itself is correctly reused via _backends.probe_budget, but the added reader duplicates an owned capability, which the rubric caps at 5.",
+    "scope_discipline": "the diff over 111a3fb70..b8c3d413 changes exactly docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html, reckon/crew/paid_lanes.py and tests/test_publisher_refreshes_stale_windows.py, all three inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to refresh a subscription account's stale window through the existing account probe; reckon/crew/paid_lanes.py:583 publish_document probes a backend group whose published reading is stale and republishes the probe reading with source probe at line 671.\nVERDICT done_when: the declared gate ran to its summary line in both arms (base 145 passed EXIT=0, head 151 passed EXIT=0) and the new tests/test_publisher_refreshes_stale_windows.py asserts refresh-once, one-probe-per-horizon, failed-probe retention with reason, and never-probe-when-fresh.\nVERDICT write_paths: the diff over 111a3fb70..b8c3d413 touches exactly the three declared write paths and nothing else.\nVERDICT manifest: read; it records base 145 passed EXIT=0 and head 151 passed EXIT=0, the negative control red (1 failed EXIT=1), its commit list and its three changed paths.\nVERDICT diff: read commit by commit against 111a3fb70; reckon/crew/paid_lanes.py gains a lock-guarded publish_document that claims a probe before running it, translates the account probe block into window figures and republishes with source probe, retains provider-defined primary windows in account_entry, and main now routes through publish_document.\nCALL_SITES: reckon/crew/paid_lanes.py:main\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/paid_lanes.py:583 publish_document detects a stale subscription window, calls the existing account probe through _backends.probe_budget at line 662, rate-limits it to one attempt per DEFAULT_STALE_SECONDS horizon (line 68) with a durable pre-written claim, and republishes the reading with source probe at line 671 while retaining the aged reading and a failure reason when the probe fails.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is recorded, not claimed: base-gate.log (revision 111a3fb70, 145 passed, EXIT=0) and head-gate-final.log (revision a9899a9b5, 151 passed, EXIT=0) both ran to their summary lines with no FAILED/ERROR lines, and the negative control reddens at EXIT=1; the gap is that a successful refresh is shown only against a stubbed probe, the one live probe attempt failed with HTTP 403, and the head log names a9899a9b5 rather than the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff over 111a3fb70..b8c3d413 changes exactly docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html, reckon/crew/paid_lanes.py and tests/test_publisher_refreshes_stale_windows.py, all three inside the node's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_publisher_refreshes_stale_windows.py reddens on the declared mutation (negative-control.log: test_stale_subscription_window_is_refreshed_once_for_its_account FAILED, probe_calls 0 != 1) and its assertions compare the published figure against an independently supplied probe answer (usedPercent 0.0 -> utilisation 0.0) and against the source reading (0.85 retained on failure), not against a value the test itself passes to the code.\nSCORE fit: 18\nJUSTIFICATION fit: the added names describe mechanism (publish_document, _probe_reading, _previous_probe_candidates, the probe claim block) and the docstrings explain why the probe is claimed before it runs; no added symbol, comment or filename carries a version, a plan label or an attribution.\nSCORE reuse: 5\nJUSTIFICATION reuse: _probe_reading re-implements the minutes-to-clock translation and keyed-window normalisation that reckon/budget.py already owns (WINDOW_MINUTES_CLOCK at reckon/budget.py:2885, _reported_window_clock at reckon/budget.py:2896, _quota_windows at reckon/budget.py:842) rather than extending that owner; the probe itself is correctly reused via _backends.probe_budget, but the added reader duplicates an owned capability, which the rubric caps at 5.\nFINDING reckon/crew/paid_lanes.py:565 follow-on: _probe_reading maps a probe window's length to its named clock with an inline literal {300: five_hour, 10080: seven_day}.get(int(minutes), primary), re-implementing a capability reckon/budget.py already owns (WINDOW_MINUTES_CLOCK at reckon/budget.py:2885 with _reported_window_clock at reckon/budget.py:2896, the same translation used at reckon/budget.py:867), and its own raw.values()/window_minutes iteration duplicates budget._quota_windows at reckon/budget.py:842; the addition duplicates rather than extends the owner, so the two readers can drift.\nFINDING reckon/crew/paid_lanes.py:623 follow-on: the probe trigger is any(block.get(stale) ...) and _unknown_window at reckon/crew/paid_lanes.py:309 always carries stale False, so a subscription account whose published reading is entirely absent or unknown is never probed; the publisher only refreshes an account that already carries a stale figure, leaving Jev and preflight reading an unknown account indefinitely.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html:26 follow-on: the manual end-to-end reading records codex, codex-astra and codex-luna with source rollout (a fresh 0.303 s observation, never probed) and the only live probe attempt is claude-opus, which failed with HTTP 403, so the fragment does not exhibit a successful refresh through the probe; the goal behaviour is demonstrated only against the stubbed probe in tests/test_publisher_refreshes_stale_windows.py, and the production default document could not be written under the worker fence.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T052613021938-publisher-refreshes-stale-windows/head-gate-final.log:1 follow-on: the head arm's log names revision a9899a9b5197b516dfa9b92adb925b85d477bd6c (the code commit) while the reviewed head is b8c3d413400caf02453ac0ded43fd6c7b19a694b (a docs-only commit on top), so the 151-passed result is evidence about the code at a9899a9b5 and is carried to the reviewed head only because the intervening commit changes a document and no source.",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T052613021938-publisher-refreshes-stale-windows.json",
+  "review_run_id": "r-20261007T063707288016-review-of-publisher-refreshes-stale-windows",
+  "reviewed_base_sha": "111a3fb70c470f0571600e3a7e6fb23d1af0a51c",
+  "reviewed_head_sha": "b8c3d413400caf02453ac0ded43fd6c7b19a694b",
+  "reviewed_run_id": "r-20261007T052613021938-publisher-refreshes-stale-windows",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:48:00+00:00",
+  "total": 97
+}
