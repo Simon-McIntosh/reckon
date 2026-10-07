@@ -61,4 +61,7 @@ while owner_alive; do
   fi
 done
 
+# Reached only when the owner is gone: the exec path above never returns here.
+# Remove the FIFO this process created so a later session does not inherit it.
+rm -f "$fifo"
 exit 0

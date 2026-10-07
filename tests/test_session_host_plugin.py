@@ -110,10 +110,11 @@ def test_manifest_declares_one_always_armed_monitor() -> None:
     assert len(monitors["monitors"]) == 1
     monitor = monitors["monitors"][0]
     assert monitor["when"] == "always"
+    assert monitor["description"] == "reckon crew"
     assert "bin/crew-host" in monitor["command"]
 
     manifest = json.loads((PLUGIN / ".claude-plugin" / "plugin.json").read_text())
-    assert manifest["name"] == "crew-host"
+    assert manifest["name"] == "reckon-crew-host"
 
 
 def test_waits_silently_on_a_fifo_named_for_its_owner(tmp_path: Path) -> None:
@@ -187,6 +188,24 @@ def test_exits_within_one_interval_after_its_owner_exits(tmp_path: Path) -> None
         # timeout fenced by the process start and the exec.
         assert proc.wait(timeout=8) == 0
         assert proc.stdout.read() == b""
+    finally:
+        _stop(proc)
+        _stop(owner)
+
+
+def test_removes_its_fifo_when_its_owner_exits(tmp_path: Path) -> None:
+    root = _checkout(tmp_path)
+    owner = _start_owner()
+    proc, runtime, _ = _launch(root, tmp_path, owner.pid)
+    try:
+        fifo = _fifo(runtime, owner.pid, _proc_start(owner.pid))
+        assert _await(fifo.exists), f"FIFO never appeared at {fifo}"
+
+        os.kill(owner.pid, signal.SIGKILL)
+        owner.wait(timeout=5)
+
+        assert proc.wait(timeout=8) == 0
+        assert not fifo.exists(), "the entry point left its FIFO behind"
     finally:
         _stop(proc)
         _stop(owner)
