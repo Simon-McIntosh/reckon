@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:52",
+    "reckon/crew/dispatch.py:5277",
+    "reckon/crew/dispatch.py:5143"
+  ],
+  "completed_at": "2026-10-07T17:35:45.588Z",
+  "dispatched_at": "2026-10-07T17:25:17Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T165000435924-pick-candidates-one-pass/manifest.md",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "follow-on: the artifacts line names snapshot_candidates_warm_ms (base median 307.5 ms, head 161.2 ms) and cites measure_candidates.py and driver_run_attempt head-warm.log, but no log in the run directory records either arm's snapshot.candidates timing -- head-warm.log/head-warm.json are the census driver's output, which fell back on a budget_snapshot OSError and produced no snapshot.candidates stage, and the direct measurement script's stdout was not saved; the caveat at manifest.md:19 discloses this, so the figure is disclosed-unbacked rather than false, and it should be re-run under a writable scratch RECKON_HOME."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "3449",
+      "severity": "follow-on",
+      "text": "follow-on: requirement 2 asks to recount only a file whose stamp has changed, but context_census rebuilds the whole census when any stamp moves -- build() re-reads the entire standing chain and node file set -- so the per-file granularity is not delivered; the reused figures are still equal to an uncached census, and tests/test_pick_candidates_one_pass.py:167 pins the whole-rebuild behaviour (builder calls 1 then 2 after one touched file)."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "3356",
+      "severity": "follow-on",
+      "text": "follow-on: requirement 1 named run_time_profile.local_lane_load as the reader of each lane document, but that function takes no path argument and reads only the fixed local-lane document, so it cannot serve an arbitrary backend's lane_document; the landed routing.pick_lane_document is a second reader of the same published documents (a third counting snapshot's removed inline json.loads), and the deviation is reported at manifest.md:19."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 2a813c755; b37ba0cde is the change (one-pass scan, pick-scoped lane-document cache, stamped census) and 586043f2b is a one-line trailing-newline fix in the new test file.",
+    "done_when": "the measure has four parts; the gate asserts parts 1-3 (equality, one-pass scan count, census reuse) and the declared negative control reddens test_candidates_iterates_the_records_once, but part 4's latency figures are unbacked in the record (see the manifest finding).",
+    "goal": "the node's goal is that a production pick scan the ledger once and reuse its instruction census; snapshot.candidates:510-521 replaces the per-backend recent_outcomes/_peak_input_utilisation loops with one _candidates_scan pass (snapshot.py:158) and routes the estimate through routing.context_census (snapshot.py:96) so a pick scans the rows once and reuses the census, and test_one_pass_scan_matches_per_backend_reference confirms every candidate field is unchanged.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T165000435924-pick-candidates-one-pass/manifest.md; it records both commits, the four changed paths, both gate arms (base 2 failed/704 passed/1 error, head 1 failed/709 passed/1 error, zero added ids), the negative control, and discloses at line 19 that requirement 4's census driver could not run under the fence.",
+    "write_paths": "the four changed paths -- docs/evidence/fragments/one-typesafe-model-picker/pick-candidates-one-pass.html, reckon/crew/picker/snapshot.py, reckon/crew/routing.py, tests/test_pick_candidates_one_pass.py -- all lie inside the declared fence; the declared docs/figures path was not used, correctly, because the done-when names the fragment and no figure."
+  },
+  "justifications": {
+    "durability": "the four added tests fail if the change regresses -- test_candidates_iterates_the_records_once reddens (6==1) when the per-backend scan is restored (negative-control.log), the equality test compares candidates against the retained reference readers, and the two census tests count builder calls (1 then 2 after a touched stamp).",
+    "evidence": "the gate asserts the equality (tests/test_pick_candidates_one_pass.py:137), one-pass scan count (:159) and census reuse (:167) and its negative control reddens the scan-count test, but the done-when's requirement-4 latency measure is recorded only as an unbacked manifest figure -- no log in the run directory holds either arm's snapshot.candidates timing, and the cited head-warm.log is the census driver's failed fallback.",
+    "fit": "the added names -- _candidates_scan, _peak_summary, _outcome_counts, pick_lane_document, context_census, _census_request_key -- describe mechanism with no plan, sprint or version identifier and follow the module idiom at reckon/crew/picker/snapshot.py:113.",
+    "goal_fidelity": "snapshot.candidates:510-521 computes outcome counts and peak values in one _candidates_scan pass and routes the node estimate through routing.context_census, so the pick reads the ledger once and reuses its census; the objective is met, with requirement 2's per-file granularity coarser than the measure's wording.",
+    "reuse": "routing.context_census:3467 extends the existing owner capabilities.cached_pick_input_stamped/file_stamp rather than adding a cache, but pick_lane_document (reckon/crew/routing.py:3356) is a new file reader for a document lane_document.read_lane_document and run_time_profile.local_lane_load already read.",
+    "scope_discipline": "every changed path is inside the declared fence, but requirement 1's named mechanism run_time_profile.local_lane_load is replaced by a new reader routing.pick_lane_document, a deviation the plan section's exact spec called a blocker to report; it is reported at manifest.md:19."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a production pick scan the ledger once and reuse its instruction census; snapshot.candidates:510-521 replaces the per-backend recent_outcomes/_peak_input_utilisation loops with one _candidates_scan pass (snapshot.py:158) and routes the estimate through routing.context_census (snapshot.py:96) so a pick scans the rows once and reuses the census, and test_one_pass_scan_matches_per_backend_reference confirms every candidate field is unchanged.\nVERDICT done_when: the measure has four parts; the gate asserts parts 1-3 (equality, one-pass scan count, census reuse) and the declared negative control reddens test_candidates_iterates_the_records_once, but part 4's latency figures are unbacked in the record (see the manifest finding).\nVERDICT write_paths: the four changed paths -- docs/evidence/fragments/one-typesafe-model-picker/pick-candidates-one-pass.html, reckon/crew/picker/snapshot.py, reckon/crew/routing.py, tests/test_pick_candidates_one_pass.py -- all lie inside the declared fence; the declared docs/figures path was not used, correctly, because the done-when names the fragment and no figure.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T165000435924-pick-candidates-one-pass/manifest.md; it records both commits, the four changed paths, both gate arms (base 2 failed/704 passed/1 error, head 1 failed/709 passed/1 error, zero added ids), the negative control, and discloses at line 19 that requirement 4's census driver could not run under the fence.\nVERDICT diff: read commit by commit against base 2a813c755; b37ba0cde is the change (one-pass scan, pick-scoped lane-document cache, stamped census) and 586043f2b is a one-line trailing-newline fix in the new test file.\nCALL_SITES: reckon/crew/picker/__init__.py:52, reckon/crew/dispatch.py:5277, reckon/crew/dispatch.py:5143\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: snapshot.candidates:510-521 computes outcome counts and peak values in one _candidates_scan pass and routes the node estimate through routing.context_census, so the pick reads the ledger once and reuses its census; the objective is met, with requirement 2's per-file granularity coarser than the measure's wording.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate asserts the equality (tests/test_pick_candidates_one_pass.py:137), one-pass scan count (:159) and census reuse (:167) and its negative control reddens the scan-count test, but the done-when's requirement-4 latency measure is recorded only as an unbacked manifest figure -- no log in the run directory holds either arm's snapshot.candidates timing, and the cited head-warm.log is the census driver's failed fallback.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path is inside the declared fence, but requirement 1's named mechanism run_time_profile.local_lane_load is replaced by a new reader routing.pick_lane_document, a deviation the plan section's exact spec called a blocker to report; it is reported at manifest.md:19.\nSCORE durability: 19\nJUSTIFICATION durability: the four added tests fail if the change regresses -- test_candidates_iterates_the_records_once reddens (6==1) when the per-backend scan is restored (negative-control.log), the equality test compares candidates against the retained reference readers, and the two census tests count builder calls (1 then 2 after a touched stamp).\nSCORE fit: 19\nJUSTIFICATION fit: the added names -- _candidates_scan, _peak_summary, _outcome_counts, pick_lane_document, context_census, _census_request_key -- describe mechanism with no plan, sprint or version identifier and follow the module idiom at reckon/crew/picker/snapshot.py:113.\nSCORE reuse: 15\nJUSTIFICATION reuse: routing.context_census:3467 extends the existing owner capabilities.cached_pick_input_stamped/file_stamp rather than adding a cache, but pick_lane_document (reckon/crew/routing.py:3356) is a new file reader for a document lane_document.read_lane_document and run_time_profile.local_lane_load already read.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T165000435924-pick-candidates-one-pass/manifest.md:18 follow-on: the artifacts line names snapshot_candidates_warm_ms (base median 307.5 ms, head 161.2 ms) and cites measure_candidates.py and driver_run_attempt head-warm.log, but no log in the run directory records either arm's snapshot.candidates timing -- head-warm.log/head-warm.json are the census driver's output, which fell back on a budget_snapshot OSError and produced no snapshot.candidates stage, and the direct measurement script's stdout was not saved; the caveat at manifest.md:19 discloses this, so the figure is disclosed-unbacked rather than false, and it should be re-run under a writable scratch RECKON_HOME.\nFINDING reckon/crew/routing.py:3449 follow-on: requirement 2 asks to recount only a file whose stamp has changed, but context_census rebuilds the whole census when any stamp moves -- build() re-reads the entire standing chain and node file set -- so the per-file granularity is not delivered; the reused figures are still equal to an uncached census, and tests/test_pick_candidates_one_pass.py:167 pins the whole-rebuild behaviour (builder calls 1 then 2 after one touched file).\nFINDING reckon/crew/routing.py:3356 follow-on: requirement 1 named run_time_profile.local_lane_load as the reader of each lane document, but that function takes no path argument and reads only the fixed local-lane document, so it cannot serve an arbitrary backend's lane_document; the landed routing.pick_lane_document is a second reader of the same published documents (a third counting snapshot's removed inline json.loads), and the deviation is reported at manifest.md:19.\n",
+  "review_run_id": "r-20261007T172451997726-review-of-pick-candidates-one-pass",
+  "reviewed_base_sha": "2a813c755e1d1eae2ccc6e04e29b8b18458d7a70",
+  "reviewed_head_sha": "586043f2b143c6122e74d7f7db689b769e407a47",
+  "reviewed_run_id": "r-20261007T165000435924-pick-candidates-one-pass",
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T17:37:33.762673+00:00",
+  "total": 99
+}
