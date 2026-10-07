@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own two gate logs: the regression arm at 37b548ccf (39 passed, zero failures) and the delivery gate at 636673866 (14 passed, zero failures); both ran to their summary line, and both carry zero failing ids, so the added-failure count is zero whichever is base and whichever is after. The manifest declares no baseline_suite/after_suite arm, so this mapping is drawn from its test_logs and is immaterial to a count that is zero on both sides",
+  "base_log_revision": "37b548ccf845d9c2547b33931b390c3d61ae1460",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:7404 dispatch admission branch",
+    "reckon/cli.py:2074 crew_dispatch"
+  ],
+  "completed_at": "2026-10-07T09:08:19.623Z",
+  "dispatched_at": "2026-10-07T08:38:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1340",
+      "severity": "follow-on",
+      "text": "follow-on: `_session_host_record_path` now shares the host's directory and suffix but still spells the record stem `f\"{pid}-{start}\"` while the host spells its own `SessionHost._stem = f\"{pid}-{start_time or '0'}\"` (reckon/crew/session_host.py:250); they agree today only because both read kernel stat field 19, so a change to the host's stem format (a separator or suffix change) leaves the reader naming a file the host never writes, and no module-level record-path function exists to make the two one."
+    }
+  ],
+  "head_log_revision": "636673866279b58ac7b0a61b2252ec708d655131",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "805709925 drops the local SESSION_HOST_STATE_DIRECTORY and the duplicated CLAUDE_PID/start-tick read (one `_session_host_owner` now feeds both the FIFO and the record path), routes the record path through `session_host._state_dir` and `RECORD_SUFFIX`, and moves the test fixture onto the same resolver; c5bdaa611 corrects the evidence fragment's prose to match.",
+    "done_when": "the reviewed node's measure is tests/test_dispatch_session_host.py and tests/test_session_host.py; an independent gate at the increment head c5bdaa611 reads 14 passed, EXIT=0, and the new delegation is falsifiable (mutated reader -> 1 failed, EXIT=1).",
+    "goal": "the increment resolves dispatch's host census reader through the session host's own directory and suffix, so the delivery \"host\" verdict it feeds is read from where the host actually writes; reckon/crew/dispatch.py:1344 `_session_host_record_path` returns `_state_dir() / f\"{pid}-{start}{RECORD_SUFFIX}\"` with both halves imported from reckon.crew.session_host.",
+    "manifest": "the reviewed manifest declares commits through c5bdaa611 and status complete, but its gate-host-delivery.log header names revision 636673866, the increment base: the run's own gate predates both increment commits, and its baseline_suite and after_suite keys are absent.",
+    "write_paths": "git diff --stat 636673866..c5bdaa611 names exactly reckon/crew/dispatch.py, tests/test_dispatch_session_host.py and docs/evidence/fragments/a-follower-lives-as-long-as-its-session/delivery-reads-host-for-a-host-follower.html, all three inside the reviewed node's declared write paths."
+  },
+  "justifications": {
+    "durability": "in a scratch copy of head, mutating `_session_host_record_path` to ignore `_state_dir` reddens test_dispatch_reads_host_for_an_already_attached_host_follower (assert 'monitor' == 'host', EXIT=1) while the same tree unmutated passes (EXIT=0), so the new delegation is pinned; the record stem itself is still spelled in two modules.",
+    "evidence": "the reviewed run's own gate log header names 636673866, the base of this increment, so the run's declared head c5bdaa611 is not evidenced by its own artifacts; the gap is closed only by the independent gate and negative control this review ran, not by the run.",
+    "fit": "c5bdaa611 aligns the evidence fragment with the reader and the dispatch comment at reckon/crew/dispatch.py:1340-1343 now says the directory is \"a directory the host module owns\" rather than overstating that the whole name is imported.",
+    "goal_fidelity": "the delegation hands both the directory and the filename suffix to the host module (reckon/crew/dispatch.py:1352-1354), and an independent gate at head keeps the already-attached case at delivery \"host\" while the foreign-pid case still reads \"monitor\".",
+    "reuse": "the increment removes the directory/suffix duplication the prior review flagged and factors the CLAUDE_PID/start-tick read into one `_session_host_owner`, but the `{pid}-{start}` stem is still computed independently in dispatch and in session_host (SessionHost._stem, reckon/crew/session_host.py:250), with no module-level record-path function shared between them.",
+    "scope_discipline": "the increment's diff --stat lists exactly the three declared files, adds no figure, and touches no path outside the node's fenced write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment resolves dispatch's host census reader through the session host's own directory and suffix, so the delivery \"host\" verdict it feeds is read from where the host actually writes; reckon/crew/dispatch.py:1344 `_session_host_record_path` returns `_state_dir() / f\"{pid}-{start}{RECORD_SUFFIX}\"` with both halves imported from reckon.crew.session_host.\nVERDICT done_when: the reviewed node's measure is tests/test_dispatch_session_host.py and tests/test_session_host.py; an independent gate at the increment head c5bdaa611 reads 14 passed, EXIT=0, and the new delegation is falsifiable (mutated reader -> 1 failed, EXIT=1).\nVERDICT write_paths: git diff --stat 636673866..c5bdaa611 names exactly reckon/crew/dispatch.py, tests/test_dispatch_session_host.py and docs/evidence/fragments/a-follower-lives-as-long-as-its-session/delivery-reads-host-for-a-host-follower.html, all three inside the reviewed node's declared write paths.\nVERDICT manifest: the reviewed manifest declares commits through c5bdaa611 and status complete, but its gate-host-delivery.log header names revision 636673866, the increment base: the run's own gate predates both increment commits, and its baseline_suite and after_suite keys are absent.\nVERDICT diff: 805709925 drops the local SESSION_HOST_STATE_DIRECTORY and the duplicated CLAUDE_PID/start-tick read (one `_session_host_owner` now feeds both the FIFO and the record path), routes the record path through `session_host._state_dir` and `RECORD_SUFFIX`, and moves the test fixture onto the same resolver; c5bdaa611 corrects the evidence fragment's prose to match.\nVERDICT call_sites: the reader `_session_host_runs_follower` (reckon/crew/dispatch.py:1361) is called from the dispatch admission branch at reckon/crew/dispatch.py:7404, whose session_delivery rides the payload to reckon/cli.py:2074.\nCALL_SITES: reckon/crew/dispatch.py:7404 dispatch admission branch, reckon/cli.py:2074 crew_dispatch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the delegation hands both the directory and the filename suffix to the host module (reckon/crew/dispatch.py:1352-1354), and an independent gate at head keeps the already-attached case at delivery \"host\" while the foreign-pid case still reads \"monitor\".\nSCORE evidence: 13\nJUSTIFICATION evidence: the reviewed run's own gate log header names 636673866, the base of this increment, so the run's declared head c5bdaa611 is not evidenced by its own artifacts; the gap is closed only by the independent gate and negative control this review ran, not by the run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the increment's diff --stat lists exactly the three declared files, adds no figure, and touches no path outside the node's fenced write paths.\nSCORE durability: 18\nJUSTIFICATION durability: in a scratch copy of head, mutating `_session_host_record_path` to ignore `_state_dir` reddens test_dispatch_reads_host_for_an_already_attached_host_follower (assert 'monitor' == 'host', EXIT=1) while the same tree unmutated passes (EXIT=0), so the new delegation is pinned; the record stem itself is still spelled in two modules.\nSCORE fit: 19\nJUSTIFICATION fit: c5bdaa611 aligns the evidence fragment with the reader and the dispatch comment at reckon/crew/dispatch.py:1340-1343 now says the directory is \"a directory the host module owns\" rather than overstating that the whole name is imported.\nSCORE reuse: 17\nJUSTIFICATION reuse: the increment removes the directory/suffix duplication the prior review flagged and factors the CLAUDE_PID/start-tick read into one `_session_host_owner`, but the `{pid}-{start}` stem is still computed independently in dispatch and in session_host (SessionHost._stem, reckon/crew/session_host.py:250), with no module-level record-path function shared between them.\nFINDING reckon/crew/dispatch.py:1340 follow-on: `_session_host_record_path` now shares the host's directory and suffix but still spells the record stem `f\"{pid}-{start}\"` while the host spells its own `SessionHost._stem = f\"{pid}-{start_time or '0'}\"` (reckon/crew/session_host.py:250); they agree today only because both read kernel stat field 19, so a change to the host's stem format (a separator or suffix change) leaves the reader naming a file the host never writes, and no module-level record-path function exists to make the two one.\nREVIEWED_BASE_SHA: 636673866279b58ac7b0a61b2252ec708d655131\nREVIEWED_HEAD_SHA: c5bdaa61105abd28e46ec0c4852e8aacf440380e\n",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T074338009469-delivery-reads-host-for-a-host-follower.json",
+  "review_run_id": "r-20261007T083812311836-review-of-delivery-reads-host-for-a-host-follower",
+  "reviewed_base_sha": "636673866279b58ac7b0a61b2252ec708d655131",
+  "reviewed_head_sha": "c5bdaa61105abd28e46ec0c4852e8aacf440380e",
+  "reviewed_run_id": "r-20261007T074338009469-delivery-reads-host-for-a-host-follower",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T09:08:31.098726+00:00",
+  "total": 105
+}
