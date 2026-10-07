@@ -57,7 +57,7 @@ CATALOGUE_LAYER = "catalogue"
 
 # Maps whose keys are user-chosen names rather than schema-fixed keys. Their
 # entries are inlined objects whose identifier slot is the map key.
-_KEYED_MAPS = ("backends", "roles")
+_KEYED_MAPS = ("backends", "roles", "lanes")
 
 _AUTH_PROBE_TIMEOUT_SECONDS = 10
 _CATALOG_PROBE_TIMEOUT_SECONDS = 10
@@ -593,7 +593,9 @@ def _inject_map_keys(data: Mapping[str, Any]) -> dict[str, Any]:
 
     The schema models backends and roles as inlined objects identified by
     ``name``; on the wire the map key is that identifier, so it is supplied here
-    rather than written twice in every config file.
+    rather than written twice in every config file. A lane's ``models`` is a
+    keyed map nested inside the lane, and ``lanes`` itself is keyed too, so both
+    carry the same identifier.
     """
     out = copy.deepcopy(dict(data))
     for map_name in _KEYED_MAPS:
@@ -608,6 +610,22 @@ def _inject_map_keys(data: Mapping[str, Any]) -> dict[str, Any]:
                 value = {**value, "name": key}
             rebuilt[key] = value
         out[map_name] = rebuilt
+    lanes = out.get("lanes")
+    if isinstance(lanes, Mapping):
+        for lane in lanes.values():
+            if not isinstance(lane, Mapping):
+                continue
+            models = lane.get("models")
+            if not isinstance(models, Mapping):
+                continue
+            rebuilt_models: dict[str, Any] = {}
+            for key, value in models.items():
+                if value is None:
+                    value = {}
+                if isinstance(value, Mapping):
+                    value = {**value, "name": key}
+                rebuilt_models[key] = value
+            lane["models"] = rebuilt_models
     return out
 
 
@@ -1355,7 +1373,7 @@ def expand_lanes(merged: dict[str, Any]) -> None:
         lane_level = {
             key: value
             for key, value in lane.items()
-            if key not in ("models", "default_model")
+            if key not in ("models", "default_model", "name")
         }
         models = lane.get("models")
         models = models if isinstance(models, Mapping) else {}

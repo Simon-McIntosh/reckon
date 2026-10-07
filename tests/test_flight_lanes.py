@@ -93,6 +93,30 @@ def _resolve(host: Path, tmp_path: Path, *, overrides=None):
     return flight.resolve(host_path=host, catalogue_path=catalogue, overrides=overrides)
 
 
+# The lane the fixture declares, its default model key, and the identifier that
+# key launches. The lane-named entry must carry exactly these.
+LANE = "claude"
+DEFAULT_KEY = "sonnet"
+DEFAULT_MODEL = "claude-sonnet-5-5"
+
+
+def test_lane_expands_to_its_default_named_entry(tmp_path):
+    host = _write(tmp_path / "host.yaml", HOST_WITH_LANES)
+    backends = _resolve(host, tmp_path).config["backends"]
+
+    # The lane-named entry exists and is the lane's default model.
+    assert LANE in backends
+    entry = backends[LANE]
+    assert entry["lane"] == LANE
+    assert entry["model_key"] == DEFAULT_KEY
+    assert entry["model"] == DEFAULT_MODEL
+    # It is the lane itself, not a name derived from a legacy backend.
+    assert "derived_from" not in entry
+    # Model fields come from the default model; the lane supplies the rest.
+    assert entry["effort"] == "medium"
+    assert entry["time_budget"] == "25m"
+
+
 def test_lane_expands_its_derived_legacy_entries(tmp_path):
     host = _write(tmp_path / "host.yaml", HOST_WITH_LANES)
     backends = _resolve(host, tmp_path).config["backends"]

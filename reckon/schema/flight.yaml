@@ -264,6 +264,33 @@ slots:
     multivalued: true
     inlined: true
 
+  lanes:
+    description: >-
+      A lane is a subscription or host, and the models chosen inside it.
+      Declaring a lane is an alternative to writing one backend block per
+      model: resolution expands each lane back into the backend entries today's
+      callers read, so a lane that declares its models and an equivalent set of
+      backend blocks resolve to the same config. Absent means no lane is
+      declared and resolution is unchanged.
+    range: LaneConfig
+    multivalued: true
+    inlined: true
+
+  default_model:
+    description: >-
+      Model key a dispatch on this lane resolves to when it names no model. A
+      lane declaring none has no default, and only its derived model entries
+      are reachable by name.
+    range: string
+
+  models:
+    description: >-
+      The models this lane offers, keyed by the short name a caller types. A
+      lane with no models expands to its own named entry alone.
+    range: LaneModelConfig
+    multivalued: true
+    inlined: true
+
   roles:
     description: >-
       Per-role routing overlays, keyed by role name. A role overrides only the
@@ -915,6 +942,7 @@ classes:
       - protected_paths
       - unprotected_paths
       - backends
+      - lanes
       - roles
       - routing
       - gates
@@ -1005,6 +1033,34 @@ classes:
       - time_budget
       - token_budget
       - placement
+
+  LaneModelConfig:
+    description: >-
+      One model inside a lane, and the routing knobs that apply to it alone.
+      The model key is the short name a caller types; the identifier it
+      launches is `model`.
+    slots:
+      - name
+      - model
+      - effort
+      - alias
+      - input_rate_per_million
+      - output_rate_per_million
+      - as_of
+      - budget_group
+      - time_budget
+
+  LaneConfig:
+    description: >-
+      One lane: a subscription or host, carrying the backend-block keys that
+      apply to every model inside it, plus the models themselves and the
+      default one a dispatch on the lane gets when it declares none.
+      Resolution expands a lane into backend entries, so a reader of `backends`
+      sees one entry per lane and one per derived model name.
+    is_a: BackendConfig
+    slots:
+      - default_model
+      - models
 
   PlacementConfig:
     description: >-
