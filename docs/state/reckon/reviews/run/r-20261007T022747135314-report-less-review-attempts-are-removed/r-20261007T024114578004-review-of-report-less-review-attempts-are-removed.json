@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-07T02:51:35.034Z",
+  "dispatched_at": "2026-10-07T02:41:35Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/scripts/remove_listed.py",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "follow-on: newest_mtime in the removal script carries a dead \"os.stat(root, follow_symlinks=False).st_mtime if False else ...\" expression; it is behaviourally a no-op, so it neither changes the removal set nor the verification, but it is a leftover to simplify."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/scripts/remove_listed.py",
+      "line": "63",
+      "severity": "follow-on",
+      "text": "follow-on: the negative control proves rules 2, 3 and 4 refuse a qualifying candidate but never exercises rule 1's path-shape rejection, so the depth/plan-review guard that keeps removal inside the subtree is unproven by the node's own evidence."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node changed no repository file (commits [] and changed_paths []); the only mutation is the removal of the listed directories under reports/, and the worktree is clean.",
+    "done_when": "the measure is the three-step list/remove/verify procedure in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/brief.md; the gate /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/scripts/verify_report_counts.py reconciles the per-project report.md counts and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/verify.log records ALL_RECONCILE=true and EXIT=0.",
+    "goal": "the node's goal is to remove plan-review attempt directories holding no review and older than one day; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/listing.log records 1123 qualifying dirs and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/removal.log records 1123 removals, none a report-holding or live dir.",
+    "manifest": "read; it reports 1123 removed dirs / 161733994 bytes, tests verify_report_counts.py -> ALL_RECONCILE=true EXIT=0, negative_control.log, and names listing/removal/verify logs, matching what the logs contain.",
+    "write_paths": "the node is fenced to the five plan-review subtrees under .config/reckon/crew/reports; every path removed in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/removal.log resolves under <project>/plan-review/<plan>/<run> of one of them."
+  },
+  "justifications": {
+    "durability": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/negative_control.log exercises the qualifying check for rules 2, 3 and 4 on a scratch tree, but no committed test guards the logic, rule 1's path-shape rejection is not exercised, and the scripts live only under the run dir, so a regression would fail no suite.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/scripts/verify_report_counts.py reads listing_summary.json and ends ALL_RECONCILE=true EXIT=0 in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/verify.log, and I reproduced its after counts and its zero-remaining-qualifier claim independently.",
+    "fit": "the three scripts sit under the run directory as /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/brief.md:14 requires, use no forbidden version/sprint/ticket label, and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/scripts/remove_listed.py:26 leaves a dead \"os.stat(...) if False else os.stat(...)\" expression that adds no behaviour.",
+    "goal_fidelity": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/removal.log carries 1123 REMOVED and 0 SKIP, and an independent walk of the five plan-review subtrees now finds 0 qualifying dirs remaining with per-project report.md counts 161/161/18/139/377.",
+    "reuse": "a search over reckon/crew found no owner that reaps report-less plan-review attempt dirs -- reckon/crew/plan_review.py owns the report store and report directory, not their cleanup -- so the listing and removal scripts are the first implementation of this capability.",
+    "scope_discipline": "every path in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/removal.log is under .config/reckon/crew/reports/<project>/plan-review/<plan>/<run>, and the manifest records no repository change (changed_paths [] and commits [])."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to remove plan-review attempt directories holding no review and older than one day; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/listing.log records 1123 qualifying dirs and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/removal.log records 1123 removals, none a report-holding or live dir.\nVERDICT done_when: the measure is the three-step list/remove/verify procedure in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/brief.md; the gate /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/scripts/verify_report_counts.py reconciles the per-project report.md counts and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/verify.log records ALL_RECONCILE=true and EXIT=0.\nVERDICT write_paths: the node is fenced to the five plan-review subtrees under .config/reckon/crew/reports; every path removed in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/removal.log resolves under <project>/plan-review/<plan>/<run> of one of them.\nVERDICT manifest: read; it reports 1123 removed dirs / 161733994 bytes, tests verify_report_counts.py -> ALL_RECONCILE=true EXIT=0, negative_control.log, and names listing/removal/verify logs, matching what the logs contain.\nVERDICT diff: the node changed no repository file (commits [] and changed_paths []); the only mutation is the removal of the listed directories under reports/, and the worktree is clean.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/removal.log carries 1123 REMOVED and 0 SKIP, and an independent walk of the five plan-review subtrees now finds 0 qualifying dirs remaining with per-project report.md counts 161/161/18/139/377.\nSCORE evidence: 19\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/scripts/verify_report_counts.py reads listing_summary.json and ends ALL_RECONCILE=true EXIT=0 in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/verify.log, and I reproduced its after counts and its zero-remaining-qualifier claim independently.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/removal.log is under .config/reckon/crew/reports/<project>/plan-review/<plan>/<run>, and the manifest records no repository change (changed_paths [] and commits []).\nSCORE durability: 15\nJUSTIFICATION durability: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/negative_control.log exercises the qualifying check for rules 2, 3 and 4 on a scratch tree, but no committed test guards the logic, rule 1's path-shape rejection is not exercised, and the scripts live only under the run dir, so a regression would fail no suite.\nSCORE fit: 15\nJUSTIFICATION fit: the three scripts sit under the run directory as /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/brief.md:14 requires, use no forbidden version/sprint/ticket label, and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/scripts/remove_listed.py:26 leaves a dead \"os.stat(...) if False else os.stat(...)\" expression that adds no behaviour.\nSCORE reuse: 18\nJUSTIFICATION reuse: a search over reckon/crew found no owner that reaps report-less plan-review attempt dirs -- reckon/crew/plan_review.py owns the report store and report directory, not their cleanup -- so the listing and removal scripts are the first implementation of this capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/scripts/remove_listed.py:26 follow-on: newest_mtime in the removal script carries a dead \"os.stat(root, follow_symlinks=False).st_mtime if False else ...\" expression; it is behaviourally a no-op, so it neither changes the removal set nor the verification, but it is a leftover to simplify.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T022747135314-report-less-review-attempts-are-removed/scripts/remove_listed.py:63 follow-on: the negative control proves rules 2, 3 and 4 refuse a qualifying candidate but never exercises rule 1's path-shape rejection, so the depth/plan-review guard that keeps removal inside the subtree is unproven by the node's own evidence.\nreviewed_base_sha: 6a3dc0b88a575bd75ef1f1e4a5c0cdd4f7972a44\nreviewed_head_sha: 6a3dc0b88a575bd75ef1f1e4a5c0cdd4f7972a44\n",
+  "review_run_id": "r-20261007T024114578004-review-of-report-less-review-attempts-are-removed",
+  "reviewed_base_sha": "6a3dc0b88a575bd75ef1f1e4a5c0cdd4f7972a44",
+  "reviewed_head_sha": "6a3dc0b88a575bd75ef1f1e4a5c0cdd4f7972a44",
+  "reviewed_run_id": "r-20261007T022747135314-report-less-review-attempts-are-removed",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-07T02:53:45.176820+00:00",
+  "total": 106
+}
