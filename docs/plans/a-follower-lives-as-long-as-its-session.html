@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="32">
+<meta name="plan-impl" content="0.83">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -117,20 +117,11 @@
   <p class="landed-summary">Landed: <code>reckon sync</code> links the main checkout's <code>plugins/crew-host</code> as <code>~/.claude/skills/reckon-crew-host</code> and refuses from a worktree; <code>reckon doctor</code> reports the link as missing, dangling, worktree, elsewhere or valid and loads it with <code>claude plugin validate</code>. Both resolve the skills directory through <code>RECKON_CLAUDE_SKILLS_DIR</code>, which the test session sets for fixtures of every scope. Reviews 112, 118 and 118 of 120. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/sync-links-the-session-host-plugin.html">full record</a></p>
 </section>
 
-    <h2 id="s7" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§7 — The skills say what the session host now does</h2>
-    <p><strong>Deliverable.</strong> <code>skills/reckon-build/SKILL.md</code> (the producer-and-follower section),
-      <code>references/orchestrator-harness/claude-code.md</code> (arming the fleet watch, and what a session owns)
-      and <code>references/sprint-orchestration.md</code> §15 and §17 say that on Claude Code with the plugin linked,
-      dispatch arms the follower and nothing re-arms it. Where no session host runs, the Monitor tool stays the fallback:
-      Codex sessions, sessions without the plugin, and <code>-p</code> sessions, in which Claude Code starts no
-      plugin monitors. The fallback lifetime is <code>--lifetime 29m</code>, except in a <code>-p</code> session,
-      where Claude Code ends a Monitor at 10 minutes and the lifetime is <code>--lifetime 9m</code>.
-      The re-arm guidance moves under that fallback rather than being deleted, because those sessions still need it.
-      The user-global <code>~/.agents/AGENTS.md</code> rule on stopping a follower before re-arming it gets the same
-      qualification.</p>
-    <p><strong>Done when</strong> the three skill files and the global rule name session-host delivery first and
-      the Monitor fallback second, with its <code>-p</code> lifetime, and no sentence still tells a coordinator on a host-delivered session to re-arm every
-      29 minutes.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s7" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="">§7 — The skills say what the session host now does</h2></header>
+  <p class="landed-summary">Landed: <code>skills/reckon-build/SKILL.md</code>, the Claude Code harness reference and sprint-orchestration §15 and §17 name session-host delivery first and the Monitor fallback second (<code>--lifetime 29m</code>, <code>9m</code> under <code>-p</code>), guarded by an ordering test; the global follower rule carries the same qualification (dotfiles <code>5168bcd</code>). Review 107/120. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/skills-name-session-host-delivery.html">full record</a></p>
+</section>
 
     <h2 id="s8" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§8 — Prove it in a live session, then link it everywhere</h2>
     <p><strong>Deliverable.</strong> One live coordinator session in this repository with the plugin linked:
@@ -269,7 +260,7 @@
     <div class="r-comment-body"><p>Independent review of run r-20261007T074228172964-skills-name-session-host-delivery over the delta gained since the prior review (base 8362b726d, head d29492dbf): parsed record stored at both granted-name paths, six dimensions scored goal_fidelity 18, evidence 18, scope_discipline 16, durability 17, fit 19, reuse 19 (total 107), added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own base-gate.log (2 failing ids) and head-gate.log (0), five follow-on findings and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261007T074228172964-skills-name-session-host-delivery" data-who="reckon-build" data-when="2026-10-07T09:08:57.438Z">
-    <div class="r-comment-body"><p>§7: session-host delivery named first and the Monitor fallback second (with its -p lifetime) in SKILL.md, claude-code.md and sprint-orchestration sections 15 and 17; CREW_VERBS_OUTSIDE_ORCHESTRATION lists (&#x27;crew&#x27;,&#x27;host&#x27;) and (&#x27;crew&#x27;,&#x27;budget-reset&#x27;); the new ordering guard test fails if the fallback re-arm guidance is moved above the session-host paragraph; gate at 4d10ebb6a: tests/test_skill_contracts.py passes, and tests/test_crew_help_names_its_state.py&#x27;s single failure is the pre-existing budget-reset phrase, owned elsewhere.</p></div>
+    <div class="r-comment-body"><p>§7: session-host delivery named first and the Monitor fallback second (with its -p lifetime) in SKILL.md, claude-code.md and sprint-orchestration sections 15 and 17; CREW_VERBS_OUTSIDE_ORCHESTRATION lists ('crew','host') and ('crew','budget-reset'); the new ordering guard test fails if the fallback re-arm guidance is moved above the session-host paragraph; gate at 4d10ebb6a: tests/test_skill_contracts.py passes, and tests/test_crew_help_names_its_state.py's single failure is the pre-existing budget-reset phrase, owned elsewhere.</p></div>
 </div>
 </section>
 </main>
