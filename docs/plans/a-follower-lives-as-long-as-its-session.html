@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.83">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -123,7 +123,7 @@
   <p class="landed-summary">Landed: <code>skills/reckon-build/SKILL.md</code>, the Claude Code harness reference and sprint-orchestration §15 and §17 name session-host delivery first and the Monitor fallback second (<code>--lifetime 29m</code>, <code>9m</code> under <code>-p</code>), guarded by an ordering test; the global follower rule carries the same qualification (dotfiles <code>5168bcd</code>). Review 107/120. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/skills-name-session-host-delivery.html">full record</a></p>
 </section>
 
-    <h2 id="s8" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§8 — Prove it in a live session, then link it everywhere</h2>
+    <h2 id="s8" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§8 — Prove it in a live session</h2>
     <p><strong>Deliverable.</strong> One live coordinator session in this repository with the plugin linked:
       dispatch a node without calling the Monitor tool, watch its rows arrive, keep the session for more than an
       hour, then end it. Record the evidence in
@@ -136,7 +136,11 @@
       and only ticker lines; rows still arriving more than 60 minutes after the first dispatch, with no re-arm; no
       <code>crew host</code> or <code>crew follow</code> process whose environment names the session's
       <code>CLAUDE_PID</code>, read from <code>/proc</code> rather than from the session host's record, one minute
-      after it ends; and <code>reckon doctor</code> clean for the link in every mounted project.</p>
+      after it ends. The read is made outside the worker fence, because a fenced worker's bwrap namespace cannot
+      read another process's environment. Its negative control is the same reading for a live session's
+      <code>CLAUDE_PID</code>, which must find that session's host, so the zero is a measured one. The evidence
+      also shows no <code>reckon-monitor-probe</code> entry under <code>~/.claude/skills</code>, and
+      <code>reckon doctor</code> clean for the link in every mounted project.</p>
 
     <h2 id="s9">§9 — The session host removes its FIFO when it ends</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -154,7 +158,9 @@ runtime-directory order the entry point uses.</p>
 FIFO named for a fake owner, ends the owner, and finds the FIFO gone; a test in
 <code>tests/test_session_host_plugin.py</code> sends <code>TERM</code> to a waiting entry point and finds its
 FIFO gone; and the session-host census reports <code>stale_fifos=0</code> after one session that dispatched
-and one that did not have both ended.</p>
+and one that did not have both ended. Each test fails on the current code, which is its negative control:
+the host test because nothing removes the FIFO once the entry point has become <code>reckon crew host</code>,
+and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
