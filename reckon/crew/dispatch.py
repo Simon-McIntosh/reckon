@@ -4484,6 +4484,14 @@ def _dispatch_fleet_gate() -> dict[str, Any]:
     }
 
 
+def _require_fleet_gate_open() -> dict[str, Any]:
+    """Read the shared gate at the last boundary before starting a worker."""
+    gate = _dispatch_fleet_gate()
+    if gate["state"] in _LANE_GATE_WAITING_STATES:
+        raise LanePaused(gate)
+    return gate
+
+
 def _dispatch_lane_gate(backend: Mapping[str, Any]) -> dict[str, Any]:
     """Read the fleet gate, then the gate file a backend declares.
 
@@ -8031,8 +8039,10 @@ def dispatch(
                             attempt_started_at=str(record["attempt_started_at"]),
                         ),
                     )
+                    _require_fleet_gate_open()
                     spawned_pid = _start_supervisor(spec_path, directory, run_id)
                 else:
+                    _require_fleet_gate_open()
                     spawned_pid = launcher(
                         plan,
                         log_path=log_path,
@@ -9389,6 +9399,7 @@ def _spawn(
     filename as a run attempt would make its parent directory into a run by
     accident.
     """
+    _require_fleet_gate_open()
     stream_name = Path(log_path).name
     if stream_name.startswith(("resume-", "lane-change-")):
         directory = Path(log_path).parent
@@ -10118,9 +10129,7 @@ def supervised_launch(
     dispatch path writes it, so a fleet spawn always finds its stderr path on
     disk.
     """
-    gate = _dispatch_fleet_gate()
-    if gate["state"] in _LANE_GATE_WAITING_STATES:
-        raise LanePaused(gate)
+    _require_fleet_gate_open()
     record = read_pointer(run_directory.name)
     attempt = int(record.get("attempt") or 1) + 1
     stream_name = Path(log_path).name
@@ -10166,6 +10175,7 @@ def _start_supervisor(spec_path: Path, run_directory: Path, run_id: str) -> int:
     allocation's batch step instead and the caller waits, bounded, for the pid
     the step acknowledges.
     """
+    _require_fleet_gate_open()
     fleet = _read_fleet_record()
     if (
         _fleet_spawn_enabled()
@@ -12610,9 +12620,7 @@ def change_lane(
                 for finding in resolution.validation.findings
             )
         )
-    lane_gate = getattr(resolution, "lane_gate", None)
-    if lane_gate is None:
-        lane_gate = _dispatch_lane_gate(resolution.backend_settings)
+    lane_gate = resolution.lane_gate
     if lane_gate.get("state") in _LANE_GATE_WAITING_STATES:
         raise LanePaused(lane_gate)
     competence = resolution.competence or _competence_verdict(

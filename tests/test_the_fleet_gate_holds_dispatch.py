@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli, crew
+from reckon import cli, crew, mcp
 from tests import test_dispatch_holds_while_the_lane_is_paused as lane_tests
 from tests import test_ledger as ledger_tests
 
@@ -21,6 +21,7 @@ pytest_plugins = (
 )
 
 dispatch = importlib.import_module("reckon.crew.dispatch")
+resumption = importlib.import_module("reckon.crew.resumption")
 REASON = "move workers to another allocation"
 
 
@@ -199,11 +200,165 @@ def test_redispatch_checks_the_shared_gate_before_stopping_the_source(
         lambda **_kwargs: SimpleNamespace(
             validation=SimpleNamespace(ok=True),
             backend_settings={},
+            lane_gate=dispatch._dispatch_lane_gate({}),
         ),
     )
     with pytest.raises(dispatch.LanePaused) as held:
         dispatch.change_lane("run", "destination", "move", config={})
     assert held.value.gate["gate"] == "fleet"
+
+
+@pytest.mark.parametrize("starter", ["detached", "supervisor", "resumption"])
+def test_worker_spawn_boundaries_hold_and_admit(
+    starter: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    directory = tmp_path / "run"
+    calls = []
+    plan = object()
+    if starter == "detached":
+        monkeypatch.setattr(
+            dispatch,
+            "_spawn_detached_worker",
+            lambda *_a, **_k: calls.append("spawn") or 42,
+        )
+
+        def start():
+            return dispatch._spawn(
+                plan,
+                log_path=directory / "probe.jsonl",
+                stderr_path=directory / "probe.stderr.log",
+                prompt_path=directory / "prompt.txt",
+            )
+    elif starter == "supervisor":
+        monkeypatch.setattr(dispatch, "_read_fleet_record", lambda: None)
+        monkeypatch.setattr(dispatch, "_supervisor_argv", lambda **_k: ["worker"])
+        monkeypatch.setattr(
+            dispatch,
+            "_spawn_detached_supervisor",
+            lambda *_a: calls.append("spawn") or 42,
+        )
+        monkeypatch.setattr(dispatch, "_confirm_supervisor_survived", lambda *_a: None)
+
+        def start():
+            return dispatch._start_supervisor(directory / "spec.json", directory, "run")
+    else:
+        monkeypatch.setattr(resumption, "read_pointer", lambda _run: {})
+        monkeypatch.setattr(
+            dispatch, "supervised_launch", lambda *_a, **_k: calls.append("spawn") or 42
+        )
+
+        def start():
+            return resumption._spawn(
+                plan,
+                log_path=directory / "resume-1.jsonl",
+                stderr_path=directory / "resume-1.stderr.log",
+                prompt_path=directory / "prompt.txt",
+            )
+
+    _pause()
+    with pytest.raises(dispatch.LanePaused) as held:
+        start()
+    assert held.value.gate["gate"] == "fleet"
+    assert held.value.gate["reason"] == REASON
+    assert calls == []
+    _command("--open")
+    assert start() == 42
+    assert calls == ["spawn"]
+
+
+@pytest.mark.parametrize("surface", ["cli", "mcp"])
+def test_recovery_launch_surfaces_hold_and_admit(
+    surface: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    plan = SimpleNamespace(stdin_text="continue", as_dict=dict)
+    starts = []
+    monkeypatch.setattr(crew, "read_pointer", lambda _run: {"project": ""})
+    monkeypatch.setattr(crew, "resume_plan", lambda *_a, **_k: plan)
+    monkeypatch.setattr(crew, "run_dir", lambda _run: tmp_path)
+    monkeypatch.setattr(crew, "_manifest_mtime_ns", lambda _path: 0)
+    monkeypatch.setattr(crew, "_utc_now", lambda: "2026-10-07T00:00:00Z")
+    monkeypatch.setattr(crew, "_spawn", lambda *_a, **_k: starts.append("spawn") or 42)
+    monkeypatch.setattr(crew, "record_resumption", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        mcp.resumption_module,
+        "resolve_session",
+        lambda *_a, **_k: {"session_id": "session", "source": "pointer"},
+    )
+
+    def invoke():
+        if surface == "cli":
+            result = CliRunner().invoke(
+                cli.main, ["crew", "resume", "--run", "run", "--advice", "continue"]
+            )
+            return json.loads(result.output), result.exit_code
+        payload = mcp._crew_recover("resume", run_id="run", advice="continue")
+        return payload, 0 if payload["ok"] else 75
+
+    _pause()
+    held, code = invoke()
+    assert code == 75
+    assert held["error"] == "lane-paused"
+    assert held["lane_gate"]["gate"] == "fleet"
+    assert held["reason"] == REASON
+    assert starts == []
+    _command("--open")
+    admitted, code = invoke()
+    assert code == 0
+    assert admitted["pid"] == 42
+    assert starts == ["spawn"]
+
+
+def test_automatic_resumption_reports_the_fleet_hold_and_admits_when_open(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    record = {"run_id": "run", "launch": "cli"}
+    monkeypatch.setattr(resumption, "record_process_alive", lambda *_a: False)
+    monkeypatch.setattr(
+        resumption, "_readonly_budget_verdict", lambda *_a, **_k: {"held": False}
+    )
+    monkeypatch.setattr(resumption, "_backend_settings", lambda *_a, **_k: {})
+    monkeypatch.setattr(resumption, "resume_window_refusal", lambda *_a, **_k: None)
+    _pause()
+    held = resumption._launcher_refusal(record, config={})
+    assert isinstance(held, dispatch.LanePaused)
+    row = resumption._refusal_entry({"run_id": "run"}, held)
+    assert row["reason"] == "lane-paused"
+    assert row["lane_gate"]["gate"] == "fleet"
+    assert row["lane_gate"]["reason"] == REASON
+    _command("--open")
+    assert resumption._launcher_refusal(record, config={}) is None
+
+
+def test_automatic_resumption_checks_the_gate_before_its_launcher(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    monkeypatch.setattr(
+        resumption,
+        "resume_plan",
+        lambda *_a, **_k: SimpleNamespace(stdin_text="continue"),
+    )
+    monkeypatch.setattr(resumption, "run_dir", lambda _run: tmp_path)
+    monkeypatch.setattr(resumption, "_manifest_mtime_ns", lambda _path: 0)
+    monkeypatch.setattr(resumption, "record_resumption", lambda *_a, **_k: None)
+    starts = []
+
+    def launch(*_args, **_kwargs):
+        starts.append("spawn")
+        return 42
+
+    _pause()
+    with pytest.raises(dispatch.LanePaused) as held:
+        resumption._resume("run", {}, config={}, launcher=launch)
+    assert held.value.gate["gate"] == "fleet"
+    assert held.value.gate["reason"] == REASON
+    assert starts == []
+    _command("--open")
+    assert resumption._resume("run", {}, config={}, launcher=launch)["pid"] == 42
+    assert starts == ["spawn"]
 
 
 def test_completion_and_promotion_continue_during_a_pause(home, repo) -> None:
@@ -225,12 +380,9 @@ def test_completion_and_promotion_continue_during_a_pause(home, repo) -> None:
 def test_launch_callers_reach_the_shared_gate() -> None:
     """Search launch calls so a new worker entry must lead through a gate."""
     root = Path(__file__).parents[1]
-    sources = [
-        root / "reckon" / "cli.py",
-        *sorted((root / "reckon" / "crew").glob("*.py")),
-    ]
-    launchers = []
-    for path in sources:
+    launchers = set()
+    guarded_spawns = set()
+    for path in sorted((root / "reckon").rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for function in (
             node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
@@ -246,17 +398,42 @@ def test_launch_callers_reach_the_shared_gate() -> None:
                 else ""
                 for call in calls
             }
-            symbols = {
-                node.id for node in ast.walk(function) if isinstance(node, ast.Name)
-            }
-            if (
-                "_spawn" in names or "_start_supervisor" in names
-            ) and "plan" in symbols:
-                launchers.append((path.name, function.name, names))
-    assert launchers
-    for path, function, calls in launchers:
-        if function == "supervised_launch":
-            assert "_dispatch_fleet_gate" in calls
-            continue
-        assert {"plan_dispatch", "resume_plan", "change_lane"} & calls, (path, function)
-    assert "_dispatch_fleet_gate" in Path(dispatch.__file__).read_text(encoding="utf-8")
+            relative = path.relative_to(root).as_posix()
+            if (relative, function.name) in {
+                ("reckon/crew/dispatch.py", "_spawn"),
+                ("reckon/crew/dispatch.py", "_start_supervisor"),
+                ("reckon/crew/resumption.py", "_spawn"),
+            }:
+                guarded_spawns.add((relative, function.name))
+                assert "_require_fleet_gate_open" in names, (relative, function.name)
+            starts_worker = any(
+                (
+                    isinstance(call, ast.Name)
+                    and call.id in {"_spawn", "_start_supervisor"}
+                )
+                or (
+                    isinstance(call, ast.Attribute)
+                    and call.attr in {"_spawn", "_start_supervisor"}
+                    and not (
+                        relative == "reckon/crew/session_host.py"
+                        and isinstance(call.value, ast.Name)
+                        and call.value.id == "self"
+                    )
+                )
+                for call in calls
+            )
+            if starts_worker:
+                launchers.add((relative, function.name))
+                assert "_require_fleet_gate_open" in names, (relative, function.name)
+    assert guarded_spawns == {
+        ("reckon/crew/dispatch.py", "_spawn"),
+        ("reckon/crew/dispatch.py", "_start_supervisor"),
+        ("reckon/crew/resumption.py", "_spawn"),
+    }
+    assert launchers >= {
+        ("reckon/crew/dispatch.py", "dispatch"),
+        ("reckon/crew/dispatch.py", "supervised_launch"),
+        ("reckon/crew/resumption.py", "_resume"),
+        ("reckon/cli.py", "crew_resume"),
+        ("reckon/mcp.py", "_crew_recover"),
+    }
