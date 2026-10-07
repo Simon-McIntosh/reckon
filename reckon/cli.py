@@ -20,6 +20,7 @@ import click
 from reckon import __version__, pages
 from reckon._store import _config_home, _state_root, write_json_atomically
 from reckon._timestamps import parse_utc
+from reckon.hooks import install as hook_installer
 
 
 def _asset_root() -> Path:
@@ -366,32 +367,7 @@ def _worker_git_guard_path() -> Path:
 
 def _is_worker_git_guard_group(group: Any) -> bool:
     """Return whether one harness hook group manages the worker git guard."""
-    if not isinstance(group, dict) or group.get("matcher") != "Bash":
-        return False
-    hooks = group.get("hooks")
-    if not isinstance(hooks, list) or len(hooks) != 1:
-        return False
-    hook = hooks[0]
-    if not isinstance(hook, dict) or hook.get("type") != "command":
-        return False
-    try:
-        command = shlex.split(str(hook.get("command") or ""))
-    except ValueError:
-        return False
-    if len(command) == 2:
-        interpreter = Path(command[0])
-        if (
-            interpreter.name != "python"
-            or interpreter.parent.name != "bin"
-            or interpreter.parent.parent.name != ".venv"
-        ):
-            return False
-        path = Path(command[1])
-    elif len(command) == 1:
-        path = Path(command[0])
-    else:
-        return False
-    return path.name == "worker_git_guard.py" and path.parent.name == "hooks"
+    return hook_installer.is_worker_git_guard_group(group)
 
 
 def _write_json_atomically(path: Path, payload: dict, original: bytes | None) -> None:
@@ -510,18 +486,8 @@ def _configure_crew_guards(
             }
         )
         if include_git_guard:
-            guard_path = _worker_git_guard_path()
-            interpreter = guard_path.parents[2] / ".venv" / "bin" / "python"
             retained.append(
-                {
-                    "matcher": "Bash",
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": shlex.join([str(interpreter), str(guard_path)]),
-                        }
-                    ],
-                }
+                hook_installer.worker_git_guard_group(_worker_git_guard_path())
             )
 
     updated_hooks = dict(hooks)

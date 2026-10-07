@@ -160,7 +160,7 @@ def build_hook_snippet(
         _command_group(worker_stop_command),
     ]
     if include_git_guard:
-        entries["PreToolUse"] = [_git_guard_group()]
+        entries["PreToolUse"] = [worker_git_guard_group()]
     return {"hooks": entries}
 
 
@@ -215,7 +215,7 @@ def _command_group(command: str) -> dict[str, Any]:
     return {"hooks": [{"type": "command", "command": command}]}
 
 
-def _git_guard_group(script_path: Path | str | None = None) -> dict[str, Any]:
+def worker_git_guard_group(script_path: Path | str | None = None) -> dict[str, Any]:
     """Return the PreToolUse Bash group that binds the worker git guard.
 
     The matcher is ``Bash``: the guard reads a Bash command's text, so it has
@@ -229,16 +229,47 @@ def _git_guard_group(script_path: Path | str | None = None) -> dict[str, Any]:
     """
     script = (
         worker_git_guard_script_path() if script_path is None else Path(script_path)
-    )
+    ).resolve()
+    interpreter = script.parents[2] / ".venv" / "bin" / "python"
     return {
         "matcher": "Bash",
         "hooks": [
             {
                 "type": "command",
-                "command": shlex.join([str(interpreter_path()), str(script)]),
+                "command": shlex.join([str(interpreter), str(script)]),
             }
         ],
     }
+
+
+def is_worker_git_guard_group(group: Any) -> bool:
+    """Recognise a bare or interpreter-bound worker git guard group."""
+    if not isinstance(group, dict) or group.get("matcher") != "Bash":
+        return False
+    hooks = group.get("hooks")
+    if not isinstance(hooks, list) or len(hooks) != 1:
+        return False
+    hook = hooks[0]
+    if not isinstance(hook, dict) or hook.get("type") != "command":
+        return False
+    try:
+        command = shlex.split(str(hook.get("command") or ""))
+    except ValueError:
+        return False
+    if len(command) == 2:
+        interpreter = Path(command[0])
+        if (
+            interpreter.name != "python"
+            or interpreter.parent.name != "bin"
+            or interpreter.parent.parent.name != ".venv"
+        ):
+            return False
+        path = Path(command[1])
+    elif len(command) == 1:
+        path = Path(command[0])
+    else:
+        return False
+    return path.name == WORKER_GIT_GUARD_SCRIPT_NAME and path.parent.name == "hooks"
 
 
 def _print(payload: dict[str, Any], stream: IO[str] | None) -> None:
