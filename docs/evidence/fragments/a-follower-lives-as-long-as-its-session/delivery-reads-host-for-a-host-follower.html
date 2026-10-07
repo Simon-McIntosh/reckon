@@ -27,7 +27,7 @@
     <section id="delivery-reads-host-for-a-host-follower-what-changed">
       <h2>What changed</h2>
       <ul>
-        <li><code>reckon/crew/dispatch.py</code>: <code>_session_host_record_path</code> resolves the calling Claude session's census record under the config home's <code>crew/session-hosts</code> directory, named for the Claude pid and its kernel start tick, with the filename suffix read from the host module that writes it. <code>_session_host_runs_follower</code> reports whether the host names the pair with the pid the live registration holds.</li>
+        <li><code>reckon/crew/dispatch.py</code>: <code>_session_host_record_path</code> resolves the calling Claude session's census record through the host module's own <code>_state_dir</code> and <code>RECORD_SUFFIX</code>, named for the Claude pid and its kernel start tick, so the directory and filename the reader looks in are the ones the host writes. <code>_session_host_runs_follower</code> reports whether the host names the pair with the pid the live registration holds.</li>
         <li>The dispatch admission block reports <code>session_delivery = "host"</code> when the session is already attached and that check is true, beside the existing ask-then-upgrade path. A session attached by a foreign follower still reads <code>monitor</code>, because the pid does not match the host's child.</li>
       </ul>
     </section>
