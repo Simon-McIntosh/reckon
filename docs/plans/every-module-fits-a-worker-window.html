@@ -25,7 +25,7 @@
   <title>Every Module Fits A Worker Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -76,7 +76,8 @@
       its own. It walks each module body itself, because <code>interface_counts.definitions</code> lists only functions
       and classes and a move also carries assignments. Every
       top-level statement of the base module apart from its imports must appear with byte-identical source in exactly
-      one produced module. The script prints a JSON receipt listing each moved statement and where it went, every
+      one resulting module, where the resulting modules are the produced ones plus what remains in the original at the
+      head. The script prints a JSON receipt listing each moved statement and where it went, every
       statement in a produced module that did not come from the base, and the estimated tokens of each produced module.
       It exits non-zero when a statement is lost, altered or duplicated. Only imports and re-export lines may be new.
       This turns a review of a 150k-token diff into a review of its receipt and of the few lines that are not moves.
