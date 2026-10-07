@@ -198,7 +198,7 @@ def test_redispatch_checks_the_shared_gate_before_stopping_the_source(
         "plan_dispatch",
         lambda **_kwargs: SimpleNamespace(
             validation=SimpleNamespace(ok=True),
-            lane_gate=dispatch._dispatch_lane_gate({}),
+            backend_settings={},
         ),
     )
     with pytest.raises(dispatch.LanePaused) as held:

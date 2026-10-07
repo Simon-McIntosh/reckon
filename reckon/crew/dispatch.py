@@ -12593,7 +12593,9 @@ def change_lane(
                 for finding in resolution.validation.findings
             )
         )
-    lane_gate = resolution.lane_gate or {}
+    lane_gate = getattr(resolution, "lane_gate", None)
+    if lane_gate is None:
+        lane_gate = _dispatch_lane_gate(resolution.backend_settings)
     if lane_gate.get("state") in _LANE_GATE_WAITING_STATES:
         raise LanePaused(lane_gate)
     competence = resolution.competence or _competence_verdict(
