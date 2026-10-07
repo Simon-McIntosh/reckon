@@ -1548,6 +1548,98 @@ def _review_prose(
     return None if evidence is None else dict(evidence[1])
 
 
+def _finding_types(record: Mapping[str, Any]) -> set[str]:
+    """The finding types a review carries, whatever their answers."""
+    findings = record.get("findings")
+    if not isinstance(findings, list):
+        return set()
+    return {
+        str(finding.get("type") or "").strip()
+        for finding in findings
+        if isinstance(finding, Mapping) and str(finding.get("type") or "").strip()
+    }
+
+
+def _acted_finding_types(record: Mapping[str, Any]) -> set[str]:
+    """The types a review raised whose finding carries a stored response of ``acted``.
+
+    A type counts only when one of its findings was answered with the ``acted``
+    action: a type raised and declined, or raised and left unanswered, is not an
+    act, so it is absent here. The response is keyed by the finding's id, the
+    same key :func:`unanswered_findings` reads.
+    """
+    findings = record.get("findings")
+    if not isinstance(findings, list):
+        return set()
+    responses = record.get("responses")
+    responses = responses if isinstance(responses, Mapping) else {}
+    acted: set[str] = set()
+    for finding in findings:
+        if not isinstance(finding, Mapping):
+            continue
+        finding_type = str(finding.get("type") or "").strip()
+        if not finding_type:
+            continue
+        response = responses.get(str(finding.get("id") or ""))
+        if isinstance(response, Mapping) and (
+            str(response.get("action") or "").strip().lower() == "acted"
+        ):
+            acted.add(finding_type)
+    return acted
+
+
+def _finding_type_recurrence(
+    history: Mapping[str, list[tuple[datetime, Mapping[str, Any]]]],
+    start: datetime,
+    end: datetime,
+) -> dict[str, dict[str, Any]]:
+    """Two shares per finding type over the window's consecutive review pairs.
+
+    Each review in the window is compared only with the review of the same plan
+    immediately before it — the consecutive pairs
+    ``docs/figures/plan-review-cycles/measure_review_cycles.py`` walks — and each
+    of its findings is counted once. ``any_share`` is the share of a type's
+    findings whose preceding review raised the same type; ``acted_share`` is the
+    share whose preceding review carries a same-type finding with a stored
+    response of action ``acted``. The predecessor is the plan's preceding review
+    even when it lies outside the window, so a window's first review still sees
+    the review it follows. A review with no predecessor at all — the plan's
+    first — has nothing to recur against, so its findings are excluded rather
+    than counted as fresh. Each type returns ``findings``, ``any`` and ``acted``
+    beside the two shares.
+    """
+    counts: dict[str, dict[str, int]] = {}
+    for entries in history.values():
+        for index, (instant, record) in enumerate(entries):
+            if index == 0 or not (start <= instant < end):
+                continue
+            previous = entries[index - 1][1]
+            previous_types = _finding_types(previous)
+            acted_types = _acted_finding_types(previous)
+            for finding in record.get("findings") or ():
+                if not isinstance(finding, Mapping):
+                    continue
+                finding_type = str(finding.get("type") or "").strip()
+                if not finding_type:
+                    continue
+                bucket = counts.setdefault(
+                    finding_type, {"findings": 0, "any": 0, "acted": 0}
+                )
+                bucket["findings"] += 1
+                if finding_type in previous_types:
+                    bucket["any"] += 1
+                if finding_type in acted_types:
+                    bucket["acted"] += 1
+    return {
+        finding_type: {
+            **bucket,
+            "any_share": bucket["any"] / bucket["findings"],
+            "acted_share": bucket["acted"] / bucket["findings"],
+        }
+        for finding_type, bucket in sorted(counts.items())
+    }
+
+
 def review_day_summary(
     project: str,
     *,
@@ -1574,6 +1666,13 @@ def review_day_summary(
     with a new section, firings, and re-reviews whose change could not be
     measured because neither their bytes nor their snapshot resolve. A review
     the rule would not have fired on is reported, never refused or rewritten.
+
+    Under ``finding_type_recurrence`` the summary carries, per finding type, two
+    shares over the window's consecutive review pairs: the share whose preceding
+    review raised the same type, and the share whose preceding review carries a
+    same-type finding that was answered ``acted``. It follows the same pairs the
+    per-section fold does, so a type's recurrence and the change behind it are
+    read off one ordering.
     """
     from reckon import flight
 
@@ -1697,6 +1796,7 @@ def review_day_summary(
         "threshold": threshold,
         "plans": plans,
         "totals": totals,
+        "finding_type_recurrence": _finding_type_recurrence(history, start, end),
     }
 
 
