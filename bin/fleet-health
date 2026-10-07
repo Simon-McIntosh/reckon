@@ -9,21 +9,29 @@
 #
 # SLURM declares a node failed when its slurmd does not answer the controller
 # for SlurmdTimeout (30 s on this cluster). The columns are the ones that tell
-# the causes apart: memory headroom and the job's own cgroup use (memory
-# pressure), blocked tasks and a timed stat of $HOME (a GPFS stall), the time
-# the local slurmd takes to answer (slurmd itself), and a controller ping
-# (the network path).
+# the failed kill apart from the D-state storm that followed it: memory
+# headroom and the job's own cgroup use (memory pressure), blocked tasks and a
+# timed stat of $HOME (a GPFS stall), the time the local slurmd takes to answer
+# (slurmd itself), and a controller ping (the network path).
 #
-# The task columns name a spawn leak while it grows: this user's task count
-# (what RLIMIT_NPROC counts), how many of them are Python interpreters, and the
-# process with the most children. When any of them crosses its threshold, or
-# memory runs low, the full process table with parents and command lines is
-# written beside the samples and an alert is raised, at most once per ten
+# Five triggers mark pressure. The task columns name a spawn leak while it
+# grows: this user's task count (what RLIMIT_NPROC counts), how many of them
+# are Python interpreters, and the process with the most children. A node-wide
+# D-state count and the one-minute load catch a stall that crosses no other
+# threshold — the failed kill and the D-state storm crossed none of the three
+# counters. Each threshold is overridable by environment variable. When any
+# trigger fires, the full process table is written beside the samples with
+# each process's thread count and wait channel, followed by every D-state
+# process on the node whoever owns it, because a stall is often in another
+# user's process or a kernel thread. An alert is raised at most once per ten
 # minutes. A kernel OOM report lists each process's memory but not its parent
 # or command line, so without that table a leak can be measured and not named.
 #
 # One file per job and node; a second copy for the same job and node exits.
 set -uo pipefail
+
+once=0
+[ "${1:-}" = "--once" ] && once=1
 
 : "${SLURM_JOB_ID:?fleet-health runs inside the fleet allocation}"
 node=$(hostname -s)
@@ -32,6 +40,7 @@ dir="$state/health"
 mkdir -p "$dir"
 out="$dir/${SLURM_JOB_ID}-${node}.tsv"
 lock="${XDG_RUNTIME_DIR:-/tmp/$(id -u)-fleet}/fleet-health.lock"
+mkdir -p "$(dirname "$lock")"
 exec 9>"$lock"
 flock -n 9 || exit 0
 
@@ -41,11 +50,23 @@ flock -n 9 || exit 0
 TASKS_ALERT="${FLEET_TASKS_ALERT:-4000}"
 PYTHON_ALERT="${FLEET_PYTHON_ALERT:-1000}"
 MEM_AVAIL_ALERT_MB="${FLEET_MEM_AVAIL_ALERT_MB:-12000}"
+# A healthy node carries a handful of D-state tasks and a one-minute load
+# near its core count; a stall drives both up. Both are node-wide and cheaper
+# than the leak counters, so they catch pressure those counters never see.
+DSTATE_ALERT="${FLEET_DSTATE_ALERT:-50}"
+LOAD_ALERT="${FLEET_LOAD_ALERT:-56}"
 
-cg=$(sed -n 's/^0:://p' /proc/self/cgroup | sed -E 's#/step_[^/]+.*##')
-cgdir="/sys/fs/cgroup$cg"
+# The reading paths are overridable so one pass can be driven against fixtures
+# without touching the node's own /proc or cgroup.
+procdir="${FLEET_PROC_DIR:-/proc}"
+cgdir="${FLEET_CGROUP_DIR:-}"
+if [ -z "$cgdir" ]; then
+    cg=$(sed -n 's/^0:://p' "$procdir/self/cgroup" | sed -E 's#/step_[^/]+.*##')
+    cgdir="/sys/fs/cgroup$cg"
+fi
 
 ms_since() { echo $(( ($(date +%s%N) - $1) / 1000000 )); }
+over_load() { awk -v l="$1" -v t="$2" 'BEGIN { exit !(l > t) }'; }
 
 header=$'utc\tload1\tload5\tprocs_running\tprocs_blocked\tdstate\tmem_avail_mb\tswap_free_mb\tjob_mem_mb\tjob_mem_max_mb\thome_stat_ms\tslurmd_ms\tctld_ping\ttasks\tpython_procs\ttop_parent'
 if [ -s "$out" ] && [ "$(head -1 "$out")" != "$header" ]; then
@@ -55,12 +76,12 @@ fi
 
 last_snapshot=0
 while :; do
-    read -r load1 load5 _ < /proc/loadavg
-    running=$(awk '/^procs_running/ {print $2}' /proc/stat)
-    blocked=$(awk '/^procs_blocked/ {print $2}' /proc/stat)
+    read -r load1 load5 _ < "$procdir/loadavg"
+    running=$(awk '/^procs_running/ {print $2}' "$procdir/stat")
+    blocked=$(awk '/^procs_blocked/ {print $2}' "$procdir/stat")
     dstate=$(ps -eo stat= 2>/dev/null | grep -c '^D')
-    avail=$(awk '/^MemAvailable:/ {printf "%d", $2/1024}' /proc/meminfo)
-    swap=$(awk '/^SwapFree:/ {printf "%d", $2/1024}' /proc/meminfo)
+    avail=$(awk '/^MemAvailable:/ {printf "%d", $2/1024}' "$procdir/meminfo")
+    swap=$(awk '/^SwapFree:/ {printf "%d", $2/1024}' "$procdir/meminfo")
     jobmem=$(awk '{printf "%d", $1/1048576}' "$cgdir/memory.current" 2>/dev/null || echo -)
     jobmax=$(awk '$1 ~ /^[0-9]+$/ {printf "%d", $1/1048576; next} {print $1}' "$cgdir/memory.max" 2>/dev/null || echo -)
     t=$(date +%s%N); timeout 10 stat "$HOME" >/dev/null 2>&1 && home=$(ms_since "$t") || home=timeout
@@ -81,13 +102,22 @@ while :; do
     [ "$tasks" -gt "$TASKS_ALERT" ] && reason="$tasks tasks"
     [ "$python" -gt "$PYTHON_ALERT" ] && reason="${reason:+$reason, }$python python processes"
     [ "${avail:-0}" -lt "$MEM_AVAIL_ALERT_MB" ] && reason="${reason:+$reason, }${avail} MB available"
+    [ "${dstate:-0}" -gt "$DSTATE_ALERT" ] && reason="${reason:+$reason, }$dstate D-state processes"
+    over_load "${load1:-0}" "$LOAD_ALERT" && reason="${reason:+$reason, }load $load1"
     if [ -n "$reason" ] && [ $(( $(date +%s) - last_snapshot )) -ge 600 ]; then
         last_snapshot=$(date +%s)
         snap="$dir/${SLURM_JOB_ID}-${node}-$(date -u +%Y%m%dT%H%M%SZ).ps"
-        timeout 30 ps -u "$USER" -o pid,ppid,pgid,etimes,rss,comm,args > "$snap" 2>&1
+        {
+            printf '%s\n' "# per-process thread count and wait channel, $now"
+            timeout 30 ps -u "$USER" -o pid,ppid,pgid,etimes,rss,nlwp,wchan:32,stat,comm,args
+            printf '%s\n' "# node-wide D-state processes, whoever owns them, $now"
+            timeout 30 ps -eo pid,ppid,user,etimes,nlwp,wchan:32,stat,comm,args 2>/dev/null \
+                | awk 'NR==1 || $7 ~ /^D/'
+        } > "$snap" 2>&1
         msg="$now fleet node $node under pressure: $reason. Busiest parent $top. Process table: $snap"
         printf '%s\n' "$msg" >> "$state/alerts.log"
         printf '%s\n' "$msg" > "$state/notice"
     fi
+    [ "$once" -eq 1 ] && break
     sleep 60
 done
