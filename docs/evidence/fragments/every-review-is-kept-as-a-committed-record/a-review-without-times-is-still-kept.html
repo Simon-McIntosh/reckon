@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>A review with no recorded times is committed, not refused | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-review-without-times-is-still-kept-landing">
+      <p>A committed review whose review run has no record anywhere and whose id encodes no instant is now kept rather than refused: <code>store_committed_review</code> writes it with <code>dispatched_at</code> and <code>completed_at</code> empty and <code>times_source</code> <code>unknown</code>, never the store clock, while a review run whose own record exists but carries no dispatch stamp is still refused naming the run. Gate <code>tests/test_review_store_owns_identity_and_times.py</code> with <code>tests/test_import_host_reviews.py</code> and <code>tests/test_review_records_have_a_committed_root.py</code>: 29 passed, <code>EXIT=0</code>; negative control restores the refusal and fails <code>test_a_record_resolving_no_time_is_committed_marked_unknown</code>, 1 failed, <code>EXIT=1</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
