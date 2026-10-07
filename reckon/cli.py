@@ -796,6 +796,24 @@ def fleet_node_group():
     """Hold, read and place work on the fleet node's whole-node allocation."""
 
 
+@fleet_node_group.command(name="migrate")
+@click.option(
+    "--dry-run", is_flag=True, help="Print the next step without changing state."
+)
+@click.option("--session", help="Limit a cutover step to one zellij session.")
+@click.option(
+    "--confirm", is_flag=True, help="Confirm cancellation at the retire step."
+)
+def fleet_node_migrate(dry_run: bool, session: str | None, confirm: bool) -> None:
+    """Advance the fleet move by one recorded checkpoint."""
+    from reckon.crew.fleet_migrate import MigrationError, migrate
+
+    try:
+        click.echo(migrate(dry_run=dry_run, session=session, confirm=confirm))
+    except MigrationError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
 @fleet_node_group.command(name="hold")
 @click.option(
     "--submit",

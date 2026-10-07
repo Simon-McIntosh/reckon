@@ -1,0 +1,25 @@
+layout {
+    cwd "/home/ITER/mcintos/Code/imas-efit"
+    tab name="recon" hide_floating_panes=true {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        pane command="fleet-claude" {
+            args "--resume" "e72a5b5c-957b-4a8e-b041-79f1747667f7"
+            start_suspended true
+        }
+    }
+    tab name="shell" hide_floating_panes=true {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        pane contents_file="initial_contents_1"
+    }
+    new_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        pane cwd="/home/ITER/mcintos/Code/imas-efit"
+    }
+}
+
