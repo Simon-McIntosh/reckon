@@ -16,9 +16,13 @@ is gone, and <code>lane_context._size_of</code> now delegates to
 and <code>_percentile</code> are defined once in
 <code>run_time_profile</code> and imported by <code>picker/outcomes.py</code>
 and <code>picker/lane_context.py</code>; the local copies and their
-<code>import math</code> are deleted. <code>_number</code> keeps the strictest
-of the three prior semantics (rejects <code>bool</code>, non-finite floats),
-which is a superset of each caller's old behaviour on numeric input.</li>
+<code>import math</code> are deleted. <code>_number</code> preserves the input's
+own type — an <code>int</code> stays an <code>int</code> and a
+<code>float</code> stays a <code>float</code> — while rejecting
+<code>bool</code>, non-numeric and non-finite values. Merging the three copies
+without this also merged their return types, and the picker state then rendered
+an integer wall-second figure as <code>300.0</code> where the base rendered
+<code>300</code>; the type-preserving form restores the base's bytes.</li>
 <li><strong>The profile cache routes through
 <code>capabilities.cached_pick_input</code>.</strong> The hand-rolled reader,
 writer, schema marker and key (<code>_read_persisted_profile</code>,
@@ -29,14 +33,19 @@ calls a new shared entry point,
 <code>capabilities.cached_pick_input_rekeyed</code>, which owns the schema
 marker, the atomic write and the corrupt-entry handling, and which re-keys after
 the build so a profile built while the ledger was still settling is not cached.
-The on-disk name is preserved (<code>run-time-profile/&lt;project&gt;.json</code>).</li>
+The on-disk name is preserved (<code>run-time-profile/&lt;project&gt;.json</code>).
+The file name is checked against the ledger's safe-identifier pattern before it
+is formed, so a project string never forms a cache path unchecked; an unsafe id
+is read without caching rather than raising on a pick, which is what the base's
+guarded reader and writer did (they raised deep and caught <code>ValueError</code>
+at the cache boundary).</li>
 <li><strong>The lane document is read once.</strong> <code>local_lane_load()</code>
 now returns the parsed document it read, and <code>lane_context.local_lane()</code>
 reuses that value instead of reading it a second time.</li>
 </ul>
 
 <h4 id="picker-helpers-have-one-owner-checks">Checks that could have failed</h4>
-<p><code>tests/test_picker_helpers_have_one_owner.py</code> holds three
+<p><code>tests/test_picker_helpers_have_one_owner.py</code> holds four
 tests:</p>
 <ul>
 <li>A <strong>positive control</strong> asserting each behaviour has exactly one
@@ -46,24 +55,33 @@ away.</li>
 <li>A <strong>one-owner scan</strong> asserting no module under
 <code>reckon/crew/picker/</code> defines an owned helper name
 (<code>_bucket</code>, <code>_number</code>, <code>_percentile</code>).</li>
-<li>A <strong>byte-identical render</strong>: one fixture state is rendered
-twice through <code>state.jinja</code>, the second render after the in-process
-memo is cleared so the profile can only come from the persisted copy. The ledger
-loader runs exactly once, the two renders are byte-identical, and the payload
-carries <code>size_bucket == "30m_to_60m"</code>, <code>p50_s == 200.0</code>,
-<code>p90_s == 300.0</code>, <code>runs == 2</code>.</li>
+<li>A <strong>before/after render check</strong>: the bytes
+<code>state.jinja</code> rendered at the base revision for one frozen fixture
+(integer wall-second figures included) are committed as <code>GOLDEN_STATE</code>,
+and the head must reproduce them exactly. The bytes were produced by running the
+base tree's own code over the same fixture through <code>render_base_state.py</code>,
+never transcribed by hand. This replaced an earlier test that rendered the new
+code twice — a check that rendered the code twice moves with the code it is
+meant to hold still. It was confirmed to fail against a float-returning
+<code>_number</code> (<code>p90_s":500.0</code> against the base's
+<code>500</code>) before the type-preserving owner landed; log
+<code>before-fix-render.log</code>.</li>
+<li>An <strong>unsafe-name guard</strong> asserting a project id that is not a
+safe cache file name never forms a cache path: the profile is read without being
+cached, and no file is written under the cache root.</li>
 </ul>
-<p><strong>Gate.</strong> 27 test files (every <code>test_picker*.py</code>,
+<p><strong>Gate.</strong> Every <code>test_picker*.py</code>,
 <code>test_run_time_profile*.py</code>, <code>test_jev_weighs_context.py</code>,
 and every file importing <code>reckon.capabilities</code>,
-<code>lane_context</code> or <code>run_time_profile</code>) with
-<code>-n 8</code>. Base revision <code>4e2f6823c</code>:
-<strong>369 passed, EXIT=0</strong> (203.11&nbsp;s). Head:
-<strong>372 passed, EXIT=0</strong> (120.76&nbsp;s). Delta is +3, the new
-tests, with no added failure.</p>
+<code>lane_context</code> or <code>run_time_profile</code>, run with
+<code>-n 8</code>. Base revision <code>4e2f6823c</code> (26 files, the new test
+does not exist at base): <strong>369 passed, EXIT=0</strong> (146.08&nbsp;s).
+Head <code>b637ec547</code> (27 files): <strong>373 passed, EXIT=0</strong>
+(114.02&nbsp;s). Delta is +4, the new tests, with no added failure.</p>
 <p><strong>Declared negative control</strong> — re-add a local
-<code>_bucket</code> definition in <code>lane_context.py</code> — produced
-<code>EXIT=1</code>, <code>1 failed, 2 passed</code> at
+<code>_bucket</code> definition in <code>lane_context.py</code> at the head
+<code>b637ec547</code> — produced <code>EXIT=1</code>, <code>1 failed, 3
+passed</code> at
 <code>tests/test_picker_helpers_have_one_owner.py::test_no_second_definition_of_an_owned_helper_under_picker</code>,
 reporting <code>{'reckon/crew/picker/lane_context.py': ['_bucket']}</code>, while
 the unmutated head passes that test. Log: <code>gate-negative-control.log</code>.</p>
