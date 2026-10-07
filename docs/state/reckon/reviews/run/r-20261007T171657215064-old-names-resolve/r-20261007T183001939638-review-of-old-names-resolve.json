@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "bdfb159260bf28417d160653d14bf2defeaf1940",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/ledger.py:3334 read_records",
+    "reckon/crew/query.py:288 _compact_row",
+    "reckon/crew/recovery.py:9220 classify_pointer",
+    "reckon/crew/recovery.py:348 select_review_for_head",
+    "reckon/crew/reports.py:1311 _reviewer_store_records",
+    "reckon/mcp_views.py:190 _run_identity_key"
+  ],
+  "completed_at": "2026-10-07T18:38:48.723Z",
+  "dispatched_at": "2026-10-07T18:30:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/query.py",
+      "line": "285",
+      "severity": "follow-on",
+      "text": "follow-on: the runs view's compact row gained lane and model_key here, but reckon/crew/query.py is not among the node's declared write paths (plan \u00a77 or the dispatch scope), and scope_probe.py shows the runs view drops and refuses those fields at base; the file the done_when reaches was outside the declared scope, so the plan's write paths for this node are incomplete and should name query.py."
+    }
+  ],
+  "head_log_revision": "34a38d200cd702876a0e8ad0bd760fda0324cb32",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read the four commits against base bdfb1592; commit 892aa04 adds resolve_name and normalize_identity and wires the readers, 34a38d2 preserves a retired model id's key, fa9f9dc adds the test module, and 5dc28f07 adds the evidence fragment.",
+    "done_when": "fixtures written as claude-opus and as claude with model opus normalise identically (tests/test_old_names_resolve.py:47), all seven legacy aliases are exercised (ALIASES at tests/test_old_names_resolve.py:18), the CLI ledger and the runs view report the pair (tests/test_old_names_resolve.py:137 and :167), the routing-identifier leak check (tests/test_skill_contracts.py:208) is included, and the negative control reddens a fixture; I re-ran the focused gate at head 5dc28f07 in a scratch extraction (reviewer-head-gate.log, 98 passed, EXIT=0) and reproduced the control (reviewer-negative-control.log, 16 failed, EXIT=1).",
+    "goal": "the node's goal is plan \u00a77, one read-side resolver mapping old backend names, model ids and aliases to a lane-and-model pair; reckon/ledger.py:187 resolve_name and reckon/ledger.py:229 normalize_identity read the catalogue's lanes and aliases tables, and every reader \u2014 ledger read_records, run classification, stored reviews, review exclusions and the crew views \u2014 calls normalize_identity, so a stored row keeps its own spelling while a reader sees the (lane, model_key) pair.",
+    "manifest": "read; status complete, four commits, tests line recording two base and two head gate halves with EXIT=0 and the negative control, test_logs naming base.log/head.log/negative-control.log, and baseline_suite and after_suite both present, complete, with zero failures.",
+    "write_paths": "the manifest declares reckon/crew/recovery.py, reckon/ledger.py, reckon/mcp_views.py, reckon/crew/reports.py, tests/test_old_names_resolve.py and the evidence fragment; git diff --stat bdfb1592 5dc28f07 lists those plus reckon/crew/query.py, which is outside the declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_old_names_resolve.py:47 asserts resolve_name against literal hardcoded pairs and tests/test_old_names_resolve.py:88 removes one alias and asserts the name stops resolving, both of which redden if the resolver regresses; 19 not 20 \u2014 the one softness is that tests/test_old_names_resolve.py:57 derives its expected pair from the same catalogue structure it reads, so a coupled change to both would not be caught.",
+    "evidence": "the manifest records complete base and head gate arms each ending EXIT=0 with zero failures and a negative-control log at EXIT=1, and I re-ran the declared focused gate at head 5dc28f07 (reviewer-head-gate.log, 98 passed, EXIT=0) and the alias-removal control (reviewer-negative-control.log, 16 failed, EXIT=1).",
+    "fit": "the added names (resolve_name, normalize_identity, _review_backend_excluded, _run_identity_key, _identity_catalogue) state mechanism rather than plan or ticket identity, and the docstrings at reckon/ledger.py:188 and :230 describe the resolution rule with no version, plan or sprint identifier.",
+    "goal_fidelity": "reckon/ledger.py:187 resolve_name returns the (lane, model_key) pair for a catalogue alias, lane name, model key, model id or display alias, and reckon/ledger.py:229 normalize_identity applies it at every read site the plan \u00a77 names, so the landed change is exactly the single read-side resolver the goal states.",
+    "reuse": "reckon/ledger.py:180 _identity_catalogue reuses flight.read_layer_file and the pre-existing ledger._file_identity rather than adding a second catalogue reader, and a search over reckon/ for an existing name-to-lane resolver found none, so this is the owner the plan \u00a77 calls for and no capability is duplicated.",
+    "scope_discipline": "git diff --stat bdfb1592 5dc28f07 lists the declared production and test paths plus reckon/crew/query.py, which is not among the plan \u00a77 or dispatch write paths though the runs-view done_when reaches it, and the query.py change is goal-implied rather than gratuitous."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: bdfb159260bf28417d160653d14bf2defeaf1940\nreviewed_head_sha: 5dc28f07f94ba013accc7a22bbe9964b3e2ba6dc\nVERDICT goal: the node's goal is plan \u00a77, one read-side resolver mapping old backend names, model ids and aliases to a lane-and-model pair; reckon/ledger.py:187 resolve_name and reckon/ledger.py:229 normalize_identity read the catalogue's lanes and aliases tables, and every reader \u2014 ledger read_records, run classification, stored reviews, review exclusions and the crew views \u2014 calls normalize_identity, so a stored row keeps its own spelling while a reader sees the (lane, model_key) pair.\nVERDICT done_when: fixtures written as claude-opus and as claude with model opus normalise identically (tests/test_old_names_resolve.py:47), all seven legacy aliases are exercised (ALIASES at tests/test_old_names_resolve.py:18), the CLI ledger and the runs view report the pair (tests/test_old_names_resolve.py:137 and :167), the routing-identifier leak check (tests/test_skill_contracts.py:208) is included, and the negative control reddens a fixture; I re-ran the focused gate at head 5dc28f07 in a scratch extraction (reviewer-head-gate.log, 98 passed, EXIT=0) and reproduced the control (reviewer-negative-control.log, 16 failed, EXIT=1).\nVERDICT write_paths: the manifest declares reckon/crew/recovery.py, reckon/ledger.py, reckon/mcp_views.py, reckon/crew/reports.py, tests/test_old_names_resolve.py and the evidence fragment; git diff --stat bdfb1592 5dc28f07 lists those plus reckon/crew/query.py, which is outside the declared write paths.\nVERDICT manifest: read; status complete, four commits, tests line recording two base and two head gate halves with EXIT=0 and the negative control, test_logs naming base.log/head.log/negative-control.log, and baseline_suite and after_suite both present, complete, with zero failures.\nVERDICT diff: read the four commits against base bdfb1592; commit 892aa04 adds resolve_name and normalize_identity and wires the readers, 34a38d2 preserves a retired model id's key, fa9f9dc adds the test module, and 5dc28f07 adds the evidence fragment.\nCALL_SITES: reckon/ledger.py:3334 read_records, reckon/crew/query.py:288 _compact_row, reckon/crew/recovery.py:9220 classify_pointer, reckon/crew/recovery.py:348 select_review_for_head, reckon/crew/reports.py:1311 _reviewer_store_records, reckon/mcp_views.py:190 _run_identity_key\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:187 resolve_name returns the (lane, model_key) pair for a catalogue alias, lane name, model key, model id or display alias, and reckon/ledger.py:229 normalize_identity applies it at every read site the plan \u00a77 names, so the landed change is exactly the single read-side resolver the goal states.\nSCORE evidence: 20\nJUSTIFICATION evidence: the manifest records complete base and head gate arms each ending EXIT=0 with zero failures and a negative-control log at EXIT=1, and I re-ran the declared focused gate at head 5dc28f07 (reviewer-head-gate.log, 98 passed, EXIT=0) and the alias-removal control (reviewer-negative-control.log, 16 failed, EXIT=1).\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git diff --stat bdfb1592 5dc28f07 lists the declared production and test paths plus reckon/crew/query.py, which is not among the plan \u00a77 or dispatch write paths though the runs-view done_when reaches it, and the query.py change is goal-implied rather than gratuitous.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_old_names_resolve.py:47 asserts resolve_name against literal hardcoded pairs and tests/test_old_names_resolve.py:88 removes one alias and asserts the name stops resolving, both of which redden if the resolver regresses; 19 not 20 \u2014 the one softness is that tests/test_old_names_resolve.py:57 derives its expected pair from the same catalogue structure it reads, so a coupled change to both would not be caught.\nSCORE fit: 20\nJUSTIFICATION fit: the added names (resolve_name, normalize_identity, _review_backend_excluded, _run_identity_key, _identity_catalogue) state mechanism rather than plan or ticket identity, and the docstrings at reckon/ledger.py:188 and :230 describe the resolution rule with no version, plan or sprint identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/ledger.py:180 _identity_catalogue reuses flight.read_layer_file and the pre-existing ledger._file_identity rather than adding a second catalogue reader, and a search over reckon/ for an existing name-to-lane resolver found none, so this is the owner the plan \u00a77 calls for and no capability is duplicated.\nFINDING reckon/crew/query.py:285 follow-on: the runs view's compact row gained lane and model_key here, but reckon/crew/query.py is not among the node's declared write paths (plan \u00a77 or the dispatch scope), and scope_probe.py shows the runs view drops and refuses those fields at base; the file the done_when reaches was outside the declared scope, so the plan's write paths for this node are incomplete and should name query.py.",
+  "review_run_id": "r-20261007T183001939638-review-of-old-names-resolve",
+  "reviewed_base_sha": "bdfb159260bf28417d160653d14bf2defeaf1940",
+  "reviewed_head_sha": "5dc28f07f94ba013accc7a22bbe9964b3e2ba6dc",
+  "reviewed_run_id": "r-20261007T171657215064-old-names-resolve",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T18:37:38.503362+00:00",
+  "total": 116
+}
