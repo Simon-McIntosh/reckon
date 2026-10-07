@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T16:48:57.591Z",
+  "dispatched_at": "2026-10-07T16:40:26Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:140",
+      "id": "single_goal-1",
+      "reason": "the node count is a dispatch unit, so as written a reader cannot tell whether (2) and (3) are one node carrying two goals or two nodes, and the two readings give different scopes and different dispatch.",
+      "text": "\u00a713's Deliverable reads \"Two nodes\" yet lists (1) `promotion.py`, (2) the per-project import plus census, and (3) the dry-run listing, and followup f-erkc-015 dispatches \"\u00a713's node (3)\" separately on `scripts/import_host_reviews.py`",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:144",
+      "id": "reasoning-1",
+      "reason": "the two scopes disagree on mixed records, so the implementer must pick one, and the wrong pick either blocks a legitimate review at promotion or promotes a record whose claim is silently discarded.",
+      "text": "\u00a714 states the malformed obligation fires for \"a record whose every finding states no claim\" but refuses promotion for a record that \"carries a claimless finding\", so a record holding one claimless finding beside valid ones is dropped-and-repaired under the first rule and refused under the second",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:144",
+      "id": "reasoning-2",
+      "reason": "the Why rests its defect on a cited record a later reader cannot re-derive, so the evidence sentence must cite a claimless record that resolves rather than an instance that is no longer on disk.",
+      "text": "\u00a714's Why states, \"confirmed on disk\", that the review of run `r-20261007T154818066959-the-session-host-records-when-it-stopped` \"stored a record whose findings are `[{\"file\": \"reckon_placeholder\"}]`\", but that record now holds two real `session_host.py` follow-on findings, no record under the host store or any project's `docs/state/<project>/reviews/` contains `reckon_placeholder`, and the three claimless records the census counts are the two imas-ambix copies of `r-20260921T053443850077-scrape-fixture` (findings `[{F:1},{F:2},{F:3}]`, not `{\"F\": 1}`) and one reckon record whose findings read `[{\"file\":\"reckon/crew/review_lifecycle\"}]`",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "710a3b184fc2307fd163d3cf02d4c51605c825e2c49b2d7db9d1f3247bac73b9",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 119,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261007T164003153046-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "ee7076b187677905d1c1cb9e5ccbee58ae274e5d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `promotion.py` `_staging_review_record_by_run`/`record_for_review_run`, `routing.py:2788`, `cli.py:2918` (reckon/cli.py), `scripts/import_host_reviews.py`, `repair.py:103\u2013125` and `repair._finding_kind` all resolve, and the extensionless `s13`/`s14` hrefs resolve as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a713's done-when cases (1) and (3) name failing mutations (\"fails when promotion looks the record up by the promoting run's id alone\", \"fails when the listing is removed\") and \u00a714's case (1) names one (\"fails when the predicate accepts a mapping with no claim field\"), so each node has a declared negative control.",
+    "evidence_paths": "pass \u2014 the census reads the host store and each project's `docs/state/<project>/reviews/`, and the import commits into project repositories, so no evidence sits on a node-local or scratch path.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches a symbol, file or comment in either unit, and the present-tense \"red on the current code\" is a control statement, not changelog prose.",
+    "reasoning": "a finding \u2014 \u00a714's Why cites a reproduction that no longer resolves on disk (the named run's record now carries two real findings and no stored record contains `reckon_placeholder`), and its promotion-refusal scope contradicts its own malformed-record rule.",
+    "single_goal": "a finding \u2014 \u00a713's Deliverable declares \"Two nodes\" but enumerates three numbered deliverables, and its done-when and the followups treat node (3) as a separate writer of `scripts/import_host_reviews.py`.",
+    "wiring": "pass \u2014 \u00a713 nodes (1)\u2013(3) and \u00a714 name their write scopes, \u00a713 depends on \u00a712 (landed) and f-erkc-015 dispatches \u00a713's node (3) beside \u00a714 on disjoint files, so no declared relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "65ca1da17a46bbd1e01ba270ed9d874cbe6db92066a9a933a0162b43bfe321bc",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "614ca49d99bf222ad3a55d453940bbeca47e8a55a989eaa977cadf7a9427a857",
+    "s14": "57e3d868ebc75ac975f26b22d37361c008c3ea730caec6fa1055cccd6bd2abfe",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T16:49:32.855549+00:00"
+}
