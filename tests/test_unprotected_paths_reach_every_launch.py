@@ -292,6 +292,7 @@ def test_case_2_a_lane_changed_run_leaves_the_default_writable(
         backend="beta",
         launch="cli",
         backend_settings=dict(CONFIG["backends"]["beta"]),
+        lane_gate={"state": "open", "paused": False, "reason": None, "detail": ""},
         validation=SimpleNamespace(ok=True, findings=[]),
         competence={"allowed": True},
         authority="a-ledger-authority",

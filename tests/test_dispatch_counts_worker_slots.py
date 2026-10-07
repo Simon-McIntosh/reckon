@@ -462,6 +462,7 @@ def test_a_lane_change_resolves_under_the_runs_coordinator_session(
         backend="beta",
         launch="in-harness",
         backend_settings={},
+        lane_gate=dispatch_module._dispatch_lane_gate({}),
         validation=SimpleNamespace(ok=True, findings=[]),
         competence={"allowed": True},
         authority="a-ledger-authority",

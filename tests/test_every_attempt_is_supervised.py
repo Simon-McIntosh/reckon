@@ -292,6 +292,7 @@ def _lane_resolution(dialect: str) -> SimpleNamespace:
         validation=SimpleNamespace(ok=True, findings=[]),
         competence={"allowed": True},
         backend_settings=backend,
+        lane_gate={"state": "open", "paused": False, "reason": None, "detail": ""},
         backend="beta",
         launch="cli",
         authority={},

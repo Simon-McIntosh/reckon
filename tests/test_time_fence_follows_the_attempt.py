@@ -254,6 +254,7 @@ def test_a_lane_change_restates_the_fence_for_the_attempt_it_launches(
         backend="beta",
         launch="cli",
         backend_settings=dict(CONFIG["backends"]["beta"]),
+        lane_gate={"state": "open", "paused": False, "reason": None, "detail": ""},
         validation=SimpleNamespace(ok=True, findings=[]),
         competence={"allowed": True},
         authority="a-ledger-authority",
