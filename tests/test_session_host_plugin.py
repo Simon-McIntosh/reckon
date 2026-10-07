@@ -10,14 +10,21 @@ from __future__ import annotations
 import json
 import os
 import select
+import shutil
 import signal
 import subprocess
 import time
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parent.parent
 PLUGIN = REPO / "plugins" / "crew-host"
 ENTRY_REL = Path("plugins") / "crew-host" / "bin" / "crew-host"
+
+# The one shape Claude Code reads at this path is a bare array of monitor
+# entries; every key an entry may carry is in this set.
+ALLOWED_MONITOR_KEYS = {"name", "command", "description", "when"}
 
 STUB = """#!/usr/bin/env bash
 {
@@ -107,14 +114,46 @@ def _value(args: list[str], flag: str) -> str:
 
 def test_manifest_declares_one_always_armed_monitor() -> None:
     monitors = json.loads((PLUGIN / "monitors" / "monitors.json").read_text())
-    assert len(monitors["monitors"]) == 1
-    monitor = monitors["monitors"][0]
+    # The default path carries a bare array of entries, not an object wrapping
+    # them: Claude Code's loader validates the file against an array schema and
+    # refuses the whole component when it reads an object instead. See
+    # test_plugin_directory_loads_without_errors for the loader's own verdict.
+    assert isinstance(monitors, list), "monitors.json must be a bare JSON array"
+    assert len(monitors) == 1
+    monitor = monitors[0]
+    assert set(monitor) <= ALLOWED_MONITOR_KEYS
     assert monitor["when"] == "always"
     assert monitor["description"] == "reckon crew"
     assert "bin/crew-host" in monitor["command"]
 
     manifest = json.loads((PLUGIN / ".claude-plugin" / "plugin.json").read_text())
     assert manifest["name"] == "reckon-crew-host"
+
+
+requires_claude = pytest.mark.skipif(
+    shutil.which("claude") is None, reason="no claude executable on PATH"
+)
+
+
+@requires_claude
+def test_plugin_directory_loads_without_errors() -> None:
+    """Claude Code itself loads the plugin directory and reports no errors.
+
+    The shape assertions above are ours; this is the loader's own verdict on
+    the manifest and every component under it, which is what a malformed
+    monitors file actually breaks.
+    """
+    result = subprocess.run(
+        ["claude", "--plugin-dir", str(PLUGIN), "plugin", "list", "--json"],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stderr
+    entries = json.loads(result.stdout)
+    entry = next(e for e in entries if e["id"].startswith("reckon-crew-host"))
+    assert entry.get("errors", []) == [], entry.get("errors")
 
 
 def test_waits_silently_on_a_fifo_named_for_its_owner(tmp_path: Path) -> None:
