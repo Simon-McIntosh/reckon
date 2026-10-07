@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.83">
-<meta name="plan-version" content="59">
+<meta name="plan-impl" content="0.92">
+<meta name="plan-version" content="60">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -165,7 +165,7 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 <p><strong>Done when</strong> a test resolves the FIFO path for one owner pair through the host and through dispatch and finds them equal. The filename format <code>{pid}-{start}.fifo</code> appears once in <code>reckon/</code>. <code>tests/test_session_host.py</code> and <code>tests/test_dispatch_session_host.py</code> pass. The equality test fails when one side's format is changed alone, and that is its negative control.</p>
 
     <h2 id="s13">§13 — A stopped host never records a stop reason of None</h2>
-<section data-reckon="section" data-id="s13" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s13" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> Every path that stops <code>reckon crew host</code> names its reason, so the final record never carries <code>stop_reason: null</code>. <code>SessionHost.stop</code> takes the reason as required rather than optional. The entry's <code>finally</code> call passes one, and the request-descriptor end-of-file path records its own. That path has no production caller: the entry point and <code>reckon crew host</code> open the request FIFO read-write, so the host holds a write end and its read never returns end-of-file. The branch stays as a guard, because without it a closed descriptor would spin the read loop. Its caller is a host handed a plain pipe, as the tests do. The §11 review found the fallback and the end-of-file path untested and the <code>finally</code> call passing no reason.</p>
 <p><strong>Done when</strong> tests in <code>tests/test_session_host.py</code> drive a bare <code>request_stop()</code> with no wake-pipe write, and an end-of-file on a host handed a plain pipe as its request descriptor, and find a non-null <code>stop_reason</code> in the final record each time. <code>tests/test_session_host.py</code> and <code>tests/test_dispatch_session_host.py</code> pass. Each new test fails when the reason its path records is removed, and that is the negative control.</p>
 
@@ -232,10 +232,16 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §9</pre>
     <p class="r-fu-outcome">superseded: the §11 review's rewritten findings folded into §13, so a code node remains beside §9's live census</p>
     </article>
-<article class="r-fu" data-id="f-afl-005" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-07T18:05:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afl-005" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-07T18:05:00Z" data-recommends-skill="" data-resolved-at="2026-10-07T18:34:22+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Require the stop reason, then read §9&#x27;s live census</h4>
     <div class="r-fu-body"><p>§13 is the last code node: every stop path names its reason, and the untested fallback and end-of-file paths gain tests. Build it first. §9 stays open for its live census, which reads <code>stale_fifos=0</code> after two Claude sessions have ended, one that dispatched and one that did not. Both must have started after merge <code>9dfb2a1e</code>; an older session leaves its FIFO, and the census should list that as expected.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §13</pre>
+    <p class="r-fu-outcome">§13 landed and closed; §9's live census is the plan's last node</p>
+    </article>
+<article class="r-fu" data-id="f-afl-006" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-07T18:40:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Read §9&#x27;s live census after two fresh sessions end</h4>
+    <div class="r-fu-body"><p>Every code node has landed. §9 stays open for its live clause: a census reading <code>stale_fifos=0</code> once two Claude sessions have ended, one that dispatched and one that did not. Both must have started after merge <code>9dfb2a1e</code>. A session started earlier runs the old entry point and leaves its FIFO, which the census lists as expected rather than counting. Dispatch one unfenced census node for §9 and close the section on its result.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-follower-lives-as-long-as-its-session §9</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -372,7 +378,10 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>independent review of r-20261007T170555017051-one-spelling-of-the-host-fifo-path stored: status=parsed, 6 dimensions scored (goal_fidelity 20, evidence 20, scope_discipline 20, durability 20, fit 20, reuse 20), total 120, reviewed_base_sha a1074fb6, reviewed_head_sha 173caf43, added_failure_count null (unmeasured: the reviewed manifest names no base gate log), added_failure_ids []</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261007T181138218485-review-of-a-stopped-host-names-its-reason" data-who="reckon-build" data-when="2026-10-07T18:17:22.633Z">
-    <div class="r-comment-body"><p>Reviewed run r-20261007T180232994727-a-stopped-host-names-its-reason over d7d80fbd6ebc3e55efe0830a47120c0a6f05a12a..242220970ddda915bbc96d4dd5f370b77fa0fb34 (commits 5eaaf28fa and 242220970): six dimensions scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19, reuse 20 (total 117), reviewed_base_sha d7d80fbd6 head 242220970, added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite (22 passed EXIT=0) and after_suite (24 passed EXIT=0); one follow-on finding, no blocking finding.</p></div>
+    <div class="r-comment-body"><p>Reviewed run r-20261007T180232994727-a-stopped-host-names-its-reason over d7d80fbd6ebc3e55efe0830a47120c0a6f05a12a..242220970ddda915bbc96d4dd5f370b77fa0fb34 (commits 5eaaf28fa and 242220970): six dimensions scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19, reuse 20 (total 117), reviewed_base_sha d7d80fbd6 head 242220970, added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite (22 passed EXIT=0) and after_suite (24 passed EXIT=0); one follow-on finding, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-10-07T18:40:00Z">
+    <div class="r-comment-body"><p>Landed at merge <code>9455ec00</code>. <code>SessionHost.stop</code> requires a non-empty reason and raises <code>ValueError</code> before any state changes otherwise. A requested stop records <code>signalled</code>, an exception escaping the read loop records <code>host failed</code> and still propagates, the request-descriptor end-of-file records <code>request stream ended</code>, and the entry's guard records <code>host exited</code>. A repair round, resumed by the coordinator, kept the signalled fallback conditional on a requested stop, because the first build recorded an exception as signalled, and added the runtime guard. Gate: 26 passed, and each negative-control arm fails as declared. Population of 9 session-host test modules: 138 passed at base, 142 at the merged head, 0 added. Reviews 117/120 and 120/120 (delta). Section closed by tick. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/a-stopped-host-names-its-reason.html">evidence</a></p></div>
 </div>
 </section>
 </main>
