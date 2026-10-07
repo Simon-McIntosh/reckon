@@ -219,6 +219,10 @@ class HostHarness:
         environ["RECKON_SESSION_HOST_POLL_SECONDS"] = POLL_SECONDS
         environ["RECKON_SESSION_HOST_BACKOFF"] = BACKOFF_SECONDS
         environ["FAKE_FOLLOWER_MARKER"] = str(self.marker)
+        # The host removes the request FIFO it was handed, resolved from the
+        # node-local runtime root. Point that root at the temporary tree so a
+        # case never names a path in the operator's real runtime directory.
+        environ["XDG_RUNTIME_DIR"] = str(self.tmp_path / "run")
         return environ
 
     def start(self) -> None:
@@ -400,6 +404,82 @@ def test_no_child_survives_its_owners_exit(host: HostHarness) -> None:
         timeout=STOP_BOUND,
         description="the child to end",
     )
+
+
+def test_the_host_removes_its_fifo_when_its_owner_exits(tmp_path: Path) -> None:
+    """A host that has taken over from the entry point removes the request FIFO.
+
+    The plugin entry point removes the FIFO only when its own wait loop sees the
+    owner gone; once it has exec'd into ``reckon crew host``, removal is the
+    host's. The FIFO here is the one the entry point would have created -- named
+    for the owner pair under the runtime root -- and its descriptor is handed to
+    the host the way the entry point hands fd 3. A request written to the FIFO
+    starts a child first, so the removal is shown against a host that was
+    reading that FIFO rather than one that never opened it.
+    """
+    owner = OwnerStub()
+    marker = tmp_path / "children.txt"
+    fake_follower = tmp_path / "fake_follower.py"
+    fake_follower.write_text(FAKE, encoding="utf-8")
+    runtime = tmp_path / "run"
+    fifo = runtime / "reckon-session-host" / f"{owner.pid}-{owner.start_time}.fifo"
+    fifo.parent.mkdir(parents=True)
+    os.mkfifo(fifo)
+    environ = dict(os.environ)
+    environ["PYTHONPATH"] = str(REPO_ROOT)
+    environ["RECKON_HOME"] = str(tmp_path / "home")
+    environ["RECKON_SESSION_HOST_STATE_DIR"] = str(tmp_path / "state")
+    environ["RECKON_SESSION_HOST_LOG_DIR"] = str(tmp_path / "logs")
+    environ["RECKON_SESSION_HOST_POLL_SECONDS"] = POLL_SECONDS
+    environ["FAKE_FOLLOWER_MARKER"] = str(marker)
+    environ["XDG_RUNTIME_DIR"] = str(runtime)
+    descriptor = os.open(fifo, os.O_RDWR)
+    argv = [
+        _console_script(),
+        "crew",
+        "host",
+        "--owner-pid",
+        str(owner.pid),
+        "--owner-start",
+        owner.start_time,
+        "--follower-command",
+        json.dumps([sys.executable, str(fake_follower)]),
+        "--fd",
+        str(descriptor),
+    ]
+    try:
+        process = subprocess.Popen(
+            argv,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=environ,
+            pass_fds=(descriptor,),
+        )
+        try:
+            os.write(
+                descriptor,
+                json.dumps({"project": "alpha", "session": "sess"}).encode() + b"\n",
+            )
+            _wait_for(
+                lambda: marker.exists() and len(marker.read_text().split()) >= 1,
+                timeout=START_BOUND,
+                description="a child from the FIFO request",
+            )
+            owner.end()
+            process.wait(timeout=STOP_BOUND)
+            assert not fifo.exists(), "the host left its FIFO behind"
+        finally:
+            if process.poll() is None:
+                process.send_signal(signal.SIGTERM)
+                try:
+                    process.wait(timeout=STOP_BOUND)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+    finally:
+        os.close(descriptor)
+        owner.end()
 
 
 def test_the_host_takes_over_a_pair_once_a_foreign_follower_exits(
