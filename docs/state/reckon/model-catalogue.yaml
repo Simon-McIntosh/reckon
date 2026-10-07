@@ -80,3 +80,89 @@ backends:
   # only its display alias is a reckon decision rather than a machine fact.
   native:
     alias: harness
+
+# The same models, regrouped by the lane that serves them. A lane is a
+# subscription or host; its models are the choices inside it, and
+# ``default_model`` names the one a dispatch on the lane gets when it names
+# none. This is the declaration the ``backends:`` blocks above are the
+# flattened form of: every ``backends`` entry here has exactly one lane model
+# that supplies the same model, effort and alias, so the two groupings can be
+# compared directly while the old surface retires. Nothing reads ``lanes`` in
+# resolution yet — the catalogue fills ``backends`` keys only — so declaring
+# lanes here changes no resolved value.
+lanes:
+  claude:
+    default_model: sonnet
+    models:
+      sonnet:
+        model: claude-sonnet-5-5
+        effort: medium
+        alias: sonnet 5.5
+        budget_group: claude-sub
+      opus:
+        model: claude-opus-5-5
+        effort: high
+        alias: opus 5.5
+        budget_group: claude-sub
+      haiku:
+        model: claude-haiku-4-5-20251001
+        effort: high
+        alias: haiku 4.5
+        budget_group: claude-sub
+
+  codex:
+    default_model: sol
+    models:
+      sol:
+        model: gpt-6-sol
+        effort: high
+        alias: sol6
+        budget_group: codex-sub
+      astra:
+        model: gpt-6-astra
+        effort: xhigh
+        alias: astra6
+        budget_group: codex-sub
+      luna:
+        model: gpt-6-luna
+        effort: xhigh
+        alias: luna6
+        budget_group: codex-sub
+
+  clive:
+    default_model: flash
+    models:
+      flash:
+        model: deepseek-v4.1-flash
+        effort: xhigh
+        alias: "dsv4.1-flash"
+
+# Old backend names, mapped to the lane and model key they name. A stored row,
+# review or ``review_excluded_backends`` entry is never rewritten; a reader
+# resolves it through this table, so a name whose backend block has retired
+# still normalises to the same pair. ``terra`` and ``spark`` name models the
+# codex lane no longer offers and ``glm`` a clive model that retired, and they
+# are kept here for history alone: they resolve to a pair for a reader, and
+# nothing in resolution reads this table.
+aliases:
+  claude-opus:
+    lane: claude
+    model_key: opus
+  claude-haiku:
+    lane: claude
+    model_key: haiku
+  codex-astra:
+    lane: codex
+    model_key: astra
+  codex-luna:
+    lane: codex
+    model_key: luna
+  codex-terra:
+    lane: codex
+    model_key: terra
+  codex-spark:
+    lane: codex
+    model_key: spark
+  clive-glm:
+    lane: clive
+    model_key: glm

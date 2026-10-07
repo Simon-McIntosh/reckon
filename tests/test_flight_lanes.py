@@ -156,3 +156,16 @@ def test_no_lanes_leaves_the_backends_unchanged(tmp_path):
     assert "lane" not in opus
     assert "model_key" not in opus
     assert "derived_from" not in opus
+
+
+def test_lane_model_keys_are_the_generated_model_fields():
+    """``LANE_MODEL_KEYS`` is derived from the generated ``LaneModelConfig``.
+
+    The keys expansion copies from a lane model onto its backend entry must be
+    exactly the generated model's slots (less the map-key ``name``), so a slot
+    added to the schema reaches expansion without a second edit. This pins the
+    derivation: a hand-copied list that drifts from the schema fails here.
+    """
+    from reckon._flight_schema import LaneModelConfig
+
+    assert set(flight.LANE_MODEL_KEYS) == set(LaneModelConfig.model_fields) - {"name"}

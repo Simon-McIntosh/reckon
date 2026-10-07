@@ -1,0 +1,98 @@
+<article class="landed-report" data-run-id="r-20261007T160947007052-catalogue-declares-lanes" data-node="catalogue-declares-lanes">
+  <h3 id="catalogue-declares-lanes-summary">catalogue-declares-lanes — the model catalogue declares lanes with a default model each, plus an alias table old names resolve through</h3>
+  <p id="catalogue-declares-lanes-change">
+    <code>docs/state/reckon/model-catalogue.yaml</code> gains a
+    <code>lanes:</code> block regrouping its eight backend entries under three
+    lanes, each with a <code>default_model</code> and its models keyed:
+    <code>claude</code> (default <code>sonnet</code>) offering
+    <code>sonnet</code>, <code>opus</code>, <code>haiku</code>;
+    <code>codex</code> (default <code>sol</code>) offering
+    <code>sol</code>, <code>astra</code>, <code>luna</code>; and
+    <code>clive</code> (default <code>flash</code>) offering
+    <code>flash</code>. Each model carries the same
+    <code>model</code>/<code>effort</code>/<code>alias</code>/<code>budget_group</code>
+    values its <code>backends:</code> entry already had, and the eight
+    <code>backends:</code> blocks are kept unchanged so the new grouping can be
+    compared with the old one directly.
+  </p>
+  <p id="catalogue-declares-lanes-alias-table">
+    <strong>Alias table.</strong> A top-level <code>aliases:</code> table maps
+    each legacy backend name to the <code>(lane, model_key)</code> pair it
+    names: <code>claude-opus</code>, <code>claude-haiku</code>,
+    <code>codex-astra</code>, <code>codex-luna</code> (live), and
+    <code>codex-terra</code>, <code>codex-spark</code>,
+    <code>clive-glm</code> (retired). The table is history, not routing — a
+    stored ledger row or run record is never rewritten, so a name whose backend
+    block has retired still resolves to a pair. <code>codex-terra</code> and
+    <code>codex-spark</code> name codex models the lane no longer offers, and
+    <code>clive-glm</code> a clive model that retired; the test asserts these
+    are exactly the names with no declared model behind them, so a live alias
+    whose model is deleted reddens. The field is <code>model_key</code> in the
+    catalogue entries, matching the plan's own wording and §7's
+    <code>resolve_tuple -> (lane, model_key)</code> signature (the design report
+    used <code>model</code> as shorthand — recorded for the §7 node).
+  </p>
+  <p id="catalogue-declares-lanes-schema-source">
+    <strong>Schema source.</strong> The catalogue schema had no slot for either
+    block, so <code>reckon/schema/flight.yaml</code> gains a top-level
+    <code>aliases</code> slot (range <code>ModelAlias</code>, inlined) and a
+    <code>ModelAlias</code> class with <code>lane</code> and
+    <code>model_key</code> slots, added to <code>FlightConfig.slots</code>.
+    <code>reckon/_flight_schema.py</code> and
+    <code>docs/_shared/flight.schema.json</code> are regenerated from it with
+    <code>scripts/regen_flight_schema.py</code>; neither generated file is
+    hand-edited, and the round-trip tests below assert both match the source.
+    <code>reckon/flight.py</code> lists <code>aliases</code> among
+    <code>_KEYED_MAPS</code>.
+  </p>
+  <p id="catalogue-declares-lanes-followon">
+    <strong>§1 review follow-on.</strong> <code>LANE_MODEL_KEYS</code> in
+    <code>reckon/flight.py</code> hand-clear-copied <code>LaneModelConfig</code>'s
+    field list; it is now derived from the generated model
+    (<code>_lane_model_keys()</code> reads
+    <code>LaneModelConfig.model_fields</code> less the map-key
+    <code>name</code>), and
+    <code>tests/test_flight_lanes.py::test_lane_model_keys_are_the_generated_model_fields</code>
+    pins the derivation, so a hand-copied list that drifts from the schema fails.
+  </p>
+  <p id="catalogue-declares-lanes-measure">
+    <strong>Measure.</strong> Gate built from the head tree with
+    <code>grep -l</code> over <code>tests/test_catalogue_declares_lanes.py</code>,
+    every <code>tests/test_flight*.py</code>, and every tests file that imports
+    <code>reckon.capabilities</code> or reads <code>model-catalogue.yaml</code>
+    (15 files). Run with the main checkout's
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -n 8</code> and the
+    main checkout's <code>.venv/bin</code> on <code>PATH</code>, in the
+    foreground, so the two LinkML round-trip tests execute rather than skip.
+    Base arm at revision <code>8a4140a93c843dcd0240a614ba6fd51576c91dd0</code>
+    (14 files — the new test file did not exist at base): 402 passed, 0 skipped,
+    EXIT=0. Head arm (15 files): 407 passed, 0 skipped, EXIT=0 — a delta of +5
+    (four catalogue cases and the derived-keys case), and zero added failures.
+    Logs <code>gate-base.log</code> and <code>gate-head.log</code> under the run
+    directory, each ending in an <code>EXIT=</code> line.
+  </p>
+  <p id="catalogue-declares-lanes-negative-control">
+    <strong>Negative control.</strong> Deleting one model entry from a catalogue
+    lane (<code>lanes.claude.models.opus</code>) in a copy, and running the new
+    test against it via <code>RECKON_CATALOGUE_FIXTURE</code>, reddens three
+    cases including
+    <code>test_every_alias_resolves_to_a_declared_lane_and_model</code>
+    (<code>claude-opus</code> names a model key the lane no longer declares):
+    EXIT=1. The head arm does not fail these. Log
+    <code>negative-control.log</code> under the run directory.
+  </p>
+  <p id="catalogue-declares-lanes-no-value-moves">
+    <strong>No value moves.</strong> <code>reckon flight --project reckon</code>
+    is byte-identical at base and head in every field that is not a live probe:
+    <code>config</code>, <code>provenance</code>, <code>layers</code>,
+    <code>undeclared_meteredness</code> and <code>warnings</code> all compare
+    SAME, and the catalogue provenance still contributes the same 28 leaves. The
+    only difference is <code>availability.clive.lane_headroom</code> (7 -> 3), a
+    live reading of the serving lane, not a code-driven value. Positive
+    control: the two catalogues differ — base has no <code>lanes:</code> key —
+    so this is not the identity of two identical inputs. Raw outputs
+    <code>flight-base.json</code> / <code>flight-head.json</code> and the
+    structured comparison <code>flight-compare.txt</code> under the run
+    directory.
+  </p>
+  </article>
