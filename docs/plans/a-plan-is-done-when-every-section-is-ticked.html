@@ -19,13 +19,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,plan-format">
   <meta name="plan-blocks" content="plan-lifecycle-hygiene">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>A Plan Is Done When Every Section Is Ticked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="2">
-<meta name="plan-modified" content="2026-10-07">
+<meta name="plan-version" content="5">
+<meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
   <main class="plan-doc">
@@ -116,12 +116,14 @@
 
     <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§6 — A plan reaches done only when every todo is ticked</h2>
     <p><strong>Deliverable.</strong> A write that sets a plan's status to <code>shipped</code> or <code>done</code> is
-      refused while any declaration is <code>implementable</code>, and the refusal names those sections. Whether a
-      <code>deferred</code> section counts as ticked is the open decision below. The census comes first here too:
-      count the plans already at a terminal status with an implementable declaration, and state the count.</p>
+      refused while any declaration is <code>implementable</code> or <code>deferred</code>, and the refusal names those
+      sections. A deferred section is not ticked (decision below), so a plan holding one stays open; §9 keeps that
+      from blocking work that does not depend on the deferred section. The census comes first here too: count the
+      plans already at a terminal status with an implementable or deferred declaration, and state the count.</p>
     <p><strong>Done when</strong> the census is recorded with its count. A test sets a plan with one implementable
-      section to <code>done</code> and finds the refusal naming that section. After the section is ticked, the same
-      write succeeds. The first test fails on the current code; that is its negative control.</p>
+      section to <code>done</code> and finds the refusal naming that section, and a second does the same with one
+      deferred section. After the section is ticked, the same write succeeds. Both refusal tests fail on the current
+      code; that is their negative control.</p>
 
     <h2 id="s7" data-reckon="section" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="">§7 — The landing beat ticks instead of collapsing</h2>
     <p><strong>Deliverable.</strong> The landing beat in <code>skills/reckon-build/SKILL.md</code>, its coordinator
@@ -146,26 +148,37 @@
       collapsed card is unchanged keeps its review. The display path in <code>reckon/mcp_views.py</code>, which reads
       landed cards for plans already collapsed, is left unchanged.</p>
 
+    <h2 id="s9">§9 — A deferred section blocks only the work that names it</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> Under §6 a plan holding a deferred section stays open, so a dependency that waits for the whole plan to reach <code>done</code> would wait for ever. The roadmap's readiness judges a dependency by the sections it needs. In <code>reckon/roadmap.py</code>, a whole-plan dependency on a plan (<code>plan-depends-on: other</code>) is satisfied when that plan is complete, or when none of its sections is left <code>implementable</code>: every section is done or deferred. A section dependency (<code>other#sN</code>) is satisfied when that section's declaration is <code>done</code>, as well as by the existing completed-plan and passed-gate routes, and never while the section is deferred or implementable. Today <code>_section_satisfied</code> reads no declaration at all, so a ticked section satisfies nothing until its plan is complete or its gates have passed.</p>
+<p><strong>Done when</strong> tests on a fixture project find the following, with plan A having §1 done, §2 deferred and status active. A plan depending on A is ready. A plan depending on <code>A#s1</code> is ready. A plan depending on <code>A#s2</code> is blocked, and the blocker names <code>A#s2</code>. A plan depending on a plan that still has an implementable section is blocked as today. The first two fail on the current code, which waits for A to be complete; that is their negative control.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="deferred-counts-as-ticked" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="deferred-counts-as-ticked" data-choice="deferred-blocks" data-by="Simon McIntosh" data-when="2026-10-07T22:36:52+00:00">
     <p class="r-dec-q">Does a deferred section count as ticked when a plan is set to done?</p>
     <p class="r-dec-ctx">A deferred section is one the author chose not to build in this plan. If it blocks done,
           authors are pushed to delete sections they mean to come back to.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="deferred-satisfies">Yes: done needs every section done or deferred</button>
-      <button class="r-opt" data-value="deferred-blocks">No: done needs every section done</button>
+      <button class="r-opt chosen" data-value="deferred-blocks">No: done needs every section done</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">A deferred section is not ticked, so a plan holding one stays open. The deferral blocks only the work that names that section: a whole-plan dependency clears once no section is left implementable, and a dependency on the deferred section itself stays blocked.</p>
     </div>
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tick-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build a-plan-is-done-when-every-section-is-ticked §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tick-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build a-plan-is-done-when-every-section-is-ticked §3" data-resolved-at="2026-10-07T22:37:37+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Derive the todo list, then show and enforce it</h4>
     <div class="r-fu-body"><p>§3 derives the list in the plan read. §4 renders it and §7 changes the landing beat;
       both read §3's field. §5 and §6 are independent controls, each measured by a census before it is closed.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-plan-is-done-when-every-section-is-ticked §3</pre>
+    <p class="r-fu-outcome">superseded: the deferred decision is locked and adds §9; the build order is restated in the next followup</p>
+    </article>
+<article class="r-fu" data-id="f-tick-002" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-08T06:00:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Derive, show and enforce the todo list</h4>
+    <div class="r-fu-body"><p>Wave one runs in parallel: §3 derives the list in the plan read, §6 adds the terminal guard in <code>reckon/_store.py</code>, and §9 makes roadmap readiness section-aware. Wave two: §5 adds the coverage control, after §6 releases <code>reckon/_store.py</code>; §4 renders the list and §7 changes the landing beat, both after §3. §8 stays deferred.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-plan-is-done-when-every-section-is-ticked §3</pre>
     </article>
 </section>
