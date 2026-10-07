@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-moves-to-a-new-node">
+  <meta name="plan-evidence-for" content="the-fleet-moves-to-a-new-node">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-title" content="The health sampler names a stall">
+  <meta name="plan-summary" content="The fleet health sampler gains two triggers the failed kill and the D-state storm crossed none of: the node-wide D-state count and the one-minute load, each with a threshold overridable by environment variable like the existing three. The process table it writes beside the samples now carries each process's thread count and wait channel, and lists every D-state process on the node whoever owns it. The reading paths and a one-pass mode are overridable so the behaviour is driven from fixtures, and the sampling interval and loop sleep are overridable so the one-snapshot-per-interval limit is exercised; gate 10 passed EXIT=0, negative control 4 failed EXIT=1.">
+  <meta name="plan-landed-commits" content="9c0e50f3b, 2a500dca8, c1bd6ec40">
+  <title>The health sampler names a stall &mdash; evidence | reckon">
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The health sampler names a stall &mdash; evidence</h1>
+    <section id="fleet-health-names-a-stall-landing">
+      <h2>Landing record</h2>
+      <ul>
+        <li><strong>What changed.</strong> <code>bin/fleet-health</code> gains two triggers: the node-wide D-state count (<code>FLEET_DSTATE_ALERT</code>, default 50) and the one-minute load (<code>FLEET_LOAD_ALERT</code>, default 56), both overridable by environment variable like the existing three. The process table it writes beside the samples now carries every process's thread count and wait channel, and appends every node-wide D-state process whoever owns it. The reading paths (<code>FLEET_PROC_DIR</code>, <code>FLEET_CGROUP_DIR</code>) and a <code>--once</code> mode make one pass drivable from fixtures. The snapshot stays rate-limited to one per ten minutes.</li>
+        <li><strong>Changed paths.</strong> <code>bin/fleet-health</code> (+58/&minus;19), <code>tests/test_fleet_health.py</code> (+300, new; +15/&minus;8 of it widening the rate-limit margins).</li>
+        <li><strong>Measure.</strong> <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider tests/test_fleet_health.py</code> &mdash; <code>10 passed</code>, <code>EXIT=0</code> (<code>gate-repair.log</code>). Ten cases: one pass per new trigger writes a snapshot carrying the thread-count and wait-channel columns and the D-state listing of a process another user owns; a pass below every threshold writes none; the three existing triggers fire as before; both new thresholds are shown honoured when overridden; two crossing passes spaced inside the snapshot interval write one table, and two spaced past it write two. Every case runs against a temporary <code>/proc</code>, a temporary cgroup directory, a temporary state directory and stub <code>ps</code>, so no case reads the real <code>/proc</code> or writes the real state directory.</li>
+        <li><strong>Negative control.</strong> Remove the D-state trigger from <code>fleet-health</code> &mdash; <code>4 failed, 6 passed</code>, <code>EXIT=1</code> (<code>negative-control.log</code>), the four D-state cases failing where the gate's head arm passes all ten. A second control returns the snapshot-bound case to its first margins and the intermittent failure to the case: with the answer reverted, twenty runs of the named case fail four times (<code>negative-control-repair.log</code>), where forty runs of the answered head fail none (<code>stability-repaired.log</code>).</li>
+        <li><strong>Repair.</strong> The case that drives two crossing passes inside the snapshot bound first set a three-second bound against two seconds of loop spacing. <code>fleet-health</code> rate-limits on the second-resolution <code>date +%s</code> and pays per-pass loop overhead, so a second could round the second pass across the bound and it wrote a table the case forbids &mdash; eleven failures in forty runs of the reviewed head (<code>repro-flake.log</code>). The margins are now kept far from the spacing: the within-bound case runs a sixty-second bound against one second of spacing, its mirror a one-second bound against three. Forty iterations of the pair pass with no failure. Ten cases, unchanged in count.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
