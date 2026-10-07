@@ -606,6 +606,47 @@ def test_delivered_report_already_carried_is_not_imported(harness) -> None:
     ).exists()
 
 
+def test_delivered_report_that_cannot_be_built_is_refused_and_recorded(harness) -> None:
+    module = _load_script()
+    config = harness["tmp"] / "config"
+    repo = harness["repo"]
+    # The report carries a RUBRIC line, so it is recognised as a review, but the
+    # sidecar names a rubric the parser does not know, so its record cannot be
+    # built: the dry run must list it as refused rather than drop it.
+    directory = _write_delivered_report(config, "r-bad-rubric")
+    sidecar_path = directory / "plan-review.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["rubric"] = "not-a-registered-rubric"
+    sidecar_path.write_text(json.dumps(sidecar, sort_keys=True), encoding="utf-8")
+
+    dry_code, dry_out = _run_cli(module, ["--project", PROJECT, "--root", str(repo)])
+    assert dry_code == 0
+    assert "delivered reports without a record: 0, refused: 1" in dry_out
+    assert "r-bad-rubric" in dry_out
+    assert "refused\t" in dry_out
+    assert "ValueError" in dry_out
+
+    argv = ["--project", PROJECT, "--root", str(repo), "--write"]
+    code, out = _run_cli(module, argv)
+    assert code == 0
+    assert "delivered imported: 0" in out
+    assert "delivered refused: 1" in out
+    # The reason is recorded on the delivery's own sidecar, not only printed.
+    recorded = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    assert "rubric" in recorded["store_error"]
+    # The refused report is not committed.
+    assert not (
+        repo
+        / "docs"
+        / "state"
+        / PROJECT
+        / "reviews"
+        / "plan"
+        / REPORT_SLUG
+        / "r-bad-rubric.json"
+    ).exists()
+
+
 def test_write_imports_a_filename_named_run_review(harness) -> None:
     module = _load_script()
     store = harness["store"]

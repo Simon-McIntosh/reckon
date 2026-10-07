@@ -438,20 +438,31 @@ def _carried_reports(
     return run_ids, triples
 
 
+def _report_is_review(report_path: Path) -> bool:
+    """Whether a report file carries a RUBRIC or FINDING line, so it is a review."""
+    try:
+        text = report_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    return plan_review.report_carries_review_lines(text)
+
+
 def _delivered_report_candidates(
     project: str, committed_root: Path
-) -> list[dict[str, Any]]:
-    """Delivered reports no record carries, as sidecar-and-record pairs.
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Delivered reports no record carries, split into importable and refused.
 
-    A delivered report is a report directory whose ``report.md`` carries a
-    ``RUBRIC`` or ``FINDING`` line; a directory that was composed and never
-    delivered, or whose report carries neither line, is not a review and is
-    neither returned nor counted. A report a record already carries — by review
-    run id or by plan, fingerprint and rubric — is skipped, so a second pass
-    imports zero.
+    Returns ``(candidates, refused)``. Each candidate is a sidecar-and-record
+    pair; each refused entry is a sidecar and the reason its record could not be
+    built, so a report that is a review but cannot be parsed is listed and
+    counted rather than silently dropped. A report a record already carries — by
+    review run id or by plan, fingerprint and rubric — is skipped, so a second
+    pass imports zero. A directory whose report carries no ``RUBRIC`` or
+    ``FINDING`` line is not a review and is neither returned nor counted.
     """
     run_ids, triples = _carried_reports(project, committed_root)
     candidates: list[dict[str, Any]] = []
+    refused: list[dict[str, Any]] = []
     for slug in _delivered_plan_slugs(project):
         for sidecar in plan_review.delivered_reports(project, slug):
             run_id = str(sidecar.get("review_run_id") or "").strip()
@@ -462,43 +473,66 @@ def _delivered_report_candidates(
             )
             if run_id in run_ids or triple in triples:
                 continue
+            if not _report_is_review(Path(str(sidecar.get("report_path") or ""))):
+                continue
             try:
                 record = plan_review.delivered_report_record(sidecar)
-            except (OSError, ValueError):
+            except (OSError, ValueError) as exc:
+                refused.append(
+                    {"sidecar": sidecar, "reason": f"{type(exc).__name__}: {exc}"}
+                )
                 continue
             candidates.append({"sidecar": sidecar, "record": record})
-    return candidates
+    return candidates, refused
 
 
-def _print_delivered(candidates: list[dict[str, Any]]) -> None:
-    """List each delivered report no record carries, with a count line."""
-    print(f"delivered reports without a record: {len(candidates)}")
+def _print_delivered(
+    candidates: list[dict[str, Any]], refused: list[dict[str, Any]]
+) -> None:
+    """List each unrecorded and each refused delivered report, with a count line."""
+    print(
+        f"delivered reports without a record: {len(candidates)}, "
+        f"refused: {len(refused)}"
+    )
     for item in candidates:
         report_path = str(item["sidecar"].get("report_path") or "")
         print(f"  delivered\t{report_path}")
+    for item in refused:
+        report_path = str(item["sidecar"].get("report_path") or "")
+        print(f"  refused\t{report_path}\t{item['reason']}")
 
 
 def _import_delivered(
     project: str,
     candidates: list[dict[str, Any]],
+    refused: list[dict[str, Any]],
     root: str | None,
 ) -> dict[str, int]:
-    """Commit each delivered report no record carries through the shared writer."""
+    """Commit each unrecorded delivered report; record each refused report's reason.
+
+    A report the store commits has any stale ``store_error`` cleared from its
+    sidecar, so the file never contradicts the record beside it; a report whose
+    record could not be built carries the reason under ``store_error`` on its
+    sidecar, the same way the staging store records a refusal.
+    """
+    for item in refused:
+        plan_review._record_store_error(item["sidecar"], item["reason"])
     imported = 0
-    refused: list[str] = []
+    refused_store: list[str] = []
     for item in candidates:
         record = item["record"]
         try:
             review_store.store_committed_review(record, project=project, root=root)
         except (OSError, ValueError) as exc:
-            refused.append(
-                f"{record.get('review_run_id')}: {type(exc).__name__}: {exc}"
-            )
+            reason = f"{type(exc).__name__}: {exc}"
+            refused_store.append(f"{record.get('review_run_id')}: {reason}")
+            plan_review._record_store_error(item["sidecar"], reason)
             continue
+        plan_review._clear_store_error(item["sidecar"])
         imported += 1
-    for message in refused:
+    for message in refused_store:
         print(f"refused: {message}")
-    return {"imported": imported, "refused": len(refused)}
+    return {"imported": imported, "refused": len(refused) + len(refused_store)}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -513,8 +547,10 @@ def main(argv: list[str] | None = None) -> int:
     plan = _plan(args.project, store_root, committed_root)
     _print_inventory(args.project, store_root, plan)
 
-    delivered = _delivered_report_candidates(args.project, committed_root)
-    _print_delivered(delivered)
+    delivered, delivered_refused = _delivered_report_candidates(
+        args.project, committed_root
+    )
+    _print_delivered(delivered, delivered_refused)
 
     if not args.write:
         print("dry run: nothing written")
@@ -532,8 +568,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"imported: {counts['imported']}")
     print(f"already present: {counts['already_present']}")
     print(f"refused: {counts['refused']}")
-    delivered_counts = _import_delivered(args.project, delivered, args.root)
+    delivered_counts = _import_delivered(
+        args.project, delivered, delivered_refused, args.root
+    )
     print(f"delivered imported: {delivered_counts['imported']}")
+    print(f"delivered refused: {delivered_counts['refused']}")
     return 0
 
 
