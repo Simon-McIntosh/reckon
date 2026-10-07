@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="352">
-<meta name="plan-modified" content="2026-10-05">
+<meta name="plan-version" content="353">
+<meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
   <main class="plan-doc">
@@ -2383,6 +2383,9 @@
 </div>
 <div class="r-comment" data-section="s62" data-id="c-20261005-s62-scope" data-who="s22-coord" data-when="2026-10-05T01:18:30Z">
     <div class="r-comment-body"><p><strong>Scope settled by the plan review of 2026-10-05 (duplicate_owner).</strong> <code>fleet_supervisor.config_directory</code> (<code>reckon/crew/fleet_supervisor.py</code>, about line 415) resolves the same <code>XDG_CONFIG_HOME</code>-or-<code>~/.config</code> base. The moved function is therefore the XDG config base, living in a module that imports nothing from <code>reckon.crew</code>. <code>systemd_user_dir</code> appends <code>systemd/user</code> to it and <code>config_directory</code> appends <code>fleet</code>, so one resolution serves both consumers while each keeps its own subdirectory. An earlier review declined folding the fleet directory in, as a different consumer; the consumers do stay distinct, and only the base resolution is shared.</p></div>
+</div>
+<div class="r-comment" data-section="s62" data-id="c-run-r-20261005T011253460835-the-systemd-resolver-lives-below-crew" data-who="reckon-build" data-when="2026-10-05T01:57:49.118Z">
+    <div class="r-comment-body"><p>the XDG config base resolves in reckon/service.py as xdg_config_home; service.systemd_user_dir appends systemd/user, fleet_supervisor.config_directory appends fleet, paid_lanes re-exports the resolver instead of keeping a copy, and the landing record is the fragment docs/evidence/fragments/crew-runtime-positive-controls/the-systemd-resolver-lives-below-crew.html committed with the work.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">

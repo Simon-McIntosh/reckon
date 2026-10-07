@@ -1,0 +1,500 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "1f4205dd3184150070a7dfe9d96148c9f3e647ac",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 18756251,
+      "input_tokens_cumulative": 18756251,
+      "output_tokens": 133464,
+      "output_tokens_cumulative": 133464,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 203,
+    "files": 5,
+    "removed": 31
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 391,
+        "name": "unknown_budget",
+        "path": "reckon/_backends.py"
+      },
+      "run_function": {
+        "line": 294,
+        "name": "_unknown_window",
+        "path": "reckon/crew/paid_lanes.py"
+      },
+      "window_line": 299
+    },
+    {
+      "existing_function": {
+        "line": 408,
+        "name": "unknown_throughput",
+        "path": "reckon/_backends.py"
+      },
+      "run_function": {
+        "line": 294,
+        "name": "_unknown_window",
+        "path": "reckon/crew/paid_lanes.py"
+      },
+      "window_line": 299
+    },
+    {
+      "existing_function": {
+        "line": 1850,
+        "name": "_clock",
+        "path": "reckon/budget.py"
+      },
+      "run_function": {
+        "line": 294,
+        "name": "_unknown_window",
+        "path": "reckon/crew/paid_lanes.py"
+      },
+      "window_line": 296
+    },
+    {
+      "existing_function": {
+        "line": 1926,
+        "name": "_unknown_allowance",
+        "path": "reckon/budget.py"
+      },
+      "run_function": {
+        "line": 294,
+        "name": "_unknown_window",
+        "path": "reckon/crew/paid_lanes.py"
+      },
+      "window_line": 299
+    },
+    {
+      "existing_function": {
+        "line": 2389,
+        "name": "_group_bar",
+        "path": "reckon/budget.py"
+      },
+      "run_function": {
+        "line": 294,
+        "name": "_unknown_window",
+        "path": "reckon/crew/paid_lanes.py"
+      },
+      "window_line": 298
+    },
+    {
+      "existing_function": {
+        "line": 10902,
+        "name": "_spend_facts",
+        "path": "reckon/crew/recovery.py"
+      },
+      "run_function": {
+        "line": 294,
+        "name": "_unknown_window",
+        "path": "reckon/crew/paid_lanes.py"
+      },
+      "window_line": 299
+    },
+    {
+      "existing_function": {
+        "line": 161,
+        "name": "_run_cumulative_input",
+        "path": "reckon/crew/carryover_census.py"
+      },
+      "run_function": {
+        "line": 637,
+        "name": "_codex_rollout_candidates",
+        "path": "reckon/crew/paid_lanes.py"
+      },
+      "window_line": 689
+    },
+    {
+      "existing_function": {
+        "line": 342,
+        "name": "read_rollout_receipt",
+        "path": "reckon/crew/rollout.py"
+      },
+      "run_function": {
+        "line": 637,
+        "name": "_codex_rollout_candidates",
+        "path": "reckon/crew/paid_lanes.py"
+      },
+      "window_line": 689
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "3383443f774938f2d979e852779c4dc842d6d80a",
+    "e76c723315782fd7866741c709437cdc002e8dcc",
+    "99d84d03e74cbd208e9fa22fffcbcbb9b86db926"
+  ],
+  "completed_at": "2026-10-05T01:57:49.118Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-05T01:13:18Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_lane_carries_the_dispatch_environment.py tests/test_fleet_supervisor.py tests/test_fleet_supervisor_runs_declared_services.py tests/test_headroom_publishes_real_readings.py tests/test_one_systemd_unit_resolver_and_installer.py tests/test_paid_lanes_codex_window.py tests/test_paid_lanes_document.py tests/test_paid_lanes_timer.py tests/test_picker_dispatch_pace.py tests/test_preflight_reads_the_published_document.py tests/test_service.py tests/test_service_unit.py tests/test_stop_hook_reads_the_snapshot.py tests/test_the_systemd_resolver_lives_below_crew.py tests/test_timestamp_callers_batch_a.py tests/test_unmanaged_producer_keeps_a_log.py tests/test_watch_seat_across_hosts.py tests/test_watcher_arming_fallback.py tests/test_watcher_unit_restart.py tests/test_writer_callers_first_wave.py tests/test_writer_callers_second_wave.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T011253460835-the-systemd-resolver-lives-below-crew/gate-head.log"
+  },
+  "impl_move": {
+    "at_complete": 1.0,
+    "at_dispatch": 1.0,
+    "plan": "crew-runtime-positive-controls",
+    "reason": "crew-runtime-positive-controls already reads impl 1.0 at dispatch; this node is a refactor of an already-landed section (the XDG resolver moves below crew), landed by s25-picker for the unreachable s22-coord with the lead's approval",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-05T02:12:55.032616+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-05T01:12:55Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 15,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 1,
+    "headroom": 15,
+    "mean_context": 120000,
+    "observed_at": "2026-10-05T01:12:40Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-05T01:57:49.118Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T011253460835-the-systemd-resolver-lives-below-crew/manifest.md",
+  "member": "disposable-r-20261005T011253460835-the-systemd-resolver-lives-below-crew",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_the_systemd_resolver_lives_below_crew.py::test_config_directory_reads_the_base_from_the_service_module",
+      "tests/test_the_systemd_resolver_lives_below_crew.py::test_importing_the_service_module_loads_no_crew_module",
+      "tests/test_the_systemd_resolver_lives_below_crew.py::test_the_probe_sees_crew_modules_when_they_are_loaded",
+      "tests/test_the_systemd_resolver_lives_below_crew.py::test_the_xdg_base_serves_both_consumers",
+      "tests/test_the_systemd_resolver_lives_below_crew.py::test_without_the_variable_the_base_is_the_home_config"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_the_systemd_resolver_lives_below_crew.py::test_config_directory_reads_the_base_from_the_service_module",
+      "tests/test_the_systemd_resolver_lives_below_crew.py::test_importing_the_service_module_loads_no_crew_module",
+      "tests/test_the_systemd_resolver_lives_below_crew.py::test_the_probe_sees_crew_modules_when_they_are_loaded",
+      "tests/test_the_systemd_resolver_lives_below_crew.py::test_the_xdg_base_serves_both_consumers",
+      "tests/test_the_systemd_resolver_lives_below_crew.py::test_without_the_variable_the_base_is_the_home_config"
+    ],
+    "declaration": "Restoring the crew import in reckon/service.py at head reddens the fresh-interpreter assertion",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T011253460835-the-systemd-resolver-lives-below-crew/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T011253460835-the-systemd-resolver-lives-below-crew/negative-control.log",
+    "test_paths": [
+      "tests/test_the_systemd_resolver_lives_below_crew.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "the-systemd-resolver-lives-below-crew",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 902,
+          "cached_input_tokens": 709371,
+          "input_tokens": 710275,
+          "output_tokens": 1494,
+          "reasoning_output_tokens": 443,
+          "total_tokens": 711769,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "One function in a module outside reckon.crew resolves the XDG config base; systemd_user_dir and fleet_supervisor.config_directory both use it with no local copy left; a test imports reckon.service in a fresh interpreter and asserts no reckon.crew module is loaded; the population of test files importing reckon.service, reckon.crew.paid_lanes or reckon.crew.fleet_supervisor adds no failure against base",
+    "estimated_hours": null,
+    "goal": "Move the XDG config base resolver into a module that imports nothing from reckon.crew, with systemd_user_dir and fleet_supervisor.config_directory both building on it, as section 62 and its scope comment state",
+    "id": "the-systemd-resolver-lives-below-crew",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-05T01:12:55Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 15,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 1,
+      "headroom": 15,
+      "mean_context": 120000,
+      "observed_at": "2026-10-05T01:12:40Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T011253460835-the-systemd-resolver-lives-below-crew/manifest.md",
+    "negative_control": "Restoring the crew import in reckon/service.py at head reddens the fresh-interpreter assertion",
+    "plan": "crew-runtime-positive-controls",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§62",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/service.py",
+      "reckon/crew/paid_lanes.py",
+      "reckon/crew/fleet_supervisor.py",
+      "tests/test_the_systemd_resolver_lives_below_crew.py",
+      "docs/evidence/fragments/crew-runtime-positive-controls/the-systemd-resolver-lives-below-crew.html",
+      "docs/figures/crew-runtime-positive-controls/the-systemd-resolver-lives-below-crew"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 2602830.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "the-systemd-resolver-lives-below-crew",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-05T01:13:00.997430+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5005.516,
+    "model": null,
+    "offered": [],
+    "probabilities": {}
+  },
+  "plan": "crew-runtime-positive-controls",
+  "plan_impl_at_dispatch": 1.0,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "99d84d03e74cbd208e9fa22fffcbcbb9b86db926",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "1f4205dd3184150070a7dfe9d96148c9f3e647ac",
+    "reviewed_head_sha": "99d84d03e74cbd208e9fa22fffcbcbb9b86db926",
+    "scores": {
+      "durability": 18,
+      "evidence": 18,
+      "fit": 16,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 91
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261005T011253460835-the-systemd-resolver-lives-below-crew",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§62",
+  "session": "s22-coord",
+  "session_harness": "claude",
+  "session_id": "ea017dbc-7d03-4f0d-a2d4-3617b29115af",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 18953881,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 2662.157,
+    "generated_tokens": 143326,
+    "generation_seconds": 1936.231,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 85.3,
+    "machine_seconds": 725.926,
+    "peak_input_tokens": 196330,
+    "tokens_per_second": 74.02,
+    "wall_tokens_per_second": 53.84
+  },
+  "time_budget": "60m",
+  "tool_steps": 165.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 2671,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-05T01:57:53Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-05T01:13:22Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261005T011253460835-the-systemd-resolver-lives-below-crew",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 33950,
+    "worker_pid": 3447166
+  },
+  "worker_seconds": 2647,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
