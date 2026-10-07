@@ -291,6 +291,10 @@ def normalize_identity(
     if not (lane and key):
         if model:
             model_lane, key = resolve_name(str(model), lane=lane)
+            # A model-specific name preserves its historical key even when
+            # the recorded model id has retired from the catalogue.
+            if key is None and name != resolved_lane:
+                key = resolved_key
             lane = lane or model_lane
         else:
             key = resolved_key

@@ -342,3 +342,12 @@ def test_mcp_runs_surface_reports_the_resolved_pair(tmp_path):
     assert result["count"] == 2
     assert all(pair(row) == ("claude", "opus") for row in result["rows"])
     assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize(("name", "expected"), ALIASES.items())
+def test_legacy_alias_survives_an_uncatalogued_historical_model(name, expected):
+    row = {
+        "backend": name,
+        "agent": {"model": "historical-model-id-not-in-the-catalogue"},
+    }
+    assert pair(ledger.normalize_identity(row)) == expected
