@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-keeps-the-plan-live">
+  <meta name="plan-title" content="A landing's commits write leaves the design review standing">
+  <meta name="plan-summary" content="commits joins PLAN_METADATA_SCALARS in reckon/crew/plan_review.py, so the landing beat's provenance write no longer moves the _document digest or any section digest and a stored review keeps covering; a new test shows the same write beside an authored prose edit still reports the section uncovered.">
+  <meta name="plan-evidence-for" content="a-landing-keeps-the-plan-live">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>A landing's commits write leaves the design review standing | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A landing's commits write leaves the design review standing</h1>
+
+    <section id="alkpl-commits-earns-no-review-anchor">
+      <h2>What changed</h2>
+      <p><code>commits</code> joins <code>PLAN_METADATA_SCALARS</code> in
+        <code>reckon/crew/plan_review.py</code>. It is a parsed top-level state key
+        that the landing beat sets on every landing, recording which commits landed
+        the plan — provenance rather than the design a review reads. Left out of the
+        exclusion set it moved the document unit's digest, so every landing made the
+        next dispatch refuse with <code>plan-review-missing</code> and the uncovered
+        unit <code>_document</code>. Sweeping the parsed state confirmed that setting
+        <code>commits</code> moves that key alone, so no derived key needed adding to
+        <code>PLAN_DERIVED_SCALARS</code>.</p>
+      <p>Gate: <code>tests/test_bookkeeping_earns_no_review.py</code> —
+        9 passed, 0 failed, EXIT=0. The new
+        <code>test_a_landing_commits_leaves_every_unit_covered_but_a_prose_edit_does_not</code>
+        sets <code>commits</code> on a plan with a stored review and asserts the
+        <code>_document</code> digest and every section digest are unchanged, the
+        fingerprint holds, and <code>review_coverage</code> still covers every unit;
+        the same test's authored prose edit beside the commits write reports the
+        changed section (<code>b</code>) uncovered. <code>plan-commits</code> also
+        joins the metadata-scalar sweep over every live plan.</p>
+      <p>Negative control (removing <code>commits</code> from
+        <code>PLAN_METADATA_SCALARS</code> in a scratch copy) — 1 failed
+        (<code>test_a_landing_commits_leaves_every_unit_covered_but_a_prose_edit_does_not</code>),
+        8 deselected, EXIT=1.</p>
+    </section>
+  </main>
+</body>
+</html>
