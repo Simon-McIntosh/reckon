@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.87">
-<meta name="plan-version" content="61">
+<meta name="plan-impl" content="0.79">
+<meta name="plan-version" content="62">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -77,26 +77,12 @@
   <p class="landed-summary">Landed in six reviewed nodes plus a hotfix (<code>26e6502aa</code> … <code>ca2c52f84</code>). A review run's promotion commits every stored review round beside its ledger row, the readers read the committed tree first, and <code>audit-doc</code> resolves <code>review:PROJECT/REVIEW-ID</code>. The whole suite added 0 failures. Follow-on: derive legacy ids for unnamed rounds, queued with §5. <a href="s3">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
     <h2 id="s4">§4 — Reviews are kept after their work lands</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> A lifecycle derived in Python from the record and the plan, never stored on
-      the record: <em>open</em> (a blocking finding is unanswered), <em>answered</em>, <em>superseded</em> (a
-      later full review of the same subject exists), and <em>landed</em> (the reviewed section has collapsed,
-      the plan has shipped, or the reviewed run is promoted). The gate, the obligations view and the SPA's
-      default view read only the hot set, open and answered but not landed. The look-back views read the
-      archive: finding-type recurrence, declined recurrence across plans (<code>declined_recurrence</code>),
-      and how often a later review contradicts an earlier one. One of them replaces the throwaway scripts behind
-      §1's figures (<code>edit_size.py</code> and <code>section_change.py</code>): the existing
-      <code>crew(view="plan-review")</code> gains a per-day summary reporting, per plan, the reviews run, the
-      authored-prose change behind each re-review and how often §22's threshold fired. No view is added, because
-      that view already returns a plan's stored reviews and the summary is a fold over the same records. It reads each record's reviewed bytes from the object store, so re-measuring
-      the threshold is a query rather than a script someone has to remember.</p>
-    <p>What is discarded is what the record already distils: the raw report text and a review run's scratch,
-      after <code>review.raw_report_retention_days</code> (default 30) on the host.</p>
-    <p><strong>Done when</strong> each lifecycle state is derived in a test from fixture records; a plan
-      shipping moves its reviews to landed without any record being rewritten; <code>declined_recurrence</code>
-      reads the committed archive; the per-day summary reproduces §1's per-section figure for 6 October from
-      the imported records; and the raw-report retention runs on the host with its removals printed.</p>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Every stored review's lifecycle is derived, never stored; the dispatch gate and the sub-floor obligation read only open or answered reviews; the plan-review view summarises a day per plan; raw plan-review reports are pruned after 30 days once their record is committed (0 candidates today). <a href="s4">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
@@ -120,6 +106,10 @@
     <h2 id="s8">§8 — Every delivered plan review becomes a record</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> Measured on 2026-10-07 against each project's <code>origin/main</code>, many delivered plan reviews have no committed record. A delivered review is a report directory carrying a <code>report.md</code> with rubric and finding lines. It counts as recorded when a record matches it by review run id, or by plan, fingerprint and rubric. Unrecorded: reckon 240 of 390, nova 49 of 139, imas-ambix 53 of 190, imas-codex 39 of 172, imas-ink 0 of 18. There are two causes. First, the staging path is <code>plan-&lt;slug&gt;.v&lt;N&gt;.json</code> (<code>plan_review_path</code>), with an <code>.at-&lt;blob8&gt;</code> sibling only when the plan bytes differ. Repeated reviews of the same bytes at one version therefore share one file. The three delivered design reviews of <code>a-brief-should-not-cost-what-it-names</code> at version 2 (4, 5 and 6 October) left one record. Second, <code>store_delivered_reviews</code> runs only when the gate or a read reaches the plan, so a plan nobody builds keeps its reviews as report files. §5's import read the host store, so neither kind reached the committed tree. Nothing is lost yet: the reports stay on the host, and raw-report retention withholds any report that has no committed record.</p><p><strong>Deliverable.</strong> Two changes, as two nodes. (1) A delivered plan review is stored under a path its own review run owns, so two reviews of one plan version never share a staging file. The new name stays inside the <code>plan-&lt;slug&gt;.v&lt;N&gt;.at-*.json</code> family that <code>plan_review._candidate_paths</code> already globs, so the version-keyed readers see every round without a reader change. The change belongs in <code>plan_review_path</code> and <code>store_plan_review</code>, and adds no second store. (2) <code>scripts/import_host_reviews.py</code> also imports every delivered report that no record carries. It parses the report through the parser <code>_store_delivered_report</code> uses and commits it through <code>review.store_committed_review</code>, keyed by the report directory's run id. The import across projects commits into their repositories, as §5's did.</p><p><strong>Done when, node (1):</strong> a test stores two delivered reviews of one plan version with identical plan bytes, reads both back by review run id, and finds both through <code>_candidate_paths</code>. The negative control writes the second review to the version path, and that test turns red. <strong>Done when, node (2):</strong> the import's dry run lists, per project, the delivered reports no record carries; after the import is merged, that count is zero in every project when measured against <code>origin</code>; a second pass imports zero; and a test with a delivered report and no stored record fails when the import skips report directories. The census of delivered reports without a record is a search the done-when runs, not a figure copied from this section.</p>
+
+    <h2 id="s9">§9 — One owner per mechanism, and the recurrence §2&#x27;s re-measure needs</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> Four small nodes carried from the reviews of §4 and §5, each with its own write scope.</p><ul><li><strong>(a)</strong> <code>reckon.velocity.read_blobs</code> gains an entry that reads bare object names. <code>plan_review._read_reviewed_blob_texts</code> then calls it, so the batched <code>cat-file</code> protocol has one owner.</li><li><strong>(b)</strong> <code>review._run_record_times_found</code> returns only what its callers read, and its docstring states the current rule: a record whose times resolve from no source is committed as <code>unknown</code>.</li><li><strong>(c)</strong> A test makes the content-review hot guard in <code>require_plan_reviewed</code> falsifiable. Today only the design-review branch is exercised.</li><li><strong>(d)</strong> A finding-type recurrence fold in <code>plan_review.py</code>, carried in the plan-review view's day summary. For each finding type in a window, it gives the share of findings that follow an earlier review of the same plan raising the same type. That is the figure §2's one-week re-measure compares against 41.9%.</li></ul><p><strong>Done when</strong> (a) the fork is gone, and a test shows <code>read_blobs</code> returning a bare blob's bytes and <code>None</code> for a missing one; (b) no caller-unread value remains, checked by a search the node runs; (c) the new test fails when the content branch's hot guard is removed; and (d) a fixture with repeated and fresh finding types gives the expected share per type, and the real figure for 7–13 October is recorded beside 41.9% once that week has passed.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -168,15 +158,21 @@
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §5</pre>
     <p class="r-fu-outcome">All six projects are imported and merged, nova's scratch is quarantined, the store writers refuse a non-record, and promotion derives a legacy id for an unnamed round. Section 5 is closed. Section 4's lifecycle and raw-report retention have landed; the hot-set gate and the per-day summary remain.</p>
     </article>
-<article class="r-fu" data-id="f-erkc-005" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-erkc-005" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="2026-10-07T09:24:14+00:00" data-resolved-by="9cf43820">
     <h4 class="r-fu-title">Finish §4: the hot-set gate, the per-day summary, and one store cleanup</h4>
     <div class="r-fu-body"><p>The per-day summary (<code>plan-review-view-summarises-a-day</code>) is in flight. The hot-set gate node is briefed and waits for a local-lane slot. One follow-on from the review of <code>the-review-store-keeps-no-unreachable-refusal</code> remains: <code>_run_record_times_found</code> still returns a <code>found</code> flag that nothing reads, under a docstring describing the removed refusal.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §4</pre>
+    <p class="r-fu-outcome">Section 4 is closed: the lifecycle, the hot-set readers, the per-day summary and raw-report retention are on main. The store cleanup and the other review follow-ons moved to section 9.</p>
     </article>
 <article class="r-fu" data-id="f-erkc-006" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build §8: key the staging file by review run, then import every delivered report</h4>
     <div class="r-fu-body"><p>Node (1) changes <code>plan_review_path</code> and <code>store_plan_review</code>. Node (2) extends <code>scripts/import_host_reviews.py</code> and runs the import across projects. The store gate <code>g-erkc-1</code> has already passed and its precondition holds for §8.</p></div>
     <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §8</pre>
+    </article>
+<article class="r-fu" data-id="f-erkc-007" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="9cf43820" data-written-at="2026-10-07" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §9&#x27;s four follow-on nodes</h4>
+    <div class="r-fu-body"><p>Nodes (a) and (d) both write <code>plan_review.py</code>, so they run in sequence after §8's node (1), which also writes that file. Node (d)'s real figure waits until 13 October.</p></div>
+    <pre class="r-fu-prompt">/reckon-build every-review-is-kept-as-a-committed-record §9</pre>
     </article>
 </section>
 
@@ -340,7 +336,7 @@
     <div class="r-comment-body"><p>the dispatch gate and the sub-floor obligation now count a finding only from a review whose derived lifecycle is open or answered, so a landed design review's unanswered finding no longer refuses a covered build and a landed or superseded run review raises no duty</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T083542773341-review-of-review-gate-reads-the-hot-set" data-who="reckon-build" data-when="2026-10-07T09:00:16.826Z">
-    <div class="r-comment-body"><p>stored the independent review of run r-20261007T073745130487-review-gate-reads-the-hot-set (reckon:every-review-is-kept-as-a-... §4, the hot-set gate node) as a parsed six-dimension record at both fenced paths: goal_fidelity 20, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 20 (total 115), reviewed_base_sha 8d0e7cb4a289a8566fa642ce3e589ad3a422ed19 and reviewed_head_sha 62c9be1392d413a6f76290f124063767505cbe27, added_failure_count unmeasured (null) with added_failure_ids [] because the reviewed manifest arms neither baseline_suite nor after_suite; three follow-on findings (the content-review is_hot guard is held by no test; obligations reaches private recovery._promoted_run_ids; the reviewed manifest&#x27;s ruff baseline figure is not reproducible) and one operational follow-on (the reviewed node&#x27;s self-reported /var/tmp cleanup incident), no blocking finding.</p></div>
+    <div class="r-comment-body"><p>stored the independent review of run r-20261007T073745130487-review-gate-reads-the-hot-set (reckon:every-review-is-kept-as-a-... §4, the hot-set gate node) as a parsed six-dimension record at both fenced paths: goal_fidelity 20, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 20 (total 115), reviewed_base_sha 8d0e7cb4a289a8566fa642ce3e589ad3a422ed19 and reviewed_head_sha 62c9be1392d413a6f76290f124063767505cbe27, added_failure_count unmeasured (null) with added_failure_ids [] because the reviewed manifest arms neither baseline_suite nor after_suite; three follow-on findings (the content-review is_hot guard is held by no test; obligations reaches private recovery._promoted_run_ids; the reviewed manifest's ruff baseline figure is not reproducible) and one operational follow-on (the reviewed node's self-reported /var/tmp cleanup incident), no blocking finding.</p></div>
 </div>
 </section>
 </main>
