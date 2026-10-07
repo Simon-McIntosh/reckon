@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate arm, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5824 require_plan_reviewed"
+  ],
+  "completed_at": "2026-10-07T13:43:08.114Z",
+  "dispatched_at": "2026-10-07T13:26:39Z",
+  "findings": [
+    {
+      "file": "tests/test_review_gate_content_branch_reads_the_hot_set.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest records no baseline_suite/after_suite gate arms, so the store's added-failure derivation reads unmeasured (null) rather than a measured zero; recording the two arms would let a later reader derive the delta this one-arm evidence cannot."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T130421418854-the-content-review-hot-guard-is-falsifiable/logs/head-gate.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's revision header names the reviewed base 1355064481 while the change landed at head 9aeff9c3, so a reader keying the evidence to the recorded revision sees the base rather than the measured head; the tree field and the re-run resolve the ambiguity but the header line alone does not."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the single commit 9aeff9c3 against base 1355064481; it adds one test module (128 lines, two cases reusing the sibling module's gate_project fixture and _node/_plan helpers) and one evidence fragment, and changes no production file.",
+    "done_when": "the done-when's gate is tests/test_review_gate_content_branch_reads_the_hot_set.py with tests/test_review_gate_reads_the_hot_set.py and tests/test_plan_review_gate.py; the manifest records the head arm (31 passed, EXIT=0) and a negative control (1 failed, 30 passed, EXIT=1); I re-ran both and reproduced them.",
+    "goal": "the node's goal is to make the content-review hot guard in require_plan_reviewed falsifiable, since only the design branch was exercised; tests/test_review_gate_content_branch_reads_the_hot_set.py adds an admit case (a landed content review whose unanswered finding is archive) and a refuse case (the same review left hot), and the admit case reddens when the guard is removed.",
+    "manifest": "read; status complete, commit 9aeff9c3, tests line with 31 passed EXIT=0, test_logs naming logs/head-gate.log and logs/negative-control.log, negative_control_log naming the red log (EXIT=1); baseline_suite and after_suite are both null so the added-failure count is unmeasured.",
+    "write_paths": "the manifest declares the new test file, the evidence fragment and a figures directory; git diff --stat 1355064481 9aeff9c3 lists exactly tests/test_review_gate_content_branch_reads_the_hot_set.py and the fragment, both inside the declared scope, and the figures directory was not created."
+  },
+  "justifications": {
+    "durability": "removing the content branch's is_hot guard turns test_the_gate_admits_a_landed_content_review_with_an_unanswered_finding red (reviewer-negative-control.log), and the admit case asserts resolution.validation.ok against the gate's own output rather than a value it passed in; it is 19 rather than 20 because the mutation removes the whole guard rather than one polarity of it, and the store's added-failure derivation for this run is unmeasured.",
+    "evidence": "I re-ran the declared gate at 9aeff9c3 (reviewer-head-gate.log, 31 passed, EXIT=0) and reproduced the negative control (reviewer-negative-control.log, 1 failed 30 passed EXIT=1, naming the admit case), but the reviewed manifest records no baseline_suite/after_suite arms so the added-failure count is unmeasured, and logs/head-gate.log:2 names the reviewed base 1355064481 rather than the measured head 9aeff9c3.",
+    "fit": "the added names describe mechanism (test_the_gate_admits_a_landed_content_review_with_an_unanswered_finding, _store_content_review, CONTENT_FINDING) with no version, plan, sprint or ticket identifier and no attribution, and the module docstring states the invariant rather than the change history.",
+    "goal_fidelity": "require_plan_reviewed's content branch (reckon/crew/routing.py:2823-2830) is now pinned from both sides by tests/test_review_gate_content_branch_reads_the_hot_set.py:92 and :108, and the admit case fails when the guard is removed (reviewer-negative-control.log: 1 failed, 30 passed, EXIT=1).",
+    "reuse": "the new module imports the sibling's gate_project fixture and _node/_plan helpers (tests/test_review_gate_content_branch_reads_the_hot_set.py:22-31) rather than copying them, and it adds no production definition, so it forks no capability the repository already owns.",
+    "scope_discipline": "git diff --stat 1355064481 9aeff9c3 lists exactly tests/test_review_gate_content_branch_reads_the_hot_set.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/the-content-review-hot-guard-is-falsifiable.html, both inside the manifest's declared write paths, with no production file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the content-review hot guard in require_plan_reviewed falsifiable, since only the design branch was exercised; tests/test_review_gate_content_branch_reads_the_hot_set.py adds an admit case (a landed content review whose unanswered finding is archive) and a refuse case (the same review left hot), and the admit case reddens when the guard is removed.\nVERDICT done_when: the done-when's gate is tests/test_review_gate_content_branch_reads_the_hot_set.py with tests/test_review_gate_reads_the_hot_set.py and tests/test_plan_review_gate.py; the manifest records the head arm (31 passed, EXIT=0) and a negative control (1 failed, 30 passed, EXIT=1); I re-ran both and reproduced them.\nVERDICT write_paths: the manifest declares the new test file, the evidence fragment and a figures directory; git diff --stat 1355064481 9aeff9c3 lists exactly tests/test_review_gate_content_branch_reads_the_hot_set.py and the fragment, both inside the declared scope, and the figures directory was not created.\nVERDICT manifest: read; status complete, commit 9aeff9c3, tests line with 31 passed EXIT=0, test_logs naming logs/head-gate.log and logs/negative-control.log, negative_control_log naming the red log (EXIT=1); baseline_suite and after_suite are both null so the added-failure count is unmeasured.\nVERDICT diff: read the single commit 9aeff9c3 against base 1355064481; it adds one test module (128 lines, two cases reusing the sibling module's gate_project fixture and _node/_plan helpers) and one evidence fragment, and changes no production file.\nCALL_SITES: reckon/crew/dispatch.py:5824 require_plan_reviewed\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: require_plan_reviewed's content branch (reckon/crew/routing.py:2823-2830) is now pinned from both sides by tests/test_review_gate_content_branch_reads_the_hot_set.py:92 and :108, and the admit case fails when the guard is removed (reviewer-negative-control.log: 1 failed, 30 passed, EXIT=1).\nSCORE evidence: 17\nJUSTIFICATION evidence: I re-ran the declared gate at 9aeff9c3 (reviewer-head-gate.log, 31 passed, EXIT=0) and reproduced the negative control (reviewer-negative-control.log, 1 failed 30 passed EXIT=1, reviewer-negative-control.log names the admit case), but the reviewed manifest records no baseline_suite/after_suite arms so the added-failure count is unmeasured, and logs/head-gate.log:2 names the reviewed base 1355064481 rather than the measured head 9aeff9c3.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1355064481 9aeff9c3 lists exactly tests/test_review_gate_content_branch_reads_the_hot_set.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/the-content-review-hot-guard-is-falsifiable.html, both inside the manifest's declared write paths, with no production file touched.\nSCORE durability: 19\nJUSTIFICATION durability: removing the content branch's is_hot guard turns test_the_gate_admits_a_landed_content_review_with_an_unanswered_finding red (reviewer-negative-control.log), and the admit case asserts resolution.validation.ok against the gate's own output rather than a value it passed in; it is 19 rather than 20 because the mutation removes the whole guard rather than one polarity of it, and the refuse case stays green under it by design.\nSCORE fit: 20\nJUSTIFICATION fit: the added names describe mechanism (test_the_gate_admits_a_landed_content_review_with_an_unanswered_finding, _store_content_review, CONTENT_FINDING) with no version, plan, sprint or ticket identifier and no attribution, and the module docstring states the invariant rather than the change history.\nSCORE reuse: 20\nJUSTIFICATION reuse: the new module imports the sibling's gate_project fixture and _node/_plan helpers (tests/test_review_gate_content_branch_reads_the_hot_set.py:22-31) rather than copying them, and it adds no production definition, so it forks no capability the repository already owns.\nFINDING tests/test_review_gate_content_branch_reads_the_hot_set.py:1 follow-on: the reviewed manifest records no baseline_suite/after_suite gate arms, so the store's added-failure derivation reads unmeasured (null) rather than a measured zero; recording the two arms would let a later reader derive the delta this one-arm evidence cannot.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T130421418854-the-content-review-hot-guard-is-falsifiable/logs/head-gate.log:2 follow-on: the head gate log's revision header names the reviewed base 1355064481 while the change landed at head 9aeff9c3, so a reader keying the evidence to the recorded revision sees the base rather than the measured head; the tree field and the re-run resolve the ambiguity but the header line alone does not.\n",
+  "review_run_id": "r-20261007T132602283127-review-of-the-content-review-hot-guard-is-falsifiable",
+  "reviewed_base_sha": "1355064481ee24988dbd15ed30eafdb17ca03625",
+  "reviewed_head_sha": "9aeff9c3ef3338c85921db5aa21d85bf57990551",
+  "reviewed_run_id": "r-20261007T130421418854-the-content-review-hot-guard-is-falsifiable",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T13:40:47.106571+00:00",
+  "total": 116
+}
