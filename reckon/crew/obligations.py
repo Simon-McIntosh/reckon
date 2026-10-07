@@ -27,7 +27,7 @@ from typing import Any
 
 from reckon import _store, flight, ledger
 from reckon._timestamps import parse_utc
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, review_lifecycle, runs
 from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, parse_duration
 from reckon.crew.routing import _registered_worktrees
@@ -704,6 +704,34 @@ def stored_review_for_run(
     return recovery.select_review_for_head(project, run_id, head, tree=tree)
 
 
+def _review_is_hot(
+    project: str,
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    closed: set[str],
+) -> bool:
+    """Whether a run's stored review still owes a live duty.
+
+    The lifecycle is derived once, in :mod:`reckon.crew.review_lifecycle`, and
+    consulted here through its hot-set predicate so the states a live reader
+    acts on are not restated. A review lands once its run has a ledger row —
+    promoted, or closed without promotion — and is superseded once a later
+    review of the same run exists; either way it describes work in the past and
+    raises no duty. The run's other stored reviews are the candidates for
+    superseding this one, read from the store's own rows so a by-head selection
+    cannot hide a later round.
+    """
+    later = [
+        other for _path, other in review_module.stored_records_for_run(project, run_id)
+    ]
+    return review_lifecycle.is_hot(
+        record,
+        run_closed=run_id in closed,
+        later_records=later,
+    )
+
+
 def _sub_floor_items_by_session(
     project: str,
     floors: Mapping[str, Any],
@@ -730,6 +758,7 @@ def _sub_floor_items_by_session(
     """
     if not floors:
         return {}
+    closed = recovery._promoted_run_ids(project)
     by_session: dict[str, list[dict[str, Any]]] = {}
     for pointer in runs.list_live(project=project):
         session = str(pointer.get("session") or "")
@@ -744,6 +773,13 @@ def _sub_floor_items_by_session(
             continue
         record, _described = stored_review_for_run(project, run_id, pointer)
         if not record:
+            continue
+        if not _review_is_hot(project, run_id, record, closed=closed):
+            # A review is a live duty only while it is hot. A run review lands
+            # once its run has a ledger row and is superseded once a later
+            # review of the same run exists, and a landed or superseded review
+            # is the archive: it describes work in the past, so a dimension
+            # below its floor is kept but no longer owed.
             continue
         node = pointer.get("node") or {}
         by_session.setdefault(session, []).extend(
