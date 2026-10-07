@@ -19,11 +19,11 @@
   <meta name="plan-sprint" content="S25">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -40,15 +40,11 @@
     <p>The seven sections below are independently landable in the report's migration order. Each leaves the tree working, and the measure for each configuration step is that the resolved flight of every project in <code>mounts.json</code>, counted when the step runs, is unchanged.</p>
     <p><strong>What the new surface retires.</strong> The plan adds a <code>lanes:</code> key (§1), a <code>--model</code> option (§4) and one resolver (§7), and each replaces more than it adds. <code>lanes:</code> replaces the per-model backend blocks as the declaration: three claude blocks and three codex blocks become two lane blocks (§3, §6). <code>--model</code> replaces naming a model through a separate backend name such as <code>--backend claude-opus</code>, which survives only as an alias. The resolver replaces scattered name comparisons on stored rows, reviews and <code>review_excluded_backends</code>. The derived entries count, which <code>reckon flight</code> reports, is the measure that the old surface is actually retiring.</p>
 
-    <h2 id="s1" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§1 — Flight schema declares lanes with models inside them</h2>
-    <p>Add a top-level <code>lanes:</code> key to the platform schema. Each lane carries today's backend-block keys (placement, launch, command, sandbox, session_reuse, time_budget, budget_check, budget_group, the local lane's documents, windows and concurrency), plus <code>default_model</code> and <code>models.&lt;key&gt;</code>. Each model carries <code>model</code>, <code>effort</code>, <code>alias</code>, optional rates with <code>as_of</code>, an optional <code>budget_group</code> that defaults to the lane's, and an optional <code>time_budget</code> that overrides the lane's for that model. Resolution expands each lane into today's <code>backends:</code> entries, so the 47 call sites that read <code>config["backends"]</code> are untouched. Each expanded entry gains <code>lane</code> and <code>model_key</code>. A lane expands to an entry named after the lane (its default model), and to <code>&lt;lane&gt;-&lt;key&gt;</code> for every model whose key matches a legacy backend name. Derived entries are marked with <code>derived_from</code>, so <code>reckon flight</code> can count how many remain. Override layers, including <code>--set lanes.claude.models.opus.effort=xhigh</code>, merge before expansion.</p>
-    <p><strong>Write paths:</strong> <code>reckon/_flight_schema.py</code>, <code>reckon/flight.py</code>, <code>tests/test_flight_lanes.py</code>.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>the new tests pass, covering a lane expanding to its default-named entry and its derived legacy entries with <code>lane</code>, <code>model_key</code> and <code>derived_from</code>, and a <code>--set</code> on a lane model reaching the expanded entry;</li>
-      <li>a no-value-moves proof shows the resolved flight of every project in <code>mounts.json</code> byte-identical to the pre-change resolution, because nothing declares <code>lanes:</code> yet;</li>
-      <li>a negative control applying the override layer after expansion fails the <code>--set</code> test.</li>
-    </ul>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s1" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links="">§1 — Flight schema declares lanes with models inside them</h2></header>
+  <p class="landed-summary">Lanes are declared in the LinkML flight schema, and resolution expands each one into today's backends entries (a default-named entry plus derived legacy names carrying <code>lane</code>, <code>model_key</code> and <code>derived_from</code>). Nothing declares lanes yet, and every project resolves byte-identically. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s1">full record</a></p>
+</section>
 
     <h2 id="s2" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links="">§2 — The model catalogue declares lanes</h2>
     <p>Regroup the catalogue's eight backend entries under <code>lanes.&lt;lane&gt;.models</code> with a <code>default_model</code> per lane: <code>claude</code> holds sonnet, opus and haiku; <code>codex</code> holds sol, astra and luna; <code>clive</code> holds its local model. Keep the existing <code>backends:</code> blocks, so the resolution can be compared with the old one directly. Add the alias table §7 reads: <code>claude-opus</code>, <code>claude-haiku</code>, <code>codex-astra</code>, <code>codex-luna</code>, <code>codex-terra</code>, <code>codex-spark</code> and <code>clive-glm</code>, each mapped to a lane and a model key.</p>
@@ -145,10 +141,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-lmr-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-lmr-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-07T16:08:01+00:00" data-resolved-by="s25-picker">
     <h4 class="r-fu-title">Build lane-and-model routing §1, after its design review and the three open decisions</h4>
     <div class="r-fu-body">The plan was created from the lane-and-model-design report. Its design review must be stored and answered before the first build node, and the lead's choices on lane-identity, bare-model and derived-names-retire settle §1 and §4. Run the sections in order: §1 before §2 and §3, §4 before any derived name retires, and §5 after its gate clears. §3 and §6 edit the host flight in the dotfiles repository.</div>
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §1</pre>
+    <p class="r-fu-outcome"><p>§1 landed at <code>3a9d3e9b4</code> after the three decisions were locked; see the <a href="/reckon/evidence/archive/lane-and-model-routing-landed#s1">s1 evidence</a>.</p></p>
+    </article>
+<article class="r-fu" data-id="f-lmr-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-picker" data-written-at="2026-10-07" data-recommends-skill="/reckon-build lane-and-model-routing §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2: the model catalogue declares lanes and the alias table</h4>
+    <div class="r-fu-body"><p>§1 is on main, so the catalogue can declare lanes. §2 regroups the catalogue under lanes with a default model for each lane and adds the alias table that §7 reads. Then §3 and §7 can run in parallel.</p><p>One non-blocking follow-on from §1's review: <code>LANE_MODEL_KEYS</code> in <code>reckon/flight.py</code> hand-copies <code>LaneModelConfig</code>'s field list, and no test ties the two. Derive the keys from the generated model, or add a test asserting they match.</p><p>§4 writes <code>reckon/cli.py</code> and <code>reckon/crew/dispatch.py</code>. Dispatch it only after <code>every-module-fits-a-worker-window</code> §3 and §4 have landed.</p></div>
+    <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §2</pre>
     </article>
 </section>
   <section data-reckon="gates" id="gates" class="r-gates">
@@ -166,7 +168,7 @@
     <div class="r-comment-body"><p>review of run r-20261007T150557843231-flight-schema-declares-lanes over the gained commit 0c30da2f5 only (base 3ab8e606d): scores goal_fidelity 20 / evidence 20 / scope_discipline 18 / durability 19 / fit 18 / reuse 20, total 115, added_failure_count 0, added_failure_ids []; stored at both assigned review paths.</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261007T150557843231-flight-schema-declares-lanes" data-who="reckon-build" data-when="2026-10-07T15:46:03.662Z">
-    <div class="r-comment-body"><p>landing: docs/evidence/fragments/lane-and-model-routing/flight-schema-declares-lanes.html — flight schema declares lanes with models inside them and expands each into today&#x27;s backend entries (lane, model_key, derived_from), overrides merged before expansion; gate base 100 / head 104 passed, 0 skipped either arm, 0 added failures, 15/15 mounted projects byte-identical base vs head.</p></div>
+    <div class="r-comment-body"><p>landing: docs/evidence/fragments/lane-and-model-routing/flight-schema-declares-lanes.html — flight schema declares lanes with models inside them and expands each into today's backend entries (lane, model_key, derived_from), overrides merged before expansion; gate base 100 / head 104 passed, 0 skipped either arm, 0 added failures, 15/15 mounted projects byte-identical base vs head.</p></div>
 </div>
 </section>
 </main>
