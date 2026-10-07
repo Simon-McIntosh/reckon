@@ -586,7 +586,7 @@ def section_dependency_refusals(
             )
             if target is None:
                 continue
-            if parsed.stage not in plan_section_anchors(target):
+            if parsed.stage not in declared_section_identities(target):
                 refuse(
                     "missing-dependency-section",
                     section,

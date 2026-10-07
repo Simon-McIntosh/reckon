@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:section-contract-and-computed-impl">
+  <meta name="plan-verifies" content="reckon:section-contract-and-computed-impl#s15">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-07">
+  <meta name="evidence-commit" content="b93352322">
+  <title>A section ref resolves against every declared section | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="section-refs-resolve-declared-sections">
+  <h2>A section ref resolves against every declared section</h2>
+
+  <p id="section-refs-resolve-declared-sections-what">
+  The four ref-validation sites now answer through
+  <code>declared_section_identities</code> rather than
+  <code>plan_section_anchors</code>: <code>section_dependency_refusals</code>
+  in <code>reckon/_schema.py</code> and the roadmap's staged-ref checks for
+  <code>after</code> edges, section-scoped <code>depends_on</code> edges and
+  hard <code>depends_on</code> edges. The roadmap's private
+  <code>_declared_stages</code> union is retired in its favour, and the
+  readiness split reads the owner's set as well. A plan view fed to the owner
+  is read once per plan with a file fallback for a row carrying neither
+  declarations nor records, threaded with the checkout the rows were
+  inventoried from. <code>promotion.py</code>'s fallback enumeration reaches
+  the owner too. Callers wanting only gate and comment anchors keep
+  <code>plan_section_anchors</code>.</p>
+
+  <p id="section-refs-resolve-declared-sections-tests">
+  <strong>Done-when met.</strong> Ten new cases in
+  <code>tests/test_section_refs_resolve_declared_sections.py</code> pass: a
+  target whose only evidence of <code>s8</code> is its
+  <code>section_declarations</code> and one whose only evidence is a typed
+  <code>sections</code> record each resolve <code>#s8</code> with no
+  <code>missing-dependency-section</code> from
+  <code>section_dependency_refusals</code>, and report
+  <code>section_found</code> true at the <code>after</code> site (roadmap 831),
+  the section-scoped site (947) and the hard-dependency site (2470). A ref to a
+  section the target never declares still earns the finding at all three, and
+  the file-aware read is exercised with a discovery-shaped row for both
+  authored forms.</p>
+
+  <p id="section-refs-resolve-declared-sections-gate">
+  <strong>Gate.</strong> Every test file importing
+  <code>plan_section_anchors</code> or
+  <code>section_dependency_refusals</code> — the three pre-existing files plus
+  the new one. Head arm (node worktree, base <code>044fca510</code>):
+  <strong>2421 passed</strong>, <code>EXIT=0</code>, log <code>gate.log</code>.
+  Base arm (a <code>git archive</code> extraction of <code>044fca510</code>
+  under <code>$TMPDIR</code>): <strong>1 failed, 2411 passed</strong>,
+  <code>EXIT=1</code>, module file and cwd the extraction, log
+  <code>gate-base.log</code>. The one base failure is scaffolding: the
+  extracted tree has no <code>.git</code>, so
+  <code>git -C &lt;tree&gt; rev-parse HEAD</code> refuses inside
+  <code>test_well_formed_evidence_record_with_resolving_shas_is_quiet</code>.
+  Zero failure ids added against the base.</p>
+
+  <p id="section-refs-resolve-declared-sections-control">
+  <strong>Declared negative control</strong> — restoring
+  <code>plan_section_anchors</code> at the schema site makes the
+  declaration-only <code>#s8</code> case fail with
+  <code>missing-dependency-section</code>. Executed: <code>EXIT=1</code>,
+  <strong>1 failed</strong>, id
+  <code>test_a_declaration_only_section_resolves</code>; log
+  <code>negative-control.log</code>. Reverted, and the same case passes.</p>
+
+  <p id="section-refs-resolve-declared-sections-grammar">
+  <strong>Malformed identifiers.</strong> The owner admits a section identity
+  only when it matches the shared segment grammar, where the retired private
+  union admitted any string. Scanning every plan under the fifteen mounted
+  checkouts (<strong>2606 plans</strong>; 1248 declaration keys and 436 typed
+  records actually read) finds <strong>no malformed identifier</strong> — none
+  is newly rejected. Positive control in the same log: the grammar rejects
+  <code>"not a section!"</code> and accepts <code>"s8"</code>, so a zero is a
+  reading rather than a blind scan. Log
+  <code>malformed-identifiers.log</code>.</p>
+</section>
+</main>
+</body>
+</html>

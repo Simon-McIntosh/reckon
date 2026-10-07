@@ -30,7 +30,6 @@ from reckon._schema import (
     is_section_identity,
     parse_plan_ref,
     pending_transition_gates,
-    plan_section_anchors,
     resolve_plan_ref,
     section_dependency_refusals,
     section_depends_on,
@@ -125,48 +124,60 @@ def implementable_sections(declarations: Mapping[str, Any] | None) -> list[str]:
     )
 
 
-def _plan_declarations(
+def _plan_authored_state(
     plan: Mapping[str, Any],
     docs_dir: Path | None,
     project: str,
     slug: str,
-) -> Mapping[str, Any] | None:
-    """Read a plan's section classification from its own file when the row lacks it.
+) -> Mapping[str, Any]:
+    """Read a plan's authored sections from its own file for what the row lacks.
 
-    A composed inventory row carries ``section_declarations`` already; a
-    discovery row built for the MCP summary does not. Falling back to the plan
-    file keeps one answer for both callers rather than an empty column on the
-    surface a coordinator actually reads. ``docs_dir`` is the checkout the row
-    was inventoried from, matching the wiring scan's rule that one tree's rows
-    are judged against that same tree's declarations.
+    A composed inventory row carries ``section_declarations`` and the typed
+    ``sections`` records already; a discovery row built for the MCP summary
+    carries neither. Reading the file fills whichever the row lacks, so one
+    authored record answers the section-existence question for both callers
+    rather than an empty column on the surface a coordinator actually reads.
+    ``docs_dir`` is the checkout the row was inventoried from, matching the
+    wiring scan's rule that one tree's rows are judged against that same tree's
+    declarations.
     """
 
-    declarations = plan.get("section_declarations")
-    if isinstance(declarations, Mapping):
-        return declarations
+    view = dict(plan)
+    needs_declarations = not isinstance(plan.get("section_declarations"), Mapping)
+    needs_records = plan.get("sections") is None
+    if not (needs_declarations or needs_records):
+        return view
     if docs_dir is None:
         docs_dir = _load_mounts().get(project)
     if docs_dir is None:
-        return None
+        return view
     try:
         resource = resolve_resource(
             docs_dir, project, slug, "plan", include_archived=False
         )
     except Exception:  # noqa: BLE001 — a resolution error is "no declaration"
-        return None
+        return view
     path = getattr(resource, "path", None)
     if path is None:
-        return None
+        return view
 
-    def read_declarations() -> dict[str, Any]:
+    def read_authored() -> dict[str, Any]:
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             return {}
-        value = read_state(text).get("section_declarations")
-        return dict(value) if isinstance(value, Mapping) else {}
+        state = read_state(text)
+        return {
+            "section_declarations": state.get("section_declarations"),
+            "sections": state.get("sections"),
+        }
 
-    return memoized("section_declarations", path, read_declarations)
+    authored = memoized("section_authored", path, read_authored)
+    if needs_declarations and isinstance(authored.get("section_declarations"), Mapping):
+        view["section_declarations"] = authored["section_declarations"]
+    if needs_records and authored.get("sections") is not None:
+        view["sections"] = authored["sections"]
+    return view
 
 
 _SECTION_WORD_RE = re.compile(
@@ -176,29 +187,6 @@ _SECTION_WORD_RE = re.compile(
 )
 _REF_TOKEN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]*")
 _CONTEXT_WINDOW = 8
-
-
-def _declared_stages(plan: Mapping[str, Any]) -> set[str]:
-    """Section identities a plan declares, typed records included.
-
-    Gates and comment mappings anchor the sections they bind to, and a typed
-    section record carries every authored section beside its cost; the union is
-    the set a named section must belong to before a gate's words may bind it.
-    """
-
-    stages = set(plan_section_anchors(plan))
-    for record in plan.get("sections") or []:
-        ident = (
-            record.get("id")
-            if isinstance(record, Mapping)
-            else getattr(record, "id", None)
-        )
-        if ident:
-            stages.add(str(ident))
-    declarations = plan.get("section_declarations")
-    if isinstance(declarations, Mapping):
-        stages.update(str(key) for key in declarations)
-    return stages
 
 
 def _gate_section_refs(
@@ -230,7 +218,7 @@ def _gate_section_refs(
             known = (
                 declared_for(target_slug, target)
                 if declared_for is not None and target is not None
-                else _declared_stages(target)
+                else declared_section_identities(target)
                 if target is not None
                 else set()
             )
@@ -277,6 +265,7 @@ def _gate_section_edges(
     plan: Mapping[str, Any],
     slug: str,
     all_plans: Mapping[str, dict[str, Any]],
+    docs_dir: Path | None,
 ) -> list[dict[str, Any]]:
     """Resolve each gate's section refs into dependency rows.
 
@@ -288,14 +277,11 @@ def _gate_section_edges(
     """
 
     def declared_for(target_slug: str, target: Mapping[str, Any]) -> set[str]:
-        stages = _declared_stages(target)
-        try:
-            declarations = _plan_declarations(target, None, project, target_slug)
-        except Exception:  # noqa: BLE001 — an unreadable declaration adds nothing
-            declarations = None
-        if isinstance(declarations, Mapping):
-            stages.update(str(key) for key in declarations)
-        return stages
+        return set(
+            declared_section_identities(
+                _plan_authored_state(target, docs_dir, project, target_slug)
+            )
+        )
 
     rows: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
@@ -770,6 +756,7 @@ def _after_edges(
     plan: dict[str, Any],
     all_plans: Mapping[str, dict[str, Any]],
     artifacts: Mapping[str, list[dict[str, Any]]],
+    docs_dir: Path | None,
 ) -> list[dict[str, Any]]:
     """Resolve a plan's soft ``after`` refs into annotation rows.
 
@@ -828,7 +815,9 @@ def _after_edges(
             "status": target_status,
         }
         if parsed.stage:
-            found_section = parsed.stage in plan_section_anchors(target)
+            found_section = parsed.stage in declared_section_identities(
+                _plan_authored_state(target, docs_dir, project, parsed.slug)
+            )
             row["stage"] = parsed.stage
             row["section_found"] = found_section
             row["satisfied"] = found_section and _section_satisfied(
@@ -846,6 +835,7 @@ def _section_scoped_edges(
     slug: str,
     mapping: Mapping[str, Any],
     all_plans: Mapping[str, dict[str, Any]],
+    docs_dir: Path | None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Resolve a section-scoped mapping into per-section blocker rows and findings.
 
@@ -867,13 +857,20 @@ def _section_scoped_edges(
 
     rows: list[dict[str, Any]] = []
     findings: list[dict[str, Any]] = []
+
+    def target_row(
+        target_project: str, target_slug: str
+    ) -> Mapping[str, Any] | None:
+        if not target_slug or target_project != project:
+            return None
+        row = all_plans.get(target_slug)
+        if row is None:
+            return None
+        return _plan_authored_state(row, docs_dir, project, target_slug)
+
     refusals = section_dependency_refusals(
         mapping,
-        lambda target_project, target_slug: (
-            all_plans.get(target_slug)
-            if target_slug and target_project == project
-            else None
-        ),
+        target_row,
         owning_project=project,
     )
     findings.extend(
@@ -944,7 +941,9 @@ def _section_scoped_edges(
                     )
                 )
                 continue
-            section_found = parsed.stage in plan_section_anchors(target)
+            section_found = parsed.stage in declared_section_identities(
+                _plan_authored_state(target, docs_dir, project, parsed.slug)
+            )
             row.update(
                 {
                     "scope": "local",
@@ -1117,7 +1116,9 @@ def _followup_work_findings(
     for slug, plan in sorted(plans.items()):
         if str(plan.get("type") or "plan") != "plan":
             continue
-        declarations = _plan_declarations(plan, docs_dir, project, slug)
+        declarations = _plan_authored_state(plan, docs_dir, project, slug).get(
+            "section_declarations"
+        )
         for followup in _plan_followups(plan, docs_dir, project, slug):
             if not isinstance(followup, Mapping):
                 continue
@@ -2467,7 +2468,9 @@ def _build_roadmap(
                 continue
 
             target_status = _status(target)
-            target_sections = plan_section_anchors(target)
+            target_sections = declared_section_identities(
+                _plan_authored_state(target, docs_dir, project, parsed.slug)
+            )
             section_found = not parsed.stage or parsed.stage in target_sections
             if parsed.stage:
                 satisfied = section_found and _section_satisfied(target, parsed.stage)
@@ -2565,12 +2568,14 @@ def _build_roadmap(
         section_mapping = _plan_section_deps(plan, docs_dir, project, slug)
         if section_mapping:
             section_edge_rows, section_edge_findings = _section_scoped_edges(
-                project, plan, slug, section_mapping, all_plans
+                project, plan, slug, section_mapping, all_plans, docs_dir
             )
             dependency_rows[slug].extend(section_edge_rows)
             findings.extend(section_edge_findings)
 
-        gate_edge_rows = _gate_section_edges(project, plan, slug, all_plans)
+        gate_edge_rows = _gate_section_edges(
+            project, plan, slug, all_plans, docs_dir
+        )
         if gate_edge_rows:
             dependency_rows[slug].extend(gate_edge_rows)
             for edge_row in gate_edge_rows:
@@ -2597,8 +2602,9 @@ def _build_roadmap(
         # source the write boundary refuses against, so one scope has one
         # answer on both surfaces.
         decision_mapping = _plan_decision_sections(plan, docs_dir, project, slug)
-        decision_declarations = _plan_declarations(plan, docs_dir, project, slug)
-        declared_sections = declared_section_identities(plan, decision_declarations)
+        declared_sections = declared_section_identities(
+            _plan_authored_state(plan, docs_dir, project, slug)
+        )
         findings.extend(
             _finding(
                 refusal["code"],
@@ -2622,7 +2628,7 @@ def _build_roadmap(
         # Soft sequencing: resolved here, ranked below, and deliberately kept
         # out of every blocker list — an after target that has not shipped
         # orders the plan later without ever holding it.
-        after_rows[slug] = _after_edges(project, plan, all_plans, artifacts)
+        after_rows[slug] = _after_edges(project, plan, all_plans, artifacts, docs_dir)
         for row in after_rows[slug]:
             if row.get("found"):
                 continue
@@ -2944,14 +2950,18 @@ def _build_roadmap(
             "ready": is_ready,
             "readiness": readiness,
             "implementable_sections": implementable_sections(
-                _plan_declarations(plan, docs_dir, project, slug)
+                _plan_authored_state(plan, docs_dir, project, slug).get(
+                    "section_declarations"
+                )
             ),
             "section_attempts": {
                 section: attempts_by_plan.get(slug, {})
                 .get(section_record_id(section), {})
                 .get("attempts", 0)
                 for section in implementable_sections(
-                    _plan_declarations(plan, docs_dir, project, slug)
+                    _plan_authored_state(plan, docs_dir, project, slug).get(
+                        "section_declarations"
+                    )
                 )
             },
             "dependency_ready": is_ready,
@@ -2986,17 +2996,15 @@ def _build_roadmap(
                 section_blockers[waiting].append(blocker)
             for section, holding in decision_section_blockers.items():
                 section_blockers[section].extend(holding)
+            # The readiness split enumerates a plan's sections from the same
+            # authored set every existence question reads, so a section that
+            # lives only in a declaration or a typed record still appears; the
+            # section-scoped blockers beside it are the split's own addition.
             sections = sorted(
-                plan_section_anchors(plan)
-                | set(section_blockers)
-                # A scoped decision's sections are the ones a reader most needs
-                # to see, and they need not carry a gate or a comment anchor of
-                # their own, so the plan's authored declarations name them too.
-                | (
-                    set(_plan_declarations(plan, docs_dir, project, slug) or ())
-                    if decision_section_blockers
-                    else set()
+                declared_section_identities(
+                    _plan_authored_state(plan, docs_dir, project, slug)
                 )
+                | set(section_blockers)
             )
             row["section_readiness"] = [
                 {
