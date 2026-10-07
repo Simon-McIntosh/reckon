@@ -1,0 +1,82 @@
+<article class="landed-report" data-run-id="r-20261007T181259042051-pick-records-its-stage-times" data-node="pick-records-its-stage-times" id="pick-records-its-stage-times">
+<h3>Every production pick records where its time went</h3>
+<p>A pick that hit the five-second dispatch bound recorded only
+<code>fallback_reason: timeout</code>, so the stage that spent the budget could
+not be attributed. <code>picker.pick()</code> now times each stage it runs and
+appends one JSON line per pick under the crew home, so a timed-out pick and a
+late pick are both attributable to the stage that spent the time.</p>
+
+<h4 id="pick-records-its-stage-times-what-landed">What landed</h4>
+<ul>
+<li><strong>Per-stage timing in <code>pick()</code></strong>
+(<code>reckon/crew/picker/__init__.py</code>). Five stages are timed:
+<code>snapshot_ms</code> (the candidates snapshot, including the one docs-tree
+scan), <code>estimate_ms</code> (the estimated-context figure),
+<code>state_render_ms</code> and <code>questions_render_ms</code> (prompt
+rendering, split so a slow render is not charged to Jev), and
+<code>jev_ms</code> (the request: connect plus response). A stage that did not
+run reads <code>null</code>, never a measured zero.</li>
+<li><strong>One line per pick, appended best-effort.</strong>
+<code>_record_pick_timings</code> writes to <code>pick-timings.jsonl</code>
+under <code>crew_home()</code> — the same resolver every other crew-home path
+uses, so a test's <code>RECKON_HOME</code> isolation covers it. The append is a
+single <code>os.write</code> on an <code>O_APPEND</code> descriptor (one small
+line cannot interleave with a concurrent pick's), and the whole write is wrapped
+so a pick never fails or stalls on its own record.</li>
+<li><strong>The bound comes from the dispatcher, not a copy.</strong>
+<code>within_bound</code> is computed against
+<code>dispatch.PICKER_DISPATCH_TIMEOUT_SECONDS</code>, read at write time, so
+the flag cannot drift from the timeout dispatch actually applies.</li>
+<li><strong>Late picks still record.</strong> The pick runs on the dispatcher's
+daemon thread, so when the wait returns at the bound the pick keeps running; its
+line is written when the slow stage completes, carrying
+<code>within_bound: false</code> and the whole-pick <code>latency_ms</code>.</li>
+</ul>
+
+<h4 id="pick-records-its-stage-times-line">The line</h4>
+<p>Fields: <code>started_at</code>, <code>project</code>, <code>node</code>,
+<code>session</code>, <code>latency_ms</code>, <code>outcome</code>,
+<code>decision_source</code>, <code>fallback_reason</code>, the five stage
+milliseconds, and <code>within_bound</code>. A representative line produced by a
+stubbed pick (stages present, all in bound) reads:</p>
+<pre>{"started_at":"2026-10-07T18:23:59.079226+00:00","project":"example","node":"parser","session":"s-demo","latency_ms":1.469,"outcome":"route","decision_source":"jev","fallback_reason":null,"snapshot_ms":0.02,"estimate_ms":0.005,"state_render_ms":0.028,"questions_render_ms":0.026,"jev_ms":1.346,"within_bound":true}</pre>
+
+<h4 id="pick-records-its-stage-times-checks">Checks that could have failed</h4>
+<p><code>tests/test_pick_records_its_stage_times.py</code> holds four tests:</p>
+<ul>
+<li>A routed pick writes exactly one line with every stage present and numeric
+(<code>test_a_pick_records_every_stage</code>).</li>
+<li>A pick slower than the bound still writes its line, marked past-bound
+(<code>test_a_pick_past_the_bound_records_when_it_completes</code>). The pick
+runs on its own thread as dispatch starts it; the waiter gives up at the bound
+while the pick is still inside its slow stage, the log is asserted empty at that
+moment, and the line is asserted only after the stage returns.</li>
+<li>An unwritable log path leaves the pick's result unchanged
+(<code>test_an_unwritable_log_leaves_the_pick_unchanged</code>) — a file stands
+where the crew directory must be, so every append fails.</li>
+<li>The log resolves through <code>RECKON_HOME</code>, never a candidate real
+home (<code>test_the_real_crew_home_is_untouched</code>): with
+<code>Path.home()</code> pointed at a temp tree holding an existing
+<code>~/.config/reckon</code>, the line lands under the isolated home and the
+candidate real home is left absent.</li>
+</ul>
+
+<h4 id="pick-records-its-stage-times-gate">Gate</h4>
+<p>Gate command (main checkout interpreter, <code>-n 8</code>, foreground):
+<code>tests/test_pick_records_its_stage_times.py</code>, every
+<code>tests/test_picker*.py</code>, <code>tests/test_pick_candidates_one_pass.py</code>
+and <code>tests/test_jev_weighs_context.py</code>. Base revision
+<code>103594b76</code> in a scratch tree (18 files; the new test does not exist
+at base): <strong>155 passed, EXIT=0</strong>. Head <code>7500c95a2</code>
+(19 files): <strong>159 passed, EXIT=0</strong>. Delta is <code>+4</code>, the
+new tests, with zero added failures. Logs: <code>gate-base.log</code>,
+<code>gate-head.log</code>.</p>
+<p><strong>Declared negative control</strong> — stop writing the line from a
+pick that finishes after the bound
+(<code>if latency_ms &gt; bound: return</code> in
+<code>_record_pick_timings</code>) — produced <code>EXIT=1</code>,
+<code>1 failed</code> at
+<code>tests/test_pick_records_its_stage_times.py::test_a_pick_past_the_bound_records_when_it_completes</code>,
+while the unmutated head passes that test. Log:
+<code>negative-control.log</code>.</p>
+</article>
