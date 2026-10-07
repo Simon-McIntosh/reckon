@@ -325,9 +325,14 @@ def account_entry(
     which is the point of resolving per window rather than per account.
     """
     ordered = list(candidates)
+    periods = list(PERIODS)
+    for candidate in ordered:
+        for figure in candidate.reading.figures:
+            if figure.period not in periods:
+                periods.append(figure.period)
     windows: dict[str, Any] = {}
     freshest: tuple[datetime, Candidate] | None = None
-    for period in PERIODS:
+    for period in periods:
         best: tuple[datetime, Candidate, window_reading.WindowFigure] | None = None
         for candidate in ordered:
             figure = candidate.reading.figure(period)

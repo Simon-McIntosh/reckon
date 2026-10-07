@@ -187,3 +187,33 @@ def test_probe_claim_survives_an_interrupted_publish(tmp_path):
     )
     assert resumed["accounts"]["codex"]["windows"]["seven_day"]["stale"]
     assert "interrupted" in resumed["accounts"]["codex"]["probe"]["failure"]
+
+
+def test_probe_keeps_a_longer_provider_window(tmp_path):
+    def probe(_request):
+        return {
+            "id": 2,
+            "result": {
+                "rateLimits": {
+                    "primary": {
+                        "usedPercent": 3.0,
+                        "windowDurationMins": 43200,
+                        "resetsAt": int((NOW + timedelta(days=30)).timestamp()),
+                    }
+                }
+            },
+        }
+
+    document = paid_lanes.publish_document(
+        {"backends": BACKENDS},
+        _sources(),
+        path=tmp_path / "paid-lanes.json",
+        moment=NOW,
+        probe_runner=probe,
+        local_lane={"state": "unknown"},
+    )
+    primary = document["accounts"]["codex"]["windows"]["primary"]
+    assert primary["utilisation"] == 0.03
+    assert primary["source"] == "probe"
+    assert primary["stale"] is False
+    assert paid_lanes.document_windows(document)["codex"].figure("primary") is not None
