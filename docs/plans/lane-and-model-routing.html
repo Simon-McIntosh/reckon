@@ -23,7 +23,7 @@
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -116,29 +116,29 @@
       </p>
     <p class="r-dec-rat">The lead directed that Jev choose both lane and model where applicable. The design measured that refusal, context fit, rates and outcomes attach to a model, while burn, pace and windows attach to the shared account. Asking twice would make the model choice depend on a lane answer given without model-level fit, so pairs keep one typed decision with every fact in it.</p>
     </div>
-<div class="r-dec" data-key="lane-identity" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="lane-identity" data-choice="dialect-names" data-by="Simon McIntosh" data-when="2026-10-07T14:47:36+00:00">
     <p class="r-dec-q">Are lanes named by their dialect (claude, codex, clive), or can a lane be named independently, for example two subscriptions both running claude?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="dialect-names">Dialect names (recommended by the design)</button>
+      <button class="r-opt chosen" data-value="dialect-names">Dialect names (recommended by the design)</button>
       <button class="r-opt" data-value="independent-names">Independent lane names</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">One lane per dialect (claude, codex, clive), as the design proposes; claude-opus stops being a separate lane and becomes a model inside the claude lane.</p>
     </div>
-<div class="r-dec" data-key="bare-model" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="bare-model" data-choice="imply-when-unique" data-by="Simon McIntosh" data-when="2026-10-07T14:47:36+00:00">
     <p class="r-dec-q">Does a bare --model imply its lane when exactly one lane declares it, or must the lane always be named?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="imply-when-unique">Imply the lane when unique (recommended by the design)</button>
+      <button class="r-opt chosen" data-value="imply-when-unique">Imply the lane when unique (recommended by the design)</button>
       <button class="r-opt" data-value="always-name-lane">Always name the lane</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">A bare --model resolves to the one lane that declares it; a model two lanes declare is refused as ambiguous, so the shorthand never guesses.</p>
     </div>
-<div class="r-dec" data-key="derived-names-retire" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="derived-names-retire" data-choice="when-undeclared" data-by="Simon McIntosh" data-when="2026-10-07T14:47:36+00:00">
     <p class="r-dec-q">When do derived entries such as claude-opus leave the resolved config?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="when-undeclared">When nothing declares them; the alias resolves forever (recommended by the design)</button>
+      <button class="r-opt chosen" data-value="when-undeclared">When nothing declares them; the alias resolves forever (recommended by the design)</button>
       <button class="r-opt" data-value="early">Retire early: land §7 before §3</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">A derived entry leaves the resolved config once nothing declares it, and its old name keeps resolving as an alias, so retirement breaks no caller and needs no ordering of section 7 before section 3.</p>
     </div>
 </section>
 
