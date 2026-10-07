@@ -22,9 +22,16 @@ from .types import Candidate, PickRequest
 
 @dataclass
 class BudgetCandidate(Candidate):
-    """A candidate with an explanation when its account window is unknown."""
+    """A candidate with an explanation when its account window is unknown.
+
+    ``stale`` and ``budget_age_s`` describe the age of the reading behind the
+    candidate's figures. A stale reading keeps its figures rather than nulling
+    them, so the age and flag travel beside the numbers they qualify.
+    """
 
     budget_reason: str | None = None
+    stale: bool | None = None
+    budget_age_s: float | None = None
 
 
 def recent_outcomes(
@@ -343,22 +350,22 @@ def candidates(
         state = verdict["state"]
         group = group_by_backend.get(name)
         group_allowance = (group or {}).get("allowance") or {}
-        budget_facts = (
-            state
-            if state.get("headroom") == "known"
-            and not state.get("expired")
-            and (
-                group is None
-                or group_allowance.get("state") == budget.OBSERVED
-                or group_allowance.get("effective_limit") is not None
-            )
-            else {}
+        # A reading is carried whether or not it has passed its shelf life: an
+        # old figure with its age and stale flag lets Jev weigh it, where a null
+        # figure hides the account exactly when it has been idle. Only a reading
+        # that is genuinely absent leaves the figures null, with its
+        # budget_reason naming why.
+        reading_known = state.get("headroom") == "known" and (
+            group is None
+            or group_allowance.get("state") == budget.OBSERVED
+            or group_allowance.get("effective_limit") is not None
         )
-        utilisation = (
-            state.get("utilisation_pct")
-            if state.get("headroom") == "known" and not state.get("expired")
-            else None
-        )
+        budget_facts = state if reading_known else {}
+        stale = bool(state.get("expired")) if reading_known else None
+        # The ceiling gate acts on a fresh reading alone: an old figure is
+        # offered for Jev to weigh, never turned into a hard refusal.
+        fresh = reading_known and not state.get("expired")
+        utilisation = state.get("utilisation_pct") if fresh else None
         ceiling = budget.policy(config)["utilisation_ceiling_pct"]
         if utilisation is not None and utilisation >= ceiling:
             reasons.append(f"budget-ceiling: {utilisation:g}% at or above {ceiling:g}%")
@@ -412,6 +419,12 @@ def candidates(
         days_to_reset = (
             max(0.0, (reset - now).total_seconds() / 86400) if reset else None
         )
+        observed = parse_utc(str(state.get("observed_at") or ""))
+        budget_age_s = (
+            max(0.0, (now - observed).total_seconds())
+            if reading_known and observed is not None
+            else None
+        )
         budget_reason = None
         if group is not None and not budget_facts:
             budget_reason = str(state.get("detail") or "") or (
@@ -437,6 +450,8 @@ def candidates(
                 outcomes=recent_outcomes(rows, request, name, model, now=now),
                 reasons=reasons,
                 budget_reason=budget_reason,
+                stale=stale,
+                budget_age_s=budget_age_s,
             )
         )
     return result
