@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest carries baseline_suite and after_suite empty (both keys present but null), so no added-failure count can be derived from the reviewed run's own arms. The reviewed run's declared gate (gate.log: 62 passed EXIT=0 over five test files) and its declared negative control (negative-control.log: 1 failed, 7 passed, EXIT=1) were both independently reproduced by this review against the reviewed head 62c9be139, in a scratch extraction at module.__file__ under $TMPDIR; the negative control was reproduced by an independent mutation of the reviewed head in a second scratch tree rather than re-read from the manifest. A third and fourth mutation exercised the obligations guard (2 tests red) and the content-review branch (0 tests red \u2014 see the follow-on).",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/routing.py:2825 review_lifecycle.is_hot(record, ...) \u2014 the newest content review's finding count is gated on the review being hot",
+    "reckon/crew/routing.py:2831 review_lifecycle.is_hot(design, ...) \u2014 the design review's unanswered findings are counted only while it is hot",
+    "reckon/crew/obligations.py:777 obligations._review_is_hot(project, run_id, record, closed=closed) \u2014 the sub-floor duty is raised only from a hot review"
+  ],
+  "completed_at": "2026-10-07T09:00:16.826Z",
+  "dispatched_at": "2026-10-07T08:36:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2823-2829",
+      "severity": "follow-on",
+      "text": "follow-on: the content-review hot guard in require_plan_reviewed is not falsifiable by any test. The change wraps the newest content review's finding count in `plan_review.unanswered_findings(record) if review_lifecycle.is_hot(record, ...) else []` (routing.py:2823-2829). Only the design branch (routing.py:2830-2834) is exercised: three gate tests cover a landed design review (admitted), a hot design review (refused) and a plan with no design review (refused). Replacing the content branch with the pre-change `unanswered = plan_review.unanswered_findings(record)` \u2014 dropping the is_hot guard entirely \u2014 leaves all 8 tests in tests/test_review_gate_reads_the_hot_set.py GREEN (verified: 8 passed with the mutation applied in a scratch tree). So a regression that always counts a landed or superseded content review's findings would not be caught, while the symmetric design and obligations guards are both held (design: declared negative control reddens test_the_gate_admits_a_landed_design_review_with_an_unanswered_finding; obligations: my mutation to `_review_is_hot` returning True reddens test_a_run_with_a_ledger_row_raises_no_sub_floor_duty and test_a_superseded_review_raises_no_sub_floor_duty). Not blocking: the code is correct as written and the two most load-bearing guards are covered; the gap is a gate case for a landed or superseded *content* review that no longer refuses.",
+      "type": "untested-guard"
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "707",
+      "severity": "follow-on",
+      "text": "follow-on: obligations._review_is_hot reads the ledger through the private recovery._promoted_run_ids (recovery.py:3228), a module-private helper. The dispatch brief named it, so it is within scope, but a public wrapper on recovery (or the ledger's own run_ids) would keep the obligations reader off a private symbol. Low value and non-behavioural; named for completeness.",
+      "type": "private-cross-module-coupling"
+    },
+    {
+      "file": "manifest.md",
+      "line": "n/a",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest's ruff figure is not reproducible. evidence_inputs in the worker's reply states 'changed sources carry 8 findings against a 14 baseline'. An independent measurement over the four changed source files (routing.py, obligations.py, review_lifecycle.py, review.py) with the repository's own ruff config resolved in both arms gives 8 findings at the reviewed head and 8 at the reviewed base (8d0e7cb4a) \u2014 identical finding sets, a delta of 0, not 8-vs-14. The substantive claim ('the edit adds no finding', the repository's binding rule) holds and is the direction that matters; only the baseline number is wrong. The new test file is ruff-clean and all five changed paths are format-clean.",
+      "type": "manifest-accuracy"
+    },
+    {
+      "file": "n/a",
+      "line": "n/a",
+      "severity": "follow-on",
+      "text": "follow-on (outside the code change): the reviewed node records in its own manifest blockers that, while cleaning session scratch, it ran a command whose argument list ended with the bare path `/var/tmp` and discarded its output, so it removed every mcintos-owned entry in the node-local shared /var/tmp rather than only its own hotset-* dirs. A peer run was active on that path at the time. No repository file was touched and the reviewed commit 62c9be139 is intact, so the change under review is unaffected; the coordinator must still triage the shared-scratch loss (peer basetemps under /var/tmp near 2026-10-07T08:30Z). Reported, not triaged, per the runtime rule that a failure outside this node's declared scope goes to follow_ons.",
+      "type": "operational-incident"
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 7,
+  "item_verdicts": {
+    "call_sites": "Two new public entry points and their callers. review_lifecycle.is_hot (review_lifecycle.py:277) wraps the existing lifecycle() and is called at routing.py:2825 (content review) and routing.py:2831 (design review), plus through obligations._review_is_hot (obligations.py:728). review.reviewed_run_ids (review.py:2512) has one production caller, review_lifecycle._run_review_records (review_lifecycle.py:334), replacing the loader's direct reach into review._store_index. obligations._review_is_hot has one caller (obligations.py:777).",
+    "diff": "Read commit by commit: one commit 62c9be1392d413a6f76290f124063767505cbe27 ('fix(crew): raise review duties only while a review is hot') changes five files, 631 insertions / 18 deletions: reckon/crew/routing.py (gate guards both branches on is_hot and derives the plan state), reckon/crew/obligations.py (the _review_is_hot helper and the duty guard), reckon/crew/review_lifecycle.py (the is_hot predicate; the loader now enumerates run reviews through the public reader), reckon/crew/review.py (the reviewed_run_ids reader), and the new tests/test_review_gate_reads_the_hot_set.py (520 lines, 8 tests).",
+    "done_when": "The two required changes are implemented and tested: (gate) an unanswered finding blocks dispatch only when its review is hot, with the design-review presence check and the coverage check unchanged; (obligations) a sub-floor duty is raised only from a hot review, with a run that has a ledger row or a review superseded by a later review of the same run raising none. tests/test_review_gate_reads_the_hot_set.py has a named test for each: test_the_gate_admits_a_landed_design_review_with_an_unanswered_finding, test_the_gate_refuses_an_unanswered_finding_of_a_hot_review, test_the_gate_refuses_a_plan_with_no_design_review, test_a_hot_review_raises_a_sub_floor_duty, test_a_run_with_a_ledger_row_raises_no_sub_floor_duty, test_a_superseded_review_raises_no_sub_floor_duty, and two loader-reader cases. All 8 pass at the reviewed head; the design guard, the obligations guard and the loader reader each redden under mutation of the code they cover, the content-review guard does not (see finding).",
+    "goal": "The dispatch gate and the sub-floor obligations view each consult the review_lifecycle derivation and act on a review only while it is hot (open or answered), so a landed design review's unanswered finding no longer refuses a covered build and a landed or superseded review raises no duty \u2014 exactly the two changes brief \u00a74 specifies.",
+    "manifest": "status complete; commits [62c9be139]; gate.log names the five-file gate (62 passed EXIT=0); negative-control.log's last line is EXIT=1 over tests/test_review_gate_reads_the_hot_set.py; changed_paths lists the five changed files and reconciles with the diffstat; baseline_suite and after_suite are present-but-null, so the added-failure count is unmeasured. One manifest claim is not reproducible: the ruff figure in evidence_inputs ('8 findings against a 14 baseline') against a measured 8-vs-8 delta of 0. The node additionally reports a self-inflicted /var/tmp cleanup incident in blockers.",
+    "write_paths": "Declared: reckon/crew/routing.py, reckon/crew/obligations.py, reckon/crew/review_lifecycle.py, reckon/crew/review.py, tests/test_review_gate_reads_the_hot_set.py, docs/evidence/fragments/every-review-is-kept-as-a-committed-record/review-gate-reads-the-hot-set.html, and a figures directory. The diff touches the five source/test files only; no fragment and no figure were written, which the manifest justifies under the small-node rule because the brief's done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "Two of the three guard sites the change introduces are held and falsifiable, one is not. I reproduced the declared negative control (design branch not filtered on is_hot: 1 failed, 7 passed, EXIT=1 in a scratch tree at the reviewed head) and added two mutations of my own: obligations._review_is_hot forced to True reddens test_a_run_with_a_ledger_row_raises_no_sub_floor_duty and test_a_superseded_review_raises_no_sub_floor_duty (2 failed), and review.py/review_lifecycle.py loader behaviour is held by the reader-spy test. But the content-review branch in routing.py (2823-2829) is unfalsifiable: removing its is_hot guard leaves all 8 tests green. That is a real regression surface (a landed or superseded content review's finding would again refuse) held by no test, so durability is marked down rather than perfect.",
+    "evidence": "Independently reproduced rather than read: the reviewed head 62c9be139 extracted at git archive and re-run gives 62 passed EXIT=0 (gate-head.log, module.__file__ under the scratch tree); the declared negative control reproduced by my own mutation of the design branch gives 1 failed, 7 passed, EXIT=1 (negcontrol.log); and an independent ruff comparison with the repo config resolved in both arms gives identical finding sets (delta 0) on the four changed sources, with the new test file clean and all five paths format-clean. The one weakness is manifest accuracy, not the change: the manifest's ruff baseline figure (14) does not reproduce (8); the conclusion it supports is correct.",
+    "fit": "Extends the owners the plan and brief name rather than adding mechanisms: is_hot wraps lifecycle() and names the two hot states once beside the derivation, routing and obligations consult it, and review.reviewed_run_ids is the one public reader the brief asked for so the loader stops reaching into review._store_index. Two fit notes, both named as follow-ons: the content-review branch's guard is untested, and obligations reaches a private recovery helper for the ledger-row set. Neither is a behavioural defect.",
+    "goal_fidelity": "Both required changes are implemented and load-bearing, and the two invariants the brief pins are preserved: the design-review presence check (design is None refuses before any lifecycle read) is unchanged, so a design review at any version and any lifecycle state still satisfies it; and review_coverage is unchanged. The gate now derives the plan state from the resolved plan file (plan_review.list_plan_reviews as later_records) and the obligations view derives a run's ledger-row membership and its sibling rounds. The two branch fixes rather than restate the plan.",
+    "reuse": "Reuses review_lifecycle.lifecycle and HOT_STATES, review.stored_records_for_run and its _store_index cache, plan_review.list_plan_reviews, and recovery._promoted_run_ids; adds no new store path and no new store, exactly as the brief directed. The two new public symbols are the predicate the brief allowed and the reader it required.",
+    "scope_discipline": "Five files changed, all within the declared write paths: reckon/crew/routing.py, reckon/crew/obligations.py, reckon/crew/review_lifecycle.py, reckon/crew/review.py, tests/test_review_gate_reads_the_hot_set.py. The diffstat reconciles at five files, 631 insertions / 18 deletions. plan_review.py and mcp.py, which the brief fences off, are untouched; no figure or fragment was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the dispatch gate and the sub-floor obligations view now consult review_lifecycle and act on a review only while it is hot (open/answered), so a landed design review's unanswered finding no longer refuses a covered build and a landed/superseded run review raises no duty (reckon/crew/routing.py:require_plan_reviewed both branches, reckon/crew/obligations.py:_sub_floor_items_by_session via _review_is_hot, on review_lifecycle.is_hot; review.py:reviewed_run_ids replaces the loader's reach into _store_index). EVIDENCE: head gate independently re-run 62 passed EXIT=0 in a scratch extraction at 62c9be139; declared negative control reproduced by independent mutation (1 failed, 7 passed, EXIT=1); obligations guard falsified by mutation (2 failed); ruff delta on the four changed sources 0 with identical finding sets. SCOPE: five declared files, nothing else; plan_review.py and mcp.py untouched. DURABILITY: design and obligations guards held and falsifiable; the content-review guard (routing.py:2823-2829) is held by no test \u2014 removing it leaves all 8 green. FIT: extends lifecycle and the store's own readers, adds is_hot and reviewed_run_ids as briefed; TWO follow-ons (the untested content branch, and obligations reaching private recovery._promoted_run_ids). REUSE: reuses lifecycle/HOT_STATES/stored_records_for_run/_store_index/list_plan_reviews; adds no store path. Manifest ruff baseline figure not reproducible (8-vs-8, not 8-vs-14); the no-added-findings conclusion holds. A self-inflicted /var/tmp cleanup incident is reported by the reviewed node in its own manifest and is out of this change's scope.",
+  "review_run_id": "r-20261007T083542773341-review-of-review-gate-reads-the-hot-set",
+  "reviewed_base_sha": "8d0e7cb4a289a8566fa642ce3e589ad3a422ed19",
+  "reviewed_head_sha": "62c9be1392d413a6f76290f124063767505cbe27",
+  "reviewed_run_id": "r-20261007T073745130487-review-gate-reads-the-hot-set",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T08:56:00Z",
+  "total": 115
+}
