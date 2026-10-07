@@ -7494,7 +7494,7 @@ def crew_velocity(project, since, until, fields, limit, cursor, pretty):
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_budget_reset(group, mark_available, mark_used, by, pretty):
-    """Set, clear or read a budget group's banked-reset flag.
+    """Set, clear or read whether a budget group's banked reset is available or used.
 
     A metered subscription can carry one banked reset, which grants one extra
     full window of allowance while it is available. With no action flag the
