@@ -73,11 +73,17 @@ RESERVATION_STATE_QUERY = ("squeue", "-h", "-j", "{job}", "-o", "%T")
 RESERVATION_REASON_QUERY = ("squeue", "-h", "-j", "{job}", "-o", "%R")
 
 # The scheduler question a replacement asks about the job it is pointed at: one
-# row carrying the state, the owner and the shape of the job named, or no row
-# when the scheduler knows no such job. All of it is read in the same query
-# because a replacement must see the job is running under this user before it
-# overwrites the record that names it.
-REPLACEMENT_JOB_QUERY = ("squeue", "-h", "-j", "{job}", "-o", "%T|%u|%P|%c|%m")
+# row carrying the state and the owner of the job named. The job's shape is read
+# through the allocation-shape reader the fleet node already owns, so only the
+# two fields a replacement decides on are asked for here.
+REPLACEMENT_JOB_QUERY = ("squeue", "-h", "-j", "{job}", "-o", "%T|%u")
+
+# What a scheduler prints on stderr when it is asked about a job id it does not
+# know. Some clients answer a successful query naming no job; this one reports
+# the unknown id as an error and exits non-zero, so the marker is what tells an
+# unknown job apart from a scheduler that could not be asked at all — the two
+# must not be read as each other.
+SCHEDULER_UNKNOWN_JOB_MARKER = "invalid job id"
 
 # The one state a replacement may be pointed at: a job that is there to run
 # steps under. A pending job has not started, and every other state names a job
@@ -428,7 +434,7 @@ def _adopted_result(record: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _target_job_argv(job_id: str) -> list[str]:
-    """The argument vector that asks about one named job's state and shape."""
+    """The argument vector that asks about one named job's state and owner."""
     return [part.replace("{job}", job_id) for part in REPLACEMENT_JOB_QUERY]
 
 
@@ -441,13 +447,15 @@ def _read_target_job(
     job_id: str,
     runner: Callable[..., subprocess.CompletedProcess[str]] | None,
 ) -> dict[str, Any]:
-    """The state, owner and shape the scheduler reports for a named job.
+    """The state and owner the scheduler reports for a named job.
 
     Raises the refusal to raise when the job cannot be read. A question that
-    could not be asked is kept apart from a job the scheduler answered for and
-    did not name: the first says nothing about the job and must not be read as
-    its absence, while the second is the scheduler's own statement that no such
-    job is in the queue.
+    could not be asked is kept apart from a scheduler that answered for a job
+    and did not name it: the first says nothing about the job and must not be
+    read as its absence, while the second is the scheduler's own statement that
+    no such job is in the queue. This client states that absence as an error
+    carrying the unknown-job marker, so both an empty successful answer and a
+    marked error are read as a job the scheduler does not know.
 
     ``state`` and ``owner`` are returned as the scheduler printed them; the
     caller compares them against its own vocabulary rather than trusting the
@@ -467,7 +475,17 @@ def _read_target_job(
             f"be asked about job {job_id} — {exc}; the record is unchanged"
         ) from exc
     if completed.returncode != 0:
-        reason = (completed.stderr or "").strip()
+        stderr = completed.stderr or ""
+        if SCHEDULER_UNKNOWN_JOB_MARKER in stderr.casefold():
+            # This cluster's client reports a job id it does not know as an
+            # error rather than as a successful query naming no job, so the
+            # marker is what names the job unknown instead of reading a
+            # scheduler that answered as one that could not be asked.
+            raise CrewError(
+                "cannot replace the placement reservation: the scheduler does not "
+                f"know job {job_id}; the record is unchanged"
+            )
+        reason = stderr.strip()
         raise CrewError(
             "cannot replace the placement reservation: the scheduler could not "
             f"be asked about job {job_id}"
@@ -488,34 +506,7 @@ def _read_target_job(
             "cannot replace the placement reservation: the scheduler named no "
             f"state and owner for job {job_id}; the record is unchanged"
         )
-    return {
-        "state": state,
-        "owner": owner,
-        "partition": parts[2].strip() if len(parts) > 2 else "",
-        "cores": parts[3].strip() if len(parts) > 3 else "",
-        "memory": parts[4].strip() if len(parts) > 4 else "",
-    }
-
-
-def _target_shape(target: Mapping[str, Any]) -> tuple[str, int, int]:
-    """The partition, cores and memory a replacement's target was submitted with.
-
-    Read from the scheduler row rather than from this module's declared
-    defaults, so the published record describes the allocation the job actually
-    carries. A field the scheduler did not report falls back to the declared
-    default, because a record naming the target's real job id is still what a
-    dispatch resolves, and a missing size is not a reason to refuse a job the
-    boundary checks have already admitted.
-    """
-    from reckon.crew import fleet_node
-
-    partition = str(target.get("partition") or RESERVATION_PARTITION)
-    cores_text = str(target.get("cores") or "")
-    cores = int(cores_text) if cores_text.isdigit() else RESERVATION_CORES
-    memory_gb = fleet_node.parse_memory_gb(str(target.get("memory") or ""))
-    if memory_gb is None:
-        memory_gb = RESERVATION_MEMORY_GB
-    return partition, cores, memory_gb
+    return {"state": state, "owner": owner}
 
 
 def _replacement_refusal(job_id: str, target: Mapping[str, Any]) -> str | None:
@@ -575,7 +566,19 @@ def replace_reservation(
             raise CrewError(f"cannot replace the placement reservation: {refusal}")
         previous = read_reservation(project)
         previous_job = previous.get("job_id") if previous else None
-        partition, cores, memory_gb = _target_shape(target)
+        # The shape is read through the allocation-shape reader the fleet node
+        # already owns, so the published record describes the target's real
+        # allocation rather than a second parse of the same scheduler fields. A
+        # shape that cannot be read falls back to the declared defaults: the
+        # boundary checks have already admitted the job, and a record naming the
+        # real job id is still what a dispatch resolves.
+        from reckon.crew import fleet_node
+
+        shape = fleet_node.allocation_shape(job_id, runner=runner) or {}
+        partition = str(shape.get("partition") or RESERVATION_PARTITION)
+        cores = int(shape.get("cores") or RESERVATION_CORES)
+        memory_gb = shape.get("memory_gb")
+        memory_gb = int(memory_gb) if memory_gb is not None else RESERVATION_MEMORY_GB
         reach = _roster_reach()
         record = {
             "job_id": job_id,
