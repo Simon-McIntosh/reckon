@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate arm, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/plan_review.py:1797 review_day_summary"
+  ],
+  "completed_at": "2026-10-07T14:10:21.841Z",
+  "dispatched_at": "2026-10-07T14:03:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1584",
+      "severity": "follow-on",
+      "text": "_acted_finding_types reads the stored action as str(action).strip().lower() == \"acted\" while the cited script (docs/figures/plan-review-cycles/measure_review_cycles.py:609-614) compares it exactly; record_response constrains a stored action to \"acted\"/\"declined\", so the two readers diverge only on a record written by hand with a variant spelling (which the review-store routing permits). The re-measured acted share could then differ from the 41.9% baseline by exactly those records; the fold's own sibling declined_recurrence uses the same normalised read, so the divergence is with the cited figure, not within the module."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T135317151529-the-finding-type-recurrence-fold/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the reviewed manifest declares no baseline_suite or after_suite arm (its test_logs name the head gate and the negative control only), so the store's added-failure derivation reads unmeasured (null) rather than a measured zero; recording the two arms would let a later reader derive the delta this one-arm evidence cannot."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1563",
+      "severity": "follow-on",
+      "text": "_acted_finding_types re-implements the per-finding response lookup (strip the finding id, look up responses by it, compare the action) that declined_recurrence already carries at plan_review.py:1413-1430; the two folds now hold the same accessor pattern twice in one module."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site: reckon/crew/plan_review.py:1797 review_day_summary; reckon/mcp.py:4416 returns {\"day_summary\": summary} verbatim, so the new key needs no change there.",
+    "diff": "read the single commit 5d774475 against base 4bb0ac77; it adds the two same-type helpers and the _finding_type_recurrence fold (+100 lines) to reckon/crew/plan_review.py, one new test module (210 lines, four cases) and one evidence fragment, and changes no wiring outside plan_review.py.",
+    "done_when": "the done-when's gate is tests/test_plan_review_recurrence_fold.py with tests/test_plan_review_day_summary.py; I re-ran it at head 5d774475 in a scratch extraction (reviewer-head-gate.log, 15 passed, EXIT=0) and reproduced the negative control (reviewer-negative-control.log, 2 failed 13 passed, EXIT=1, naming test_the_fold_gives_the_any_share_beside_the_acted_share and test_a_declined_same_type_is_not_counted_as_acted).",
+    "goal": "the node implements plan \u00a79(d): the plan-review day summary carries a per-finding-type recurrence fold giving, per type, the any share (the preceding review of the same plan raised the type) and the acted share (the preceding review carries a same-type finding with a stored response of action acted); the two helpers and the _finding_type_recurrence fold reproduce the definition the plan names.",
+    "manifest": "read; status complete, commit 5d774475, tests line with 15 passed EXIT=0, test_logs naming head/gate.log and negative-control.log, negative_control_log naming the red log (EXIT=1); baseline_suite and after_suite are both absent so the added-failure count is unmeasured.",
+    "write_paths": "the reviewed manifest declares plan_review.py, the new test module and the evidence fragment; git diff --stat 4bb0ac77 5d774475 lists exactly reckon/crew/plan_review.py, tests/test_plan_review_recurrence_fold.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/the-finding-type-recurrence-fold.html, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the acted share is the discriminating measure and is shown to fire: counting any same-type finding as acted whatever its stored response, the declared mutation, turns test_a_declined_same_type_is_not_counted_as_acted and test_the_fold_gives_the_any_share_beside_the_acted_share red (reviewer-negative-control.log: 2 failed, 13 passed, EXIT=1) while the head arm fails neither; it is 19 rather than 20 because the mutation replaces the whole response-action branch rather than one polarity of it, so a fold that accepted only a subset of the acted vocabulary would not be told apart by it.",
+    "evidence": "I re-ran the declared gate at head 5d774475 in a scratch extraction and reproduced both arms (reviewer-head-gate.log 15 passed EXIT=0; reviewer-negative-control.log 2 failed 13 passed EXIT=1, the same two ids the reviewed run's own negative-control.log names); it is 19 rather than 20 because the reviewed manifest carries no baseline_suite/after_slice arm, so the store's added-failure derivation is unmeasured (null) rather than a measured zero.",
+    "fit": "the added names describe mechanism (_finding_type_recurrence, _finding_types, _acted_finding_types, the finding_type_recurrence key) with no version, plan, sprint or ticket identifier and no attribution, and the docstrings state the invariant (a raised-and-declined or unanswered type is not an act) rather than the change history.",
+    "goal_fidelity": "the \u00a79(d) deliverable is met point for point: _finding_types and _acted_finding_types read the same stored record the research script reads (findings[].type/.id, responses keyed by finding id), _finding_type_recurrence walks each plan's reviews in dispatch order and compares each with its immediate predecessor over the window [start, end), the predecessor is anchored outside the window, and a plan's first review is excluded rather than counted fresh, exactly as the tests assert; the fold is carried under finding_type_recurrence on the review_day_summary dict and reaches crew(view=\"plan-review\", since=...) unmodified through mcp.py:4416.",
+    "reuse": "the fold reuses the module's existing accessors (unanswered_findings' finding-id keying, the Mapping guards the sibling folds use) rather than forking a record reader, and _finding_type_recurrence walks the same ordered history the per-section fold already builds; it is 19 rather than 20 because _acted_finding_types repeats the per-finding response-action lookup declined_recurrence already holds (plan_review.py:1413-1430).",
+    "scope_discipline": "git diff --stat 4bb0ac77 5d774475 lists exactly the three declared paths (reckon/crew/plan_review.py, tests/test_plan_review_recurrence_fold.py, the evidence fragment), with no production file outside the node's declared write scope and no plan, sprint or index state touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node implements plan \u00a79(d): the plan-review day summary carries a per-finding-type recurrence fold giving, per type, the any share (the preceding review of the same plan raised the type) and the acted share (the preceding review carries a same-type finding with a stored response of action acted); the two helpers and the _finding_type_recurrence fold reproduce the definition the plan names.\nVERDICT done_when: the done-when's gate is tests/test_plan_review_recurrence_fold.py with tests/test_plan_review_day_summary.py; I re-ran it at head 5d774475 in a scratch extraction (reviewer-head-gate.log, 15 passed, EXIT=0) and reproduced the negative control (reviewer-negative-control.log, 2 failed 13 passed, EXIT=1, naming test_the_fold_gives_the_any_share_beside_the_acted_share and test_a_declined_same_type_is_not_counted_as_acted).\nVERDICT write_paths: the reviewed manifest declares plan_review.py, the new test module and the evidence fragment; git diff --stat 4bb0ac77 5d774475 lists exactly reckon/crew/plan_review.py, tests/test_plan_review_recurrence_fold.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/the-finding-type-recurrence-fold.html, all inside the declared scope.\nVERDICT manifest: read; status complete, commit 5d774475, tests line with 15 passed EXIT=0, test_logs naming head/gate.log and negative-control.log, negative_control_log naming the red log (EXIT=1); baseline_suite and after_suite are both absent so the added-failure count is unmeasured.\nVERDICT diff: read the single commit 5d774475 against base 4bb0ac77; it adds the two same-type helpers and the _finding_type_recurrence fold (+100 lines) to reckon/crew/plan_review.py, one new test module (210 lines, four cases) and one evidence fragment, and changes no wiring outside plan_review.py.\nCALL_SITES: reckon/crew/plan_review.py:1797 review_day_summary\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the \u00a79(d) deliverable is met point for point: _finding_types and _acted_finding_types read the same stored record the research script reads (findings[].type/.id, responses keyed by finding id), _finding_type_recurrence walks each plan's reviews in dispatch order and compares each with its immediate predecessor over the window [start, end), the predecessor is anchored outside the window, and a plan's first review is excluded rather than counted fresh, exactly as the tests assert; the fold is carried under finding_type_recurrence on the review_day_summary dict and reaches crew(view=\"plan-review\", since=...) unmodified through mcp.py:4416.\nSCORE evidence: 19\nJUSTIFICATION evidence: I re-ran the declared gate at head 5d774475 in a scratch extraction and reproduced both arms (reviewer-head-gate.log 15 passed EXIT=0; reviewer-negative-control.log 2 failed 13 passed EXIT=1, the same two ids the reviewed run's own negative-control.log names); it is 19 rather than 20 because the reviewed manifest carries no baseline_suite/after_slice arm, so the store's added-failure derivation is unmeasured (null) rather than a measured zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 4bb0ac77 5d774475 lists exactly the three declared paths (reckon/crew/plan_review.py, tests/test_plan_review_recurrence_fold.py, the evidence fragment), with no production file outside the node's declared write scope and no plan, sprint or index state touched.\nSCORE durability: 19\nJUSTIFICATION durability: the acted share is the discriminating measure and is shown to fire: counting any same-type finding as acted whatever its stored response, the declared mutation, turns test_a_declined_same_type_is_not_counted_as_acted and test_the_fold_gives_the_any_share_beside_the_acted_share red (reviewer-negative-control.log: 2 failed, 13 passed, EXIT=1) while the head arm fails neither; it is 19 rather than 20 because the mutation replaces the whole response-action branch rather than one polarity of it, so a fold that accepted only a subset of the acted vocabulary would not be told apart by it.\nSCORE fit: 20\nJUSTIFICATION fit: the added names describe mechanism (_finding_type_recurrence, _finding_types, _acted_finding_types, the finding_type_recurrence key) with no version, plan, sprint or ticket identifier and no attribution, and the docstrings state the invariant (a raised-and-declined or unanswered type is not an act) rather than the change history.\nSCORE reuse: 19\nJUSTIFICATION reuse: the fold reuses the module's existing accessors (unanswered_findings' finding-id keying, the Mapping guards the sibling folds use) rather than forking a record reader, and _finding_type_recurrence walks the same ordered history the per-section fold already builds; it is 19 rather than 20 because _acted_finding_types repeats the per-finding response-action lookup declined_recurrence already holds (plan_review.py:1413-1430).\nFINDING reckon/crew/plan_review.py:1584 follow-on: _acted_finding_types reads the stored action as str(action).strip().lower() == \"acted\" while the cited script (docs/figures/plan-review-cycles/measure_review_cycles.py:609-614) compares it exactly; record_response constrains a stored action to \"acted\"/\"declined\", so the two readers diverge only on a record written by hand with a variant spelling (which the review-store routing permits). The re-measured acted share could then differ from the 41.9% baseline by exactly those records; the fold's own sibling declined_recurrence uses the same normalised read, so the divergence is with the cited figure, not within the module.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T135317151529-the-finding-type-recurrence-fold/manifest.md:1 follow-on: the reviewed manifest declares no baseline_suite or after_suite arm (its test_logs name the head gate and the negative control only), so the store's added-failure derivation reads unmeasured (null) rather than a measured zero; recording the two arms would let a later reader derive the delta this one-arm evidence cannot.\nFINDING reckon/crew/plan_review.py:1563 follow-on: _acted_finding_types re-implements the per-finding response lookup (strip the finding id, look up responses by it, compare the action) that declined_recurrence already carries at plan_review.py:1413-1430; the two folds now hold the same accessor pattern twice in one module.\n",
+  "review_run_id": "r-20261007T140256721590-review-of-the-finding-type-recurrence-fold",
+  "reviewed_base_sha": "4bb0ac7768f6fce6f75dbeb0b40e662bf5c4b259",
+  "reviewed_head_sha": "5d7744751702e87c0db6788c25002de7ceb7f470",
+  "reviewed_run_id": "r-20261007T135317151529-the-finding-type-recurrence-fold",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T14:09:33.951651+00:00",
+  "total": 117
+}
