@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "a78d1cf027fe8904f89277217c503706acefccd1",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/session_host.py:526",
+    "reckon/crew/dispatch.py:1319",
+    "plugins/crew-host/bin/crew-host:41"
+  ],
+  "completed_at": "2026-10-07T15:41:01.672Z",
+  "dispatched_at": "2026-10-07T15:36:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "199",
+      "severity": "follow-on",
+      "text": "follow-on: _fifo_path duplicates the FIFO-path capability dispatch.py:1319 _session_host_fifo() owns; both compose root / SESSION_HOST_DIRECTORY / f\"{pid}-{start}.fifo\", so the filename format now lives in two modules and can drift, where a single shared owner helper would keep one spelling."
+    }
+  ],
+  "head_log_revision": "a78d1cf027fe8904f89277217c503706acefccd1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; one commit 68361d4ee adds _fifo_path, _remove_fifo and the trap, 170 insertions and 1 deletion across five files.",
+    "done_when": "the done_when names one test in each of tests/test_session_host.py and tests/test_session_host_plugin.py, each asserting the FIFO is gone; both are in the diff and the manifest records them run at head.",
+    "goal": "the node goal is that the session host and its entry point remove their FIFO when they stop; reckon/crew/session_host.py:460 calls self._remove_fifo() in SessionHost.stop and plugins/crew-host/bin/crew-host:41 traps TERM/HUP/INT to rm -f, so both halves are present at head.",
+    "manifest": "read; it states the two test files pass at head (18 passed, EXIT=0), names both gate logs, and carries the declared negative control.",
+    "write_paths": "read the manifest's declared paths; the diff touches the four code paths plus the evidence fragment, all inside the six declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_session_host.py:452 asserts not fifo.exists() against the filesystem, so deleting the self._remove_fifo() call reddens it, as the manifest's mutation run shows in gate-negative.log.",
+    "evidence": "tests/test_session_host.py:452 and tests/test_session_host_plugin.py:251 assert the FIFO is gone, and the manifest records 18 passed EXIT=0 at head with the declared mutation red at EXIT=1.",
+    "fit": "reckon/crew/session_host.py:199 follows the module's deferred-import and contextlib.suppress idiom used at session_host.py:533 and carries no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/session_host.py:460 removes the host's FIFO on stop and plugins/crew-host/bin/crew-host:41 removes the entry point's on TERM/HUP/INT.",
+    "reuse": "reckon/crew/session_host.py:199 re-implements the FIFO path construction reckon/crew/dispatch.py:1319 already owns.",
+    "scope_discipline": "the diff a78d1cf..68361d4 touches exactly the five declared paths with 170 insertions and 1 deletion."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the session host and its entry point remove their FIFO when they stop; reckon/crew/session_host.py:460 calls self._remove_fifo() in SessionHost.stop and plugins/crew-host/bin/crew-host:41 traps TERM/HUP/INT to rm -f, so both halves are present at head.\nVERDICT done_when: the done_when names one test in each of tests/test_session_host.py and tests/test_session_host_plugin.py, each asserting the FIFO is gone; both are in the diff and the manifest records them run at head.\nVERDICT write_paths: read the manifest's declared paths; the diff touches the four code paths plus the evidence fragment, all inside the six declared write paths.\nVERDICT manifest: read; it states the two test files pass at head (18 passed, EXIT=0), names both gate logs, and carries the declared negative control.\nVERDICT diff: read commit by commit; one commit 68361d4ee adds _fifo_path, _remove_fifo and the trap, 170 insertions and 1 deletion across five files.\nCALL_SITES: reckon/crew/session_host.py:526, reckon/crew/dispatch.py:1319, plugins/crew-host/bin/crew-host:41\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/session_host.py:460 removes the host's FIFO on stop and plugins/crew-host/bin/crew-host:41 removes the entry point's on TERM/HUP/INT.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_session_host.py:452 and tests/test_session_host_plugin.py:251 assert the FIFO is gone, and the manifest records 18 passed EXIT=0 at head with the declared mutation red at EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff a78d1cf..68361d4 touches exactly the five declared paths with 170 insertions and 1 deletion.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_session_host.py:452 asserts not fifo.exists() against the filesystem, so deleting the self._remove_fifo() call reddens it, as the manifest's mutation run shows in gate-negative.log.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/session_host.py:199 follows the module's deferred-import and contextlib.suppress idiom used at session_host.py:533 and carries no plan or ticket identifier.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/session_host.py:199 re-implements the FIFO path construction reckon/crew/dispatch.py:1319 already owns.\nFINDING reckon/crew/session_host.py:199 follow-on: _fifo_path duplicates the FIFO-path capability dispatch.py:1319 _session_host_fifo() owns; both compose root / SESSION_HOST_DIRECTORY / f\"{pid}-{start}.fifo\", so the filename format now lives in two modules and can drift, where a single shared owner helper would keep one spelling.\n",
+  "review_run_id": "r-20261007T153523035962-review-of-session-host-removes-its-fifo",
+  "reviewed_base_sha": "a78d1cf027fe8904f89277217c503706acefccd1",
+  "reviewed_head_sha": "68361d4eee327c1d53e425b3288a78bd9d3d514a",
+  "reviewed_run_id": "r-20261007T151850415696-session-host-removes-its-fifo",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261007T153523035962-review-of-session-host-removes-its-fifo",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T15:40:15.670796+00:00",
+  "total": 107
+}

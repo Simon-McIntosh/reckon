@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.78">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -305,7 +305,10 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>Node <code>session-host-removes-its-fifo</code> landed at merge <code>9dfb2a1e</code>. <code>SessionHost.stop</code> removes the FIFO it was handed, and the entry point traps <code>TERM</code>, <code>HUP</code> and <code>INT</code> to remove its FIFO. Gate: 18 passed, and the declared mutation fails both new tests. Population of 8 importing test files: 127 passed at base, 129 at the merged head, 0 added. Review 107/120; its one follow-on is that the FIFO filename format is now spelled in both <code>session_host._fifo_path</code> and <code>dispatch._session_host_fifo</code>. The section stays open for its live clause: a census reading <code>stale_fifos=0</code> after one session that dispatched and one that did not, both started after this merge, have ended. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/session-host-removes-its-fifo.html">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261007T151850415696-session-host-removes-its-fifo" data-who="reckon-build" data-when="2026-10-07T15:34:24.553Z">
-    <div class="r-comment-body"><p>docs/evidence/fragments/a-follower-lives-as-long-as-its-session/session-host-removes-its-fifo.html — SessionHost.stop removes the request FIFO it was handed (path resolved from the owner pair through dispatch&#x27;s SESSION_HOST_DIRECTORY and _session_host_runtime_root) and the entry point traps TERM/HUP/INT to remove its FIFO and exit; gate 18 passed EXIT=0, declared mutation 2 failed EXIT=1</p></div>
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-follower-lives-as-long-as-its-session/session-host-removes-its-fifo.html — SessionHost.stop removes the request FIFO it was handed (path resolved from the owner pair through dispatch's SESSION_HOST_DIRECTORY and _session_host_runtime_root) and the entry point traps TERM/HUP/INT to remove its FIFO and exit; gate 18 passed EXIT=0, declared mutation 2 failed EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261007T153523035962-review-of-session-host-removes-its-fifo" data-who="reckon-build" data-when="2026-10-07T15:41:01.672Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T151850415696-session-host-removes-its-fifo.at-68361d4eee327c1d53e425b3288a78bd9d3d514a.json</p></div>
 </div>
 </section>
 </main>
