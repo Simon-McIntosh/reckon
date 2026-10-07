@@ -30,13 +30,19 @@
   <code>missing-committed-record</code>. Every candidate is printed with its path, age in
   days and action; a dry run prints the same set <code>--apply</code> would act
   on. The sidecar and the <code>plan.html</code> snapshot survive every case.</p>
+  <p>The pass takes the same <code>run_id</code> as the rest of
+  <code>garbage_collect</code>, so <code>crew gc --run &lt;id&gt; --apply</code>
+  confines it to the one report directory named by that id: another run's
+  past-retention report is neither listed nor removed.</p>
   <p>Gate <code>tests/test_raw_report_retention.py</code> with
   <code>tests/test_crew_gc.py</code> and
   <code>tests/test_review_is_earned_by_significant_change.py</code> at
-  <code>-n 4</code>: 49 passed, <code>EXIT=0</code>. Declared negative control —
+  <code>-n 4</code>: 50 passed, <code>EXIT=0</code>. Declared negative control —
   prune a past-retention report whose committed record is absent — makes
   <code>test_a_past_report_without_a_record_is_withheld_and_never_removed</code>
-  fail, <code>EXIT=1</code>.</p>
+  fail, <code>EXIT=1</code>; disabling the <code>run_id</code> filter makes
+  <code>test_run_id_confines_the_pass_to_one_report</code> fail,
+  <code>EXIT=1</code>.</p>
 </section>
 </main>
 </body>
