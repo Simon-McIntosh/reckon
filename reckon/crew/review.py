@@ -63,6 +63,7 @@ parsed dimensions. A change here changes what all of them store or decide.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from collections.abc import Iterable, Iterator, Mapping
@@ -1246,6 +1247,76 @@ COMMITTED_RUN_DIRNAME = "run"
 DISPATCH_TIME_KEY = "dispatched_at"
 COMPLETION_TIME_KEY = "completed_at"
 
+# The stage a committed record's dispatch time was resolved from, recorded on
+# the record so a reader can tell a stamp the run itself carried from one
+# reconstructed from the run id's own dispatch instant.
+RUN_RECORD_TIMES_SOURCE = "run-record"
+RECORD_TIMES_SOURCE = "record"
+RUN_ID_TIMES_SOURCE = "run-id"
+TIMES_SOURCE_KEY = "times_source"
+
+# A run id is ``r-<YYYYmmdd>T<HHMMSS><ffffff>-<node>`` (see ``runs.new_run_id``),
+# so it encodes the moment the run was minted — its dispatch, never its
+# completion.
+_RUN_ID_STAMP = re.compile(r"^r-(\d{8})T(\d{6})(\d{6})")
+
+# The dispatch sidecar the plan-review reflex writes into a report directory.
+# It names the crew run that actually ran the review, which is a different id
+# from the composed id the directory (and the record's review run id) carries.
+REVIEW_DISPATCH_FILE_NAME = "dispatch.json"
+
+# A body is a review when it names the plan or the run it reviews and carries
+# the material a review produces. Merely naming a subject is not enough: a
+# ledger row or an index that references a run is not a review of it.
+REVIEW_MATERIAL_KEYS = ("findings", "scores", "rubric")
+REVIEW_REVISION_KEYS = ("reviewed_commit", "reviewed_commits")
+
+
+def names_a_review_subject(record: Mapping[str, Any]) -> bool:
+    """Whether a body names the plan or the run it reviews.
+
+    A plan subject carries a slug and an integer version; a run subject carries
+    a reviewed run id. A plan slug with no usable version names no subject, so a
+    partial plan reference is not misread as a run.
+    """
+    if str(record.get("reviewed_run_id") or "").strip():
+        return True
+    if str(record.get("plan_slug") or "").strip():
+        try:
+            int(record.get("plan_version"))
+        except (TypeError, ValueError):
+            return False
+        return True
+    return False
+
+
+def carries_review_material(record: Mapping[str, Any]) -> bool:
+    """Whether a body carries the material a review produces.
+
+    The material is a rubric's ``findings``, ``scores`` or ``rubric`` field, or
+    the revision the review read — a ``reviewed_commit``/``reviewed_commits``
+    pair or any ``reviewed_*sha*`` field. Naming a subject alone does not make
+    a body a review, so a scratch file that happens to reference a run is not
+    accepted as one.
+    """
+    if any(key in record for key in REVIEW_MATERIAL_KEYS):
+        return True
+    return any(
+        str(key) in REVIEW_REVISION_KEYS
+        or (str(key).startswith("reviewed_") and "sha" in str(key))
+        for key in record
+    )
+
+
+def derived_legacy_review_run_id(record_bytes: bytes) -> str:
+    """Return the stable legacy id a record naming no review run is filed under.
+
+    The id is ``legacy-`` plus the first twelve hex of the sha256 of the
+    record's own bytes, so a re-run over the same bytes derives the same id —
+    a second import files nothing — while two different records never collide.
+    """
+    return "legacy-" + hashlib.sha256(record_bytes).hexdigest()[:12]
+
 
 def committed_review_root(
     project: str, *, root: str | Path | None = None
@@ -1686,6 +1757,11 @@ def store_review(
         raise ValueError("review record is missing project")
     if not reviewed_run_id:
         raise ValueError("review record is missing reviewed_run_id")
+    if not carries_review_material(record):
+        raise ValueError(
+            "review record carries no review material — findings, scores, a "
+            "rubric or a reviewed revision — so it is not a review"
+        )
     base_carried, base_sha, head_carried, head_sha = carried_revision_pair(record)
     if base_carried or head_carried:
         record = dict(record)
@@ -1752,6 +1828,128 @@ def run_record_times(
     )
 
 
+def run_id_dispatch_time(run_id: str) -> str:
+    """Return the ISO-8601 dispatch instant a run id encodes, or ``""``.
+
+    A run id is ``r-<YYYYmmdd>T<HHMMSS><ffffff>-<node>``, so the instant it
+    carries is the moment the run was minted — its dispatch. A completion is
+    never encoded, so a caller that resolves a dispatch from here has no
+    completion to take. An id matching no such grammar yields the empty string
+    rather than a guessed instant.
+    """
+    match = _RUN_ID_STAMP.match(str(run_id or "").strip())
+    if match is None:
+        return ""
+    date, clock, micros = match.groups()
+    try:
+        moment = datetime(
+            int(date[:4]),
+            int(date[4:6]),
+            int(date[6:8]),
+            int(clock[:2]),
+            int(clock[2:4]),
+            int(clock[4:6]),
+            int(micros),
+            tzinfo=UTC,
+        )
+    except ValueError:
+        return ""
+    return moment.isoformat()
+
+
+def _plan_review_crew_run_id(project: str, plan_slug: str, review_run_id: str) -> str:
+    """Return the crew run a plan review's report directory names, or ``""``.
+
+    A plan review's review run id is the composed id its report directory is
+    named for (``r-<stamp>-plan-review-of-<slug>``), which is not a crew run and
+    has no run record of its own. The crew run that actually ran the review
+    carries a different id, recorded in the directory's ``dispatch.json``
+    sidecar, so resolving that sidecar is what lets a plan review's committed
+    times come from the run that produced it. A directory or sidecar that is
+    absent, or one naming no run, yields no id.
+    """
+    if not (project and plan_slug and review_run_id):
+        return ""
+    from reckon.crew.plan_review import review_report_directory
+
+    try:
+        directory = review_report_directory(project, plan_slug, review_run_id)
+        sidecar = json.loads(
+            (directory / REVIEW_DISPATCH_FILE_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return ""
+    if not isinstance(sidecar, Mapping):
+        return ""
+    return str(sidecar.get("run_id") or "").strip()
+
+
+def resolve_record_times(
+    project: str,
+    record: Mapping[str, Any],
+    *,
+    root: str | Path | None = None,
+) -> tuple[str, str, str]:
+    """Return ``(dispatched_at, completed_at, times_source)`` for a record.
+
+    The store clock is never substituted for a stamp. The sources are tried in
+    order, and the first that supplies a **dispatch** time fixes the returned
+    ``times_source`` while every source still contributes a completion it
+    carries:
+
+    1. the run records — the review run's own record or live pointer, the crew
+       run a plan review's report directory names, and the reviewed run's
+       record, each through :func:`run_record_times`;
+    2. the record's own ``dispatched_at``/``completed_at`` stamps;
+    3. the dispatch instant the review run id encodes.
+
+    ``times_source`` is ``"run-record"``, ``"record"`` or ``"run-id"``. A
+    dispatch resolved only from the run id leaves ``completed_at`` empty rather
+    than defaulted, because a run id encodes no completion; a record that
+    resolves no dispatch time at all raises, naming the run, rather than being
+    stored with a time nobody recorded.
+    """
+    review_run_id = str(record.get("review_run_id") or "").strip()
+    reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
+    plan_slug = str(record.get("plan_slug") or "").strip()
+
+    dispatched = ""
+    completed = ""
+
+    def absorb(pair: tuple[str, str]) -> None:
+        nonlocal dispatched, completed
+        dispatched = dispatched or pair[0]
+        completed = completed or pair[1]
+
+    absorb(run_record_times(project, review_run_id, root=root))
+    if plan_slug:
+        crew_run_id = _plan_review_crew_run_id(project, plan_slug, review_run_id)
+        if crew_run_id:
+            absorb(run_record_times(project, crew_run_id, root=root))
+    if reviewed_run_id:
+        absorb(run_record_times(project, reviewed_run_id, root=root))
+    if dispatched:
+        return dispatched, completed, RUN_RECORD_TIMES_SOURCE
+
+    own_dispatched = str(record.get(DISPATCH_TIME_KEY) or "").strip()
+    if own_dispatched:
+        return (
+            own_dispatched,
+            str(record.get(COMPLETION_TIME_KEY) or "").strip(),
+            RECORD_TIMES_SOURCE,
+        )
+
+    encoded = run_id_dispatch_time(review_run_id)
+    if encoded:
+        return encoded, "", RUN_ID_TIMES_SOURCE
+
+    raise ValueError(
+        "no dispatch or completion time resolves for review run "
+        f"{review_run_id!r} (reviewed run {reviewed_run_id!r}) — the committed "
+        "record is refused rather than stored with times nobody recorded"
+    )
+
+
 def store_committed_review(
     record: dict[str, Any],
     *,
@@ -1767,16 +1965,23 @@ def store_committed_review(
     the promoting run knows the project it is landing into, so the committed
     record takes that project rather than the write being refused. The review
     run id keys the committed file and supplies the
-    dispatch and completion times, so the record carries when the review ran
-    rather than when its file was stored; a record carrying no review run id is
-    refused rather than filed under the run it reviews, because two review runs
-    of one reviewed run would otherwise name the same committed file. Both
-    stamps must resolve from one of the two run records — the review run's, or
-    the reviewed run's when the review run's own record carries none — or the
-    write is refused, naming the run: the store clock is never substituted for
-    a stamp and a stamp is never silently omitted, because a committed review
-    whose times are wrong or missing is exactly the defect the committed store
-    exists to remove.
+    dispatch and completion times through :func:`resolve_record_times`, so the
+    record carries when the review ran rather than when its file was stored; a
+    record carrying no review run id is refused rather than filed under the run
+    it reviews, because two review runs of one reviewed run would otherwise name
+    the same committed file. The times are resolved from the run records, the
+    record's own carried stamps, or the dispatch instant the review run id
+    encodes — in that order — and the stage used is recorded under
+    ``times_source``. The store clock is never substituted for a stamp, and only
+    a record that resolves no dispatch time at all is refused, naming the run,
+    because a committed review whose times are wrong or missing is exactly the
+    defect the committed store exists to remove.
+
+    The body must be a review: it names the plan or the run it reviews (which
+    the ``plan_slug``/``reviewed_run_id`` checks above already require) and it
+    carries review material — findings, scores, a rubric or a reviewed
+    revision. A body carrying none of those is refused here, so the committed
+    store holds records only.
 
     ``committed_root`` names the tree directly (a caller that already resolved
     it, or a test); omitted, it resolves through :func:`committed_review_root`
@@ -1800,29 +2005,26 @@ def store_committed_review(
             "review record names neither a reviewed run nor a plan, so it has "
             "no subject to be filed under"
         )
+    if not carries_review_material(record):
+        raise ValueError(
+            "review record carries no review material — findings, scores, a "
+            "rubric or a reviewed revision — so it is not a review and the "
+            "committed store holds records only"
+        )
     if committed_root is None:
         committed_root = committed_review_root(project, root=root)
     if committed_root is None:
         raise ValueError(f"no committed reviews tree resolves for project {project!r}")
 
-    dispatched, completed = run_record_times(project, review_run_id, root=root)
-    if (not dispatched or not completed) and reviewed_run_id:
-        review_dispatched, review_completed = run_record_times(
-            project, reviewed_run_id, root=root
-        )
-        dispatched = dispatched or review_dispatched
-        completed = completed or review_completed
-    if not dispatched or not completed:
-        raise ValueError(
-            "no dispatch and completion times resolve for review run "
-            f"{review_run_id!r} (reviewed run {reviewed_run_id!r}); the "
-            "committed record is refused rather than stored with missing times"
-        )
+    dispatched, completed, times_source = resolve_record_times(
+        project, record, root=root
+    )
 
     stored = dict(record)
     stored["project"] = project
     stored[DISPATCH_TIME_KEY] = dispatched
     stored[COMPLETION_TIME_KEY] = completed
+    stored[TIMES_SOURCE_KEY] = times_source
     if not stored.get("timestamp"):
         stored["timestamp"] = datetime.now(UTC).isoformat()
 

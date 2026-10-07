@@ -31,7 +31,6 @@ Deleting quarantined content is a later decision taken on the printed inventory.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import re
 import shutil
@@ -104,16 +103,6 @@ def _explicit_review_run_id(body: Mapping[str, Any]) -> str:
     return str(body.get("review_run_id") or body.get("reviewer_run_id") or "").strip()
 
 
-def _derived_review_run_id(raw: bytes) -> str:
-    """Return the stable legacy id a record with no review run id is filed under.
-
-    The id is ``legacy-`` plus the first twelve hex of the sha256 of the record's
-    bytes, so a re-run of the same file derives the same id and imports nothing
-    a second time, while two different records never collide.
-    """
-    return "legacy-" + hashlib.sha256(raw).hexdigest()[:12]
-
-
 def _subject_kind(body: Mapping[str, Any]) -> str | None:
     """Return ``"plan"``, ``"run"`` or ``None`` for the subject a body names."""
     if str(body.get("plan_slug") or "").strip():
@@ -125,23 +114,6 @@ def _subject_kind(body: Mapping[str, Any]) -> str | None:
     if str(body.get("reviewed_run_id") or "").strip():
         return "run"
     return None
-
-
-def _carries_review_evidence(body: Mapping[str, Any]) -> bool:
-    """Return whether a body shows it is a review rather than an unrelated file.
-
-    A review carries the material its rubric or findings produce: a ``findings``,
-    ``scores`` or ``rubric`` field, or the revision it read. Merely naming a plan
-    or a run is not enough, so a ledger row or an index that happens to reference
-    a run is not mistaken for a review of it.
-    """
-    if any(key in body for key in ("findings", "scores", "rubric")):
-        return True
-    return any(
-        key in ("reviewed_commit", "reviewed_commits")
-        or (str(key).startswith("reviewed_") and "sha" in str(key))
-        for key in body
-    )
 
 
 # The staging store names a run review by the run it reviewed:
@@ -179,7 +151,7 @@ def _review_identity(
     grammar. A review run id is not required; one that names none is filed under
     a derived, stable legacy id.
     """
-    if not isinstance(body, Mapping) or not _carries_review_evidence(body):
+    if not isinstance(body, Mapping) or not review_store.carries_review_material(body):
         return None
     kind = _subject_kind(body)
     if kind == "plan":
@@ -201,7 +173,7 @@ def _review_identity(
     explicit = _explicit_review_run_id(body)
     if explicit:
         return kind, subject, explicit, False
-    return kind, subject, _derived_review_run_id(raw), True
+    return kind, subject, review_store.derived_legacy_review_run_id(raw), True
 
 
 def _committed_path(
