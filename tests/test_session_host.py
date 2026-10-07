@@ -779,7 +779,7 @@ def test_stop_refuses_a_reason_that_is_not_a_non_empty_string(
     """A null or empty stop reason is refused before any state changes."""
     host = _in_process_host(tmp_path)
     for bad in (None, ""):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="non-empty string"):
             host.stop(bad)
     assert host._stopped is False
     assert host._stopped_at is None
