@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/cli.py:2544 (format_watch_transition's ticker emit)",
+    "reckon/cli.py:2420 (its second emit)",
+    "reckon/_store.py:121 _config_home() and its callers in reckon/crew/runs.py",
+    "reckon/crew/review.py and reckon/crew/dispatch.py",
+    "reckon/crew/promotion.py:3372 and reckon/roadmap.py:1472",
+    ":1842 (plan_section_anchors consumers)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T21:09:52.573209+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s22-reuse-map/reuse-map.md",
+      "line": "324",
+      "text": "the sentence \"Every `file:line` above is checked by grep\" and the tally that follows it overstate the instrument's coverage: nine cited values have no row in citations.tsv \u2014 reckon/schema/flight.yaml:102 and :611, reckon/schema/flight-defaults.yaml:57, reckon/roadmap.py:1842 and :2178, reckon/crew/dispatch.py:5032 and :5061, reckon/crew/promotion.py:494 and tests/test_executable_remainder.py:8 \u2014 so a coordinator reading the tally as coverage of the report has no evidence for those nine; my independent extraction resolves every one of them correctly at 2fabeb96, so the conclusions stand and only the recorded coverage is wrong."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s22-reuse-map/reuse-map.md",
+      "line": "278",
+      "text": "the node-14 section states there are 24 `crew` commands and then prints 25 names in the same sentence; `git grep -c '@crew.command' 2fabeb96 -- reckon/cli.py` is 25 and the printed list matches those 25 decorators exactly, so the count is wrong wherever it is used to size the CLI surface \u2014 including the restatement in evidence-input 6 at reuse-map.md:342 \u2014 while the substantive claim that no command is named `crew path` is true (0 hits)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s22-reuse-map/reuse-map.md",
+      "line": "294",
+      "text": "the conflicts-table row cites the plan's own note as `dependency-edge-semantics.html:264` with the `docs/plans/` prefix dropped, so the path resolves nowhere from the repository root and sits outside the instrument's coverage; the same line is cited with its full path at reuse-map.md:148 and :341, so no claim is wrong, but a reader who retypes the short form (or a grep pass that reads it as a path) lands in the wrong place."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "there is no commit to read \u2014 the change is the 46412-byte report plus its instrument and logs under the report store; I read reuse-map.md in full and verified the load-bearing claims independently at 2fabeb96 rather than through the node's own script.",
+    "done_when": "the measure (prompt.txt:52) names eight grouped items spanning fourteen sections; I extracted all 58 file:line citations from the report and resolved each against 2fabeb96 with `git show`, and every one lands on the line it claims while all four \"already met at HEAD: no\" claims hold with a positive control I ran myself; the instrument's own instrument-level defects are recorded as FINDINGs below.",
+    "goal": "the node's goal (prompt.txt:25) is a reuse map naming, per node, the existing functions to reuse and the exact repository files to write; reuse-map.md:22-280 carries fourteen node sections, each with a reuse table of file:line entries and a write-path clause (plan-fixed at reuse-map.md:38, :56, :74, :90, :106, :147, :165, :184, :202, :221, :241, :279; derived and escalated at :124, :241, :260), with the conflicts table at reuse-map.md:286-318.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T203913190997-s22-reuse-map/manifest.md; status complete, artifacts and all three logs named and present under the fence, commits \"none\" with the reason that the deliverable is outside the repository, changed_paths [] which the clean worktree confirms, and the run's exit.json records exit_code 0 with 5786 stream records.",
+    "write_paths": "the node was fenced to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s22-reuse-map (prompt.txt:36); every artifact (reuse-map.md, citations.tsv, verify-citations.sh and the three logs) sits under it, `git -C <tree> status --porcelain` in the reviewed worktree at 2fabeb96 is empty, and `git log 2fabeb96..HEAD` there is empty, so no repository path was written."
+  },
+  "justifications": {
+    "durability": "verify-citations.sh is falsifiable \u2014 the node's own mutation log reddens with MISS=4 and mine, shifting the covered row at citations.tsv:38 from 1019 to 1020, reddens with MISS=1 at found_at=1019 (/tmp/review-negative-control.log) \u2014 but the instrument carries no row for nine of the report's citations, so citation rot there is undetected.",
+    "evidence": "the 55-row instrument re-runs clean at 2fabeb96 and my independent extraction resolves all 58 report citations, but reuse-map.md:324's \"Every file:line above is checked by grep\" overstates the tally, which covers none of the nine citations named in the first FINDING.",
+    "fit": "the report cites repository paths rather than inventing symbols, its instrument is shell and plain text beside the report it checks, and its one imprecision (reuse-map.md:91's \"land six sections together\" reading) is stated explicitly rather than left to the reader.",
+    "goal_fidelity": "reuse-map.md:22-280 gives all fourteen sections a reuse table and a write-path clause, and the goal's \"eleven\" is shown at reuse-map.md:11-14 to be reachable only by two groupings the plans do not fix, escalated rather than silently picked.",
+    "scope_discipline": "the reviewed worktree at /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/s22-reuse-map is clean at 2fabeb96 with no commit above the base, and every artifact lies under the fenced report store named at prompt.txt:36."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260924T203913190997-s22-reuse-map at 2fabeb9637ffd460582933a6da5e5cd9297d5a44.\n\nVERDICT goal: the node's goal (prompt.txt:25) is a reuse map naming, per node, the existing functions to reuse and the exact repository files to write; reuse-map.md:22-280 carries fourteen node sections, each with a reuse table of file:line entries and a write-path clause (plan-fixed at reuse-map.md:38, :56, :74, :90, :106, :147, :165, :184, :202, :221, :241, :279; derived and escalated at :124, :241, :260), with the conflicts table at reuse-map.md:286-318.\n\nVERDICT done_when: the measure (prompt.txt:52) names eight grouped items spanning fourteen sections; I extracted all 58 file:line citations from the report and resolved each against 2fabeb96 with `git show`, and every one lands on the line it claims while all four \"already met at HEAD: no\" claims hold with a positive control I ran myself; the instrument's own instrument-level defects are recorded as FINDINGs below.\n\nVERDICT write_paths: the node was fenced to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s22-reuse-map (prompt.txt:36); every artifact (reuse-map.md, citations.tsv, verify-citations.sh and the three logs) sits under it, `git -C <tree> status --porcelain` in the reviewed worktree at 2fabeb96 is empty, and `git log 2fabeb96..HEAD` there is empty, so no repository path was written.\n\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T203913190997-s22-reuse-map/manifest.md; status complete, artifacts and all three logs named and present under the fence, commits \"none\" with the reason that the deliverable is outside the repository, changed_paths [] which the clean worktree confirms, and the run's exit.json records exit_code 0 with 5786 stream records.\n\nVERDICT diff: there is no commit to read \u2014 the change is the 46412-byte report plus its instrument and logs under the report store; I read reuse-map.md in full and verified the load-bearing claims independently at 2fabeb96 rather than through the node's own script.\n\nCALL_SITES: reckon/cli.py:2544 (format_watch_transition's ticker emit), reckon/cli.py:2420 (its second emit), reckon/_store.py:121 _config_home() and its callers in reckon/crew/runs.py, reckon/crew/review.py and reckon/crew/dispatch.py, reckon/crew/promotion.py:3372 and reckon/roadmap.py:1472, :1842 (plan_section_anchors consumers)\n\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reuse-map.md:22-280 gives all fourteen sections a reuse table and a write-path clause, and the goal's \"eleven\" is shown at reuse-map.md:11-14 to be reachable only by two groupings the plans do not fix, escalated rather than silently picked.\n\nSCORE evidence: 16\nJUSTIFICATION evidence: the 55-row instrument re-runs clean at 2fabeb96 and my independent extraction resolves all 58 report citations, but reuse-map.md:324's \"Every file:line above is checked by grep\" overstates the tally, which covers none of the nine citations named in the first FINDING.\n\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree at /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/s22-reuse-map is clean at 2fabeb96 with no commit above the base, and every artifact lies under the fenced report store named at prompt.txt:36.\n\nSCORE durability: 16\nJUSTIFICATION durability: verify-citations.sh is falsifiable \u2014 the node's own mutation log reddens with MISS=4 and mine, shifting the covered row at citations.tsv:38 from 1019 to 1020, reddens with MISS=1 at found_at=1019 (/tmp/review-negative-control.log) \u2014 but the instrument carries no row for nine of the report's citations, so citation rot there is undetected.\n\nSCORE fit: 18\nJUSTIFICATION fit: the report cites repository paths rather than inventing symbols, its instrument is shell and plain text beside the report it checks, and its one imprecision (reuse-map.md:91's \"land six sections together\" reading) is stated explicitly rather than left to the reader.\n\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s22-reuse-map/reuse-map.md:324 the sentence \"Every `file:line` above is checked by grep\" and the tally that follows it overstate the instrument's coverage: nine cited values have no row in citations.tsv \u2014 reckon/schema/flight.yaml:102 and :611, reckon/schema/flight-defaults.yaml:57, reckon/roadmap.py:1842 and :2178, reckon/crew/dispatch.py:5032 and :5061, reckon/crew/promotion.py:494 and tests/test_executable_remainder.py:8 \u2014 so a coordinator reading the tally as coverage of the report has no evidence for those nine; my independent extraction resolves every one of them correctly at 2fabeb96, so the conclusions stand and only the recorded coverage is wrong.\n\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s22-reuse-map/reuse-map.md:278 the node-14 section states there are 24 `crew` commands and then prints 25 names in the same sentence; `git grep -c '@crew.command' 2fabeb96 -- reckon/cli.py` is 25 and the printed list matches those 25 decorators exactly, so the count is wrong wherever it is used to size the CLI surface \u2014 including the restatement in evidence-input 6 at reuse-map.md:342 \u2014 while the substantive claim that no command is named `crew path` is true (0 hits).\n\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s22-reuse-map/reuse-map.md:294 the conflicts-table row cites the plan's own note as `dependency-edge-semantics.html:264` with the `docs/plans/` prefix dropped, so the path resolves nowhere from the repository root and sits outside the instrument's coverage; the same line is cited with its full path at reuse-map.md:148 and :341, so no claim is wrong, but a reader who retypes the short form (or a grep pass that reads it as a path) lands in the wrong place.",
+  "review_run_id": "r-20260924T210952573209-review-of-s22-reuse-map",
+  "reviewed_base_sha": "2fabeb9637ffd460582933a6da5e5cd9297d5a44",
+  "reviewed_head_sha": "2fabeb9637ffd460582933a6da5e5cd9297d5a44",
+  "reviewed_run_id": "r-20260924T203913190997-s22-reuse-map",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T21:38:44.304526+00:00",
+  "total": 88
+}

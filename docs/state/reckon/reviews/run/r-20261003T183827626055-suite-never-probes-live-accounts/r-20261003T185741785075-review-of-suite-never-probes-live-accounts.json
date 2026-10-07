@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "count and ids derived from the reviewed run's own baseline_suite and after_suite gate logs. baseline_suite (gate-base.log, revision 3fd343636354df919ede6c6dd41faebe95c35fbd, guard disabled, new file absent) records 194 passed, 0 failures; after_suite (gate-head.log, revision dceecd30282a74c1e0f04a623701701b354109d1) records 196 passed, 0 failures. after minus baseline is 0: no failing id present at head was absent at base, and the two extra passing tests are the two tests the node added, so the pair is matched (196 = 194 + 2).",
+  "after_suite": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/suite-never-probes-live-accounts /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 tests/test_suite_never_probes_live_accounts.py tests/test_preflight_pace.py tests/test_suite_never_calls_live_jev.py tests/test_budget.py tests/test_budget_evidence_scope.py tests/test_budget_group.py tests/test_budget_group_declaration.py tests/test_budget_window_length.py tests/test_backends.py -q",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T183827626055-suite-never-probes-live-accounts/gate-head.log",
+    "revision": "dceecd30282a74c1e0f04a623701701b354109d1"
+  },
+  "base_log_revision": "3fd343636354df919ede6c6dd41faebe95c35fbd",
+  "baseline_suite": {
+    "command": "RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD=1 PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/suite-never-probes-live-accounts /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 tests/test_preflight_pace.py tests/test_suite_never_calls_live_jev.py tests/test_budget.py tests/test_budget_evidence_scope.py tests/test_budget_group.py tests/test_budget_group_declaration.py tests/test_budget_window_length.py tests/test_backends.py -q",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T183827626055-suite-never-probes-live-accounts/gate-base.log",
+    "revision": "3fd343636354df919ede6c6dd41faebe95c35fbd"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T19:02:40.802Z",
+  "dispatched_at": "2026-10-03T18:57:57Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T183827626055-suite-never-probes-live-accounts/pace-on.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: both pace arms declare revision 3fd343636354df919ede6c6dd41faebe95c35fbd, but the guard-on arm (no RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD) ran 43.11s against 66.74s for the guard-off arm; the guard fixture does not exist at base, so a 23.6s gap there is impossible and the header names a revision the run did not execute, leaving the timing-gap artifact unreconcilable from the record."
+    },
+    {
+      "file": "tests/conftest.py",
+      "line": "177",
+      "severity": "follow-on",
+      "text": "follow-on: the guard covers only reckon._backends.run_probe, the single current spawn site, and the new test drives only the lanes-view -> run_probe path; an account probe spawned by a future dialect or backend outside that seam would be unguarded and the test would stay green, so the isolation is held by a seam convention rather than by a check that no spawn occurs suite-wide."
+    }
+  ],
+  "head_log_revision": "dceecd30282a74c1e0f04a623701701b354109d1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 3fd34363; dceecd302 adds the guard fixture, the test file and the fragment, ea8a7486d only updates the fragment's quoted figure; the guard targets the single Popen seam run_probe.",
+    "done_when": "the done-when is a matched gate pair (gate-head.log 196 passed in 194+2) plus a negative control that reddens with the guard disabled (negative-control.log: 1 failed, 1 passed in 21.18s, EXIT=1).",
+    "goal": "the goal is that no test spawns a real provider account probe whatever the machine's codex login; the guard is an autouse fixture replacing reckon._backends.run_probe with the no-answer stub (tests/conftest.py:177-183) and a new test spies subprocess.Popen/run over a stale-lane re-query (tests/test_suite_never_probes_live_accounts.py:101).",
+    "manifest": "read; status complete, baseline_suite and after_suite readable and matched, negative_control_log present with EXIT=1; the base arm ran in-place with the guard disabled by env rather than in a base-revision checkout (disclosed under follow_ons).",
+    "write_paths": "the diff 3fd34363..ea8a7486 touches tests/conftest.py, tests/test_suite_never_probes_live_accounts.py and the evidence fragment only; every path is inside the declared scope and no product source is changed."
+  },
+  "justifications": {
+    "durability": "the committed test reddens when the guard is removed (negative-control.log EXIT=1, that id failing), so a regression that reopens the live probe reddens in the routine suite; deducted because the guard and the test cover only the run_probe seam.",
+    "evidence": "the structured gate pair is readable and matched (196 = 194 + 2), and the negative control reddens with the disabled guard; deducted because pace-on.log and pace-off.log share a revision header that the guard-on arm's 23.6s timing gap contradicts, since the guard fixture does not exist at that revision.",
+    "fit": "the fixture mirrors the adjacent no_live_jev guard in tests/conftest.py, the commit subject is conventional with a body, and no plan, sprint or ticket label appears in any name or comment.",
+    "goal_fidelity": "tests/conftest.py:183 replaces reckon._backends.run_probe autouse, and reckon/_backends.py:3317 resolves that same module global in probe_budget, so the lanes-view re-query reaches the stub rather than spawning <command> app-server; the negative control spawns it when the guard is disabled, proving the guard is load-bearing.",
+    "scope_discipline": "the diff 3fd34363..ea8a7486 is the two test paths and the evidence fragment only, all inside the declared write scope; no product source changed and the unused figures grant was not written."
+  },
+  "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T183827626055-suite-never-probes-live-accounts/negative-control.log",
+  "negative_control_note": "guard disabled via RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD=1; test_no_subprocess_is_spawned_when_a_stale_lane_requeries fails on AssertionError with Popen(['codex','app-server']) spawned, 1 failed 1 passed in 21.18s, EXIT=1 \u2014 the head arm passes this same id, so the refusal is load-bearing.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that no test in the suite spawns a real provider account probe whatever the machine's codex login answers; the change adds an autouse conftest fixture no_live_account_probe replacing reckon._backends.run_probe with the exchange's documented no-answer stub (tests/conftest.py:177-183), beside the existing no_live_jev guard, and a new test file whose first test spies subprocess.Popen/run over a stale-lane re-query and asserts no subprocess is attempted and the lane keeps the run's record stamp (tests/test_suite_never_probes_live_accounts.py:101).\nVERDICT done_when: the done-when is a matched gate pair plus a proven falsifier: head = the new file and the eight adjacent gate files (gate-head.log: 196 passed in 126.71s, EXIT=0, revision dceecd302, module.__file__ and cwd named), base = the eight files with the guard disabled and the new file absent (gate-base.log: 194 passed in 155.35s, EXIT=0), and the negative control reddens with the guard disabled (negative-control.log: 1 failed, 1 passed in 21.18s, EXIT=1, Popen(['codex','app-server']) spawned).\nVERDICT write_paths: the manifest declares tests/conftest.py, tests/test_suite_never_probes_live_accounts.py, an evidence fragment and a figures dir; the diff 3fd34363..ea8a7486 touches exactly conftest (+29), the test file (+148) and the fragment (+89/-1) \u2014 every path inside scope; the figures grant is unused and no product source is touched (reckon/_backends.py unchanged because the run_probe seam already existed).\nVERDICT manifest: read; status complete, commits dceecd302 and ea8a7486d, baseline_suite and after_suite both readable with revision headers and EXIT lines, negative_control_log present; the pair is matched (196 = 194 + 2 new tests) so the zero-added figure is a true delta rather than an arm artifact, though the base arm ran in-place with the guard disabled by env rather than in a base-revision checkout.\nVERDICT diff: read commit by commit against base 3fd34363; dceecd302 adds the guard fixture, the new test file and the fragment, ea8a7486d only updates the fragment's quoted head figure; the guard replaces run_probe, the single Popen spawn site (reckon/_backends.py:3323), and probe_budget resolves it as the module global (reckon/_backends.py:3317), so monkeypatch on the module reaches every caller.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/conftest.py:183 monkeypatches reckon._backends.run_probe to the no-answer stub autouse, and reckon/_backends.py:3317 shows probe_budget calls that same module global when no runner is passed, so every lanes-view re-query reaches the stub rather than spawning <command> app-server; the negative control (guard disabled) spawns it, so the guard is load-bearing, and the head arm is green with it.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate pair is readable with revision, module.__file__, cwd and EXIT lines and a matched 196-vs-194 (+2 tests) delta, and the negative control reddens with the disabled guard; deducted because pace-on.log and pace-off.log both declare revision 3fd343636354df919ede6c6dd41faebe95c35fbd yet the guard-on arm ran 43.11s against 66.74s for the guard-off arm, a gap only possible with the guard fixture present (absent at base), so the artifact supporting the ~24s claim names a revision it did not execute.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 3fd34363..ea8a7486 is tests/conftest.py, tests/test_suite_never_probes_live_accounts.py and the evidence fragment only \u2014 every path inside the declared write scope, no product source changed, and the unused figures grant is left unwritten.\nSCORE durability: 18\nJUSTIFICATION durability: the guard is a committed autouse fixture and the committed test test_no_subprocess_is_spawned_when_a_stale_lane_requeries reddens when the guard is removed (negative-control.log: EXIT=1, that id failing), so a regression that reopens the live probe reddens in the routine suite rather than on a particular host; deducted because the guard and test cover only the run_probe seam, so a future account-probe spawn site outside it would go unguarded with the test still green.\nSCORE fit: 19\nJUSTIFICATION fit: the fixture sits beside the existing no_live_jev guard in tests/conftest.py and follows its monkeypatch idiom, the subject is conventional with a body, the fixture and test names describe the mechanism, and no plan, sprint or ticket label appears in any symbol, file or comment.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T183827626055-suite-never-probes-live-accounts/pace-on.log:1 follow-on: both pace arms declare revision 3fd343636354df919ede6c6dd41faebe95c35fbd, but the guard-on arm (no RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD) ran 43.11s against 66.74s for the guard-off arm; the guard fixture does not exist at base, so a 23.6s gap there is impossible and the header names a revision the run did not execute, leaving the timing-gap artifact unreconcilable from the record.\nFINDING tests/conftest.py:177 follow-on: the guard covers only reckon._backends.run_probe, the single current spawn site, and the new test drives only the lanes-view -> run_probe path; an account probe spawned by a future dialect or backend outside that seam would be unguarded and the test would stay green, so the isolation is held by a seam convention rather than by a check that no spawn occurs suite-wide.",
+  "review_run_id": "r-20261003T185741785075-review-of-suite-never-probes-live-accounts",
+  "reviewed_base_sha": "3fd343636354df919ede6c6dd41faebe95c35fbd",
+  "reviewed_head_sha": "ea8a7486d14d4e9d4cca66767b1e0902c6c4d441",
+  "reviewed_run_id": "r-20261003T183827626055-suite-never-probes-live-accounts",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T185741785075-review-of-suite-never-probes-live-accounts",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T19:01:08.751420+00:00",
+  "total": 93
+}

@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/promotion.py:_release_after_promotion",
+    "reckon/cli.py:3802"
+  ],
+  "completed_at": "2026-09-25T18:22:42.644Z",
+  "dispatched_at": "2026-09-25T17:37:36Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_promotion.py",
+      "line": "1572",
+      "text": "three assertions (also :1599 and :1861) identify the promotion commit by final HEAD and fail at the reviewed head, three added failures against ca9b7e02, because the release receipt is now its own commit; the fix is outside this node's fence and is the widening the manifest requests."
+    },
+    {
+      "file": "tests/test_append_run_writes_one_run_file.py",
+      "line": "161",
+      "text": "this file lies outside the node's declared write paths, so the one-line attempts-aware call at :161 was edited rather than a fence widening requested; a coordinator merging this run should record that the file left its node's scope."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against ca9b7e02 \u2014 038b4735 replaces the amend with the scoped release commit and drops the occurrences parameter, 7f51cb12 adds the identical-receipt no-op, 789ef768 appends the plan aside, the f-tlioefpr-promotion-never-amends evidence anchor (absent at base, present at head) and the release-commits figure; 368 insertions and 10 deletions across seven files.",
+    "done_when": "the measure's clauses are each exercised \u2014 the new test drives real completion in a synthesised repository (tests/test_promotion_never_amends_its_commit.py:35) and its ancestry, blob-byte and reflog assertions are the ones the declared mutation reddens (negative-control.log, 4 failed, 1 passed) \u2014 but the zero-added-failures clause is unmet because the run's own cohort record lists three added ids in tests/test_crew_promotion.py.",
+    "goal": "read reckon/crew/promotion.py:3099-3175 and tests/test_promotion_never_amends_its_commit.py:35-209 at the reviewed head; crew complete now records the release receipt in a second commit scoped with \"git commit --only\" to the run file and the promote commit is never rewritten, which is what the node goal states.",
+    "manifest": "read; it records the focused gate (34 passed), the declared mutation (4 failed, 1 passed), both 22-module cohort arms (base ca9b7e02: 1 failed, 417 passed; head 7f51cb12: 4 failed, 414 passed), the measurement module and cwd, the negative-control path, and status blocked with the scope extension request for tests/test_crew_promotion.py.",
+    "write_paths": "read the dispatch fence; the diff stays inside reckon/crew/promotion.py, reckon/ledger.py, tests/test_promotion_never_amends_its_commit.py, docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html, docs/figures/the-ledger-is-one-file-per-run and docs/plans/the-ledger-is-one-file-per-run.html, except one line at tests/test_append_run_writes_one_run_file.py:161 that the done_when's own caller-check clause requires."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_never_amends_its_commit.py:162-175 reddens in all four permutations when the amend is restored (negative-control.log) and reads the promote commit's ancestry and blob bytes rather than the code's own return value, while only the attempts-parameter deletion rests on the append-callers.json audit for its guard.",
+    "evidence": "both cohort arms are recorded with module and cwd headers (base-cohort.log 1 failed, 417 passed at ca9b7e02; final-cohort.log 4 failed, 414 passed at 7f51cb12) and the declared mutation is red with its string verbatim, but the done_when's zero-added-failures clause fails on the run's own record, so the measure is measured and not met.",
+    "fit": "the release commit at reckon/crew/promotion.py:3153-3166 mirrors the promote subject shape at promotion.py:2051 and deliberately does not reuse _commit_landing_writes at promotion.py:2016, which commits the whole index and would sweep a peer's staged work; the cross-module import at tests/test_promotion_never_amends_its_commit.py:17 follows the suite's existing idiom.",
+    "goal_fidelity": "the release outcome is recorded by reckon/crew/promotion.py:3153-3166 without rewriting the promote commit and tests/test_promotion_never_amends_its_commit.py:162-175 proves the original commit stays reachable and byte-unchanged, but the landed change leaves three promotion tests red at head so the node's own deliverable is not a clean landing.",
+    "scope_discipline": "every changed path is inside the fence except tests/test_append_run_writes_one_run_file.py:161, a one-line caller fix the done_when compels and the manifest discloses, where the fence norm is to request the widening instead."
+  },
+  "node": "review-of-promotion-never-amends-its-commit",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read reckon/crew/promotion.py:3099-3175 and tests/test_promotion_never_amends_its_commit.py:35-209 at the reviewed head; crew complete now records the release receipt in a second commit scoped with \"git commit --only\" to the run file and the promote commit is never rewritten, which is what the node goal states.\nVERDICT done_when: the measure's clauses are each exercised \u2014 the new test drives real completion in a synthesised repository (tests/test_promotion_never_amends_its_commit.py:35) and its ancestry, blob-byte and reflog assertions are the ones the declared mutation reddens (negative-control.log, 4 failed, 1 passed) \u2014 but the zero-added-failures clause is unmet because the run's own cohort record lists three added ids in tests/test_crew_promotion.py.\nVERDICT write_paths: read the dispatch fence; the diff stays inside reckon/crew/promotion.py, reckon/ledger.py, tests/test_promotion_never_amends_its_commit.py, docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html, docs/figures/the-ledger-is-one-file-per-run and docs/plans/the-ledger-is-one-file-per-run.html, except one line at tests/test_append_run_writes_one_run_file.py:161 that the done_when's own caller-check clause requires.\nVERDICT manifest: read; it records the focused gate (34 passed), the declared mutation (4 failed, 1 passed), both 22-module cohort arms (base ca9b7e02: 1 failed, 417 passed; head 7f51cb12: 4 failed, 414 passed), the measurement module and cwd, the negative-control path, and status blocked with the scope extension request for tests/test_crew_promotion.py.\nVERDICT diff: read commit by commit against ca9b7e02 \u2014 038b4735 replaces the amend with the scoped release commit and drops the occurrences parameter, 7f51cb12 adds the identical-receipt no-op, 789ef768 appends the plan aside, the f-tlioefpr-promotion-never-amends evidence anchor (absent at base, present at head) and the release-commits figure; 368 insertions and 10 deletions across seven files.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/crew/promotion.py:_release_after_promotion, reckon/cli.py:3802\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the release outcome is recorded by reckon/crew/promotion.py:3153-3166 without rewriting the promote commit and tests/test_promotion_never_amends_its_commit.py:162-175 proves the original commit stays reachable and byte-unchanged, but the landed change leaves three promotion tests red at head so the node's own deliverable is not a clean landing.\nSCORE evidence: 16\nJUSTIFICATION evidence: both cohort arms are recorded with module and cwd headers (base-cohort.log 1 failed, 417 passed at ca9b7e02; final-cohort.log 4 failed, 414 passed at 7f51cb12) and the declared mutation is red with its string verbatim, but the done_when's zero-added-failures clause fails on the run's own record, so the measure is measured and not met.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every changed path is inside the fence except tests/test_append_run_writes_one_run_file.py:161, a one-line caller fix the done_when compels and the manifest discloses, where the fence norm is to request the widening instead.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_promotion_never_amends_its_commit.py:162-175 reddens in all four permutations when the amend is restored (negative-control.log) and reads the promote commit's ancestry and blob bytes rather than the code's own return value, while only the attempts-parameter deletion rests on the append-callers.json audit for its guard.\nSCORE fit: 19\nJUSTIFICATION fit: the release commit at reckon/crew/promotion.py:3153-3166 mirrors the promote subject shape at promotion.py:2051 and deliberately does not reuse _commit_landing_writes at promotion.py:2016, which commits the whole index and would sweep a peer's staged work; the cross-module import at tests/test_promotion_never_amends_its_commit.py:17 follows the suite's existing idiom.\nFINDING tests/test_crew_promotion.py:1572 three assertions (also :1599 and :1861) identify the promotion commit by final HEAD and fail at the reviewed head, three added failures against ca9b7e02, because the release receipt is now its own commit; the fix is outside this node's fence and is the widening the manifest requests.\nFINDING tests/test_append_run_writes_one_run_file.py:161 this file lies outside the node's declared write paths, so the one-line attempts-aware call at :161 was edited rather than a fence widening requested; a coordinator merging this run should record that the file left its node's scope.",
+  "review_run_id": "r-20260925T173724624119-review-of-promotion-never-amends-its-commit",
+  "reviewed_base_sha": "ca9b7e0278c98a0eaf524385d994e6f0cb0bd128",
+  "reviewed_head_sha": "789ef76899c46067469307c2e7150c620e74c5e7",
+  "reviewed_run_id": "r-20260925T132849977230-promotion-never-amends-its-commit",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T18:17:56.643369+00:00",
+  "total": 88
+}

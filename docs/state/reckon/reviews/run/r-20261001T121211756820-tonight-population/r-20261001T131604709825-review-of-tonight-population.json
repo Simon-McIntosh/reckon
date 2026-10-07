@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_crew_boundary_waiver.py::test_boundary_refusal_promotes_under_waiver_with_reason_and_paths",
+    "tests/test_every_attempt_is_supervised.py::test_crew_resume_keeps_the_harness_behind_a_supervisor[codex]"
+  ],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (base_arm.log, 16 failed) and after_suite (head_arm.log, 18 failed): 2 ids differ, of which the node settles tests/test_every_attempt_is_supervised.py::test_crew_resume_keeps_the_harness_behind_a_supervisor[codex] as unstable (passes alone at head and in the second head run) and attributes tests/test_crew_boundary_waiver.py::test_boundary_refusal_promotes_under_waiver_with_reason_and_paths to ec09db9347; I reproduced that boundary at 3094b21e36 (pass) and ec09db9347 (fail).",
+  "backend": "deepseek-v4.1-flash",
+  "base_log_revision": "7a4a973721b73902848e524969541dcb3043d875",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T13:26:38.618Z",
+  "dispatched_at": "2026-10-01T13:16:23Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/tonight-population/report.md",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite records head run 1 (18 failed), which carries the codex id the node itself settles as unstable, so a mechanical added-failure derivation over baseline_suite and after_suite returns two ids where the node attributes one, overstating the merges' added failures by the flaky id."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/tonight-population/report.md",
+      "line": "9",
+      "severity": "follow-on",
+      "text": "follow-on: head_arm_run2.log ends on its pytest summary line and carries no bare EXIT= line, so the second head run's exit status is not recorded in the form the done_when requires of an arm log."
+    }
+  ],
+  "head_log_revision": "678865de9876500e3d0ed811220e691630414016",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "the node's only commit c0ef328 against base 15cedd43 is an empty marker commit changing no tracked file, consistent with a read-only attribution role whose deliverables live outside the repository.",
+    "done_when": "the done_when names the two arms, the population file, the run-alone head confirmation and the oldest-to-newest candidate bisection; report.md:8-9 records base 16 failed, head run1 18 and run2 17, and manifest.md carries readable baseline_suite and after_suite JSON with revisions.",
+    "goal": "the node is dispatched to attribute every test failure the S22 merges of 2026-10-01 added on main across the promotion/review/recovery/dispatch population by comparing base 7a4a9737 against head 678865de; report.md states that attribution and names the introducing merge per added id.",
+    "manifest": "manifest.md reads status complete, names commit c0ef328, records baseline_suite at 7a4a9737 (16 failed) and after_suite at 678865de (18 failed), attributes the boundary test to ec09db9347, and its evidence_inputs names the unstable codex id and the corrected candidate order.",
+    "write_paths": "the node was fenced to the reports directory reck.../s22-coord/tonight-population; manifest.md records changed_paths none and report.md, population.txt and the three arm logs all sit inside that directory."
+  },
+  "justifications": {
+    "durability": "the node changes no code and adds no guard test, so nothing reddens if the attribution regresses, and the one flaking head-only id is excluded by experiment rather than pinned by a test.",
+    "evidence": "I re-ran the named test at 7a4a9737 (pass), 3094b21e36 (pass), ec09db9347 (fail) and 678865de (fail at line 115), reproducing the boundary and the head failure the report claims.",
+    "fit": "report.md follows the attribution shape the dispatch names, manifest.md carries the required keys, and commit c0ef328 is a conventional subject with a body and no attribution or plan label.",
+    "goal_fidelity": "report.md names the introducing merge ec09db9347 with its assertion line at tests/test_crew_boundary_waiver.py:115 and corrects the dispatch's newest-to-oldest candidate order.",
+    "scope_discipline": "every artifact is under the declared reports directory and git show c0ef328 --stat lists no changed path."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node is dispatched to attribute every test failure the S22 merges of 2026-10-01 added on main across the promotion/review/recovery/dispatch population by comparing base 7a4a9737 against head 678865de; report.md states that attribution and names the introducing merge per added id.\nVERDICT done_when: the done_when names the two arms, the population file, the run-alone head confirmation and the oldest-to-newest candidate bisection; report.md:8-9 records base 16 failed, head run1 18 and run2 17, and manifest.md carries readable baseline_suite and after_suite JSON with revisions.\nVERDICT write_paths: the node was fenced to the reports directory reck.../s22-coord/tonight-population; manifest.md records changed_paths none and report.md, population.txt and the three arm logs all sit inside that directory.\nVERDICT manifest: manifest.md reads status complete, names commit c0ef328, records baseline_suite at 7a4a9737 (16 failed) and after_suite at 678865de (18 failed), attributes the boundary test to ec09db9347, and its evidence_inputs names the unstable codex id and the corrected candidate order.\nVERDICT diff: the node's only commit c0ef328 against base 15cedd43 is an empty marker commit changing no tracked file, consistent with a read-only attribution role whose deliverables live outside the repository.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md names the introducing merge ec09db9347 with its assertion line at tests/test_crew_boundary_waiver.py:115 and corrects the dispatch's newest-to-oldest candidate order.\nSCORE evidence: 18\nJUSTIFICATION evidence: I re-ran the named test at 7a4a9737 (pass), 3094b21e36 (pass), ec09db9347 (fail) and 678865de (fail at line 115), reproducing the boundary and the head failure the report claims.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every artifact is under the declared reports directory and git show c0ef328 --stat lists no changed path.\nSCORE durability: 15\nJUSTIFICATION durability: the node changes no code and adds no guard test, so nothing reddens if the attribution regresses, and the one flaking head-only id is excluded by experiment rather than pinned by a test.\nSCORE fit: 18\nJUSTIFICATION fit: report.md follows the attribution shape the dispatch names, manifest.md carries the required keys, and commit c0ef328 is a conventional subject with a body and no attribution or plan label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/tonight-population/report.md:8 follow-on: after_suite records head run 1 (18 failed), which carries the codex id the node itself settles as unstable, so a mechanical added-failure derivation over baseline_suite and after_suite returns two ids where the node attributes one, overstating the merges' added failures by the flaky id.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/tonight-population/report.md:9 follow-on: head_arm_run2.log ends on its pytest summary line and carries no bare EXIT= line, so the second head run's exit status is not recorded in the form the done_when requires of an arm log.\n",
+  "review_run_id": "r-20261001T131604709825-review-of-tonight-population",
+  "reviewed_base_sha": "15cedd43ee7259c1d7db8befcbec614c72491234",
+  "reviewed_head_sha": "c0ef32829b4da0f9e3ab4d43fca8262f9f8275a7",
+  "reviewed_run_id": "r-20261001T121211756820-tonight-population",
+  "role": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.595111+00:00",
+  "total": 89
+}

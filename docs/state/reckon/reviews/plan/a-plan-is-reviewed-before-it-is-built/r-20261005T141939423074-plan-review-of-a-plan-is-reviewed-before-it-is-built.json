@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:23:44.886Z",
+  "dispatched_at": "2026-10-05T14:19:57Z",
+  "findings": [
+    {
+      "anchor": "reckon/doccheck.py:1014",
+      "id": "duplicate_owner-1",
+      "reason": "the section must either keep doccheck's reader or name how the hoisted reader preserves its fallback population and its treatment of landings, because a blind fold is a behaviour change presented as a de-duplication.",
+      "text": "the section asserts `doccheck._implementable_section_ids` and `promotion._plan_remaining_sections` answer \"the same question asked of the same map\" and folds the former onto the hoisted reader, but they differ in three ways the fold does not resolve: promotion subtracts recorded landings (`_landed_sections`, so a landed section drops out) while doccheck does not; with no declarations promotion falls back to `plan_section_anchors(state)` while doccheck falls back to *numbered* heading ids (`_NUMBERED_SECTION_ID`); and promotion returns a `sorted` list while doccheck returns document order \u2014 so folding as written silently changes the document check's findings (an implementable section that has landed, or a plan with no declarations, is reported differently)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py:7236",
+      "id": "duplicate_owner-2",
+      "reason": "the done-when must be scoped to the predicate (the outstanding-sections question), not to every consumer of the declaration map, or the node's own gate is unsatisfiable.",
+      "text": "the section's done-when \"greps `section_declarations` readers under `reckon/` and requires one\", but the map is read for several distinct questions by owners the check would flag: `roadmap._plan_declarations`/`_declared_stages` (reckon/roadmap.py:142,194), `followup_pointers` (reckon/followup_pointers.py:148), the MCP view's per-identity declaration (reckon/mcp_views.py:2259), and the schema's declaration validation (reckon/_schema.py:1485) \u2014 so the check as specified cannot pass at head without deleting legitimate readers, and it measures \"readers of the map\" where the design means \"readers of which sections are still work\"",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py",
+      "id": "interface_budget-1",
+      "reason": "the item's rule requires the section to name in its own text what it adds to the family, and the accounting presently names one addition where the design describes two.",
+      "text": "\u00a716's interface accounting states \"one public definition is added, the coverage predicate the gate and the sweep read\", but the surrounding text also hoists `promotion._plan_remaining_sections` to `reckon/_store.py` so the gate, the sweep and promotion import it from there; a definition exported at module scope for cross-module import counts toward `public_definitions` (1475), so the section adds two surfaces' worth of public name unless the hoisted reader keeps an underscore name \u2014 which the repo's own \u00a79 follow-on already flagged as a smell when the preview read `plan_review._REVIEW_SIDECAR_NAME` across a module boundary",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "55b6861e268aee2943b77873eeb0463e80e7333b29435f10b5463058db2e1abf",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 74,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T141939423074-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "307bc04cea10724b38911ee270c504aaf268854e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design's direction is consolidation to one owner (`_StructuredSectionSpanParser` becomes the one raw-text section reader; `_fingerprint_forms` and one declaration reader absorb the rest), not a spread of new wrappers, and the enumerator's interface (identity, heading text, replaced span as offsets) is smaller than the many boundary/identity rules it hides.",
+    "duplicate_owner": "a finding \u2014 the section folds `doccheck._implementable_section_ids` onto the hoisted reader on the claim that they are \"the same question\", and scopes its done-when to `section_declarations` readers, but the two existing readers answer *different* questions and the map has several further legitimate readers that must survive.",
+    "interface_budget": "a finding \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a716's accounting names one added public definition (the coverage predicate) but the design also hoists `promotion._plan_remaining_sections` into `_store.py` for cross-module import by the gate, the sweep and promotion, which is a second addition to `public_definitions` unless it stays private, and the section does not say which.",
+    "reuse_search": "pass \u2014 \u00a716 names and the code confirms the machinery it extends: `_StructuredSectionSpanParser`/`structured_section_spans` (reckon/_plan_html.py:44,94), `_section_heading`/`_section_body_end`/`landed_section_ids` (reckon/_store.py:899,932,1034), `_authored_section_headings` (reckon/mcp_views.py:2080), `promotion._plan_remaining_sections` (reckon/crew/promotion.py:7236), `doccheck._implementable_section_ids` (reckon/doccheck.py:1014), and `interface_counts.read_trees`/`definitions`/`_staged_writes` (reckon/interface_counts.py:76,99,472); each is a real, openable owner.",
+    "thin_wrapper": "a finding \u2014 the coverage predicate is a new layer whose distinction from the reader it wraps is stated only in passing, and the section's own accounting does not say how it stays smaller than the machinery it sits over."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.896674+00:00"
+}

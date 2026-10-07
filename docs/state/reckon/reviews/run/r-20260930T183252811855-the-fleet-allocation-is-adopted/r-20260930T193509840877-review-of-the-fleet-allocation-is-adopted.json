@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183252811855-the-fleet-allocation-is-adopted/population-base-n8.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183252811855-the-fleet-allocation-is-adopted/population-head-n8.log"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:3083",
+    "reckon/crew/dispatch.py:6330",
+    "reckon/crew/dispatch.py:5175"
+  ],
+  "completed_at": "2026-09-30T19:44:06.183Z",
+  "dispatched_at": "2026-09-30T19:35:26Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-fleet-shares-one-allocation/the-fleet-allocation-is-adopted.html",
+      "line": "24",
+      "text": "the committed landing fragment records the population as \"base 247 passed and 1 pre-existing failure ... head 251 passed and the same 1\", but the manifest's own baseline_suite and after_suite and the only retained population logs (population-base-n8.log, population-head-n8.log) both read 0 failures (248 and 252 passed), so the fragment's numbers belong to an unretained first run and no reader can reconcile the fragment with the cited gate logs."
+    },
+    {
+      "file": "reckon/crew/placement.py",
+      "line": "491",
+      "text": "_adopt_live_fleet_allocation catches only fleet_node.FleetNodeError around query_jobs, which calls subprocess.run without wrapping OSError, so a missing or unrunnable squeue client raises FileNotFoundError out of ensure_reservation on the no-record path, where the adjacent mint call at placement.py:558 wraps (OSError, SubprocessError) into a CrewError, leaving the two branches of one decision inconsistent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against base 4d852e70: placement.py adds the adoption branch and _adopted_result, fleet_node.py adds query_jobs' runner seam plus allocation_shape and parse_memory_gb, dispatch.py adds _carry_declared_placement and the resume-path placement resolution, and the node adds one test file and one evidence fragment; no unrelated edits.",
+    "done_when": "the declared measure is a focused four-case file, a base/head population over the importers of placement/fleet_node/resumption with no added failing id, and a negative control; focused-head.log reads \"4 passed\", population-base-n8.log \"248 passed\" and population-head-n8.log \"252 passed\" with 0 failures at both arms, and negative-control-adoption-branch-removed.log reddens the first case on the named allocation-obtaining request (\"assert 1 == 0\" from _allocation_requests()).",
+    "goal": "the node's goal is for ensure_reservation to adopt a live supervisor-running fleet allocation the fleet record names into the one unkeyed record while submitting nothing, with the resume path placing the resumed worker as an --overlap step in that job; reckon/crew/placement.py:463-519 _adopt_live_fleet_allocation plus the else branch at :547 do exactly that and reckon/crew/dispatch.py:8252 resolves placement on the resume path, so the goal is met.",
+    "manifest": "read; it names both commits, the mechanism, the four figures, the negative control and a follow-on for two load-sensitive ids; its commits list resolves (43ba4465, 7e9a4e94) and its evidence_inputs correctly reports that the fence's placement.py comment was already landed at base (\"carried nowhere else\" at 4d852e70:487), so no correction was owed there.",
+    "write_paths": "the manifest declares seven write paths; git diff 4d852e70..7e9a4e94 touches five \u2014 reckon/crew/placement.py, reckon/crew/fleet_node.py, reckon/crew/dispatch.py, tests/test_the_fleet_allocation_is_adopted.py and the evidence fragment \u2014 every one inside the grant; reckon/crew/resumption.py and the figures directory are declared but the change needed neither, which is not a violation."
+  },
+  "justifications": {
+    "durability": "tests/test_the_fleet_allocation_is_adopted.py isolates RECKON_HOME and FLEET_STATE_DIR and puts a recording scheduler on PATH, so no allocation is submitted, adopted or cancelled for real, and adoption sits under the cross-process lock; minus two for the unguarded OSError path at placement.py:491.",
+    "evidence": "focused-head.log 4 passed and population baseline/head logs 248 vs 252 passed with 0 failures at both arms over the exact 18 importers I re-derived, and a real negative control; but the committed evidence fragment cites a first population run (247+1 / 251+1) that no retained log carries, so its figures are unverifiable from disk.",
+    "fit": "_adopt_live_fleet_allocation reuses fleet_node.find_allocation/find_allocations and adds no second hold path, the runner seam follows query_jobs' existing subprocess idiom, and every new name (_adopted_result, allocation_shape, parse_memory_gb, _carry_declared_placement) is mechanism-named with no plan or version token.",
+    "goal_fidelity": "placement.py:463 _adopt_live_fleet_allocation reads the recorded job's shape from the scheduler (squeue %P|%C|%m) and the else branch at :547 publishes it and returns adopted with started=False, and dispatch.py:8252 makes a resumed placed backend an overlapping step in that job \u2014 the goal in full, with the release of 1276262 belonging to the coordinator, not this node.",
+    "scope_discipline": "git diff 4d852e70..7e9a4e94 is five files, 524 insertions and 4 deletions, every path inside the manifest's declared write grants, with resumption.py and the figures directory declared but untouched."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 4d852e7000589a5edf484bff32bbe2ba60a61a69\nreviewed_head_sha: 7e9a4e94d159092cc0b6a66d1eb83248ba105c91\nVERDICT goal: the node's goal is for ensure_reservation to adopt a live supervisor-running fleet allocation the fleet record names into the one unkeyed record while submitting nothing, with the resume path placing the resumed worker as an --overlap step in that job; reckon/crew/placement.py:463-519 _adopt_live_fleet_allocation plus the else branch at :547 do exactly that and reckon/crew/dispatch.py:8252 resolves placement on the resume path, so the goal is met.\nVERDICT done_when: the declared measure is a focused four-case file, a base/head population over the importers of placement/fleet_node/resumption with no added failing id, and a negative control; focused-head.log reads \"4 passed\", population-base-n8.log \"248 passed\" and population-head-n8.log \"252 passed\" with 0 failures at both arms, and negative-control-adoption-branch-removed.log reddens the first case on the named allocation-obtaining request (\"assert 1 == 0\" from _allocation_requests()).\nVERDICT write_paths: the manifest declares seven write paths; git diff 4d852e70..7e9a4e94 touches five \u2014 reckon/crew/placement.py, reckon/crew/fleet_node.py, reckon/crew/dispatch.py, tests/test_the_fleet_allocation_is_adopted.py and the evidence fragment \u2014 every one inside the grant; reckon/crew/resumption.py and the figures directory are declared but the change needed neither, which is not a violation.\nVERDICT manifest: read; it names both commits, the mechanism, the four figures, the negative control and a follow-on for two load-sensitive ids; its commits list resolves (43ba4465, 7e9a4e94) and its evidence_inputs correctly reports that the fence's placement.py comment was already landed at base (\"carried nowhere else\" at 4d852e70:487), so no correction was owed there.\nVERDICT diff: read both commits against base 4d852e70: placement.py adds the adoption branch and _adopted_result, fleet_node.py adds query_jobs' runner seam plus allocation_shape and parse_memory_gb, dispatch.py adds _carry_declared_placement and the resume-path placement resolution, and the node adds one test file and one evidence fragment; no unrelated edits.\nCALL_SITES: reckon/crew/runs.py:3083, reckon/crew/dispatch.py:6330, reckon/crew/dispatch.py:5175\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: placement.py:463 _adopt_live_fleet_allocation reads the recorded job's shape from the scheduler (squeue %P|%C|%m) and the else branch at :547 publishes it and returns adopted with started=False, and dispatch.py:8252 makes a resumed placed backend an overlapping step in that job \u2014 the goal in full, with the release of 1276262 belonging to the coordinator, not this node.\nSCORE evidence: 17\nJUSTIFICATION evidence: focused-head.log 4 passed and population baseline/head logs 248 vs 252 passed with 0 failures at both arms over the exact 18 importers I re-derived, and a real negative control; but the committed evidence fragment cites a first population run (247+1 / 251+1) that no retained log carries, so its figures are unverifiable from disk.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 4d852e70..7e9a4e94 is five files, 524 insertions and 4 deletions, every path inside the manifest's declared write grants, with resumption.py and the figures directory declared but untouched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_fleet_allocation_is_adopted.py isolates RECKON_HOME and FLEET_STATE_DIR and puts a recording scheduler on PATH, so no allocation is submitted, adopted or cancelled for real, and adoption sits under the cross-process lock; minus two for the unguarded OSError path at placement.py:491.\nSCORE fit: 20\nJUSTIFICATION fit: _adopt_live_fleet_allocation reuses fleet_node.find_allocation/find_allocations and adds no second hold path, the runner seam follows query_jobs' existing subprocess idiom, and every new name (_adopted_result, allocation_shape, parse_memory_gb, _carry_declared_placement) is mechanism-named with no plan or version token.\nFINDING docs/evidence/fragments/the-fleet-shares-one-allocation/the-fleet-allocation-is-adopted.html:24 the committed landing fragment records the population as \"base 247 passed and 1 pre-existing failure ... head 251 passed and the same 1\", but the manifest's own baseline_suite and after_suite and the only retained population logs (population-base-n8.log, population-head-n8.log) both read 0 failures (248 and 252 passed), so the fragment's numbers belong to an unretained first run and no reader can reconcile the fragment with the cited gate logs.\nFINDING reckon/crew/placement.py:491 _adopt_live_fleet_allocation catches only fleet_node.FleetNodeError around query_jobs, which calls subprocess.run without wrapping OSError, so a missing or unrunnable squeue client raises FileNotFoundError out of ensure_reservation on the no-record path, where the adjacent mint call at placement.py:558 wraps (OSError, SubprocessError) into a CrewError, leaving the two branches of one decision inconsistent.\n",
+  "review_run_id": "r-20260930T193509840877-review-of-the-fleet-allocation-is-adopted",
+  "reviewed_base_sha": "4d852e7000589a5edf484bff32bbe2ba60a61a69",
+  "reviewed_head_sha": "7e9a4e94d159092cc0b6a66d1eb83248ba105c91",
+  "reviewed_run_id": "r-20260930T183252811855-the-fleet-allocation-is-adopted",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260930T193509840877-review-of-the-fleet-allocation-is-adopted",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T19:42:39.389916+00:00",
+  "total": 94
+}

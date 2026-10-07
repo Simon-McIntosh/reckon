@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0c32542d14c1e291aa88c1664fac9419353bf0de",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1535 dispatch composes every worker's prompt via compose_prompt",
+    "reckon/crew/prompts.py:496 compose_prompt calls _negative_control_declaration",
+    "reckon/crew/prompts.py:334 NEGATIVE_CONTROL_DECLARED_RULE is rendered into the declaration block",
+    "reckon/crew/promotion.py:5751 _require_declared_negative_control applies the rule the prompt states"
+  ],
+  "completed_at": "2026-09-30T23:29:22.273Z",
+  "dispatched_at": "2026-09-30T23:20:51Z",
+  "findings": [
+    {
+      "file": "tests/test_prompt_carries_the_declaration.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: this file is changed outside the reviewed run's dispatch-declared write paths (the FENCE \u2014 SCOPE list in its prompt.txt does not carry it; check-manifest reports 'changed paths outside the write scope'), so promotion must accept it as a companion path with a stated reason. The change itself is necessary and was authorised: the coordinator's resume advice (run directory resume-1-advice.txt) instructed the worker to bring this module's two wording cases onto the facts rule and stated 'the coordinator accepts it at promotion', and it answers the previous review's blocking finding that the module pinned the removed verbatim sentence so the change could not land alone. The residual defect is the record, not the work: the run record's write_paths were not updated to carry the companion path."
+    }
+  ],
+  "head_log_revision": "e35585e5aed11faa8e2403c76d49dab2db0ca8cd",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read against 0c32542d1 over four commits; 270 insertions and 67 deletions across eight files, the removed verbatim wording replaced at both sites by the facts rule plus the fallback, the declaration still shown once, and the sibling module's two wording cases re-pointed at the facts rule.",
+    "done_when": "the done-when names both prompt sites, a base/head gate arm with a private basetemp, and a negative control; the manifest records base 46 passed and head 62 passed with zero added ids, and the reviewer reproduced the head arm at 62 passed EXIT=0.",
+    "goal": "the node goal is to make both live prompt sites teach the rule the control gate actually applies instead of the removed verbatim first-line rule, and to add the gate's arm fallback; both reckon/crew/prompts.py sites now state admission on the run's recorded facts with the fallback clause, matching the gate at reckon/crew/promotion.py:5268.",
+    "manifest": "read at the run directory; status complete, four commits named, both suite arms carry completed true with literal commands and revision headers, the negative-control path and declared mutation are recorded, and the out-of-scope companion path is disclosed under blockers.",
+    "write_paths": "the diff touches reckon/crew/prompts.py, six test modules and one evidence fragment; all but tests/test_prompt_carries_the_declaration.py are inside the run's declared FENCE \u2014 SCOPE paths, and that companion path was authorised in the coordinator's resume advice."
+  },
+  "justifications": {
+    "durability": "tests/test_the_prompt_teaches_the_rule_the_gate_applies.py pins both sites for the facts rule, the fallback clause, the arm-readability clause, the absence of verbatim/first-line, and the declaration shown once, and logs/negative-control.log shows the restored verbatim sentence reddening four of its cases at EXIT=1.",
+    "evidence": "logs/baseline.log names revision 0c32542d and ends 46 passed EXIT=0; logs/head.log names e35585e5 and ends 62 passed EXIT=0; both carry literal commands and a private basetemp, and the reviewer re-ran the seven-file head gate at c9c4d116 to 62 passed EXIT=0 (set difference against base empty, added_failure_count 0).",
+    "fit": "the rewritten comment at reckon/crew/prompts.py:250 and the docstring at :313 describe the mechanism the gate applies, and the four commits carry conventional subjects with bodies and no plan label or attribution.",
+    "goal_fidelity": "reckon/crew/prompts.py:272 and the manifest template gloss at :583 both state \"a non-zero `EXIT=` line and at least one failing test id the head arm does not fail, falling back to the baseline's failing ids only when the manifest records no readable head arm\", which is the rule reckon/crew/promotion.py:5370 applies (head arm decides when readable, baseline only as fallback).",
+    "scope_discipline": "the diff stays inside the declared paths except tests/test_prompt_carries_the_declaration.py, which the coordinator's resume advice ordered changed and accepted at promotion but which the run record's declared write_paths do not carry, so check-manifest still flags it as outside the scope."
+  },
+  "node": "review-of-the-prompt-teaches-the-rule-the-gate-applies",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make both live prompt sites teach the rule the control gate actually applies instead of the removed verbatim first-line rule, and to add the gate's arm fallback; both reckon/crew/prompts.py sites now state admission on the run's recorded facts with the fallback clause, matching the gate at reckon/crew/promotion.py:5268.\nVERDICT done_when: the done-when names both prompt sites, a base/head gate arm with a private basetemp, and a negative control; the manifest records base 46 passed and head 62 passed with zero added ids, and the reviewer reproduced the head arm at 62 passed EXIT=0.\nVERDICT write_paths: the diff touches reckon/crew/prompts.py, six test modules and one evidence fragment; all but tests/test_prompt_carries_the_declaration.py are inside the run's declared FENCE \u2014 SCOPE paths, and that companion path was authorised in the coordinator's resume advice.\nVERDICT manifest: read at the run directory; status complete, four commits named, both suite arms carry completed true with literal commands and revision headers, the negative-control path and declared mutation are recorded, and the out-of-scope companion path is disclosed under blockers.\nVERDICT diff: read against 0c32542d1 over four commits; 270 insertions and 67 deletions across eight files, the removed verbatim wording replaced at both sites by the facts rule plus the fallback, the declaration still shown once, and the sibling module's two wording cases re-pointed at the facts rule.\nCALL_SITES: reckon/crew/dispatch.py:1535 dispatch composes every worker's prompt via compose_prompt, reckon/crew/prompts.py:496 compose_prompt calls _negative_control_declaration, reckon/crew/prompts.py:334 NEGATIVE_CONTROL_DECLARED_RULE is rendered into the declaration block, reckon/crew/promotion.py:5751 _require_declared_negative_control applies the rule the prompt states\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:272 and the manifest template gloss at :583 both state \"a non-zero `EXIT=` line and at least one failing test id the head arm does not fail, falling back to the baseline's failing ids only when the manifest records no readable head arm\", which is the rule reckon/crew/promotion.py:5370 applies (head arm decides when readable, baseline only as fallback).\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/baseline.log names revision 0c32542d and ends 46 passed EXIT=0; logs/head.log names e35585e5 and ends 62 passed EXIT=0; both carry literal commands and a private basetemp, and the reviewer re-ran the seven-file head gate at c9c4d116 to 62 passed EXIT=0 (set difference against base empty, added_failure_count 0).\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff stays inside the declared paths except tests/test_prompt_carries_the_declaration.py, which the coordinator's resume advice ordered changed and accepted at promotion but which the run record's declared write_paths do not carry, so check-manifest still flags it as outside the scope.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_prompt_teaches_the_rule_the_gate_applies.py pins both sites for the facts rule, the fallback clause, the arm-readability clause, the absence of verbatim/first-line, and the declaration shown once, and logs/negative-control.log shows the restored verbatim sentence reddening four of its cases at EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: the rewritten comment at reckon/crew/prompts.py:250 and the docstring at :313 describe the mechanism the gate applies, and the four commits carry conventional subjects with bodies and no plan label or attribution.\nFINDING tests/test_prompt_carries_the_declaration.py:1 follow-on: this file is changed outside the reviewed run's dispatch-declared write paths (the FENCE \u2014 SCOPE list in its prompt.txt does not carry it; check-manifest reports 'changed paths outside the write scope'), so promotion must accept it as a companion path with a stated reason. The change itself is necessary and was authorised: the coordinator's resume advice (run directory resume-1-advice.txt) instructed the worker to bring this module's two wording cases onto the facts rule and stated 'the coordinator accepts it at promotion', and it answers the previous review's blocking finding that the module pinned the removed verbatim sentence so the change could not land alone. The residual defect is the record, not the work: the run record's write_paths were not updated to carry the companion path.",
+  "review_run_id": "r-20260930T232033268914-review-of-the-prompt-teaches-the-rule-the-gate-applies",
+  "reviewed_base_sha": "0c32542d14c1e291aa88c1664fac9419353bf0de",
+  "reviewed_head_sha": "c9c4d116de9c61959b6e5c1f5c62a6c35ba960ce",
+  "reviewed_run_id": "r-20260930T223448155313-the-prompt-teaches-the-rule-the-gate-applies",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T23:27:27+00:00",
+  "total": 93
+}

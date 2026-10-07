@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:44:18.744Z",
+  "dispatched_at": "2026-10-05T14:39:53Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:1034",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a717 must either name `landed_section_ids` as the extent owner to extend and have the parser read it, or state that the parser becomes the sole owner and `landed_section_ids` delegates to it; a forked card recogniser drifts from the writer that mints cards.",
+      "text": "\u00a717 folds section identity and the replaced span into `_StructuredSectionSpanParser`, but the span it must yield for an already-landed section is the card, and card recognition stays in `_store.landed_section_ids` / `_landed_card_span` / `_is_structural_boundary` (`_store.py:992\u20131062`); \u00a716 then consumes `landed_section_ids` for the fingerprint while \u00a717's parser re-derives the same boundary, so one change set would carry two recognisers of a landed card",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:598",
+      "id": "interface_budget-1",
+      "reason": "\u00a716 must say which convention holds \u2014 make the predicate public and count it, or state why a module-private cross-package reader is acceptable where \u00a718's is not \u2014 before its \"no public definition is added\" claim can be checked from the section text alone.",
+      "text": "\u00a716 keeps the coverage predicate module-private so `public_definitions` stays flat, explicitly because its two consumers live in the same `reckon/crew` package, while \u00a718 applies the opposite convention to the same situation \u2014 it hoists promotion's reader to a public name on `_store.py`, calling the public home \"the price of a cross-module mechanism\"; the two sections cannot both be the house rule, and the counts supplied for this week (public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23) show any public addition is a tracked family",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:368",
+      "id": "deep_module-1",
+      "reason": "the section must name the function that yields the per-section digests and the record key that holds them, or the node cannot write the record the coverage predicate of \u00a716 then reads.",
+      "text": "\u00a716 says the whole-document fingerprint becomes the digest of the sorted per-section digest set and that the stored record \"carries the section digests beside that identity\", and it also says the public `plan_fingerprint` signature deliberately does not widen; the record must therefore hold per-section digests but no interface is named that returns them, and `_authored_prose` is named only as gaining \"the ability\", not as a callable the composer (`reckon/crew/recovery.py:593`, which today calls only `plan_fingerprint(document)`) could use",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/interface_counts.py:441",
+      "id": "deep_module-2",
+      "reason": "the module already carries a module-private rule consumed only by a test (`_staged_writes`, `tests/test_staged_write_inventory.py`), so the placement follows an established in-repo pattern and the node can implement it as written.",
+      "text": "\u00a717 adds a heading-walk reporting rule to the interface census whose only consumer is \u00a717's own done-when (the head-vs-base site count); `interface_counts.counts` returns exactly the four counted families and a site-reporting rule is a different output shape",
+      "type": "deep_module",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "3f9de8a08a34ac227b5dc1d7b0f9cfd7a2029a65b177bc67626bde5c20f0abd2",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 78,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T143936821917-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "70483346cec820f3763ca5d9a63f8564a10f9603",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a716 claims a per-section digest set without naming the interface that yields it, so the depth it describes has no surface a node can call.",
+    "duplicate_owner": "a finding \u2014 \u00a717 moves section-extent recognition into the raw-text parser while \u00a716 keeps `_store.landed_section_ids` as the card recogniser, leaving the \"this extent is a landed card\" predicate with two owners and no statement of which the other delegates to.",
+    "interface_budget": "a finding \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 declares its coverage predicate module-private to hold public_definitions flat while \u00a718 (same change set) hoists a cross-module reader to a public name on `_store.py`, so \u00a716's \"no public definition is added here\" is not settled by its own text.",
+    "reuse_search": "pass \u2014 the plan searched the codebase it extends and cites the mechanisms it builds on; every one named above exists at the citation given.",
+    "thin_wrapper": "pass \u2014 \u00a716's coverage predicate is justified against `read_plan_review` (one record to one digest) and \u00a718 relocates an existing reader rather than wrapping it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.892107+00:00"
+}

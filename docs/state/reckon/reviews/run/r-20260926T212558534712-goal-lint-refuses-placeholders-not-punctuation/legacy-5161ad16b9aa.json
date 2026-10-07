@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3043"
+  ],
+  "completed_at": "2026-09-27T18:55:53.840Z",
+  "dispatched_at": "2026-09-26T21:26:12Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T212558534712-goal-lint-refuses-placeholders-not-punctuation/manifest.md",
+      "line": "34",
+      "text": "the after_suite claim reads \"at HEAD 601e51e5\" but the log it cites (suite-head-test_crew.log:1) is stamped HEAD 98f3eb98edacb1d5a9a46389da1157d52dc0e819, the base revision the run was branched from, so the claim needs a content-equality statement or the revision actually measured."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T212558534712-goal-lint-refuses-placeholders-not-punctuation/manifest.md",
+      "line": "11",
+      "text": "the prompt requires the reuse map (reports/reckon/s25-coord/s25-reuse-map-dispatch-surface/reuse-map.md) cited in this manifest for the node.py seams the change extends; it is absent, the only reuse mention at :44 naming the comparison without citing the map, and the citation lives only in docs/evidence/archive/a-refusal-is-about-the-work-landed.html:83."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T212558534712-goal-lint-refuses-placeholders-not-punctuation/logs/suite-base-test_crew.log",
+      "line": "1",
+      "text": "this scratch-tree (/tmp/base-lint) base-arm log names no module.__file__ and no resolved cwd on its header lines, so a reader cannot tell the arm imported the base tree rather than the worktree, and the manifest's measurement_module/measurement_cwd at manifest.md:21-22 name the gate's test file and the worktree instead of this arm."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both commits against base 98f3eb98edacb1d5a9a46389da1157d52dc0e819; 601e51e5 changes only reckon/crew/node.py (58 insertions, 14 deletions) and adds the 165-line tests/test_goal_contract_lint.py, and 74dc4774 adds the evidence record, the figure and the plan section.",
+    "done_when": "the done-when's table is pinned at tests/test_goal_contract_lint.py:74 (four accepted rows) and :106 (three refused rows); I re-ran the gate myself to 8 passed, exit 0 at 74dc4774, and one done-when clause (the reuse map cited in the manifest) is unmet (see findings).",
+    "goal": "the node's goal is to narrow the contract lint so it refuses unresolved placeholders and two-deliverable goals, not punctuation, and reckon/crew/node.py:179 now opens a second deliverable only when the clause a separator leads carries its own action verb while node.py:138 refuses an angle-bracket token only outside a quoted string and outside a code span.",
+    "manifest": "read; it records the 8-passed gate with its log and the zero suite delta, but its after_suite claim cites a log stamped at the base revision and no reuse-map citation appears (see findings).",
+    "write_paths": "the manifest declares reckon/crew/node.py, tests/test_goal_contract_lint.py, docs/evidence/archive/a-refusal-is-about-the-work-landed.html, docs/figures/a-refusal-is-about-the-work and docs/plans/a-refusal-is-about-the-work.html, and git show --stat for 601e51e5 and 74dc4774 shows those five paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_goal_contract_lint.py:133 fails when the semicolon separator is restored (negative-control.log: 1 failed, 7 passed, exit 1), naming both the condition and the regression each accepted row guards.",
+    "evidence": "tests/test_goal_contract_lint.py re-ran green at 74dc4774, but the suite-delta record outruns its own log's revision stamp and the base-arm log carries no module.__file__ or cwd header, so two of the done-when's evidence clauses are unmet (see findings).",
+    "fit": "the change follows the module idiom at reckon/crew/node.py:120-179 and adds no forbidden name; docs/evidence/archive/a-refusal-is-about-the-work-landed.html:16 uses plan-verdict \"passed\" where reckon/evidence.py:270 emits \"pass\".",
+    "goal_fidelity": "reckon/crew/node.py:120-145 scopes the word rule to the goal text outside quotes and code spans and node.py:179 requires an action verb, which is what the deliverable's clauses state read as the plan's exemption list scopes them.",
+    "scope_discipline": "both commits touch only the five declared paths, with reckon/crew/node.py:1051 adding a test-only execution_capable input that no production caller passes."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to narrow the contract lint so it refuses unresolved placeholders and two-deliverable goals, not punctuation, and reckon/crew/node.py:179 now opens a second deliverable only when the clause a separator leads carries its own action verb while node.py:138 refuses an angle-bracket token only outside a quoted string and outside a code span.\nVERDICT done_when: the done-when's table is pinned at tests/test_goal_contract_lint.py:74 (four accepted rows) and :106 (three refused rows); I re-ran the gate myself to 8 passed, exit 0 at 74dc4774, and one done-when clause (the reuse map cited in the manifest) is unmet (see findings).\nVERDICT write_paths: the manifest declares reckon/crew/node.py, tests/test_goal_contract_lint.py, docs/evidence/archive/a-refusal-is-about-the-work-landed.html, docs/figures/a-refusal-is-about-the-work and docs/plans/a-refusal-is-about-the-work.html, and git show --stat for 601e51e5 and 74dc4774 shows those five paths and nothing else.\nVERDICT manifest: read; it records the 8-passed gate with its log and the zero suite delta, but its after_suite claim cites a log stamped at the base revision and no reuse-map citation appears (see findings).\nVERDICT diff: read both commits against base 98f3eb98edacb1d5a9a46389da1157d52dc0e819; 601e51e5 changes only reckon/crew/node.py (58 insertions, 14 deletions) and adds the 165-line tests/test_goal_contract_lint.py, and 74dc4774 adds the evidence record, the figure and the plan section.\nCALL_SITES: reckon/crew/dispatch.py:3043\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:120-145 scopes the word rule to the goal text outside quotes and code spans and node.py:179 requires an action verb, which is what the deliverable's clauses state read as the plan's exemption list scopes them.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_goal_contract_lint.py re-ran green at 74dc4774, but the suite-delta record outruns its own log's revision stamp and the base-arm log carries no module.__file__ or cwd header, so two of the done-when's evidence clauses are unmet (see findings).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both commits touch only the five declared paths, with reckon/crew/node.py:1051 adding a test-only execution_capable input that no production caller passes.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_goal_contract_lint.py:133 fails when the semicolon separator is restored (negative-control.log: 1 failed, 7 passed, exit 1), naming both the condition and the regression each accepted row guards.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module idiom at reckon/crew/node.py:120-179 and adds no forbidden name; docs/evidence/archive/a-refusal-is-about-the-work-landed.html:16 uses plan-verdict \"passed\" where reckon/evidence.py:270 emits \"pass\".\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T212558534712-goal-lint-refuses-placeholders-not-punctuation/manifest.md:34 the after_suite claim reads \"at HEAD 601e51e5\" but the log it cites (suite-head-test_crew.log:1) is stamped HEAD 98f3eb98edacb1d5a9a46389da1157d52dc0e819, the base revision the run was branched from, so the claim needs a content-equality statement or the revision actually measured.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T212558534712-goal-lint-refuses-placeholders-not-punctuation/manifest.md:11 the prompt requires the reuse map (reports/reckon/s25-coord/s25-reuse-map-dispatch-surface/reuse-map.md) cited in this manifest for the node.py seams the change extends; it is absent, the only reuse mention at :44 naming the comparison without citing the map, and the citation lives only in docs/evidence/archive/a-refusal-is-about-the-work-landed.html:83.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T212558534712-goal-lint-refuses-placeholders-not-punctuation/logs/suite-base-test_crew.log:1 this scratch-tree (/tmp/base-lint) base-arm log names no module.__file__ and no resolved cwd on its header lines, so a reader cannot tell the arm imported the base tree rather than the worktree, and the manifest's measurement_module/measurement_cwd at manifest.md:21-22 name the gate's test file and the worktree instead of this arm.\nreviewed_base_sha: 98f3eb98edacb1d5a9a46389da1157d52dc0e819\nreviewed_head_sha: 74dc47749a16dc6558e77d0b497ea82282a597ca",
+  "review_run_id": "legacy-5161ad16b9aa",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "98f3eb98edacb1d5a9a46389da1157d52dc0e819",
+  "reviewed_head_sha": "74dc47749a16dc6558e77d0b497ea82282a597ca",
+  "reviewed_run_id": "r-20260926T212558534712-goal-lint-refuses-placeholders-not-punctuation",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T23:21:20.865863+00:00",
+  "total": 89
+}

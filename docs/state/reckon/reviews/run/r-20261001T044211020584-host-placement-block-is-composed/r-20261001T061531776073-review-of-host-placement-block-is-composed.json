@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T06:28:24.850Z",
+  "dispatched_at": "2026-10-01T06:15:50Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-host-placement-block.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the report states each log ends EXIT=, but grep -rn EXIT= over <run>/logs/ returns nothing, so the done_when's per-command EXIT= requirement is unmet and every exit status (0, 97) is asserted only in the manifest's tests prose."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T044211020584-host-placement-block-is-composed/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest carries no baseline_suite/after_suite, so the store's added-failure derivation is unmeasured (null) rather than zero; a no-code-change node genuinely has no population, so this is a limit of the record, not of the work."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-host-placement-block.md",
+      "line": "209",
+      "severity": "follow-on",
+      "text": "follow-on: job_id_probe is omitted although the done_when lists it as a required field of every block; the omission is measured and justified in \u00a76, but the SPEC asked for exact implementation and it is the coordinator's call whether to accept the deviation."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "none \u2014 the node changed no repository file (git -C <tree> status --porcelain empty, HEAD 1a772da1), so there is no landed diff to read; the review reads the report, scratch and logs.",
+    "done_when": "the done_when's report, nine backends with native excluded, per-block PlacementConfig validation, scratch env-var pointer, flight resolution, two dry runs, the composed argv naming srun --jobid=1277272 --overlap, the shim disposition, the login-node composition and the refusal modes are present and independently measurable, but its requirement that every log end EXIT= is unmet.",
+    "goal": "the node's goal is to compose and dry-run the host-layer placement block for the nine CLI backends; the report at reports/reckon/s21-host-placement-block.md \u00a71-\u00a75 gives the block, its scratch resolution, the composed argv and the refusal modes.",
+    "manifest": "read; status complete, commits none, changed_paths the report, tests carries exit codes in prose, negative_control_log empty with a stated reason; no baseline_suite/after_suite fields; one deviation (job_id_probe) declared.",
+    "write_paths": "the declared path is the single report file; the reviewed tree is clean at 1a772da1 and the real flight.yaml is byte-identical (sha256 4b5bd5238fd3cbcdfffb283c86e708d6ba85a999803c9bdf210885e5a8ab123f), so nothing was written outside scope."
+  },
+  "justifications": {
+    "durability": "log 07 shows the declaration's refusal guards firing under mutation (nonexistent path, missing queries, unreachable endpoint), but the change lands no code and no test persists.",
+    "evidence": "report:21 asserts each log ends EXIT= and report:187 cites log 08 `srun shim EXIT=97`, but grep -rn EXIT= over the run's logs returns nothing, so the exit statuses rest on prose.",
+    "fit": "the report follows the reports/ evidence idiom (sha256, layer resolution, composed argv, measured refusals) and introduces no source symbol or banned filename.",
+    "goal_fidelity": "the report \u00a71-\u00a75 delivers the block and dry runs the goal names, and \u00a76 records the one departure (job_id_probe omitted from a field list the done_when requires).",
+    "scope_discipline": "the reviewed tree is clean at 1a772da1 and the real host layer is byte-identical at sha256 4b5bd5238fd3cbcdfffb283c86e708d6ba85a999803c9bdf210885e5a8ab123f, so no out-of-scope write exists."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to compose and dry-run the host-layer placement block for the nine CLI backends; the report at reports/reckon/s21-host-placement-block.md \u00a71-\u00a75 gives the block, its scratch resolution, the composed argv and the refusal modes.\nVERDICT done_when: the done_when's report, nine backends with native excluded, per-block PlacementConfig validation, scratch env-var pointer, flight resolution, two dry runs, the composed argv naming srun --jobid=1277272 --overlap, the shim disposition, the login-node composition and the refusal modes are present and independently measurable, but its requirement that every log end EXIT= is unmet.\nVERDICT write_paths: the declared path is the single report file; the reviewed tree is clean at 1a772da1 and the real flight.yaml is byte-identical (sha256 4b5bd5238fd3cbcdfffb283c86e708d6ba85a999803c9bdf210885e5a8ab123f), so nothing was written outside scope.\nVERDICT manifest: read; status complete, commits none, changed_paths the report, tests carries exit codes in prose, negative_control_log empty with a stated reason; no baseline_suite/after_suite fields; one deviation (job_id_probe) declared.\nVERDICT diff: none \u2014 the node changed no repository file (git -C <tree> status --porcelain empty, HEAD 1a772da1), so there is no landed diff to read; the review reads the report, scratch and logs.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the report \u00a71-\u00a75 delivers the block and dry runs the goal names, and \u00a76 records the one departure (job_id_probe omitted from a field list the done_when requires).\nSCORE evidence: 16\nJUSTIFICATION evidence: report:21 asserts each log ends EXIT= and report:187 cites log 08 `srun shim EXIT=97`, but grep -rn EXIT= over the run's logs returns nothing, so the exit statuses rest on prose.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed tree is clean at 1a772da1 and the real host layer is byte-identical at sha256 4b5bd5238fd3cbcdfffb283c86e708d6ba85a999803c9bdf210885e5a8ab123f, so no out-of-scope write exists.\nSCORE durability: 16\nJUSTIFICATION durability: log 07 shows the declaration's refusal guards firing under mutation (nonexistent path, missing queries, unreachable endpoint), but the change lands no code and no test persists.\nSCORE fit: 18\nJUSTIFICATION fit: the report follows the reports/ evidence idiom (sha256, layer resolution, composed argv, measured refusals) and introduces no source symbol or banned filename.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-host-placement-block.md:21 follow-on: the report states each log ends EXIT=, but grep -rn EXIT= over <run>/logs/ returns nothing, so the done_when's per-command EXIT= requirement is unmet and every exit status (0, 97) is asserted only in the manifest's tests prose.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T044211020584-host-placement-block-is-composed/manifest.md:14 follow-on: the manifest carries no baseline_suite/after_suite, so the store's added-failure derivation is unmeasured (null) rather than zero; a no-code-change node genuinely has no population, so this is a limit of the record, not of the work.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-host-placement-block.md:209 follow-on: job_id_probe is omitted although the done_when lists it as a required field of every block; the omission is measured and justified in \u00a76, but the SPEC asked for exact implementation and it is the coordinator's call whether to accept the deviation.\n",
+  "review_run_id": "r-20261001T061531776073-review-of-host-placement-block-is-composed",
+  "reviewed_base_sha": "1a772da1aee1b517e39b1ff2d887a8a65840d61e",
+  "reviewed_head_sha": "1a772da1aee1b517e39b1ff2d887a8a65840d61e",
+  "reviewed_run_id": "r-20261001T044211020584-host-placement-block-is-composed",
+  "reviewer_run_id": "r-20261001T061531776073-review-of-host-placement-block-is-composed",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T06:25:17.793664+00:00",
+  "total": 88
+}

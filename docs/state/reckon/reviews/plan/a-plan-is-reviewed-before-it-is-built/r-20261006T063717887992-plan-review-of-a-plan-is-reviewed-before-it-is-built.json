@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T06:43:18.507Z",
+  "dispatched_at": "2026-10-06T06:37:37Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:286",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a716's document-unit prose must be reconciled with \u00a721's rule so both name the single state normaliser as the owner and \u00a716's done-when asserts the comment/followup exclusion rather than silently relying on \u00a721 landing later.",
+      "text": "\u00a716 states the document unit is \"the key under which decisions, followups and authored comments are digested\", while \u00a721 rewrites the one state normaliser so the document unit stops folding authored comments and followups; two pending sections define the document unit's composition and contradict each other, and \u00a716's done-when tests only a decision edit so a worker building \u00a716 to its own text would fold the comments and followups \u00a721 removes",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f9ecdfc09ea9ea1160ee0107a4f5fc0acca803bfd35e2c7cffbdeac92f41f589",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 177,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T063717887992-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "6dacda664a31964b86abd534288e08ffc0195f3c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a716 converges three separate plan-prose parsers (`mcp_views.authored_plan_text`, the `_section_response` soup walk, `dispatch._plan_section_text`) onto one `section_prose` reader that hides parsing, span splitting and tag stripping behind a single ordered-slice return, and deletes the interim `_prose_slices` rather than leaving it as a delegator, so behaviour grows behind a smaller interface.",
+    "duplicate_owner": "a finding \u2014 \u00a716 and \u00a721 both define the document unit's composition and disagree (reckon/crew/plan_review.py:286).",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; each pending section names in its own text what it retires or merges, or states that nothing is added: \u00a716 retires the interim public `strip_tags`, deletes `_prose_slices`, moves `_DOCUMENT_UNIT` and retires the public `legacy` flag on `plan_fingerprint`; \u00a721 adds nothing public and says so; \u00a722 retires `plan_review_settle_seconds` for `plan_review_settings`; \u00a723 hoists one public definition and retires the private copy in routing, which the family does not count. No section adds counted surface unaccounted.",
+    "reuse_search": "pass \u2014 every pending section cites the existing mechanism it extends and greps an instrument rather than asserting prior art: \u00a716 builds `section_prose` over the `reckon/_plan_html.py` parser, `structured_section_spans`, the existing `_TAG_RE`/`_PROSE_SKIP_TAGS` and `count_open_decisions`; \u00a721 reuses `review_report_directory`/`delivered_reports`/`_section_digests`; \u00a722 reuses the \u00a77 flight-layer key path and `_review_coverage`; \u00a723 extends `store_delivered_report`.",
+    "thin_wrapper": "pass \u2014 the two wrappers added across the pending sections each replace or hoist an existing definition with the reason stated: \u00a722's `plan_review_settings` replaced `plan_review_settle_seconds` (one accessor for two plan-review settings, one production caller repointed), and \u00a723's `store_delivered_reviews` hoists `routing._store_delivered_plan_review` to the module that owns the sidecar and store so the answer verb outside the package can call it."
+  },
+  "section_digests": {
+    "_document": "ef17bf98a5243e5fbc201a4fcd28fee4e85e931d0cc3fe7031cc0ebd940a9aee",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "a85d3d5b6115911cebee511fc8dcb878e34525faa6ed760e6c6d5e252a745c18",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "80a6a0059aee47aef152d7e22d75a673cdd56ccdbb155c85aaf6868874ab368d",
+    "s22": "0d179320da16ea25bd04dcadc260d12243ff41cc52b7e7f67bc485e929737c52",
+    "s23": "d5923a18f9f600d2f9d1b10ce797bf2b5ce80a57c5b5544c167824fd936b4515",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T07:22:13.025651+00:00"
+}

@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "derived from the reviewed run's own gate logs: baseline_suite logs/base-picker.log reports FAILED tests/test_picker_pressure.py::test_review_node_is_never_offered_a_review_excluded_backend and FAILED tests/test_picker_return_time.py::test_lane_document_is_read; after_suite logs/head-picker.log reports only FAILED tests/test_picker_return_time.py::test_lane_document_is_read. The head failure set minus the base failure set is empty, so zero added failures.",
+  "base_log_revision": "5b5a14a12ffb462fe177213d2a669eb1c1294e89",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:dispatch_picker_selection",
+    "reckon/cli.py:_route_picker_selection"
+  ],
+  "call_sites_emission": "sites",
+  "completed_at": "2026-10-02T21:49:41.706Z",
+  "dispatched_at": "2026-10-02T21:40:12Z",
+  "findings": [],
+  "head_log_revision": "78bd2242127e7edde0a548d95752296b23761a5e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit 78bd2242 (+76/-0) commit by commit; the filter is inserted into snapshot.candidates before any competence, serving or budget check and the fallback in pick() selects only from offered, so an excluded backend cannot be reached.",
+    "done_when": "the done-when's named test tests/test_picker_pressure.py::test_review_node_is_never_offered_a_review_excluded_backend fails at base 5b5a14a12 (logs/base-picker.log) and passes at head 78bd2242 (logs/head-picker.log), with zero added failure ids across tests/test_picker*.py.",
+    "goal": "read the node goal \"Keep review nodes off the backends reviews never run on\"; reckon/crew/picker/snapshot.py:204-205 gives every backend named in the resolved review_excluded_backends the reason review-excluded-backend for a review-role node.",
+    "manifest": "read; it records base 2-failed and head 1-failed gate logs, derives zero added failure ids, and names the one remaining test_picker_return_time.py::test_lane_document_is_read failure as red at base and head and out of scope.",
+    "write_paths": "git show --stat 78bd2242 lists three files, all inside the declared fence: reckon/crew/picker/snapshot.py, tests/test_picker_pressure.py and the picker-honours-review-exclusion.html fragment."
+  },
+  "justifications": {
+    "durability": "the recorded negative control (logs/negative-control.log) drops the review-excluded-backend filter and reddens tests/test_picker_pressure.py::test_review_node_is_never_offered_a_review_excluded_backend, so the added assertion fails if the change regresses.",
+    "evidence": "the done-when's new test is in the base arm's failure list (logs/base-picker.log) and absent from the head arm's (logs/head-picker.log), so the gate measures the assertion and records it rather than claiming it.",
+    "fit": "snapshot.py already imports the private helper _dispatch_lane_gate from reckon.crew.dispatch, so reading recovery._review_excluded_backends matches the file's existing idiom, and the reason string follows the lane-gate/budget-ceiling naming around it.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:188-205 filters review-role candidates by recovery._review_excluded_backends with reason review-excluded-backend from the two-flight key the flight schema documents, delivering the goal exactly.",
+    "scope_discipline": "all three paths in git show --stat 78bd2242 are inside the declared write fence and nothing outside it changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal \"Keep review nodes off the backends reviews never run on\"; reckon/crew/picker/snapshot.py:204-205 gives every backend named in the resolved review_excluded_backends the reason review-excluded-backend for a review-role node.\nVERDICT done_when: the done-when's named test tests/test_picker_pressure.py::test_review_node_is_never_offered_a_review_excluded_backend fails at base 5b5a14a12 (logs/base-picker.log) and passes at head 78bd2242 (logs/head-picker.log), with zero added failure ids across tests/test_picker*.py.\nVERDICT write_paths: git show --stat 78bd2242 lists three files, all inside the declared fence: reckon/crew/picker/snapshot.py, tests/test_picker_pressure.py and docs/evidence/fragments/one-typesafe-model-picker/picker-honours-review-exclusion.html.\nVERDICT manifest: read; it records base 2-failed and head 1-failed gate logs, derives zero added failure ids, and names the one remaining test_picker_return_time.py::test_lane_document_is_read failure as red at base and head and out of scope.\nVERDICT diff: read commit 78bd2242 (+76/-0) commit by commit; the filter is inserted into snapshot.candidates before any competence, serving or budget check and the fallback in pick() selects only from offered, so an excluded backend cannot be reached.\nCALL_SITES: reckon/crew/dispatch.py:dispatch_picker_selection, reckon/cli.py:_route_picker_selection\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:188-205 filters review-role candidates by recovery._review_excluded_backends with reason review-excluded-backend from the same resolved flight key the flight schema documents, delivering the goal exactly.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done-when's new test is in the base arm's failure list (logs/base-picker.log FAILED tests/test_picker_pressure.py::test_review_node_is_never_offered_a_review_excluded_backend) and absent from the head arm's (logs/head-picker.log), so the gate measures the assertion and records it rather than claiming it.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all three paths in git show --stat 78bd2242 are inside the declared write fence and nothing outside it changed.\nSCORE durability: 19\nJUSTIFICATION durability: the recorded negative control (logs/negative-control.log) drops the review-excluded-backend filter and reddens tests/test_picker_pressure.py::test_review_node_is_never_offered_a_review_excluded_backend, so the added assertion fails if the change regresses.\nSCORE fit: 19\nJUSTIFICATION fit: snapshot.py already imports the private helper _dispatch_lane_gate from reckon.crew.dispatch, so reading recovery._review_excluded_backends matches the file's existing idiom, and the reason string follows the lane-gate/budget-ceiling naming around it.\n",
+  "review_run_id": "r-20261002T213926273463-review-of-picker-honours-review-exclusion",
+  "reviewed_base_sha": "5b5a14a12ffb462fe177213d2a669eb1c1294e89",
+  "reviewed_head_sha": "78bd2242127e7edde0a548d95752296b23761a5e",
+  "reviewed_run_id": "r-20261002T211909857570-picker-honours-review-exclusion",
+  "reviewer": "review-of-picker-honours-review-exclusion",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T21:48:03.852343+00:00",
+  "total": 96
+}

@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "backend": "codex",
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T09:44:06.074727+00:00",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "750",
+      "text": "git commit --only snapshots the entire current roster file, so a prior default-off registration is absorbed into the next public add commit; the probe produced subject chore(roster): register public-b with both internal-a and public-b, recreating a commit whose message describes one change and whose content carries two."
+    },
+    {
+      "file": "tests/test_roster_write_commits.py",
+      "line": "33",
+      "text": "the commit-boundary fixture always starts from a clean repository, so it cannot catch an earlier legitimate non-committing roster write being swept into the public member-add commit."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_roster_write_commits.py:33 guards a clean public add and line 79 guards the default-off caller, but neither test composes those two states to detect same-file absorption.",
+    "evidence": "tests/test_roster_write_commits.py:33 plus defect-reproduction.log and the paired all_debug receipts prove the clean-start case and preserve a 34-to-34 failure-id delta, but do not exercise pre-existing roster dirt.",
+    "fit": "reckon/ledger.py:705 uses a mechanism-named private helper and an explicit default-off option with no forbidden plan labels, while keeping the CLI opt-in at reckon/cli.py:2949.",
+    "goal_fidelity": "reckon/ledger.py:750 commits the whole current roster path, and an independent probe showed a prior internal-a write folded into the commit whose subject named only public-b.",
+    "scope_discipline": "git show --stat for 588c56c4, 0b73f64e, and 35c00234 names only the five paths in the extended manifest fence, including the coordinator-granted reckon/cli.py path."
+  },
+  "model": "gpt-5.6-sol",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/ledger.py:750 commits the whole current roster path, and an independent probe showed a prior internal-a write folded into the commit whose subject named only public-b.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_roster_write_commits.py:33 plus defect-reproduction.log and the paired all_debug receipts prove the clean-start case and preserve a 34-to-34 failure-id delta, but do not exercise pre-existing roster dirt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat for 588c56c4, 0b73f64e, and 35c00234 names only the five paths in the extended manifest fence, including the coordinator-granted reckon/cli.py path.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_roster_write_commits.py:33 guards a clean public add and line 79 guards the default-off caller, but neither test composes those two states to detect same-file absorption.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:705 uses a mechanism-named private helper and an explicit default-off option with no forbidden plan labels, while keeping the CLI opt-in at reckon/cli.py:2949.\nFINDING reckon/ledger.py:750 git commit --only snapshots the entire current roster file, so a prior default-off registration is absorbed into the next public add commit; the probe produced subject chore(roster): register public-b with both internal-a and public-b, recreating a commit whose message describes one change and whose content carries two.\nFINDING tests/test_roster_write_commits.py:33 the commit-boundary fixture always starts from a clean repository, so it cannot catch an earlier legitimate non-committing roster write being swept into the public member-add commit.\n",
+  "review_run_id": "r-20260917T094406074727-review-of-the-roster-write-commits-itself",
+  "reviewed_run_id": "r-20260917T084525454048-the-roster-write-commits-itself",
+  "reviewer_member": "codex-l",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "scope_discipline": 20
+  },
+  "source_base_sha": "4547f8789bd6a39bfeff2aceb3a10d9699072109",
+  "source_commits": [
+    "588c56c4eba3ad3b87621363d350eff8a9f8536c",
+    "0b73f64ef988c62938d0e335897fb286a78ae77b",
+    "35c00234347d22e46aacba3cca463af535d0e2de"
+  ],
+  "source_head_sha": "35c00234347d22e46aacba3cca463af535d0e2de",
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T09:53:07.347648+00:00",
+  "total": 85
+}

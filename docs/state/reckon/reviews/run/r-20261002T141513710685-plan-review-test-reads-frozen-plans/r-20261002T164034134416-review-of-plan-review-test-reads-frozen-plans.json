@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [
+    "goal",
+    "done_when",
+    "write_paths",
+    "manifest",
+    "diff",
+    "call_sites"
+  ],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "ba2c17c79dba7b530c60cb0f4e13f5f3ac3afabf",
+  "completed_at": "2026-10-02T17:03:16.505Z",
+  "dispatched_at": "2026-10-02T16:41:01Z",
+  "findings": [
+    {
+      "file": "tests/test_plan_review_store.py",
+      "line": "318",
+      "severity": "follow-on",
+      "text": "follow-on: the run's declared negative control mutates CURRENT_PLAN onto a live plan to fail the metadata-edit case, but the new case test_a_metadata_edit_leaves_a_derived_impl_and_the_fingerprint_unchanged is not falsified by that mutation; its premise and its fingerprint assertion are each falsifiable (an authored fixture fails the premise, a prose-inclusive fingerprint fails the digest comparison), so the omission is advisory rather than a defect."
+    }
+  ],
+  "head_log_revision": "dedb1bad0b1218899fbbde48cbe297d39b8328e3",
+  "item_aggregate": null,
+  "item_verdicts": {},
+  "justifications": {
+    "durability": "the change converts a monitor into a test by freezing the plan copies; the fixtures are committed, the assertions run in the suite, and the fingerprint stability no longer moves when a live plan is edited.",
+    "evidence": "both arms independently reproduced \u2014 the base tree at ba2c17c79 extracted to scratch fails test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it (1 failed, 5 passed, EXIT=1), and the reviewed head dedb1bad passes (7 passed, EXIT=0); the three fixture sha256 read back byte-for-byte equal to their claimed live sources; two negative controls fire beyond the run's own (an authored fixture fails the new case's premise, and a prose-inclusive fingerprint fails its digest comparison), so one point is docked because the run's declared control exercises only the metadata-edit case.",
+    "fit": "the change follows the file's existing fixture idiom, adds no plan label to a filename, symbol or comment, rewrites the module docstring to describe the frozen-copy boundary, and names the derived-impl shape as a first-class fixture rather than an inline string; one point is docked because the frozen-copy rationale is restated in both the module docstring and the inline comment above FIXTURES.",
+    "goal_fidelity": "every clause of section 5's done-when holds: the metadata-edit case reads three committed copies under tests/fixtures/plan_review_store/ (legacy_plan.html with no named effort field, current_plan.html whose authored impl stands, derived_impl_plan.html whose impl derives from complete records), no case reads a live plan (grep finds no docs/plans or PLANS_DIR reference), the case passes (7 passed), and the second case asserts a plan-impl edit on the derived plan leaves the impl, its source and the fingerprint unchanged.",
+    "scope_discipline": "the reviewed diff touches exactly the four declared paths (tests/test_plan_review_store.py and the three fixtures); no live plan, state file or index is mutated; the commit is local, conventional, carries a body, and names no plan, sprint or ticket identifier."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: every clause of section 5's done-when holds: the metadata-edit case reads three committed copies under tests/fixtures/plan_review_store/ (legacy_plan.html with no named effort field, current_plan.html whose authored impl stands, derived_impl_plan.html whose impl derives from complete records), no case reads a live plan (grep finds no docs/plans or PLANS_DIR reference), the case passes (7 passed), and the second case asserts a plan-impl edit on the derived plan leaves the impl, its source and the fingerprint unchanged.\nSCORE evidence: 19\nJUSTIFICATION evidence: both arms independently reproduced \u2014 the base tree at ba2c17c79 extracted to scratch fails test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it (1 failed, 5 passed, EXIT=1), and the reviewed head dedb1bad passes (7 passed, EXIT=0); the three fixture sha256 read back byte-for-byte equal to their claimed live sources; two negative controls fire beyond the run's own (an authored fixture fails the new case's premise, and a prose-inclusive fingerprint fails its digest comparison), so one point is docked because the run's declared control exercises only the metadata-edit case.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed diff touches exactly the four declared paths (tests/test_plan_review_store.py and the three fixtures); no live plan, state file or index is mutated; the commit is local, conventional, carries a body, and names no plan, sprint or ticket identifier.\nSCORE durability: 20\nJUSTIFICATION durability: the change converts a monitor into a test by freezing the plan copies; the fixtures are committed, the assertions run in the suite, and the fingerprint stability no longer moves when a live plan is edited.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the file's existing fixture idiom, adds no plan label to a filename, symbol or comment, rewrites the module docstring to describe the frozen-copy boundary, and names the derived-impl shape as a first-class fixture rather than an inline string; one point is docked because the frozen-copy rationale is restated in both the module docstring and the inline comment above FIXTURES.\nFINDING tests/test_plan_review_store.py:318 follow-on: the run's declared negative control mutates CURRENT_PLAN onto a live plan to fail the metadata-edit case, but the new case test_a_metadata_edit_leaves_a_derived_impl_and_the_fingerprint_unchanged is not falsified by that mutation; its premise and its fingerprint assertion are each falsifiable (an authored fixture fails the premise, a prose-inclusive fingerprint fails the digest comparison), so the omission is advisory rather than a defect.\nreviewed_base_sha: ba2c17c79dba7b530c60cb0f4e13f5f3ac3afabf\nreviewed_head_sha: dedb1bad0b1218899fbbde48cbe297d39b8328e3\n",
+  "review_run_id": "r-20261002T164034134416-review-of-plan-review-test-reads-frozen-plans",
+  "reviewed_base_sha": "ba2c17c79dba7b530c60cb0f4e13f5f3ac3afabf",
+  "reviewed_head_sha": "dedb1bad0b1218899fbbde48cbe297d39b8328e3",
+  "reviewed_run_id": "r-20261002T141513710685-plan-review-test-reads-frozen-plans",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.133105+00:00",
+  "total": 98
+}

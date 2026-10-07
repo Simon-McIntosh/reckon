@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/ledger.py:1440",
+    "reckon/ledger.py:1831",
+    "reckon/ledger.py:3496"
+  ],
+  "completed_at": "2026-10-06T14:19:45.674Z",
+  "dispatched_at": "2026-10-06T14:03:03Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1673",
+      "severity": "follow-on",
+      "text": "follow-on: the empty-set guard in _state_checkout_paths ('if checkout is None: raise LedgerError(no ... path given to commit)') is unreachable from its only caller, because _commit_state_write at reckon/ledger.py:1708 already raises the same message when the materialised list is empty; the duplicate refusal is harmless but untested and could drift from the caller's spelling."
+    },
+    {
+      "file": "tests/test_state_write_commits_a_set_of_paths.py",
+      "line": "47",
+      "severity": "follow-on",
+      "text": "follow-on: the declared negative control narrows the commit stage to the first path of the set, which never reaches _state_checkout_paths, so the two-checkout refusal branch and its 'nothing staged' assertion at :113-:120 are covered by a passing case only; a mutation that resolves the pair but stages only one path would exercise both the commit and the refusal guards."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T134908735148-state-write-commits-a-set-of-paths/gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's header line records rev 3c7a3f36, the reviewed base, while the change is committed at head 45913ce7; the log's module.__file__ and cwd name the reviewed worktree so the gate did exercise the change, but a reader keying evidence to the recorded revision sees the base rather than the measured head."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit 45913ce7 against base 3c7a3f36. It adds _state_checkout_paths, widens _commit_state_write's path parameter to Path | Iterable[Path], threads the resolved relative paths through the stage, commit (git commit ... -- *relative_args) and reset-on-failure commands, and adds three behaviour-named test cases plus the evidence fragment. Nothing is removed and nothing lies outside the three files.",
+    "done_when": "The node's measure is the gate plus its negative control. I re-ran the gate at the reviewed head 45913ce7 and read 100 passed in 515.66s, EXIT=0 (review-gate.log), and the new module alone 3 passed in 5.19s with module.__file__ naming the reviewed worktree's reckon/ledger.py. I reproduced the declared negative control independently and read 1 failed / 2 passed, EXIT=1 (review-negative-control.log), failing test_two_paths_land_in_one_commit.",
+    "goal": "The node's goal \u2014 extend _commit_state_write in reckon/ledger.py to commit a set of paths in one commit, so a review run's promotion can land its ledger row and its review record together without adding a commit \u2014 is met. The signature is now path: Path | Iterable[Path]; a str is wrapped to one Path, an iterable is materialised, and a new helper _state_checkout_paths resolves every path to one checkout before any staging, then the set is staged and committed with one git commit -- <paths>. A single Path commits exactly as before.",
+    "manifest": "Read at the run's manifest.md: status complete, commits 45913ce7, gate command with 100 passed in 446.96s EXIT=0, negative_control_log and its note, changed_paths. Its tests line names no baseline_suite and no after_suite arm, and its gate.log's own header line records rev 3c7a3f36 (the base) rather than the head 45913ce7, so the log's revision line does not by itself tie the evidence to the committed change even though its module.__file__ and cwd name the reviewed worktree.",
+    "write_paths": "git diff --stat 3c7a3f36 45913ce7 is exactly three files and 211 insertions against 18 deletions \u2014 reckon/ledger.py, tests/test_state_write_commits_a_set_of_paths.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/state-write-commits-a-set-of-paths.html \u2014 every one inside the node's four declared write paths (the declared docs/figures/... directory is unused), with no plan meta line, shared index or sprint state touched."
+  },
+  "justifications": {
+    "durability": "The guard fires \u2014 the declared mutation, which narrows the commit to the first path of the set, reddens test_two_paths_land_in_one_commit (second path reads {} at HEAD) while the single-path and refusal cases stay green, reproduced at review-negative-control.log; it is 18 rather than 20 because that mutation bypasses _state_checkout_paths entirely, so the two-checkout refusal branch and its nothing-staged assertion are exercised by a passing case only and are never falsified.",
+    "evidence": "The gate is recorded (gate.log, 100 passed, EXIT=0) and I reproduced it at the head (review-gate.log, 100 passed, EXIT=0) plus the declared mutation (review-negative-control.log, 1 failed / 2 passed, EXIT=1, failing test_two_paths_land_in_one_commit); it is 17 rather than 20 because the reviewed manifest declares no baseline_suite or after_suite arm, so the added-failure count is unmeasured, and the gate log's rev line names the base rather than the measured head, leaving module.__file__ and cwd to carry the coverage.",
+    "fit": "The change extends the existing _state_checkout resolution and the existing stage/commit/reset sequence rather than forking a second writer, the helper and the new parameter are named by behaviour (_state_checkout_paths), and the docstrings state the mechanism \u2014 one commit, one checkout, refusal before staging \u2014 with no plan, ticket or version label.",
+    "goal_fidelity": "The change is exactly the node's goal \u2014 reckon/ledger.py:1697 accepts Path or Iterable[Path], reckon/ledger.py:1657's _state_checkout_paths resolves every path to one checkout before staging, and the stage/commit/reset commands at reckon/ledger.py:1714, :1744 and :1756 take the whole set, so [ledger_row, review_record] lands in one commit and a single Path behaves as before.",
+    "reuse": "Every path reuses _state_checkout per path and the merge guard, git add, git commit and reset-on-failure flow are shared rather than duplicated; it is 19 rather than 20 because _state_checkout_paths carries an empty-set guard (if checkout is None: raise) that _commit_state_write already makes unreachable by raising first, so one refusal is spelled twice.",
+    "scope_discipline": "git diff --stat 3c7a3f36 45913ce7 is three files and 211 insertions against 18 deletions, every one inside the declared write paths, with no plan meta line, shared index, sprint or other plan touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal \u2014 extend _commit_state_write in reckon/ledger.py to commit a set of paths in one commit, so a review run's promotion can land its ledger row and its review record together without adding a commit \u2014 is met. The signature is now path: Path | Iterable[Path]; a str is wrapped to one Path, an iterable is materialised, and a new helper _state_checkout_paths resolves every path to one checkout before any staging, then the set is staged and committed with one git commit -- <paths>. A single Path commits exactly as before.\nVERDICT done_when: The node's measure is the gate plus its negative control. I re-ran the gate at the reviewed head 45913ce7 and read 100 passed in 515.66s, EXIT=0 (review-gate.log), and the new module alone 3 passed in 5.19s with module.__file__ naming the reviewed worktree's reckon/ledger.py. I reproduced the declared negative control independently and read 1 failed / 2 passed, EXIT=1 (review-negative-control.log), failing test_two_paths_land_in_one_commit.\nVERDICT write_paths: git diff --stat 3c7a3f36 45913ce7 is exactly three files and 211 insertions against 18 deletions \u2014 reckon/ledger.py, tests/test_state_write_commits_a_set_of_paths.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/state-write-commits-a-set-of-paths.html \u2014 every one inside the node's four declared write paths (the declared docs/figures/... directory is unused), with no plan meta line, shared index or sprint state touched.\nVERDICT manifest: Read at the run's manifest.md: status complete, commits 45913ce7, gate command with 100 passed in 446.96s EXIT=0, negative_control_log and its note, changed_paths. Its tests line names no baseline_suite and no after_suite arm, and its gate.log's own header line records rev 3c7a3f36 (the base) rather than the head 45913ce7, so the log's revision line does not by itself tie the evidence to the committed change even though its module.__file__ and cwd name the reviewed worktree.\nVERDICT diff: Read commit 45913ce7 against base 3c7a3f36. It adds _state_checkout_paths, widens _commit_state_write's path parameter to Path | Iterable[Path], threads the resolved relative paths through the stage, commit (git commit ... -- *relative_args) and reset-on-failure commands, and adds three behaviour-named test cases plus the evidence fragment. Nothing is removed and nothing lies outside the three files.\nVERDICT call_sites: _commit_state_write has three production call sites, all in reckon/ledger.py at :1440, :1831 and :3496; none passes a set yet, so the widening is additive and every existing caller is unaffected. _state_checkout_paths is called only from _commit_state_write.\nCALL_SITES: reckon/ledger.py:1440, reckon/ledger.py:1831, reckon/ledger.py:3496\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The change is exactly the node's goal \u2014 reckon/ledger.py:1697 accepts Path or Iterable[Path], reckon/ledger.py:1657's _state_checkout_paths resolves every path to one checkout before staging, and the stage/commit/reset commands at reckon/ledger.py:1714, :1744 and :1756 take the whole set, so [ledger_row, review_record] lands in one commit and a single Path behaves as before.\nSCORE evidence: 17\nJUSTIFICATION evidence: The gate is recorded (gate.log, 100 passed, EXIT=0) and I reproduced it at the head (review-gate.log, 100 passed, EXIT=0) plus the declared mutation (review-negative-control.log, 1 failed / 2 passed, EXIT=1, failing test_two_paths_land_in_one_commit); it is 17 rather than 20 because the reviewed manifest declares no baseline_suite or after_suite arm, so the added-failure count is unmeasured, and the gate log's rev line names the base rather than the measured head, leaving module.__file__ and cwd to carry the coverage.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3c7a3f36 45913ce7 is three files and 211 insertions against 18 deletions, every one inside the declared write paths, with no plan meta line, shared index, sprint or other plan touched.\nSCORE durability: 18\nJUSTIFICATION durability: The guard fires \u2014 the declared mutation, which narrows the commit to the first path of the set, reddens test_two_paths_land_in_one_commit (second path reads {} at HEAD) while the single-path and refusal cases stay green, reproduced at review-negative-control.log; it is 18 rather than 20 because that mutation bypasses _state_checkout_paths entirely, so the two-checkout refusal branch and its nothing-staged assertion are exercised by a passing case only and are never falsified.\nSCORE fit: 20\nJUSTIFICATION fit: The change extends the existing _state_checkout resolution and the existing stage/commit/reset sequence rather than forking a second writer, the helper and the new parameter are named by behaviour (_state_checkout_paths), and the docstrings state the mechanism \u2014 one commit, one checkout, refusal before staging \u2014 with no plan, ticket or version label.\nSCORE reuse: 19\nJUSTIFICATION reuse: Every path reuses _state_checkout per path and the merge guard, git add, git commit and reset-on-failure flow are shared rather than duplicated; it is 19 rather than 20 because _state_checkout_paths carries an empty-set guard (if checkout is None: raise) that _commit_state_write already makes unreachable by raising first, so one refusal is spelled twice.\nFINDING reckon/ledger.py:1673 follow-on: the empty-set guard in _state_checkout_paths ('if checkout is None: raise LedgerError(no ... path given to commit)') is unreachable from its only caller, because _commit_state_write at reckon/ledger.py:1708 already raises the same message when the materialised list is empty; the duplicate refusal is harmless but untested and could drift from the caller's spelling.\nFINDING tests/test_state_write_commits_a_set_of_paths.py:47 follow-on: the declared negative control narrows the commit stage to the first path of the set, which never reaches _state_checkout_paths, so the two-checkout refusal branch and its 'nothing staged' assertion at :113-:120 are covered by a passing case only; a mutation that resolves the pair but stages only one path would exercise both the commit and the refusal guards.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T134908735148-state-write-commits-a-set-of-paths/gate.log:1 follow-on: the gate log's header line records rev 3c7a3f36, the reviewed base, while the change is committed at head 45913ce7; the log's module.__file__ and cwd name the reviewed worktree so the gate did exercise the change, but a reader keying evidence to the recorded revision sees the base rather than the measured head.",
+  "review_run_id": "r-20261006T140243528947-review-of-state-write-commits-a-set-of-paths",
+  "reviewed_base_sha": "3c7a3f36abd0ffc6546bc3f893db8c004b698886",
+  "reviewed_head_sha": "45913ce7a585c151cecedbb5a724c47712b1c3cb",
+  "reviewed_run_id": "r-20261006T134908735148-state-write-commits-a-set-of-paths",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T14:18:34.673396+00:00",
+  "total": 114
+}

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failure_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T054616395543-review-tier-resolver/gate.log"
+  ],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-28T07:16:04.444Z",
+  "dispatched_at": "2026-09-28T06:09:51Z",
+  "findings": [
+    {
+      "file": "tests/test_review_tiers.py",
+      "line": "20",
+      "text": "the comment names a plan section number instead of the mechanism (\"the tier the \u00a72 rule gives it\"; \"\u00a72\" is written as the plan-section glyph), which the source rules forbid in new lines: a test must stand alone without plan context and the number rots when the plan renumbers; state the rule's home (reckon/review_tiers.py) instead."
+    },
+    {
+      "file": "reckon/review_tiers.py",
+      "line": "44",
+      "text": "ESCALATED_TIER is defined and read nowhere in the tree \u2014 git grep for the name at 9701e873 returns only this line \u2014 so the escalation the comment beside it names has no consumer and no test; the section's two nodes own no caller for it, so drop the constant until the dispatch path that escalates lands, or have that caller read it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 3476364e \u2014 505c690b adds reckon/review_tiers.py, the review.tiers slot and its two classes in reckon/schema/flight.yaml with reckon/_flight_schema.py and docs/_shared/flight.schema.json regenerated from it, the shipped defaults and the 16-case fixture file; 9701e873 appends one r-note to the plan, opens the evidence record at its anchor and adds the decision-flow svg, with the plan's plan-* meta lines byte-identical base to head.",
+    "done_when": "the measure is a fixture set that resolves to its declared tier plus the flight parity cases, and I reproduced it at the reviewed head: tests/test_review_tiers.py 16 passed and tests/test_flight.py 87 passed with the LinkML generators placed on PATH so its two schema-parity cases executed rather than skipped, all resolving from module.__file__=/tmp/rev-tier-verify/reckon/review_tiers.py.",
+    "goal": "the goal is that a finished run resolves to a full, light or none review tier from a review.tiers flight key, and reckon/review_tiers.py:78 with reckon/flight.py:565 lands that \u2014 my own eleven-case probe at the reviewed head reads the ceiling as exclusive (50 lines full, 49 light), reads an open spec level as full at any size, reads an empty diff as none while a declared critical risk on the same empty diff is full, and reads docs/ui/shell.jsx as source where file_class alone answers other.",
+    "manifest": "read; it records the gate command and 103 passed at 9701e873, names its negative-control log, leaves the armed-only suite fields empty as an implementation node's manifest does, and its test_logs path resolves to a file whose last line reads EXIT=0.",
+    "write_paths": "the manifest declares ten paths and git diff --name-only 3476364e..9701e873 returns exactly those ten \u2014 none outside the fence and none declared but untouched, the figure directory counted through its one new file."
+  },
+  "justifications": {
+    "durability": "tests/test_review_tiers.py:25 declares the expected tiers as literals and :122 asserts the resolver's answer against them rather than against the argument the test passed in, and the declared mutation's log shows the resolver answering none where the SPA fixture expects full, which is the condition under which that assertion reddens.",
+    "evidence": "the recorded gate at 9701e873 names its revision, tree and command and its 103-passed result reproduces at the head (16 + 87, parity cases armed), and my own probe adds eleven boundary cases the fixtures do not cover (logs/probe-tier-rule-at-9701e873.log).",
+    "fit": "reckon/review_tiers.py:63 follows the packaged idiom with a rationale docstring and no plan-labelled symbol, but tests/test_review_tiers.py:20 cites a plan section number and reckon/review_tiers.py:44 defines a constant nothing in the tree reads.",
+    "goal_fidelity": "reckon/review_tiers.py:78 and reckon/flight.py:565 carry the rule and the key and my own probe holds both at the boundaries, but nothing in production calls review_tier yet \u2014 the section's second node owns that seam \u2014 and a caller omitting light_changed_lines takes the shipped ceiling rather than a project's retuned one (reckon/review_tiers.py:84).",
+    "scope_discipline": "git diff --name-status 3476364e..9701e873 is set-equal to the ten declared write paths with nothing changed outside them, and the plan change is one r-note block whose plan-* meta lines are, by byte comparison, identical at base and head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a finished run resolves to a full, light or none review tier from a review.tiers flight key, and reckon/review_tiers.py:78 with reckon/flight.py:565 lands that \u2014 my own eleven-case probe at the reviewed head reads the ceiling as exclusive (50 lines full, 49 light), reads an open spec level as full at any size, reads an empty diff as none while a declared critical risk on the same empty diff is full, and reads docs/ui/shell.jsx as source where file_class alone answers other.\nVERDICT done_when: the measure is a fixture set that resolves to its declared tier plus the flight parity cases, and I reproduced it at the reviewed head: tests/test_review_tiers.py 16 passed and tests/test_flight.py 87 passed with the LinkML generators placed on PATH so its two schema-parity cases executed rather than skipped, all resolving from module.__file__=/tmp/rev-tier-verify/reckon/review_tiers.py.\nVERDICT write_paths: the manifest declares ten paths and git diff --name-only 3476364e..9701e873 returns exactly those ten \u2014 none outside the fence and none declared but untouched, the figure directory counted through its one new file.\nVERDICT manifest: read; it records the gate command and 103 passed at 9701e873, names its negative-control log, leaves the armed-only suite fields empty as an implementation node's manifest does, and its test_logs path resolves to a file whose last line reads EXIT=0.\nVERDICT diff: read commit by commit against 3476364e \u2014 505c690b adds reckon/review_tiers.py, the review.tiers slot and its two classes in reckon/schema/flight.yaml with reckon/_flight_schema.py and docs/_shared/flight.schema.json regenerated from it, the shipped defaults and the 16-case fixture file; 9701e873 appends one r-note to the plan, opens the evidence record at its anchor and adds the decision-flow svg, with the plan's plan-* meta lines byte-identical base to head.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/review_tiers.py:78 and reckon/flight.py:565 carry the rule and the key and my own probe holds both at the boundaries, but nothing in production calls review_tier yet \u2014 the section's second node owns that seam \u2014 and a caller omitting light_changed_lines takes the shipped ceiling rather than a project's retuned one (reckon/review_tiers.py:84).\nSCORE evidence: 19\nJUSTIFICATION evidence: the recorded gate at 9701e873 names its revision, tree and command and its 103-passed result reproduces at the head (16 + 87, parity cases armed), and my own probe adds eleven boundary cases the fixtures do not cover (logs/probe-tier-rule-at-9701e873.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 3476364e..9701e873 is set-equal to the ten declared write paths with nothing changed outside them, and the plan change is one r-note block whose plan-* meta lines are, by byte comparison, identical at base and head.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_review_tiers.py:25 declares the expected tiers as literals and :122 asserts the resolver's answer against them rather than against the argument the test passed in, and the declared mutation's log shows the resolver answering none where the SPA fixture expects full, which is the condition under which that assertion reddens.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/review_tiers.py:63 follows the packaged idiom with a rationale docstring and no plan-labelled symbol, but tests/test_review_tiers.py:20 cites a plan section number and reckon/review_tiers.py:44 defines a constant nothing in the tree reads.\nFINDING tests/test_review_tiers.py:20 the comment names a plan section number instead of the mechanism (\"the tier the \u00a72 rule gives it\"; \"\u00a72\" is written as the plan-section glyph), which the source rules forbid in new lines: a test must stand alone without plan context and the number rots when the plan renumbers; state the rule's home (reckon/review_tiers.py) instead.\nFINDING reckon/review_tiers.py:44 ESCALATED_TIER is defined and read nowhere in the tree \u2014 git grep for the name at 9701e873 returns only this line \u2014 so the escalation the comment beside it names has no consumer and no test; the section's two nodes own no caller for it, so drop the constant until the dispatch path that escalates lands, or have that caller read it.\n",
+  "review_run_id": "r-20260928T060936173592-review-of-review-tier-resolver",
+  "reviewed_base_sha": "3476364ed445b40d5806e25435045f587061d8e3",
+  "reviewed_head_sha": "9701e873162c0dfc74d83210664931a3cd69a175",
+  "reviewed_run_id": "r-20260928T054616395543-review-tier-resolver",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T06:56:49.795401+00:00",
+  "total": 91
+}

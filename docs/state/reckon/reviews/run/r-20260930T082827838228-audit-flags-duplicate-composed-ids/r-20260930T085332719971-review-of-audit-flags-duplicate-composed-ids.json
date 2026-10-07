@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:6545 audit_doc -> reckon/doccheck.py:1900 run -> audit_file",
+    "reckon/mcp.py:4538 (the MCP audit tool)"
+  ],
+  "completed_at": "2026-09-30T09:18:05.295Z",
+  "dispatched_at": "2026-09-30T08:53:52Z",
+  "findings": [
+    {
+      "file": "tests/test_audit_flags_duplicate_composed_ids.py",
+      "line": "1",
+      "text": "the arms are not the population the done_when names: both logs list 19 tests/ files while 22 import reckon.doccheck by AST, and test_read_plan_composes_the_record.py, test_readers_compose_the_record.py and test_timestamp_callers_batch_b.py are in neither arm \u2014 I ran those three at the reviewed head, 102 passed, so no regression is hidden but the arms measure 19 of 22."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T082827838228-audit-flags-duplicate-composed-ids/logs/archive-scan.log",
+      "line": "22",
+      "text": "the scan records 0 for a-sprint-is-live-while-a-crew-works-it-landed.html while that file carries id=\"s4\" and id=\"s4-focus\" twice in its own bytes at both f12977d42 and the reviewed head, so the log's numbers cannot come from the delivered check over this corpus; its header also names rev f12977d42 while its own body records nonzero findings."
+    },
+    {
+      "file": "reckon/doccheck.py",
+      "line": "1255",
+      "text": "the fragment-directory derivation is a second copy of reckon/evidence.py:446 _record_evidence_dir, so a change to the record path spellings that reaches composition would silently leave attribution pointing at a directory that does not exist."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against f12977d42; 257 insertions and 2 deletions across the three files, and the landed code matches what the commit messages describe.",
+    "done_when": "the done_when names three test cases, the base and head arms over every tests/ file importing reckon.doccheck, and an archive scan at the head; tests/test_audit_flags_duplicate_composed_ids.py carries all three cases, but the arms cover 19 of the 22 importing files and the archive figure is not the reviewed head's.",
+    "goal": "the node's goal is a reckon audit-doc finding for every element id repeated in a composed evidence record, naming the id and each source that carries it; reckon/doccheck.py:1288 _duplicate_element_id_findings implements it and I reproduced four findings on docs/evidence/archive/a-landing-record-never-conflicts-landed.html, each naming the fragments that carry the id.",
+    "manifest": "read; it states the standalone gate 3 passed and both arms (head 207 passed exit 0, base 2 failed 205 passed exit 1), and I re-ran the standalone gate at the reviewed head myself: 3 passed in 0.71s.",
+    "write_paths": "read the dispatch fence and the manifest; the diff's three paths \u2014 reckon/doccheck.py, tests/test_audit_flags_duplicate_composed_ids.py, docs/evidence/fragments/a-landing-record-never-conflicts/audit-flags-duplicate-composed-ids.html \u2014 are all inside them."
+  },
+  "justifications": {
+    "durability": "the base arm and logs/negative-control.log both redden the two positive cases in tests/test_audit_flags_duplicate_composed_ids.py, so each assertion fails on the defect it claims to guard.",
+    "evidence": "tests/test_audit_flags_duplicate_composed_ids.py is red at base and green at head and the declared mutation reddens two cases, but the manifest's archive figure of 29 findings across 10 of 118 records measures 33 across 12 at the reviewed head.",
+    "fit": "the helpers follow the module's private-helper and Finding idiom, but reckon/doccheck.py:1255 _record_fragment_dir restates reckon/evidence.py:446 _record_evidence_dir body for body.",
+    "goal_fidelity": "reckon/doccheck.py:1288 reports each duplicated id once with per-source attribution, and my own run over a-landing-record-never-conflicts-landed.html returned 4 findings naming the fragment files.",
+    "scope_discipline": "the three changed paths are exactly the node's declared write paths and the diff carries no other file and no unrelated edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a reckon audit-doc finding for every element id repeated in a composed evidence record, naming the id and each source that carries it; reckon/doccheck.py:1288 _duplicate_element_id_findings implements it and I reproduced four findings on docs/evidence/archive/a-landing-record-never-conflicts-landed.html, each naming the fragments that carry the id.\nVERDICT done_when: the done_when names three test cases, the base and head arms over every tests/ file importing reckon.doccheck, and an archive scan at the head; tests/test_audit_flags_duplicate_composed_ids.py carries all three cases, but the arms cover 19 of the 22 importing files and the archive figure is not the reviewed head's.\nVERDICT write_paths: read the dispatch fence and the manifest; the diff's three paths \u2014 reckon/doccheck.py, tests/test_audit_flags_duplicate_composed_ids.py, docs/evidence/fragments/a-landing-record-never-conflicts/audit-flags-duplicate-composed-ids.html \u2014 are all inside them.\nVERDICT manifest: read; it states the standalone gate 3 passed and both arms (head 207 passed exit 0, base 2 failed 205 passed exit 1), and I re-ran the standalone gate at the reviewed head myself: 3 passed in 0.71s.\nVERDICT diff: read both commits against f12977d42; 257 insertions and 2 deletions across the three files, and the landed code matches what the commit messages describe.\nCALL_SITES: reckon/cli.py:6545 audit_doc -> reckon/doccheck.py:1900 run -> audit_file, reckon/mcp.py:4538 (the MCP audit tool)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/doccheck.py:1288 reports each duplicated id once with per-source attribution, and my own run over a-landing-record-never-conflicts-landed.html returned 4 findings naming the fragment files.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_audit_flags_duplicate_composed_ids.py is red at base and green at head and the declared mutation reddens two cases, but the manifest's archive figure of 29 findings across 10 of 118 records measures 33 across 12 at the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three changed paths are exactly the node's declared write paths and the diff carries no other file and no unrelated edit.\nSCORE durability: 19\nJUSTIFICATION durability: the base arm and logs/negative-control.log both redden the two positive cases in tests/test_audit_flags_duplicate_composed_ids.py, so each assertion fails on the defect it claims to guard.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers follow the module's private-helper and Finding idiom, but reckon/doccheck.py:1255 _record_fragment_dir restates reckon/evidence.py:446 _record_evidence_dir body for body.\nFINDING tests/test_audit_flags_duplicate_composed_ids.py:1 the arms are not the population the done_when names: both logs list 19 tests/ files while 22 import reckon.doccheck by AST, and test_read_plan_composes_the_record.py, test_readers_compose_the_record.py and test_timestamp_callers_batch_b.py are in neither arm \u2014 I ran those three at the reviewed head, 102 passed, so no regression is hidden but the arms measure 19 of 22.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T082827838228-audit-flags-duplicate-composed-ids/logs/archive-scan.log:22 the scan records 0 for a-sprint-is-live-while-a-crew-works-it-landed.html while that file carries id=\"s4\" and id=\"s4-focus\" twice in its own bytes at both f12977d42 and the reviewed head, so the log's numbers cannot come from the delivered check over this corpus; its header also names rev f12977d42 while its own body records nonzero findings.\nFINDING reckon/doccheck.py:1255 the fragment-directory derivation is a second copy of reckon/evidence.py:446 _record_evidence_dir, so a change to the record path spellings that reaches composition would silently leave attribution pointing at a directory that does not exist.",
+  "review_run_id": "r-20260930T085332719971-review-of-audit-flags-duplicate-composed-ids",
+  "reviewed_base_sha": "f12977d42f6e25924571249690317690b995e179",
+  "reviewed_head_sha": "2cb18d3588b1e0193d5b5a16703e0f52a0389c03",
+  "reviewed_run_id": "r-20260930T082827838228-audit-flags-duplicate-composed-ids",
+  "reviewer_node": "review-of-audit-flags-duplicate-composed-ids",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T09:13:12.652305+00:00",
+  "total": 89
+}

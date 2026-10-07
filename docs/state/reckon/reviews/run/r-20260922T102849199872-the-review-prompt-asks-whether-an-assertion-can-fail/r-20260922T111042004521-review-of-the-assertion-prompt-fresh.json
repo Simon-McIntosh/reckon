@@ -1,0 +1,47 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "local",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:dispatch_review_for_run",
+    "reckon/crew/review.py:load_review_prompt"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T11:10:42.004521+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against base aa267565 commit by commit; 751281c8 adds the prompt section and the test, 983f8c0d adds the plan comment and the evidence section, insertions only.",
+    "done_when": "read the done_when in prompt.txt and the gate it names; tests/test_review_prompt_contract.py:71-81 reads the composed prompt and requires the question, the independent-source clause and the remedy, clause for clause with the done_when.",
+    "goal": "read the goal in the node's prompt.txt and the landed text at reckon/crew/prompts/review.md:41-64, which asks the reviewer what would have to be true of the code for each added assertion to fail.",
+    "manifest": "read; it records 4 passed at base and 5 passed at candidate with log paths, the declared clause-deletion mutation and the restored prompt hash, each of which I re-checked.",
+    "write_paths": "read the five declared paths in the manifest; both commits touch five paths and every one of them is inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_review_prompt_contract.py:71-81 compares the prompt read from disk through the module loader against three literals, so the clause deletion reddens it rather than leaving an assertion that moves with the value the test supplied.",
+    "evidence": "the gate the done_when names ran 4 passed at base aa267565 and 5 passed at candidate in the run's logs, the clause-deletion control at logs/negative-control.log:1 reddens it, and my re-run of tests/test_review_prompt_contract.py at the reviewed head returned 5 passed.",
+    "fit": "the new section follows the rule-prose idiom of reckon/crew/prompts/review.md:28-39 and the test extends the phrase-tuple pattern at tests/test_review_prompt_contract.py:37-52, with the naming and attribution checks clean on both staged source files.",
+    "goal_fidelity": "reckon/crew/prompts/review.md:41-64 states the per-assertion question, names the same-variable shape and gives the reinstatement remedy, which is the goal's deliverable.",
+    "scope_discipline": "every path in both commits is inside the five declared write paths, the docs diffs are 49 and 39 insertions with 0 deletions, and the plan's version and modified meta lines are untouched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "REVISION: 983f8c0d9c16e075c20d3c73809d1d9f16c83c1b\nVERDICT goal: read the goal in the node's prompt.txt and the landed text at reckon/crew/prompts/review.md:41-64, which asks the reviewer what would have to be true of the code for each added assertion to fail.\nVERDICT done_when: read the done_when in prompt.txt and the gate it names; tests/test_review_prompt_contract.py:71-81 reads the composed prompt and requires the question, the independent-source clause and the remedy, clause for clause with the done_when.\nVERDICT write_paths: read the five declared paths in the manifest; both commits touch five paths and every one of them is inside the declared set.\nVERDICT manifest: read; it records 4 passed at base and 5 passed at candidate with log paths, the declared clause-deletion mutation and the restored prompt hash, each of which I re-checked.\nVERDICT diff: read both commits against base aa267565 commit by commit; 751281c8 adds the prompt section and the test, 983f8c0d adds the plan comment and the evidence section, insertions only.\nCALL_SITES: reckon/crew/recovery.py:dispatch_review_for_run, reckon/crew/review.py:load_review_prompt\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts/review.md:41-64 states the per-assertion question, names the same-variable shape and gives the reinstatement remedy, which is the goal's deliverable.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate the done_when names ran 4 passed at base aa267565 and 5 passed at candidate in the run's logs, the clause-deletion control at logs/negative-control.log:1 reddens it, and my re-run of tests/test_review_prompt_contract.py at the reviewed head returned 5 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in both commits is inside the five declared write paths, the docs diffs are 49 and 39 insertions with 0 deletions, and the plan's version and modified meta lines are untouched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_review_prompt_contract.py:71-81 compares the prompt read from disk through the module loader against three literals, so the clause deletion reddens it rather than leaving an assertion that moves with the value the test supplied.\nSCORE fit: 19\nJUSTIFICATION fit: the new section follows the rule-prose idiom of reckon/crew/prompts/review.md:28-39 and the test extends the phrase-tuple pattern at tests/test_review_prompt_contract.py:37-52, with the naming and attribution checks clean on both staged source files.\n",
+  "review_run_id": "r-20260922T111042004521-review-of-the-assertion-prompt-fresh",
+  "reviewed_head_sha": "983f8c0d9c16e075c20d3c73809d1d9f16c83c1b",
+  "reviewed_revision": "983f8c0d9c16e075c20d3c73809d1d9f16c83c1b",
+  "reviewed_run_id": "r-20260922T102849199872-the-review-prompt-asks-whether-an-assertion-can-fail",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T11:28:45.528484+00:00",
+  "total": 96
+}

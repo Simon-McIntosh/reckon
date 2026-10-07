@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T19:27:59.433285+00:00",
+  "findings": [
+    {
+      "file": "docs/ui/shell.jsx",
+      "line": "438",
+      "text": "the live Crew surface cannot yet render the meter: the sole call site passes no quota prop and the served /crew payload (reckon/serve.py) carries none of the component's consumed fields (used_percent, rate_limit_period_minutes, resets_at, burn_multiple, projected_exhaustion_at, rate_windows, observed_at), so the node goal that the Crew surface renders a quota meter holds only at the component level behind an optional prop every real caller omits; wiring the call site and the payload is outside this node's fence and belongs to a follow-on node."
+    },
+    {
+      "file": "manifest.md",
+      "line": "26",
+      "text": "the baseline_suite and after_suite records are prose (pytest \"10 failed, 60 passed\" and \"23 passed\" strings with failure lists) rather than the armed JSON shape carrying exit_status, log_path, completed and failure_count, so the recorded result cannot be mechanically verified from the manifest alone, and the plan's rendered-capture gate (a capture of the unsustainable and sustainable cases) is evidenced only by a code-level node probe."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_spa_crew_burn.py renders the on-disk docs/ui/crew.jsx through serve.compile_jsx and the real node runtime, so a regression that removed the meter region, dropped an observation stamp, flipped the projection comparison or reintroduced a cache-hit figure fails it.",
+    "evidence": "the gate asserts each done-when disposition (labelled period, absent-meter by element absence, projection left/right of the reset with warn/no-warn, two rate windows together, only-window label, observation timestamp on every figure, no cache-hit figure as a negative), and I reproduced the claim independently at the reviewed head a5254ef: 8 passed in 0.67s with the worktree clean before and after.",
+    "fit": "the meter extends the existing r-crew-meter primitive with a --quota modifier exactly as the done-when demands, consumes the Python derivation vocabulary (burn_multiple, projected_exhaustion_at, rate_limit_period_minutes, resets_at, observed_at from reckon/budget.py:105-137) rather than duplicating it, and uses only foundation.css-defined variables and the established r-crew-* class and data-* idioms.",
+    "goal_fidelity": "docs/ui/crew.jsx realizes every clause of the done-when \u2014 one meter per windowed backend labelled with the reported period, position fill, reset at the right edge, projected exhaustion plotted on the same axis warning only when it precedes the reset, no meter and no default period for a window-less backend, at least two rate windows, and no cache-hit figure \u2014 with all eight cases reproduced passing at the reviewed head.",
+    "scope_discipline": "docs/ui/crew.jsx, docs/ui/crew.css and tests/test_spa_crew_burn.py are exactly the three declared write paths and are the only files in the a5254ef diff, landed as one conventional commit with a body, with the reviewed worktree clean at the head."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/ui/crew.jsx realizes every clause of the done-when \u2014 one meter per windowed backend labelled with the reported period, position fill, reset at the right edge, projected exhaustion plotted on the same axis warning only when it precedes the reset, no meter and no default period for a window-less backend, at least two rate windows, and no cache-hit figure \u2014 with all eight cases reproduced passing at the reviewed head.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate asserts each done-when disposition (labelled period, absent-meter by element absence, projection left/right of the reset with warn/no-warn, two rate windows together, only-window label, observation timestamp on every figure, no cache-hit figure as a negative), and I reproduced the claim independently at the reviewed head a5254ef: 8 passed in 0.67s with the worktree clean before and after.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: docs/ui/crew.jsx, docs/ui/crew.css and tests/test_spa_crew_burn.py are exactly the three declared write paths and are the only files in the a5254ef diff, landed as one conventional commit with a body, with the reviewed worktree clean at the head.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_spa_crew_burn.py renders the on-disk docs/ui/crew.jsx through serve.compile_jsx and the real node runtime, so a regression that removed the meter region, dropped an observation stamp, flipped the projection comparison or reintroduced a cache-hit figure fails it.\nSCORE fit: 19\nJUSTIFICATION fit: the meter extends the existing r-crew-meter primitive with a --quota modifier exactly as the done-when demands, consumes the Python derivation vocabulary (burn_multiple, projected_exhaustion_at, rate_limit_period_minutes, resets_at, observed_at from reckon/budget.py:105-137) rather than duplicating it, and uses only foundation.css-defined variables and the established r-crew-* class and data-* idioms.\nFINDING docs/ui/shell.jsx:438 the live Crew surface cannot yet render the meter: the sole call site passes no quota prop and the served /crew payload (reckon/serve.py) carries none of the component's consumed fields (used_percent, rate_limit_period_minutes, resets_at, burn_multiple, projected_exhaustion_at, rate_windows, observed_at), so the node goal that the Crew surface renders a quota meter holds only at the component level behind an optional prop every real caller omits; wiring the call site and the payload is outside this node's fence and belongs to a follow-on node.\nFINDING manifest.md:26 the baseline_suite and after_suite records are prose (pytest \"10 failed, 60 passed\" and \"23 passed\" strings with failure lists) rather than the armed JSON shape carrying exit_status, log_path, completed and failure_count, so the recorded result cannot be mechanically verified from the manifest alone, and the plan's rendered-capture gate (a capture of the unsustainable and sustainable cases) is evidenced only by a code-level node probe.",
+  "review_run_id": "r-20260914T192759433285-rev-crew-meter-renders-position-and-projection",
+  "reviewed_base": "641a5ca64081041ba25b7f62c97eda9674b8b26b",
+  "reviewed_commit": "a5254ef06d8a05faa01f024f0696f0edce3b8ecc",
+  "reviewed_run_id": "r-20260914T162707540226-crew-meter-renders-position-and-projection",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T19:35:00+00:00",
+  "total": 91
+}

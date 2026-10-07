@@ -155,6 +155,9 @@ def cache_root(kind: str, override: str | Path | None = None) -> Path:
     kinds = {
         "velocity": ("RECKON_VELOCITY_CACHE", "velocity", "after"),
         "clones": ("RECKON_CLONE_CACHE", "clones", "after"),
+        # Child stderr for a live session host: shared-home like the other
+        # fleet caches, with no isolation home of its own.
+        "session-host": ("RECKON_SESSION_HOST_CACHE", "session-host", "after"),
         # An isolated configuration must not read or write the live user cache.
         "pick-input": ("RECKON_PICK_CACHE", "", "before"),
         "run-time-profile": (

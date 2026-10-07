@@ -8,7 +8,6 @@ from unittest.mock import Mock
 
 import pytest
 from click.testing import CliRunner
-from jinja2 import UndefinedError
 
 from reckon import budget
 from reckon.cli import main
@@ -255,19 +254,27 @@ def test_representative_state_is_bounded_and_comment_verbatim(
     assert len(rendered) <= 1500 * 4
     assert json.loads(rendered)["orchestrator_comment"] == request_node.comment
     assert set(json.loads(rendered)["candidates"]["remote"]) == {
+        "backend",
+        "lane",
+        "model",
         "availability",
         "utilisation_pct",
         "burn_multiple",
         "pace_allowance",
+        "days_to_reset",
         "resets_at",
         "worker_slots",
         "congestion",
-        "outcomes_14_days",
+        "outcomes",
+        "budget_source",
+        "budget_age_s",
+        "stale",
+        "reset_available",
     }
 
 
 def test_missing_live_fact_raises(request_node):
-    with pytest.raises(UndefinedError):
+    with pytest.raises(AttributeError):
         prompts.render(
             "state.jinja",
             node=request_node.node,

@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "added failures 0 by id, measured by this review with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own two gate arms: base = gate.log (revision 3129f05e8a6d, working tree with fix applied, 43 passed) and head = gate-head.log (revision 4af67bd34eaa249123ebd86779a4f9e9b3e3ff93, 12 passed); the set difference is empty, so the count is a measured zero. The reviewed manifest names no baseline_suite/after_suite field (they appear only in the dispatch template), so the store's read-path annotation reports this run unmeasured; the count stored here is this review's own measurement of the same two logs. Positive control: the same extractor over base = gate-head.log and head = negative-control.log (the declared mutation, red) returns (3, [...]) naming the three added cases, so the reader is shown to see a failure known present.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_live_conflict_is_a_directory_claim",
+    "reckon/crew/dispatch.py:_raise_repository_scope_conflict"
+  ],
+  "completed_at": "2026-09-30T20:59:20.155Z",
+  "dispatched_at": "2026-09-30T20:52:13Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; the repair commit changes reckon/crew/dispatch.py (+17/-2), tests/test_directory_claim_asks_first.py (+58), and the evidence fragment (+26), all inside the declared scope.",
+    "done_when": "the done-when names tests/test_directory_claim_asks_first.py and requires the manifest to name every finding by id acted/declined; gate-head.log records 12 passed at revision 4af67bd and the manifest landing line reads \"acted fbb06230e03: 4af67bd34eaa249123ebd86779a4f9e9b3e3ff93\".",
+    "goal": "the node goal is to repair finding fbb06230e03 (the absent-path directory arm keyed on Path.suffix == \"\", so a dotted directory name inside a live claim went unwarned); reckon/crew/dispatch.py:1684 adds _absent_path_names_a_directory and sibling_dispatch.py:1725 routes the absent arm through it.",
+    "manifest": "read; it names commits 4af67bd, tests 12 passed EXIT=0 with the declared mutation red at EXIT=1, and log paths gate-head.log, gate.log and negative-control.log.",
+    "write_paths": "the manifest declares four paths (two source, one fragment, one figure dir); the diff 3129f05e..4af67bd touches exactly the three that were needed and the figure dir was correctly left absent."
+  },
+  "justifications": {
+    "durability": "negative-control.log reverts the one discriminating line and reddens the three added cases at tests/test_directory_claim_asks_first.py:363,385,399 (3 failed, 9 passed, EXIT=1), each asserting an independently constructed expectation.",
+    "evidence": "gate-head.log headers carry revision 4af67bd, the tree and the command, and the 12-passed result is recorded there and in the manifest, not merely claimed.",
+    "fit": "the helper sits with the other _directory_claim_* predicates in reckon/crew/dispatch.py:1684 and its docstring states the mechanism; no changed path, symbol or comment carries a plan, stage or version label.",
+    "goal_fidelity": "_absent_path_names_a_directory at reckon/crew/dispatch.py:1684 reads docs/evidence/2026.09 as a directory (overlap returns True) and notes.html as a file (False), answering the finding; a directory whose suffix carries a letter would still read as a file, but the finding names the numeric version case.",
+    "scope_discipline": "git diff --stat 3129f05e 4af67bd lists exactly reckon/crew/dispatch.py, tests/test_directory_claim_asks_first.py and the declared evidence fragment, with no file outside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to repair finding fbb06230e03 (the absent-path directory arm keyed on Path.suffix == \"\", so a dotted directory name inside a live claim went unwarned); reckon/crew/dispatch.py:1684 adds _absent_path_names_a_directory and sibling_dispatch.py:1725 routes the absent arm through it.\nVERDICT done_when: the done-when names tests/test_directory_claim_asks_first.py and requires the manifest to name every finding by id acted/declined; gate-head.log records 12 passed at revision 4af67bd and the manifest landing line reads \"acted fbb06230e03: 4af67bd34eaa249123ebd86779a4f9e9b3e3ff93\".\nVERDICT write_paths: the manifest declares four paths (two source, one fragment, one figure dir); the diff 3129f05e..4af67bd touches exactly the three that were needed and the figure dir was correctly left absent.\nVERDICT manifest: read; it names commits 4af67bd, tests 12 passed EXIT=0 with the declared mutation red at EXIT=1, and log paths gate-head.log, gate.log and negative-control.log.\nVERDICT diff: read commit by commit; the repair commit changes reckon/crew/dispatch.py (+17/-2), tests/test_directory_claim_asks_first.py (+58), and the evidence fragment (+26), all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:_live_conflict_is_a_directory_claim, reckon/crew/dispatch.py:_raise_repository_scope_conflict\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: _absent_path_names_a_directory at reckon/crew/dispatch.py:1684 reads docs/evidence/2026.09 as a directory (overlap returns True) and notes.html as a file (False), answering the finding; a directory whose suffix carries a letter would still read as a file, but the finding names the numeric version case.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log headers carry revision 4af67bd, the tree and the command, and the 12-passed result is recorded there and in the manifest, not merely claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3129f05e 4af67bd lists exactly reckon/crew/dispatch.py, tests/test_directory_claim_asks_first.py and the declared evidence fragment, with no file outside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log reverts the one discriminating line and reddens the three added cases at tests/test_directory_claim_asks_first.py:363,385,399 (3 failed, 9 passed, EXIT=1), each asserting an independently constructed expectation.\nSCORE fit: 19\nJUSTIFICATION fit: the helper sits with the other _directory_claim_* predicates in reckon/crew/dispatch.py:1684 and its docstring states the mechanism; no changed path, symbol or comment carries a plan, stage or version label.\n",
+  "review_run_id": "r-20260930T205152818996-review-of-repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d",
+  "reviewed_base_sha": "3129f05e8a6d180253db35cfddaf5a98ec2c0661",
+  "reviewed_head_sha": "4af67bd34eaa249123ebd86779a4f9e9b3e3ff93",
+  "reviewed_run_id": "r-20260930T203755534764-repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260930T205152818996-review-of-repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T20:58:15.731351+00:00",
+  "total": 96
+}

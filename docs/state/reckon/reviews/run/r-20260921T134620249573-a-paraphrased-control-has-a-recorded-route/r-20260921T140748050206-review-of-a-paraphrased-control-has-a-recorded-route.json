@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "codex",
+  "commits_read": [
+    "681771db720457af44af42bf95a42ae757bb62b0",
+    "c30737a45073908dc4ca1d7f5c1e4e99d7d0bb54",
+    "930a9cefb503fb2f7fef0889f2d1fac304aa489e"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T14:07:48.050206+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route/prompt.txt",
+      "line": "48-52",
+      "text": "the immutable source fence names reckon/crew/cli.py, but the landed implementation changes reckon/cli.py; the cumulative evidence says the coordinator explicitly granted the real path, yet the authoritative dispatch scope was not mechanically updated, so the original write-path contract and the diff are not self-consistent"
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read all three commits against base 6db1c0bc92e1124baadbe217a92450370ab67b53: the implementation adds the CLI option and promotion plumbing, the test file adds 17 focused cases, and the two documentation files record the reproduction and durable evidence; the landed paths are reckon/crew/promotion.py, reckon/cli.py, tests/test_negative_control_waiver.py and the two declared documentation paths",
+    "done_when": "the source measure requires 17 focused waiver cases plus the lint delta; the source receipt records 26 passed and 5 unchanged related failures, the dedicated negative-control mutation records 5 failed and 12 passed, and an independent run of tests/test_negative_control_waiver.py at 930a9cefb503fb2f7fef0889f2d1fac304aa489e records 17 passed",
+    "goal": "the source goal asks for a named, auditable route when a readable red control describes the declared mutation in other words; the implementation records negative_control.verdict=waived with the reason, declaration, supplied log and resolved log while preserving the original files",
+    "manifest": "read the completed source manifest: it records base 6db1c0bc, commits 681771db, c30737a4 and 930a9ce, the focused and related receipts, the five deliberate negative-control failures, zero added related failures, lint counts 12 to 12 and format counts 1 to 1, plus the coordinator's path-grant explanation",
+    "write_paths": "the final diff has five paths; four are within the source manifest's recorded changed paths, while reckon/cli.py replaces the immutable prompt's nonexistent reckon/crew/cli.py and is therefore the one scope-record inconsistency reported as a finding"
+  },
+  "justifications": {
+    "durability": "tests/test_negative_control_waiver.py contains 17 cases covering matched and mismatched controls, ledger persistence, empty reasons, missing logs and non-waivable states, and its five-case negative mutation is recorded as red",
+    "evidence": "the source receipt preserves the base and candidate failure IDs, the dedicated negative-control.log records 5 failed and 12 passed under deletion of the no-mismatch refusal, and the independent focused run records 17 passed at the landed head",
+    "fit": "reckon/crew/promotion.py keeps the waiver beside the existing control and promotion guards, the CLI option follows the other reasoned waivers, the structured verdict is filterable, and the naming check reports no new forbidden source labels",
+    "goal_fidelity": "reckon/cli.py forwards --waive-negative-control REASON, promotion.py accepts only a non-empty reason for an actual mismatch and persists a waived ledger block, while matched, missing and non-waivable cases remain refused",
+    "scope_discipline": "the implementation and test paths are the intended deliverable and the documentation changes are in the recorded scope, but the original prompt says reckon/crew/cli.py while the real changed path is reckon/cli.py; the landing record documents explicit approval without updating the original fence"
+  },
+  "model": "gpt-5",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal asks for a named, auditable route when a readable red control describes the declared mutation in other words; the implementation records negative_control.verdict=waived with the reason, declaration, supplied log and resolved log while preserving the original files.\nVERDICT done_when: the source measure requires 17 focused waiver cases plus the lint delta; the source receipt records 26 passed and 5 unchanged related failures, the dedicated negative-control mutation records 5 failed and 12 passed, and an independent run of tests/test_negative_control_waiver.py at 930a9cefb503fb2f7fef0889f2d1fac304aa489e records 17 passed.\nVERDICT write_paths: the final diff has five paths; four are within the source manifest's recorded changed paths, while reckon/cli.py replaces the immutable prompt's nonexistent reckon/crew/cli.py and is therefore the one scope-record inconsistency reported as a finding.\nVERDICT manifest: read the completed source manifest: it records base 6db1c0bc, commits 681771db, c30737a4 and 930a9ce, the focused and related receipts, the five deliberate negative-control failures, zero added related failures, lint counts 12 to 12 and format counts 1 to 1, plus the coordinator's path-grant explanation.\nVERDICT diff: read all three commits against base 6db1c0bc92e1124baadbe217a92450370ab67b53: the implementation adds the CLI option and promotion plumbing, the test file adds 17 focused cases, and the two documentation files record the reproduction and durable evidence; the landed paths are reckon/crew/promotion.py, reckon/cli.py, tests/test_negative_control_waiver.py and the two declared documentation paths.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/cli.py forwards --waive-negative-control REASON, promotion.py accepts only a non-empty reason for an actual mismatch and persists a waived ledger block, while matched, missing and non-waivable cases remain refused.\nSCORE evidence: 19\nJUSTIFICATION evidence: the source receipt preserves the base and candidate failure IDs, the dedicated negative-control.log records 5 failed and 12 passed under deletion of the no-mismatch refusal, and the independent focused run records 17 passed at the landed head.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the implementation and test paths are the intended deliverable and the documentation changes are in the recorded scope, but the original prompt says reckon/crew/cli.py while the real changed path is reckon/cli.py; the landing record documents explicit approval without updating the original fence.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_negative_control_waiver.py contains 17 cases covering matched and mismatched controls, ledger persistence, empty reasons, missing logs and non-waivable states, and its five-case negative mutation is recorded as red.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion.py keeps the waiver beside the existing control and promotion guards, the CLI option follows the other reasoned waivers, the structured verdict is filterable, and the naming check reports no new forbidden source labels.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route/prompt.txt:48-52 the immutable source fence names reckon/crew/cli.py, but the landed implementation changes reckon/cli.py; the cumulative evidence says the coordinator explicitly granted the real path, yet the authoritative dispatch scope was not mechanically updated, so the original write-path contract and the diff are not self-consistent",
+  "review_run_id": "r-20260921T140748050206-review-of-a-paraphrased-control-has-a-recorded-route",
+  "reviewed_base_sha": "6db1c0bc92e1124baadbe217a92450370ab67b53",
+  "reviewed_head_sha": "930a9cefb503fb2f7fef0889f2d1fac304aa489e",
+  "reviewed_run_id": "r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route",
+  "reviewer_head_sha": "059692f4f67415931801dc957fc0c61ccb3ea0e7",
+  "reviewer_run_id": "r-20260921T140748050206-review-of-a-paraphrased-control-has-a-recorded-route",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T16:14:55+02:00",
+  "total": 94
+}

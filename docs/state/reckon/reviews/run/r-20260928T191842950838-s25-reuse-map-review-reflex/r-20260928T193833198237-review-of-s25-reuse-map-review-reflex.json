@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "added_failures_source": {
+    "after_suite_field": "not applicable \u2014 no repository file was edited",
+    "baseline_suite_field": "not applicable \u2014 no repository file was edited, so there is no base arm to compare",
+    "run_dir": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T191842950838-s25-reuse-map-review-reflex"
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/review.py:1091 read_review",
+    "reckon/crew/review.py:954 annotate_review_of_run",
+    "reckon/crew/recovery.py:902 _review_head_covers",
+    "reckon/crew/recovery.py:274 select_review_for_head",
+    "reckon/crew/obligations.py:270 _sub_floor_items",
+    "reckon/crew/promotion.py:5441 review_tier"
+  ],
+  "completed_at": "2026-09-28T19:57:33.638Z",
+  "dispatched_at": "2026-09-28T19:38:49Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md",
+      "line": "5",
+      "text": "the stamp \"the local `main` ref sits one commit ahead of it on a state-record commit only, so no citation below is one revision stale\" is false and load-bearing: the map was written at 21:36:09 while main was 20 first-parent commits past f1444f08, one of them c35032b4 at 21:25:28 merging 5949a8b6, which changed reckon/crew/recovery.py by 119 lines \u2014 the file the map assigns to node A. Measured against current main, 1 of 44 sampled citations, recovery.py:3608 classify_pointer, no longer resolves."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md",
+      "line": "66",
+      "text": "the done_when requires the obligation producer as a file:line, but it is named only as `_sub_floor_items` with no location; it lives at reckon/crew/obligations.py:270, and obligations.py \u2014 which maps the scoring classification to the review-missing duty at line 34 \u2014 is cited nowhere in the map."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md",
+      "line": "159",
+      "text": "node A's exclusive write paths omit reckon/crew/obligations.py, so the proposed split has no owner for the review-missing obligation that the s5 requirement to leave no silent absence requires; a builder following this split meets a scope wall at obligations.py:34."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md",
+      "line": "204",
+      "text": "follow-on 2 cites recovery.py:3977 as documenting that the reflex keeps dispatching for a tier-none run; that line opens the manifest-status-complete branch, and the comment beneath it at 3979-3986 documents deliberate dispatch for a run that never had a review attached, not for a run whose tier is none. The follow-on's claim is true \u2014 review_tier has zero hits in recovery.py at f1444f08 and at main \u2014 but the cited anchor does not support it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "no commits \u2014 a read-only node, so the deliverable is the document itself; 44 sampled citations resolve at the declared revision f1444f08a754 and 43 of those 44 still resolve at current main.",
+    "done_when": "the done_when names five targets to be cited as file:line; four carry one (recovery.py:1327 dispatch_awaiting_reviews, recovery.py:274 select_review_for_head, promotion.py:3380 _require_review_waiver, promotion.py:1531 record_gate_rerun_at_integrated_revision), but the obligation producer is named only as `_sub_floor_items` with no location at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:66.",
+    "goal": "the node's goal is to map the code that sections 3 to 5 would extend; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:40-68 delivers one row per section with its functions to extend, what is present, what is missing, and the second implementation each must reuse.",
+    "manifest": "read; it is quantitative, names the revision the map was read at, and states honestly that no suite ran because no repository file was edited.",
+    "write_paths": "the node was fenced to the single report path and wrote only it; its manifest changed_paths names that one path and its worktree at f1444f08a754ac0affd9976f2af5ee3c3a95d100 is unmodified."
+  },
+  "justifications": {
+    "durability": "a read-only node changes nothing, so no regression test is owed and none was misread as coverage; the only exposure is citation drift, which is measurable and stands at 43 of 44 sampled citations at current main.",
+    "evidence": "44 of 44 sampled citations resolve at f1444f08a754, including recovery.py:902 _review_head_covers, and both measured facts reproduce exactly, but /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:5 claims main was one commit ahead when it was twenty, and one done_when target carries no file:line.",
+    "fit": "the module and test names proposed at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:159-161 carry no plan label, version suffix or ticket reference, and the file:line citation form matches the repo's idiom.",
+    "goal_fidelity": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:40-68 maps each of s3, s4 and s5 onto its existing functions and its missing edge, but omits the file holding the review-missing obligation that the s5 carry-forward must satisfy.",
+    "scope_discipline": "the manifest's changed_paths names only the fenced report path, the reviewed worktree at f1444f08a754 carries no modification, and no repository file was edited."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: f1444f08a754ac0affd9976f2af5ee3c3a95d100\nreviewed_head_sha: f1444f08a754ac0affd9976f2af5ee3c3a95d100\nVERDICT goal: the node's goal is to map the code that sections 3 to 5 would extend; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:40-68 delivers one row per section with its functions to extend, what is present, what is missing, and the second implementation each must reuse.\nVERDICT done_when: the done_when names five targets to be cited as file:line; four carry one (recovery.py:1327 dispatch_awaiting_reviews, recovery.py:274 select_review_for_head, promotion.py:3380 _require_review_waiver, promotion.py:1531 record_gate_rerun_at_integrated_revision), but the obligation producer is named only as `_sub_floor_items` with no location at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:66.\nVERDICT write_paths: the node was fenced to the single report path and wrote only it; its manifest changed_paths names that one path and its worktree at f1444f08a754ac0affd9976f2af5ee3c3a95d100 is unmodified.\nVERDICT manifest: read; it is quantitative, names the revision the map was read at, and states honestly that no suite ran because no repository file was edited.\nVERDICT diff: no commits \u2014 a read-only node, so the deliverable is the document itself; 44 sampled citations resolve at the declared revision f1444f08a754 and 43 of those 44 still resolve at current main.\nCALL_SITES: reckon/crew/review.py:1091 read_review, reckon/crew/review.py:954 annotate_review_of_run, reckon/crew/recovery.py:902 _review_head_covers, reckon/crew/recovery.py:274 select_review_for_head, reckon/crew/obligations.py:270 _sub_floor_items, reckon/crew/promotion.py:5441 review_tier\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:40-68 maps each of s3, s4 and s5 onto its existing functions and its missing edge, but omits the file holding the review-missing obligation that the s5 carry-forward must satisfy.\nSCORE evidence: 15\nJUSTIFICATION evidence: 44 of 44 sampled citations resolve at f1444f08a754, including recovery.py:902 _review_head_covers, and both measured facts reproduce exactly, but /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:5 claims main was one commit ahead when it was twenty, and one done_when target carries no file:line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the manifest's changed_paths names only the fenced report path, the reviewed worktree at f1444f08a754 carries no modification, and no repository file was edited.\nSCORE durability: 17\nJUSTIFICATION durability: a read-only node changes nothing, so no regression test is owed and none was misread as coverage; the only exposure is citation drift, which is measurable and stands at 43 of 44 sampled citations at current main.\nSCORE fit: 18\nJUSTIFICATION fit: the module and test names proposed at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:159-161 carry no plan label, version suffix or ticket reference, and the file:line citation form matches the repo's idiom.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:5 the stamp \"the local `main` ref sits one commit ahead of it on a state-record commit only, so no citation below is one revision stale\" is false and load-bearing: the map was written at 21:36:09 while main was 20 first-parent commits past f1444f08, one of them c35032b4 at 21:25:28 merging 5949a8b6, which changed reckon/crew/recovery.py by 119 lines \u2014 the file the map assigns to node A. Measured against current main, 1 of 44 sampled citations, recovery.py:3608 classify_pointer, no longer resolves.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:66 the done_when requires the obligation producer as a file:line, but it is named only as `_sub_floor_items` with no location; it lives at reckon/crew/obligations.py:270, and obligations.py \u2014 which maps the scoring classification to the review-missing duty at line 34 \u2014 is cited nowhere in the map.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:159 node A's exclusive write paths omit reckon/crew/obligations.py, so the proposed split has no owner for the review-missing obligation that the s5 requirement to leave no silent absence requires; a builder following this split meets a scope wall at obligations.py:34.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-review-reflex/reuse-map.md:204 follow-on 2 cites recovery.py:3977 as documenting that the reflex keeps dispatching for a tier-none run; that line opens the manifest-status-complete branch, and the comment beneath it at 3979-3986 documents deliberate dispatch for a run that never had a review attached, not for a run whose tier is none. The follow-on's claim is true \u2014 review_tier has zero hits in recovery.py at f1444f08 and at main \u2014 but the cited anchor does not support it.",
+  "review_run_id": "r-20260928T193833198237-review-of-s25-reuse-map-review-reflex",
+  "reviewed_base_sha": "f1444f08a754ac0affd9976f2af5ee3c3a95d100",
+  "reviewed_head_sha": "f1444f08a754ac0affd9976f2af5ee3c3a95d100",
+  "reviewed_run_id": "r-20260928T191842950838-s25-reuse-map-review-reflex",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T19:50:36.603181+00:00",
+  "total": 87
+}

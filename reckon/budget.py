@@ -58,7 +58,7 @@ from typing import Any, Callable, Iterable, Mapping
 from reckon import _backends, crew, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import bar as bar_module
-from reckon.crew import budget_group, window_reading
+from reckon.crew import budget_group, budget_reset, window_reading
 from reckon.crew import pace as pace_module
 from reckon.crew import reserve as reserve_module
 from reckon.crew import rollout as rollout_module
@@ -1962,6 +1962,46 @@ def _unknown_allowance(
     return allowance
 
 
+def _scale_for_banked_reset(
+    allowance: dict[str, Any], *, credit: float
+) -> dict[str, Any]:
+    """Count a banked reset as one extra full window of allowance.
+
+    A banked reset adds a whole extra window of budget on top of what remains,
+    so the same reading admits more: the derived allowance scales up by the
+    extra window and the burn, which measures spend against the budget that is
+    actually available, scales down by the same factor. The credit is capped at
+    one window — a group carries at most one banked reset.
+
+    A group with no banked reset is returned byte for byte as it was derived:
+    ``reset_available`` is added only when a reset is counted, so the allowance
+    a group without one carries is unchanged and stays equal to the allowance a
+    replay recomputes from the same row.
+    """
+    credit = max(0.0, min(1.0, float(credit)))
+    if credit > 0:
+        allowance["reset_available"] = True
+        factor = 1.0 + credit
+        derived = allowance.get("derived")
+        if isinstance(derived, (int, float)) and not isinstance(derived, bool):
+            scaled = float(derived) * factor
+            allowance["derived"] = scaled
+            ceiling = allowance.get("provider_ceiling")
+            if ceiling is not None and float(ceiling) < scaled:
+                allowance["effective_limit"] = float(ceiling)
+                allowance["limited_by"] = "ceiling"
+            else:
+                allowance["effective_limit"] = scaled
+                allowance["limited_by"] = "allowance"
+        burn = allowance.get("burn_multiple")
+        if isinstance(burn, (int, float)) and not isinstance(burn, bool):
+            allowance["burn_multiple"] = float(burn) / factor
+        remaining = allowance.get("remaining_budget")
+        if isinstance(remaining, (int, float)) and not isinstance(remaining, bool):
+            allowance["remaining_budget"] = float(remaining) + credit
+    return allowance
+
+
 def _group_allowance(
     group: str,
     reading: window_reading.WindowReading,
@@ -2002,31 +2042,48 @@ def _group_allowance(
         else float(operative.utilisation) / elapsed_fraction
     )
 
+    # A banked reset is read from the durable flag before the allowance is
+    # derived, so the pace and the hold that reads it both count the extra
+    # allowance covers. Nothing is tracked for a group that never carried one,
+    # so this is a read for every other group.
+    reset_state = budget_reset.observe(
+        group,
+        resets_at=operative.resets_at,
+        window_minutes=operative.window_minutes,
+        moment=moment,
+        utilisation=float(operative.utilisation),
+    )
+    available = bool(reset_state.get("available"))
+    credit = 1.0 if available else 0.0
+
     # Accounts that publish both clocks keep the established next-window
     # derivation. A primary-only account has no shorter burst ceiling to divide
     # through, so its safe cumulative limit is the elapsed share of the window.
     if reading.figure(CLOCK_FIVE_HOUR) is None:
         derived = min(1.0, elapsed_fraction * float(multiple))
-        return {
-            "group": group,
-            "state": OBSERVED,
-            "reason": None,
-            "utilisation": float(operative.utilisation),
-            "elapsed_hours": elapsed,
-            "drain_hours": window_hours,
-            "remaining_budget": max(0.0, 1.0 - float(operative.utilisation)),
-            "remaining_windows": None,
-            "pace_multiple": float(multiple),
-            "derived": derived,
-            "provider_ceiling": None,
-            "effective_limit": derived,
-            "limited_by": "allowance",
-            "window_minutes": operative.window_minutes,
-            "elapsed_fraction": elapsed_fraction,
-            "burn_multiple": burn,
-            "observed_at": operative.observed_at.isoformat(),
-            "resets_at": operative.resets_at,
-        }
+        return _scale_for_banked_reset(
+            {
+                "group": group,
+                "state": OBSERVED,
+                "reason": None,
+                "utilisation": float(operative.utilisation),
+                "elapsed_hours": elapsed,
+                "drain_hours": window_hours,
+                "remaining_budget": max(0.0, 1.0 - float(operative.utilisation)),
+                "remaining_windows": None,
+                "pace_multiple": float(multiple),
+                "derived": derived,
+                "provider_ceiling": None,
+                "effective_limit": derived,
+                "limited_by": "allowance",
+                "window_minutes": operative.window_minutes,
+                "elapsed_fraction": elapsed_fraction,
+                "burn_multiple": burn,
+                "observed_at": operative.observed_at.isoformat(),
+                "resets_at": operative.resets_at,
+            },
+            credit=credit,
+        )
 
     week = clocks[CLOCK_SEVEN_DAY]
     if week["state"] != OBSERVED:
@@ -2058,7 +2115,7 @@ def _group_allowance(
             "resets_at": operative.resets_at,
         }
     )
-    return allowance
+    return _scale_for_banked_reset(allowance, credit=credit)
 
 
 def _operative_window(

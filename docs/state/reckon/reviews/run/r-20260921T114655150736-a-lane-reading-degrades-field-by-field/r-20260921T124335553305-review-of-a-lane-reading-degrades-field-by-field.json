@@ -1,0 +1,103 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T12:43:35.553305+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/lane_document.py",
+      "line": "56",
+      "text": "the docstring at lines 33-38 states the _instant value is the one that describes the moment the lane observed, while the field map orders the bare rolling key first: on the document published while this review read it, the reader returned mean_context 97352 and concurrent_requests 20 where the document's own instant figures were 95122 and 21, on the document stamped 2026-09-21T13:44:00Z."
+    },
+    {
+      "file": "reckon/crew/lane_document.py",
+      "line": "211",
+      "text": "age = max(0.0, age) reports a document stamped in the future as age_seconds 0 and stale False with an empty detail, where the reader at the node's base revision in reckon/crew/dispatch.py:1955-1958 refuses such a document outright, so adopting this module drops that guard with no test noticing."
+    },
+    {
+      "file": "reckon/crew/lane_document.py",
+      "line": "56",
+      "text": "the field map leaves out preemptions, which the published lane document carries and which the plan's section on the bar records as the free lane's admission signal that matters most, so the bar this reader is meant to feed cannot report it."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit; abbce128 adds the per-field reader and its fourteen tests, f554b2ef adds the landing record to the plan section and opens the cumulative evidence record with 131 insertions and no deletion.",
+    "done_when": "all five declared clauses are directly asserted in tests/test_lane_document.py:86-206 and the 14-passing receipt is gate-lane-document.log; I re-ran the named test with the node's declared mutation applied to a scratch copy of the head tree and observed it fail, with a positive control passing on the unmutated copy.",
+    "goal": "the node's goal is a reader that yields every field the lane document actually carries instead of discarding it whole; reckon/crew/lane_document.py:168-233 resolves each of the eight named fields on its own, and defect-reproduction.log shows it returning headroom 96 and running 0 on a real published shape where the reader it will replace returns every field unknown.",
+    "manifest": "read; it names both commits, all four changed paths, the 14-passing gate, a red negative-control log and a defect reproduction, and each claim agrees with the worktree, the logs and the dispatch pointer.",
+    "write_paths": "four paths were declared at dispatch and the diff against base da878451 adds or modifies exactly those four and nothing else, naming the reader, its test file, the plan section and the cumulative evidence record."
+  },
+  "justifications": {
+    "durability": "tests/test_lane_document.py:86-104 fails under the node's declared mutation as re-run in this review, though no test covers the future-stamped reading that lane_document.py:211 clamps to a fresh one.",
+    "evidence": "tests/test_lane_document.py:86-206 asserts every declared clause and gate-lane-document.log records 14 passed, while negative-control-lane-document.log:1 states a mutation broader than the one declared at dispatch.",
+    "fit": "reckon/crew/lane_document.py:128-137 follows the carry shape of the readers it supersedes and introduces no forbidden name, but the docstring at lines 33-38 states a key preference the code does not implement.",
+    "goal_fidelity": "reckon/crew/lane_document.py:186-198 resolves each of the eight declared fields independently, while the field map omits preemptions, the admission signal the plan's section on the bar names.",
+    "scope_discipline": "the diff against base da878451 touches only the four declared paths, adding no figure and no helper file."
+  },
+  "measure_verdicts": {
+    "absent_field_unknown_while_siblings_resolve_in_both_directions": {
+      "already_satisfied_at_base": "no \u2014 the base reader collapsed the whole carry at the first non-numeric field (reckon/crew/dispatch.py:1959-1968), so an absent field cost every sibling.",
+      "base_control": "same base lines as above",
+      "evidence": "tests/test_lane_document.py:107-118 deletes waiting and requires it unknown while headroom, running and state resolve; tests/test_lane_document.py:130-141 makes headroom and running non-numeric and requires both unknown while concurrent_requests keeps 96 \u2014 a non-numeric value is not coerced to zero or a ceiling (reckon/crew/lane_document.py:86-95, 190-198).",
+      "status": "asserted"
+    },
+    "declared_mutation_reddens_the_named_test": {
+      "already_satisfied_at_base": "n/a \u2014 the gate is the node's own, not satisfied or unsatisfied by base code.",
+      "base_control": "positive control: the same test passes on the unmutated head copy",
+      "evidence": "the declared mutation at dispatch is 'make the reader return all fields unknown when binding_observed is null, reproducing the whole-document discard; tests/test_lane_document.py must fail'. The log records a broader one: a short-circuit after the per-field loop whenever ANY field is unknown. I applied the DECLARED mutation to a scratch copy of the head tree, confirmed the named test module resolves to that scratch copy, and observed test_null_binding_leaves_the_other_fields_as_the_numbers_carried fail at line 90 with a passing positive control on the unmutated copy. The recorded log's first line therefore does not repeat the declared wording verbatim, though the mutation it does record reddens the same test.",
+      "status": "asserted, with a wording divergence"
+    },
+    "fields_resolve_independently_under_a_null_binding": {
+      "already_satisfied_at_base": "no \u2014 at the node's base da878451 both reckon/crew/dispatch.py:1959-1968 (bare-key-only lookup, whole-carry collapse) returned every field unknown on the same shape, quoted in the run's defect-reproduction.log.",
+      "base_control": "git show da878451:reckon/crew/dispatch.py lines 1959-1968",
+      "evidence": "reckon/crew/lane_document.py:186-198 resolves each name in _FIELD_KEYS in its own loop iteration; tests/test_lane_document.py:86-104 asserts headroom 96, running 0, waiting 0, concurrent_requests 96, kv_occupancy 0.0, state measured and observed_at resolved on the real-shaped fixture whose binding_observed is null, with mean_context the only unknown.",
+      "status": "asserted"
+    },
+    "malformed_document_returns_all_unknown_and_never_raises": {
+      "already_satisfied_at_base": "yes, in the reader it supersedes \u2014 the base returned unknown and never raised on the same inputs; the clause is a property of the new module, which does not exist at base, so the test is evidence of the new module's behaviour rather than of a newly repaired defect.",
+      "base_control": "reckon/crew/dispatch.py:1931-1941 returns the unknown carry for None, non-mapping and unparsable stamps",
+      "evidence": "tests/test_lane_document.py:166-186 drives six malformed inputs (none, truncated JSON, a list, a number, undecodable bytes, empty text) and requires every canonical field unknown, stale False, age None and a non-empty detail; tests/test_lane_document.py:189-195 covers the file entry point on a missing path (reckon/crew/lane_document.py:140-165, 236-254).",
+      "status": "asserted"
+    },
+    "stale_reading_carries_its_age_and_a_stale_marker": {
+      "already_satisfied_at_base": "partly, and differently \u2014 freshness was judged at base, but by refusing the whole reading: reckon/crew/dispatch.py:1974-1983 at the node's base da878451 returns every field unknown once the reading is older than its own shelf life, keeping only age_seconds and the shelf life. The landed module keeps every figure and marks it stale instead of discarding it, which is the node's declared intent, so this clause is a change of behaviour rather than a test asserting something already true.",
+      "base_control": "git show da878451:reckon/crew/dispatch.py lines 1974-1983 (stale refusal, age retained)",
+      "evidence": "tests/test_lane_document.py:153-163 requires stale True, age_seconds 1000000, shelf_life_seconds 45 and the figures retained, with the reason in detail; tests/test_lane_document.py:144-151 pins the inside-shelf case as not stale, so the marker is not hardcoded true; the test pins its own clock, so no expectation is derived from the day the suite runs (reckon/crew/lane_document.py:203-217).",
+      "status": "asserted"
+    }
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a reader that yields every field the lane document actually carries instead of discarding it whole; reckon/crew/lane_document.py:168-233 resolves each of the eight named fields on its own, and defect-reproduction.log shows it returning headroom 96 and running 0 on a real published shape where the reader it will replace returns every field unknown.\nVERDICT done_when: all five declared clauses are directly asserted in tests/test_lane_document.py:86-206 and the 14-passing receipt is gate-lane-document.log; I re-ran the named test with the node's declared mutation applied to a scratch copy of the head tree and observed it fail, with a positive control passing on the unmutated copy.\nVERDICT write_paths: four paths were declared at dispatch and the diff against base da878451 adds or modifies exactly those four and nothing else, naming the reader, its test file, the plan section and the cumulative evidence record.\nVERDICT manifest: read; it names both commits, all four changed paths, the 14-passing gate, a red negative-control log and a defect reproduction, and each claim agrees with the worktree, the logs and the dispatch pointer.\nVERDICT diff: read commit by commit; abbce128 adds the per-field reader and its fourteen tests, f554b2ef adds the landing record to the plan section and opens the cumulative evidence record with 131 insertions and no deletion.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/lane_document.py:186-198 resolves each of the eight declared fields independently, while the field map omits preemptions, the admission signal the plan's section on the bar names.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_lane_document.py:86-206 asserts every declared clause and gate-lane-document.log records 14 passed, while negative-control-lane-document.log:1 states a mutation broader than the one declared at dispatch.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff against base da878451 touches only the four declared paths, adding no figure and no helper file.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_lane_document.py:86-104 fails under the node's declared mutation as re-run in this review, though no test covers the future-stamped reading that lane_document.py:211 clamps to a fresh one.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/lane_document.py:128-137 follows the carry shape of the readers it supersedes and introduces no forbidden name, but the docstring at lines 33-38 states a key preference the code does not implement.\nFINDING reckon/crew/lane_document.py:56 the docstring at lines 33-38 states the _instant value is the one that describes the moment the lane observed, while the field map orders the bare rolling key first: on the document published while this review read it, the reader returned mean_context 97352 and concurrent_requests 20 where the document's own instant figures were 95122 and 21, on the document stamped 2026-09-21T13:44:00Z.\nFINDING reckon/crew/lane_document.py:211 age = max(0.0, age) reports a document stamped in the future as age_seconds 0 and stale False with an empty detail, where the reader at the node's base revision in reckon/crew/dispatch.py:1955-1958 refuses such a document outright, so adopting this module drops that guard with no test noticing.\nFINDING reckon/crew/lane_document.py:56 the field map leaves out preemptions, which the published lane document carries and which the plan's section on the bar records as the free lane's admission signal that matters most, so the bar this reader is meant to feed cannot report it.",
+  "review_evidence": {
+    "declared_mutation_replication": "the declared mutation (all fields unknown when binding_observed is null) was applied to a scratch copy of the head tree at /tmp/rev-lanedoc-decl; the named test failed at tests/test_lane_document.py:90 while the same test passed on an unmutated copy at /tmp/rev-lanedoc-unmut, and the imported module resolved to the scratch path.",
+    "future_stamp_probe": "a copy of the published document with observed_at replaced by 2099-01-01T00:00:00Z returned age_seconds 0, stale False and an empty detail.",
+    "live_document": "reader_returned -- head reader run on the parsed document stamped 2026-09-21T13:44:00Z from /home/ITER/mcintos/public/imas-ambix/lane.json in a single read: mean_context bare 97352 / instant 95122 returned; concurrent_requests bare 20 / instant 21 returned, so the rolling figures win over their instant twins. A separate earlier run over the file returned headroom 0, running 32, waiting 0, kv_occupancy 0.7206, age_seconds 2, stale False.",
+    "resolution_gotcha": "running the scratch copy needed python -P because the interpreter prepends the working directory, which otherwise shadows the scratch package with the review worktree's own reckon/ tree."
+  },
+  "review_run_id": "r-20260921T124335553305-review-of-a-lane-reading-degrades-field-by-field",
+  "reviewed_agent": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewed_base_sha": "da8784516ac4788b91cc00c4061a92831daba573",
+  "reviewed_commits": [
+    "abbce128b3ffd044ede1b0c6a13f3b87c7a14622",
+    "f554b2ef66e9f3f1caa51db8947f08dcd8feb04b"
+  ],
+  "reviewed_head_sha": "f554b2ef66e9f3f1caa51db8947f08dcd8feb04b",
+  "reviewed_run_id": "r-20260921T114655150736-a-lane-reading-degrades-field-by-field",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T13:39:25.191664+00:00",
+  "total": 95
+}

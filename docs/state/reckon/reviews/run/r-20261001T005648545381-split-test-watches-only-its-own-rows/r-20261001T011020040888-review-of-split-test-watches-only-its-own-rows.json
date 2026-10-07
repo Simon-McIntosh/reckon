@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T01:24:20.861Z",
+  "dispatched_at": "2026-10-01T01:10:41Z",
+  "findings": [
+    {
+      "file": "tests/test_split_existing_runs.py",
+      "line": "83",
+      "severity": "follow-on",
+      "text": "follow-on: the workstation_state control now asserts only that a mounted project's state directory exists, not that the teardown's instrument can read any run id from it, so a workstation whose mounted state dirs hold no runs and no crew.json would satisfy the control while the leak scan sees nothing, which is the vacuity the control exists to prevent."
+    },
+    {
+      "file": "tests/test_split_existing_runs.py",
+      "line": "64",
+      "severity": "follow-on",
+      "text": "follow-on: _run_ids_under returns only the runs/*.json filename stems when crew.json is unreadable or malformed, silently narrowing the leak scan, so a leak into a corrupt ledger would not be reported."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit 20140ea8 against base 39fff04; 98 changed lines in the one test file (67 insertions, 31 deletions) and a 3-line evidence fragment; the _fingerprint helper and its comparison are removed, replaced by _run_id_values, _run_ids_under and the seeded-id teardown.",
+    "done_when": "the done-when names the teardown asserting the case's own ids absent with the at-least-one-mounted-project control kept; tests/test_split_existing_runs.py:106-116 performs the intersection, :83-88 keeps the control, and the recorded negative-control.log exits 1 naming r-leak under the scratch copy.",
+    "goal": "the node goal is to make tests/test_split_existing_runs.py assert isolation by the case's own run ids rather than a live-tree fingerprint; tests/test_split_existing_runs.py:92-116 replaces the mtime/size comparison with an intersection of the case's seeded run ids against each mounted project's runs/*.json and crew.json, and _write_ledger at :131-133 records those ids.",
+    "manifest": "read at the run directory; status complete, commit 20140ea8 named, head.log and negative-control.log on disk, the negative_control_log path and its declared mutation recorded; it names no baseline_suite/after_suite pair, so the added-failure count is unmeasured from the reviewed record itself, and this review additionally ran the base and head arms (both logged) as corroboration.",
+    "write_paths": "the diff touches tests/test_split_existing_runs.py and docs/evidence/fragments/a-review-is-sized-to-its-risk/split-test-watches-only-its-own-rows.html, both inside the declared fence; the third declared path (the figures directory) is unused."
+  },
+  "justifications": {
+    "durability": "the teardown compares an independent pair, the ids _write_ledger seeded at tests/test_split_existing_runs.py:131-133 against _run_ids_under's read of the live tree, and the negative control reddens it; docked because the at-least-one control at :83-88 asserts only that a state directory exists rather than that the instrument can read a run id, and _run_ids_under at :64-67 swallows a read error and returns a partial set.",
+    "evidence": "the manifest records head.log 8 passed EXIT=0 and negative-control.log 8 passed 1 error EXIT=1; this review reproduced the head arm at 20140ea8 (8 passed) and, running the base file at 39fff04, saw the old fingerprint teardown error on 7 of 8 cases because reckon/runs moved under a live promotion, the exact defect the change repairs; the reviewed manifest names no baseline_suite/after_suite pair, so its added-failure count is unmeasured from its own record.",
+    "fit": "the helpers carry mechanism docstrings and reconciling comments in the module's style, the names (_seeded_run_ids, _run_ids_under, _run_id_values) describe what they do, and the commit body is conventional with no plan or ticket identifier or attribution.",
+    "goal_fidelity": "tests/test_split_existing_runs.py:106-116 asserts the case's own seeded run ids never appear under a mounted project's runs directory or crew.json, resolving the watched path through the registry in force, which is exactly the goal; the change is test-only so no production call site reaches it.",
+    "scope_discipline": "the diff's 98 changed lines lie in tests/test_split_existing_runs.py and a 3-line fragment, both declared; the third declared path (the figures directory) is unused and nothing else is touched."
+  },
+  "node": "review-of-split-test-watches-only-its-own-rows",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make tests/test_split_existing_runs.py assert isolation by the case's own run ids rather than a live-tree fingerprint; tests/test_split_existing_runs.py:92-116 replaces the mtime/size comparison with an intersection of the case's seeded run ids against each mounted project's runs/*.json and crew.json, and _write_ledger at :131-133 records those ids.\nVERDICT done_when: the done-when names the teardown asserting the case's own ids absent with the at-least-one-mounted-project control kept; tests/test_split_existing_runs.py:106-116 performs the intersection, :83-88 keeps the control, and the recorded negative-control.log exits 1 naming r-leak under the scratch copy.\nVERDICT write_paths: the diff touches tests/test_split_existing_runs.py and docs/evidence/fragments/a-review-is-sized-to-its-risk/split-test-watches-only-its-own-rows.html, both inside the declared fence; the third declared path (the figures directory) is unused.\nVERDICT manifest: read at the run directory; status complete, commit 20140ea8 named, head.log and negative-control.log on disk, the negative_control_log path and its declared mutation recorded; it names no baseline_suite/after_suite pair, so the added-failure count is unmeasured from the reviewed record itself, and this review additionally ran the base and head arms (both logged) as corroboration.\nVERDICT diff: read commit 20140ea8 against base 39fff04; 98 changed lines in the one test file (67 insertions, 31 deletions) and a 3-line evidence fragment; the _fingerprint helper and its comparison are removed, replaced by _run_id_values, _run_ids_under and the seeded-id teardown.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_split_existing_runs.py:106-116 asserts the case's own seeded run ids never appear under a mounted project's runs directory or crew.json, resolving the watched path through the registry in force, which is exactly the goal; the change is test-only so no production call site reaches it.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest records head.log 8 passed EXIT=0 and negative-control.log 8 passed 1 error EXIT=1; this review reproduced the head arm at 20140ea8 (8 passed) and, running the base file at 39fff04, saw the old fingerprint teardown error on 7 of 8 cases because reckon/runs moved under a live promotion, the exact defect the change repairs; the reviewed manifest names no baseline_suite/after_suite pair, so its added-failure count is unmeasured from its own record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's 98 changed lines lie in tests/test_split_existing_runs.py and a 3-line fragment, both declared; the third declared path (the figures directory) is unused and nothing else is touched.\nSCORE durability: 18\nJUSTIFICATION durability: the teardown compares an independent pair, the ids _write_ledger seeded at tests/test_split_existing_runs.py:131-133 against _run_ids_under's read of the live tree, and the negative control reddens it; docked because the at-least-one control at :83-88 asserts only that a state directory exists rather than that the instrument can read a run id, and _run_ids_under at :64-67 swallows a read error and returns a partial set.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers carry mechanism docstrings and reconciling comments in the module's style, the names (_seeded_run_ids, _run_ids_under, _run_id_values) describe what they do, and the commit body is conventional with no plan or ticket identifier or attribution.\nFINDING tests/test_split_existing_runs.py:83 follow-on: follow-on: the workstation_state control now asserts only that a mounted project's state directory exists, not that the teardown's instrument can read any run id from it, so a workstation whose mounted state dirs hold no runs and no crew.json would satisfy the control while the leak scan sees nothing, which is the vacuity the control exists to prevent.\nFINDING tests/test_split_existing_runs.py:64 follow-on: follow-on: _run_ids_under returns only the runs/*.json filename stems when crew.json is unreadable or malformed, silently narrowing the leak scan, so a leak into a corrupt ledger would not be reported.",
+  "review_run_id": "r-20261001T011020040888-review-of-split-test-watches-only-its-own-rows",
+  "reviewed_base_sha": "39fff0435239ded5d285a4d87e38a1ad007e8451",
+  "reviewed_head_sha": "20140ea8e5de1506b8ac0d19bf277511f3f0512c",
+  "reviewed_run_id": "r-20261001T005648545381-split-test-watches-only-its-own-rows",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T01:22:32.236281+00:00",
+  "total": 95
+}

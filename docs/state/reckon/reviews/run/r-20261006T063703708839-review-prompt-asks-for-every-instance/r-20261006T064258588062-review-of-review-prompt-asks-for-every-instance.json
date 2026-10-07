@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py"
+  ],
+  "completed_at": "2026-10-06T06:51:34.921Z",
+  "dispatched_at": "2026-10-06T06:43:23Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit d9c0b5a8c against bd6b700b7; three files changed, all inside the declared write paths, no other path touched.",
+    "done_when": "the done_when names a test asserting the loaded design-review prompt carries the instruction; tests/test_plan_review_prompt.py adds test_design_review_prompt_asks_for_every_instance_of_a_finding and the run's gate.log records it green.",
+    "goal": "the node goal is to make the design-review prompt tell the reviewer a finding of one type is a census; reckon/crew/prompts/plan_design_review.md adds the 'Every instance of a type, not the same pass' section and the matching emission note.",
+    "manifest": "read; it records gate tests/test_plan_review_prompt.py 9 passed EXIT=0 and negative control 1 failed EXIT=1, with gate.log and negative_control.log paths.",
+    "write_paths": "the declared scope is the prompt, the prompt-contract test and the evidence fragment; the diff's three files all lie inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_review_prompt.py fails if the census clause is deleted, shown by the run's own negative control which reddens exactly that case (1 failed, 8 passed, EXIT=1).",
+    "evidence": "the done_when test clause is measured by tests/test_plan_review_prompt.py and recorded in the run's own gate.log, but the reviewed manifest names no baseline_suite/after_suite pair so the added-failure count is unmeasured rather than zero.",
+    "fit": "the new section in reckon/crew/prompts/plan_design_review.md follows the file's prose-section idiom and the added case follows tests/test_plan_review_prompt.py's structure, introducing no forbidden name.",
+    "goal_fidelity": "reckon/crew/prompts/plan_design_review.md states 'you search for every instance of that type in the same pass and list them all under one finding', which is the goal verbatim.",
+    "reuse": "the change extends the prompt that already owns the design-review instruction; a search over reckon/crew and reckon/crew/prompts found no other census clause, so nothing is forked.",
+    "scope_discipline": "the three files in the diff (prompt, test, evidence fragment) lie inside the manifest's declared write paths and nothing outside them changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the design-review prompt tell the reviewer a finding of one type is a census; reckon/crew/prompts/plan_design_review.md adds the 'Every instance of a type, not the same pass' section and the matching emission note.\nVERDICT done_when: the done_when names a test asserting the loaded design-review prompt carries the instruction; tests/test_plan_review_prompt.py adds test_design_review_prompt_asks_for_every_instance_of_a_finding and the run's gate.log records it green.\nVERDICT write_paths: the declared scope is the prompt, the prompt-contract test and the evidence fragment; the diff's three files all lie inside it.\nVERDICT manifest: read; it records gate tests/test_plan_review_prompt.py 9 passed EXIT=0 and negative control 1 failed EXIT=1, with gate.log and negative_control.log paths.\nVERDICT diff: read commit d9c0b5a8c against bd6b700b7; three files changed, all inside the declared write paths, no other path touched.\nCALL_SITES: reckon/crew/recovery.py\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/prompts/plan_design_review.md states 'you search for every instance of that type in the same pass and list them all under one finding', which is the goal verbatim.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when test clause is measured by tests/test_plan_review_prompt.py and recorded in the run's own gate.log, but the reviewed manifest names no baseline_suite/after_suite pair so the added-failure count is unmeasured rather than zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three files in the diff (prompt, test, evidence fragment) lie inside the manifest's declared write paths and nothing outside them changed.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_plan_review_prompt.py fails if the census clause is deleted, shown by the run's own negative control which reddens exactly that case (1 failed, 8 passed, EXIT=1).\nSCORE fit: 19\nJUSTIFICATION fit: the new section in reckon/crew/prompts/plan_design_review.md follows the file's prose-section idiom and the added case follows tests/test_plan_review_prompt.py's structure, introducing no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the prompt that already owns the design-review instruction; a search over reckon/crew and reckon/crew/prompts found no other census clause, so nothing is forked.\n",
+  "review_run_id": "r-20261006T064258588062-review-of-review-prompt-asks-for-every-instance",
+  "reviewed_base_sha": "bd6b700b7a3a01da285a5900667c71ecd2cf626e",
+  "reviewed_head_sha": "d9c0b5a8c5a7807b26e5f2ec62b677a12cb4460f",
+  "reviewed_run_id": "r-20261006T063703708839-review-prompt-asks-for-every-instance",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T06:49:52.176595+00:00",
+  "total": 116
+}

@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: gate/base-xdist7.log carries ERROR tests/conftest.py::test_temp_config_home and gate/head-xdist7.log carries the same single id, so the head adds no failure id.",
+  "backend": "sonnet",
+  "base_log_revision": "4256153f281ea51f84631cebd40065d0ebeb9810",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/runs.py:_publish_watch_stream",
+    "reckon/crew/runs.py:_run_obligation_sweep",
+    "reckon/crew/runs.py:_publish_obligation_snapshots",
+    "reckon/crew/obligations.py:_sub_floor_items_by_session"
+  ],
+  "completed_at": "2026-10-02T12:30:54.299Z",
+  "dispatched_at": "2026-10-02T12:14:59Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "370",
+      "severity": "follow-on",
+      "text": "follow-on: the rename to _held_worktrees_by_session and the review-existence guard at :518 are the node's own changes to a file outside its declared fence and absent from the manifest's changed_paths, so the run's exclusive-scope record does not match what it landed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T204424733309-the-producer-publishes-the-snapshot/manifest.md",
+      "line": "13",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite failure_ids array embeds an annotation in the id slot, so the head's added-failure count had to be derived from gate/head-xdist7.log rather than read from the manifest JSON."
+    }
+  ],
+  "head_log_revision": "2f04353a96b1b6f984d093572a51a4ad3a87c496",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit over the node's commits; it adds obligation_snapshot.py (642 lines), wires the producer sweep in runs.py, refactors obligations.py to slice per session and resolves a merge of origin/main, and adds the eleven-case test file and the evidence fragment.",
+    "done_when": "plan \u00a72's three cases are tests/test_obligations_snapshot_is_published.py:163 (a pointer transition in the snapshot by the next explicitly-driven sweep), :194 (the snapshot equals obligations() over unmodified files) and :229 (a writer stopped between the temp file and the rename leaves the previous snapshot whole), and all three pass in my run of the file.",
+    "goal": "the node's goal is plan \u00a72, that the per-project watch producer publishes each live follower session's obligations snapshot; reckon/crew/runs.py:1609 _publish_obligation_snapshots selects the list_followers rows whose live field is set and reckon/crew/runs.py:1637 calls obligation_snapshot.sweep, which writes each session's snapshot atomically.",
+    "manifest": "read; status complete with commits, changed_paths, landing, tests, test_logs, negative_control_log and both arms' JSON, but its changed_paths omits reckon/crew/obligations.py and its after_suite failure_ids carries an annotation in the id slot.",
+    "write_paths": "the manifest declares reckon/crew/obligation_snapshot.py, reckon/crew/runs.py, tests/test_obligations_snapshot_is_published.py, the evidence fragment and a figures directory, but git diff 3fadeb60e..45294ad33 also changes reckon/crew/obligations.py, which none of them name."
+  },
+  "justifications": {
+    "durability": "tests/test_obligations_snapshot_is_published.py:229 fails if the write is not atomic (the injected replace raises and the previous snapshot is asserted unchanged), :163 and :194 fail if a transition or the derivation is dropped, and the negative control reddens the stdlib-only import guard at :56.",
+    "evidence": "the manifest records both arms' summary lines and log paths under gate/, the negative control log shows a bare EXIT=1, and gate/head-xdist7.log adds no failure id over gate/base-xdist7.log; I re-ran the eleven-case file to 11 passed.",
+    "fit": "reckon/crew/obligation_snapshot.py follows the surrounding reckon/crew idiom with a stdlib-only import surface and no plan labels, and the evidence fragment is a well-formed r-note page with plan-verifies metadata.",
+    "goal_fidelity": "reckon/crew/runs.py:1637 publishes each live session's snapshot through obligation_snapshot.sweep with the required producer identity, byte stream offset and per-file state_dirs, meeting all three of plan \u00a72's done-whens.",
+    "scope_discipline": "git diff 3fadeb60e..45294ad33 changes reckon/crew/obligations.py:370 and reckon/crew/obligations.py:518, which neither the manifest's changed_paths nor its declared write paths name."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is plan \u00a72, that the per-project watch producer publishes each live follower session's obligations snapshot; reckon/crew/runs.py:1609 _publish_obligation_snapshots selects the list_followers rows whose live field is set and reckon/crew/runs.py:1637 calls obligation_snapshot.sweep, which writes each session's snapshot atomically.\nVERDICT done_when: plan \u00a72's three cases are tests/test_obligations_snapshot_is_published.py:163 (a pointer transition in the snapshot by the next explicitly-driven sweep), :194 (the snapshot equals obligations() over unmodified files) and :229 (a writer stopped between the temp file and the rename leaves the previous snapshot whole), and all three pass in my run of the file.\nVERDICT write_paths: the manifest declares reckon/crew/obligation_snapshot.py, reckon/crew/runs.py, tests/test_obligations_snapshot_is_published.py, the evidence fragment and a figures directory, but git diff 3fadeb60e..45294ad33 also changes reckon/crew/obligations.py, which none of them name.\nVERDICT manifest: read; status complete with commits, changed_paths, landing, tests, test_logs, negative_control_log and both arms' JSON, but its changed_paths omits reckon/crew/obligations.py and its after_suite failure_ids carries an annotation in the id slot.\nVERDICT diff: read commit by commit over the node's commits; it adds obligation_snapshot.py (642 lines), wires the producer sweep in runs.py, refactors obligations.py to slice per session and resolves a merge of origin/main, and adds the eleven-case test file and the evidence fragment.\nCALL_SITES: reckon/crew/runs.py:_publish_watch_stream, reckon/crew/runs.py:_run_obligation_sweep, reckon/crew/runs.py:_publish_obligation_snapshots, reckon/crew/obligations.py:_sub_floor_items_by_session\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1637 publishes each live session's snapshot through obligation_snapshot.sweep with the required producer identity, byte stream offset and per-file state_dirs, meeting all three of plan \u00a72's done-whens.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records both arms' summary lines and log paths under gate/, the negative control log shows a bare EXIT=1, and gate/head-xdist7.log adds no failure id over gate/base-xdist7.log; I re-ran the eleven-case file to 11 passed.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: git diff 3fadeb60e..45294ad33 changes reckon/crew/obligations.py:370 and reckon/crew/obligations.py:518, which neither the manifest's changed_paths nor its declared write paths name.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_obligations_snapshot_is_published.py:229 fails if the write is not atomic (the injected replace raises and the previous snapshot is asserted unchanged), :163 and :194 fail if a transition or the derivation is dropped, and the negative control reddens the stdlib-only import guard at :56.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligation_snapshot.py follows the surrounding reckon/crew idiom with a stdlib-only import surface and no plan labels, and the evidence fragment is a well-formed r-note page with plan-verifies metadata.\nFINDING reckon/crew/obligations.py:370 follow-on: the rename to _held_worktrees_by_session and the review-existence guard at :518 are the node's own changes to a file outside its declared fence and absent from the manifest's changed_paths, so the run's exclusive-scope record does not match what it landed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T204424733309-the-producer-publishes-the-snapshot/manifest.md:13 follow-on: the after_suite failure_ids array embeds an annotation in the id slot, so the head's added-failure count had to be derived from gate/head-xdist7.log rather than read from the manifest JSON.\n",
+  "review_run_id": "r-20261002T121433914559-review-of-the-producer-publishes-the-snapshot",
+  "reviewed_base_sha": "3fadeb60e5d96c0ec4009c570947145937abbc59",
+  "reviewed_head_sha": "45294ad330d5b66398b8bf36eae44668f39f91fc",
+  "reviewed_run_id": "r-20261001T204424733309-the-producer-publishes-the-snapshot",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T12:28:08.794721+00:00",
+  "total": 88
+}

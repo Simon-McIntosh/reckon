@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T12:57:47.809546+00:00",
+  "findings": [
+    {
+      "file": "docs/plans/a-window-paces-the-lane.html",
+      "line": "97",
+      "text": "the section computed table prints allowances without the pace multiple (2.65 percent, 3.21 percent, 6.94 percent) while the landed module folds the multiple in (2.917, 3.514, 7.639 percent at the documented pair, measured by a direct call at 1411341f), and the landing record at :125 does not reconcile the two, so the section carries two allowances for the same states."
+    },
+    {
+      "file": "tests/test_pace.py",
+      "line": "203",
+      "text": "the parametrized assertion that every allowance carries the multiple pins the returned field to the configured multiple and passes under a mutation that drops the factor from the derivation, so alone it cannot show that the value was produced by it; the arithmetic is covered at :97, :160 and :230 and the node discloses the limit, so this is a coverage caveat rather than a behaviour defect."
+    },
+    {
+      "file": "tests/test_pace.py",
+      "line": "160",
+      "text": "the fence asks each tunable to be asserted a flight key; the tests assert each as a key of a plain config mapping, and the flight schema rejects unknown budget keys one layer before this module reads them, so the clause is asserted in appearance only, and the node records it as its unmet half."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read the three commits against base 8e57bdaa file by file; both source files are new, the two docs are the landing record and the evidence anchor, no plan meta line is touched, and no undeclared path appears.",
+    "done_when": "four states named ahead and asserted (tests/test_pace.py:97, :106, :112, :118); the on-pace equality is computed at :101-102 as policy(CONFIG).pace_multiple * nominal_share(DRAIN), never a hardcoded number, and nominal_share is pinned against WINDOW_HOURS/drain at :85; lead and multiple are asserted separately at :160 and :171 with the other held fixed and cross-checked at :184, so neither can be the constant the other is mistaken for; the ceiling is asserted both ways at :132 and the unread ceiling at :152; the mutation clause reproduces in my replay at 1411341f; the flight-key clause is asserted only in appearance (see the finding at :160).",
+    "goal": "read the goal line and plan section 2; reckon/crew/pace.py:180 derives remaining_budget * multiple / windows per group with the provider ceiling applied last at :188, so the landed change does what the node goal states.",
+    "manifest": "read manifest.md; its commit list, gate log and negative-control log all exist; every claim I re-ran held at 1411341f (19 passed exit 0 in my own run; the declared mutation reddened the same four ids); its one self-reported commit-body over-claim is disclosed there and corrected in 1411341f.",
+    "write_paths": "git diff 8e57bdaa09f4aadf45460ffbb0605b99fda71d3a..1411341f touches exactly the four declared paths, all additions, and the worktree is clean."
+  },
+  "justifications": {
+    "durability": "dropping the multiple reddens tests/test_pace.py:97, :160, :223 and :230 in my own replay at 1411341f; ceiling, unread ceiling, defaults and per-group each have their own case.",
+    "evidence": "the gate tests/test_pace.py is recorded and I reproduced it green and red at 1411341f, but the flight-key clause is asserted only as a key of a plain config mapping at tests/test_pace.py:160-181, which the flight schema cannot carry today.",
+    "fit": "pace.py names its pieces by mechanism (PacePolicy, GroupReading, allowance_for_group, drain_deadline), both new files carry no plan, stage or version identifier, and the payload is built by as_dict as its neighbours do.",
+    "goal_fidelity": "pace.py:180 is the derivation the goal names; one point withheld because the section computed table at docs/plans/a-window-paces-the-lane.html:97-99 prints allowances computed without the pace multiple, unreconciled by the landing record.",
+    "scope_discipline": "diff 8e57bdaa..1411341f contains exactly the four declared write paths, additions only, and the worktree is clean at 1411341f."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal line and plan section 2; reckon/crew/pace.py:180 derives remaining_budget * multiple / windows per group with the provider ceiling applied last at :188, so the landed change does what the node goal states.\nVERDICT done_when: four states named ahead and asserted (tests/test_pace.py:97, :106, :112, :118); the on-pace equality is computed at :101-102 as policy(CONFIG).pace_multiple * nominal_share(DRAIN), never a hardcoded number, and nominal_share is pinned against WINDOW_HOURS/drain at :85; lead and multiple are asserted separately at :160 and :171 with the other held fixed and cross-checked at :184, so neither can be the constant the other is mistaken for; the ceiling is asserted both ways at :132 and the unread ceiling at :152; the mutation clause reproduces in my replay at 1411341f; the flight-key clause is asserted only in appearance (see the finding at :160).\nVERDICT write_paths: git diff 8e57bdaa09f4aadf45460ffbb0605b99fda71d3a..1411341f touches exactly the four declared paths, all additions, and the worktree is clean.\nVERDICT manifest: read manifest.md; its commit list, gate log and negative-control log all exist; every claim I re-ran held at 1411341f (19 passed exit 0 in my own run; the declared mutation reddened the same four ids); its one self-reported commit-body over-claim is disclosed there and corrected in 1411341f.\nVERDICT diff: read the three commits against base 8e57bdaa file by file; both source files are new, the two docs are the landing record and the evidence anchor, no plan meta line is touched, and no undeclared path appears.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: pace.py:180 is the derivation the goal names; one point withheld because the section computed table at docs/plans/a-window-paces-the-lane.html:97-99 prints allowances computed without the pace multiple, unreconciled by the landing record.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate tests/test_pace.py is recorded and I reproduced it green and red at 1411341f, but the flight-key clause is asserted only as a key of a plain config mapping at tests/test_pace.py:160-181, which the flight schema cannot carry today.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: diff 8e57bdaa..1411341f contains exactly the four declared write paths, additions only, and the worktree is clean at 1411341f.\nSCORE durability: 19\nJUSTIFICATION durability: dropping the multiple reddens tests/test_pace.py:97, :160, :223 and :230 in my own replay at 1411341f; ceiling, unread ceiling, defaults and per-group each have their own case.\nSCORE fit: 19\nJUSTIFICATION fit: pace.py names its pieces by mechanism (PacePolicy, GroupReading, allowance_for_group, drain_deadline), both new files carry no plan, stage or version identifier, and the payload is built by as_dict as its neighbours do.\nFINDING docs/plans/a-window-paces-the-lane.html:97 the section computed table prints allowances without the pace multiple (2.65 percent, 3.21 percent, 6.94 percent) while the landed module folds the multiple in (2.917, 3.514, 7.639 percent at the documented pair, measured by a direct call at 1411341f), and the landing record at :125 does not reconcile the two, so the section carries two allowances for the same states.\nFINDING tests/test_pace.py:203 the parametrized assertion that every allowance carries the multiple pins the returned field to the configured multiple and passes under a mutation that drops the factor from the derivation, so alone it cannot show that the value was produced by it; the arithmetic is covered at :97, :160 and :230 and the node discloses the limit, so this is a coverage caveat rather than a behaviour defect.\nFINDING tests/test_pace.py:160 the fence asks each tunable to be asserted a flight key; the tests assert each as a key of a plain config mapping, and the flight schema rejects unknown budget keys one layer before this module reads them, so the clause is asserted in appearance only, and the node records it as its unmet half.\n",
+  "review_run_id": "r-20260921T125747809546-review-of-allowance-tracks-the-week",
+  "reviewed_base_sha": "8e57bdaa09f4aadf45460ffbb0605b99fda71d3a",
+  "reviewed_head_sha": "1411341f6b64201e940ffa05d032345552ca94fc",
+  "reviewed_run_id": "r-20260921T114139745979-allowance-tracks-the-week",
+  "reviewer_head_sha": "f5caf1c068f1b901cdb986c6265ee3bc4809616e",
+  "reviewer_run_id": "r-20260921T125747809546-review-of-allowance-tracks-the-week",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T14:18:07.962940+00:00",
+  "total": 94
+}

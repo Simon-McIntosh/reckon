@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "65f3795c73f1625bd67b9ed6c9c044ad655f993e",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_run_supervisor"
+  ],
+  "completed_at": "2026-10-02T09:15:48.476Z",
+  "dispatched_at": "2026-10-02T08:54:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "8891",
+      "severity": "follow-on",
+      "text": "follow-on: the overall ceiling that bounds a deferred signal is reached only when the manifest is whole, so an incomplete manifest whose mtime rests \u2014 a worker that wrote a done status and a truncated list field and then hung without exiting \u2014 is deferred without bound and holds the supervisor's slot, which the done-when's \"still bounded by an overall ceiling\" clause does not cover."
+    }
+  ],
+  "head_log_revision": "65f3795c73f1625bd67b9ed6c9c044ad655f993e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit-by-commit against base 65f3795c7; three files changed, +354/-32, holding the reaper rewrite, the two new stub tests and the evidence fragment.",
+    "done_when": "the done-when names two new cases in tests/test_a_terminal_worker_exits_within_its_grace.py plus base/head arms and an executed negative control; the manifest records head 19 passed (base 17 passed, zero added failures) and the negative control red, and logs/head-arm.log and logs/base-arm.log confirm those summaries.",
+    "goal": "read the node goal (\"the supervisor never signals a worker while its manifest is incomplete or still being written\"); reckon/crew/dispatch.py:8810 _reap_worker_on_its_terminal_manifest now defers a signal unless the manifest is whole and rested, so the goal is implemented for a still-writing or unclosed-list manifest.",
+    "manifest": "read; it records the reproduction from the truncated as-delivered manifest of run r-20261002T071141388102, base 17 passed, head 19 passed, negative control 2 failed EXIT=1, and names its three gate logs.",
+    "write_paths": "the declared scope is reckon/crew/dispatch.py, tests/test_a_terminal_worker_exits_within_its_grace.py and the evidence fragment; the diff at e9f13206a touches exactly those three files and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the two new assertions are verified by the declared negative control, which reddens both (logs/negative-control.log EXIT=1), so they fail if the change regresses; docked because the ceiling branch at dispatch.py:8891 has no test and no case covers an incomplete manifest that never completes.",
+    "evidence": "the gate tests/test_a_terminal_worker_exits_within_its_grace.py:795 and :876 exercise still-writing and unclosed-list stubs, the manifest records head 19 passed against base 17, and I reproduced _worker_manifest_is_whole returning False on the as-delivered truncated manifest and True on the completed one.",
+    "fit": "the reaper keeps the surrounding poll-and-stat idiom of reckon/crew/dispatch.py:8810 and its new names (_WORKER_MANIFEST_QUIET_SECONDS, _worker_manifest_is_whole) carry no banned label.",
+    "goal_fidelity": "reckon/crew/dispatch.py:8810 defers a signal unless the manifest is whole (dispatch.py:8706) and has rested for _WORKER_MANIFEST_QUIET_SECONDS, meeting the node goal; docked one because an incomplete manifest that never completes is deferred without bound.",
+    "scope_discipline": "the diff at commit e9f13206a touches only reckon/crew/dispatch.py, tests/test_a_terminal_worker_exits_within_its_grace.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/the-grace-never-cuts-a-manifest-write.html, all inside the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (\"the supervisor never signals a worker while its manifest is incomplete or still being written\"); reckon/crew/dispatch.py:8810 _reap_worker_on_its_terminal_manifest now defers a signal unless the manifest is whole and rested, so the goal is implemented for a still-writing or unclosed-list manifest.\nVERDICT done_when: the done-when names two new cases in tests/test_a_terminal_worker_exits_within_its_grace.py plus base/head arms and an executed negative control; the manifest records head 19 passed (base 17 passed, zero added failures) and the negative control red, and logs/head-arm.log and logs/base-arm.log confirm those summaries.\nVERDICT write_paths: the declared scope is reckon/crew/dispatch.py, tests/test_a_terminal_worker_exits_within_its_grace.py and the evidence fragment; the diff at e9f13206a touches exactly those three files and nothing outside them.\nVERDICT manifest: read; it records the reproduction from the truncated as-delivered manifest of run r-20261002T071141388102, base 17 passed, head 19 passed, negative control 2 failed EXIT=1, and names its three gate logs.\nVERDICT diff: read commit-by-commit against base 65f3795c7; three files changed, +354/-32, holding the reaper rewrite, the two new stub tests and the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:_run_supervisor\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:8810 defers a signal unless the manifest is whole (dispatch.py:8706) and has rested for _WORKER_MANIFEST_QUIET_SECONDS, meeting the node goal; docked one because an incomplete manifest that never completes is deferred without bound.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate tests/test_a_terminal_worker_exits_within_its_grace.py:795 and :876 exercise still-writing and unclosed-list stubs, the manifest records head 19 passed against base 17, and I reproduced _worker_manifest_is_whole returning False on the as-delivered truncated manifest and True on the completed one.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff at commit e9f13206a touches only reckon/crew/dispatch.py, tests/test_a_terminal_worker_exits_within_its_grace.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/the-grace-never-cuts-a-manifest-write.html, all inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the two new assertions are verified by the declared negative control, which reddens both (logs/negative-control.log EXIT=1), so they fail if the change regresses; docked because the ceiling branch at dispatch.py:8891 has no test and no case covers an incomplete manifest that never completes.\nSCORE fit: 19\nJUSTIFICATION fit: the reaper keeps the surrounding poll-and-stat idiom of reckon/crew/dispatch.py:8810 and its new names (_WORKER_MANIFEST_QUIET_SECONDS, _worker_manifest_is_whole) carry no banned label.\nFINDING reckon/crew/dispatch.py:8891 follow-on: the overall ceiling that bounds a deferred signal is reached only when the manifest is whole, so an incomplete manifest whose mtime rests \u2014 a worker that wrote a done status and a truncated list field and then hung without exiting \u2014 is deferred without bound and holds the supervisor's slot, which the done-when's \"still bounded by an overall ceiling\" clause does not cover.",
+  "review_run_id": "r-20261002T085347760539-review-of-the-grace-never-cuts-a-manifest-write",
+  "reviewed_base_sha": "65f3795c73f1625bd67b9ed6c9c044ad655f993e",
+  "reviewed_head_sha": "e9f13206a634480147119e0d9f348950a31cc7a2",
+  "reviewed_run_id": "r-20261002T074804768878-the-grace-never-cuts-a-manifest-write",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T09:12:55.607387+00:00",
+  "total": 94
+}

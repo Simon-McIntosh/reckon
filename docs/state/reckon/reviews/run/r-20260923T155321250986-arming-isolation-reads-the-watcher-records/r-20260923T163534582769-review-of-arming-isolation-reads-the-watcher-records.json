@@ -1,0 +1,42 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T16:35:34.582769+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against base 1388f197 \u2014 046d454c rewrites the one test and its docstring (22 insertions, 20 deletions in tests/test_watch_arming_isolation.py), and a1596c45 appends the plan's section 10 note, the cumulative archive anchor s10-arming-isolation-reads-the-watcher-records and the schematic, with the archive file gaining 50 lines and losing none.",
+    "done_when": "all five clauses are met at a1596c45 \u2014 the named test passes (re-run in the reviewed tree: 1 passed in 0.50s), no module under tests/ imports the removed helper, the assertion registers one producer inside the run root and one outside it (tests/test_watch_arming_isolation.py:319-321), both covering modules report 1 failed to 9 passed 1 skipped as counts, and the negative control is executed and logged.",
+    "goal": "the node goal is that the isolation test stops importing the removed watch_producers_under and asserts the record-based binding; tests/test_watch_arming_isolation.py:297 imports watcher_record_pids instead, and a grep over the reviewed tree finds the removed name nowhere under tests/ or reckon/.",
+    "manifest": "read; it records the gate command with its result at both revisions, one log per run, the executed negative control with its mutation, and the reasoning for leaving the record reader itself untouched.",
+    "write_paths": "the declared fence is tests/test_watch_arming_isolation.py, tests/conftest.py, docs/evidence/archive/a-follower-outlives-its-monitor-landed.html, docs/figures/a-follower-outlives-its-monitor and docs/plans/a-follower-outlives-its-monitor.html; the four paths changed across 046d454c and a1596c45 all lie inside it, and the declared tests/conftest.py is byte-unchanged."
+  },
+  "justifications": {
+    "durability": "the recorded negative control at logs/negative_control.log:2 reddens the binding assertion at tests/test_watch_arming_isolation.py:321 when the reader is widened past the queried root, so the exclusion half is falsifiable, but the record there is synthesised by the test rather than written by a producer and the home each result carries is derived from where the reader found it, so the writer half rests on the sibling module inside the same gate.",
+    "evidence": "each gate log opens with revision, tree and command (logs/baseline_suite.log:1-3, logs/after_suite.log:1-3) and their summaries read 1 failed, 8 passed, 1 skipped at 1388f197 and 9 passed, 1 skipped at a1596c45, and my re-run of the named test in the reviewed tree passed in 0.50s.",
+    "fit": "the rewrite follows the module's idiom \u2014 tmp_path, subprocess, a finally that reaps and removes the foreign home at tests/test_watch_arming_isolation.py:323-327 \u2014 and introduces no plan, sprint, ticket or version identifier, though the RECKON_HOME passed at line 307 is now vestigial since the binding is read from where the record lies on disk.",
+    "goal_fidelity": "tests/test_watch_arming_isolation.py:297 calls watcher_record_pids and lines 319-321 assert the record's home as the binding, with no remaining reference to watch_producers_under anywhere in that tree.",
+    "scope_discipline": "every one of the four paths in 1388f197..a1596c45 lies inside the node's declared write paths, and the plan HTML gained the landed note alone, with no meta scalar touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the isolation test stops importing the removed watch_producers_under and asserts the record-based binding; tests/test_watch_arming_isolation.py:297 imports watcher_record_pids instead, and a grep over the reviewed tree finds the removed name nowhere under tests/ or reckon/.\nVERDICT done_when: all five clauses are met at a1596c45 \u2014 the named test passes (re-run in the reviewed tree: 1 passed in 0.50s), no module under tests/ imports the removed helper, the assertion registers one producer inside the run root and one outside it (tests/test_watch_arming_isolation.py:319-321), both covering modules report 1 failed to 9 passed 1 skipped as counts, and the negative control is executed and logged.\nVERDICT write_paths: the declared fence is tests/test_watch_arming_isolation.py, tests/conftest.py, docs/evidence/archive/a-follower-outlives-its-monitor-landed.html, docs/figures/a-follower-outlives-its-monitor and docs/plans/a-follower-outlives-its-monitor.html; the four paths changed across 046d454c and a1596c45 all lie inside it, and the declared tests/conftest.py is byte-unchanged.\nVERDICT manifest: read; it records the gate command with its result at both revisions, one log per run, the executed negative control with its mutation, and the reasoning for leaving the record reader itself untouched.\nVERDICT diff: read both commits against base 1388f197 \u2014 046d454c rewrites the one test and its docstring (22 insertions, 20 deletions in tests/test_watch_arming_isolation.py), and a1596c45 appends the plan's section 10 note, the cumulative archive anchor s10-arming-isolation-reads-the-watcher-records and the schematic, with the archive file gaining 50 lines and losing none.\nCALL_SITES: none\nREVIEWED_BASE_SHA: 1388f19755367c98e5fd00f4cb4db789e45ec0e1\nREVIEWED_HEAD_SHA: a1596c451413ae41fcddb163d0fb07631e69b1d4\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_watch_arming_isolation.py:297 calls watcher_record_pids and lines 319-321 assert the record's home as the binding, with no remaining reference to watch_producers_under anywhere in that tree.\nSCORE evidence: 19\nJUSTIFICATION evidence: each gate log opens with revision, tree and command (logs/baseline_suite.log:1-3, logs/after_suite.log:1-3) and their summaries read 1 failed, 8 passed, 1 skipped at 1388f197 and 9 passed, 1 skipped at a1596c45, and my re-run of the named test in the reviewed tree passed in 0.50s.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the four paths in 1388f197..a1596c45 lies inside the node's declared write paths, and the plan HTML gained the landed note alone, with no meta scalar touched.\nSCORE durability: 17\nJUSTIFICATION durability: the recorded negative control at logs/negative_control.log:2 reddens the binding assertion at tests/test_watch_arming_isolation.py:321 when the reader is widened past the queried root, so the exclusion half is falsifiable, but the record there is synthesised by the test rather than written by a producer and the home each result carries is derived from where the reader found it, so the writer half rests on the sibling module inside the same gate.\nSCORE fit: 18\nJUSTIFICATION fit: the rewrite follows the module's idiom \u2014 tmp_path, subprocess, a finally that reaps and removes the foreign home at tests/test_watch_arming_isolation.py:323-327 \u2014 and introduces no plan, sprint, ticket or version identifier, though the RECKON_HOME passed at line 307 is now vestigial since the binding is read from where the record lies on disk.",
+  "review_run_id": "r-20260923T163534582769-review-of-arming-isolation-reads-the-watcher-records",
+  "reviewed_base_sha": "1388f19755367c98e5fd00f4cb4db789e45ec0e1",
+  "reviewed_head_sha": "a1596c451413ae41fcddb163d0fb07631e69b1d4",
+  "reviewed_run_id": "r-20260923T155321250986-arming-isolation-reads-the-watcher-records",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T17:10:40.287905+00:00",
+  "total": 93
+}

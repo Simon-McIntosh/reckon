@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 9,
+  "added_failure_ids": [
+    "tests/test_cited_identifier_resolves.py::test_a_citation_naming_a_tag_is_admitted",
+    "tests/test_cited_identifier_resolves.py::test_a_full_commit_sha_that_resolves_is_admitted",
+    "tests/test_cited_identifier_resolves.py::test_an_abbreviated_commit_sha_that_resolves_is_admitted",
+    "tests/test_cited_identifier_resolves.py::test_the_refusal_turns_on_resolvability_and_not_on_the_spelling",
+    "tests/test_crew_session_delivery.py::test_a_scoped_follower_receives_only_the_runs_its_session_dispatched",
+    "tests/test_follower_prints_only_policy_rows.py::test_a_noise_pair_prints_nothing_through_the_followers_own_rows",
+    "tests/test_promotion_stages_its_one_run_file.py::test_complete_commits_one_run_file_per_promotion[False]",
+    "tests/test_promotion_stages_its_one_run_file.py::test_complete_commits_one_run_file_per_promotion[True]",
+    "tests/test_review_store_reads_and_fences_by_head.py::test_a_refusal_names_two_revisions_and_never_one_twice"
+  ],
+  "added_failures_note": "total capped at 5: the reviewed run added 9 failing test(s) not retired by name (tests/test_cited_identifier_resolves.py::test_a_citation_naming_a_tag_is_admitted, tests/test_cited_identifier_resolves.py::test_a_full_commit_sha_that_resolves_is_admitted, tests/test_cited_identifier_resolves.py::test_an_abbreviated_commit_sha_that_resolves_is_admitted, tests/test_cited_identifier_resolves.py::test_the_refusal_turns_on_resolvability_and_not_on_the_spelling, tests/test_crew_session_delivery.py::test_a_scoped_follower_receives_only_the_runs_its_session_dispatched, tests/test_follower_prints_only_policy_rows.py::test_a_noise_pair_prints_nothing_through_the_followers_own_rows, tests/test_promotion_stages_its_one_run_file.py::test_complete_commits_one_run_file_per_promotion[False], tests/test_promotion_stages_its_one_run_file.py::test_complete_commits_one_run_file_per_promotion[True], tests/test_review_store_reads_and_fences_by_head.py::test_a_refusal_names_two_revisions_and_never_one_twice)",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/promotion.py:_run_review_tier",
+    "reckon/crew/promotion.py:_require_review_waiver",
+    "reckon/crew/promotion.py:_review_changed_scope",
+    "reckon/crew/promotion.py:_manifest_repository_paths",
+    "reckon/crew/recovery.py:select_review_for_head",
+    "reckon/review_tiers.py:review_tier",
+    "reckon/path_classes.py:path_class"
+  ],
+  "completed_at": "2026-09-28T20:32:11.982Z",
+  "dispatched_at": "2026-09-28T20:03:58Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T192622442256-review-tier-suite-fallout/manifest.md",
+      "line": "10",
+      "text": "the tests: line records `env -C <worktree> PYTHONPATH=<worktree> python -m pytest ...`, two unsubstituted placeholders, so the field cannot be re-run as written and reads as a template where the schema demands the command that actually ran."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T192622442256-review-tier-suite-fallout/manifest.md",
+      "line": "17",
+      "text": "calls the two contention artefacts \"base-arm\" while both ids appear only in the head arm's failure list (suite-head-ce2ac203.log:4623 and :4679) and nowhere in suite-base-0805d391.log, so a reader who opens the base arm to check finds neither id and the added-count accounting stops reading."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against c35032b4; ce2ac203 changes three fixtures' declared scopes and drops one stale flag (tests/test_crew_test_role.py:183, tests/test_promotion_never_amends_its_commit.py:72, tests/test_a_short_commit_list_is_reported.py:311) and 1d96c1e7 adds only the fragment and the figure; no assertion is deleted or weakened.",
+    "done_when": "the done-when asks for a two-arm full-suite measurement with named revisions and FAILED ids, a table of every added id, and no failing id added by the head arm; both arms are on disk with revision, tree, command, module.__file__ and cwd on their header lines (suite-base-0805d391.log:1-5, suite-head-ce2ac203.log:1-5) and as armed JSON (base-armed.json, head-armed.json), but nine ids are added rather than none and the tests: line (manifest.md:10) carries two unsubstituted <worktree> placeholders.",
+    "goal": "the goal is to reconcile the seven tests the review-tier gate turned red; the landed diff rewrites exactly the three fixtures those cases read, the seven ids appear in neither arm's failure list (suite-base-0805d391.log, suite-head-ce2ac203.log), and the reviewed node's own runs show 7 failed / 20 passed over the three fixtures before the repair (stream.jsonl:383) and 27 passed after it (stream.jsonl:4850, manifest.md:10).",
+    "manifest": "read in full; it records both arms, the nine added ids, the seven out-of-fence follow-ons with their files and causes, and the two contention artefacts, but the per-id table the fence asks for in the manifest is carried by the fragment it names at manifest.md:16 instead of by the manifest itself.",
+    "write_paths": "the fence names three test files plus the fragment and the figures directory; all five paths of the base..head diff are inside it (git diff --stat c35032b4 1d96c1e7: five files, 162 insertions, 4 deletions)."
+  },
+  "justifications": {
+    "durability": "the repaired cases red at the pre-repair head on the refusal the stream quotes (\"run 'r-release' is classified scoring because no complete independent review is stored\", stream.jsonl:1228) and pass at the repaired head, so each fails if the tier contract regresses.",
+    "evidence": "both arms are on disk with revision, tree, module.__file__ and cwd on their header lines and their FAILED ids in base-armed.json and head-armed.json, though the tests: line names a template rather than the command that ran.",
+    "fit": "the added comments state the empty-scope mechanism in the surrounding fixtures' idiom (tests/test_promotion_never_amends_its_commit.py:68-71) and introduce no banned name.",
+    "goal_fidelity": "the three edited fixtures now resolve to tier none (reckon/review_tiers.py:97 through reckon/path_classes.py:81), which is the contract the seven cases were refused against, and the repaired cases are green at the repaired head.",
+    "scope_discipline": "every path in the diff is one of the five declared fence entries, and the second commit is docs-only (git diff --stat ce2ac203 1d96c1e7: two files, 145 insertions)."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: c35032b4313d59cfb40143ff8aef6fb1164dcbec\nreviewed_head_sha: 1d96c1e76d418c7f32382c5c5c2bf564b80f8f3c\nVERDICT goal: the goal is to reconcile the seven tests the review-tier gate turned red; the landed diff rewrites exactly the three fixtures those cases read, the seven ids appear in neither arm's failure list (suite-base-0805d391.log, suite-head-ce2ac203.log), and the reviewed node's own runs show 7 failed / 20 passed over the three fixtures before the repair (stream.jsonl:383) and 27 passed after it (stream.jsonl:4850, manifest.md:10).\nVERDICT done_when: the done-when asks for a two-arm full-suite measurement with named revisions and FAILED ids, a table of every added id, and no failing id added by the head arm; both arms are on disk with revision, tree, command, module.__file__ and cwd on their header lines (suite-base-0805d391.log:1-5, suite-head-ce2ac203.log:1-5) and as armed JSON (base-armed.json, head-armed.json), but nine ids are added rather than none and the tests: line (manifest.md:10) carries two unsubstituted <worktree> placeholders.\nVERDICT write_paths: the fence names three test files plus the fragment and the figures directory; all five paths of the base..head diff are inside it (git diff --stat c35032b4 1d96c1e7: five files, 162 insertions, 4 deletions).\nVERDICT manifest: read in full; it records both arms, the nine added ids, the seven out-of-fence follow-ons with their files and causes, and the two contention artefacts, but the per-id table the fence asks for in the manifest is carried by the fragment it names at manifest.md:16 instead of by the manifest itself.\nVERDICT diff: read commit by commit against c35032b4; ce2ac203 changes three fixtures' declared scopes and drops one stale flag (tests/test_crew_test_role.py:183, tests/test_promotion_never_amends_its_commit.py:72, tests/test_a_short_commit_list_is_reported.py:311) and 1d96c1e7 adds only the fragment and the figure; no assertion is deleted or weakened.\nCALL_SITES: reckon/crew/promotion.py:_run_review_tier, reckon/crew/promotion.py:_require_review_waiver, reckon/crew/promotion.py:_review_changed_scope, reckon/crew/promotion.py:_manifest_repository_paths, reckon/crew/recovery.py:select_review_for_head, reckon/review_tiers.py:review_tier, reckon/path_classes.py:path_class\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the three edited fixtures now resolve to tier none (reckon/review_tiers.py:97 through reckon/path_classes.py:81), which is the contract the seven cases were refused against, and the repaired cases are green at the repaired head.\nSCORE evidence: 17\nJUSTIFICATION evidence: both arms are on disk with revision, tree, module.__file__ and cwd on their header lines and their FAILED ids in base-armed.json and head-armed.json, though the tests: line names a template rather than the command that ran.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is one of the five declared fence entries, and the second commit is docs-only (git diff --stat ce2ac203 1d96c1e7: two files, 145 insertions).\nSCORE durability: 18\nJUSTIFICATION durability: the repaired cases red at the pre-repair head on the refusal the stream quotes (\"run 'r-release' is classified scoring because no complete independent review is stored\", stream.jsonl:1228) and pass at the repaired head, so each fails if the tier contract regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the added comments state the empty-scope mechanism in the surrounding fixtures' idiom (tests/test_promotion_never_amends_its_commit.py:68-71) and introduce no banned name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T192622442256-review-tier-suite-fallout/manifest.md:10 the tests: line records `env -C <worktree> PYTHONPATH=<worktree> python -m pytest ...`, two unsubstituted placeholders, so the field cannot be re-run as written and reads as a template where the schema demands the command that actually ran.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T192622442256-review-tier-suite-fallout/manifest.md:17 calls the two contention artefacts \"base-arm\" while both ids appear only in the head arm's failure list (suite-head-ce2ac203.log:4623 and :4679) and nowhere in suite-base-0805d391.log, so a reader who opens the base arm to check finds neither id and the added-count accounting stops reading.",
+  "review_run_id": "r-20260928T200341896314-review-of-review-tier-suite-fallout",
+  "reviewed_base_sha": "c35032b4313d59cfb40143ff8aef6fb1164dcbec",
+  "reviewed_head_sha": "1d96c1e76d418c7f32382c5c5c2bf564b80f8f3c",
+  "reviewed_run_id": "r-20260928T192622442256-review-tier-suite-fallout",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T20:29:15.000259+00:00",
+  "total": 5
+}

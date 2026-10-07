@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T19:13:51.604Z",
+  "dispatched_at": "2026-10-05T19:07:39Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:875",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must either give the machinery-region test an instrument like the heading-walk rule and require every site (including the moved `_is_structural_boundary`) to converge on the predicate in `reckon/_plan_html.py`, or its single-home done-when is unachievable.",
+      "text": "\u00a717 claims the machinery-region test is \"spelled three times today\" (the span parser, the prose parser, and `mcp_views._inside_structured_region`) and its done-when requires `grep -rn '\"data-reckon\"' reckon/` to report \"an attribute test in exactly one function\", but the literal `\"data-reckon\"` occurs in at least eight attribute tests across six functions in four files \u2014 reckon/_plan_html.py:67/:70/:74, reckon/_store.py:827/:883/:914, reckon/mcp_views.py:2075/:2101/:2159/:2162/:2232, reckon/crew/plan_review.py:204 \u2014 and `_is_structural_boundary` (reckon/_store.py:883), which \u00a717 itself moves into `_plan_html.py`, is left spelling `_attr(open_tag, \"data-reckon\") not in (None, \"section\")` with no requirement to call the new predicate; \u00a717's own doctrine that a hand list \"was an undercount at every review\" applies to this census too",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/doccheck.py:116",
+      "id": "duplicate_owner-2",
+      "reason": "the plan must name doccheck's constant as the one remaining home to fold or exempt, so the single-home done-when matches what the package actually contains.",
+      "text": "\u00a717's done-when for the card class literal \"requires the literal in `reckon/_plan_html.py` alone\" after pointing \"every site that grep reports\" at `landed_section_ids` in its new home, but `reckon/doccheck.py` holds it as a named constant `_LANDED_SECTION_CLASS = \"section-landed\"` and tests it directly at doccheck.py:667 (`tag == \"section\" and _LANDED_SECTION_CLASS in classes.split()`), a soup-tag consumer that the html_text-taking `landed_section_ids` does not serve, and `reckon/_store.py:881` and `:1051` both spell the literal inside helpers the plan moves into `_plan_html.py`; the plan's \"two places\" is again a hand list",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "27b9e2b516d447eaaf24f099c9fbc3e93b9ec97d8abcec1668daa2bff93beef2",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 115,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T190704320110-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "ba16fff53e662c23a94d92479c907f55026cd775",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 each section adds one reader/function over an existing private mechanism rather than a spread of wrappers: \u00a717 exposes one public `plan_headings` over the private parser and makes `structured_section_spans` a projection of it (reckon/_plan_html.py:44-103); \u00a716 adds one private `_section_digests` consumed by `plan_fingerprint`; \u00a718 adds one public classification predicate beneath the roadmap and document check. The net surface trend is consolidation.",
+    "duplicate_owner": "a finding \u2014 \u00a717 consolidates the machinery-region (`data-reckon`) attribute test onto one predicate in `reckon/_plan_html.py` but censuses it as \"spelled three times today\" when the code spells it in at least eight places across six functions, and it does not require the `reckon/_store.py` sites it is simultaneously moving to call the predicate.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; \u00a716, \u00a717 and \u00a718 add only to public_definitions (+1, +2, +1 = four per \u00a716's own tally) and each names in its own text what it merges or why nothing can be retired (\u00a716 \"nothing is retired, because the identity digest and the prose walk keep their names\"; \u00a717 \"no public definition can be retired, because the two public readers \u2026 keep callers\"; \u00a718 \"nothing public can be retired, because the readers \u2026 keep callers\"), and \u00a716 states no refusal family is added.",
+    "reuse_search": "pass \u2014 the plan searched the codebase and cites the mechanisms it extends by name and file; every symbol it claims to reuse exists: the raw-text section parser `_StructuredSectionSpanParser`/`structured_section_spans` (reckon/_plan_html.py:44,94), the landed-card recogniser `landed_section_ids` (reckon/_store.py:1075), the tag expression `_TAG_RE` its `strip_tags` would wrap (reckon/_plan_html.py:1506, used at :1525), the identity derivation `section_record_id`/`section_id_candidates` (reckon/crew/routing.py:224,243), the AST census it adds a rule to (reckon/interface_counts.py:74,97), and all six `== \"implementable\"` readers (\u00a718's census reproduces exactly: roadmap.py:122, followup_pointers.py:150, doccheck.py:1031, _schema.py:812, promotion.py:7252, _plan_html.py:353). A search for its proposed new names (`strip_tags`, `section_digests`, `plan_headings`) returns nothing, so it adds rather than rebuilds.",
+    "thin_wrapper": "pass \u2014 the two thin layers the plan introduces each carry the required justification: `strip_tags` is stated as exposing the module's existing `_TAG_RE` expression across the package boundary \"rather than adding a second one beside it\" (reckon/_plan_html.py:1506), and the retained `structured_section_spans` is justified by external callers that keep their contract (reckon/_plan_html.py:94)."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.803182+00:00"
+}

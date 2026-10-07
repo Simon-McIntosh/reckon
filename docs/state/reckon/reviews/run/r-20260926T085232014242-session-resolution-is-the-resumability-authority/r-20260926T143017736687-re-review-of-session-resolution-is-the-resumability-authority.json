@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 11,
+  "call_sites": [
+    "reckon/cli.py:3148",
+    "reckon/crew/directory.py:70",
+    "reckon/crew/obligations.py:99",
+    "reckon/crew/promotion.py:2743",
+    "reckon/crew/promotion.py:3536",
+    "reckon/crew/query.py:166",
+    "reckon/crew/query.py:211",
+    "reckon/crew/runs.py:1019",
+    "reckon/crew/resumption.py:1113",
+    "reckon/flight.py:1574",
+    "reckon/mcp_views.py:1221"
+  ],
+  "completed_at": "2026-09-26T15:30:57.513Z",
+  "dispatched_at": "2026-09-26T14:30:41Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 11 production call site(s)",
+    "diff": "read commit by commit; 53648e78 adds the mechanism comment at recovery.py:4181-4187 and the guard at recovery.py:4188-4189, plus the case at tests/test_crew_recover.py:852, and 2abc2f11 records the finding and the repair in the evidence archive and the plan comment while touching no plan meta line.",
+    "done_when": "the done_when names tests/test_crew_recover.py, a temporary config home with the real crew home asserted untouched, a base arm, the four-file gate with zero added failures and the ruff deltas; the manifest records all of it and the re-run gate, whose twelve failure ids I diffed against the base arm's twelve and found identical (213 passed at base, 216 at the repaired head), and I ran tests/test_crew_recover.py myself at 2abc2f11 (21 passed).",
+    "goal": "the node's goal is that every resumability reader in crew recovery keys on the resolved session id rather than the raw pointer field, and the prior review's promotion-blocking finding is resolved at this head: recovery.py:4188-4189 keeps an action that already composes a resume, so the derived-manifest abandoned arm's own advice survives while recovery.py:4190-4193 still names the surviving session and the verb reads resume, and my grep of the head module finds no raw session_id read on the resumability paths.",
+    "manifest": "read at the report store for this node; it states the repair, the case red at the pre-repair head, the re-run gate, the re-executed negative control and the ruff arms, and it names its eight logs on disk, each header line naming the revision, tree, imported module file and resolved cwd.",
+    "write_paths": "read the manifest's declared write paths; git diff 3e6115fb..2abc2f11 touches exactly reckon/crew/recovery.py, tests/test_crew_recover.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/figures/crew-observability-truth/stop-reads-the-resolved-session.svg and docs/plans/crew-observability-truth.html, and nothing else."
+  },
+  "justifications": {
+    "durability": "removing the guard in a scratch copy of the head reddens tests/test_crew_recover.py:876, the assertion the pre-repair head fails, while the stopped and no-session cases in the same selection stay green (3 passed unmutated against 1 failed, 2 passed mutated).",
+    "evidence": "the base and repaired-head gate logs carry FAILED lines I diffed to identical twelve-id sets and the added case is red in my own run against the pre-repair module at /tmp/rr-prior and green at the head.",
+    "fit": "the guard reuses the startswith(\"reckon crew resume\") idiom already present at reckon/crew/recovery.py:4173 for the same purpose, with a mechanism comment, and the added case and its fixture follow the file's existing idiom.",
+    "goal_fidelity": "reckon/crew/recovery.py:4188 preserves the derived-manifest arm's advice while recovery.py:4190-4193 still names the resolved session and the verb stays resume, which is the exact loss the prior review found against recovery.py:4178 at 993e6e37.",
+    "scope_discipline": "git diff 3e6115fb..2abc2f11 changes only the run's five declared write paths, and the repair narrows the earlier change rather than extending it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every resumability reader in crew recovery keys on the resolved session id rather than the raw pointer field, and the prior review's promotion-blocking finding is resolved at this head: recovery.py:4188-4189 keeps an action that already composes a resume, so the derived-manifest abandoned arm's own advice survives while recovery.py:4190-4193 still names the surviving session and the verb reads resume, and my grep of the head module finds no raw session_id read on the resumability paths.\nVERDICT done_when: the done_when names tests/test_crew_recover.py, a temporary config home with the real crew home asserted untouched, a base arm, the four-file gate with zero added failures and the ruff deltas; the manifest records all of it and the re-run gate, whose twelve failure ids I diffed against the base arm's twelve and found identical (213 passed at base, 216 at the repaired head), and I ran tests/test_crew_recover.py myself at 2abc2f11 (21 passed).\nVERDICT write_paths: read the manifest's declared write paths; git diff 3e6115fb..2abc2f11 touches exactly reckon/crew/recovery.py, tests/test_crew_recover.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/figures/crew-observability-truth/stop-reads-the-resolved-session.svg and docs/plans/crew-observability-truth.html, and nothing else.\nVERDICT manifest: read at the report store for this node; it states the repair, the case red at the pre-repair head, the re-run gate, the re-executed negative control and the ruff arms, and it names its eight logs on disk, each header line naming the revision, tree, imported module file and resolved cwd.\nVERDICT diff: read commit by commit; 53648e78 adds the mechanism comment at recovery.py:4181-4187 and the guard at recovery.py:4188-4189, plus the case at tests/test_crew_recover.py:852, and 2abc2f11 records the finding and the repair in the evidence archive and the plan comment while touching no plan meta line.\nCALL_SITES: reckon/cli.py:3148, reckon/crew/directory.py:70, reckon/crew/obligations.py:99, reckon/crew/promotion.py:2743, reckon/crew/promotion.py:3536, reckon/crew/query.py:166, reckon/crew/query.py:211, reckon/crew/runs.py:1019, reckon/crew/resumption.py:1113, reckon/flight.py:1574, reckon/mcp_views.py:1221\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:4188 preserves the derived-manifest arm's advice while recovery.py:4190-4193 still names the resolved session and the verb stays resume, which is the exact loss the prior review found against recovery.py:4178 at 993e6e37.\nSCORE evidence: 19\nJUSTIFICATION evidence: the base and repaired-head gate logs carry FAILED lines I diffed to identical twelve-id sets and the added case is red in my own run against the pre-repair module at /tmp/rr-prior and green at the head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 3e6115fb..2abc2f11 changes only the run's five declared write paths, and the repair narrows the earlier change rather than extending it.\nSCORE durability: 19\nJUSTIFICATION durability: removing the guard in a scratch copy of the head reddens tests/test_crew_recover.py:876, the assertion the pre-repair head fails, while the stopped and no-session cases in the same selection stay green (3 passed unmutated against 1 failed, 2 passed mutated).\nSCORE fit: 18\nJUSTIFICATION fit: the guard reuses the startswith(\"reckon crew resume\") idiom already present at reckon/crew/recovery.py:4173 for the same purpose, with a mechanism comment, and the added case and its fixture follow the file's existing idiom.\n",
+  "review_run_id": "r-20260926T143017736687-re-review-of-session-resolution-is-the-resumability-authority",
+  "reviewed_base_sha": "3e6115fb99660b6934ffb503056800d37cb8d4ce",
+  "reviewed_head_sha": "2abc2f117f05b6d275a89eeed08d06588a273b69",
+  "reviewed_run_id": "r-20260926T085232014242-session-resolution-is-the-resumability-authority",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T15:15:59.519549+00:00",
+  "total": 94
+}

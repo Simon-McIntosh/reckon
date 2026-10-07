@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no head gate log \u2014 after_suite reads \"run by the coordinator at merge\" \u2014 so reckon.crew.review.added_failures_from_gate_logs over its own baseline_suite (gate_base_arm.log, 26 failed / 1927 passed / 1 skipped, EXIT=1) and after_suite pair returns (None, []). The instrument is not blind: the same call over identical arms (gate_base_arm.log against itself) returns (0, []) and with one synthetic FAILED id appended to the base text it returns (1, ['tests/synthetic_control.py::test_added_after_base']). The run's own head arm log, fed in as the head, also returns (0, []) only because it was truncated at 153 lines before any FAILED summary \u2014 a zero from an arm that never reached its summary, which is why no zero is stored here.",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:_record_stream_paths",
+    "reckon/crew/promotion.py:_terminal_stream_data",
+    "reckon/crew/promotion.py:_promotion_terminal_observation",
+    "reckon/ledger.py:repair_completion"
+  ],
+  "completed_at": "2026-09-30T07:08:37.187Z",
+  "dispatched_at": "2026-09-30T06:54:39Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204752689333-stream-enumeration-reuses-metering/manifest.md",
+      "line": "21",
+      "text": "after_suite carries prose instead of the head gate log and the run's own head arm log stops at 153 lines with no summary and no EXIT= line, so the done-when's \"the head adds no failing test id\" was never measured: added_failures_from_gate_logs over this manifest's own baseline_suite and after_suite returns (null, []), and feeding the truncated head arm in as the head returns a clean (0, []) for an arm that never reached its summary, which is the blind zero the unmeasured state exists to prevent."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204752689333-stream-enumeration-reuses-metering/gate_base_arm.log",
+      "line": "1",
+      "text": "the arm's first line spells the revision \"# rev: 24df7b57b36257ded83b6e8ccb10990be3896e2c (base)\" where reckon/crew/review.py:507 reads it only where the header spells the word \"revision\" \u2014 the spelling sibling runs in the same wave use (\"revision: <sha>\") \u2014 so base_log_revision and head_log_revision both come back null and a reader cannot tie either arm's count to the commit it measured without opening the file."
+    },
+    {
+      "file": "tests/test_stream_enumeration_reuses_metering.py",
+      "line": "128",
+      "text": "test_the_shared_helper_delegates asserts that two calls return equal lists, which a private re-implementation that globs the lane changes also satisfies; running this file with both helpers replaced in memory by self-contained copies that never call metering.run_streams left all 11 rows green, so the reuse the node exists to make can be undone with the node's own test file still passing."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 24df7b57b; 6276347c5 replaces the two private walks with a function-local import of metering.run_streams and adds the node test, 1f793ee2b adds the 5-line landing fragment, and no other file changed.",
+    "done_when": "the done-when names tests/test_stream_enumeration_reuses_metering.py and base and head arms over every tests/ file whose AST imports promotion or ledger; the importer file list and the base arm are recorded, but the head arm's own log stops before its summary, so the head half of the measure is unmeasured in the run's own record.",
+    "goal": "the node goal is to route every stream enumeration outside reckon/crew/metering.py through metering.run_streams, and both helpers it names now do \u2014 reckon/crew/promotion.py:2462 and reckon/ledger.py:2615 return metering.run_streams(...) with the base-revision lists preserved \u2014 while the third copy the goal's wording reaches, reckon/crew/directory.py:32, sits outside the node's fence and is named in the manifest's follow_ons rather than routed.",
+    "manifest": "read; every key is filled and negative_control_log is a bare path whose first line repeats the declared mutation verbatim and whose last line is EXIT=1, but after_suite reads \"run by the coordinator at merge\" instead of naming a gate log and the head-arm figure is claimed with no log behind it.",
+    "write_paths": "the declared scope is reckon/crew/promotion.py, reckon/ledger.py, the new node test, one evidence fragment and one figure directory; the two commits change exactly the first three plus docs/evidence/fragments/a-worker-reuses-before-it-writes/stream-enumeration-reuses-metering.html, so the figure is correctly unwritten."
+  },
+  "justifications": {
+    "durability": "the lane-change rows redden when the glob is dropped (negative_control.log, 1 failed, EXIT=1), but replacing both helpers with self-contained copies that never call metering.run_streams left all 11 rows green, so no assertion guards the reuse this node exists to make.",
+    "evidence": "the base arm is recorded at gate_base_arm.log with 26 failed, 1927 passed, 1 skipped and EXIT=1, but the manifest names no head gate log and gate_head_arm.log stops at 153 lines with no summary and no EXIT line, so added_failures_from_gate_logs over the manifest's own pair returns unmeasured.",
+    "fit": "the function-local \"from reckon.crew import metering\" follows the repository's own idiom for reckon.crew submodules (reckon/cli.py:575, :2250) and both the test module name and its symbols carry no plan, sprint or ticket label.",
+    "goal_fidelity": "both fenced helpers delegate at reckon/crew/promotion.py:2462 and reckon/ledger.py:2615 and the node test pins the base lists, but reckon/crew/directory.py:32 still enumerates the same directory set and drops the same lane changes, reported only under follow_ons.",
+    "scope_discipline": "every path in the two commits is inside the manifest's declared write paths, the declared figure directory is correctly unwritten, and the plan's version and modified metas are untouched."
+  },
+  "node": "review-of-stream-enumeration-reuses-metering",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to route every stream enumeration outside reckon/crew/metering.py through metering.run_streams, and both helpers it names now do \u2014 reckon/crew/promotion.py:2462 and reckon/ledger.py:2615 return metering.run_streams(...) with the base-revision lists preserved \u2014 while the third copy the goal's wording reaches, reckon/crew/directory.py:32, sits outside the node's fence and is named in the manifest's follow_ons rather than routed.\nVERDICT done_when: the done-when names tests/test_stream_enumeration_reuses_metering.py and base and head arms over every tests/ file whose AST imports promotion or ledger; the importer file list and the base arm are recorded, but the head arm's own log stops before its summary, so the head half of the measure is unmeasured in the run's own record.\nVERDICT write_paths: the declared scope is reckon/crew/promotion.py, reckon/ledger.py, the new node test, one evidence fragment and one figure directory; the two commits change exactly the first three plus docs/evidence/fragments/a-worker-reuses-before-it-writes/stream-enumeration-reuses-metering.html, so the figure is correctly unwritten.\nVERDICT manifest: read; every key is filled and negative_control_log is a bare path whose first line repeats the declared mutation verbatim and whose last line is EXIT=1, but after_suite reads \"run by the coordinator at merge\" instead of naming a gate log and the head-arm figure is claimed with no log behind it.\nVERDICT diff: read commit by commit against 24df7b57b; 6276347c5 replaces the two private walks with a function-local import of metering.run_streams and adds the node test, 1f793ee2b adds the 5-line landing fragment, and no other file changed.\nCALL_SITES: reckon/crew/promotion.py:_record_stream_paths, reckon/crew/promotion.py:_terminal_stream_data, reckon/crew/promotion.py:_promotion_terminal_observation, reckon/ledger.py:repair_completion\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: both fenced helpers delegate at reckon/crew/promotion.py:2462 and reckon/ledger.py:2615 and the node test pins the base lists, but reckon/crew/directory.py:32 still enumerates the same directory set and drops the same lane changes, reported only under follow_ons.\nSCORE evidence: 13\nJUSTIFICATION evidence: the base arm is recorded at gate_base_arm.log with 26 failed, 1927 passed, 1 skipped and EXIT=1, but the manifest names no head gate log and gate_head_arm.log stops at 153 lines with no summary and no EXIT line, so added_failures_from_gate_logs over the manifest's own pair returns unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the two commits is inside the manifest's declared write paths, the declared figure directory is correctly unwritten, and the plan's version and modified metas are untouched.\nSCORE durability: 15\nJUSTIFICATION durability: the lane-change rows redden when the glob is dropped (negative_control.log, 1 failed, EXIT=1), but replacing both helpers with self-contained copies that never call metering.run_streams left all 11 rows green, so no assertion guards the reuse this node exists to make.\nSCORE fit: 19\nJUSTIFICATION fit: the function-local \"from reckon.crew import metering\" follows the repository's own idiom for reckon.crew submodules (reckon/cli.py:575, :2250) and both the test module name and its symbols carry no plan, sprint or ticket label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204752689333-stream-enumeration-reuses-metering/manifest.md:21 after_suite carries prose instead of the head gate log and the run's own head arm log stops at 153 lines with no summary and no EXIT= line, so the done-when's \"the head adds no failing test id\" was never measured: added_failures_from_gate_logs over this manifest's own baseline_suite and after_suite returns (null, []), and feeding the truncated head arm in as the head returns a clean (0, []) for an arm that never reached its summary, which is the blind zero the unmeasured state exists to prevent.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204752689333-stream-enumeration-reuses-metering/gate_base_arm.log:1 the arm's first line spells the revision \"# rev: 24df7b57b36257ded83b6e8ccb10990be3896e2c (base)\" where reckon/crew/review.py:507 reads it only where the header spells the word \"revision\" \u2014 the spelling sibling runs in the same wave use (\"revision: <sha>\") \u2014 so base_log_revision and head_log_revision both come back null and a reader cannot tie either arm's count to the commit it measured without opening the file.\nFINDING tests/test_stream_enumeration_reuses_metering.py:128 test_the_shared_helper_delegates asserts that two calls return equal lists, which a private re-implementation that globs the lane changes also satisfies; running this file with both helpers replaced in memory by self-contained copies that never call metering.run_streams left all 11 rows green, so the reuse the node exists to make can be undone with the node's own test file still passing.",
+  "review_run_id": "r-20260930T065416284783-review-of-stream-enumeration-reuses-metering",
+  "reviewed_base_sha": "24df7b57b36257ded83b6e8ccb10990be3896e2c",
+  "reviewed_head_sha": "1f793ee2b7ad2f97e9e43093f9322811e79d144a",
+  "reviewed_run_id": "r-20260929T204752689333-stream-enumeration-reuses-metering",
+  "reviewer_run_id": "r-20260930T065416284783-review-of-stream-enumeration-reuses-metering",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T07:03:02.421196+00:00",
+  "total": 85
+}

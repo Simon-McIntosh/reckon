@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: base logs/base-orderA-1.log (rev e7eca9f0) and after logs/fixed-orderA-1.log (rev 3a7781da) each end \"4 passed\" with no FAILED/ERROR line, so the set difference over pytest node ids is zero. The reviewed manifest names its base and after logs under test_logs, not the baseline_suite/after_suite fields the read-time annotation reads, so read_review annotates this run unmeasured.",
+  "added_failures_source": {
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/logs/base-orderA-1.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/logs/fixed-orderA-1.log"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T20:03:01.980Z",
+  "dispatched_at": "2026-09-30T19:49:41Z",
+  "findings": [
+    {
+      "file": "tests/test_server_listens_before_it_watches.py",
+      "line": "212",
+      "text": "the teardown ends by assigning serve._SIGNATURE_TTL_S = 0.0 with no assertion, so the done-when's named teardown check (\"fails the server test if serve._SIGNATURE_TTL_S is not 0.0\") is absent at head; a regression that removes only this restore leaves the 60.0 memo in place and no in-repo test reddens, because the unmodified base arms also ran 4 passed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/logs/base-orderA-1.log",
+      "line": "1",
+      "text": "the base arm's command omits the memoprobe plugin, so it records only \"4 passed\" and neither the tag-inventory outcome nor the serve._SIGNATURE_TTL_S value the done-when required each base run to log; the base failure did not reproduce and the manifest never says so."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/manifest.md",
+      "line": "34",
+      "text": "the manifest presents the modified scratch tree /tmp/asm-repro-base, whose write is deferred until after server.serve_forever() returns, as the base fixture reproducing the defect, while the done-when required measuring the node's own base (e7eca9f0) and this run's own base arms passed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base e7eca9f0 - 83f453e2 adds _THREAD_STOP_S, the join and the thread-alive assertion in _ServedEntryPoint.stop() and takes the memo assignment off monkeypatch; 3a7781da removes a teardown assertion that compared the memo with the 0.0 it had just assigned; e9f88016 adds the evidence fragment; no product source is touched.",
+    "done_when": "the done-when names base and after runs of both files in one process, in both orders, three and five times each, each base run logging the tag-inventory outcome and the _SIGNATURE_TTL_S value after the server fixtures' teardown, a teardown check that fails the server test when the memo is not 0.0, an executed red control and no deleted assertion; the manifest records the five-by-five fixed arms and a scratch control, but the base arms at logs/base-orderA-1.log log neither quantity, the base failure did not reproduce, and the teardown check the done-when names is absent at head.",
+    "goal": "the node's goal is to contain the served-entry-point test's discovery memo write within its own test so no later test in the same process reads a live memo, and tests/test_server_listens_before_it_watches.py:119-125 joins the served thread (bounded by _THREAD_STOP_S) before teardown returns while :206-212 restores serve._SIGNATURE_TTL_S after that join, so the write is ordered inside the test.",
+    "manifest": "read; it names commits 83f453e2, 3a7781da and e9f88016 (each resolves under git cat-file -t) and the mechanism at reckon/serve.py:3397-3399, but it presents the modified scratch tree /tmp/asm-repro-base as the base fixture and never records that the node's own base arms passed.",
+    "write_paths": "the manifest declares tests/test_server_listens_before_it_watches.py, the evidence fragment and a figures directory; git diff e7eca9f0..e9f88016 touches only the test file and the fragment, both inside the declared scope, and git diff e7eca9f0..e9f88016 over reckon/ is empty so no product source changed."
+  },
+  "justifications": {
+    "durability": "the join plus tests/test_server_listens_before_it_watches.py:121 assert not self.thread.is_alive() reddens when the join is removed (the control ends 1 failed, 3 passed, 3 errors), but the memo restore at :212 is a bare assignment with no assertion and the done-when's teardown check is absent, so a regression that drops only the restore leaks undetected.",
+    "evidence": "the fixed arms at logs/fixed-orderA-1.log log the probe teardown ttl=60.0 then 0.0 and end 4 passed in both orders, but the base arms at logs/base-orderA-1.log omit the memoprobe and record only \"4 passed\", so the two quantities the done-when required each base run to log were never taken and the base failure did not reproduce.",
+    "fit": "the fixture change follows the surrounding idiom at tests/test_server_listens_before_it_watches.py:151 and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "tests/test_server_listens_before_it_watches.py:119-121 joins the served thread and asserts it stopped, and :206-212 restores serve._SIGNATURE_TTL_S=0.0 after that join, so the memo write no longer outlives the test.",
+    "scope_discipline": "git diff e7eca9f0..e9f88016 changes tests/test_server_listens_before_it_watches.py and the declared evidence fragment only."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to contain the served-entry-point test's discovery memo write within its own test so no later test in the same process reads a live memo, and tests/test_server_listens_before_it_watches.py:119-125 joins the served thread (bounded by _THREAD_STOP_S) before teardown returns while :206-212 restores serve._SIGNATURE_TTL_S after that join, so the write is ordered inside the test.\nVERDICT done_when: the done-when names base and after runs of both files in one process, in both orders, three and five times each, each base run logging the tag-inventory outcome and the _SIGNATURE_TTL_S value after the server fixtures' teardown, a teardown check that fails the server test when the memo is not 0.0, an executed red control and no deleted assertion; the manifest records the five-by-five fixed arms and a scratch control, but the base arms at logs/base-orderA-1.log log neither quantity, the base failure did not reproduce, and the teardown check the done-when names is absent at head.\nVERDICT write_paths: the manifest declares tests/test_server_listens_before_it_watches.py, the evidence fragment and a figures directory; git diff e7eca9f0..e9f88016 touches only the test file and the fragment, both inside the declared scope, and git diff e7eca9f0..e9f88016 over reckon/ is empty so no product source changed.\nVERDICT manifest: read; it names commits 83f453e2, 3a7781da and e9f88016 (each resolves under git cat-file -t) and the mechanism at reckon/serve.py:3397-3399, but it presents the modified scratch tree /tmp/asm-repro-base as the base fixture and never records that the node's own base arms passed.\nVERDICT diff: read commit by commit against base e7eca9f0 - 83f453e2 adds _THREAD_STOP_S, the join and the thread-alive assertion in _ServedEntryPoint.stop() and takes the memo assignment off monkeypatch; 3a7781da removes a teardown assertion that compared the memo with the 0.0 it had just assigned; e9f88016 adds the evidence fragment; no product source is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_server_listens_before_it_watches.py:119-121 joins the served thread and asserts it stopped, and :206-212 restores serve._SIGNATURE_TTL_S=0.0 after that join, so the memo write no longer outlives the test.\nSCORE evidence: 13\nJUSTIFICATION evidence: the fixed arms at logs/fixed-orderA-1.log log the probe teardown ttl=60.0 then 0.0 and end 4 passed in both orders, but the base arms at logs/base-orderA-1.log omit the memoprobe and record only \"4 passed\", so the two quantities the done-when required each base run to log were never taken and the base failure did not reproduce.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff e7eca9f0..e9f88016 changes tests/test_server_listens_before_it_watches.py and the declared evidence fragment only.\nSCORE durability: 14\nJUSTIFICATION durability: the join plus tests/test_server_listens_before_it_watches.py:121 assert not self.thread.is_alive() reddens when the join is removed (the control ends 1 failed, 3 passed, 3 errors), but the memo restore at :212 is a bare assignment with no assertion and the done-when's teardown check is absent, so a regression that drops only the restore leaks undetected.\nSCORE fit: 19\nJUSTIFICATION fit: the fixture change follows the surrounding idiom at tests/test_server_listens_before_it_watches.py:151 and introduces no name the repository naming rules forbid.\nFINDING tests/test_server_listens_before_it_watches.py:212 the teardown ends by assigning serve._SIGNATURE_TTL_S = 0.0 with no assertion, so the done-when's named teardown check (\"fails the server test if serve._SIGNATURE_TTL_S is not 0.0\") is absent at head; a regression that removes only this restore leaves the 60.0 memo in place and no in-repo test reddens, because the unmodified base arms also ran 4 passed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/logs/base-orderA-1.log:1 the base arm's command omits the memoprobe plugin, so it records only \"4 passed\" and neither the tag-inventory outcome nor the serve._SIGNATURE_TTL_S value the done-when required each base run to log; the base failure did not reproduce and the manifest never says so.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/manifest.md:34 the manifest presents the modified scratch tree /tmp/asm-repro-base, whose write is deferred until after server.serve_forever() returns, as the base fixture reproducing the defect, while the done-when required measuring the node's own base (e7eca9f0) and this run's own base arms passed.",
+  "review_run_id": "r-20260930T194926006582-review-of-a-served-thread-leaves-no-memo-behind",
+  "reviewed_base_sha": "e7eca9f0361b661cc4a435b3a39015497a795688",
+  "reviewed_head_sha": "e9f880161c2fb1e85ad4d311376143083d624c2d",
+  "reviewed_run_id": "r-20260930T183005741612-a-served-thread-leaves-no-memo-behind",
+  "reviewer_run_id": "r-20260930T194926006582-review-of-a-served-thread-leaves-no-memo-behind",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T20:01:29.088530+00:00",
+  "total": 83
+}

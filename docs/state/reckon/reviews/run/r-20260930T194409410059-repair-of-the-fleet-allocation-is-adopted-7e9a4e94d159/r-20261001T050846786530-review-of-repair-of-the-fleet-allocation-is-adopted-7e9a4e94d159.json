@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (revision 7e9a4e94d, 101 passed / 0 failed) and after_suite (revision e72f2641, 103 passed / 0 failed) gate logs; the store's own added_failures_from_gate_logs over those logs returns 0 with no ids",
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/placement.py:_ensure_reservation_locked",
+    "reckon/crew/dispatch.py:resolve_backend_placement",
+    "reckon/crew/runs.py:ensure_placement_reservation"
+  ],
+  "completed_at": "2026-10-01T05:41:59.814Z",
+  "dispatched_at": "2026-10-01T05:09:01Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-fleet-shares-one-allocation/repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159.html",
+      "line": "13",
+      "severity": "follow-on",
+      "text": "follow-on: plan-commits names 9a1e6b4d6, the superseded attempt whose swallow-the-error design 4e602c4ab replaced, and omits the correcting commit e72f2641 that rewrote this fragment, so a reader following the fragment's commit list reaches a design the node itself rejected."
+    },
+    {
+      "file": "reckon/crew/placement.py",
+      "line": "471",
+      "severity": "follow-on",
+      "text": "follow-on: _unanswerable_queue reports \"squeue could not be run\" for every guarded failure, including a query that ran and returned an error (FleetNodeError at placement.py:509) and the allocation_shape probe at placement.py:516, so the refusal's leading clause can name a condition the exception does not describe."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 7e9a4e94d; three files, +118/-4, all inside the declared scope; 4e602c4ab adds _unanswerable_queue and raises it where query_jobs or allocation_shape fails, replacing the superseded 9a1e6b4d that swallowed the same exception.",
+    "done_when": "the reviewed node's done-when asks that a change answer each of the two findings and that the manifest name every finding by id, as `acted <id>: <commit>` or `declined <id>: <reason>`, with none left unanswered; manifest.md:20 carries both forms.",
+    "goal": "the reviewed node's goal is to repair the two findings (f52548ef35a, f1c8d42239a) raised on run r-20260930T183252811855; the manifest's evidence_inputs names both by id, one acted and one declined, and the landed diff at e72f2641 is the adoption guard plus its test.",
+    "manifest": "read; status complete; commits names four shas; tests records the focused gate 6 passed EXIT=0; baseline_suite and after_suite carry the two population arms; negative_control_log names the red log; follow_ons records two items fenced out.",
+    "write_paths": "the node was fenced to tests/test_the_fleet_allocation_is_adopted.py, reckon/crew/placement.py and its own evidence fragment; `git diff --name-status 7e9a4e94d e72f2641` lists exactly those three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_fleet_allocation_is_adopted.py::test_a_recorded_job_the_queue_cannot_be_asked_about_refuses reads _allocation_requests() from the recording-scheduler log rather than a value the case passed in, and reverting the guard at placement.py:509 in a scratch tree turns it red.",
+    "evidence": "the manifest's baseline_suite/after_suite name the two population logs, and the store's own added_failures_from_gate_logs over them returns 0 with no ids at base 7e9a4e94d and head e72f2641; I re-ran the focused gate at head and it printed 6 passed.",
+    "fit": "the change follows the mint branch's own CrewError idiom at reckon/crew/placement.py:584 and names no plan or version token; one point off because the refusal message at placement.py:471 hardcodes squeue for a failure that may have been a query that ran.",
+    "goal_fidelity": "f1c8d42239a asked the adoption branch to wrap OSError/SubprocessError the way the mint branch does at reckon/crew/placement.py:584, and 4e602c4ab does exactly that at placement.py:509 while f52548ef35a is declined with a correct scope reason at manifest.md:20.",
+    "scope_discipline": "the net diff 7e9a4e94d..e72f2641 touches only reckon/crew/placement.py, tests/test_the_fleet_allocation_is_adopted.py and the node's own fragment, all inside the fenced scope, with no plan, index or sprint edit."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to repair the two findings (f52548ef35a, f1c8d42239a) raised on run r-20260930T183252811855; the manifest's evidence_inputs names both by id, one acted and one declined, and the landed diff at e72f2641 is the adoption guard plus its test.\nVERDICT done_when: the reviewed node's done-when asks that a change answer each of the two findings and that the manifest name every finding by id, as `acted <id>: <commit>` or `declined <id>: <reason>`, with none left unanswered; manifest.md:20 carries both forms.\nVERDICT write_paths: the node was fenced to tests/test_the_fleet_allocation_is_adopted.py, reckon/crew/placement.py and its own evidence fragment; `git diff --name-status 7e9a4e94d e72f2641` lists exactly those three paths and nothing else.\nVERDICT manifest: read; status complete; commits names four shas; tests records the focused gate 6 passed EXIT=0; baseline_suite and after_suite carry the two population arms; negative_control_log names the red log; follow_ons records two items fenced out.\nVERDICT diff: read commit by commit against base 7e9a4e94d; three files, +118/-4, all inside the declared scope; 4e602c4ab adds _unanswerable_queue and raises it where query_jobs or allocation_shape fails, replacing the superseded 9a1e6b4d that swallowed the same exception.\nCALL_SITES: reckon/crew/placement.py:_ensure_reservation_locked, reckon/crew/dispatch.py:resolve_backend_placement, reckon/crew/runs.py:ensure_placement_reservation\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: f1c8d42239a asked the adoption branch to wrap OSError/SubprocessError the way the mint branch does at reckon/crew/placement.py:584, and 4e602c4ab does exactly that at placement.py:509 while f52548ef35a is declined with a correct scope reason at manifest.md:20.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's baseline_suite/after_suite name the two population logs, and the store's own added_failures_from_gate_logs over them returns 0 with no ids at base 7e9a4e94d and head e72f2641; I re-ran the focused gate at head and it printed 6 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the net diff 7e9a4e94d..e72f2641 touches only reckon/crew/placement.py, tests/test_the_fleet_allocation_is_adopted.py and the node's own fragment, all inside the fenced scope, with no plan, index or sprint edit.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_fleet_allocation_is_adopted.py::test_a_recorded_job_the_queue_cannot_be_asked_about_refuses reads _allocation_requests() from the recording-scheduler log rather than a value the case passed in, and reverting the guard at placement.py:509 in a scratch tree turns it red.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the mint branch's own CrewError idiom at reckon/crew/placement.py:584 and names no plan or version token; one point off because the refusal message at placement.py:471 hardcodes squeue for a failure that may have been a query that ran.\nFINDING docs/evidence/fragments/the-fleet-shares-one-allocation/repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159.html:13 follow-on: plan-commits names 9a1e6b4d6, the superseded attempt whose swallow-the-error design 4e602c4ab replaced, and omits the correcting commit e72f2641 that rewrote this fragment, so a reader following the fragment's commit list reaches a design the node itself rejected.\nFINDING reckon/crew/placement.py:471 follow-on: _unanswerable_queue reports \"squeue could not be run\" for every guarded failure, including a query that ran and returned an error (FleetNodeError at placement.py:509) and the allocation_shape probe at placement.py:516, so the refusal's leading clause can name a condition the exception does not describe.",
+  "review_run_id": "r-20261001T050846786530-review-of-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159",
+  "reviewed_base_sha": "7e9a4e94d159092cc0b6a66d1eb83248ba105c91",
+  "reviewed_head_sha": "e72f26417ac2aafb634a34a038417a920f1d895b",
+  "reviewed_run_id": "r-20260930T194409410059-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159",
+  "reviewer_run_id": "r-20261001T050846786530-review-of-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T05:36:48.784503+00:00",
+  "total": 94
+}

@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:8535"
+  ],
+  "completed_at": "2026-10-02T04:25:40.457Z",
+  "dispatched_at": "2026-10-02T04:16:35Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_timestamps_reuse_the_parser.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's negative-control log header records CMD=pytest tests/test_dispatch_timestamps_reuse_the_timestamp_parser.py::test_only_the_lane_reading_retains_fromisoformat, but no such file exists in the tree; the real file is tests/test_dispatch_timestamps_reuse_the_parser.py, which is what the log's own traceback cites at line 178. The control demonstrably fired (1 failed, EXIT=1, the right assertion), so the measurement stands, but the header line is not reproducible as written. The same header also reads revision=825bf5bc8d9fb4b1f269ec8712392eda0085a8ef for a mutation applied to the head revision."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "8499",
+      "severity": "follow-on",
+      "text": "follow-on: the _iso_stamp_to_ns docstring still reads \"An ISO-8601 instant as epoch nanoseconds, or None for an unreadable one\", but through parse_utc the function now also accepts a numeric epoch in seconds or milliseconds and returns a datetime for it, so the docstring under-describes the accepted input. The sole caller wraps its value in str() and so never reaches this; recorded as contract drift rather than a defect."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit. 4a6747c replaces the fromisoformat parse with parse_utc and adds no test, skip, xfail or deletion; the retained _lane_reading_carry call is documented in-code with its mechanism.",
+    "done_when": "met. The named guard test is green at head and was the sole base-arm failure; added failures are zero, derived from the reviewed run's own baseline_suite (1 failure) and after_suite (0 failures) gate logs.",
+    "goal": "met. The node's goal is that the grace supervisor's attempt-start stamp resolve through the shared parser; dispatch.py:8501-8505 now calls parse_utc and states no parsing rule of its own, the guard passes, and the re-run head arm is green 35/35.",
+    "manifest": "read in full; it names the single commit, both arms as JSON with literal commands and real log paths, the negative-control log, and resolved evidence_inputs; internally consistent with the logs it cites.",
+    "write_paths": "clean. The diff base..head lists exactly reckon/crew/dispatch.py, which is a declared write path of the reviewed node; the reviewed worktree is unmodified at head."
+  },
+  "justifications": {
+    "durability": "one conventional commit with a body and no AI, plan or ticket reference; the change removes a duplicate spelling of the timestamp rule and delegates it to the single shared owner, which is the durable direction.",
+    "evidence": "both arms and the negative control carry literal commands and real log paths, base red on the named id and head green, zero added failures derivable from the reviewed run's own baseline_suite/after_suite, and I reproduced the head-green and the control-red myself; deducted because the negative-control log's header CMD names tests/test_dispatch_timestamps_reuse_the_timestamp_parser.py, a file that does not exist (the log's own traceback cites the real tests/test_dispatch_timestamps_reuse_the_parser.py:178), and its header revision reads the base sha for a head-side mutation, so the header alone is not reproducible.",
+    "fit": "the edit follows the module's existing idiom, the retained lane-reader call keeps its in-code mechanism comment, the commit body explains why that call is deliberately kept, and no author or ticket reference appears in source.",
+    "goal_fidelity": "the change does exactly what the node's goal names, verified by reading dispatch.py:8501-8505 and re-running the head arm green (35 passed); the deduction of one is for widening the function's accepted input beyond its docstring (a numeric epoch now resolves), which the sole caller never exercises.",
+    "scope_discipline": "the sole changed path, reckon/crew/dispatch.py, is a declared write path of the reviewed node, no other file moved between base and head, and the worktree is unmodified at head."
+  },
+  "node": "review-of-grace-baseline-reuses-the-timestamp-parser",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20261002T040657926582-grace-baseline-reuses-the-timestamp-parser\n(plan the-suite-is-green-at-head, section s2; reviewed node grace-baseline-reuses-the-timestamp-parser)\nreviewed_base_sha: 825bf5bc8d9fb4b1f269ec8712392eda0085a8ef\nreviewed_head_sha: 4a6747c600bf16e91e21772b6315cb6748a658ad\n\nThe change is product code: reckon/crew/dispatch.py:8501 _iso_stamp_to_ns now reads the grace\nsupervisor's attempt-start stamp through reckon._timestamps.parse_utc instead of a direct\ndatetime.fromisoformat call, keeping its None-on-unreadable return. The commit is 4a6747c, whose\nparent is exactly the recorded base 825bf5bc8 (git rev-parse 4a6747c^). The diff is 2 insertions and\n5 deletions, no other file touched.\n\nSemantics: parse_utc routes a string through parse_iso (which strips surrounding whitespace and\nturns a trailing Z into +00:00), reads a naive value as UTC, and returns None for a malformed one.\nFor the reachable input set this reproduces the removed body exactly except that padded whitespace\nis now accepted rather than returning None (a strict widening), and a non-str numeric input now\nresolves to an epoch rather than returning None. The sole caller, dispatch.py:8535, always passes a\nstr (it wraps the source in str(...) first), so the numeric widening is unreachable in-tree; it is\nrecorded below as a follow-on docstring/contract note, not a behavioural regression.\n\nThe guard test tests/test_dispatch_timestamps_reuse_the_parser.py::test_only_the_lane_reading_retains_fromisoformat\n(scoped to module dispatch by importlib) asserts the only function in dispatch.py enclosing a\nfromisoformat call is _lane_reading_carry; it was red at base because _iso_stamp_to_ns still carried\nthe second call, and green at head. I read the reviewed worktree at head 4a6747c and never wrote it\n(git status clean), and I re-ran the gate myself from a scratch copy of that tree.\n\nWhat I measured myself, in a scratch copy of the reviewed head under TMPDIR:\n- Head arm: PYTHONPATH=<scratch> python -m pytest -q tests/test_dispatch_timestamps_reuse_the_parser.py\n  tests/test_a_terminal_worker_exits_within_its_grace.py -> 35 passed, EXIT=0.\n- Negative control: restoring the direct datetime.fromisoformat call in _iso_stamp_to_ns reddens the\n  guard (1 failed, EXIT=1), so the guard is load-bearing for this change, not vacuous.\n- The imported module resolved to the scratch tree's reckon/crew/dispatch.py (confirmed by printing\n  dispatch.__file__), so the arms measured the tree under test.\n- Base-arm log read: 1 failed, 34 passed at 825bf5bc8, the sole failure being the named guard id.\n\nVERDICT goal: met. The node's goal is that the grace supervisor's attempt-start stamp resolve through the shared parser; dispatch.py:8501-8505 now calls parse_utc and states no parsing rule of its own, the guard passes, and the re-run head arm is green 35/35.\nVERDICT done_when: met. The named guard test is green at head and was the sole base-arm failure; added failures are zero, derived from the reviewed run's own baseline_suite (1 failure) and after_suite (0 failures) gate logs.\nVERDICT write_paths: clean. The diff base..head lists exactly reckon/crew/dispatch.py, which is a declared write path of the reviewed node; the reviewed worktree is unmodified at head.\nVERDICT manifest: read in full; it names the single commit, both arms as JSON with literal commands and real log paths, the negative-control log, and resolved evidence_inputs; internally consistent with the logs it cites.\nVERDICT diff: read commit by commit. 4a6747c replaces the fromisoformat parse with parse_utc and adds no test, skip, xfail or deletion; the retained _lane_reading_carry call is documented in-code with its mechanism.\nVERDICT call_sites: one production caller, dispatch.py:8535 (_supervisor_manifest_baseline_ns), which always passes a str.\nCALL_SITES: reckon/crew/dispatch.py:8535\n\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the change does exactly what the node's goal names, verified by reading dispatch.py:8501-8505 and re-running the head arm green (35 passed); the deduction of one is for widening the function's accepted input beyond its docstring (a numeric epoch now resolves), which the sole caller never exercises.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms and the negative control carry literal commands and real log paths, base red on the named id and head green, zero added failures derivable from the reviewed run's own baseline_suite/after_suite, and I reproduced the head-green and the control-red myself; deducted because the negative-control log's header CMD names tests/test_dispatch_timestamps_reuse_the_timestamp_parser.py, a file that does not exist (the log's own traceback cites the real tests/test_dispatch_timestamps_reuse_the_parser.py:178), and its header revision reads the base sha for a head-side mutation, so the header alone is not reproducible.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the sole changed path, reckon/crew/dispatch.py, is a declared write path of the reviewed node, no other file moved between base and head, and the worktree is unmodified at head.\nSCORE durability: 20\nJUSTIFICATION durability: one conventional commit with a body and no AI, plan or ticket reference; the change removes a duplicate spelling of the timestamp rule and delegates it to the single shared owner, which is the durable direction.\nSCORE fit: 20\nJUSTIFICATION fit: the edit follows the module's existing idiom, the retained lane-reader call keeps its in-code mechanism comment, the commit body explains why that call is deliberately kept, and no author or ticket reference appears in source.\n\nFINDING tests/test_dispatch_timestamps_reuse_the_parser.py:1 follow-on: the reviewed run's negative-control log header records CMD=pytest tests/test_dispatch_timestamps_reuse_the_timestamp_parser.py::test_only_the_lane_reading_retains_fromisoformat, but no such file exists in the tree; the real file is tests/test_dispatch_timestamps_reuse_the_parser.py, which is what the log's own traceback cites at line 178. The control demonstrably fired (1 failed, EXIT=1, the right assertion), so the measurement stands, but the header line is not reproducible as written. The same header also reads revision=825bf5bc8d9fb4b1f269ec8712392eda0085a8ef for a mutation applied to the head revision.\nFINDING reckon/crew/dispatch.py:8499 follow-on: the _iso_stamp_to_ns docstring still reads \"An ISO-8601 instant as epoch nanoseconds, or None for an unreadable one\", but through parse_utc the function now also accepts a numeric epoch in seconds or milliseconds and returns a datetime for it, so the docstring under-describes the accepted input. The sole caller wraps its value in str() and so never reaches this; recorded as contract drift rather than a defect.",
+  "review_run_id": "r-20261002T041615043714-review-of-grace-baseline-reuses-the-timestamp-parser",
+  "reviewed_base_sha": "825bf5bc8d9fb4b1f269ec8712392eda0085a8ef",
+  "reviewed_head_sha": "4a6747c600bf16e91e21772b6315cb6748a658ad",
+  "reviewed_run_id": "r-20261002T040657926582-grace-baseline-reuses-the-timestamp-parser",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T04:24:52.380864+00:00",
+  "total": 97
+}

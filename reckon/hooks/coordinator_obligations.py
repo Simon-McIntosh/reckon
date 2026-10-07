@@ -55,11 +55,13 @@ Two modes, selected by ``--hook``:
   the digest; it clears that record when the list is empty, because whichever
   event first sees the emptying is the last one that can notice it.
 
-A command the hook prints is one a coordinator may type, so it follows the
-configured local lane rather than whichever backend the run was carried on: the
-lane a run arrived on is the right lane to *read* about and the wrong one to
-route new work to silently. Both modes print a checklist through the same
-formatting, so both carry that rewrite.
+A command the hook prints is one a coordinator may type, so it edits the lane a
+composed remedy names. A remedy that dispatches new work — a review, a new node
+— names no lane, so the picker chooses one or holds, and a lane a caller names
+stays the caller's to name. A remedy that continues an existing run keeps the
+lane that run was carried on, because the run's own session and state live
+there. Both modes print a checklist through the same formatting, so both carry
+that edit.
 
 Silence is a mode of operation here, not a failure. A working directory
 outside the registered mounts, or a session that armed no follower, both mean
@@ -481,42 +483,59 @@ def local_lane(project: str) -> str:
     return str((resolved.config or {}).get("local_backend") or "").strip()
 
 
-def follow_local_lane(command: str, *, project: str) -> str:
-    """Point a printed command's lane at the configured local default.
+# The ``crew`` subcommands that launch new work. A remedy naming one of these
+# routes something new — a review, a node — and so leaves the lane to the
+# picker; every other composed command continues the run it already names.
+_NEW_WORK_SUBCOMMANDS = frozenset({"dispatch", "review-plan", "shadow"})
 
-    A composed review dispatch names the lane its run was carried on, which is
-    the lane that run's coordinator chose and so the right lane to *run* — and
-    the wrong one to hand a coordinator as the next command to type, because a
-    backend named there routes the next dispatch to a metered lane without
-    anyone deciding to. The local lane's own spelling is ``--local``, which
-    resolves through the same configuration, so the printed command follows
-    ``local_backend`` instead of naming the run's backend. A host that declares
-    no local lane has no default to follow and the command is left as composed.
+
+def _dispatches_new_work(tokens: Sequence[str]) -> bool:
+    """True when a composed command launches new work rather than continuing a run."""
+    return any(token in _NEW_WORK_SUBCOMMANDS for token in tokens)
+
+
+def _without_lane(tokens: Sequence[str]) -> list[str]:
+    """The same command with every lane flag removed, so the picker routes it."""
+    kept: list[str] = []
+    index = 0
+    while index < len(tokens):
+        token = tokens[index]
+        if token == "--local":
+            index += 1
+            continue
+        if token == "--backend":
+            index += 2
+            continue
+        if token.startswith("--backend="):
+            index += 1
+            continue
+        kept.append(token)
+        index += 1
+    return kept
+
+
+def follow_local_lane(command: str, *, project: str) -> str:
+    """Leave a printed new-work remedy's lane to the picker; keep a run's own.
+
+    A command the hook prints is one a coordinator may retype, so it edits the
+    lane a composed remedy names. A remedy that dispatches new work — a review,
+    a new node — names no lane, so the picker chooses one or holds, and a lane a
+    caller names stays the caller's to name. A remedy that continues an existing
+    run — a resume, a redispatch, a repair of that run — keeps the lane that run
+    was carried on, because the run's own session and state live there and a
+    continuation answered on another lane is a continuation the run never sees.
     """
-    if not command or "--backend" not in command:
+    if not command:
         return command
     try:
         tokens = shlex.split(command)
     except ValueError:
         return command
-    if not any(part == "--backend" or part.startswith("--backend=") for part in tokens):
+    if not _dispatches_new_work(tokens):
         return command
-    if not local_lane(project):
+    rewritten = _without_lane(tokens)
+    if rewritten == tokens:
         return command
-    rewritten: list[str] = []
-    index = 0
-    while index < len(tokens):
-        part = tokens[index]
-        if part == "--backend" and index + 1 < len(tokens):
-            rewritten.append("--local")
-            index += 2
-            continue
-        if part.startswith("--backend="):
-            rewritten.append("--local")
-            index += 1
-            continue
-        rewritten.append(part)
-        index += 1
     return " ".join(shlex.quote(part) for part in rewritten)
 
 
@@ -624,7 +643,7 @@ def locate_session(payload: dict[str, Any]) -> tuple[str, str] | None:
 def follow_each_local_lane(
     obligations: dict[str, Any], *, project: str
 ) -> dict[str, Any]:
-    """Point every item's printed command at the configured local lane."""
+    """Leave each item's printed command the lane its own remedy calls for."""
     for item in obligations.get("obligations") or ():
         if isinstance(item, dict):
             item["next_command"] = follow_local_lane(
@@ -776,7 +795,7 @@ def _inject_list(
     """Inject a list once per change, staying silent when there is no news.
 
     The fresh reading and the reloading reading of the same snapshot go
-    through here, so both carry the lane rewrite and the same change record;
+    through here, so both carry the lane edit and the same change record;
     only the header's note and the tag on the recorded digest differ. An empty
     list on an ordinary turn has nothing to say -- but an empty list under a
     reload is the news that the producer is reloading, so it is spoken once

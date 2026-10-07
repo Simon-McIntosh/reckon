@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "codex",
+  "commits_read": [
+    "4ef8356fc630038d299b2526abdc2c57845987eb",
+    "e219aa99036eaac85da3786c5ebadeaf7bf31023"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T11:38:52.769417+00:00",
+  "findings": [
+    {
+      "file": "tests/test_budget_group.py",
+      "line": "20",
+      "text": "the declared measure says the four sol-family lanes plus spark resolve to two groups with a separate undeclared backend, but SOL_FAMILY_CONFIG reuses codex-terra as the undeclared backend; the asserted codex-main group therefore contains only codex, codex-astra and codex-luna, so the five-lane census only appears to be asserted and the manifest's claim that all five lanes resolve to two groups is false."
+    },
+    {
+      "file": "docs/figures/a-window-paces-the-lane/group-position.svg",
+      "line": "1",
+      "text": "this 69-line figure is a fifth changed path outside the four exclusive write paths in prompt.txt; the graphics instruction did not transfer write scope, so the worker should have requested a scope change before adding it."
+    },
+    {
+      "file": "docs/figures/a-window-paces-the-lane/group-position.svg",
+      "line": "41",
+      "text": "the figure labels codex-main as four lanes and the plan/evidence alt text says four codex lanes collapse into that wallet, but the diagram draws only three connectors and explicitly leaves codex-terra ungrouped; the visual record contradicts its own fixture."
+    },
+    {
+      "file": "docs/plans/a-window-paces-the-lane.html",
+      "line": "257",
+      "text": "the landed-record link uses the plan route /plan/reckon/a-window-paces-the-lane-landed instead of the typed evidence route /reckon/evidence/archive/a-window-paces-the-lane-landed used by this repository, so the durable record is linked through the wrong resource surface."
+    },
+    {
+      "file": "reckon/crew/budget_group.py",
+      "line": "46",
+      "text": "GroupPosition declares observed_at as str or None, but group_position accepts epoch-number stamps and stores reading.get('observed_at') unchanged at line 154; the epoch test exercises that path without asserting the field type, leaving the public dataclass contract inconsistent with a supported input."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read 4ef8356f and e219aa99 against 1d2e70cc: the pure group selector and its freshness guard landed, while the documentation commit adds an unfenced figure, overstates the grouped lane census, and links the evidence through the wrong route.",
+    "done_when": "read prompt.txt and the named receipts: group-keyed resolution, freshest-not-first selection with age, the group-only entry point, and the red first-member mutation are directly asserted, but the four-sol-family-plus-spark census only appears to be asserted because codex-terra is used as the undeclared backend.",
+    "goal": "read prompt.txt and plan section s5b: reckon/crew/budget_group.py computes one declared group's position from its freshest dated member and refuses a lane identifier, satisfying the core one-wallet-one-position goal.",
+    "manifest": "read the completed manifest and its receipts: both commits match the clean source worktree head, the focused gate is 12 passed, the declared mutation is 4 failed and 8 passed, and the manifest itself exposes the fifth changed figure path beyond its orientation_write_paths.",
+    "write_paths": "read the four exclusive paths in prompt.txt and compared them with 1d2e70cc..e219aa99: the diff changes those four plus docs/figures/a-window-paces-the-lane/group-position.svg, so scope discipline is not complete."
+  },
+  "justifications": {
+    "durability": "tests/test_budget_group.py:79-127 and the recorded red mutation give a strong freshness regression guard, but lines 20-44 do not cover the exact four-sol-family membership the evidence claims and lines 179-197 do not assert the epoch stamp's public field type.",
+    "evidence": "tests/test_budget_group.py:37-76, 79-127 and 200-234 plus freshest_member_replaced_by_first.red.log directly demonstrate four of the measures, while the named five-lane grouping census is not the fixture actually asserted.",
+    "fit": "reckon/crew/budget_group.py:30-157 is a small pure dataclass-and-function surface matching local Python idiom, but the observed_at annotation disagrees with its supported epoch input and docs/plans/a-window-paces-the-lane.html:257 uses the wrong typed-resource route.",
+    "goal_fidelity": "reckon/crew/budget_group.py:98-157 implements the group-keyed freshest-member position and refuses undeclared identifiers, with the deduction confined to the landing record's false four-lane claim rather than the selector itself.",
+    "scope_discipline": "prompt.txt declares four paths, while git diff --name-status 1d2e70cc..e219aa99 shows five, the extra docs/figures/a-window-paces-the-lane/group-position.svg being neither declared nor covered by an approved scope change."
+  },
+  "model": "gpt-5.6-sol",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read prompt.txt and plan section s5b: reckon/crew/budget_group.py computes one declared group's position from its freshest dated member and refuses a lane identifier, satisfying the core one-wallet-one-position goal.\nVERDICT done_when: read prompt.txt and the named receipts: group-keyed resolution, freshest-not-first selection with age, the group-only entry point, and the red first-member mutation are directly asserted, but the four-sol-family-plus-spark census only appears to be asserted because codex-terra is used as the undeclared backend.\nVERDICT write_paths: read the four exclusive paths in prompt.txt and compared them with 1d2e70cc..e219aa99: the diff changes those four plus docs/figures/a-window-paces-the-lane/group-position.svg, so scope discipline is not complete.\nVERDICT manifest: read the completed manifest and its receipts: both commits match the clean source worktree head, the focused gate is 12 passed, the declared mutation is 4 failed and 8 passed, and the manifest itself exposes the fifth changed figure path beyond its orientation_write_paths.\nVERDICT diff: read 4ef8356f and e219aa99 against 1d2e70cc: the pure group selector and its freshness guard landed, while the documentation commit adds an unfenced figure, overstates the grouped lane census, and links the evidence through the wrong route.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/budget_group.py:98-157 implements the group-keyed freshest-member position and refuses undeclared identifiers, with the deduction confined to the landing record's false four-lane claim rather than the selector itself.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_budget_group.py:37-76, 79-127 and 200-234 plus freshest_member_replaced_by_first.red.log directly demonstrate four of the measures, while the named five-lane grouping census is not the fixture actually asserted.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: prompt.txt declares four paths, while git diff --name-status 1d2e70cc..e219aa99 shows five, the extra docs/figures/a-window-paces-the-lane/group-position.svg being neither declared nor covered by an approved scope change.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_budget_group.py:79-127 and the recorded red mutation give a strong freshness regression guard, but lines 20-44 do not cover the exact four-sol-family membership the evidence claims and lines 179-197 do not assert the epoch stamp's public field type.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/budget_group.py:30-157 is a small pure dataclass-and-function surface matching local Python idiom, but the observed_at annotation disagrees with its supported epoch input and docs/plans/a-window-paces-the-lane.html:257 uses the wrong typed-resource route.\nFINDING tests/test_budget_group.py:20 the declared measure says the four sol-family lanes plus spark resolve to two groups with a separate undeclared backend, but SOL_FAMILY_CONFIG reuses codex-terra as the undeclared backend; the asserted codex-main group therefore contains only codex, codex-astra and codex-luna, so the five-lane census only appears to be asserted and the manifest's claim that all five lanes resolve to two groups is false.\nFINDING docs/figures/a-window-paces-the-lane/group-position.svg:1 this 69-line figure is a fifth changed path outside the four exclusive write paths in prompt.txt; the graphics instruction did not transfer write scope, so the worker should have requested a scope change before adding it.\nFINDING docs/figures/a-window-paces-the-lane/group-position.svg:41 the figure labels codex-main as four lanes and the plan/evidence alt text says four codex lanes collapse into that wallet, but the diagram draws only three connectors and explicitly leaves codex-terra ungrouped; the visual record contradicts its own fixture.\nFINDING docs/plans/a-window-paces-the-lane.html:257 the landed-record link uses the plan route /plan/reckon/a-window-paces-the-lane-landed instead of the typed evidence route /reckon/evidence/archive/a-window-paces-the-lane-landed used by this repository, so the durable record is linked through the wrong resource surface.\nFINDING reckon/crew/budget_group.py:46 GroupPosition declares observed_at as str or None, but group_position accepts epoch-number stamps and stores reading.get('observed_at') unchanged at line 154; the epoch test exercises that path without asserting the field type, leaving the public dataclass contract inconsistent with a supported input.\n",
+  "review_run_id": "r-20260921T113852769417-review-of-group-position-is-its-freshest-member",
+  "reviewed_base_sha": "1d2e70ccbaa9252cfcaf6cbf2020df78f3ffc11b",
+  "reviewed_evidence_sha": "e219aa99036eaac85da3786c5ebadeaf7bf31023",
+  "reviewed_head_sha": "e219aa99036eaac85da3786c5ebadeaf7bf31023",
+  "reviewed_run_head_sha": "4ef8356fc630038d299b2526abdc2c57845987eb",
+  "reviewed_run_id": "r-20260921T101909656497-group-position-is-its-freshest-member",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T11:44:36.967140Z",
+  "total": 85
+}

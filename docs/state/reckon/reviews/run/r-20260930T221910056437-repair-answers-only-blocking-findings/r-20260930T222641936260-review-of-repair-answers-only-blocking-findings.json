@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest names no baseline_suite/after_suite pair (its own fence bound the gate to the two named test files), so reckon.crew.review.annotate_review_of_run reads this round's count as unmeasured; this review derived the count itself through the store's own reader (reckon.crew.review.added_failures_from_gate_logs) over two arms it ran at the reviewed base 27c67a3a (logs/gate-base-arm.log, 6 passed, EXIT=0) and head 7ee7d1e18 (logs/gate-head-arm.log, 10 passed, EXIT=0): no FAILED or ERROR node id appears in either, so zero failures were added. Positive control: the same reader over the head log text with a FAILED and an ERROR line injected returns (2, ['tests/test_x.py::test_red', 'tests/test_y.py::test_err']), so the zero is a measured zero.",
+  "base_log_revision": "27c67a3a56b0773d9e80d90a1f62a8c6807fd8df",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:1912"
+  ],
+  "completed_at": "2026-09-30T22:39:14.860Z",
+  "dispatched_at": "2026-09-30T22:27:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "1927",
+      "severity": "follow-on",
+      "text": "follow-on: the branch comment states the composer returns None for a finding-bearing record only when the record it re-read differs from the one selected here, but this change makes compose_repair_node return None for an all-follow-on round, so dispatch_repair_for_run (recovery.py:1912) now reaches this branch and reports \"no repair composes for this review round\" (recovery.py:1933) rather than naming the follow-on-only cause; the dispatch outcome is correct, only the recorded reason misattributes the round."
+    }
+  ],
+  "head_log_revision": "7ee7d1e1826384936cbf86b393ce3b6750111fc2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read git show 7ee7d1e18 against base 27c67a3a, three files +195/-24; repair.py carries a declared severity through review_findings only when it is declared, adds _finding_blocks and blocking_findings, and switches both repair_write_scope (repair.py:258) and compose_repair_node (repair.py:325) to the filtered list; no unrelated edit.",
+    "done_when": "the fence names three cases (mixed, all-follow-on, no-severity key) and tests/test_repair_answers_only_blocking_findings.py asserts each in both directions; the manifest records 10 passed over it and the unchanged tests/test_review_findings_compose_a_repair.py, EXIT=0.",
+    "goal": "the node's goal is to make reckon.crew.repair compose a repair round only from the findings whose severity blocks; at the reviewed head 7ee7d1e18 reckon/crew/repair.py:325 builds the node's findings from blocking_findings(review), and an all-follow-on round returns None at repair.py:326.",
+    "manifest": "read; it names the landed change 7ee7d1e18, the answering helper change, the 10-passed gate with its log and EXIT, and a negative control; it names no baseline_suite/after_suite pair, so this review ran the two arms at the reviewed base and head itself.",
+    "write_paths": "the grant is reckon/crew/repair.py, tests/test_repair_answers_only_blocking_findings.py, an evidence fragment and a figures directory; the single landed change touches the first three, all inside the grant, and the figures directory is unused."
+  },
+  "justifications": {
+    "durability": "the added assertions name an independent oracle (_expected_id re-derives the finding id) and are shown to fail against the regression they guard (dropping _finding_blocks reddens three of four cases); deducted only because the scope half is exercised through compose_repair_node's write_paths rather than repair_write_scope directly.",
+    "evidence": "the manifest's gate.log records 10 passed (EXIT=0), this review reproduced the negative control (the severity filter dropped reddens the mixed and all-follow-on cases, 3 failed/1 passed, EXIT=1, log logs/negative-control-answer-saonly.log) and derived added_failure_count 0 over its own base and head arms; deducted because the reviewed manifest names no baseline_suite/after_suite pair, so the store's own reader (reckon/crew/review.py annotate_review_of_run) reads this round's count as unmeasured and the derivation rests on arms this review ran itself.",
+    "fit": "the helpers follow the module's private-helper idiom (reckon/crew/repair.py:127 _finding_blocks, repair.py:143 blocking_findings) and carry no plan or version token; deducted because the change makes compose_repair_node's None reachable for an all-follow-on round while recovery.py:1927's comment still attributes None solely to a stale re-read.",
+    "goal_fidelity": "at head 7ee7d1e18 reckon/crew/repair.py:325 composes from blocking_findings and returns None at repair.py:326 for an all-follow-on round, which is exactly the goal.",
+    "scope_discipline": "one change touches three paths, all inside the declared grant (reckon/crew/repair.py, tests/test_repair_answers_only_blocking_findings.py, the evidence fragment), and ruff reports no finding at head over repair.py and the pre-existing test file against a base that also reports none."
+  },
+  "node": "review-of-repair-answers-only-blocking-findings",
+  "project": "reckon",
+  "raw_text": "reviewed_run_id: r-20260930T221910056437-repair-answers-only-blocking-findings\nreviewed_base_sha: 27c67a3a56b0773d9e80d90a1f62a8c6807fd8df\nreviewed_head_sha: 7ee7d1e1826384936cbf86b393ce3b6750111fc2\nVERDICT goal: the node's goal is to make reckon.crew.repair compose a repair round only from the findings whose severity blocks; at the reviewed head 7ee7d1e18 reckon/crew/repair.py:325 builds the node's findings from blocking_findings(review), and an all-follow-on round returns None at repair.py:326.\nVERDICT done_when: the fence names three cases (mixed, all-follow-on, no-severity key) and tests/test_repair_answers_only_blocking_findings.py asserts each in both directions; the manifest records 10 passed over it and the unchanged tests/test_review_findings_compose_a_repair.py, EXIT=0.\nVERDICT write_paths: the grant is reckon/crew/repair.py, tests/test_repair_answers_only_blocking_findings.py, an evidence fragment and a figures directory; the single landed change touches the first three, all inside the grant, and the figures directory is unused.\nVERDICT manifest: read; it names the landed change 7ee7d1e18, the answering helper change, the 10-passed gate with its log and EXIT, and a negative control; it names no baseline_suite/after_suite pair, so this review ran the two arms at the reviewed base and head itself.\nVERDICT diff: read git show 7ee7d1e18 against base 27c67a3a, three files +195/-24; repair.py carries a declared severity through review_findings only when it is declared, adds _finding_blocks and blocking_findings, and switches both repair_write_scope (repair.py:258) and compose_repair_node (repair.py:325) to the filtered list; no unrelated edit.\nCALL_SITES: reckon/crew/recovery.py:1912\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: at head 7ee7d1e18 reckon/crew/repair.py:325 composes from blocking_findings and returns None at repair.py:326 for an all-follow-on round, which is exactly the goal.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's gate.log records 10 passed (EXIT=0), this review reproduced the negative control (the severity filter dropped reddens the mixed and all-follow-on cases, 3 failed/1 passed, EXIT=1, log logs/negative-control-answer-saonly.log) and derived added_failure_count 0 over its own base and head arms; deducted because the reviewed manifest names no baseline_suite/after_suite pair, so the store's own reader (reckon/crew/review.py annotate_review_of_run) reads this round's count as unmeasured and the derivation rests on arms this review ran itself.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: one change touches three paths, all inside the declared grant (reckon/crew/repair.py, tests/test_repair_answers_only_blocking_findings.py, the evidence fragment), and ruff reports no finding at head over repair.py and the pre-existing test file against a base that also reports none.\nSCORE durability: 19\nJUSTIFICATION durability: the added assertions name an independent oracle (_expected_id re-derives the finding id) and are shown to fail against the regression they guard (dropping _finding_blocks reddens three of four cases); deducted only because the scope half is exercised through compose_repair_node's write_paths rather than repair_write_scope directly.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers follow the module's private-helper idiom (reckon/crew/repair.py:127 _finding_blocks, repair.py:143 blocking_findings) and carry no plan or version token; deducted because the change makes compose_repair_node's None reachable for an all-follow-on round while recovery.py:1927's comment still attributes None solely to a stale re-read.\nFINDING reckon/crew/recovery.py:1927 follow-on: the branch comment states the composer returns None for a finding-bearing record only when the record it re-read differs from the one selected here, but this change makes compose_repair_node return None for an all-follow-on round, so dispatch_repair_for_run (recovery.py:1912) now reaches this branch and reports \"no repair composes for this review round\" (recovery.py:1933) rather than naming the follow-on-only cause; the dispatch outcome is correct, only the recorded reason misattributes the round.\n",
+  "review_run_id": "r-20260930T222641936260-review-of-repair-answers-only-blocking-findings",
+  "reviewed_base_sha": "27c67a3a56b0773d9e80d90a1f62a8c6807fd8df",
+  "reviewed_head_sha": "7ee7d1e1826384936cbf86b393ce3b6750111fc2",
+  "reviewed_run_id": "r-20260930T221910056437-repair-answers-only-blocking-findings",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:03.806802+00:00",
+  "total": 94
+}

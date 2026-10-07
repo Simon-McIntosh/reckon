@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T12:12:52.467856+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/reserve.py",
+      "line": "104",
+      "text": "nothing in the tree calls admit, so no dispatch is refused against the reserved fraction and the goal's cannot-claim property is unenforced; the manifest discloses this as follow-on 1 and the dispatch path is outside this node's fence."
+    },
+    {
+      "file": "reckon/schema/flight.yaml",
+      "line": "745-747",
+      "text": "bookend_reserve_pct is absent from the declared budget slots while its siblings resume_reserve_pct and coordinator_reserve_pct are declared at flight-defaults.yaml:76,84, so the reserved fraction is not settable through the budget block the test's literal mapping stands in for; disclosed as follow-on 2 and outside this node's fence."
+    },
+    {
+      "file": "reckon/crew/reserve.py",
+      "line": "96-97",
+      "text": "admit reads an unreadable window as 0.0 percent and admits, so an absent utilisation is silently treated as an empty window, the reading the plan forbids at section 5, and no test covers the None branch."
+    },
+    {
+      "file": "tests/test_reserve.py",
+      "line": "105-111",
+      "text": "test_the_reserve_holds_from_the_start_of_the_window computes role_ceiling_pct twice with identical arguments and asserts the two equal, so that assertion cannot fail; only its third assertion, ceiling_pct minus limit equals reserve_pct, carries evidence."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read all four commits against base c0a50630 \u2014 b2594d65 adds the module and its tests, 4947fdde lands the plan and evidence records, 00555ac9 corrects a mutation description that did not match the log, bacd8e17 adds trailing newlines; no commit touches anything else.",
+    "done_when": "all five clauses are asserted in tests/test_reserve.py:28-124 and I re-ran that file in the reviewed worktree at bacd8e17, getting 8 passed in 0.81s; the pair is asserted at an empty window (lines 28-41) and again at 79 percent utilisation (lines 44-53), the flight key is the same block's bookend_reserve_pct whose change moves the boundary (lines 56-83), verify shares the review ceiling by identity (lines 86-94), and negative-control.log:1 carries the declared mutation verbatim with the empty-window pair among 4 failures.",
+    "goal": "the source goal asked for a fraction of each five-hour window that implementation work cannot claim at any bar; reckon/crew/reserve.py:74-85 makes a non-bookend role's ceiling the window ceiling less the reserved fraction with no utilisation term, so the fraction is arithmetic on the block rather than a function of window state, while nothing in the tree calls admit (grep for reserve.admit or role_ceiling_pct outside reckon/crew/reserve.py and tests/test_reserve.py returns nothing), so the fraction is computed but not yet claimed anywhere.",
+    "manifest": "the manifest names four commits, four changed paths, an 8-passing-test receipt and a negative-control log; I confirmed the receipt by re-running the file and the log's four-failure set by applying the declared mutation to a scratch copy myself, and its three follow_ons disclose the absent caller, the undeclared flight key and the missing docs/figures entry.",
+    "write_paths": "the declared four paths are reckon/crew/reserve.py, tests/test_reserve.py, docs/plans/a-window-paces-the-lane.html and docs/evidence/archive/a-window-paces-the-lane-landed.html, and git diff --stat over c0a50630..bacd8e17 lists exactly those four and no fifth."
+  },
+  "justifications": {
+    "durability": "tests/test_reserve.py:28-53 reddens under the declared mutation and covers both window states (negative-control.log shows 4 failed, 4 passed), while tests/test_reserve.py:105-111 asserts a tautology that can never fail.",
+    "evidence": "tests/test_reserve.py:28-53 asserts the pair at both window states and negative-control.log:1 carries the declared mutation with 4 failures, while tests/test_reserve.py:69-83 asserts the flight key against a literal mapping no config layer produces.",
+    "fit": "reckon/crew/reserve.py:53-63 follows the sibling-reserve idiom at reckon/budget.py:166-178 and the module carries no plan, ticket or version name.",
+    "goal_fidelity": "reckon/crew/reserve.py:74-85 holds the withheld fraction from the start as the goal states, but no caller exists so no dispatch is refused yet.",
+    "scope_discipline": "git diff --stat over c0a50630..bacd8e17 lists exactly the four declared paths and nothing else."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal asked for a fraction of each five-hour window that implementation work cannot claim at any bar; reckon/crew/reserve.py:74-85 makes a non-bookend role's ceiling the window ceiling less the reserved fraction with no utilisation term, so the fraction is arithmetic on the block rather than a function of window state, while nothing in the tree calls admit (grep for reserve.admit or role_ceiling_pct outside reckon/crew/reserve.py and tests/test_reserve.py returns nothing), so the fraction is computed but not yet claimed anywhere.\nVERDICT done_when: all five clauses are asserted in tests/test_reserve.py:28-124 and I re-ran that file in the reviewed worktree at bacd8e17, getting 8 passed in 0.81s; the pair is asserted at an empty window (lines 28-41) and again at 79 percent utilisation (lines 44-53), the flight key is the same block's bookend_reserve_pct whose change moves the boundary (lines 56-83), verify shares the review ceiling by identity (lines 86-94), and negative-control.log:1 carries the declared mutation verbatim with the empty-window pair among 4 failures.\nVERDICT write_paths: the declared four paths are reckon/crew/reserve.py, tests/test_reserve.py, docs/plans/a-window-paces-the-lane.html and docs/evidence/archive/a-window-paces-the-lane-landed.html, and git diff --stat over c0a50630..bacd8e17 lists exactly those four and no fifth.\nVERDICT manifest: the manifest names four commits, four changed paths, an 8-passing-test receipt and a negative-control log; I confirmed the receipt by re-running the file and the log's four-failure set by applying the declared mutation to a scratch copy myself, and its three follow_ons disclose the absent caller, the undeclared flight key and the missing docs/figures entry.\nVERDICT diff: read all four commits against base c0a50630 \u2014 b2594d65 adds the module and its tests, 4947fdde lands the plan and evidence records, 00555ac9 corrects a mutation description that did not match the log, bacd8e17 adds trailing newlines; no commit touches anything else.\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/reserve.py:74-85 holds the withheld fraction from the start as the goal states, but no caller exists so no dispatch is refused yet.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_reserve.py:28-53 asserts the pair at both window states and negative-control.log:1 carries the declared mutation with 4 failures, while tests/test_reserve.py:69-83 asserts the flight key against a literal mapping no config layer produces.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat over c0a50630..bacd8e17 lists exactly the four declared paths and nothing else.\nSCORE durability: 17\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/reserve.py:53-63 follows the sibling-reserve idiom at reckon/budget.py:166-178 and the module carries no plan, ticket or version name.\nJUSTIFICATION durability: tests/test_reserve.py:28-53 reddens under the declared mutation and covers both window states (negative-control.log shows 4 failed, 4 passed), while tests/test_reserve.py:105-111 asserts a tautology that can never fail.\nFINDING reckon/crew/reserve.py:104 nothing in the tree calls admit, so no dispatch is refused against the reserved fraction and the goal's cannot-claim property is unenforced; the manifest discloses this as follow-on 1 and the dispatch path is outside this node's fence.\nFINDING reckon/schema/flight.yaml:745-747 bookend_reserve_pct is absent from the declared budget slots while its siblings resume_reserve_pct and coordinator_reserve_pct are declared at flight-defaults.yaml:76,84, so the reserved fraction is not settable through the budget block the test's literal mapping stands in for; disclosed as follow-on 2 and outside this node's fence.\nFINDING reckon/crew/reserve.py:96-97 admit reads an unreadable window as 0.0 percent and admits, so an absent utilisation is silently treated as an empty window, the reading the plan forbids at section 5, and no test covers the None branch.\nFINDING tests/test_reserve.py:105-111 test_the_reserve_holds_from_the_start_of_the_window computes role_ceiling_pct twice with identical arguments and asserts the two equal, so that assertion cannot fail; only its third assertion, ceiling_pct minus limit equals reserve_pct, carries evidence.",
+  "review_run_id": "r-20260921T121252467856-review-of-the-bookend-reserve-holds-from-the-start",
+  "reviewed_agent": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewed_base_sha": "c0a5063017efe706078367c29b65d95146b746f7",
+  "reviewed_commits": [
+    "b2594d65083ec9e228ce2b4de7fbb296bbb49d07",
+    "4947fdde5422cf4ac34cc4313c9ec01d82aae3af",
+    "00555ac94bd72ecf2137e3786fae222df3e935a1",
+    "bacd8e172c860b4865849e46917150d4284febc2"
+  ],
+  "reviewed_head_sha": "bacd8e172c860b4865849e46917150d4284febc2",
+  "reviewed_run_id": "r-20260921T114411744888-the-bookend-reserve-holds-from-the-start",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-budget-20260921/the-bookend-reserve-holds-from-the-start",
+  "reviewer_negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T121252467856-review-of-the-bookend-reserve-holds-from-the-start/reviewer-negative-control.log",
+  "reviewer_negative_control_result": "declared mutation re-applied by the reviewer to a scratch copy at /tmp/reserve-scratch-lvBWab: 4 failed, 4 passed, the same four test ids as the recorded log, with the scratch module proven to be the one imported",
+  "reviewer_test_log": {
+    "command": "PYTHONPATH=<reviewed worktree> python -m pytest -p no:cacheprovider -q tests/test_reserve.py",
+    "result": "8 passed in 0.81s"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T13:03:12.575260+00:00",
+  "total": 87
+}

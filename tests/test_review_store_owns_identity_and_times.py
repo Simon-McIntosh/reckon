@@ -30,6 +30,8 @@ from reckon.crew import review as review_module
 PROJECT = "store-identity"
 REVIEWED_RUN = "r-reviewed-run"
 RUN_REVIEW = "r-20261006T120000000000-review-run"
+# A review run id that encodes no dispatch instant.
+NO_STAMP_RUN = "r-review-run-no-stamp"
 PLAN_SLUG = "demo"
 PLAN_VERSION = 2
 
@@ -201,6 +203,35 @@ def test_a_record_resolving_no_time_is_committed_marked_unknown(
     assert stored[review_module.TIMES_SOURCE_KEY] == review_module.UNKNOWN_TIMES_SOURCE
     # The store writes its own clock under ``timestamp`` but never substitutes
     # the clock for a stamp, so the empty stamps are not the stored moment.
+    assert stored["timestamp"] != ""
+    assert stored[review_module.DISPATCH_TIME_KEY] != stored["timestamp"]
+    assert stored[review_module.COMPLETION_TIME_KEY] != stored["timestamp"]
+
+
+def test_a_run_record_with_no_dispatch_stamp_is_committed_unknown(
+    checkout: Path,
+) -> None:
+    # The review run's own record exists yet carries no dispatch stamp, and its
+    # id encodes no instant: no source resolves a time. The record is still
+    # committed, with both stamps empty and the absence marked under
+    # times_source rather than the store clock substituted for a stamp nobody
+    # recorded.
+    _run_record(checkout, NO_STAMP_RUN, "", "")
+    record = {
+        "project": PROJECT,
+        "reviewed_run_id": REVIEWED_RUN,
+        "review_run_id": NO_STAMP_RUN,
+        "status": "parsed",
+        "scores": {"evidence": 18},
+    }
+    path = review_module.store_committed_review(record, root=checkout)
+    stored = _read(path)
+
+    assert stored[review_module.DISPATCH_TIME_KEY] == ""
+    assert stored[review_module.COMPLETION_TIME_KEY] == ""
+    assert stored[review_module.TIMES_SOURCE_KEY] == review_module.UNKNOWN_TIMES_SOURCE
+    # The store writes its own clock under ``timestamp`` but never substitutes
+    # the clock for a stamp, so the store timestamp appears in neither stamp.
     assert stored["timestamp"] != ""
     assert stored[review_module.DISPATCH_TIME_KEY] != stored["timestamp"]
     assert stored[review_module.COMPLETION_TIME_KEY] != stored["timestamp"]

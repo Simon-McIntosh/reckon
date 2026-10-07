@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:2420 (function-local import at :2335)",
+    "reckon/cli.py:2544 (import at :2535)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T01:51:36.574071+00:00",
+  "findings": [
+    {
+      "file": "docs/plans/the-suite-is-green-at-head.html",
+      "line": "555",
+      "text": "the cause narrative says the base test's own guard refused the copy before the reload under test could run, but neither logged base run nor my re-run ever reaches that guard: both fail earlier at the raced first read (the base file's line 113, _queue.Empty, nine lines before the guard at line 122), and the record's own reproduction paragraph at :567-569 reports that same _queue.Empty \u2014 so the guard refusal is a static prediction presented as the observed failure, and a reader reproducing it will meet a timeout instead; the Measure sentence at :572-574 (\"1 failed, 8 passed at 2848d3c9\") likewise assigns the base test file's red to the repaired id, which cannot redden there because the product is unchanged."
+    },
+    {
+      "file": "docs/plans/the-suite-is-green-at-head.html",
+      "line": "588",
+      "text": "\"every log header naming the revision, tree, command and imported recovery.__file__\" is true of one of the nine logs: five carry no header at all \u2014 including final-head-483b2839.log, the only record of the gate result \u2014 and two of the four headers that exist name revision, tree and command without the module path, so the gate's provenance lives in the manifest rather than in the artifact it cites."
+    },
+    {
+      "file": "tests/test_follower_freshness.py",
+      "line": "88",
+      "text": "_await_attached returns the first queued line without checking that it is a probe row and without draining rows rendered in the same follower tick; with the follower polling at 0.1s (reckon/cli.py:1912) against this 1.0s read, a follower stall past about 0.9s leaves a second probe row queued for the first measured read, which then fails rendered_nodes == expected_nodes (:181) with a message about node coverage rather than about the probe leak \u2014 read until the measured node set is complete, discarding probe rows, to close the window."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the single commit 483b2839 against its base \u2014 the test gains _probe_event (tests/test_follower_freshness.py:63) and _await_attached (:71) and the append seam (:154-160) for +44/-14, and the three documentation additions carry no deletions; the fourteen deleted lines are all inside the rewired test block.",
+    "done_when": "read the done_when \u2014 the freshness id green at the head, red at the base, and a declared negative control red on the fresh-code assertion \u2014 and reproduced all three from the reviewed tree (16 passed in 7.82s; 1 failed, 8 passed twice, the control failing at assert any(line.startswith(\"fresh:\"))), logged as reviewer-arm-head-gate-pinned.log, reviewer-arm-base-file-pinned.log and reviewer-arm-negative-control-pinned.log.",
+    "goal": "read the goal \u2014 the follower-freshness test must reload through a seam that survives the render fix \u2014 and found the copied-package rewrite at tests/test_follower_freshness.py:154-160 appends a module-level format_watch_transition override, so the rewrite names no source line.",
+    "manifest": "read the manifest \u2014 it records the gate (16 passed in 6.67s), the base red (1 failed, 8 passed, _queue.Empty at the raced read), the control red at assert any(line.startswith(\"fresh:\")), and the importer run (3 failed, 145 passed), each with a named log.",
+    "write_paths": "read the five declared write paths and found every path in the diff inside them \u2014 tests/test_follower_freshness.py, docs/plans/the-suite-is-green-at-head.html, docs/evidence/archive/the-suite-is-green-at-head-landed.html, docs/figures/the-suite-is-green-at-head/follower-attach-seam.py and its .png \u2014 with reckon/crew/recovery.py untouched by the commit."
+  },
+  "justifications": {
+    "durability": "the fresh-code assertion (tests/test_follower_freshness.py:172) reddens on the declared control exactly as recorded, but _await_attached (tests/test_follower_freshness.py:88) can leave a probe row queued for the first measured read, so the guard it protects is not fully deterministic.",
+    "evidence": "the gate's result is recorded and I reproduced it in-process from the reviewed tree, but the gate's own log (final-head-483b2839.log:1) names no revision, tree, command or module, so the artifact does not carry its own provenance.",
+    "fit": "the seam and its helpers follow the file's own idiom (_probe_event at tests/test_follower_freshness.py:63, _await_attached at :71) and the naming checks find no forbidden label in the changed paths.",
+    "goal_fidelity": "the seam at tests/test_follower_freshness.py:154-160 replaces the exact-source-line patch and leaves the measured assertions (tests/test_follower_freshness.py:172-181) intact, so the test still measures the running follower's reload.",
+    "scope_discipline": "git diff 2848d3c9..483b2839 --stat names five files, all inside the manifest's declared write paths, and reckon/crew/recovery.py is not among them, so the product is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of r-20260925T010457009510-the-freshness-test-hooks-a-stable-seam\n(node the-freshness-test-hooks-a-stable-seam), read from the reviewed worktree at head\n483b2839358485c6c47490367a4ecc71e203c2bb against base 2848d3c916460044ccb3269bc70f318b2d4a21d0.\n\nRead: the goal and done_when, the five declared write paths, the manifest, the single\ncommit's diff (a test-only change plus a landing record, a figure and its generator), and\nthe two production render sites the seam hooks. Reproduced in place: the gate (16 passed),\nthe base test file (1 failed, 8 passed, _queue.Empty at the raced read), and the declared\nnegative control (1 failed, 8 passed, red on the fresh-code assertion), all with the\nimported module printed from inside the pytest process.\n\nVERDICT goal: read the goal \u2014 the follower-freshness test must reload through a seam that survives the render fix \u2014 and found the copied-package rewrite at tests/test_follower_freshness.py:154-160 appends a module-level format_watch_transition override, so the rewrite names no source line.\nVERDICT done_when: read the done_when \u2014 the freshness id green at the head, red at the base, and a declared negative control red on the fresh-code assertion \u2014 and reproduced all three from the reviewed tree (16 passed in 7.82s; 1 failed, 8 passed twice, the control failing at assert any(line.startswith(\"fresh:\"))), logged as reviewer-arm-head-gate-pinned.log, reviewer-arm-base-file-pinned.log and reviewer-arm-negative-control-pinned.log.\nVERDICT write_paths: read the five declared write paths and found every path in the diff inside them \u2014 tests/test_follower_freshness.py, docs/plans/the-suite-is-green-at-head.html, docs/evidence/archive/the-suite-is-green-at-head-landed.html, docs/figures/the-suite-is-green-at-head/follower-attach-seam.py and its .png \u2014 with reckon/crew/recovery.py untouched by the commit.\nVERDICT manifest: read the manifest \u2014 it records the gate (16 passed in 6.67s), the base red (1 failed, 8 passed, _queue.Empty at the raced read), the control red at assert any(line.startswith(\"fresh:\")), and the importer run (3 failed, 145 passed), each with a named log.\nVERDICT diff: read the single commit 483b2839 against its base \u2014 the test gains _probe_event (tests/test_follower_freshness.py:63) and _await_attached (:71) and the append seam (:154-160) for +44/-14, and the three documentation additions carry no deletions; the fourteen deleted lines are all inside the rewired test block.\nCALL_SITES: reckon/cli.py:2420 (function-local import at :2335), reckon/cli.py:2544 (import at :2535)\nBoth sites are the follower's render paths, and each rebinds format_watch_transition through a function-local import at call time \u2014 which is what makes the appended module-level override reachable, so the seam depends on that import locality and not on any product change.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the seam at tests/test_follower_freshness.py:154-160 replaces the exact-source-line patch and leaves the measured assertions (tests/test_follower_freshness.py:172-181) intact, so the test still measures the running follower's reload.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate's result is recorded and I reproduced it in-process from the reviewed tree, but the gate's own log (final-head-483b2839.log:1) names no revision, tree, command or module, so the artifact does not carry its own provenance.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 2848d3c9..483b2839 --stat names five files, all inside the manifest's declared write paths, and reckon/crew/recovery.py is not among them, so the product is untouched.\nSCORE durability: 16\nJUSTIFICATION durability: the fresh-code assertion (tests/test_follower_freshness.py:172) reddens on the declared control exactly as recorded, but _await_attached (tests/test_follower_freshness.py:88) can leave a probe row queued for the first measured read, so the guard it protects is not fully deterministic.\nSCORE fit: 19\nJUSTIFICATION fit: the seam and its helpers follow the file's own idiom (_probe_event at tests/test_follower_freshness.py:63, _await_attached at :71) and the naming checks find no forbidden label in the changed paths.\nFINDING docs/plans/the-suite-is-green-at-head.html:555 the cause narrative says the base test's own guard refused the copy before the reload under test could run, but neither logged base run nor my re-run ever reaches that guard: both fail earlier at the raced first read (the base file's line 113, _queue.Empty, nine lines before the guard at line 122), and the record's own reproduction paragraph at :567-569 reports that same _queue.Empty \u2014 so the guard refusal is a static prediction presented as the observed failure, and a reader reproducing it will meet a timeout instead; the Measure sentence at :572-574 (\"1 failed, 8 passed at 2848d3c9\") likewise assigns the base test file's red to the repaired id, which cannot redden there because the product is unchanged.\nFINDING docs/plans/the-suite-is-green-at-head.html:588 \"every log header naming the revision, tree, command and imported recovery.__file__\" is true of one of the nine logs: five carry no header at all \u2014 including final-head-483b2839.log, the only record of the gate result \u2014 and two of the four headers that exist name revision, tree and command without the module path, so the gate's provenance lives in the manifest rather than in the artifact it cites.\nFINDING tests/test_follower_freshness.py:88 _await_attached returns the first queued line without checking that it is a probe row and without draining rows rendered in the same follower tick; with the follower polling at 0.1s (reckon/cli.py:1912) against this 1.0s read, a follower stall past about 0.9s leaves a second probe row queued for the first measured read, which then fails rendered_nodes == expected_nodes (:181) with a message about node coverage rather than about the probe leak \u2014 read until the measured node set is complete, discarding probe rows, to close the window.",
+  "review_run_id": "r-20260925T015136574071-review-of-the-freshness-test-hooks-a-stable-seam",
+  "reviewed_base_sha": "2848d3c916460044ccb3269bc70f318b2d4a21d0",
+  "reviewed_head_sha": "483b2839358485c6c47490367a4ecc71e203c2bb",
+  "reviewed_run_id": "r-20260925T010457009510-the-freshness-test-hooks-a-stable-seam",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T02:46:23.973994+00:00",
+  "total": 89
+}

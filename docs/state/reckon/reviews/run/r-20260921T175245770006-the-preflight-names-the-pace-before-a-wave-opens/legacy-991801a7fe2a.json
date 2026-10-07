@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:922",
+    "reckon/mcp.py:3238",
+    "reckon/budget.py:1542"
+  ],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "tests/test_preflight_pace.py",
+      "line": "317",
+      "text": "the assertion reads bar[\"bar\" if False else \"state\"], a conditional with a constant condition, so the test carries an unreachable branch and reads as a residue of a key that no longer exists."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-preflight-names-the-pace-before-a-wave-opens/negative_control_unknown_as_zero.red.log",
+      "line": "1",
+      "text": "the log's declared mutation (\"substitute a zero for an unread clock's utilisation\") is not the mutation the dispatch declared (\"make the preflight emit a zero allowance for a group whose reading is unknown\"), and promotion compares the declaration as a substring of this text, so the pair is refused at promotion until the declaration is corrected or the refusal is waived."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T175245770006-the-preflight-names-the-pace-before-a-wave-opens/manifest.md",
+      "line": "17",
+      "text": "the note quotes sha256 10e7f2c920d2ea478a215874905ffc97f20e8fb944fd94369d352a443ab43f26 for negative_control_unknown_as_zero.red.log, but that file and its sidecar both hash to d390d35e7659e14ac54b9819952d51ee84a6e57da05fe4f7418ba1b111ebfdfa and no file under the reports directory hashes to the quoted figure, so a reader verifying the manifest's own claim gets a mismatch."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against f13607a2 commit by commit: 2e32a558 carries reckon/budget.py and the new test file, cfbdb5f8 carries the plan landing, the cumulative evidence anchor and the figure; both messages carry a body and neither carries an attribution trailer.",
+    "done_when": "read tests/test_preflight_pace.py and the gate log at cfbdb5f8; the assertions read the emitted payload rather than a string (clocks with age_seconds at :167-175, allowance fields at :271-276, the four verdicts at :359-370), the unread group is asserted None and not 0.0 two-sidedly at :460-462, freshness of age at :221-229, and the unchanged preflight fields at :548-585.",
+    "goal": "read the pointer's goal against reckon/budget.py:1802-1879; group_pace emits one entry per declared budget group carrying both metered clocks with each reading's age, the allowance pace.allowance_for_group derives from the week, and the bar's four lane verdicts for a stated ready set, so the goal's four elements are all present in the payload.",
+    "manifest": "read the run manifest; its gate, red-log and figure paths all resolve and its negative-control note names the assertion that fired, but the sha256 it quotes for the red log matches no file in the reports tree and contradicts that log's own sidecar.",
+    "write_paths": "read git diff --numstat f13607a2..HEAD; five files changed and every one is inside the five declared paths, the docs additions are insertions, and the single deletion in reckon/budget.py is the first line of the preflight docstring at :1417, rewritten to name the pace."
+  },
+  "justifications": {
+    "durability": "tests/test_preflight_pace.py:445-462 fails against the mutation recorded in negative_control_unknown_as_zero.red.log (\"assert 0.0 is None\"), so the rule is guarded by a case that fires, while the assertion at :317 is written through a dead `if False else` conditional that reads as a residue of an earlier key.",
+    "evidence": "promotion.py:3156 refuses this run's pair because the declared mutation is absent from the red log's text, which I confirmed by running _require_declared_negative_control against the live pointer and the delivered manifest; the gate itself is real and I re-ran it at cfbdb5f8 with 21 passed.",
+    "fit": "reckon/budget.py:1547-1560 names the two clocks and the observed/unknown states as module constants with the reason for the distinction beside them, matching the surrounding budget module's idiom, and the added names describe mechanism.",
+    "goal_fidelity": "reckon/cli.py:922 and reckon/mcp.py:3238 pass neither windows nor ready to reckon/budget.py:1402, so both production readers emit unknown for every declared group until a caller supplies a reading.",
+    "scope_discipline": "git diff --numstat f13607a2..HEAD lists exactly the five declared paths with 1008 insertions against 3 deletions, and no file outside the fence moved."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the pointer's goal against reckon/budget.py:1802-1879; group_pace emits one entry per declared budget group carrying both metered clocks with each reading's age, the allowance pace.allowance_for_group derives from the week, and the bar's four lane verdicts for a stated ready set, so the goal's four elements are all present in the payload.\nVERDICT done_when: read tests/test_preflight_pace.py and the gate log at cfbdb5f8; the assertions read the emitted payload rather than a string (clocks with age_seconds at :167-175, allowance fields at :271-276, the four verdicts at :359-370), the unread group is asserted None and not 0.0 two-sidedly at :460-462, freshness of age at :221-229, and the unchanged preflight fields at :548-585.\nVERDICT write_paths: read git diff --numstat f13607a2..HEAD; five files changed and every one is inside the five declared paths, the docs additions are insertions, and the single deletion in reckon/budget.py is the first line of the preflight docstring at :1417, rewritten to name the pace.\nVERDICT manifest: read the run manifest; its gate, red-log and figure paths all resolve and its negative-control note names the assertion that fired, but the sha256 it quotes for the red log matches no file in the reports tree and contradicts that log's own sidecar.\nVERDICT diff: read both commits against f13607a2 commit by commit: 2e32a558 carries reckon/budget.py and the new test file, cfbdb5f8 carries the plan landing, the cumulative evidence anchor and the figure; both messages carry a body and neither carries an attribution trailer.\nCALL_SITES: reckon/cli.py:922, reckon/mcp.py:3238, reckon/budget.py:1542\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/cli.py:922 and reckon/mcp.py:3238 pass neither windows nor ready to reckon/budget.py:1402, so both production readers emit unknown for every declared group until a caller supplies a reading.\nSCORE evidence: 14\nJUSTIFICATION evidence: promotion.py:3156 refuses this run's pair because the declared mutation is absent from the red log's text, which I confirmed by running _require_declared_negative_control against the live pointer and the delivered manifest; the gate itself is real and I re-ran it at cfbdb5f8 with 21 passed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --numstat f13607a2..HEAD lists exactly the five declared paths with 1008 insertions against 3 deletions, and no file outside the fence moved.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_preflight_pace.py:445-462 fails against the mutation recorded in negative_control_unknown_as_zero.red.log (\"assert 0.0 is None\"), so the rule is guarded by a case that fires, while the assertion at :317 is written through a dead `if False else` conditional that reads as a residue of an earlier key.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/budget.py:1547-1560 names the two clocks and the observed/unknown states as module constants with the reason for the distinction beside them, matching the surrounding budget module's idiom, and the added names describe mechanism.\nFINDING tests/test_preflight_pace.py:317 the assertion reads bar[\"bar\" if False else \"state\"], a conditional with a constant condition, so the test carries an unreachable branch and reads as a residue of a key that no longer exists.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-preflight-names-the-pace-before-a-wave-opens/negative_control_unknown_as_zero.red.log:1 the log's declared mutation (\"substitute a zero for an unread clock's utilisation\") is not the mutation the dispatch declared (\"make the preflight emit a zero allowance for a group whose reading is unknown\"), and promotion compares the declaration as a substring of this text, so the pair is refused at promotion until the declaration is corrected or the refusal is waived.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T175245770006-the-preflight-names-the-pace-before-a-wave-opens/manifest.md:17 the note quotes sha256 10e7f2c920d2ea478a215874905ffc97f20e8fb944fd94369d352a443ab43f26 for negative_control_unknown_as_zero.red.log, but that file and its sidecar both hash to d390d35e7659e14ac54b9819952d51ee84a6e57da05fe4f7418ba1b111ebfdfa and no file under the reports directory hashes to the quoted figure, so a reader verifying the manifest's own claim gets a mismatch.",
+  "review_run_id": "legacy-991801a7fe2a",
+  "review_run_id_source": "derived",
+  "reviewed_run_id": "r-20260921T175245770006-the-preflight-names-the-pace-before-a-wave-opens",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-21T21:17:37.957077+00:00",
+  "total": 87
+}

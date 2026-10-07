@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:crew_dispatch",
+    "reckon/crew/dispatch.py:dispatch",
+    "reckon/crew/dispatch.py:shadow",
+    "reckon/crew/dispatch.py:change_lane",
+    "reckon/crew/node.py:validate_node"
+  ],
+  "completed_at": "2026-09-28T05:15:00.920Z",
+  "dispatched_at": "2026-09-28T04:57:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "3176",
+      "text": "the digest is taken from node.brief, the source path, rather than the durable copy at node.brief_path, so change_lane at reckon/crew/dispatch.py:7382 refuses a lane change with \"the brief is not readable\" once the source scratch file is gone, which is exactly the case _store_brief's own docstring says the run-directory copy exists to survive."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "4279",
+      "text": "the dispatch-level wiring that carries the brief into the composed prompt has no assertion, so _brief_text returning an empty string would leave all four added tests green while the worker's prompt fell back to a PLAN pointer naming an empty plan slug."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "1252",
+      "text": "the mutual-exclusion check tests brief_path and plan_slug only, so \"--brief ... --section s2\" is accepted and the section silently discarded rather than refused as the plan's \"--brief as mutually exclusive with --plan / --section\" states."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit; dcb66ac8 carries reckon/cli.py, reckon/crew/dispatch.py, reckon/crew/node.py and tests/test_brief_dispatch.py, and 9f6f58b3 carries only the plan section, the evidence anchor and docs/figures/a-worker-can-take-a-brief/brief-dispatch-flow.svg.",
+    "done_when": "the done_when's four bullets each have a named case in tests/test_brief_dispatch.py (dry-run resolution with brief.sha256, a stub-launcher pointer carrying brief.sha256, brief.path and the copied bytes, a missing done-when refused not-dispatchable at exit 2, and --brief with --plan refused), and the manifest records 4 passed EXIT=0 in logs/gate-brief-dispatch.log, which an independent re-run at head 9f6f58b3 reproduced 4/4 (review-rerun-head.log).",
+    "goal": "the node's goal is to let dispatch take a stored brief in place of a committed plan section; reckon/cli.py:1060 makes --plan optional and adds --brief, reckon/crew/dispatch.py:3171 replaces the committed-section and plan-review gates with the brief's digest, and the copy and digest reach the pointer at reckon/crew/dispatch.py:4025 and reckon/crew/dispatch.py:4280.",
+    "manifest": "read; it names the gate command and result, the negative-control log and its observation, five log paths, and it carries status complete with no wait block.",
+    "write_paths": "read the manifest's nine declared paths; every path in the diff over 3f251453..9f6f58b3 is inside them, and the cumulative evidence record was spliced rather than rewritten, with the section 3 anchor and its own commit list intact at docs/evidence/archive/a-worker-can-take-a-brief-landed.html."
+  },
+  "justifications": {
+    "durability": "the declared negative control genuinely reddens tests/test_brief_dispatch.py with plan-unavailable when the committed-section check is restored, but the change_lane reconstruction path at reckon/crew/dispatch.py:7382 is uncovered and fails on a removed source brief, and no test asserts the composed prompt carries the brief.",
+    "evidence": "logs/gate-brief-dispatch.log names revision dcb66ac8, the tree, reckon.__file__ and cwd, and its 4 passed EXIT=0 is reproduced by an independent 4/4 run at head 9f6f58b3 recorded in review-rerun-head.log.",
+    "fit": "the four private helpers at reckon/crew/dispatch.py:2877-2938 follow the surrounding helper idiom with why-docstrings, though _brief_text at line 2932 prefers the stored copy while the digest taken at line 3176 does not.",
+    "goal_fidelity": "reckon/crew/dispatch.py:3171 skips require_plan_section_visible and require_plan_reviewed for a brief and dispatch.py:4025 stores its copy under the run directory, which is what the goal states, with only the --section half of the plan's mutual exclusion unenforced.",
+    "scope_discipline": "git diff --stat 3f251453..9f6f58b3 lists seven files, all inside the manifest's nine declared paths, and no plan-version or plan-modified meta line is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to let dispatch take a stored brief in place of a committed plan section; reckon/cli.py:1060 makes --plan optional and adds --brief, reckon/crew/dispatch.py:3171 replaces the committed-section and plan-review gates with the brief's digest, and the copy and digest reach the pointer at reckon/crew/dispatch.py:4025 and reckon/crew/dispatch.py:4280.\nVERDICT done_when: the done_when's four bullets each have a named case in tests/test_brief_dispatch.py (dry-run resolution with brief.sha256, a stub-launcher pointer carrying brief.sha256, brief.path and the copied bytes, a missing done-when refused not-dispatchable at exit 2, and --brief with --plan refused), and the manifest records 4 passed EXIT=0 in logs/gate-brief-dispatch.log, which an independent re-run at head 9f6f58b3 reproduced 4/4 (review-rerun-head.log).\nVERDICT write_paths: the manifest declares nine paths and git diff --stat over 3f251453..9f6f58b3 lists seven files, every one inside that set, with docs/evidence/archive/a-worker-can-take-a-brief-landed.html gaining 69 lines while the section 3 anchor above survives intact.\nVERDICT write_paths: read the manifest's nine declared paths; every path in the diff over 3f251453..9f6f58b3 is inside them, and the cumulative evidence record was spliced rather than rewritten, with the section 3 anchor and its own commit list intact at docs/evidence/archive/a-worker-can-take-a-brief-landed.html.\nVERDICT manifest: read; it names the gate command and result, the negative-control log and its observation, five log paths, and it carries status complete with no wait block.\nVERDICT diff: read commit by commit; dcb66ac8 carries reckon/cli.py, reckon/crew/dispatch.py, reckon/crew/node.py and tests/test_brief_dispatch.py, and 9f6f58b3 carries only the plan section, the evidence anchor and docs/figures/a-worker-can-take-a-brief/brief-dispatch-flow.svg.\nCALL_SITES: reckon/cli.py:crew_dispatch, reckon/crew/dispatch.py:dispatch, reckon/crew/dispatch.py:shadow, reckon/crew/dispatch.py:change_lane, reckon/crew/node.py:validate_node\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:3171 skips require_plan_section_visible and require_plan_reviewed for a brief and dispatch.py:4025 stores its copy under the run directory, which is what the goal states, with only the --section half of the plan's mutual exclusion unenforced.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-brief-dispatch.log names revision dcb66ac8, the tree, reckon.__file__ and cwd, and its 4 passed EXIT=0 is reproduced by an independent 4/4 run at head 9f6f58b3 recorded in review-rerun-head.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3f251453..9f6f58b3 lists seven files, all inside the manifest's nine declared paths, and no plan-version or plan-modified meta line is touched.\nSCORE durability: 15\nJUSTIFICATION durability: the declared negative control genuinely reddens tests/test_brief_dispatch.py with plan-unavailable when the committed-section check is restored, but the change_lane reconstruction path at reckon/crew/dispatch.py:7382 is uncovered and fails on a removed source brief, and no test asserts the composed prompt carries the brief.\nSCORE fit: 18\nJUSTIFICATION fit: the four private helpers at reckon/crew/dispatch.py:2877-2938 follow the surrounding helper idiom with why-docstrings, though _brief_text at line 2932 prefers the stored copy while the digest taken at line 3176 does not.\nFINDING reckon/crew/dispatch.py:3176 the digest is taken from node.brief, the source path, rather than the durable copy at node.brief_path, so change_lane at reckon/crew/dispatch.py:7382 refuses a lane change with \"the brief is not readable\" once the source scratch file is gone, which is exactly the case _store_brief's own docstring says the run-directory copy exists to survive.\nFINDING reckon/crew/dispatch.py:4279 the dispatch-level wiring that carries the brief into the composed prompt has no assertion, so _brief_text returning an empty string would leave all four added tests green while the worker's prompt fell back to a PLAN pointer naming an empty plan slug.\nFINDING reckon/cli.py:1252 the mutual-exclusion check tests brief_path and plan_slug only, so \"--brief ... --section s2\" is accepted and the section silently discarded rather than refused as the plan's \"--brief as mutually exclusive with --plan / --section\" states.\n",
+  "review_run_id": "r-20260928T045654201732-review-of-dispatch-accepts-a-brief",
+  "reviewed_base_sha": "3f251453cb064dd19f185bd32301a7e0ee59e491",
+  "reviewed_head_sha": "9f6f58b3f6a1d8e1f2e673927ad7d09d1aa3a4bf",
+  "reviewed_run_id": "r-20260927T192434735630-dispatch-accepts-a-brief",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T05:08:36.200006+00:00",
+  "total": 91
+}

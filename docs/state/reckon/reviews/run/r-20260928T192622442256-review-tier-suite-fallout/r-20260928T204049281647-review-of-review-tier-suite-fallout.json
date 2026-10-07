@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_crew.py::test_shadow_explicit_time_budget_override_is_used_and_recorded"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:_require_review_waiver",
+    "reckon/crew/promotion.py:_run_review_tier",
+    "reckon/review_tiers.py:review_tier",
+    "reckon/path_classes.py:path_class",
+    "reckon/crew/recovery.py:select_review_for_head",
+    "reckon/crew/review.py:review_path"
+  ],
+  "completed_at": "2026-09-28T20:57:59.038Z",
+  "dispatched_at": "2026-09-28T20:41:03Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T192622442256-review-tier-suite-fallout/manifest.md",
+      "line": "11",
+      "text": "the tests: field records `env -C <worktree> PYTHONPATH=<worktree> python -m pytest ...`, two unsubstituted placeholders, so the field cannot be re-run as written and reads as a template where the schema asks for the command that actually ran."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T192622442256-review-tier-suite-fallout/manifest.md",
+      "line": "17",
+      "text": "the fence asks for a table in the manifest of every added id with its cause and change; the artifacts line points at the fragment instead, so the per-id table is not in the record a promotion reader holds."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against c35032b4 \u2014 ce2ac203 declares a report artefact in three fixtures and drops one stale waiver, 1bfda485 does the same for three more and moves the review-store fixture's seeded file to reckon/region.py (tests/test_review_store_reads_and_fences_by_head.py:35-41), 1d96c1e7 and e5fbc99d add only the fragment and its figure; no assertion is deleted or weakened, the three deleted lines being --waive-unreviewed-promotion arguments (tests/test_a_short_commit_list_is_reported.py:330-333, tests/test_cited_identifier_resolves.py:156-159).",
+    "done_when": "the fence's measure is a two-arm full tests/ run with the revision and reckon.__file__ on each header and the FAILED ids in armed form, and both arms are on disk with those headers (suite-base-0805d391.log:1-4, suite-head-1bfda485.log:1-3) and in base-armed.json and head-armed.json, whose failure_ids my own parse of the logs reproduces exactly, with the single added id passing on a serial re-run at the head.",
+    "goal": "reconcile every test the review-tier gate turned red \u2014 the head arm's FAILED list minus the base arm's is exactly tests/test_crew.py::test_shadow_explicit_time_budget_override_is_used_and_recorded, which I re-ran serially at the head and it passed (1 passed in 11.32s, rerun-head-added-id.log), while the fourteen reconciled ids are red on the pre-repair trees (stream.jsonl:384 records \"7 failed, 20 passed\" over the three assigned files; suite-head-ce2ac203.log carries the seven further ids in its head-minus-base delta) and absent from both final arms.",
+    "manifest": "read in full; it records the four commits, the head, both arms with revision, command, exit status, digest and ids, the one added id with its attribution, the two contention ids' absence from both arms, and the three extended paths, but the per-id table the fence asks for is carried by the fragment its artifacts line names (manifest.md:17) rather than by the manifest itself, and its tests: field cannot be re-run as written.",
+    "write_paths": "the fence names three test files plus the fragment and the figures directory; the coordinator's resume advice extended it to three further test files (resume-1-advice.txt:1-4), and every path of the c35032b4..e5fbc99 diff is inside that set (git diff --stat c35032b4 e5fbc99: eight files)."
+  },
+  "justifications": {
+    "durability": "every reconciled case reddens on the tree it was turned red by \u2014 the four parameter sets and the two role-rule cases in stream.jsonl:384 and the seven further ids in suite-head-ce2ac203.log's added list \u2014 and tests/test_review_store_reads_and_fences_by_head.py:35 guards the opposite direction, so a regression to a review for a report-only run and a regression to no review for a runtime-source run each redden a case.",
+    "evidence": "both arms carry revision, tree, module.__file__ and command on their header lines and their FAILED ids in armed JSON whose digests match the logs I read, and the six reconciled files' 46 collected cases are all green (manifest.md:11 records 27 and 19 passed), but after_suite.revision 1bfda485 is one docs-only commit behind the promoted head e5fbc99d and manifest.md:11 carries two unsubstituted <worktree> placeholders.",
+    "fit": "the added comments state the empty-scope mechanism in the surrounding fixtures' idiom (tests/test_promotion_never_amends_its_commit.py:66-70, tests/test_crew_test_role.py:178-183) and introduce no plan label, version, ticket or author attribution.",
+    "goal_fidelity": "the head-minus-base delta over the two full arms is one id (my parse of suite-head-1bfda485.log and suite-base-0805d391.log), it is attributed in manifest.md:16 and passes serially at the head, so no id the tier gate turned red remains and no production path is touched.",
+    "scope_discipline": "all eight changed paths of git diff --stat c35032b4 e5fbc99 are inside the declared fence or the three files the coordinator's resume advice names and manifest.md:18 records, and the diff carries no product code."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: c35032b4313d59cfb40143ff8aef6fb1164dcbec\nreviewed_head_sha: e5fbc99dc5c48023d38b8cbf4f5e1dccebddc066\nVERDICT goal: reconcile every test the review-tier gate turned red \u2014 the head arm's FAILED list minus the base arm's is exactly tests/test_crew.py::test_shadow_explicit_time_budget_override_is_used_and_recorded, which I re-ran serially at the head and it passed (1 passed in 11.32s, rerun-head-added-id.log), while the fourteen reconciled ids are red on the pre-repair trees (stream.jsonl:384 records \"7 failed, 20 passed\" over the three assigned files; suite-head-ce2ac203.log carries the seven further ids in its head-minus-base delta) and absent from both final arms.\nVERDICT done_when: the fence's measure is a two-arm full tests/ run with the revision and reckon.__file__ on each header and the FAILED ids in armed form, and both arms are on disk with those headers (suite-base-0805d391.log:1-4, suite-head-1bfda485.log:1-3) and in base-armed.json and head-armed.json, whose failure_ids my own parse of the logs reproduces exactly, with the single added id passing on a serial re-run at the head.\nVERDICT write_paths: the fence names three test files plus the fragment and the figures directory; the coordinator's resume advice extended it to three further test files (resume-1-advice.txt:1-4), and every path of the c35032b4..e5fbc99 diff is inside that set (git diff --stat c35032b4 e5fbc99: eight files).\nVERDICT manifest: read in full; it records the four commits, the head, both arms with revision, command, exit status, digest and ids, the one added id with its attribution, the two contention ids' absence from both arms, and the three extended paths, but the per-id table the fence asks for is carried by the fragment its artifacts line names (manifest.md:17) rather than by the manifest itself, and its tests: field cannot be re-run as written.\nVERDICT diff: read commit by commit against c35032b4 \u2014 ce2ac203 declares a report artefact in three fixtures and drops one stale waiver, 1bfda485 does the same for three more and moves the review-store fixture's seeded file to reckon/region.py (tests/test_review_store_reads_and_fences_by_head.py:35-41), 1d96c1e7 and e5fbc99d add only the fragment and its figure; no assertion is deleted or weakened, the three deleted lines being --waive-unreviewed-promotion arguments (tests/test_a_short_commit_list_is_reported.py:330-333, tests/test_cited_identifier_resolves.py:156-159).\nCALL_SITES: reckon/crew/promotion.py:_require_review_waiver, reckon/crew/promotion.py:_run_review_tier, reckon/review_tiers.py:review_tier, reckon/path_classes.py:path_class, reckon/crew/recovery.py:select_review_for_head, reckon/crew/review.py:review_path\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the head-minus-base delta over the two full arms is one id (my parse of suite-head-1bfda485.log and suite-base-0805d391.log), it is attributed in manifest.md:16 and passes serially at the head, so no id the tier gate turned red remains and no production path is touched.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms carry revision, tree, module.__file__ and command on their header lines and their FAILED ids in armed JSON whose digests match the logs I read, and the six reconciled files' 46 collected cases are all green (manifest.md:11 records 27 and 19 passed), but after_suite.revision 1bfda485 is one docs-only commit behind the promoted head e5fbc99d and manifest.md:11 carries two unsubstituted <worktree> placeholders.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all eight changed paths of git diff --stat c35032b4 e5fbc99 are inside the declared fence or the three files the coordinator's resume advice names and manifest.md:18 records, and the diff carries no product code.\nSCORE durability: 18\nJUSTIFICATION durability: every reconciled case reddens on the tree it was turned red by \u2014 the four parameter sets and the two role-rule cases in stream.jsonl:384 and the seven further ids in suite-head-ce2ac203.log's added list \u2014 and tests/test_review_store_reads_and_fences_by_head.py:35 guards the opposite direction, so a regression to a review for a report-only run and a regression to no review for a runtime-source run each redden a case.\nSCORE fit: 19\nJUSTIFICATION fit: the added comments state the empty-scope mechanism in the surrounding fixtures' idiom (tests/test_promotion_never_amends_its_commit.py:66-70, tests/test_crew_test_role.py:178-183) and introduce no plan label, version, ticket or author attribution.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T192622442256-review-tier-suite-fallout/manifest.md:11 the tests: field records `env -C <worktree> PYTHONPATH=<worktree> python -m pytest ...`, two unsubstituted placeholders, so the field cannot be re-run as written and reads as a template where the schema asks for the command that actually ran.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T192622442256-review-tier-suite-fallout/manifest.md:17 the fence asks for a table in the manifest of every added id with its cause and change; the artifacts line points at the fragment instead, so the per-id table is not in the record a promotion reader holds.\n",
+  "review_run_id": "r-20260928T204049281647-review-of-review-tier-suite-fallout",
+  "reviewed_base_sha": "c35032b4313d59cfb40143ff8aef6fb1164dcbec",
+  "reviewed_head_sha": "e5fbc99dc5c48023d38b8cbf4f5e1dccebddc066",
+  "reviewed_run_id": "r-20260928T192622442256-review-tier-suite-fallout",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T20:51:00.024046+00:00",
+  "total": 93
+}

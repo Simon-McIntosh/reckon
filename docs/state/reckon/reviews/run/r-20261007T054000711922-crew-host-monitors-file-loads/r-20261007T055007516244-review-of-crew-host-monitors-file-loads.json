@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-07T06:07:32.315Z",
+  "dispatched_at": "2026-10-07T05:50:37Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T054000711922-crew-host-monitors-file-loads/gate-session-host-plugin.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's header records the base revision de44bd83, although the arm was executed against the head worktree at 04667916; a reader who takes the header revision as the arm's revision attributes the 6-passed result to the base tree, so the header should name the tree the run resolved from."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T054000711922-crew-host-monitors-file-loads/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest names its gate log only under test_logs and records no baseline_suite/after_suite suite fields, so the store's added-failure derivation reads unmeasured rather than a measured zero, and the one-arm evidence cannot by itself distinguish a change that added no failing test from one whose base arm was never taken."
+    },
+    {
+      "file": "tests/test_session_host_plugin.py",
+      "line": "139",
+      "severity": "follow-on",
+      "text": "follow-on: test_plugin_directory_loads_without_errors is guarded by a skip when no `claude` executable is on PATH, so on a machine without it the loader's own verdict is silently not exercised and only the in-repo shape assertion stands between the manifest and the loader's refusal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read in full against de44bd83; monitors.json changes from an object wrapping a monitors array to a bare array, the shape test is rewritten to assert the array and the allowed entry keys, and a new loader test runs Claude Code against the plugin directory.",
+    "done_when": "the declared gate re-ran clean at head (6 passed EXIT=0) and Claude Code's loader itself now reports the plugin with no errors key, while a scratch copy carrying the base revision's file reproduces the refusal verbatim.",
+    "goal": "the goal is exactly delivered and reproduced end to end; see the goal_fidelity justification.",
+    "manifest": "read; it records the gate green (6 passed EXIT=0) and the negative control red (2 failed EXIT=1) with both failing ids named, but names its gate log only under test_logs and records no baseline_suite/after_suite arms, so the added-failure delta is not derivable from the manifest's own suite fields.",
+    "write_paths": "the diff over de44bd83..04667916 touches exactly the three declared paths (monitors.json, the plugin test, the evidence fragment) and nothing else."
+  },
+  "justifications": {
+    "durability": "test_manifest_declares_one_always_armed_monitor now pins the bare-array shape, the single entry and the allowed key set, and test_plugin_directory_loads_without_errors pins Claude Code's own verdict, with the declared mutation reddening both; the residual weakness is that the loader test is skipped when `claude` is not on PATH, so on such a machine the external verdict the fix exists to satisfy is never exercised.",
+    "evidence": "The declared gate ran to its summary line at head, re-run by me as 6 passed EXIT=0, and I read the negative-control log (2 failed, 4 passed, EXIT=1) naming test_manifest_declares_one_always_armed_monitor and test_plugin_directory_loads_without_errors, with the base-arm refusal re-derived from the base blob; the gap is that the reviewed manifest names no baseline_suite/after_suite arms, so the added-failure delta is recorded unmeasured rather than zero, and its single gate log header names the base revision de44bd83 although the arm executed at head.",
+    "fit": "The added names describe mechanism (ALLOWED_MONITOR_KEYS, the loader test's own docstring), and the comment on the shape assertion explains why the bare array is required by naming the loader's array schema rather than any plan or ticket; no added symbol, comment or filename carries a version, plan label or attribution.",
+    "goal_fidelity": "The stated goal is delivered and reproduced independently: Claude Code's loader refuses the object-wrapped monitors file at base and accepts the bare array at head, which I confirmed by pointing `claude --plugin-dir` at a scratch plugin directory carrying the base revision's monitors.json (entry reported with an errors key reading \"expected array, received object\" and an errorDetails component-load-failed for monitors) and at the head worktree at 04667916 (same entry, no errors key).",
+    "reuse": "The change adds no module and no second reader of the manifest: the existing test file is extended in place, the shell entry point and its command string are untouched, and the loader test reuses the file's existing subprocess pattern, with the one new helper justified because no such PATH guard exists elsewhere in the suite.",
+    "scope_discipline": "The changed paths over de44bd83..04667916 are exactly docs/evidence/fragments/a-follower-lives-as-long-as-its-session/crew-host-monitors-file-loads.html, plugins/crew-host/monitors/monitors.json and tests/test_session_host_plugin.py, all three inside the node's declared write paths, and every one of the three carries the change."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: de44bd836f4fe85ce248e73ebd4e32a770cf6415\nreviewed_head_sha: 04667916bc29f38e931eb7d32b582d768cc32fd7\nVERDICT goal: the goal is exactly delivered and reproduced end to end; see the goal_fidelity justification.\nVERDICT done_when: the declared gate re-ran clean at head (6 passed EXIT=0) and Claude Code's loader itself now reports the plugin with no errors key, while a scratch copy carrying the base revision's file reproduces the refusal verbatim.\nVERDICT write_paths: the diff over de44bd83..04667916 touches exactly the three declared paths (monitors.json, the plugin test, the evidence fragment) and nothing else.\nVERDICT manifest: read; it records the gate green (6 passed EXIT=0) and the negative control red (2 failed EXIT=1) with both failing ids named, but names its gate log only under test_logs and records no baseline_suite/after_suite arms, so the added-failure delta is not derivable from the manifest's own suite fields.\nVERDICT diff: read in full against de44bd83; monitors.json changes from an object wrapping a monitors array to a bare array, the shape test is rewritten to assert the array and the allowed entry keys, and a new loader test runs Claude Code against the plugin directory.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The stated goal is delivered and reproduced independently: Claude Code's loader refuses the object-wrapped monitors file at base and accepts the bare array at head, which I confirmed by pointing `claude --plugin-dir` at a scratch plugin directory carrying the base revision's monitors.json (entry reported with an errors key reading \"expected array, received object\" and an errorDetails component-load-failed for monitors) and at the head worktree at 04667916 (same entry, no errors key).\nSCORE evidence: 18\nJUSTIFICATION evidence: The declared gate ran to its summary line at head, re-run by me as 6 passed EXIT=0, and I read the negative-control log (2 failed, 4 passed, EXIT=1) naming test_manifest_declares_one_always_armed_monitor and test_plugin_directory_loads_without_errors, with the base-arm refusal re-derived from the base blob; the gap is that the reviewed manifest names no baseline_suite/after_suite arms, so the added-failure delta is recorded unmeasured rather than zero, and its single gate log header names the base revision de44bd83 although the arm executed at head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The changed paths over de44bd83..04667916 are exactly docs/evidence/fragments/a-follower-lives-as-long-as-its-session/crew-host-monitors-file-loads.html, plugins/crew-host/monitors/monitors.json and tests/test_session_host_plugin.py, all three inside the node's declared write paths, and every one of the three carries the change.\nSCORE durability: 17\nJUSTIFICATION durability: test_manifest_declares_one_always_armed_monitor now pins the bare-array shape, the single entry and the allowed key set, and test_plugin_directory_loads_without_errors pins Claude Code's own verdict, with the declared mutation reddening both; the residual weakness is that the loader test is skipped when `claude` is not on PATH, so on such a machine the external verdict the fix exists to satisfy is never exercised.\nSCORE fit: 19\nJUSTIFICATION fit: The added names describe mechanism (ALLOWED_MONITOR_KEYS, the loader test's own docstring), and the comment on the shape assertion explains why the bare array is required by naming the loader's array schema rather than any plan or ticket; no added symbol, comment or filename carries a version, plan label or attribution.\nSCORE reuse: 19\nJUSTIFICATION reuse: The change adds no module and no second reader of the manifest: the existing test file is extended in place, the shell entry point and its command string are untouched, and the loader test reuses the file's existing subprocess pattern, with the one new helper justified because no such PATH guard exists elsewhere in the suite.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T054000711922-crew-host-monitors-file-loads/gate-session-host-plugin.log:1 follow-on: the gate log's header records the base revision de44bd83, although the arm was executed against the head worktree at 04667916; a reader who takes the header revision as the arm's revision attributes the 6-passed result to the base tree, so the header should name the tree the run resolved from.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261007T054000711922-crew-host-monitors-file-loads/manifest.md:11 follow-on: the manifest names its gate log only under test_logs and records no baseline_suite/after_suite suite fields, so the store's added-failure derivation reads unmeasured rather than a measured zero, and the one-arm evidence cannot by itself distinguish a change that added no failing test from one whose base arm was never taken.\nFINDING tests/test_session_host_plugin.py:139 follow-on: test_plugin_directory_loads_without_errors is guarded by a skip when no `claude` executable is on PATH, so on a machine without it the loader's own verdict is silently not exercised and only the in-repo shape assertion stands between the manifest and the loader's refusal.",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T054000711922-crew-host-monitors-file-loads.json",
+  "review_run_id": "r-20261007T055007516244-review-of-crew-host-monitors-file-loads",
+  "reviewed_base_sha": "de44bd836f4fe85ce248e73ebd4e32a770cf6415",
+  "reviewed_head_sha": "04667916bc29f38e931eb7d32b582d768cc32fd7",
+  "reviewed_run_id": "r-20261007T054000711922-crew-host-monitors-file-loads",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:04:54.947057+00:00",
+  "total": 113
+}

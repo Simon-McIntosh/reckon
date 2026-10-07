@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "absent_arm_control": "a missing arm returns (None, []) \u2014 unmeasured, not zero",
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T125345398730-ensure-holds-one-reservation/logs/tests-head.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T125345398730-ensure-holds-one-reservation/logs/tests-base.log",
+    "count_derivation": "set difference of pytest FAILED/ERROR node ids over the reviewed run's two arm logs, computed with review.added_failures_from_gate_logs; the reviewed manifest carries no baseline_suite/after_suite fields (an unarmed run), so annotate at read time resolves no log and reports the count unmeasured while the stored record keeps the derived pair. Derivation log: .../r-20260929T135120663109-review-of-ensure-holds-one-reservation/logs/added-failures.out",
+    "pair_note": "both arms carry the one pre-existing failure tests/test_a_rewritten_terminal_manifest_transitions.py::test_the_rewrite_marker_does_not_leak_into_a_later_departure at the same assertion, so the head log adds no failing id; the head arm carries four further passes, the node's own new test file",
+    "pair_usable_as_suite_delta": true,
+    "positive_control": {
+      "count": 1,
+      "ids": [
+        "tests/test_fabricated:replaced"
+      ],
+      "ids_actual": [
+        "tests/test_fabricated_control.py::test_the_instrument_sees_a_failure"
+      ],
+      "mutation": "append one FAILED line to a copy of the head log text in memory"
+    }
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/runs.py:ensure_placement_reservation",
+    "reckon/cli.py:crew_placement"
+  ],
+  "completed_at": "2026-09-29T14:42:17.546Z",
+  "dispatched_at": "2026-09-29T13:51:37Z",
+  "findings": [
+    {
+      "file": "tests/test_ensure_holds_one_reservation.py",
+      "line": "214",
+      "text": "the retry assertion is written against the module's own constant (len(_asked(\"squeue\")) == placement._UNKNOWN_PROBE_ATTEMPTS), so it holds whatever that constant is set to: with _UNKNOWN_PROBE_ATTEMPTS reduced to 1 the ensure asks once, nothing is waited on or re-asked, and the assertion still passes. The wait-and-retry property the case exists for is therefore pinned by a number both sides move with rather than by an independent figure or by an assertion that the ask count is at least two."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 18d6c2dd: a269887f (+419/-16) adds reservation_lock_path and the fcntl.flock context manager around the whole read-decide-hold-publish sequence at reckon/crew/placement.py:418, splits the probe into held/released/unaskable with the bounded re-ask at placement.py:335, corrects the record's project comment at placement.py:487, and adds the four-case test file; 4beb7f46 appends the 54-line landing fragment as a new file with no line deleted.",
+    "done_when": "the done-when names tests/test_ensure_holds_one_reservation.py with its four cases, both arms and an executed negative control; logs/tests-head.log (a269887f, 1 failed 199 passed, EXIT=1) and logs/tests-base.log (18d6c2dd, materialized via git archive with the module-under-test path in its header, 1 failed 195 passed, EXIT=1) carry the same single failing id.",
+    "goal": "the goal is that ensure_reservation holds exactly one shared allocation under a cross-process race; reckon/crew/placement.py:418 wraps the whole read-decide-hold-publish sequence in fcntl.flock LOCK_EX on crew_home()/placement/reservation.lock (placement.py:102), and the four-process case at tests/test_ensure_holds_one_reservation.py:139 records exactly one salloc invocation with all four processes returning that one job id.",
+    "manifest": "read; it reports complete at 4beb7f46 with both arm logs, the pre-existing failure and its attribution, the executed negative control with its declared mutation, the reused fleet-node hold path, and follow-ons naming the dispatch wiring and the fleet allocation; it is unarmed, so the added-failure pair is derived from the two logs it names under test_logs.",
+    "write_paths": "the manifest declares five paths; git diff --name-only 18d6c2dd 4beb7f46 names exactly three of them (reckon/crew/placement.py, tests/test_ensure_holds_one_reservation.py, the evidence fragment), with fleet_node.py deliberately untouched and the declared figures directory left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_ensure_holds_one_reservation.py:182 reddens on the process-local claim \u2014 both the reviewed run's declared control and my own independent mutation in a scratch tree log 4 salloc requests against 1, EXIT=1 in each \u2014 and cases 2 to 4 name the change that reddens them (unknown read as absent, a live allocation replaced, a replaced one not recorded), but one line of case 2, tests/test_ensure_holds_one_reservation.py:214, is written against the module's own constant and would keep passing if the retry it guards were removed.",
+    "evidence": "the gate the done-when names is recorded at the reviewed head and reproduces: my re-run of tests/test_ensure_holds_one_reservation.py at 4beb7f46 records 4 passed, EXIT=0, with the module importing from the reviewed worktree; the base arm's header names the tree it was materialized into and the module path it imported, the negative control's first line repeats the declared mutation verbatim and reddens as predicted, and my own derivation of the added-failure pair (0 added, positive control 1) is stored with its provenance and both controls.",
+    "fit": "the new helpers follow the module's existing idiom (reservation_lock_path beside reservation_path, both resolving crew_home locally; the lock is a contextlib.contextmanager, as at reckon/crew/dispatch.py:1259), names are mechanism words with no plan, version or ticket labels, and ruff check under the repo config reports no findings on either changed file with ruff format --check clean.",
+    "goal_fidelity": "reckon/crew/placement.py:418 holds the claim for the whole read-decide-hold-publish sequence on an operation atomic between processes, so a racer blocked on the lock reads the record the winner published rather than minting its own allocation, and only a definite released answer (placement.py:314) replaces a record while an unaskable probe returns _held_result(unknown=True) without submitting.",
+    "scope_discipline": "every path in the node's two commits lies inside its five declared write paths \u2014 the three touched paths are the product module, the new test file and the fragment for this node \u2014 and the node neither edited the plan nor wrote to a path held by a concurrent node."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that ensure_reservation holds exactly one shared allocation under a cross-process race; reckon/crew/placement.py:418 wraps the whole read-decide-hold-publish sequence in fcntl.flock LOCK_EX on crew_home()/placement/reservation.lock (placement.py:102), and the four-process case at tests/test_ensure_holds_one_reservation.py:139 records exactly one salloc invocation with all four processes returning that one job id.\nVERDICT done_when: the done-when names tests/test_ensure_holds_one_reservation.py with its four cases, both arms and an executed negative control; logs/tests-head.log (a269887f, 1 failed 199 passed, EXIT=1) and logs/tests-base.log (18d6c2dd, materialized via git archive with the module-under-test path in its header, 1 failed 195 passed, EXIT=1) carry the same single failing id.\nVERDICT write_paths: the manifest declares five paths; git diff --name-only 18d6c2dd 4beb7f46 names exactly three of them (reckon/crew/placement.py, tests/test_ensure_holds_one_reservation.py, the evidence fragment), with fleet_node.py deliberately untouched and the declared figures directory left unused.\nVERDICT manifest: read; it reports complete at 4beb7f46 with both arm logs, the pre-existing failure and its attribution, the executed negative control with its declared mutation, the reused fleet-node hold path, and follow-ons naming the dispatch wiring and the fleet allocation; it is unarmed, so the added-failure pair is derived from the two logs it names under test_logs.\nVERDICT diff: read commit by commit against 18d6c2dd: a269887f (+419/-16) adds reservation_lock_path and the fcntl.flock context manager around the whole read-decide-hold-publish sequence at reckon/crew/placement.py:418, splits the probe into held/released/unaskable with the bounded re-ask at placement.py:335, corrects the record's project comment, and adds the four-case test file; 4beb7f46 appends the 54-line landing fragment as a new file with no line deleted.\nCALL_SITES: reckon/crew/runs.py:ensure_placement_reservation, reckon/cli.py:crew_placement\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/placement.py:418 holds the claim for the whole read-decide-hold-publish sequence on an operation atomic between processes, so a 'racer' blocked on the lock reads the record the winner published rather than minting its own allocation, and only a definite released answer (placement.py:314) replaces a record while an unaskable probe returns _held_result(unknown=True) without submitting.\nSCORE evidence: 20\nJUSTIFICATION evidence: the gate the done-when names is recorded at the reviewed head and reproduces: my re-run of tests/test_ensure_holds_one_reservation.py at 4beb7f46 records 4 passed, EXIT=0, with the module importing from the reviewed worktree; the base arm's header names the tree it was materialized into and the module path it imported, the negative control's first line repeats the declared mutation verbatim and reddens as predicted, and my own derivation of the added-failure pair (0 added, positive control 1) is stored with its provenance and both controls.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the node's two commits lies inside its five declared write paths \u2014 the three touched paths are the product module, the new test file and the fragment for this node \u2014 and the node neither edited the plan nor wrote to a path held by a concurrent node.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_ensure_holds_one_reservation.py:182 reddens on the process-local claim \u2014 both the reviewed run's declared control and my own independent mutation in a scratch tree log 4 salloc requests against 1, EXIT=1 in each \u2014 and cases 2 to 4 name the change that reddens them (unknown read as absent, a live allocation replaced, a replaced one not recorded), but one line of case 2, tests/test_ensure_holds_one_reservation.py:214, is written against the module's own constant and would keep passing if the retry it guards were removed.\nSCORE fit: 20\nJUSTIFICATION fit: the new helpers follow the module's existing idiom (reservation_lock_path beside reservation_path; the lock is a contextlib.contextmanager, as at reckon/crew/dispatch.py:1259), names are mechanism words with no plan, version or ticket labels, and ruff check under the repo config reports no findings on either changed file with ruff format --check clean.\nFINDING tests/test_ensure_holds_one_reservation.py:214 the retry assertion is written against the module's own constant (len(_asked(\"squeue\")) == placement._UNKNOWN_PROBE_ATTEMPTS), so it holds whatever that constant is set to: with _UNKNOWN_PROBE_ATTEMPTS reduced to 1 nothing is waited on or re-asked and the assertion still passes; the wait-and-retry property is pinned by a number both sides move with rather than by an independent figure or by asserting at least two asks.\n",
+  "review_run_id": "r-20260929T135120663109-review-of-ensure-holds-one-reservation",
+  "reviewed_base_sha": "18d6c2dd71372b70acf7d0d8c08d7f018a973d87",
+  "reviewed_head_sha": "4beb7f46dd973e7afa5677624fcf1f7d59a8bcc8",
+  "reviewed_run_id": "r-20260929T125345398730-ensure-holds-one-reservation",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T135120663109-review-of-ensure-holds-one-reservation",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T14:30:00+00:00",
+  "total": 99
+}

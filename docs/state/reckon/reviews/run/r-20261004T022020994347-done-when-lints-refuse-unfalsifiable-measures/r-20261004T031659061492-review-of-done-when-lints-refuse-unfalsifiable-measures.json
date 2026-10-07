@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "556e5b6f5e5dd6e2e92d4972f12edcb99c2bfd6c",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5147",
+    "reckon/crew/dispatch.py:5166"
+  ],
+  "completed_at": "2026-10-04T03:27:06.635Z",
+  "dispatched_at": "2026-10-04T03:17:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/node.py",
+      "line": "1186",
+      "severity": "follow-on",
+      "text": "follow-on: the new absolute-green lint reads the wording, not the base, so it refuses a done-when whose named check is genuinely green. A done-when 'pytest tests/test_green_only.py exits 0' matches _ABSOLUTE_GREEN_GATE (node.py:141) and carries no _GREEN_BASE_REVISION/_DELTA_AGAINST_BASE phrase, so validate_node:1186 fails it although the file is green. Measured: tests/test_unreadable_names_its_word.py, named by one of the six census-refused rows (r-20260928T055726955192), is genuinely green on this checkout (3 passed), yet its done-when is refused. The section-15 row states the negative explicitly -- 'a node whose files are genuinely green must not be refused, so the check reads the base rather than the wording' -- and eacad644 replaced the base-reading test with a wording test, so this clause is unmet. Remedy: key the refusal on the done-when itself declaring a red base (the prior '\\b(?:before|base)\\b' condition), or accept a citation as disclosure rather than as a precondition for a green node."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "line": "1186",
+      "severity": "follow-on",
+      "text": "follow-on: the citation the lint accepts is unverified, so the guard admits a false statement. tests/test_done_when_lints.py:190 admits 'pytest tests/test_preexisting.py exits 0; adds no failure to base' while the named file carries a failing test (assert 1 == 2), and _GREEN_BASE_REVISION matches any 7-40 hex characters after 'green at base' without checking the revision resolves or that the check was green there. The lint therefore passes wording that asserts a delta or a green base which is not true, the same escape it exists to close."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "line": "1186",
+      "severity": "follow-on",
+      "text": "follow-on: the admitted spellings are narrow, so a legitimate delta worded outside them is refused. _DELTA_AGAINST_BASE (node.py:149) admits only 'adds/zero added/no added failures to|over|against base', and _ABSOLUTE_GREEN_GATE (node.py:141) still requires the literal token pytest and a tests/ path; 'no regressions versus base', 'same failures as base' or a green check spelled without the word pytest are refused. This is the over-refusal direction the plan's negative warns against (one false refusal teaches coordinators to stop running the check). The prior review's carried follow-on on _NUMERIC_AGREEMENT (gerund 'agreeing', unit 's') is untouched by these commits."
+    }
+  ],
+  "head_log_revision": "cd6fa4e40b9300d4900388a9bcd1edc4e82a49c6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the increment commit by commit against 7aaad17f: eacad644 removes the pytest-executing _red_base_gate_finding and its os/sys imports, narrows _INDEPENDENT_READING to an adjacent independent/second reading, and adds the static _ABSOLUTE_GREEN_GATE/_GREEN_BASE_REVISION/_DELTA_AGAINST_BASE lint; cd6fa4e40 widens _ABSOLUTE_GREEN_GATE to admit flags before the test path and adds 'no added failures by id against' to the delta pattern.",
+    "done_when": "the reviewed run's done_when names tests/test_done_when_lints.py's three cases plus the paired test_crew_node/test_crew_dryrun records; the manifest's baseline_suite records 3 failures (exactly the three new cases) and after_suite 24 passed, and the declared negative control at EXIT=1. Reproduced the head arm in the reviewed worktree: 24 passed, EXIT=0.",
+    "goal": "three dispatch done-when lints drawn from the section-15 census; validate_node refuses an independent reading without numeric agreement (:1164), absence evidence without a coverage floor and base count (:1170), and a named exit-zero check without a green-base revision or delta citation (:1186).",
+    "manifest": "read; it carries the four commits, changed_paths, flat baseline_suite/after_suite JSON with log_paths, the negative_control_log path, and measurement_cwd of the base scratch arm.",
+    "write_paths": "the manifest declares reckon/crew/node.py, reckon/crew/dispatch.py, tests/test_done_when_lints.py, an evidence fragment and a figures directory; the increment touches only node.py and the test file, both inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_done_when_lints.py:183-239 now proves the uncited refusal, the delta admission, the flagged-pytest admission and that no repository test is executed (marker absent), and the negative control reddens the agreement clause; but the plan's negative case (a green uncited check admitted) is untested and in fact violated, and the accepted citation is unverified, so the guard's admission side is unguarded.",
+    "evidence": "the manifest's paired gate reconciles with the two logs (3 failing ids at base, 24 passed at head) and I reproduced the head arm at cd6fa4e40 (24 passed, EXIT=0); the negative control is a real EXIT=1 on the agreement case. The census (1800/1800 rows at base and head, 6 absolute-green refusals, 2 broad-agreement false positives) is self-reported and was not re-run.",
+    "fit": "the new patterns follow the module-level regex idiom of _EVIDENCE_SIGNALS and _GATE_POPULATION, the refusal uses the existing fail('demonstrable', ...) form, and the removed path drops its now-unused os/sys imports; no plan or ticket label is introduced. The _ABSOLUTE_GREEN_GATE regex is dense but consistent with the file, though untested against adversarial spacing.",
+    "goal_fidelity": "all three lints are present and the red-base execution is gone, but the absolute-green lint now decides on wording rather than the base, refusing a genuinely green uncited check and accepting an unverified delta claim -- so it does not meet the section-15 row's stated negative.",
+    "scope_discipline": "the increment is reckon/crew/node.py and tests/test_done_when_lints.py only, both inside the declared write paths, with no unrelated change."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: three dispatch done-when lints drawn from the section-15 census; validate_node refuses an independent reading without numeric agreement (:1164), absence evidence without a coverage floor and base count (:1170), and a named exit-zero check without a green-base revision or delta citation (:1186).\nVERDICT done_when: the done_when names tests/test_done_when_lints.py's three cases plus the paired test_crew_node/test_crew_dryrun records; the manifest records baseline_suite with 3 failures (exactly the three new cases) and after_suite with 24 passed, and the declared negative control at EXIT=1. Reproduced the head arm in the reviewed worktree: 24 passed, EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/node.py, reckon/crew/dispatch.py, tests/test_done_when_lints.py, an evidence fragment and a figures directory; the increment touches only node.py and the test file, both inside the declared set.\nVERDICT manifest: read; it carries the four commits, changed_paths, flat baseline_suite/after_suite JSON with log_paths, the negative_control_log path, and measurement_cwd of the base scratch arm.\nVERDICT diff: read the increment commit by commit against 7aaad17f; eacad644 removes the pytest-executing _red_base_gate_finding and its os/sys imports, narrows _INDEPENDENT_READING to an adjacent independent/second reading, and adds the static _ABSOLUTE_GREEN_GATE/_GREEN_BASE_REVISION/_DELTA_AGAINST_BASE lint; cd6fa4e40 widens _ABSOLUTE_GREEN_GATE to admit flags before the test path and adds 'no added failures by id against' to the delta pattern.\nCALL_SITES: reckon/crew/dispatch.py:5147, reckon/crew/dispatch.py:5166\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: all three lints are present and the red-base execution is gone, but the absolute-green lint now decides on wording rather than the base, refusing a genuinely green uncited check and accepting an unverified delta claim -- so it does not meet the section-15 row's stated negative.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's paired gate reconciles with the two logs (3 failing ids at base, 24 passed at head) and I reproduced the head arm at cd6fa4e40 (24 passed, EXIT=0); the negative control is a real EXIT=1 on the agreement case. The census (1800/1800 rows at base and head, 6 absolute-green refusals, 2 broad-agreement false positives) is self-reported and was not re-run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the increment is reckon/crew/node.py and tests/test_done_when_lints.py only, both inside the declared write paths, with no unrelated change.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_done_when_lints.py:183-239 now proves the uncited refusal, the delta admission, the flagged-pytest admission and that no repository test is executed (marker absent), and the negative control reddens the agreement clause; but the plan's negative case (a green uncited check admitted) is untested and in fact violated, and the accepted citation is unverified, so the guard's admission side is unguarded.\nSCORE fit: 17\nJUSTIFICATION fit: the new patterns follow the module-level regex idiom of _EVIDENCE_SIGNALS and _GATE_POPULATION, the refusal uses the existing fail('demonstrable', ...) form, and the removed path drops its now-unused os/sys imports; no plan or ticket label is introduced.\nFINDING reckon/crew/node.py:1186 follow-on: the new absolute-green lint reads the wording, not the base, so it refuses a done-when whose named check is genuinely green; tests/test_unreadable_names_its_word.py, named by one of the six census-refused rows, passes on this checkout yet its done-when is refused, contradicting the section-15 negative 'a node whose files are genuinely green must not be refused'.\nFINDING reckon/crew/node.py:1186 follow-on: the citation the lint accepts is unverified, so it admits a false statement -- the test at :190 admits 'adds no failure to base' over a file with a failing test, and 'green at base <any 7-40 hex>' is accepted without the revision resolving.\nFINDING reckon/crew/node.py:1186 follow-on: the admitted delta spellings are narrow ('no regressions versus base' or 'same failures as base' are refused) and _ABSOLUTE_GREEN_GATE still requires the literal token pytest and a tests/ path; the prior review's carried follow-on on _NUMERIC_AGREEMENT is untouched.",
+  "review_run_id": "r-20261004T031659061492-review-of-done-when-lints-refuse-unfalsifiable-measures",
+  "reviewed_base_sha": "7aaad17f26142f22c621a02826f1b107dcdb3cf5",
+  "reviewed_head_sha": "cd6fa4e40b9300d4900388a9bcd1edc4e82a49c6",
+  "reviewed_run_id": "r-20261004T022020994347-done-when-lints-refuse-unfalsifiable-measures",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T03:24:15.758769+00:00",
+  "total": 84
+}

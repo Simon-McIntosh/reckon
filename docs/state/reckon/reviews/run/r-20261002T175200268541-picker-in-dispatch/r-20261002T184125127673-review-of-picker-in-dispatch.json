@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's own baseline_suite (163 passed) and after_suite (175 passed) both list no failing node ids, so the head arm adds zero failure ids; independently re-derived with reckon.crew.review.added_failures_from_gate_logs, after a positive control confirmed the parser finds the known failing id in negative-control.log.",
+  "base_log_revision": "ba5ac01e746ecaa66f94fb1d2a8709401da30c23",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:1711",
+    "reckon/crew/recovery.py:1713",
+    "reckon/crew/recovery.py:2562",
+    "reckon/crew/promotion.py:7494"
+  ],
+  "completed_at": "2026-10-02T19:02:28.924Z",
+  "dispatched_at": "2026-10-02T18:41:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "4166",
+      "severity": "follow-on",
+      "text": "follow-on: dispatch_picker_selection calls pick(..., cached_only=True), but pick() at this head takes no cached_only parameter, so on a real configuration every shadow dispatch records a TypeError fallback instead of a selection; it is disclosed in the evidence fragment and the manifest and authorised by the shared contract with picker-judges-pressure, and is closed by merging that node."
+    }
+  ],
+  "head_log_revision": "d85ea6b941aba2fe58640812490978632eed8a1a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the dispatch-time ask and the ledger key reach production through reckon/cli.py:1711 (crew dispatch), reckon/crew/recovery.py:1713 and :2562 (recovery and reflex dispatch), and reckon/crew/promotion.py:7494 (ledger.build_record -> promoted_picker_selection).",
+    "diff": "read commit by commit against ba5ac01e; 68275e99f is the product and test change and d85ea6b94 the hold-detail change, both conventional with bodies and no attribution trailer, and the code diff stays inside the declared scope.",
+    "done_when": "read against the seven-bullet evidence fence; the shadow ask, the 5 s bound and the raising-picker survival are tested, the opt-in --route picker mode resolves the backend through the plan_dispatch override with null/fallback/hold paths, the comment round-trip is tested, and the named six-file gate runs at base 163 passed and head 175 passed with zero added failure ids.",
+    "goal": "plan section 9 makes every dispatch consult the picker in shadow mode and route only on request; reckon/crew/dispatch.py:4144 dispatch_picker_selection asks the picker with cached_only under a 5 s bound, the selection rides the live run under picker_selection, and reckon/ledger.py:158 declares one nullable picker_selection key on every row.",
+    "manifest": "read; it claims base 163 passed and head 175 passed over the six named files with zero added failure ids, a declared negative control on a raising picker, and it discloses the missing cached_only kwarg and the fenced real dry run.",
+    "write_paths": "the diff ba5ac01e..d85ea6b9 touches exactly the five declared fence paths (reckon/crew/dispatch.py, reckon/ledger.py, reckon/cli.py, tests/test_picker_in_dispatch.py, docs/evidence/fragments/one-typesafe-model-picker/picker-in-dispatch.html) with no file outside them."
+  },
+  "justifications": {
+    "durability": "reinstating the pre-change dispatch turns tests/test_picker_in_dispatch.py::test_shadow_records_selection_without_changing_backend red (base-defect.log, assert [] == [True]), and each new assertion names a condition that fails, so the guards are real.",
+    "evidence": "baseline-scratch-verified.log reports 163 passed and final-head-gate.log 175 passed with zero added failure ids, the raising-picker negative control is a real red receipt (EXIT=1, one failing id) and the base defect reproduces as assert [] == [True] in base-defect.log; one point withheld because the evidence-fence item (5) real dry run exited 2 and quoted a fallback, not a routed selection.",
+    "fit": "dispatch_picker_selection and _picker_refusal_reasons carry no plan or ticket identifier, the bounded-wait and fallback-dict shapes match reckon/crew/dispatch.py's idiom, and the diff adds no version suffix or attribution.",
+    "goal_fidelity": "reckon/crew/dispatch.py:4144-4266 implements the shadow ask and the opt-in route the plan names; the only withheld point is that at this head the ask cannot succeed, so a real dispatch records a fallback rather than a selection.",
+    "scope_discipline": "every path in the diff ba5ac01e..d85ea6b9 is one of the five declared write paths, with no shared plan, index or sprint mutation."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 9 makes every dispatch consult the picker in shadow mode and route only on request; reckon/crew/dispatch.py:4144 dispatch_picker_selection asks the picker with cached_only under a 5 s bound, the selection rides the live run under picker_selection, and reckon/ledger.py:158 declares one nullable picker_selection key on every row.\nVERDICT done_when: read against the seven-bullet evidence fence; the shadow ask, the 5 s bound and the raising-picker survival are tested, the opt-in --route picker mode resolves the backend through the plan_dispatch override with null/fallback/hold paths, the comment round-trip is tested, and the named six-file gate runs at base 163 passed and head 175 passed with zero added failure ids.\nVERDICT write_paths: the diff ba5ac01e..d85ea6b9 touches exactly the five declared fence paths (reckon/crew/dispatch.py, reckon/ledger.py, reckon/cli.py, tests/test_picker_in_dispatch.py, docs/evidence/fragments/one-typesafe-model-picker/picker-in-dispatch.html) with no file outside them.\nVERDICT manifest: read; it claims base 163 passed and head 175 passed over the six named files with zero added failure ids, a declared negative control on a raising picker, and it discloses the missing cached_only kwarg and the fenced real dry run.\nVERDICT diff: read commit by commit against ba5ac01e; 68275e99f is the product and test change and d85ea6b94 the hold-detail change, both conventional with bodies and no attribution trailer, and the code diff stays inside the declared scope.\nCALL_SITES: reckon/cli.py:1711, reckon/crew/recovery.py:1713, reckon/crew/recovery.py:2562, reckon/crew/promotion.py:7494\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:4144-4266 implements the shadow ask and the opt-in route the plan names; the only withheld point is that at this head the ask cannot succeed, so a real dispatch records a fallback rather than a selection.\nSCORE evidence: 16\nJUSTIFICATION evidence: baseline-scratch-verified.log reports 163 passed and final-head-gate.log 175 passed with zero added failure ids, the raising-picker negative control is a real red receipt (EXIT=1, one failing id) and the base defect reproduces as assert [] == [True] in base-defect.log; one point withheld because the evidence-fence item (5) real dry run exited 2 and quoted a fallback, not a routed selection.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff ba5ac01e..d85ea6b9 is one of the five declared write paths, with no shared plan, index or sprint mutation.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the pre-change dispatch turns tests/test_picker_in_dispatch.py::test_shadow_records_selection_without_changing_backend red (base-defect.log, assert [] == [True]), and each new assertion names a condition that fails, so the guards are real.\nSCORE fit: 19\nJUSTIFICATION fit: dispatch_picker_selection and _picker_refusal_reasons carry no plan or ticket identifier, the bounded-wait and fallback-dict shapes match reckon/crew/dispatch.py's idiom, and the diff adds no version suffix or attribution.\nFINDING reckon/crew/dispatch.py:4166 follow-on: dispatch_picker_selection calls pick(..., cached_only=True), but pick() at this head takes no cached_only parameter, so on a real configuration every shadow dispatch records a TypeError fallback instead of a selection; it is disclosed in the evidence fragment and the manifest and authorised by the shared contract with picker-judges-pressure, and is closed by merging that node.\nreviewed_base_sha: ba5ac01e746ecaa66f94fb1d2a8709401da30c23\nreviewed_head_sha: d85ea6b941aba2fe58640812490978632eed8a1a",
+  "review_run_id": "r-20261002T184125127673-review-of-picker-in-dispatch",
+  "reviewed_base_sha": "ba5ac01e746ecaa66f94fb1d2a8709401da30c23",
+  "reviewed_head_sha": "d85ea6b941aba2fe58640812490978632eed8a1a",
+  "reviewed_run_id": "r-20261002T175200268541-picker-in-dispatch",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T184125127673-review-of-picker-in-dispatch",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T18:59:36.533899+00:00",
+  "total": 92
+}

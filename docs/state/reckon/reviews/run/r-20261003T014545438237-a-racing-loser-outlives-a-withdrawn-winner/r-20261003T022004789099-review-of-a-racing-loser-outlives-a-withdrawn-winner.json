@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "41e6fc48f5b7f9293694519d4c13c4e8c146bb82",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:6221 _raise_repository_scope_conflict inside dispatch()",
+    "reckon/crew/dispatch.py:6742 _raise_repository_scope_conflict inside dispatch()",
+    "reckon/crew/runs.py:948 _raise_live_scope_conflict facade (exported at reckon/crew.py:132)",
+    "reckon/crew.py:132 export \"_raise_live_scope_conflict\""
+  ],
+  "completed_at": "2026-10-03T02:30:00.583Z",
+  "dispatched_at": "2026-10-03T02:20:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "909",
+      "severity": "follow-on",
+      "text": "`_raise_live_scope_conflict` gains own_run_id/own_registered_at but both default to None and no in-repo caller supplies them, so a caller reaching the facade without the dispatch identity still refuses a later racing arrival on sight; the done-when's 'every route applies the same ordering' holds only for callers that pass the identity in."
+    },
+    {
+      "file": "tests/test_one_of_two_racing_reviews_survives.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the brief asked the node to say in its manifest which assertions encoding refuse-on-sight were updated in this file; the file is unchanged and the manifest is silent on it, so a reader cannot tell 'no update was needed' from 'the instruction was missed'."
+    }
+  ],
+  "head_log_revision": "b2c272b055b098fb4e155541268c6a6af242db93",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read b2c272b05 commit by commit against base 41e6fc4; three files, +396/-6, no churn, no format sweep, no unrelated edits; the wait mirrors `_peer_claim_is_a_later_racing_arrival` and is entered only for an unlaunched peer that registered first, then re-reads that peer and proceeds, refuses naming the winner, or refuses naming the bound.",
+    "done_when": "at head b2c272b the five clauses hold - the bounded re-reading wait, the facade forwarding own_run_id/own_registered_at, the four named cases (five tests) using stub claims and an injected clock, the negative control that turns the withdrawn-winner case red (logs/negative-control.log, EXIT=1), and the focused gate over tests/test_a_racing_loser_outlives_a_withdrawn_winner.py + tests/test_one_of_two_racing_reviews_survives.py (logs/head-gate.log '13 passed' EXIT=0 vs logs/base-gate.log '8 passed' EXIT=0, 0 added failures).",
+    "goal": "the goal is that a dispatch losing a registration race settles only once the unlaunched winner launches or withdraws, and that every route into the scope-conflict check applies the same ordering; the landed change adds `_peer_claim_is_an_unlaunched_racing_winner` and `_settle_racing_winner` in reckon/crew/dispatch.py:2252-2346 and forwards the dispatch identity through reckon/crew/runs.py:900-951, which is exactly that mechanism.",
+    "manifest": "read at the reviewed run's manifest.md; status complete, commit b2c272b05, baseline_suite and after_suite are well-formed JSON with absolute log paths naming revision 41e6fc4 and b2c272b, failure_count 0 each, negative_control_log a bare path, and measurement_module/measurement_cwd recorded for the scratch base arm.",
+    "write_paths": "the brief fenced reckon/crew/dispatch.py, tests/test_a_racing_loser_outlives_a_withdrawn_winner.py and tests/test_one_of_two_racing_reviews_survives.py; the diff also changes reckon/crew/runs.py, which the brief's own done-when requires (the facade lives there) and which the coordinator granted on resume (runs/resume-1-advice.txt); tests/test_one_of_two_racing_reviews_survives.py is unchanged."
+  },
+  "justifications": {
+    "durability": "the negative control at logs/negative-control.log reddens test_the_loser_proceeds_when_the_winner_withdraws and test_the_loser_refuses_when_the_bound_expires when the wait is removed, so the guard is load-bearing rather than observed green.",
+    "evidence": "the focused gate is recorded at both arms (logs/head-gate.log '13 passed' EXIT=0, logs/base-gate.log '8 passed' EXIT=0) and the negative control at logs/negative-control.log EXIT=1, with the added-failure count of 0 re-derived from those same logs.",
+    "fit": "the new helpers mirror `_peer_claim_is_a_later_racing_arrival` at reckon/crew/dispatch.py:2199 in shape and idiom, the deferred import at reckon/crew/runs.py:661 matches the module's existing cycle-avoidance pattern, and no name carries a plan or ticket label.",
+    "goal_fidelity": "reckon/crew/dispatch.py:2276-2356 `_settle_racing_*` and reckon/crew/runs.py:940-951 implement the wait and the facade forwarding the goal names, verified by reading the landed diff.",
+    "scope_discipline": "the diff touches reckon/crew/runs.py outside the brief's listed fence, but that path is required by the done-when and was granted on resume, and the changed files otherwise stay inside scope with no stray edits."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a dispatch losing a registration race settles only once the unlaunched winner launches or withdraws, and that every route into the scope-conflict check applies the same ordering; the landed change adds `_peer_claim_is_an_unlaunched_racing_winner` and `_settle_racing_winner` in reckon/crew/dispatch.py:2252-2346 and forwards the dispatch identity through reckon/crew/runs.py:900-951, which is exactly that mechanism.\nVERDICT done_when: at head b2c272b the five clauses hold - the bounded re-reading wait, the facade forwarding own_run_id/own_registered_at, the four named cases (five tests) using stub claims and an injected clock, the negative control that turns the withdrawn-winner case red (logs/negative-control.log, EXIT=1), and the focused gate over tests/test_a_racing_loser_outlives_a_withdrawn_winner.py + tests/test_one_of_two_racing_reviews_survives.py (logs/head-gate.log '13 passed' EXIT=0 vs logs/base-gate.log '8 passed' EXIT=0, 0 added failures).\nVERDICT write_paths: the brief fenced reckon/crew/dispatch.py, tests/test_a_racing_loser_outlives_a_withdrawn_winner.py and tests/test_one_of_two_racing_reviews_survives.py; the diff also changes reckon/crew/runs.py, which the brief's own done-when requires (the facade lives there) and which the coordinator granted on resume (runs/resume-1-advice.txt); tests/test_one_of_two_racing_reviews_survives.py is unchanged.\nVERDICT manifest: read at the reviewed run's manifest.md; status complete, commit b2c272b05, baseline_suite and after_suite are well-formed JSON with absolute log paths naming revision 41e6fc4 and b2c272b, failure_count 0 each, negative_control_log a bare path, and measurement_module/measurement_cwd recorded for the scratch base arm.\nVERDICT diff: read b2c272b05 commit by commit against base 41e6fc4; three files, +396/-6, no churn, no format sweep, no unrelated edits; the wait mirrors `_peer_claim_is_a_later_racing_arrival` and is entered only for an unlaunched peer that registered first, then re-reads that peer and proceeds, refuses naming the winner, or refuses naming the bound.\nCALL_SITES: reckon/crew/dispatch.py:6221 _raise_repository_scope_conflict inside dispatch(), reckon/crew/dispatch.py:6742 _raise_repository_scope_conflict inside dispatch(), reckon/crew/runs.py:948 _raise_live_scope_conflict facade (exported at reckon/crew.py:132)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:2276-2356 `_settle_racing_*` and reckon/crew/runs.py:940-951 implement the wait and the facade forwarding the goal names, verified by reading the landed diff.\nSCORE evidence: 18\nJUSTIFICATION evidence: the focused gate is recorded at both arms (logs/head-gate.log '13 passed' EXIT=0, logs/base-gate.log '8 passed' EXIT=0) and the negative control at logs/negative-control.log EXIT=1, with the added-failure count of 0 re-derived from those same logs.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff touches reckon/crew/runs.py outside the brief's listed fence, but that path is required by the done-when and was granted on resume, and the changed files otherwise stay inside scope with no stray edits.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control at logs/negative-control.log reddens test_the_loser_proceeds_when_the_winner_withdraws and test_the_loser_refuses_when_the_bound_expires when the wait is removed, so the guard is load-bearing rather than observed green.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers mirror `_peer_claim_is_a_later_racing_arrival` at reckon/crew/dispatch.py:2199 in shape and idiom, the deferred import at reckon/crew/runs.py:661 matches the module's existing cycle-avoidance pattern, and no name carries a plan or ticket label.\nFINDING reckon/crew/runs.py:909 follow-on: `_raise_live_scope_conflict` gains own_run_id/own_registered_at but both default to None and no in-repo caller supplies them, so a caller reaching the facade without the dispatch identity still refuses a later racing arrival on sight; the done-when's 'every route applies the same ordering' holds only for callers that pass the identity in.\nFINDING tests/test_one_of_two_racing_reviews_survives.py:1 follow-on: the brief asked the node to say in its manifest which assertions encoding refuse-on-sight were updated in this file; the file is unchanged and the manifest is silent on it, so a reader cannot tell 'no update was needed' from 'the instruction was missed'.",
+  "review_run_id": "r-20261003T022004789099-review-of-a-racing-loser-outlives-a-withdrawn-winner",
+  "reviewed_base_sha": "41e6fc48f5b7f9293694519d4c13c4e8c146bb82",
+  "reviewed_head_sha": "b2c272b055b098fb4e155541268c6a6af242db93",
+  "reviewed_run_id": "r-20261003T014545438237-a-racing-loser-outlives-a-withdrawn-winner",
+  "reviewer": "review-of-a-racing-loser-outlives-a-withdrawn-winner",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T02:28:38.018573+00:00",
+  "total": 91
+}

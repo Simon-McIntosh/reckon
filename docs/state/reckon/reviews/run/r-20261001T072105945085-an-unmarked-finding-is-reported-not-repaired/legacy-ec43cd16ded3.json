@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: the reviewed manifest names no baseline_suite/after_suite pair, so the count was taken from the two arms it does name - gate.log at base 16434dd947e15f0ce35a6f05dcf69fa72323c52e (10 passed, EXIT=0) and repair-gate.log at the head (57 passed, EXIT=0) - read through the store's own reader reckon.crew.review.added_failures_from_gate_logs; each arm prints no FAILED/ERROR id and a positive control on an injected FAILED id returns 1 id, so the zero is a measured zero and not an instrument that cannot see.",
+  "base_log_revision": "16434dd947e15f0ce35a6f05dcf69fa72323c52e",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:2224",
+    "reckon/crew/recovery.py:2253",
+    "reckon/crew/recovery.py:2255"
+  ],
+  "completed_at": "2026-10-01T07:56:22.557Z",
+  "dispatched_at": "2026-10-01T07:21:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2255",
+      "severity": "follow-on",
+      "text": "follow-on: unmarked_findings(review) is only evaluated inside the branch guarded by not blocking_findings(review), and an unmarked finding now classifies as blocking (reckon/crew/repair.py:184), so the count in the recorded reason and the unmarked_findings key of the decline-only report can only be zero and empty there - the clause and the reported list are dead and can never name the cause they were built to distinguish."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T072105945085-an-unmarked-finding-is-reported-not-repaired/repair-gate.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded after arm's header names revision 1e6d4503f1645f1b5a6c17d68b401c47bd53bb34+uncommitted repair, not the landed head 233c217029f88ef6668ac48829616e9d449d6449, so the manifest's 57-passed result is evidence about an uncommitted tree and was not re-tied to the commit that landed."
+    },
+    {
+      "file": "docs/evidence/fragments/a-review-is-sized-to-its-risk/an-unmarked-finding-is-reported-not-repaired.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: this path is in the node's declared write paths but no such file is in the diff, so the node's declared evidence fragment (and its companion docs/figures path) is undeclivered."
+    }
+  ],
+  "head_log_revision": "1e6d4503f1645f1b5a6c17d68b401c47bd53bb34",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 16434dd94; 1e6d4503f introduced the storage-timestamp-keyed drop the prior review found blocking, and 233c21702 replaced it - an absent severity blocks again and a post-audit unmarked finding is flagged by file and line rather than dropped - restoring the sibling repair suites the first commit reddened.",
+    "done_when": "the round's measure is the plan section 3 acceptance shape - a stored three-finding record carrying no severities composes one repair naming all three; tests/test_an_unmarked_finding_is_reported_not_repaired.py::test_a_three_finding_unmarked_record_composes_one_node asserts exactly that, passes in the manifest's gate (57 passed, EXIT=0) and in my own arm at the committed head, and the declared negative control reddens it plus four siblings (5 failed, EXIT=1).",
+    "goal": "the node's goal is that a finding a reviewer raised is not discarded; the change makes an absent severity block again (reckon/crew/repair.py:184 _finding_kind) and still flags a post-audit unmarked finding (reckon/crew/repair.py:223 unmarked_findings), and a 57-passed run of the nine-file repair gate at the landed head 233c21702 confirms a no-severity finding now reaches the repair.",
+    "manifest": "read; it reads complete with status complete, its landing line matches the two-commit diff, and its gate names repair-gate.log 57 passed EXIT=0, but that arm's header records 1e6d4503f+uncommitted repair rather than the landed 233c21702 and the manifest names no baseline_suite/after_suite pair, so the recorded gate is not tied to the landed revision.",
+    "write_paths": "the diff touches exactly reckon/crew/repair.py, reckon/crew/recovery.py and tests/test_an_unmarked_finding_is_reported_not_repaired.py, all inside the node's declared scope, but two declared docs paths carry no file in the diff and are not delivered."
+  },
+  "justifications": {
+    "durability": "tests/test_an_unmarked_finding_is_reported_not_repaired.py::test_a_mixed_record_repairs_both_and_flags_only_the_unmarked_one asserts the unmarked finding's path is in the composed write scope, which reddens when the source mutation restores the timestamp-keyed drop (5 failed EXIT=1), and the ids the tests assert are re-derived in the test from the finding's own content rather than read back from the code under test.",
+    "evidence": "the gate is honest and reproducible in the reviewed tree (my own arm at the committed head 233c21702, 57 passed EXIT=0, module resolved to the reviewed worktree's reckon/crew/repair.py), but the manifest's recorded after arm is stamped 1e6d4503f+uncommitted repair rather than the landed revision and no baseline_suite/after_suite pair is named, so the recorded evidence must be re-taken to bind it to 233c21702.",
+    "fit": "the renamed constant UNMARKED_SEVERITY_AUDIT_STARTED_AT and its callers are mechanism-named and comment the reason the audit reports rather than refuses, but reckon/crew/recovery.py:2255-2263 still carries a decline-only unmarked count and list that the change makes structurally empty.",
+    "goal_fidelity": "the landed change does what the goal states - reckon/crew/repair.py:184 classifies a finding with no severity as blocking so it is repaired, and reckon/crew/repair.py:223 still flags it on a post-audit record, verified at head 233c21702 (nine-file gate 57 passed EXIT=0).",
+    "scope_discipline": "every path in the diff (reckon/crew/repair.py, reckon/crew/recovery.py, tests/test_an_unmarked_finding_is_reported_not_repaired.py) is inside the declared write paths, and it carries only what the repair implies; two declared docs paths are left unlanded."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a finding a reviewer raised is not discarded; the change makes an absent severity block again (reckon/crew/repair.py:184 _finding_kind) and still flags a post-audit unmarked finding (reckon/crew/repair.py:223 unmarked_findings), and a 57-passed run of the nine-file repair gate at the landed head 233c21702 confirms a no-severity finding now reaches the repair.\nVERDICT done_when: the round's measure is the plan section 3 acceptance shape - a stored three-finding record carrying no severities composes one repair naming all three; tests/test_an_unmarked_finding_is_reported_not_repaired.py::test_a_three_finding_unmarked_record_composes_one_node asserts exactly that, passes in the manifest's gate (57 passed, EXIT=0) and in my own arm at the committed head, and the declared negative control reddens it plus four siblings (5 failed, EXIT=1).\nVERDICT write_paths: the diff touches exactly reckon/crew/repair.py, reckon/crew/recovery.py and tests/test_an_unmarked_finding_is_reported_not_repaired.py, all inside the node's declared scope, but two declared docs paths carry no file in the diff and are not delivered.\nVERDICT manifest: read; it reads complete with status complete, its landing line matches the two-commit diff, and its gate names repair-gate.log 57 passed EXIT=0, but that arm's header records 1e6d4503f+uncommitted repair rather than the landed 233c21702 and the manifest names no baseline_suite/after_suite pair, so the recorded gate is not tied to the landed revision.\nVERDICT diff: read commit by commit against base 16434dd94; 1e6d4503f introduced the storage-timestamp-keyed drop the prior review found blocking, and 233c21702 replaced it - an absent severity blocks again and a post-audit unmarked finding is flagged by file and line rather than dropped - restoring the sibling repair suites the first commit reddened.\nCALL_SITES: reckon/crew/recovery.py:2224, reckon/crew/recovery.py:2253, reckon/crew/recovery.py:2255\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the landed change does what the goal states - reckon/crew/repair.py:184 classifies a finding with no severity as blocking so it is repaired, and reckon/crew/repair.py:223 still flags it on a post-audit record, verified at head 233c21702 (nine-file gate 57 passed EXIT=0).\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate is honest and reproducible in the reviewed tree (my own arm at the committed head 233c21702, 57 passed EXIT=0, module resolved to the reviewed worktree's reckon/crew/repair.py), but the manifest's recorded after arm is stamped 1e6d4503f+uncommitted repair rather than the landed revision and no baseline_suite/after_suite pair is named, so the recorded evidence must be re-taken to bind it to 233c21702.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/repair.py, reckon/crew/recovery.py, tests/test_an_unmarked_finding_is_reported_not_repaired.py) is inside the declared write paths, and it carries only what the repair implies; two declared docs paths are left unlanded.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_unmarked_finding_is_reported_not_repaired.py::test_a_mixed_record_repairs_both_and_flags_only_the_unmarked_one asserts the unmarked finding's path is in the composed write scope, which reddens when the source mutation restores the timestamp-keyed drop (5 failed EXIT=1), and the ids the tests assert are re-derived in the test from the finding's own content rather than read back from the code under test.\nSCORE fit: 18\nJUSTIFICATION fit: the renamed constant UNMARKED_SEVERITY_AUDIT_STARTED_AT and its callers are mechanism-named and comment the reason the audit reports rather than refuses, but reckon/crew/recovery.py:2255-2263 still carries a decline-only unmarked count and list that the change makes structurally empty.\nFINDING reckon/crew/recovery.py:2255 follow-on: unmarked_findings(review) is only evaluated inside the branch guarded by not blocking_findings(review), and an unmarked finding now classifies as blocking (reckon/crew/repair.py:184), so the count in the recorded reason and the unmarked_findings key of the decline-only report can only be zero and empty there - the clause and the reported list are dead and can never name the cause they were built to distinguish.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T072105945085-an-unmarked-finding-is-reported-not-repaired/repair-gate.log:2 follow-on: the recorded after arm's header names revision 1e6d4503f1645f1b5a6c17d68b401c47bd53bb34+uncommitted repair, not the landed head 233c217029f88ef6668ac48829616e9d449d6449, so the manifest's 57-passed result is evidence about an uncommitted tree and was not re-tied to the commit that landed.\nFINDING docs/evidence/fragments/a-review-is-sized-to-its-risk/an-unmarked-finding-is-reported-not-repaired.html:1 follow-on: this path is in the node's declared write paths but no such file is in the diff, so the node's declared evidence fragment (and its companion docs/figures path) is undeclivered.\n",
+  "review_run_id": "legacy-ec43cd16ded3",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "16434dd947e15f0ce35a6f05dcf69fa72323c52e",
+  "reviewed_head_sha": "233c217029f88ef6668ac48829616e9d449d6449",
+  "reviewed_run_id": "r-20261001T072105945085-an-unmarked-finding-is-reported-not-repaired",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T08:08:48.824375+00:00",
+  "total": 93
+}

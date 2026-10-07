@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3cfe2f212192e86df55bb29b704aa60775f565ec",
+  "completed_at": "2026-10-02T23:12:13.750Z",
+  "dispatched_at": "2026-10-02T22:50:10Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T224154269623-the-fleet-vocabulary-reads-the-stall-helper/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm (repro-base.log) ran only the single failing id while the head arm (gate-head.log) ran three files / 14 tests, so the two arms do not share one command; the added-failure count derives to 0 under either reading, but a reader comparing arms cannot see a like-for-like base pass/fail set for the two companion files."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T224154269623-the-fleet-vocabulary-reads-the-stall-helper/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest leaves baseline_suite and after_suite null and records its base and head arms under tests/test_logs instead, so a reader applying review.annotate_review_of_run (which reads those two fields, review.py:550-551) gets added_failure_count null for this run; the count derives to 0 here when read from the run's own two arm logs (repro-base.log, gate-head.log) directly, which is how this review's record carries it."
+    }
+  ],
+  "head_log_revision": "10d86a7c1a23b2f087dab378fd9be5c648804c44",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read 3cfe2f212..1828f6990 (2 paths, +54/-1): 10d86a7c1 widens tests/test_fleet_counter_coverage.py::_emitted_states with _states_the_verdict_helpers_return, registering recovery._stall_reading, and 1828f6990 adds the evidence fragment. No product file changed.",
+    "done_when": "independently reproduced: base 3cfe2f212 fails test_the_blocked_bucket_is_derived_from_the_attention_set on `assert _emitted_states() >= ticker_module.NEEDS_ACTION` with Extra items in the right set: 'stalled'; head 1828f6990 the three-file gate reads 14 passed EXIT=0; my own negative control (_VERDICT_EMITTING_HELPERS = ()) reds the same id EXIT=1 while the head arm passes it.",
+    "goal": "recovery._stall_reading (reckon/crew/recovery.py:8397) returns (\"stalled\", detail) and is called from inside _watch_verdict (recovery.py:8428) at line 8617, so 'stalled' is a state a snapshot can carry yet never appears as a `state = \"...\"` assignment in _watch_verdict; reading the helper as an emitter adds exactly that word and restores the subset assertion without weakening.",
+    "manifest": "status: complete, commits 10d86a7c1, 1828f6990; records the gate under tests/test_logs (correct for an implement-role node) with arm header lines naming revision, tree, module.__file__ and cwd; negative-control.log ends EXIT=1; baseline_suite/after_suite are null, which the template marks armed-only for a test role.",
+    "write_paths": "the diff touches exactly tests/test_fleet_counter_coverage.py and docs/evidence/fragments/the-suite-is-green-at-head/the-fleet-vocabulary-reads-the-stall-helper.html, both declared; the granted docs/figures path is unused; worktree clean at 1828f6990."
+  },
+  "justifications": {
+    "durability": "the emitted vocabulary is derived from the emitter, so if recovery._stall_reading stops returning \"stalled\" the subset assertion reds rather than silently passing; my independent negative control setting _VERDICT_EMITTING_HELPERS = () reds test_the_blocked_bucket_is_derived_from_the_attention_set EXIT=1, so the restored helper-scrape is load-bearing and the guard is not green by disabling itself.",
+    "evidence": "the base failure reproduces at 3cfe2f212 ('Extra items in the right set: stalled'), the head three-file gate passes 14/14 EXIT=0, and the negative control reds EXIT=1 \u2014 all three independently re-run in this review; docked one point because the base arm ran only the single id while the head arm ran three files, so the two arms share no single command.",
+    "fit": "the fix reads the state from the emitter (the design file's own docstring mandates) rather than hand-listing it, the added docstrings state the mechanism, and neither the source nor either commit subject/body carries a plan, sprint or version label or an AI trailer; only the registered tuple itself is hand-maintained, which is unavoidable and documented; the code follows the file's existing _states_the_verdict_helpers_return naming and the module's `from reckon.crew import recovery` import.",
+    "goal_fidelity": "the node repairs the named failing id by correcting the test's too-narrow source read \u2014 exactly the plan's permitted repair \u2014 with no product edit; 'stalled' joins the emitted set so `_emitted_states() >= ticker_module.NEEDS_ACTION` holds; all four tests in the file pass at head.",
+    "scope_discipline": "git diff 3cfe2f212..1828f6990 --name-only names only tests/test_fleet_counter_coverage.py and the evidence fragment, both granted; no reckon/ product file, plan, sprint or index state is touched; the worktree is clean at head."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 3cfe2f212192e86df55bb29b704aa60775f565ec\nreviewed_head_sha: 1828f6990bbe5635c77064abaa736611a4486390\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the node repairs the named failing id by correcting the test's too-narrow source read, with no product edit; 'stalled' joins the emitted set so the subset assertion holds; all four tests in the file pass at head.\nSCORE evidence: 18\nJUSTIFICATION evidence: the base failure reproduces at 3cfe2f212, the head three-file gate passes 14/14 EXIT=0, and the negative control reds EXIT=1, all independently re-run; docked one point because the base arm ran only the single id while the head arm ran three files.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly the two declared paths, both granted; no product file changed; worktree clean.\nSCORE durability: 19\nJUSTIFICATION durability: the emitted vocabulary is derived from the emitter, and forcing _VERDICT_EMITTING_HELPERS = () reds test_the_blocked_bucket_is_derived_from_the_attention_set EXIT=1 while the head arm passes, so the helper-scrape is load-bearing.\nSCORE fit: 18\nJUSTIFICATION fit: reads the state from the emitter as the file mandates rather than hand-listing it; the only hand-maintained part is the registered helper tuple, which is documented; no plan/version labels or AI trailers in source or commits.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T224154269623-the-fleet-vocabulary-reads-the-stall-helper/manifest.md:14 evidence note: the base arm ran only the single failing id while the head arm ran three files, so the two arms do not share one command; the added-failure count derives to 0 either way.\n",
+  "review_run_id": "r-20261002T224937101695-review-of-the-fleet-vocabulary-reads-the-stall-helper",
+  "reviewed_base_sha": "3cfe2f212192e86df55bb29b704aa60775f565ec",
+  "reviewed_head_sha": "1828f6990bbe5635c77064abaa736611a4486390",
+  "reviewed_run_id": "r-20261002T224154269623-the-fleet-vocabulary-reads-the-stall-helper",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T23:05:00+00:00",
+  "total": 93
+}

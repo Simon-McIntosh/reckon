@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T03:39:22.570489+00:00",
+  "findings": [
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "584",
+      "text": "no assertion pins the census read set, so reverting `paths` to SKILL.md alone leaves all 56 tests green and the miss this node was dispatched to close -- an instruction living in a reference file -- would pass the pin again."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T031341167096-no-registration-pin-covers-the-references/gate-head.log",
+      "line": "1",
+      "text": "the header names rev=81d0c364 beside 56 passed while that revision collects 55 tests, so the log misdescribes the revision it measured and reads against the manifest's own 55-at-base claim."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 81d0c364 -- ff3fc8dd replaces the seven-line inline assertion with the constants at :557-572 and the census test at :574-600, and 97d72106 appends the plan r-comment (3 lines inside the comments section, data-section=s3), the cumulative evidence section (+51/-0) and the new 77-line SVG; both commit bodies carry no attribution, plan label or ticket identifier.",
+    "done_when": "re-ran the named gate from the reviewed tree at 97d72106 (tests/test_skill_contracts.py, 56 passed, EXIT=0, reckon resolved inside the worktree), matching gate-final.log; the six retired phrasings each match the pattern (in-memory check True); the declared mutation re-applied in memory is caught naming references/sprint-orchestration.md with 'registered on demand' while the old pin (SKILL.md only, old pattern) misses it; negative-control.log's first line repeats the declared string verbatim beside 1 failed, EXIT=1, naming the same file and match; no skill file is changed (sha256 96827ed3850145fb6e8756aab72a272b09cfb40d27ec3ff919852dd2a3d59abb at head and at base).",
+    "goal": "the goal is that the no-member-registration check reads every build-skill file that once carried the instruction, and the census at tests/test_skill_contracts.py:584-596 reads SKILL.md plus all 10 files under references/ (11 files, reproduced in memory from the reviewed tree), while the same pattern over the pre-sweep tree at 59a62004 fires on exactly the two files that carried it -- SKILL.md ('register one', references/sprint-orchestration.md ('register another') -- both inside the read set, so the census is not vacuous and covers every carrier.",
+    "manifest": "read; its commit list, 56-at-head and 55-at-base counts (base confirmed by AST count and by pytest --collect-only over the base file), its ruff delta (I001 at :1 and RUF005 shifting :834->:881 under one --stdin-filename instrument), the negative-control claim and the restore SHA all reproduce, except that gate-head.log:1 names rev=81d0c364 beside 56 passed.",
+    "write_paths": "`git diff --name-only 81d0c364..97d72106` returns exactly the four declared paths (tests/test_skill_contracts.py, docs/evidence/archive/reckon-skill-overhaul-landed.html, docs/figures/reckon-skill-overhaul/registration-census-coverage.svg, docs/plans/reckon-skill-overhaul.html) over 185 insertions and 7 deletions, every deletion inside the removed inline assertion, and the worktree is clean at 97d72106."
+  },
+  "justifications": {
+    "durability": "the pattern's breadth is guarded -- both weakened arms I built lose a named phrase to the self-check at :589-593 and the census reddens on the declared mutation at :594-599 -- but the read set at :584-587 is unpinned, so reverting it to SKILL.md alone leaves all 56 tests green.",
+    "evidence": "the head gate, the declared mutation and the unchanged skill file all reproduce from the reviewed tree, but gate-head.log:1 names rev=81d0c364 beside 56 passed while that revision collects 55, so the log mislabels what it measured and no log receipts the base count.",
+    "fit": "the constants and test follow the file's idiom (module-level constants with a why-comment at :550-556, ROOT-relative paths, reuse of normalized() at :14) and the new symbols carry no plan label, version, ticket or attribution.",
+    "goal_fidelity": "tests/test_skill_contracts.py:584-596 reads 11 files and the same pattern fires on both historical carriers, SKILL.md and references/sprint-orchestration.md, at 59a62004 -- both inside that read set.",
+    "scope_discipline": "every path in the diff is inside the four declared write paths, the plan's meta and state lines are untouched, and the mutated skill file was restored to its base SHA-256 (96827ed3)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the no-member-registration check reads every build-skill file that once carried the instruction, and the census at tests/test_skill_contracts.py:584-596 reads SKILL.md plus all 10 files under references/ (11 files, reproduced in memory from the reviewed tree), while the same pattern over the pre-sweep tree at 59a62004 fires on exactly the two files that carried it -- SKILL.md ('register one', references/sprint-orchestration.md ('register another') -- both inside the read set, so the census is not vacuous and covers every carrier.\nVERDICT done_when: re-ran the named gate from the reviewed tree at 97d72106 (tests/test_skill_contracts.py, 56 passed, EXIT=0, reckon resolved inside the worktree), matching gate-final.log; the six retired phrasings each match the pattern (in-memory check True); the declared mutation re-applied in memory is caught naming references/sprint-orchestration.md with 'registered on demand' while the old pin (SKILL.md only, old pattern) misses it; negative-control.log's first line repeats the declared string verbatim beside 1 failed, EXIT=1, naming the same file and match; no skill file is changed (sha256 96827ed3850145fb6e8756aab72a272b09cfb40d27ec3ff919852dd2a3d59abb at head and at base).\nVERDICT write_paths: `git diff --name-only 81d0c364..97d72106` returns exactly the four declared paths (tests/test_skill_contracts.py, docs/evidence/archive/reckon-skill-overhaul-landed.html, docs/figures/reckon-skill-overhaul/registration-census-coverage.svg, docs/plans/reckon-skill-overhaul.html) over 185 insertions and 7 deletions, every deletion inside the removed inline assertion, and the worktree is clean at 97d72106.\nVERDICT manifest: read; its commit list, 56-at-head and 55-at-base counts (base confirmed by AST count and by pytest --collect-only over the base file), its ruff delta (I001 at :1 and RUF005 shifting :834->:881 under one --stdin-filename instrument), the negative-control claim and the restore SHA all reproduce, except that gate-head.log:1 names rev=81d0c364 beside 56 passed.\nVERDICT diff: read commit by commit against 81d0c364 -- ff3fc8dd replaces the seven-line inline assertion with the constants at :557-572 and the census test at :574-600, and 97d72106 appends the plan r-comment (3 lines inside the comments section, data-section=s3), the cumulative evidence section (+51/-0) and the new 77-line SVG; both commit bodies carry no attribution, plan label or ticket identifier.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_skill_contracts.py:584-596 reads 11 files and the same pattern fires on both historical carriers, SKILL.md and references/sprint-orchestration.md, at 59a62004 -- both inside that read set.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head gate, the declared mutation and the unchanged skill file all reproduce from the reviewed tree, but gate-head.log:1 names rev=81d0c364 beside 56 passed while that revision collects 55, so the log mislabels what it measured and no log receipts the base count.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the four declared write paths, the plan's meta and state lines are untouched, and the mutated skill file was restored to its base SHA-256 (96827ed3).\nSCORE durability: 17\nJUSTIFICATION durability: the pattern's breadth is guarded -- both weakened arms I built lose a named phrase to the self-check at :589-593 and the census reddens on the declared mutation at :594-599 -- but the read set at :584-587 is unpinned, so reverting it to SKILL.md alone leaves all 56 tests green.\nSCORE fit: 20\nJUSTIFICATION fit: the constants and test follow the file's idiom (module-level constants with a why-comment at :550-556, ROOT-relative paths, reuse of normalized() at :14) and the new symbols carry no plan label, version, ticket or attribution.\nFINDING tests/test_skill_contracts.py:584 no assertion pins the census read set, so reverting `paths` to SKILL.md alone leaves all 56 tests green and the miss this node was dispatched to close -- an instruction living in a reference file -- would pass the pin again.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T031341167096-no-registration-pin-covers-the-references/gate-head.log:1 the header names rev=81d0c364 beside 56 passed while that revision collects 55 tests, so the log misdescribes the revision it measured and reads against the manifest's own 55-at-base claim.",
+  "review_run_id": "r-20260925T033922570489-review-of-no-registration-pin-covers-the-references",
+  "reviewed_base_sha": "81d0c3649dfa8a468fedb62fc1aea7660fc28967",
+  "reviewed_head_sha": "97d72106d23c31b0a82c34ace594c8d701dd684e",
+  "reviewed_run_id": "r-20260925T031341167096-no-registration-pin-covers-the-references",
+  "reviewer": "review-of-no-registration-pin-covers-the-references",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T04:03:33.131574+00:00",
+  "total": 95
+}

@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:1376 index_rows",
+    "reckon/mcp_views.py:1154 index_rows(revalidate=True)",
+    "reckon/crew/runs.py:1055 plan_derivations"
+  ],
+  "completed_at": "2026-10-02T09:35:45.202Z",
+  "dispatched_at": "2026-10-02T09:15:52Z",
+  "findings": [
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "160",
+      "severity": "follow-on",
+      "text": "follow-on: the summary line still reads revalidated by a stat of each while the body at :168 and the gate at :226 now hash every covered file's bytes, so the line names a cheaper mechanism than the one that runs and misleads a reader reasoning about the revalidate cost."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 57dfae03; 89463012f swaps the stat-identity reuse key for a sha256 content digest (drops the stored stat field, stores digest, _VERSION 2->3) and adds the test, and 2b0e8135f adds the evidence fragment.",
+    "done_when": "the done-when asks for a second build over a synthetic docs tree that re-parses only the changed file with the warm result equal to a cold build, an executed negative control, and zero added failures across every importer; tests/test_the_metadata_index_reuses_unchanged_plans.py:126 asserts parsed == [\"plans/plan-03.html\"] and :163 compares the warm rows to a cold build, the manifest records base 50 passed / head 52 passed, and I reproduced the head arm green and the negative control red.",
+    "goal": "read the node goal (\"The document metadata index re-parses only plan files whose bytes changed\"); reckon/metadata_index.py:234 now gates row reuse on entry.get(\"digest\") == _content_digest(path) (:294), so an unchanged file is reused and only a byte change re-parses, which matches the goal.",
+    "manifest": "read; it records head 52 passed against base 50, zero added failures, the negative control 2 failed EXIT=1, the digest-vs-parse micro-measure, and names its four gate logs.",
+    "write_paths": "the declared scope is reckon/metadata_index.py, tests/test_the_metadata_index_reuses_unchanged_plans.py and the evidence fragment; git diff 57dfae03..2b0e8135 changes exactly those three files."
+  },
+  "justifications": {
+    "durability": "both new assertions redden when the digest key is dropped (RECKON_TEST_DROP_INDEX_DIGEST=1 gives 2 failed EXIT=1, re-run here), so they fail if the reuse reverses; docked because the unreadable-file branch (metadata_index.py:228) and the incomplete-row rebuild branch (:238) have no test.",
+    "evidence": "the gate at tests/test_the_metadata_index_reuses_unchanged_plans.py:126 asserts only the changed file is re-parsed and :163 checks the warm rows equal a cold build, and logs/head-arm-suite.log (52 passed) and logs/negative-control.log (2 failed EXIT=1) reconcile with the manifest, both re-run here; docked one because the logs spell their revision rev= while the store reads only a revision token, so the record's base/head log revisions come out null.",
+    "fit": "the change keeps the module's persisted-entry idiom (reckon/metadata_index.py:258) and its one new name _content_digest describes the mechanism and carries no banned label; docked because :160 still describes the revalidate cost as a stat.",
+    "goal_fidelity": "reckon/metadata_index.py:234 gates reuse on entry.get(\"digest\") == _content_digest(path) (:294), so an unchanged file is reused and only a byte change re-parses, exactly the node goal.",
+    "scope_discipline": "git diff 57dfae03..2b0e8135 changes only reckon/metadata_index.py, tests/test_the_metadata_index_reuses_unchanged_plans.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/the-metadata-index-reuses-unchanged-plans.html, all inside the declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (\"The document metadata index re-parses only plan files whose bytes changed\"); reckon/metadata_index.py:234 now gates row reuse on entry.get(\"digest\") == _content_digest(path) (:294), so an unchanged file is reused and only a byte change re-parses, which matches the goal.\nVERDICT done_when: the done-when asks for a second build over a synthetic docs tree that re-parses only the changed file with the warm result equal to a cold build, an executed negative control, and zero added failures across every importer; tests/test_the_metadata_index_reuses_unchanged_plans.py:126 asserts parsed == [\"plans/plan-03.html\"] and :163 compares the warm rows to a cold build, the manifest records base 50 passed / head 52 passed, and I reproduced the head arm green and the negative control red.\nVERDICT write_paths: the declared scope is reckon/metadata_index.py, tests/test_the_metadata_index_reuses_unchanged_plans.py and the evidence fragment; git diff 57dfae03..2b0e8135 changes exactly those three files.\nVERDICT manifest: read; it records head 52 passed against base 50, zero added failures, the negative control 2 failed EXIT=1, the digest-vs-parse micro-measure, and names its four gate logs.\nVERDICT diff: read commit by commit against 57dfae03; 89463012f swaps the stat-identity reuse key for a sha256 content digest (drops the stored stat field, stores digest, _VERSION 2->3) and adds the test, and 2b0e8135f adds the evidence fragment.\nCALL_SITES: reckon/serve.py:1376 index_rows, reckon/mcp_views.py:1154 index_rows(revalidate=True), reckon/crew/runs.py:1055 plan_derivations\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:234 gates reuse on entry.get(\"digest\") == _content_digest(path) (:294), so an unchanged file is reused and only a byte change re-parses, exactly the node goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate at tests/test_the_metadata_index_reuses_unchanged_plans.py:126 asserts only the changed file is re-parsed and :163 checks the warm rows equal a cold build, and logs/head-arm-suite.log (52 passed) and logs/negative-control.log (2 failed EXIT=1) reconcile with the manifest, both re-run here; docked one because the logs spell their revision rev= while the store reads only a revision token, so the record's base/head log revisions come out null.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 57dfae03..2b0e8135 changes only reckon/metadata_index.py, tests/test_the_metadata_index_reuses_unchanged_plans.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/the-metadata-index-reuses-unchanged-plans.html, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: both new assertions redden when the digest key is dropped (RECKON_TEST_DROP_INDEX_DIGEST=1 gives 2 failed EXIT=1, re-run here), so they fail if the reuse reverses; docked because the unreadable-file branch (metadata_index.py:228) and the incomplete-row rebuild branch (:238) have no test.\nSCORE fit: 19\nJUSTIFICATION fit: the change keeps the module's persisted-entry idiom (reckon/metadata_index.py:258) and its one new name _content_digest describes the mechanism and carries no banned label; docked because :160 still describes the revalidate cost as a stat.\nFINDING reckon/metadata_index.py:160 follow-on: the summary line still reads revalidated by a stat of each while the body at :168 and the gate at :226 now hash every covered file's bytes, so the line names a cheaper mechanism than the one that runs and misleads a reader reasoning about the revalidate cost.",
+  "review_run_id": "r-20261002T091523623566-review-of-the-metadata-index-reuses-unchanged-plans",
+  "reviewed_base_sha": "57dfae0345a5d8ecee9377da3706e8b1ea5dee3b",
+  "reviewed_head_sha": "2b0e8135f7521c27330f950f48af733028b9dd16",
+  "reviewed_run_id": "r-20261002T083645178761-the-metadata-index-reuses-unchanged-plans",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:05.672192+00:00",
+  "total": 96
+}

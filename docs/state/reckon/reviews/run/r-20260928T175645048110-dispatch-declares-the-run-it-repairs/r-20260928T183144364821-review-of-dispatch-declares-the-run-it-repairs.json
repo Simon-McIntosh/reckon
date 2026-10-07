@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T175645048110-dispatch-declares-the-run-it-repairs/logs/base-arm.txt and /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T175645048110-dispatch-declares-the-run-it-repairs/logs/head-arm.txt",
+  "backend": "clive",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/cli.py:1309",
+    "reckon/cli.py:1454",
+    "reckon/cli.py:1542",
+    "reckon/crew/dispatch.py:3289",
+    "reckon/crew/dispatch.py:4261",
+    "reckon/crew/dispatch.py:4818",
+    "reckon/crew/promotion.py:4221"
+  ],
+  "completed_at": "2026-09-28T19:08:17.921Z",
+  "dispatched_at": "2026-09-28T18:32:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "4129",
+      "text": "the ledger read's LedgerError is caught and reduced to data = None, so damaged history reaches the generic refusal at line 4154 and the operator is told the target names no run; an unreadable ledger is presented as an absent run, which is the misattribution the ledger's own refusal to read damaged history exists to prevent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against the base; c710b880 carries the CLI option, the admission refusal and the promotion branch, and c34d88cc adds the evidence fragment and the figure.",
+    "done_when": "the done_when asks that a dispatch naming a promoted run promote with the impl move exempt; tests/test_dispatch_declares_the_run_it_repairs.py carries that case and three admission refusals, and the reviewed manifest records the arms at logs/base-arm.txt (4 failed, EXIT=1) and logs/head-arm.txt (34 passed, EXIT=0).",
+    "goal": "the landed change adds `reckon crew dispatch --repairs RUN_ID`, whose target is admitted as a promoted run of the project's own ledger at reckon/crew/dispatch.py:4110 and consumed at reckon/crew/promotion.py:4221, which is the declaration the node goal names.",
+    "manifest": "read; it states each arm with a header, an exit status and a log path, and the head it claims, c34d88cc, is the reviewed worktree's HEAD with a clean status.",
+    "write_paths": "read the manifest's six declared paths against `git diff --numstat 9e727bd0 c34d88cc`; the diff lists exactly those six files and every hunk is additive."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_declares_the_run_it_repairs.py:180 and :214 fail if the recorded field, the admission check at reckon/crew/dispatch.py:3290 or the exemption at reckon/crew/promotion.py:4221 regresses, but no committed test drives the forwarding at reckon/cli.py:1454 and :1542, so dropping either leaves the suite green.",
+    "evidence": "the exempt promotion and the four admission refusals in tests/test_dispatch_declares_the_run_it_repairs.py are measured by the reviewed run's own arms, red at logs/base-arm.txt and green at logs/head-arm.txt.",
+    "fit": "the repairs branch at reckon/crew/promotion.py:4217 sits beside the attempt-kind branch it mirrors, reuses the corrective-run reason prefix and adds no new abstraction or name the naming rules forbid.",
+    "goal_fidelity": "reckon/crew/promotion.py:4221 reads the recorded repairs and returns with the impl move exempt, so a declared repair promotes through `reckon crew complete` with no --no-impl-change.",
+    "scope_discipline": "every path in `git diff --numstat 9e727bd0 c34d88cc` is one of the six declared in the reviewed manifest, and no hunk removes a line."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the landed change adds `reckon crew dispatch --repairs RUN_ID`, whose target is admitted as a promoted run of the project's own ledger at reckon/crew/dispatch.py:4110 and consumed at reckon/crew/promotion.py:4221, which is the declaration the node goal names.\nVERDICT done_when: the done_when asks that a dispatch naming a promoted run promote with the impl move exempt; tests/test_dispatch_declares_the_run_it_repairs.py carries that case and three admission refusals, and the reviewed manifest records the arms at logs/base-arm.txt (4 failed, EXIT=1) and logs/head-arm.txt (34 passed, EXIT=0).\nVERDICT write_paths: read the manifest's six declared paths against `git diff --numstat 9e727bd0 c34d88cc`; the diff lists exactly those six files and every hunk is additive.\nVERDICT manifest: read; it states each arm with a header, an exit status and a log path, and the head it claims, c34d88cc, is the reviewed worktree's HEAD with a clean status.\nVERDICT diff: read commit by commit against the base; c710b880 carries the CLI option, the admission refusal and the promotion branch, and c34d88cc adds the evidence fragment and the figure.\nCALL_SITES: reckon/cli.py:1309, reckon/cli.py:1454, reckon/cli.py:1542, reckon/crew/dispatch.py:3289, reckon/crew/dispatch.py:4261, reckon/crew/dispatch.py:4818, reckon/crew/promotion.py:4221\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:4221 reads the recorded repairs and returns with the impl move exempt, so a declared repair promotes through `reckon crew complete` with no --no-impl-change.\nSCORE evidence: 19\nJUSTIFICATION evidence: the exempt promotion and the four admission refusals in tests/test_dispatch_declares_the_run_it_repairs.py are measured by the reviewed run's own arms, red at logs/base-arm.txt and green at logs/head-arm.txt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff --numstat 9e727bd0 c34d88cc` is one of the six declared in the reviewed manifest, and no hunk removes a line.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_dispatch_declares_the_run_it_repairs.py:180 and :214 fail if the recorded field, the admission check at reckon/crew/dispatch.py:3290 or the exemption at reckon/crew/promotion.py:4221 regresses, but no committed test drives the forwarding at reckon/cli.py:1454 and :1542, so dropping either leaves the suite green.\nSCORE fit: 19\nJUSTIFICATION fit: the repairs branch at reckon/crew/promotion.py:4217 sits beside the attempt-kind branch it mirrors, reuses the corrective-run reason prefix and adds no new abstraction or name the naming rules forbid.\nFINDING reckon/crew/dispatch.py:4129 the ledger read's LedgerError is caught and reduced to data = None, so damaged history reaches the generic refusal at line 4154 and the operator is told the target names no run; an unreadable ledger is presented as an absent run, which is the misattribution the ledger's own refusal to read damaged history exists to prevent.\n",
+  "review_run_id": "r-20260928T183144364821-review-of-dispatch-declares-the-run-it-repairs",
+  "reviewed_base_sha": "9e727bd0c6e92841a4980ae139dfd4319d135ee9",
+  "reviewed_head_sha": "c34d88ccff8a4c66dc6ad94d479e2325e4a3d7c9",
+  "reviewed_run_id": "r-20260928T175645048110-dispatch-declares-the-run-it-repairs",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T18:56:30.714126+00:00",
+  "total": 94
+}

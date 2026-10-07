@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "ab8f11cea649964ef3cbae09efc7bd7eccca0bf0",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:4814",
+    "reckon/crew/promotion.py:4626",
+    "reckon/crew/promotion.py:4746"
+  ],
+  "completed_at": "2026-10-01T06:46:15.044Z",
+  "dispatched_at": "2026-10-01T06:31:38Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-1c/a-runs-scratch-ends-with-the-run/tests/test_brief_prompt.py",
+      "line": "387",
+      "severity": "follow-on",
+      "text": "follow-on: the prompt snapshot was edited outside the node's declared write paths, which the manifest declares at line 25; the edit is a mechanical consequence of the required contract sentence and the head gate confirms it keeps the suite green, but a scope extension would have kept the fence authoritative."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T051607416174-a-runs-scratch-ends-with-the-run/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite gate ran at 535b1f295, while the reviewed head is 08b986347; the final commit is docs-only so no test could reach it, but the head-revision arm does not itself cover the reviewed head and the mismatch is visible in head_log_revision."
+    }
+  ],
+  "head_log_revision": "535b1f2954cf9da69a6a246d83ed6017f93a30e7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "three commits against ab8f11cea - a feature commit touching five modules and the test, a snapshot commit carrying the new contract sentence, and a docs-only evidence commit; none outside the declared scope except the snapshot.",
+    "done_when": "the done-when's five cases exist as five tests in tests/test_a_runs_scratch_ends_with_the_run.py and independently re-run green (5 passed in 8.08s), the declared mutation is executed and logged with EXIT=1 failing the age-decided case, and the gate names its write paths; the measure is met.",
+    "goal": "the node's goal is to end a run's scratch on its terminal record and never by age; the landed change delivers all four design points of plan 12 - the composed worker contract's `$TMPDIR` rule (reckon/crew/prompts.py:603), `crew gc --scratch` deciding by the run's own records (reckon/crew/routing.py:1148), the never-removed unattributed tree report, and the scratch-size record on promotion's row (reckon/crew/promotion.py:4626).",
+    "manifest": "read; status complete, three commits, changed_paths list the modules and the snapshot, tests state the 5-case pass and the 60-file population gate with its added-failure delta, baseline_suite and after_suite are both present and complete with summary lines, and negative_control_log names the red log.",
+    "write_paths": "the node declared routing.py, dispatch.py, cli.py, prompts.py, promotion.py, the test, an evidence fragment and a figures dir; the diff stays inside those except tests/test_brief_prompt.py, a write the manifest declares and justifies at line 25."
+  },
+  "justifications": {
+    "durability": "reinstating the regression reddens an added test - the logged age-keyed mutation makes tests/test_a_runs_scratch_ends_with_the_run.py::test_a_complete_but_unpromoted_runs_scratch_is_kept fail with EXIT=1, and the snapshot test forces any drift in the contract sentence to redden.",
+    "evidence": "both gate logs are complete with summary lines and the derived added-failure count is zero (head 1 failed 579 passed is a subset of base 3 failed 572 passed); the single limit is that the head arm ran at 535b1f295, one docs-only commit before the reviewed head 08b986347.",
+    "fit": "routing.py:1148 is the module that already owns `crew gc`, the new symbols (`garbage_collect_scratch`, `_scratch_disposition`, `tree_size_bytes`) are named by what they do, and the added comment lines carry no plan label, ticket reference or attribution.",
+    "goal_fidelity": "all four design points of plan 12 land and are independently measurable - prompts.py:603 names `$TMPDIR`, routing.py:1148 decides by the run's records, and promotion.py:4626 records the size.",
+    "scope_discipline": "the diff stays inside the declared paths except tests/test_brief_prompt.py:387, written outside the declared scope and declared at manifest line 25, so a required edit landed unrequested rather than through a scope extension."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "\nREVIEWED_BASE_SHA: ab8f11cea649964ef3cbae09efc7bd7eccca0bf0\nREVIEWED_HEAD_SHA: 08b9863474bf53c7210a01d307f52080a9dc719d\nVERDICT goal: the node's goal is to end a run's scratch on its terminal record and never by age; the landed change delivers all four design points of plan 12 - the composed worker contract's `$TMPDIR` rule (reckon/crew/prompts.py:603), `crew gc --scratch` deciding by the run's own records (reckon/crew/routing.py:1148), the never-removed unattributed tree report, and the scratch-size record on promotion's row (reckon/crew/promotion.py:4626).\nVERDICT done_when: the done-when's five cases exist as five tests in tests/test_a_runs_scratch_ends_with_the_run.py and independently re-run green (5 passed in 8.08s), the declared mutation is executed and logged with EXIT=1 failing the age-decided case, and the gate names its write paths; the measure is met.\nVERDICT write_paths: the node declared routing.py, dispatch.py, cli.py, prompts.py, promotion.py, the test, an evidence fragment and a figures dir; the diff stays inside those except tests/test_brief_prompt.py, a write the manifest declares and justifies at line 25.\nVERDICT manifest: read; status complete, three commits, changed_paths list the modules and the snapshot, tests state the 5-case pass and the 60-file population gate with its added-failure delta, baseline_suite and after_suite are both present and complete with summary lines, and negative_control_log names the red log.\nVERDICT diff: three commits against ab8f11cea - a feature commit touching five modules and the test, a snapshot commit carrying the new contract sentence, and a docs-only evidence commit; none outside the declared scope except the snapshot.\nCALL_SITES: reckon/cli.py:4814, reckon/crew/promotion.py:4626, reckon/crew/promotion.py:4746\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all four design points of plan 12 land and are independently measurable - prompts.py:603 names `$TMPDIR`, routing.py:1148 decides by the run's records, and promotion.py:4626 records the size.\nSCORE evidence: 18\nJUSTIFICATION evidence: both gate logs are complete with summary lines and the derived added-failure count is zero (head 1 failed 579 passed is a subset of base 3 failed 572 passed); the single limit is that the head arm ran at 535b1f295, one docs-only commit before the reviewed head 08b986347.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff stays inside the declared paths except tests/test_brief_prompt.py:387, written outside the declared scope and declared at manifest line 25, so a required edit landed unrequested rather than through a scope extension.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the regression reddens an added test - the logged age-keyed mutation makes tests/test_a_runs_scratch_ends_with_the_run.py::test_a_complete_but_unpromoted_runs_scratch_is_kept fail with EXIT=1, and the snapshot test forces any drift in the contract sentence to redden.\nSCORE fit: 19\nJUSTIFICATION fit: routing.py:1148 is the module that already owns `crew gc`, the new symbols (`garbage_collect_scratch`, `_scratch_disposition`, `tree_size_bytes`) are named by what they do, and the added comment lines carry no plan label, ticket reference or attribution.\nFINDING /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-1c/a-runs-scratch-ends-with-the-run/tests/test_brief_prompt.py:387 follow-on: the prompt snapshot was edited outside the node's declared write paths, which the manifest declares at line 25; the edit is a mechanical consequence of the required contract sentence and the head gate confirms it keeps the suite green, but a scope extension would have kept the fence authoritative.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T051607416174-a-runs-scratch-ends-with-the-run/manifest.md:21 follow-on: the after_suite gate ran at 535b1f295, while the reviewed head is 08b986347; the final commit is docs-only so no test could reach it, but the head-revision arm does not itself cover the reviewed head and the mismatch is visible in head_log_revision.\n",
+  "review_run_id": "r-20261001T063124364339-review-of-a-runs-scratch-ends-with-the-run",
+  "reviewed_base_sha": "ab8f11cea649964ef3cbae09efc7bd7eccca0bf0",
+  "reviewed_head_sha": "08b9863474bf53c7210a01d307f52080a9dc719d",
+  "reviewed_run_id": "r-20261001T051607416174-a-runs-scratch-ends-with-the-run",
+  "reviewer_run_id": "r-20261001T063124364339-review-of-a-runs-scratch-ends-with-the-run",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.288946+00:00",
+  "total": 92
+}

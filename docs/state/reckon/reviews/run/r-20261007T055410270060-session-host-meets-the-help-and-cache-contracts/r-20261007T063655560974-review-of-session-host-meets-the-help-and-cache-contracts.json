@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/session_host.py:106 cache_root(\"session-host\") in _log_dir",
+    "reckon/crew/session_host.py:252 SessionHost.__init__ -> _log_dir -> cache_root",
+    "reckon/cli.py:4948 crew host command registration reached by the plugin entry point"
+  ],
+  "completed_at": "2026-10-07T06:54:50.807Z",
+  "dispatched_at": "2026-10-07T06:37:17Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against aa728ca09; aa4f46c7 changes reckon/_store.py (a new session-host cache kind), reckon/crew/session_host.py (_log_dir delegates to cache_root), reckon/cli.py (the crew host docstring first line) and one STATE_PHRASES row, and fd46f4c5e adds the evidence fragment; no path falls outside the declared scope.",
+    "done_when": "the done-when names tests/test_crew_help_names_its_state.py and tests/test_one_cache_cascade_serves_every_kind.py passing with tests/test_session_host.py still passing and the gate log ending in a bare EXIT=0; the manifest records 58 passed EXIT=0 and my re-run of the three files at fd46f4c5e gave 58 passed EXIT=0.",
+    "goal": "the node's goal is that crew host gains its help state phrase and reads its child-stderr cache through the cache owner; reckon/crew/session_host.py:106 now returns cache_root(\"session-host\") instead of reading XDG_CACHE_HOME and reckon/cli.py:4988's first help line names the condition it runs under.",
+    "manifest": "read; it records both commits (aa4f46c7, fd46f4c5e), the gate 58 passed EXIT=0, the declared negative control at EXIT=1 on test_cache_environment_reads_have_one_owner, and a committed evidence fragment.",
+    "write_paths": "the manifest declares reckon/crew/session_host.py, reckon/_store.py, reckon/cli.py, tests/test_crew_help_names_its_state.py, the evidence fragment for this node and a figures directory; every path in the aa728ca09..fd46f4c5e diff is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_one_cache_cascade_serves_every_kind.py:148 asserts the XDG_CACHE_HOME readers are exactly [('_store.py','cache_root')] so restoring the read in _log_dir reddens it and tests/test_crew_help_names_its_state.py:126 asserts set(leaves)==set(STATE_PHRASES) so dropping the (\"host\",) row reddens it.",
+    "evidence": "the gate tests/test_crew_help_names_its_state.py tests/test_one_cache_cascade_serves_every_kind.py and tests/test_session_host.py ends EXIT=0 with 58 passed and the recorded header names base aa728ca09 rather than landed head fd46f4c5e so the log alone does not tie the result to the change; my re-run at fd46f4c5e gave 58 passed EXIT=0.",
+    "fit": "the new (\"session-host\") row copies the sibling kinds' tuple shape at reckon/_store.py:158 and introduces no name the repository forbids.",
+    "goal_fidelity": "reckon/crew/session_host.py:106 delegates the log directory to cache_root(\"session-host\") and reckon/cli.py:4991's first help line is \"Supervise one live session's crew followers for as long as it lives.\".",
+    "reuse": "reckon/_store.cache_root already owns cache-home precedence; the change extends that owner with a new kind and deletes the duplicate XDG reader rather than forking one, and a search over reckon/ found cache_root the single owner of XDG_CACHE_HOME.",
+    "scope_discipline": "every path in the aa728ca09..fd46f4c5e diff (reckon/_store.py, reckon/cli.py, reckon/crew/session_host.py, tests/test_crew_help_names_its_state.py and the evidence fragment) is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that crew host gains its help state phrase and reads its child-stderr cache through the cache owner; reckon/crew/session_host.py:106 now returns cache_root(\"session-host\") instead of reading XDG_CACHE_HOME and reckon/cli.py:4988's first help line names the condition it runs under.\nVERDICT done_when: the done-when names tests/test_crew_help_names_its_state.py and tests/test_one_cache_cascade_serves_every_kind.py passing with tests/test_session_host.py still passing and the gate log ending in a bare EXIT=0; the manifest records 58 passed EXIT=0 and my re-run of the three files at fd46f4c5e gave 58 passed EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/session_host.py, reckon/_store.py, reckon/cli.py, tests/test_crew_help_names_its_state.py, the evidence fragment for this node and a figures directory; every path in the aa728ca09..fd46f4c5e diff is inside them.\nVERDICT manifest: read; it records both commits (aa4f46c7, fd46f4c5e), the gate 58 passed EXIT=0, the declared negative control at EXIT=1 on test_cache_environment_reads_have_one_owner, and a committed evidence fragment.\nVERDICT diff: read commit by commit against aa728ca09; aa4f46c7 changes reckon/_store.py (a new session-host cache kind), reckon/crew/session_host.py (_log_dir delegates to cache_root), reckon/cli.py (the crew host docstring first line) and one STATE_PHRASES row, and fd46f4c5e adds the evidence fragment; no path falls outside the declared scope.\nCALL_SITES: reckon/crew/session_host.py:106 cache_root(\"session-host\") in _log_dir, reckon/crew/session_host.py:252 SessionHost.__init__ -> _log_dir -> cache_root, reckon/cli.py:4948 crew host command registration reached by the plugin entry point\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/session_host.py:106 delegates the log directory to cache_root(\"session-host\") and reckon/cli.py:4991's first help line is \"Supervise one live session's crew followers for as long as it lives.\".\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate tests/test_crew_help_names_its_state.py tests/test_one_cache_cascade_serves_every_kind.py and tests/test_session_host.py ends EXIT=0 with 58 passed and the recorded header names base aa728ca09 rather than landed head fd46f4c5e so the log alone does not tie the result to the change; my re-run at fd46f4c5e gave 58 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the aa728ca09..fd46f4c5e diff (reckon/_store.py, reckon/cli.py, reckon/crew/session_host.py, tests/test_crew_help_names_its_state.py and the evidence fragment) is inside the manifest's declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_one_cache_cascade_serves_every_kind.py:148 asserts the XDG_CACHE_HOME readers are exactly [('_store.py','cache_root')] so restoring the read in _log_dir reddens it and tests/test_crew_help_names_its_state.py:126 asserts set(leaves)==set(STATE_PHRASES) so dropping the (\"host\",) row reddens it.\nSCORE fit: 20\nJUSTIFICATION fit: the new (\"session-host\") row copies the sibling kinds' tuple shape at reckon/_store.py:158 and introduces no name the repository forbids.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/_store.cache_root already owns cache-home precedence; the change extends that owner with a new kind and deletes the duplicate XDG reader rather than forking one, and a search over reckon/ found cache_root the single owner of XDG_CACHE_HOME.\nREVISION: fd46f4c5e46950076286145d68538a9c7203f08c\nreviewed_base: aa728ca09259f543da1a2880737121e5b6c3a343\n",
+  "review_run_id": "r-20261007T063655560974-review-of-session-host-meets-the-help-and-cache-contracts",
+  "reviewed_base_sha": "aa728ca09259f543da1a2880737121e5b6c3a343",
+  "reviewed_head_sha": "fd46f4c5e46950076286145d68538a9c7203f08c",
+  "reviewed_run_id": "r-20261007T055410270060-session-host-meets-the-help-and-cache-contracts",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:52:10.138857+00:00",
+  "total": 119
+}

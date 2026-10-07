@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:4232 (crew complete passes live_run_waiver)",
+    "reckon/crew/promotion.py:2789 (guard called inside complete)",
+    "reckon/crew/promotion.py:4464 (waiver written to the promoted row)"
+  ],
+  "completed_at": "2026-09-26T14:25:12.742Z",
+  "dispatched_at": "2026-09-26T12:41:46Z",
+  "findings": [
+    {
+      "file": "bt-after/test_a_checkout_that_cannot_co0/nongit/docs/state/proj/runs/r-20260914T190324000000-refused.json",
+      "line": "1",
+      "text": "peer-committed pytest basetemp scratch, with its sibling bt-after/test_a_checkout_that_cannot_co0/nongit/docs/plans/plan-a.html, sits in the worktree head outside every declared write path and will land on the primary branch when this run is promoted unless both paths are dropped."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read base 9fafad1f to head d8d8c6b1 commit by commit; dc47da0a adds the guard, the --waive-live-run option and six tests as 336 insertions over three files, and d8d8c6b1 adds only documentation and a figure, with no .py path differing between dc47da0a and the head.",
+    "done_when": "the done_when names tests/test_complete_refuses_a_live_run.py plus a no-added-failures gate over tests/test_crew_promotion.py and tests/test_crew_promotion_scope.py against base 9fafad1f, and the manifest records both runs, 76 passed at base and 82 passed at the head tree, together with the declared negative control.",
+    "goal": "the node goal is to refuse promotion of a run whose recorded worker process is alive and whose manifest status is not terminal unless an explicit waiver names the reason; reckon/crew/promotion.py:2571 is that refusal and its message names both the pid and the manifest status, with the waiver reason recorded on the promoted row at promotion.py:4464.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103214701580-complete-refuses-a-live-run/manifest.md; it states status complete, both commit shas, the gate command with its 82-passed result, and the base, after and negative-control logs, all of which are present on disk.",
+    "write_paths": "read the six declared paths in the pointer and the manifest; dc47da0a touches promotion.py, cli.py and tests/test_complete_refuses_a_live_run.py and d8d8c6b1 touches the landing record, the figure and the plan, all inside the fence, while the head additionally carries peer-committed scratch under bt-after/ outside it."
+  },
+  "justifications": {
+    "durability": "my independent red arm at the reviewed head patches promotion._require_worker_stopped_before_promotion to a no-op and the named refusal test reddens with DID NOT RAISE CrewError at tests/test_complete_refuses_a_live_run.py:139 (recheck-live-run-mutation.log, EXIT=1), while the reason assertion at :166 is an input echo that reddens only if the waiver record is dropped, so the score does not rest on it.",
+    "evidence": "base-promotion.log and after-promotion.log carry rev and tree headers for 76 and 82 passed with the module pinned to the gated tree, and git diff --name-only dc47da0a d8d8c6b1 lists no .py path, so the recorded gate measures the shipped code.",
+    "fit": "the guard is a private module-level helper beside the sibling refusal checks in promotion.py and reuses _fresh_manifest, record_process_alive and TERMINAL_MANIFEST_STATUSES, and the new flag matches the --waive-* CLI family at reckon/cli.py:4159 with no plan or version label anywhere in the diff.",
+    "goal_fidelity": "promotion.py:2571 refuses with the pid and the recorded status named and promotion.py:2789 reaches it under the pointer lock, while tests/test_complete_refuses_a_live_run.py:175, :197 and :233 confirm the exited-worker, terminal-manifest and no-manifest cases promote as before.",
+    "scope_discipline": "every path in dc47da0a and d8d8c6b1 is inside the declared write paths, but the head also carries pytest scratch committed under bt-after/test_a_checkout_that_cannot_co0/ by peer commits ca3d7ca3 and aeabb778, outside the fence and due to merge with the head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse promotion of a run whose recorded worker process is alive and whose manifest status is not terminal unless an explicit waiver names the reason; reckon/crew/promotion.py:2571 is that refusal and its message names both the pid and the manifest status, with the waiver reason recorded on the promoted row at promotion.py:4464.\nVERDICT done_when: the done_when names tests/test_complete_refuses_a_live_run.py plus a no-added-failures gate over tests/test_crew_promotion.py and tests/test_crew_promotion_scope.py against base 9fafad1f, and the manifest records both runs, 76 passed at base and 82 passed at the head tree, together with the declared negative control.\nVERDICT write_paths: read the six declared paths in the pointer and the manifest; dc47da0a touches promotion.py, cli.py and tests/test_complete_refuses_a_live_run.py and d8d8c6b1 touches the landing record, the figure and the plan, all inside the fence, while the head additionally carries peer-committed scratch under bt-after/ outside it.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103214701580-complete-refuses-a-live-run/manifest.md; it states status complete, both commit shas, the gate command with its 82-passed result, and the base, after and negative-control logs, all of which are present on disk.\nVERDICT diff: read base 9fafad1f to head d8d8c6b1 commit by commit; dc47da0a adds the guard, the --waive-live-run option and six tests as 336 insertions over three files, and d8d8c6b1 adds only documentation and a figure, with no .py path differing between dc47da0a and the head.\nCALL_SITES: reckon/cli.py:4232 (crew complete passes live_run_waiver), reckon/crew/promotion.py:2789 (guard called inside complete), reckon/crew/promotion.py:4464 (waiver written to the promoted row)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: promotion.py:2571 refuses with the pid and the recorded status named and promotion.py:2789 reaches it under the pointer lock, while tests/test_complete_refuses_a_live_run.py:175, :197 and :233 confirm the exited-worker, terminal-manifest and no-manifest cases promote as before.\nSCORE evidence: 19\nJUSTIFICATION evidence: base-promotion.log and after-promotion.log carry rev and tree headers for 76 and 82 passed with the module pinned to the gated tree, and git diff --name-only dc47da0a d8d8c6b1 lists no .py path, so the recorded gate measures the shipped code.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in dc47da0a and d8d8c6b1 is inside the declared write paths, but the head also carries pytest scratch committed under bt-after/test_a_checkout_that_cannot_co0/ by peer commits ca3d7ca3 and aeabb778, outside the fence and due to merge with the head.\nSCORE durability: 18\nJUSTIFICATION durability: my independent red arm at the reviewed head patches promotion._require_worker_stopped_before_promotion to a no-op and the named refusal test reddens with DID NOT RAISE CrewError at tests/test_complete_refuses_a_live_run.py:139 (recheck-live-run-mutation.log, EXIT=1), while the reason assertion at :166 is an input echo that reddens only if the waiver record is dropped, so the score does not rest on it.\nSCORE fit: 19\nJUSTIFICATION fit: the guard is a private module-level helper beside the sibling refusal checks in promotion.py and reuses _fresh_manifest, record_process_alive and TERMINAL_MANIFEST_STATUSES, and the new flag matches the --waive-* CLI family at reckon/cli.py:4159 with no plan or version label anywhere in the diff.\nFINDING bt-after/test_a_checkout_that_cannot_co0/nongit/docs/state/proj/runs/r-20260914T190324000000-refused.json:1 peer-committed pytest basetemp scratch, with its sibling bt-after/test_a_checkout_that_cannot_co0/nongit/docs/plans/plan-a.html, sits in the worktree head outside every declared write path and will land on the primary branch when this run is promoted unless both paths are dropped.\n",
+  "review_run_id": "r-20260926T124128753770-review-of-complete-refuses-a-live-run",
+  "reviewed_base_sha": "9fafad1fde793b9a0d5bc7ac60114f445359d202",
+  "reviewed_head_sha": "d8d8c6b1109bdd238a4fc01d92ff97af9f488056",
+  "reviewed_run_id": "r-20260926T103214701580-complete-refuses-a-live-run",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T14:09:48.489038+00:00",
+  "total": 92
+}

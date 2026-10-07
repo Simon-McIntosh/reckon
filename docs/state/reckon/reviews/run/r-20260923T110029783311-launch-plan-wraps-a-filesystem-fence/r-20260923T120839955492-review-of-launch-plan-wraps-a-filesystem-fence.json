@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3905",
+    "reckon/crew/dispatch.py:5387",
+    "reckon/crew/dispatch.py:5732",
+    "reckon/crew/resumption.py:242"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T12:08:39.955492+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/a-worker-cannot-write-your-home-landed.html",
+      "line": "90",
+      "text": "it records that base and this commit both report 3 failed, 58 passed over the five existing launch-plan files, but the four tests this commit adds to tests/test_backends.py make that set report 3 failed, 62 passed, so the recorded same-set comparison does not reproduce."
+    },
+    {
+      "file": "docs/evidence/archive/a-worker-cannot-write-your-home-landed.html",
+      "line": "93",
+      "text": "it records this node's two new tests and a gate of 3 failed, 60 passed, but the node added six tests (two in the new file and four in tests/test_backends.py) and the six-file gate measures 3 failed, 64 passed, so the recorded test surface is understated threefold."
+    },
+    {
+      "file": "docs/plans/a-worker-cannot-write-your-home.html",
+      "line": "110",
+      "text": "it repeats the same false after-side count (both give 3 failed, 58 passed over the five existing launch-plan files) when the same five files measure 3 failed, 62 passed at this head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 94d2b091; 9125b986 carries the code and its tests, 984c4f05 records the plan landing, 78e179c5 carries the negative-control log, and no diff line removes code.",
+    "done_when": "the done_when names tests/test_launch_plan_fences_the_home.py, an executed-argv proof and an off-by-default contract; tests/test_launch_plan_fences_the_home.py:214 runs the composed argv with a stub and the manifest records the base/after delta.",
+    "goal": "read the node goal (wrap every CLI worker's launch argv in a bubblewrap fence that makes protected paths read-only) against reckon/_backends.py:1797-1908, which adds protected_paths, fence_argv and the fence option on launch_plan at the one point every dialect and every entry path builds its argv.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T110029783311-launch-plan-wraps-a-filesystem-fence/manifest.md; it records commits 9125b986, 984c4f05, 78e179c5 and the gate numbers base 3 failed/58 passed, after 3 failed/64 passed.",
+    "write_paths": "read the manifest's declared paths and git diff --stat 94d2b091..78e179c5; the diff touches exactly reckon/_backends.py, tests/test_launch_plan_fences_the_home.py, tests/test_backends.py, docs/plans/a-worker-cannot-write-your-home.html, the archive evidence file and the figure directory, all additions."
+  },
+  "justifications": {
+    "durability": "tests/test_launch_plan_fences_the_home.py:238 asserts each protected sentinel survives rm -rf and tests/test_launch_plan_fences_the_home.py:252 applies the declared negative control that reinstates the absence of the ~/.claude overlay.",
+    "evidence": "tests/test_launch_plan_fences_the_home.py:214 executes the composed argv and the logs gate_base.log and gate_after.log are on disk, but the gate counts recorded in the evidence document do not reproduce.",
+    "fit": "reckon/_backends.py:1770 follows the module's existing sectioned-helper idiom and introduces only FENCE_BINARY, protected_paths and fence_argv, none carrying a plan, stage or version label.",
+    "goal_fidelity": "reckon/_backends.py:1907 applies the fence only when fence=True, and none of dispatch.py:3905, dispatch.py:5387, dispatch.py:5732 or resumption.py:242 passes it.",
+    "scope_discipline": "git diff --stat 94d2b091..78e179c5 touches only the six declared write paths and the declared figure directory, and every one is a pure addition."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (wrap every CLI worker's launch argv in a bubblewrap fence that makes protected paths read-only) against reckon/_backends.py:1797-1908, which adds protected_paths, fence_argv and the fence option on launch_plan at the one point every dialect and every entry path builds its argv.\nVERDICT done_when: the done_when names tests/test_launch_plan_fences_the_home.py, an executed-argv proof and an off-by-default contract; tests/test_launch_plan_fences_the_home.py:214 runs the composed argv with a stub and the manifest records the base/after delta.\nVERDICT write_paths: read the manifest's declared paths and git diff --stat 94d2b091..78e179c5; the diff touches exactly reckon/_backends.py, tests/test_launch_plan_fences_the_home.py, tests/test_backends.py, docs/plans/a-worker-cannot-write-your-home.html, the archive evidence file and the figure directory, all additions.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T110029783311-launch-plan-wraps-a-filesystem-fence/manifest.md; it records commits 9125b986, 984c4f05, 78e179c5 and the gate numbers base 3 failed/58 passed, after 3 failed/64 passed.\nVERDICT diff: read commit by commit against 94d2b091; 9125b986 carries the code and its tests, 984c4f05 records the plan landing, 78e179c5 carries the negative-control log, and no diff line removes code.\nCALL_SITES: reckon/crew/dispatch.py:3905, reckon/crew/dispatch.py:5387, reckon/crew/dispatch.py:5732, reckon/crew/resumption.py:242\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/_backends.py:1907 applies the fence only when fence=True, and none of dispatch.py:3905, dispatch.py:5387, dispatch.py:5732 or resumption.py:242 passes it.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_launch_plan_fences_the_home.py:214 executes the composed argv and the logs gate_base.log and gate_after.log are on disk, but the gate counts recorded in the evidence document do not reproduce.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 94d2b091..78e179c5 touches only the six declared write paths and the declared figure directory, and every one is a pure addition.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_launch_plan_fences_the_home.py:238 asserts each protected sentinel survives rm -rf and tests/test_launch_plan_fences_the_home.py:252 applies the declared negative control that reinstates the absence of the ~/.claude overlay.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_backends.py:1770 follows the module's existing sectioned-helper idiom and introduces only FENCE_BINARY, protected_paths and fence_argv, none carrying a plan, stage or version label.\nFINDING docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:90 it records that base and this commit both report 3 failed, 58 passed over the five existing launch-plan files, but the four tests this commit adds to tests/test_backends.py make that set report 3 failed, 62 passed, so the recorded same-set comparison does not reproduce.\nFINDING docs/evidence/archive/a-worker-cannot-write-your-home-landed.html:93 it records this node's two new tests and a gate of 3 failed, 60 passed, but the node added six tests (two in the new file and four in tests/test_backends.py) and the six-file gate measures 3 failed, 64 passed, so the recorded test surface is understated threefold.\nFINDING docs/plans/a-worker-cannot-write-your-home.html:110 it repeats the same false after-side count (both give 3 failed, 58 passed over the five existing launch-plan files) when the same five files measure 3 failed, 62 passed at this head.",
+  "review_run_id": "r-20260923T120839955492-review-of-launch-plan-wraps-a-filesystem-fence",
+  "reviewed_base_sha": "94d2b09108d61d862435825a3a20c2dc65840b81",
+  "reviewed_head_sha": "78e179c5e2bb8678854abb61ca3eceed319582c9",
+  "reviewed_run_id": "r-20260923T110029783311-launch-plan-wraps-a-filesystem-fence",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T12:25:42.318797+00:00",
+  "total": 89
+}

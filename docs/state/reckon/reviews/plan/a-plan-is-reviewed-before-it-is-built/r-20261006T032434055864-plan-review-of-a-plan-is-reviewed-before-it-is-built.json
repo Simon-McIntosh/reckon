@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T03:29:28.283Z",
+  "dispatched_at": "2026-10-06T03:25:10Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:162",
+      "id": "duplicate_owner-1",
+      "reason": "naming the body extent as the parser record rather than a second regex removes the one boundary derivation \u00a716 leaves un-owned, so the moved `section_prose` does not fork span detection the parser already owns.",
+      "text": "\u00a716 states the moved reader derives its headings and spans \"from one pass over the parser's record set\", yet the slicer it moves still computes the document `<body>`/`</body>` extent with its own two regexes, and the plan assigns that boundary no owner; the parser already carries a `body` structural record (`reckon/_plan_html.py:196`)",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "77275d3a614ec3677cfa6262cdcc0e9ff99daf1309bf99ec4151887bfe4c1fd3",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 163,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T032434055864-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "51cb60474aa46feed308356fcded16f1fe37f218",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the one public addition, `section_prose` on `reckon/_plan_html.py`, hides body-span clamping, heading identity, landed-card interiors, skip-tag removal and entity decoding behind an ordered sequence of (identity, prose) slices, consumed by the digests, the search text, the section response and the dispatch brief. Substantial behaviour behind a small interface.",
+    "duplicate_owner": "a finding \u2014 the document-body extent has no owner in the moved design; see FINDING duplicate_owner below.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23. \u00a716 names its one net public addition (`section_prose`) and what it retires (the interim public `strip_tags` at `reckon/_plan_html.py:1880` becomes private `_strip_tags`), and states why the moved `section_record_id`/`section_anchor`/`DOCUMENT_UNIT` are moves the family does not count \u2014 verified against `reckon/interface_counts.py:74` (`definitions` yields only FunctionDef/AsyncFunctionDef/ClassDef, so module-level constants are not counted). \u00a720 adds no public definition and says so.",
+    "reuse_search": "pass \u2014 \u00a716 runs a lexical census over the codebase (`grep -rn 'stripped_strings\\|get_text(' reck/`, fourteen lines), names the shared owners it will reuse (`_TAG_RE` and `_PROSE_SKIP_TAGS` on `reckon/_plan_html.py:1876-1877`, `section_record_id` on the same module, `structured_section_spans` at `reckon/_plan_html.py:415`, the public readers `roadmap.implementable_sections` at `reckon/roadmap.py:107` and `list_plan_reviews`), and classifies every remaining extractor by kind rather than proposing new machinery beside it. All named owners were verified to exist.",
+    "thin_wrapper": "pass \u2014 the two candidates are justified in-text: `_strip_tags` is not a bare `_TAG_RE` substitution but adds `html.unescape` and removal of the `_PROSE_SKIP_TAGS` interiors (the same reason `count_open_decisions` at `reckon/_plan_html.py:1909` keeps the bare form), and \u00a716 states why the coverage predicate cannot be a call to `read_plan_review` (one-record join vs. set join). The interim `_prose_slices` is deleted rather than left as a delegator to the new reader."
+  },
+  "section_digests": {
+    "_document": "81635abc293ac834eb5c88c1b0f17e260d168d764cf05d9f1319483da13d99ea",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "829a0621370eff5d48451ca2e872be5968c4b7188842419527a8169e1b207c26",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d79e31683151df1a56a87dbbfed8e823d115500358f376d349ab3896ca4ee1ee",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.718977+00:00"
+}

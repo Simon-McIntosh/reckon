@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/routing.py:2657",
+    "reckon/crew/recovery.py:494",
+    "reckon/crew/recovery.py:545",
+    "reckon/crew/recovery.py:1477",
+    "reckon/crew/recovery.py:2339",
+    "reckon/mcp.py:4328",
+    "reckon/crew/routing.py:2592"
+  ],
+  "completed_at": "2026-10-06T08:35:29.607Z",
+  "dispatched_at": "2026-10-06T08:26:44Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "228",
+      "severity": "follow-on",
+      "text": "follow-on: after _digest_state switched to _without_comments_and_followups at reckon/crew/plan_review.py:323, _without_run_comments has no production caller \u2014 the only reference is tests/test_one_reader_of_remaining_work.py:163 \u2014 so the run-comment filter the change describes as sitting beside the new normaliser is now reached only by a test, and dead production code that only a test keeps alive should be retired or given its caller back."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against d8fa6eee1; 1b61eb101 makes the source and test change and 2cd27490e adds only the evidence fragment, so the gated source at 1b61eb101 equals the source at head 2cd27490e.",
+    "done_when": "the done-when's cases are asserted by tests/test_bookkeeping_earns_no_review.py (an authored comment and a followup leave every unit covered, a decision edit uncovers the document, setting and flipping impl stays covered, the metadata-scalar sweep moves only excluded keys, and a snapshot outweighs stored digests from another definition), the gate recorded at gate.log ran 108 passed EXIT=0 over the six named files, and I re-ran tests/test_bookkeeping_earns_no_review.py and tests/test_a_section_reviewed_as_authored_stays_reviewed.py at head 2cd27490e and re-counted public_definitions 1481 at both base and head.",
+    "goal": "section 21's deliverable is that the document unit stops folding authored comments and followups, that the derived impl_source scalar stops moving the digest, and that coverage recomputes each stored review's unit digests from that review's own plan.html snapshot; the cumulative diff adds _without_comments_and_followups applied by _digest_state, adds impl_source to PLAN_DERIVED_SCALARS at reckon/crew/plan_review.py:118, and adds _snapshot_unit_digests at reckon/crew/plan_review.py:543 called from _review_coverage at reckon/crew/plan_review.py:602, all as the section states.",
+    "manifest": "read; it reads complete, names commits 1b61eb101 and 2cd27490e, states gate 108 passed EXIT=0 and negative control 1 failed EXIT=1 with their log paths, names census-base.json and census-head.json, and records public_definitions 1481 at base and head; it names no baseline_suite or after_suite, so the added-failure count is unmeasured, never zero.",
+    "write_paths": "the reviewed manifest declares eight write paths; the cumulative diff d8fa6eee1..2cd27490e touches exactly reckon/crew/plan_review.py, reckon/crew/recovery.py, tests/test_a_section_reviewed_as_authored_stays_reviewed.py, tests/test_bookkeeping_earns_no_review.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/bookkeeping-earns-no-review.html, every one inside the declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_bookkeeping_earns_no_review.py:341 restores the prior definition through a monkeypatch that produces legacy digests, proves the two definitions disagree, then asserts coverage holds with the snapshot and reddens once the snapshot is removed, so the guard names the condition it fails on and the negative control reddens test_an_authored_comment_leaves_every_unit_covered.",
+    "evidence": "the gate at gate.log ran 108 passed EXIT=0 at 1b61eb101, the census over 33 plans shows 15 coverage verdicts change all toward covered, and public_definitions is 1481 at base and 1481 at head; the added-failure count is unmeasured because the reviewed manifest names no baseline_suite or after_suite.",
+    "fit": "the new normaliser at reckon/crew/plan_review.py:260 mirrors the shape of the run-comment filter it sits beside, the constant at reckon/crew/plan_review.py:851 replaces the literal at reckon/crew/recovery.py:547, and no plan, ticket or version identifier enters a name or comment.",
+    "goal_fidelity": "reckon/crew/plan_review.py:260 drops comments and followups whole while keeping decisions and sections, reckon/crew/plan_review.py:118 adds impl_source to the derived exclusions, and reckon/crew/plan_review.py:551 recomputes a stored review's unit digests from its own snapshot, which is section 21's rule.",
+    "reuse": "reckon/crew/plan_review.py:861 hoists the report root that was built twice into _plan_review_report_root, and _snapshot_unit_digests calls the existing _section_digests rather than adding a second snapshot reader.",
+    "scope_discipline": "the cumulative diff touches only the five declared paths and carries nothing the goal does not imply, but reckon/crew/plan_review.py:228 leaves _without_run_comments with no production caller once _digest_state stopped using it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 21's deliverable is that the document unit stops folding authored comments and followups, that the derived impl_source scalar stops moving the digest, and that coverage recomputes each stored review's unit digests from that review's own plan.html snapshot; the cumulative diff adds _without_comments_and_followups applied by _digest_state, adds impl_source to PLAN_DERIVED_SCALARS at reckon/crew/plan_review.py:118, and adds _snapshot_unit_digests at reckon/crew/plan_review.py:543 called from _review_coverage at reckon/crew/plan_review.py:602, all as the section states.\nVERDICT done_when: the done-when's cases are asserted by tests/test_bookkeeping_earns_no_review.py (an authored comment and a followup leave every unit covered, a decision edit uncovers the document, setting and flipping impl stays covered, the metadata-scalar sweep moves only excluded keys, and a snapshot outweighs stored digests from another definition), the gate recorded at gate.log ran 108 passed EXIT=0 over the six named files, and I re-ran tests/test_bookkeeping_earns_no_review.py and tests/test_a_section_reviewed_as_authored_stays_reviewed.py at head 2cd27490e and re-counted public_definitions 1481 at both base and head.\nVERDICT write_paths: the reviewed manifest declares eight write paths; the cumulative diff d8fa6eee1..2cd27490e touches exactly reckon/crew/plan_review.py, reckon/crew/recovery.py, tests/test_a_section_reviewed_as_authored_stays_reviewed.py, tests/test_bookkeeping_earns_no_review.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/bookkeeping-earns-no-review.html, every one inside the declaration.\nVERDICT manifest: read; it reads complete, names commits 1b61eb101 and 2cd27490e, states gate 108 passed EXIT=0 and negative control 1 failed EXIT=1 with their log paths, names census-base.json and census-head.json, and records public_definitions 1481 at base and head; it names no baseline_suite or after_suite, so the added-failure count is unmeasured, never zero.\nVERDICT diff: read commit by commit against d8fa6eee1; 1b61eb101 makes the source and test change and 2cd27490e adds only the evidence fragment, so the gated source at 1b61eb101 equals the source at head 2cd27490e.\nCALL_SITES: reckon/crew/routing.py:2657, reckon/crew/recovery.py:494, reckon/crew/recovery.py:545, reckon/crew/recovery.py:1477, reckon/crew/recovery.py:2339, reckon/mcp.py:4328, reckon/crew/routing.py:2592\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:260 drops comments and followups whole while keeping decisions and sections, reckon/crew/plan_review.py:118 adds impl_source to the derived exclusions, and reckon/crew/plan_review.py:551 recomputes a stored review's unit digests from its own snapshot, which is section 21's rule.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at gate.log ran 108 passed EXIT=0 at 1b61eb101, the census over 33 plans shows 15 coverage verdicts change all toward covered, and public_definitions is 1481 at base and 1481 at head; the added-failure count is unmeasured because the reviewed manifest names no baseline_suite or after_suite.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the cumulative diff touches only the five declared paths and carries nothing the goal does not imply, but reckon/crew/plan_review.py:228 leaves _without_run_comments with no production caller once _digest_state stopped using it.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_bookkeeping_earns_no_review.py:341 restores the prior definition through a monkeypatch that produces legacy digests, proves the two definitions disagree, then asserts coverage holds with the snapshot and reddens once the snapshot is removed, so the guard names the condition it fails on and the negative control reddens test_an_authored_comment_leaves_every_unit_covered.\nSCORE fit: 19\nJUSTIFICATION fit: the new normaliser at reckon/crew/plan_review.py:260 mirrors the shape of the run-comment filter it sits beside, the constant at reckon/crew/plan_review.py:851 replaces the literal at reckon/crew/recovery.py:547, and no plan, ticket or version identifier enters a name or comment.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/plan_review.py:861 hoists the report root that was built twice into _plan_review_report_root, and _snapshot_unit_digests calls the existing _section_digests rather than adding a second snapshot reader.\nFINDING reckon/crew/plan_review.py:228 follow-on: after _digest_state switched to _without_comments_and_followups at reckon/crew/plan_review.py:323, _without_run_comments has no production caller \u2014 the only reference is tests/test_one_reader_of_remaining_work.py:163 \u2014 so the run-comment filter the change describes as sitting beside the new normaliser is now reached only by a test, and dead production code that only a test keeps alive should be retired or given its caller back.\nreviewed_base_sha: d8fa6eee1c248d1e3f9c0a4cb7d46f125e04ef16\nreviewed_head_sha: 2cd27490e3adea60a03b47e786d3047b172cdb37\n",
+  "review_run_id": "r-20261006T082625358037-review-of-bookkeeping-earns-no-review",
+  "reviewed_base_sha": "d8fa6eee1c248d1e3f9c0a4cb7d46f125e04ef16",
+  "reviewed_head_sha": "2cd27490e3adea60a03b47e786d3047b172cdb37",
+  "reviewed_run_id": "r-20261006T075850328823-bookkeeping-earns-no-review",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T08:34:22.732416+00:00",
+  "total": 112
+}

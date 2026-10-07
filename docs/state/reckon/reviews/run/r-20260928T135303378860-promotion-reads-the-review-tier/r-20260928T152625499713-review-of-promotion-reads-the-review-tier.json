@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "declared pair counted: 0 added failures, a set difference over the reviewed manifest's baseline_suite (gate-base.log, 157 passed) and after_suite (gate-head-named.log, 28 passed) logs. The same-population pairing \u2014 gate-base.log against the wider head arm gate-head.log \u2014 returns 10 added ids, all pre-existing cases asserting the review gate this run retires, attributed to 5c013063 in the reviewed manifest's failure_attribution; the declared head arm covers a strict subset of the base arm's file set, which is why the canonical count reads 0.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:4380 (crew complete command)",
+    "reckon/crew/promotion.py:3218 (complete)",
+    "reckon/crew/promotion.py:3330 (_run_review_tier)",
+    "reckon/crew/promotion.py:3333 (_require_review_waiver)",
+    "reckon/crew/promotion.py:5058 (_complete_locked ledger row write)"
+  ],
+  "completed_at": "2026-09-28T17:07:17.080Z",
+  "dispatched_at": "2026-09-28T15:26:42Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2943",
+      "text": "the section-level capability read is exercised by no test \u2014 tests/test_promotion_reads_the_review_tier.py:41 writes only plan-level risk and the fixture plan body is a bare main.plan-doc with no section records, so the branch the helper's own docstring calls the reason a review is sized to the section it landed against is left unguarded and any regression in it keeps all six cases green."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2952",
+      "text": "the ceiling's flight-key read and its config-error fallback at reckon/crew/promotion.py:2962-2964 are unguarded: no case varies the review.tiers key or pins the resolved value, and the two arms (2 lines against 80) straddle the shipped default of 50, so replacing the lookup with a literal in the module would leave every case green."
+    },
+    {
+      "file": "tests/test_promotion_reads_the_review_tier.py",
+      "line": "282",
+      "text": "the case covering the fail-closed silent scope asserts a role the pre-change module also refuses, so it passes against the base module (gate-base-newfile.log line 7, the sixth dot in FFFFF.) and cannot redden if the tier change is reverted; the case that distinguishes the new behaviour, a silent non-implement run, is asserted only by the three pre-existing cases this change turns red."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against fb7475289c \u2014 5c013063 carries the tier resolution, the rewritten gate and the six-case test file (+489/-14) and 4e75a08e carries the landing note, the evidence anchor and the figure (+148), with no path, symbol or comment outside the declared scope and no behaviour the goal does not imply.",
+    "done_when": "the brief's measure names tests/test_promotion_reads_the_review_tier.py with tests/test_review_tiers.py and \"the existing promotion review-gate tests the change reaches\" all passing at exit 0; the first two hold (gate-head-named.log, 28 passed, EXIT=0) but ten reached cases in tests/test_review_gate_coverage.py and tests/test_promotion_reads_the_matching_review.py fail at the same head (gate-head.log, 153 passed, 10 failed), so that clause is unmet as written even though every one of the ten is disclosed with its id and a repair recipe in the manifest's failure_attribution and follow_ons.",
+    "goal": "the goal is to compute each run's review tier at promotion, record it on the ledger row and gate on it in place of the role check, and that is what landed \u2014 the tier is resolved from the run's own changed paths, changed lines, spec level and declared risk at reckon/crew/promotion.py:3031-3045, computed before the gate reads it at reckon/crew/promotion.py:3330-3344, written on every promotion at reckon/crew/promotion.py:5057-5059, and the role clause is gone from the predicate at reckon/crew/promotion.py:3100-3107.",
+    "manifest": "read; it records the named arm's command and result (28 passed, EXIT=0), all four logs by absolute path, the base arm (157 passed, EXIT=0), the broad head arm (153 passed, 10 failed) with the ten ids attributed to 5c013063, an OUT=1 negative control whose first line repeats the declared mutation verbatim, and the measurement module and cwd for the scratch-tree arm.",
+    "write_paths": "read in the dispatch prompt and the manifest and checked against the diff; git diff --stat fb747528 4e75a08e names exactly the five declared paths (reckon/crew/promotion.py, tests/test_promotion_reads_the_review_tier.py, docs/plans/a-review-is-sized-to-its-risk.html, docs/evidence/archive/a-review-is-sized-to-its-risk-landed.html, docs/figures/a-review-is-sized-to-its-risk/promotion-review-gate.svg) and nothing else, and the plan edit adds one landed note without touching the plan-version or plan-modified metas."
+  },
+  "justifications": {
+    "durability": "gate-base-newfile.log's FFFFF. line shows five of the six new cases redden against the pre-change module and the negative control falsifies the tests-only guard by reinstating the role check, but the section-level capability read at reckon/crew/promotion.py:2943 and the flight-keyed ceiling at reckon/crew/promotion.py:2952 are exercised by no test.",
+    "evidence": "the named arm's log records 28 passed EXIT=0 and negative-control.log records the declared mutation reddening test_tests_only_run_promotes_unreviewed_with_tier_none, but the reached review-gate tests are red at the same head and the declared after_suite arm is a strict subset of the base arm's file set, so the canonical added-failure derivation reads 0 where the same-population pairing reads 10.",
+    "fit": "the new helpers are named by mechanism (_run_review_tier, _review_changed_scope, _light_changed_line_ceiling, _run_capability_risk) with docstrings that state the failure each prevents, and the diff carries no plan, sprint or ticket identifier, no version suffix and no attribution.",
+    "goal_fidelity": "reckon/crew/promotion.py:3100-3107 gates on the tier with the role check gone and reckon/crew/promotion.py:5058 writes review_tier on every promotion, the one shortfall being that a run whose own declarations measure nothing never reaches review_tiers.review_tier at all because reckon/crew/promotion.py:3034-3035 grants FULL directly.",
+    "scope_discipline": "every path in git diff --stat fb747528 4e75a08e lies inside the declared write paths, the reviewed worktree is clean, and no shared index, sprint or other plan file was touched."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: fb7475289c1d5e0230e6c146dc44891b02a23420\nreviewed_head_sha: 4e75a08e5a0f9f783a8583af78864d2163c013ad\nVERDICT goal: the goal is to compute each run's review tier at promotion, record it on the ledger row and gate on it in place of the role check, and that is what landed \u2014 the tier is resolved from the run's own changed paths, changed lines, spec level and declared risk at reckon/crew/promotion.py:3031-3045, computed before the gate reads it at reckon/crew/promotion.py:3330-3344, written on every promotion at reckon/crew/promotion.py:5057-5059, and the role clause is gone from the predicate at reckon/crew/promotion.py:3100-3107.\nVERDICT done_when: the brief's measure names tests/test_promotion_reads_the_review_tier.py with tests/test_review_tiers.py and \"the existing promotion review-gate tests the change reaches\" all passing at exit 0; the first two hold (gate-head-named.log, 28 passed, EXIT=0) but ten reached cases in tests/test_review_gate_coverage.py and tests/test_promotion_reads_the_matching_review.py fail at the same head (gate-head.log, 153 passed, 10 failed), so that clause is unmet as written even though every one of the ten is disclosed with its id and a repair recipe in the manifest's failure_attribution and follow_ons.\nVERDICT write_paths: read in the dispatch prompt and the manifest and checked against the diff; git diff --stat fb747528 4e75a08e names exactly the five declared paths (reckon/crew/promotion.py, tests/test_promotion_reads_the_review_tier.py, docs/plans/a-review-is-sized-to-its-risk.html, docs/evidence/archive/a-review-is-sized-to-its-risk-landed.html, docs/figures/a-review-is-sized-to-its-risk/promotion-review-gate.svg) and nothing else, and the plan edit adds one landed note without touching the plan-version or plan-modified metas.\nVERDICT manifest: read; it records the named arm's command and result (28 passed, EXIT=0), all four logs by absolute path, the base arm (157 passed, EXIT=0), the broad head arm (153 passed, 10 failed) with the ten ids attributed to 5c013063, an OUT=1 negative control whose first line repeats the declared mutation verbatim, and the measurement module and cwd for the scratch-tree arm.\nVERDICT diff: read commit by commit against fb7475289c \u2014 5c013063 carries the tier resolution, the rewritten gate and the six-case test file (+489/-14) and 4e75a08e carries the landing note, the evidence anchor and the figure (+148), with no path, symbol or comment outside the declared scope and no behaviour the goal does not imply.\nCALL_SITES: reckon/cli.py:4380 (crew complete command), reckon/crew/promotion.py:3218 (complete), reckon/crew/promotion.py:3330 (_run_review_tier), reckon/crew/promotion.py:3333 (_require_review_waiver), reckon/crew/promotion.py:5058 (_complete_locked ledger row write)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:3100-3107 gates on the tier with the role check gone and reckon/crew/promotion.py:5058 writes review_tier on every promotion, the one shortfall being that a run whose own declarations measure nothing never reaches review_tiers.review_tier at all because reckon/crew/promotion.py:3034-3035 grants FULL directly.\nSCORE evidence: 15\nJUSTIFICATION evidence: the named arm's log records 28 passed EXIT=0 and negative-control.log records the declared mutation reddening test_tests_only_run_promotes_unreviewed_with_tier_none, but the reached review-gate tests are red at the same head and the declared after_suite arm is a strict subset of the base arm's file set, so the canonical added-failure derivation reads 0 where the same-population pairing reads 10.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat fb747528 4e75a08e lies inside the declared write paths, the reviewed worktree is clean, and no shared index, sprint or other plan file was touched.\nSCORE durability: 15\nJUSTIFICATION durability: gate-base-newfile.log's FFFFF. line shows five of the six new cases redden against the pre-change module and the negative control falsifies the tests-only guard by reinstating the role check, but the section-level capability read at reckon/crew/promotion.py:2943 and the flight-keyed ceiling at reckon/crew/promotion.py:2952 are exercised by no test.\nSCORE fit: 20\nJUSTIFICATION fit: the new helpers are named by mechanism (_run_review_tier, _review_changed_scope, _light_changed_line_ceiling, _run_capability_risk) with docstrings that state the failure each prevents, and the diff carries no plan, sprint or ticket identifier, no version suffix and no attribution.\nFINDING reckon/crew/promotion.py:2943 the section-level capability read is exercised by no test \u2014 tests/test_promotion_reads_the_review_tier.py:41 writes only plan-level risk and the fixture plan body is a bare main.plan-doc with no section records, so the branch the helper's own docstring calls the reason a review is sized to the section it landed against is left unguarded and any regression in it keeps all six cases green.\nFINDING reckon/crew/promotion.py:2952 the ceiling's flight-key read and its config-error fallback at reckon/crew/promotion.py:2962-2964 are unguarded: no case varies the review.tiers key or pins the resolved value, and the two arms (2 lines against 80) straddle the shipped default of 50, so replacing the lookup with a literal in the module would leave every case green.\nFINDING tests/test_promotion_reads_the_review_tier.py:282 the case covering the fail-closed silent scope asserts a role the pre-change module also refuses, so it passes against the base module (gate-base-newfile.log line 7, the sixth dot in FFFFF.) and cannot redden if the tier change is reverted; the case that distinguishes the new behaviour, a silent non-implement run, is asserted only by the three pre-existing cases this change turns red.\n",
+  "review_run_id": "r-20260928T152625499713-review-of-promotion-reads-the-review-tier",
+  "reviewed_base_sha": "fb7475289c1d5e0230e6c146dc44891b02a23420",
+  "reviewed_head_sha": "4e75a08e5a0f9f783a8583af78864d2163c013ad",
+  "reviewed_run_id": "r-20260928T135303378860-promotion-reads-the-review-tier",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T16:21:07.424237+00:00",
+  "total": 89
+}

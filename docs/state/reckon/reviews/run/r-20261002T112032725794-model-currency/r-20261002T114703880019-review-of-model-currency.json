@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite or after_suite gate log (both null), so the added-failure count was not taken",
+  "backend": "sonnet",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T12:09:21.979Z",
+  "dispatched_at": "2026-10-02T11:47:27Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/model-currency.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the older-id column claims every location that pins an older id within roots it names, including /work/projects/imas_gpu/agents and /home/ITER/mcintos/.config/reckon, but omits /work/projects/imas_gpu/agents/bench/flight.yaml.bak-140642 (a flight-config backup pinning gpt-5.6-sol at line 58, gpt-5.3-codex-spark at 94, gpt-5.6-luna at 112, claude-sonnet-5 at 274 and claude-opus-5 at 285, the same class as the six /home/ITER/mcintos/.config/reckon flight backups the fragment does enumerate) and /home/ITER/mcintos/.config/reckon/cache/capabilities.json (an active cache bearing claude-opus-5, claude-sonnet-5, deepseek-v4-flash, gpt-5.3-codex-spark, gpt-5.6-luna, gpt-5.6-sol and gpt-5.6-terra); neither is a run, report or review record, which is the only exclusion the coverage note declares."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T112032725794-model-currency/verify_model_currency.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the verifier's CLAIMS list is hardcoded rather than read out of the fragment, so the gate proves the 64 hardcoded tokens sit at the 64 hardcoded path:line locations and cannot fail when the fragment diverges from that list or when a pin is omitted from both; the fragment's wording and its checked citations are otherwise consistent."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit 50f759110690c4916abb62b9431ea3c60688de22 against base 39b8719da002907a6e160d56f98627afbb10a1d5; one file, 121 insertions, 0 deletions.",
+    "done_when": "plan section s3 asks for the current id, its source (CLI catalog, provider model list, or live probe) and every location pinning an older id; each row supplies a source and an older-id column, all nine flight backend ids carry a current/stale/refused verdict, but two older-id sources inside the fragment's own stated roots are not listed.",
+    "goal": "the node goal is to tabulate, per provider and family, the current model id and its exactly named source; docs/evidence/fragments/one-typesafe-model-picker/model-currency.html:1 carries 12 rows over claude (sonnet, opus, haiku, fable, mythos), codex (sol, luna, terra, astra, spark, legacy 5.5) and clive, each naming a source from the Claude CLI 2.1.287 catalog, the codex 0.155.1 model list, or the live clive --list probe, all of which I independently reproduced.",
+    "manifest": "read; status complete, with commits, changed_paths, landing, tests, test_logs and negative_control_log populated.",
+    "write_paths": "the manifest declares docs/evidence/fragments/one-typesafe-model-picker/model-currency.html and an unused figures dir; commit 50f759110690c4916abb62b9431ea3c60688de22 adds only the fragment."
+  },
+  "justifications": {
+    "durability": "the fragment embeds a re-runnable coverage note naming its grep patterns and roots, but the verifier that checks its citations is not committed to the repository, so no guard fails when a pinned id moves or a new stale pin appears.",
+    "evidence": "the committed-head gate verify.log re-runs to EXIT=0 (64 citations, 0 mismatches), the negative control reproduces EXIT=1 at /home/ITER/mcintos/.config/reckon/flight.yaml:97, and I independently corroborated the CLI 2.1.287 catalog, the codex cache ids and descriptions, the nine flight pins and both clive catalog files, but the gate's 64 claims are a hardcoded list rather than extracted from the fragment, so it cannot fail on a fragment/claim divergence or an omitted location.",
+    "fit": "the fragment is a well-formed evidence page (HTMLParser clean, 12 data rows, meta tags naming plan-verifies#s3) in the repository's established r-note/table idiom, and no plan label or version number appears in the artifact.",
+    "goal_fidelity": "the table at docs/evidence/fragments/one-typesafe-model-picker/model-currency.html:1 gives every provider and family its current id and exactly named source and labels all nine flight backend ids current/stale/refused, but its older-id column omits two sources inside its own declared search roots, so the \"every location\" clause is not met.",
+    "scope_discipline": "commit 50f759110690c4916abb62b9431ea3c60688de22 touches exactly one declared write path (docs/evidence/fragments/one-typesafe-model-picker/model-currency.html), no file outside it, and the verifier lives in the run directory rather than the repository."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to tabulate, per provider and family, the current model id and its exactly named source; docs/evidence/fragments/one-typesafe-model-picker/model-currency.html:1 carries 12 rows over claude (sonnet, opus, haiku, fable, mythos), codex (sol, luna, terra, astra, spark, legacy 5.5) and clive, each naming a source from the Claude CLI 2.1.287 catalog, the codex 0.155.1 model list, or the live clive --list probe, all of which I independently reproduced.\nVERDICT done_when: plan section s3 asks for the current id, its source (CLI catalog, provider model list, or live probe) and every location pinning an older id; each row supplies a source and an older-id column, all nine flight backend ids carry a current/stale/refused verdict, but two older-id sources inside the fragment's own stated roots are not listed.\nVERDICT write_paths: the manifest declares docs/evidence/fragments/one-typesafe-model-picker/model-currency.html and an unused figures dir; commit 50f759110690c4916abb62b9431ea3c60688de22 adds only the fragment.\nVERDICT manifest: read; status complete, with commits, changed_paths, landing, tests, test_logs and negative_control_log populated.\nVERDICT diff: read commit 50f759110690c4916abb62b9431ea3c60688de22 against base 39b8719da002907a6e160d56f98627afbb10a1d5; one file, 121 insertions, 0 deletions.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the table at docs/evidence/fragments/one-typesafe-model-picker/model-currency.html:1 gives every provider and family its current id and exactly named source and labels all nine flight backend ids current/stale/refused, but its older-id column omits two sources inside its own declared search roots, so the \"every location\" clause is not met.\nSCORE evidence: 14\nJUSTIFICATION evidence: the committed-head gate verify.log re-runs to EXIT=0 (64 citations, 0 mismatches), the negative control reproduces EXIT=1 at /home/ITER/mcintos/.config/reckon/flight.yaml:97, and I independently corroborated the CLI 2.1.287 catalog, the codex cache ids and descriptions, the nine flight pins and both clive catalog files, but the gate's 64 claims are a hardcoded list rather than extracted from the fragment, so it cannot fail on a fragment/claim divergence or an omitted location.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 50f759110690c4916abb62b9431ea3c60688de22 touches exactly one declared write path (docs/evidence/fragments/one-typesafe-model-picker/model-currency.html), no file outside it, and the verifier lives in the run directory rather than the repository.\nSCORE durability: 8\nJUSTIFICATION durability: the fragment embeds a re-runnable coverage note naming its grep patterns and roots, but the verifier that checks its citations is not committed to the repository, so no guard fails when a pinned id moves or a new stale pin appears.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment is a well-formed evidence page (HTMLParser clean, 12 data rows, meta tags naming plan-verifies#s3) in the repository's established r-note/table idiom, and no plan label or version number appears in the artifact.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/model-currency.html:1 follow-on: the older-id column claims every location that pins an older id within roots it names, including /work/projects/imas_gpu/agents and /home/ITER/mcintos/.config/reckon, but omits /work/projects/imas_gpu/agents/bench/flight.yaml.bak-140642 (a flight-config backup pinning gpt-5.6-sol at line 58, gpt-5.3-codex-spark at 94, gpt-5.6-luna at 112, claude-sonnet-5 at 274 and claude-opus-5 at 285, the same class as the six /home/ITER/mcintos/.config/reckon flight backups the fragment does enumerate) and /home/ITER/mcintos/.config/reckon/cache/capabilities.json (an active cache bearing claude-opus-5, claude-sonnet-5, deepseek-v4-flash, gpt-5.3-codex-spark, gpt-5.6-luna, gpt-5.6-sol and gpt-5.6-terra); neither is a run, report or review record, which is the only exclusion the coverage note declares.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T112032725794-model-currency/verify_model_currency.py:1 follow-on: the verifier's CLAIMS list is hardcoded rather than read out of the fragment, so the gate proves the 64 hardcoded tokens sit at the 64 hardcoded path:line locations and cannot fail when the fragment diverges from that list or when a pin is omitted from both; the fragment's wording and its checked citations are otherwise consistent.\n",
+  "review_run_id": "r-20261002T114703880019-review-of-model-currency",
+  "reviewed_base_sha": "39b8719da002907a6e160d56f98627afbb10a1d5",
+  "reviewed_head_sha": "50f759110690c4916abb62b9431ea3c60688de22",
+  "reviewed_run_id": "r-20261002T112032725794-model-currency",
+  "scores": {
+    "durability": 8,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T12:05:31Z",
+  "total": 75
+}

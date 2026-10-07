@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/paid_lanes.py:751 (__main__ guard into main)",
+    "reckon/crew/paid_lanes.py:717 (the --install-timer branch into install_timer)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T06:37:40.048096+00:00",
+  "findings": [
+    {
+      "file": "tests/test_paid_lanes_timer.py",
+      "line": "71",
+      "text": "the expected service and timer paths, and the timer's Unit= line, are built from the same module constants the implementation renders from, so renaming SERVICE_NAME or TIMER_NAME at reckon/crew/paid_lanes.py:83-84 - the regression the done-when's fixed unit names exist to prevent - leaves all eight cases green; a literal reckon-paid-lanes.timer in the fixture would pin it, and the names are correct as landed."
+    },
+    {
+      "file": "docs/evidence/archive/the-local-lane-is-the-default-landed.html",
+      "line": "595",
+      "text": "the Gate transcript publishes \"22 passed in 6.43s\" for a run at 782ec81e, but no log of that run survives - /home/ITER/mcintos/.cache/reckon-paid-lanes-r7/gate.log is headed revision=850eb424 and reports 5.85s - so the published duration has no durable measurement behind it, though the load-bearing 22-passed result is corroborated at the final head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 0260fc7b - 782ec81e adds the installer and the eight cases, 7c66871b appends the plan comment and the evidence anchor while updating only the record's own meta lines and keeping the prior commits and artifacts, and 850eb424 corrects the published test count from seven to eight.",
+    "done_when": "the done-when names the two unit names and their directives, both manager calls, idempotence, the help text, the negative control and the two-file pass, and tests/test_paid_lanes_timer.py:76-192 asserts each of those, while the manifest records the gate result at 22 passed, exit 0, which my recheck at the reviewed head reproduced for this file at 8 passed.",
+    "goal": "the node's goal is a systemd user timer that republishes the paid-lanes document every five minutes, and reckon/crew/paid_lanes.py:638 install_timer writes reckon-paid-lanes.service and reckon-paid-lanes.timer (paid_lanes.py:83-84) into the user's systemd directory and enables the timer, with ExecStart rendered at paid_lanes.py:586 as the invoking interpreter on -m reckon.crew.paid_lanes --once and the five-minute cadence at paid_lanes.py:94.",
+    "manifest": "read; it records the gate command and 22 passed, names test_logs /home/ITER/mcintos/.cache/reckon-paid-lanes-r7/gate.log whose header carries revision=850eb424, the tree, the command, module.__file__ and cwd, names the negative-control log, and its changed_paths match the diff.",
+    "write_paths": "the fence named five paths and the diff touches four of them - reckon/crew/paid_lanes.py, tests/test_paid_lanes_timer.py, docs/plans/the-local-lane-is-the-default.html and its cumulative evidence record - with docs/figures/the-local-lane-is-the-default unused and nothing written outside."
+  },
+  "justifications": {
+    "durability": "the idempotence case at tests/test_paid_lanes_timer.py:107 is reddened by the executed mutation in the named control log, but the expected unit names are read from the same constants under test (tests/test_paid_lanes_timer.py:71) and no case asserts that --install-timer leaves the document unpublished.",
+    "evidence": "/home/ITER/mcintos/.cache/reckon-paid-lanes-r7/gate.log carries revision, tree, command, module and cwd and its 22-passed/exit-0 result is corroborated by my recheck at the reviewed head (8 passed), with the deduction that the duration quoted at docs/evidence/archive/the-local-lane-is-the-default-landed.html:595 has no surviving log behind it.",
+    "fit": "reckon/crew/paid_lanes.py:624 mirrors the write-if-changed comparison in reckon/service.py:207, the manager calls go through reckon/service.py:157 rather than a second systemctl of its own, and the module's docstrings and lazy import are followed, though systemd_user_dir (paid_lanes.py:562) is a second resolution of a directory reckon/service.py:75 resolves without XDG_CONFIG_HOME.",
+    "goal_fidelity": "reckon/crew/paid_lanes.py:638 does what the goal states with the plan's cadence, the one caveat being that a user unit stops at logout and this installer neither enables lingering nor says so, unlike reckon/service.py:11 and the warning at reckon/cli.py:3837.",
+    "scope_discipline": "every path in the three commits is inside the five-path fence, and the evidence record's meta update at docs/evidence/archive/the-local-lane-is-the-default-landed.html:17-18 retained the prior commits and artifacts rather than dropping them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a systemd user timer that republishes the paid-lanes document every five minutes, and reckon/crew/paid_lanes.py:638 install_timer writes reckon-paid-lanes.service and reckon-paid-lanes.timer (paid_lanes.py:83-84) into the user's systemd directory and enables the timer, with ExecStart rendered at paid_lanes.py:586 as the invoking interpreter on -m reckon.crew.paid_lanes --once and the five-minute cadence at paid_lanes.py:94.\nVERDICT done_when: the done-when names the two unit names and their directives, both manager calls, idempotence, the help text, the negative control and the two-file pass, and tests/test_paid_lanes_timer.py:76-192 asserts each of those, while the manifest records the gate result at 22 passed, exit 0, which my recheck at the reviewed head reproduced for this file at 8 passed.\nVERDICT write_paths: the fence named five paths and the diff touches four of them - reckon/crew/paid_lanes.py, tests/test_paid_lanes_timer.py, docs/plans/the-local-lane-is-the-default.html and its cumulative evidence record - with docs/figures/the-local-lane-is-the-default unused and nothing written outside.\nVERDICT manifest: read; it records the gate command and 22 passed, names test_logs /home/ITER/mcintos/.cache/reckon-paid-lanes-r7/gate.log whose header carries revision=850eb424, the tree, the command, module.__file__ and cwd, names the negative-control log, and its changed_paths match the diff.\nVERDICT diff: read commit by commit against 0260fc7b - 782ec81e adds the installer and the eight cases, 7c66871b appends the plan comment and the evidence anchor while updating only the record's own meta lines and keeping the prior commits and artifacts, and 850eb424 corrects the published test count from seven to eight.\nCALL_SITES: reckon/crew/paid_lanes.py:751 (__main__ guard into main), reckon/crew/paid_lanes.py:717 (the --install-timer branch into install_timer)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/paid_lanes.py:638 does what the goal states with the plan's cadence, the one caveat being that a user unit stops at logout and this installer neither enables lingering nor says so, unlike reckon/service.py:11 and the warning at reckon/cli.py:3837.\nSCORE evidence: 17\nJUSTIFICATION evidence: /home/ITER/mcintos/.cache/reckon-paid-lanes-r7/gate.log carries revision, tree, command, module and cwd and its 22-passed/exit-0 result is corroborated by my recheck at the reviewed head (8 passed), with the deduction that the duration quoted at docs/evidence/archive/the-local-lane-is-the-default-landed.html:595 has no surviving log behind it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the three commits is inside the five-path fence, and the evidence record's meta update at docs/evidence/archive/the-local-lane-is-the-default-landed.html:17-18 retained the prior commits and artifacts rather than dropping them.\nSCORE durability: 17\nJUSTIFICATION durability: the idempotence case at tests/test_paid_lanes_timer.py:107 is reddened by the executed mutation in the named control log, but the expected unit names are read from the same constants under test (tests/test_paid_lanes_timer.py:71) and no case asserts that --install-timer leaves the document unpublished.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/paid_lanes.py:624 mirrors the write-if-changed comparison in reckon/service.py:207, the manager calls go through reckon/service.py:157 rather than a second systemctl of its own, and the module's docstrings and lazy import are followed, though systemd_user_dir (paid_lanes.py:562) is a second resolution of a directory reckon/service.py:75 resolves without XDG_CONFIG_HOME.\nFINDING tests/test_paid_lanes_timer.py:71 the expected service and timer paths, and the timer's Unit= line, are built from the same module constants the implementation renders from, so renaming SERVICE_NAME or TIMER_NAME at reckon/crew/paid_lanes.py:83-84 - the regression the done-when's fixed unit names exist to prevent - leaves all eight cases green; a literal reckon-paid-lanes.timer in the fixture would pin it, and the names are correct as landed.\nFINDING docs/evidence/archive/the-local-lane-is-the-default-landed.html:595 the Gate transcript publishes \"22 passed in 6.43s\" for a run at 782ec81e, but no log of that run survives - /home/ITER/mcintos/.cache/reckon-paid-lanes-r7/gate.log is headed revision=850eb424 and reports 5.85s - so the published duration has no durable measurement behind it, though the load-bearing 22-passed result is corroborated at the final head.",
+  "review_run_id": "r-20260925T063740048096-review-of-paid-lanes-refresh-timer",
+  "reviewed_base_sha": "0260fc7bbe6193ef5a42afd1d6b74bced266ece7",
+  "reviewed_head_sha": "850eb42453012bf963845aef95c46e3dd74be90c",
+  "reviewed_run_id": "r-20260925T062507246668-paid-lanes-refresh-timer",
+  "reviewer": "review-of-paid-lanes-refresh-timer",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T06:58:27.296427+00:00",
+  "total": 90
+}

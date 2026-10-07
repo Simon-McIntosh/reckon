@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T20:09:00.261Z",
+  "dispatched_at": "2026-10-04T20:05:26Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:272",
+      "id": "duplicate_owner-1",
+      "reason": "the decision text asserts a reuse that did not happen, so the plan must either extend `review.py` to a key-aware store or state why the plan-review key (version+blob fingerprint) cannot share it.",
+      "text": "`plan_review_path`/`store_plan_review`/`read_plan_review` re-implement the legacy-path-plus-`.at-<blob>`-sibling keying, the predecessor-preserving target choice and the newest-record read that `reckon/crew/review.py` already owns (`review_path`, `_partial_review_path`, `store_review`, `read_review`), sharing only `review_store_root`; the plan's locked decision (review-store) states it \"reuses the code-review machinery,\" which the code does only at the store root",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery.py:438",
+      "id": "duplicate_owner-2",
+      "reason": "the plan should name `resources.resolve_resource` as the owner of plan resolution and have the sweep and the gate resolve one file the same way.",
+      "text": "`plan_review_subject` builds its plan path as `docs / \"plans\" / f\"{slug}.html\"` behind its own slug regex and `is_file()` check, bypassing `reckon/resources.py:resolve_resource`, the typed resolver that the sibling gate in the same feature uses (`reckon/crew/routing.py:2671`); the sweep's notion of \"the plan\" can therefore diverge from the gate's on archived, duplicated or non-canonically-placed plans",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "61251e0ae7db9a824f57904cf5f31b91c06eb2f31a5b2d1d307f2dc81f6f4772",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 26,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T200512388638-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "84f1c506e542221b7c07264409fefc3076ae31a1",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/crew/plan_review.py` hides fingerprinting, the record shape, the store join and report delivery behind a small function set, and the dispatch composer and the sweep extend their owners in `reckon/crew/recovery.py` rather than spreading new shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 the plan-review store re-implements the review store's path/read convention rather than extending it, and the review subject re-implements plan path resolution rather than extending `resolve_resource`.",
+    "reuse_search": "pass \u2014 the plan cites the code-review store as its record home (decision review-store), the existing review reflex it extends (D6), the review-role exemption predicate `_is_review_node`, and `reckon/interface_counts.py` for its budget; my search of `reckon/` confirms each exists and is reused (`reckon/crew/review.py:979 review_store_root`, `reckon/crew/recovery.py:238`, `reckon/crew/recovery.py:4121` sweep block, `reckon/interface_counts.py:38`).",
+    "thin_wrapper": "pass \u2014 the plan-review dispatch extends the code-review composer (`_review_dispatch_fields`, `reckon/crew/recovery.py:490`, handles both subjects in one function) and the gate extends the dispatch guard; no unjustified parallel layer was found beyond the store and resolver forks reported below."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.962687+00:00"
+}

@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c8087d0bc5cf9f821cee71bed4ea006e7ffa9261",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1126 (_start_watch_producer)"
+  ],
+  "completed_at": "2026-10-02T00:38:15.800Z",
+  "dispatched_at": "2026-10-02T00:20:10Z",
+  "findings": [
+    {
+      "file": "tests/test_watch_arming_isolation.py",
+      "line": "224",
+      "severity": "follow-on",
+      "text": "follow-on: the case still plants a pytest-named directory (home = tmp_path / \"pytest-of-suite-follow\" / \"config\") above its home as scaffolding for the old name-only signal, which the declared-basetemp fix makes redundant, so the isolation file no longer exercises the new signal and a later reader may mistake the scaffold for a requirement; not blocking because the file is out of this node's write scope and passes 14/14 either way."
+    }
+  ],
+  "head_log_revision": "933a5c279",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit 933a5c279 against base c8087d0bc; reckon/crew/dispatch.py adds _running_under_pytest, _current_and_ancestor_argvs, _declared_basetemp and the declared-root branch in _temporary_home_root, plus a new 140-line test file and a 57-line evidence fragment, all inside the declared scope.",
+    "done_when": "the measure is a guarded refusal and a logged negative control; tests/test_arming_guard_knows_a_test_session.py 4 passed EXIT=0 at head, tests/test_watch_arming_isolation.py and tests/test_crew_dispatch_arming.py 14 passed EXIT=0 at base c8087d0bc and 14 passed EXIT=0 at head (my re-run of the head arm: 14 passed in 55.55s), and the run records negative-control.log 2 failed/2 passed EXIT=1.",
+    "goal": "the node goal is that the watch arming guard refuse a home lying under a running pytest session's declared temporary root whatever that directory is called; reckon/crew/dispatch.py:992 _declared_basetemp names it from this process and its ancestors and dispatch.py:1025-1030 accepts a home under it, and tests/test_arming_guard_knows_a_test_session.py:65 drives a real child pytest session with --basetemp at a pytest-name-free root and reads the refusal from disk (tests/test_arming_guard_knows_a_test_session.py 4 passed EXIT=0 on my re-run).",
+    "manifest": "read in full; it records the gate 4 passed EXIT=0, the base arm 14 passed in 52.80s and the head arm 14 passed in 52.04s, both EXIT=0, the negative control 2 failed/2 passed EXIT=1, measurement_module /tmp/reckon-armguard-base/reckon/crew/dispatch.py, and names all four logs including negative_control_note describing the applied mutation.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py, tests/test_arming_guard_knows_a_test_session.py, docs/evidence/fragments/the-suite-is-green-at-head/arming-guard-knows-a-test-session.html and a figures path; the diff c8087d0bc..933a5c279 touches exactly the first three (263 insertions, 3 deletions), and the declared figures directory was correctly left empty because the done-when names no figure."
+  },
+  "justifications": {
+    "durability": "the new tests fail on regression - the run's negative control reddens test_the_guard_refuses_a_session_with_a_custom_basetemp and test_a_home_under_the_declared_root_is_a_throwaway_home, and my own independent mutation of the containment test at dispatch.py:1029 reddened tests/test_arming_guard_knows_a_test_session.py:140 when a home outside the declared root was wrongly refused.",
+    "evidence": "the gate is recorded, not claimed - the run's logs/gate-base.log and logs/gate-head.log each end 14 passed EXIT=0 and logs/negative-control.log ends EXIT=1, and my independent re-run reproduced 4 passed and 14 passed.",
+    "fit": "the four helpers sit beside the existing guard helpers in reckon/crew/dispatch.py:963-1051, reuse the module's Path/regex idiom, and the new test follows the repo's subprocess-and-mock pattern with no forbidden name.",
+    "goal_fidelity": "dispatch.py:992-1030 reads the running session's declared --basetemp and returns the declared root when the home lies under it, so the guard now refuses a custom-basetemp home rather than standing down, which is the node goal.",
+    "scope_discipline": "git diff c8087d0bc..933a5c279 touches only the three declared write paths (reckon/crew/dispatch.py, tests/test_arming_guard_knows_a_test_session.py, the evidence fragment) with no unrelated change and no plan, ticket or version identifier."
+  },
+  "node": "review-of-arming-guard-knows-a-test-session",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20261001T233407683288-arming-guard-knows-a-test-session (plan reckon:the-suite-is-green-at-head section 3; node arming-guard-knows-a-test-session).\nreviewed_base_sha: c8087d0bc5cf9f821cee71bed4ea006e7ffa9261\nreviewed_head_sha: 933a5c279764f5eb61f656a297f2952babf20860\nVERDICT goal: the node goal is that the watch arming guard refuse a home lying under a running pytest session's declared temporary root whatever that directory is called; reckon/crew/dispatch.py:992 _declared_basetemp names it from this process and its ancestors and dispatch.py:1025-1030 accepts a home under it, and tests/test_arming_guard_knows_a_test_session.py:65 drives a real child pytest session with --basetemp at a pytest-name-free root and reads the refusal from disk (tests/test_arming_guard_knows_a_test_session.py 4 passed EXIT=0 on my re-run).\nVERDICT done_when: the measure is a guarded refusal and a logged negative control; tests/test_arming_guard_knows_a_test_session.py 4 passed EXIT=0 at head, tests/test_watch_arming_isolation.py and tests/test_crew_dispatch_arming.py 14 passed EXIT=0 at base c8087d0bc and 14 passed EXIT=0 at head (my re-run of the head arm: 14 passed in 55.55s), and the run records negative-control.log 2 failed/2 passed EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, tests/test_arming_guard_knows_a_test_session.py, docs/evidence/fragments/the-suite-is-green-at-head/arming-guard-knows-a-test-session.html and a figures path; the diff c8087d0bc..933a5c279 touches exactly the first three (263 insertions, 3 deletions), and the declared figures directory was correctly left empty because the done-when names no figure.\nVERDICT manifest: read in full; it records the gate 4 passed EXIT=0, the base arm 14 passed in 52.80s and the head arm 14 passed in 52.04s, both EXIT=0, the negative control 2 failed/2 passed EXIT=1, measurement_module /tmp/reckon-armguard-base/reckon/crew/dispatch.py, and names all four logs including negative_control_note describing the applied mutation.\nVERDICT diff: read commit 933a5c279 against base c8087d0bc; reckon/crew/dispatch.py adds _running_under_pytest, _current_and_ancestor_argvs, _declared_basetemp and the declared-root branch in _temporary_home_root, plus a new 140-line test file and a 57-line evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:1126 (_start_watch_producer)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: dispatch.py:992-1030 reads the running session's declared --basetemp and returns the declared root when the home lies under it, so the guard now refuses a custom-basetemp home rather than standing down, which is the node goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate is recorded, not claimed - the run's logs/gate-base.log and logs/gate-head.log each end 14 passed EXIT=0 and logs/negative-control.log ends EXIT=1, and my independent re-run reproduced 4 passed and 14 passed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff c8087d0bc..933a5c279 touches only the three declared write paths (reckon/crew/dispatch.py, tests/test_arming_guard_knows_a_test_session.py, the evidence fragment) with no unrelated change and no plan, ticket or version identifier.\nSCORE durability: 17\nJUSTIFICATION durability: the new tests fail on regression - the run's negative control reddens test_the_guard_refuses_a_session_with_a_custom_basetemp and test_a_home_under_the_declared_root_is_a_throwaway_home, and my own independent mutation of the containment test at dispatch.py:1029 reddened tests/test_arming_guard_knows_a_test_session.py:140 when a home outside the declared root was wrongly refused.\nSCORE fit: 18\nJUSTIFICATION fit: the four helpers sit beside the existing guard helpers in reckon/crew/dispatch.py:963-1051, reuse the module's Path/regex idiom, and the new test follows the repo's subprocess-and-mock pattern with no forbidden name.\nFINDING tests/test_watch_arming_isolation.py:224 follow-on: the case still plants a pytest-named directory (home = tmp_path / \"pytest-of-suite-follow\" / \"config\") above its home as scaffolding for the old name-only signal, which the declared-basetemp fix makes redundant, so the isolation file no longer exercises the new signal and a later reader may mistake the scaffold for a requirement; not blocking because the file is out of this node's write scope and passes 14/14 either way.\n",
+  "review_run_id": "r-20261002T001949620014-review-of-arming-guard-knows-a-test-session",
+  "reviewed_base_sha": "c8087d0bc5cf9f821cee71bed4ea006e7ffa9261",
+  "reviewed_head_sha": "933a5c279764f5eb61f656a297f2952babf20860",
+  "reviewed_run_id": "r-20261001T233407683288-arming-guard-knows-a-test-session",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T001949620014-review-of-arming-guard-knows-a-test-session",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T00:34:08.015332+00:00",
+  "total": 90
+}

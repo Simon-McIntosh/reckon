@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4e05e287aa429d7c9a9aa2d290ffb1103316e4e7",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery.py:dispatch_awaiting_reviews",
+    "reckon/crew/resumption.py:sweep",
+    "reckon/cli.py:crew_resume_ready",
+    "reckon/cli.py:_sweep_lapsed_holds",
+    "reckon/crew/dispatch.py:plan_dispatch",
+    "reckon/crew/routing.py:_create_worktree"
+  ],
+  "completed_at": "2026-09-30T08:39:30.520Z",
+  "dispatched_at": "2026-09-30T08:12:35Z",
+  "findings": [
+    {
+      "file": "tests/test_reflex_dispatches_one_repair.py",
+      "line": "407",
+      "text": "the assertion guards a path present in neither input: reviewed_fence at line 383 holds only reckon/crew/thing.py, which the finding at 395 cites, and tests/test_reviewed_run.py, so the uncited source path its comment at 405 names is absent and a composer that carried the whole fence would still pass this line."
+    }
+  ],
+  "head_log_revision": "91acbe6a72f6627c0d9162a384f3af2cf15c1d9c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against 4e05e287aa429d7c9a9aa2d290ffb1103316e4e7: one commit, three files, 126 insertions and 1 deletion, no path outside the fence, and no plan, ticket or version label in the new names or comments.",
+    "done_when": "read clause by clause; tests/test_reflex_dispatches_one_repair.py:355 and :373 assert the base and the test path through the reflex, arm-base.log and arm-head.log each name the revision, tree, command, cwd and module.__file__ and list exactly the 103 tests/ files my own AST scan reproduces, both end EXIT=, the head adds no failing id, the eight named /tmp paths are gone, and the named file passes on re-run (16 passed, EXIT=0); the manifest's targeted -k result is the only claim with no log of its own.",
+    "goal": "the goal is that the reflex bases a repair on the head its review read and keeps the reviewed run's own test paths in the repair's scope; reckon/crew/recovery.py:1781 hands base=reviewed_head to the dispatch, which cuts the worktree at --base through reckon/crew/routing.py:1071, and reckon/crew/repair.py:197 selects the fence's tests/ paths for the scope.",
+    "manifest": "read; status complete with baseline_suite and after_suite both completed true, 13 failures at 4e05e287a and 13 at 91acbe6a7, and its added-failure count re-derives as a measured 0 from its own two gate logs by independent grep, by the store's annotate_review_of_run and by the recorded id sets.",
+    "write_paths": "the fence grants five paths; commit 91acbe6a7 changes exactly reckon/crew/recovery.py, reckon/crew/repair.py and tests/test_reflex_dispatches_one_repair.py, the worktree is clean at head, and the plan's evidence fragment and figure dir are absent as the brief's own no-evidence-prose clause directs."
+  },
+  "justifications": {
+    "durability": "the base assertion reddens on the mutation the negative-control-drop-base log records, but tests/test_reflex_dispatches_one_repair.py:407 cannot fail for the defect its comment names, and the fixture stores reviewed_base_sha equal to reviewed_head_sha and one commit, so a head-versus-base swap would pass.",
+    "evidence": "the two arms at arm-base.log and arm-head.log cover the exact import population and the head adds no failing id, but the manifest's tests field records a targeted -k run whose result has no log behind it, and the done_when's --base is asserted at the dispatch kwarg rather than the argv.",
+    "fit": "reviewed_run_test_paths sits beside the _run_fence reader it uses at reckon/crew/repair.py:186-197, follows the module's comment style, and adds no plan, ticket or version name.",
+    "goal_fidelity": "reckon/crew/recovery.py:1781 passes base=reviewed_head into dispatch and reckon/crew/repair.py:197 carries the reviewed fence's tests/ paths into the scope, with that base reaching the worktree cut at reckon/crew/dispatch.py:4653.",
+    "scope_discipline": "the commit at 91acbe6a7 changes only reckon/crew/recovery.py, reckon/crew/repair.py and tests/test_reflex_dispatches_one_repair.py, all inside the five-path fence, and the reviewed worktree is clean."
+  },
+  "node": "review-of-repair-starts-at-the-reviewed-head",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the reflex bases a repair on the head its review read and keeps the reviewed run's own test paths in the repair's scope; reckon/crew/recovery.py:1781 hands base=reviewed_head to the dispatch, which cuts the worktree at --base through reckon/crew/routing.py:1071, and reckon/crew/repair.py:197 selects the fence's tests/ paths for the scope.\nVERDICT done_when: read clause by clause; tests/test_reflex_dispatches_one_repair.py:355 and :373 assert the base and the test path through the reflex, arm-base.log and arm-head.log each name the revision, tree, command, cwd and module.__file__ and list exactly the 103 tests/ files my own AST scan reproduces, both end EXIT=, the head adds no failing id, the eight named /tmp paths are gone, and the named file passes on re-run (16 passed, EXIT=0); the manifest's targeted -k result is the only claim with no log of its own.\nVERDICT write_paths: the fence grants five paths; commit 91acbe6a7 changes exactly reckon/crew/recovery.py, reckon/crew/repair.py and tests/test_reflex_dispatches_one_repair.py, the worktree is clean at head, and the plan's evidence fragment and figure dir are absent as the brief's own no-evidence-prose clause directs.\nVERDICT manifest: read; status complete with baseline_suite and after_suite both completed true, 13 failures at 4e05e287a and 13 at 91acbe6a7, and its added-failure count re-derives as a measured 0 from its own two gate logs by independent grep, by the store's annotate_review_of_run and by the recorded id sets.\nVERDICT diff: read commit by commit against 4e05e287aa429d7c9a9aa2d290ffb1103316e4e7: one commit, three files, 126 insertions and 1 deletion, no path outside the fence, and no plan, ticket or version label in the new names or comments.\nCALL_SITES: reckon/crew/recovery.py:dispatch_awaiting_reviews, reckon/crew/resumption.py:sweep, reckon/cli.py:crew_resume_ready, reckon/cli.py:_sweep_lapsed_holds, reckon/crew/dispatch.py:plan_dispatch, reckon/crew/routing.py:_create_worktree\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:1781 passes base=reviewed_head into dispatch and reckon/crew/repair.py:197 carries the reviewed fence's tests/ paths into the scope, with that base reaching the worktree cut at reckon/crew/dispatch.py:4653.\nSCORE evidence: 18\nJUSTIFICATION evidence: the two arms at arm-base.log and arm-head.log cover the exact import population and the head adds no failing id, but the manifest's tests field records a targeted -k run whose result has no log behind it, and the done_when's --base is asserted at the dispatch kwarg rather than the argv.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit at 91acbe6a7 changes only reckon/crew/recovery.py, reckon/crew/repair.py and tests/test_reflex_dispatches_one_repair.py, all inside the five-path fence, and the reviewed worktree is clean.\nSCORE durability: 16\nJUSTIFICATION durability: the base assertion reddens on the mutation the negative-control-drop-base log records, but tests/test_reflex_dispatches_one_repair.py:407 cannot fail for the defect its comment names, and the fixture stores reviewed_base_sha equal to reviewed_head_sha and one commit, so a head-versus-base swap would pass.\nSCORE fit: 20\nJUSTIFICATION fit: reviewed_run_test_paths sits beside the _run_fence reader it uses at reckon/crew/repair.py:186-197, follows the module's comment style, and adds no plan, ticket or version name.\nFINDING tests/test_reflex_dispatches_one_repair.py:407 the assertion guards a path present in neither input: reviewed_fence at line 383 holds only reckon/crew/thing.py, which the finding at 395 cites, and tests/test_reviewed_run.py, so the uncited source path its comment at 405 names is absent and a composer that carried the whole fence would still pass this line.",
+  "review_run_id": "r-20260930T081215755566-review-of-repair-starts-at-the-reviewed-head",
+  "reviewed_base_sha": "4e05e287aa429d7c9a9aa2d290ffb1103316e4e7",
+  "reviewed_head_sha": "91acbe6a72f6627c0d9162a384f3af2cf15c1d9c",
+  "reviewed_run_id": "r-20260930T074334690499-repair-starts-at-the-reviewed-head",
+  "reviewer_run_id": "r-20260930T081215755566-review-of-repair-starts-at-the-reviewed-head",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T08:34:21.704940+00:00",
+  "total": 94
+}

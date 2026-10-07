@@ -1,0 +1,44 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T13:33:04.584321+00:00",
+  "findings": [
+    {
+      "file": "tests/test_worker_session_is_session_scoped.py",
+      "line": "302-313",
+      "text": "the new test artifact carries the node and plan fixture identities in source (the filename itself is the node slug, id=f\"session-scope-node-{sequence}\", plan=\"plan-a\", and the done-when repeats the test filename), so it does not satisfy the plan's naming requirement that the test file name no plan document or node identity; rename the test module and use behavior-based fixture names before treating the landing as fully clean."
+    }
+  ],
+  "justifications": {
+    "durability": "The implementation and test are committed in 3b8d3497d1c530d52d06f7bbde9fe9dcb206df05, with the evidence and plan updates in 07e3c1ac0535e72d64da73affbc3a352fa79e4e1 and 2f61cde4ba45ffae614ec97fa8d2c89a3bfef5ed. The worker manifest is complete, the focused and negative-control logs are on durable run paths, and the negative control reports byte-identical restoration. The roster re-registration path dropping session_owners is a safe, out-of-scope follow-on already recorded by the worker.",
+    "evidence": "I re-ran the worker's focused gate at reviewed head 2f61cde4 and read the receipt: 13 passed in 3.49s. The supplied negative-control log has the declared mutation as its first line and shows the aimed red result, 8 failed and 5 passed. I also ran the adjacent session-keying file: 3 failed and 3 passed, with all three failures being the documented cross-session expectations. The promotion cohort receipt is 18 failed and 166 passed before and after with the same failure ids.",
+    "fit": "The owner predicate is isolated in dispatch.py, the legacy and configuration-keyed lookups both delegate through it, capture records the coordinator session beside the configuration key, and dispatch writes the withholding explanation while preserving argv-level verification. The compatibility wrapper remains thin, and the independent resumption resolver is not coupled to the roster. The only fit concern found in this review is the naming issue in the test artifact, not the runtime design.",
+    "goal_fidelity": "The exact stage-one behavior is implemented in both stored-session branches: foreign and ownerless entries are withheld, same-session entries resume, the run records session_withheld, and resumption.resolve_session still reads the run pointer independently of the roster. The three adjacent failures are the documented tests that still assume cross-coordinator reuse, while the new test artifact retains the naming defect recorded under findings.",
+    "scope_discipline": "The worker worktree is clean at 2f61cde4, and git diff --name-only 19e1e67b5ea4a338dd6ce6492aaf5df34b264293..HEAD lists exactly the four declared paths: dispatch.py, the focused test, the evidence archive, and the plan. No review path or unrelated source path was changed."
+  },
+  "model": "gpt-5",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: reviewed the live plan \u00a72d and the worker head 2f61cde4; the five stage-one requirements are covered by focused tests and the implementation.\nVERDICT done_when: independently re-ran tests/test_worker_session_is_session_scoped.py at the worker head: 13 passed, 0 failed. The supplied negative control removes the owner comparison and yields 8 failed, 5 passed; the source is restored byte-identically.\nVERDICT write_paths: git diff --name-only 19e1e67b5ea4a338dd6ce6492aaf5df34b264293..HEAD lists exactly the four declared paths, and the reviewed worktree is clean.\nVERDICT adjacent: tests/test_crew_session_keying.py yields 3 failed, 3 passed, exactly the cross-coordinator reuse expectations the worker documented as outside scope.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: both stored-session branches require the current coordinator owner, same-session reuse remains available, foreign sessions are withheld with owner and reason, and run-pointer resumption remains independent of the roster; the adjacent suite correctly exposes three expectations that need follow-on updates.\nSCORE evidence: 19\nJUSTIFICATION evidence: the focused gate was independently re-run at the reviewed head with 13 passed; the declared negative control is aimed and red at 8F/5P; the cohort has identical 18-failure sets before and after.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the clean worker tree changes exactly the four declared paths and does not touch the review store or unrelated source.\nSCORE durability: 18\nJUSTIFICATION durability: three local commits carry implementation, tests, evidence and plan updates; durable manifests and logs exist, and the negative-control restoration is byte-identical. The known roster re-registration omission is a safe follow-on outside scope.\nSCORE fit: 18\nJUSTIFICATION fit: the owner predicate is shared by both lookup branches, capture writes ownership, dispatch records withholding, and resumption remains roster-independent; the test artifact naming defect is the only material fit concern.\nFINDING tests/test_worker_session_is_session_scoped.py:302-313 the test artifact carries the node and plan fixture identities in source and filename, contrary to the plan naming requirement; rename it and use behavior-based fixture names.",
+  "review_run_id": "r-20260921T133304584321-review-of-worker-session-is-session-scoped",
+  "reviewed_base": "19e1e67b5ea4a338dd6ce6492aaf5df34b264293",
+  "reviewed_base_sha": "19e1e67b5ea4a338dd6ce6492aaf5df34b264293",
+  "reviewed_commits": [
+    "3b8d3497d1c530d52d06f7bbde9fe9dcb206df05",
+    "07e3c1ac0535e72d64da73affbc3a352fa79e4e1",
+    "2f61cde4ba45ffae614ec97fa8d2c89a3bfef5ed"
+  ],
+  "reviewed_head": "2f61cde4ba45ffae614ec97fa8d2c89a3bfef5ed",
+  "reviewed_head_sha": "2f61cde4ba45ffae614ec97fa8d2c89a3bfef5ed",
+  "reviewed_run_id": "r-20260921T081647775273-worker-session-is-session-scoped",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T13:50:00+02:00",
+  "total": 93
+}

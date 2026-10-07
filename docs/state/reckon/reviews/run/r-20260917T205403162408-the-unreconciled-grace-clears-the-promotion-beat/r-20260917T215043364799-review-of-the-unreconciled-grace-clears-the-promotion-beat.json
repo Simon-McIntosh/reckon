@@ -1,0 +1,34 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T21:50:43.364799+00:00",
+  "findings": [],
+  "justifications": {
+    "durability": "tests/test_unreconciled_grace_default.py:50 fails if the shipped value regresses (base receipt: parse_duration('5m') == 300 against the asserted 900), tests/test_flight.py:569 pins the literal, and the source/artifact agreement check was shown to fire under source drift in /tmp/grace-drift.log ('^[0-9]+[smh]$' versus the mutated '^[0-9]+[smhx]$').",
+    "evidence": "the gate the done-when names (tests/test_unreconciled_grace_default.py plus tests/test_flight.py) reproduces green at the merged head here (82 passed, 2 skipped, exit 0) with both runs recorded in the source manifest's baseline/after_suite JSON, and the base receipt /tmp/grace-base.log shows the falsifier's own AssertionError: assert 300 == 900, which I re-derived independently by resolving the real 7dfae503 flight-defaults.yaml (\"5m\" -> 300 s); the one narrower-than-stated part is that the source/artifact agreement clause compares the slot pattern for unreconciled_run_grace alone on this host, because the round-trip byte-identity tests skip without the LinkML generator toolchain (tests/test_flight.py:124,140).",
+    "fit": "the added comment follows the file's own precedent for a tuned value with its basis (reckon/schema/flight-defaults.yaml:24 carries the committed-ledger p75 note and line 94-97 the promotion-beat reason), the new module, tests and symbols name the mechanism with no plan or ticket identifier, and both commits carry a conventional subject, a body and no attribution trailer.",
+    "goal_fidelity": "reckon/schema/flight-defaults.yaml:97 declares unreconciled_run_grace: 15m and resolve() with no layer present returns 900 s at origin \"shipped\" (measured in the review worktree through the package-relative shipped layer at reckon/flight.py:109), nine minutes clear of the six-minute worst measured beat.",
+    "scope_discipline": "every path in the run's two commits (f26bc411, b082d9a8) is one the change requires or the fence declared \u2014 reckon/schema/flight-defaults.yaml carries the real default, tests/test_flight.py:569 asserted the old value by literal so the node's own gate could not be green without it, tests/test_unreconciled_grace_default.py and the two doc paths were declared \u2014 and the fence drift is disclosed in the manifest, the landing evidence and the plan comment; the briefing's two declared paths that do not exist (reckon/crew/_flight_schema.py, reckon/flight.schema.json; the real artifacts are reckon/_flight_schema.py and docs/_shared/flight.schema.json) are a defect of the brief, not the node."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/schema/flight-defaults.yaml:97 declares unreconciled_run_grace: 15m and resolve() with no layer present returns 900 s at origin \"shipped\" (measured in the review worktree through the package-relative shipped layer at reckon/flight.py:109), nine minutes clear of the six-minute worst measured beat.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate the done-when names (tests/test_unreconciled_grace_default.py plus tests/test_flight.py) reproduces green at the merged head here (82 passed, 2 skipped, exit 0) with both runs recorded in the source manifest's baseline/after_suite JSON, and the base receipt /tmp/grace-base.log shows the falsifier's own AssertionError: assert 300 == 900, which I re-derived independently by resolving the real 7dfae503 flight-defaults.yaml (\"5m\" -> 300 s); the one narrower-than-stated part is that the source/artifact agreement clause compares the slot pattern for unreconciled_run_grace alone on this host, because the round-trip byte-identity tests skip without the LinkML generator toolchain (tests/test_flight.py:124,140).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the run's two commits (f26bc411, b082d9a8) is one the change requires or the fence declared \u2014 reckon/schema/flight-defaults.yaml carries the real default, tests/test_flight.py:569 asserted the old value by literal so the node's own gate could not be green without it, tests/test_unreconciled_grace_default.py and the two doc paths were declared \u2014 and the fence drift is disclosed in the manifest, the landing evidence and the plan comment; the briefing's two declared paths that do not exist (reckon/crew/_flight_schema.py, reckon/flight.schema.json; the real artifacts are reckon/_flight_schema.py and docs/_shared/flight.schema.json) are a defect of the brief, not the node.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_unreconciled_grace_default.py:50 fails if the shipped value regresses (base receipt: parse_duration('5m') == 300 against the asserted 900), tests/test_flight.py:569 pins the literal, and the source/artifact agreement check was shown to fire under source drift in /tmp/grace-drift.log ('^[0-9]+[smh]$' versus the mutated '^[0-9]+[smhx]$').\nSCORE fit: 20\nJUSTIFICATION fit: the added comment follows the file's own precedent for a tuned value with its basis (reckon/schema/flight-defaults.yaml:24 carries the committed-ledger p75 note and line 94-97 the promotion-beat reason), the new module, tests and symbols name the mechanism with no plan or ticket identifier, and both commits carry a conventional subject, a body and no attribution trailer.\n",
+  "review_run_id": "r-20260917T215043364799-review-of-the-unreconciled-grace-clears-the-promotion-beat",
+  "reviewed_commits": [
+    "f26bc4117975a636ca679cfeb5b252b74bf8ab6b",
+    "b082d9a8b304964318c438bc02c6030256df5109"
+  ],
+  "reviewed_revision": "4fe0cb87665a596b2cc9edd7aee728ad5c3d28e5",
+  "reviewed_run_id": "r-20260917T205403162408-the-unreconciled-grace-clears-the-promotion-beat",
+  "reviewer_run_id": "r-20260917T215043364799-review-of-the-unreconciled-grace-clears-the-promotion-beat",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T22:31:12.857866+00:00",
+  "total": 98
+}

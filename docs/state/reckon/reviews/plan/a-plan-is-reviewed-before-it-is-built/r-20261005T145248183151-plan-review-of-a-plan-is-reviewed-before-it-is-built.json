@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:59:47.785Z",
+  "dispatched_at": "2026-10-05T14:53:07Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:162",
+      "id": "deep_module-1",
+      "reason": "the plan should either keep the single-pass boundary walk or state the concrete boundary contract the two parsers share (including heading retention inside a card), instead of describing a cross-module two-parse coupling as \"the counters ... deleted\".",
+      "text": "\u00a716 says `_AuthoredProseParser` \"takes its section boundaries from\" \u00a717's raw-text reader and deletes the `_card_depth`/`_heading_depth`/`_section_is_card` counters, but those counters are a single-pass streaming walk (`reckon/crew/plan_review.py:162-259`) over the document, while `_StructuredSectionSpanParser` (`reckon/_plan_html.py:44`) is a separate parser over the same text; the change turns one streaming pass into a two-parser, offset-join dependency across two modules, and the card-span yield cannot by itself preserve the heading inside a landed card while dropping the card's interior, which is exactly what the counters do",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:992",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a717 must name the full set of store helpers that fold into the parser (the close-balancer and the section regexes), or the consolidation leaves section extent under two owners and adds the cross-module private import the house rule \u00a716 and \u00a718 state forbids.",
+      "text": "\u00a717 moves `_landed_card_span` and `_is_structural_boundary` into the parser, but `_landed_card_span` recognises a card by calling `_matching_section_close` (`reckon/_store.py:950`) and `_SECTION_OPEN_RE`/`_SECTION_CLOSE_RE` (`reckon/_store.py:808`), none of which \u00a717 names, so those stay owned by the store while their only card-span caller moves to `reckon/_plan_html.py`, leaving card/section-extent recognition with two owners and the parser importing the store's private balancer",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e41f2c59dad06cc5aa330a4026ca565c4dc20d38f5e94cca28f08a26373692ec",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 80,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T145248183151-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "05e0c40cd2527bd039c96695e022b6c8c3e94f82",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a716 removes `_AuthoredProseParser`'s own section/card boundary tracking and sources those boundaries from a second parser in another module, splitting the fingerprint's authored-content behaviour across `reckon/crew/plan_review.py` and `reckon/_plan_html.py` behind what it presents as a simplification.",
+    "duplicate_owner": "a finding \u2014 \u00a717 names only `_landed_card_span` and `_is_structural_boundary` as folding into the parser, leaving their dependencies on card/extent recognition owned by `reckon/_store.py`, so section-extent recognition keeps a second owner.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds no public definition and retires the public `legacy` parameter of `plan_fingerprint`, \u00a717 and \u00a718 each add exactly one public definition and each names in its own text the private walks/name it retires, so no section adds to a family without accounting for it.",
+    "reuse_search": "pass \u2014 the design searches the code it extends and cites the mechanisms it reuses: \u00a716 names `_fingerprint_forms` (`reckon/crew/plan_review.py:598`) and `landed_section_ids` (`reckon/_store.py:1034`), \u00a717 names `_StructuredSectionSpanParser` (`reckon/_plan_html.py:44`) and its thirteen heading-walk sites, \u00a718 names `promotion._plan_remaining_sections` (`reckon/crew/promotion.py:7236`) and `doccheck._implementable_section_ids` (`reckon/doccheck.py:1014`); every named mechanism exists.",
+    "thin_wrapper": "pass \u2014 \u00a718 is a hoist of an existing reader (move, not a new layer), \u00a717 extends the existing parser rather than wrapping it, and no proposed layer forwards to existing machinery without a stated reason."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.880884+00:00"
+}

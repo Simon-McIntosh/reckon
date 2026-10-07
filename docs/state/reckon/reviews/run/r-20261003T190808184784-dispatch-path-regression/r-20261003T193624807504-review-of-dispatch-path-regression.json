@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated"
+  ],
+  "added_failures_note": "Derived from the reviewed run's own armed arms. baseline_suite: revision f83665dcc, gate-before-1.log, 394 passed, EXIT=0, failure_count 0, failure_ids []. after_suite: revision 8c3d96f4, gate-after-1.log, 1 failed/395 passed, EXIT=1, failure_count 1, failure_ids [test_a_discarded_run_is_not_recreated]. The single after-only id is the added failure; the after arm's header names 8c3d96f4 rather than the docs-only head 7f33be51, so the arm is materially at head.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4678",
+    "reckon/crew/dispatch.py:3711"
+  ],
+  "completed_at": "2026-10-03T19:40:35.835Z",
+  "dispatched_at": "2026-10-03T19:36:38Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T190808184784-dispatch-path-regression/gate-after-1.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the head gate arm's header names revision 8c3d96f4 rather than the reviewed landing head 7f33be51; the head commit is docs-only so the arm is materially at head, but the receipt is not pinned to a sha a later reader resolves."
+    },
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "1142",
+      "severity": "follow-on",
+      "text": "the head gate adds one failing id, test_a_discarded_run_is_not_recreated (assert supervisor_pid, pointer pid 0); the base arm passed it, the node records no causal attribution, and the supervisor pointer lifecycle is outside this node's write scope, so it is reported not triaged."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T190808184784-dispatch-path-regression/phase-after-1.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the after arm was sampled at load 27-31 while base/before were sampled at 23-27, so part of the 2.653 s overshoot below the historical base median is confounded by host load; the SQL probe's in-transaction receipts support the mechanism independently, but the two arms are not at parity."
+    }
+  ],
+  "item_aggregate": null,
+  "item_verdicts": {
+    "diff": "read commit by commit against base f83665dcc; 8c3d96f4 adds three lines to reckon/ledger.py (explicit BEGIN) and a parametrised transaction-ordering test; 7f33be51 adds the evidence fragment only.",
+    "done_when": "the evidence fragment reports phase medians over five fresh processes/homes per arm; after median 5.053 s minus historical base 7.706 s = -2.653 s, inside the required no-more-than +0.200 s, and the standalone test records 5/5 under the unchanged 8.0 s bound.",
+    "goal": "the node goal is to recover the ~1 s the picker work added to a cold dispatch without changing picker inputs; reckon/ledger.py:_indexed_data now opens one explicit transaction so cold schema and row writes share a single durable commit, and the head gate's picker-input equivalence tests pass.",
+    "manifest": "read; it states the base gate 394 passed EXIT=0 and the head gate 1 failed/395 passed EXIT=1, names run-local logs, and reports the phase table, SQL probe and restored-eager negative control.",
+    "write_paths": "the two commits touch reckon/ledger.py, tests/test_dispatch_speed.py and the evidence fragment only, all inside the declared write scope; the wider declared file list was untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_speed.py:96 asserts a single BEGIN bounds the schema writes and one COMMIT closes them, tracing real SQL; the negative control (removing the explicit BEGIN) reddens both parametrisations at EXIT=1.",
+    "evidence": "the fragment's phase table, per-arm medians and gate receipts are recorded in run-local logs and json under r-20261003T190808184784, but the after arm ran at load 27-31 against base 23-27 and its gate header names 8c3d96f4, not the docs-only landing head 7f33be51.",
+    "fit": "the ledger.py:881 comment states the context-manager mechanism plainly with no plan or ticket identifier, the test name describes the behaviour it pins, and the commit carries a conventional subject and body.",
+    "goal_fidelity": "reckon/ledger.py:_indexed_data now wraps the DDL, PRAGMA and row writes in one begin/commit, and the phase table (ledger phase 3.612 s before -> 0.567 s after) plus the passing picker-input equivalence tests show the second is recovered with selection unchanged.",
+    "scope_discipline": "git diff f83665dcc..7f33be51 shows exactly reckon/ledger.py (3 added lines) and tests/test_dispatch_speed.py (35 added) plus the evidence fragment, all declared write paths, with no unrelated edits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to recover the ~1 s the picker work added to a cold dispatch without changing picker inputs; reckon/ledger.py:_indexed_data now opens one explicit transaction so cold schema and row writes share a single durable commit, and the head gate's picker-input equivalence tests pass.\nVERDICT done_when: the evidence fragment reports phase medians over five fresh processes/homes per arm; after median 5.053 s minus historical base 7.706 s = -2.653 s, inside the required no-more-than +0.200 s, and the standalone test records 5/5 under the unchanged 8.0 s bound.\nVERDICT write_paths: the two commits touch reckon/ledger.py, tests/test_dispatch_speed.py and the evidence fragment only, all inside the declared write scope; the wider declared file list was untouched.\nVERDICT manifest: read; it states the base gate 394 passed EXIT=0 and the head gate 1 failed/395 passed EXIT=1, names run-local logs, and reports the phase table, SQL probe and restored-eager negative control.\nVERDICT diff: read commit by commit against base f83665dcc; 8c3d96f4 adds three lines to reckon/ledger.py (explicit BEGIN) and a parametrised transaction-ordering test; 7f33be51 adds the evidence fragment only.\nCALL_SITES: reckon/crew/dispatch.py:4678, reckon/crew/dispatch.py:3711\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:_indexed_data now wraps the DDL, PRAGMA and row writes in one begin/commit, and the phase table (ledger phase 3.612 s before -> 0.567 s after) plus the passing picker-input equivalence tests show the second is recovered with selection unchanged.\nSCORE evidence: 17\nJUSTIFICATION evidence: the fragment's phase table, per-arm medians and gate receipts are recorded in run-local logs and json under r-20261003T190808184784, but the after arm ran at load 27-31 against base 23-27 and its gate header names 8c3d96f4, not the docs-only landing head 7f33be51.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff f83665dcc..7f33be51 shows exactly reckon/ledger.py (3 added lines) and tests/test_dispatch_speed.py (35 added) plus the evidence fragment, all declared write paths, with no unrelated edits.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispatch_speed.py:96 asserts a single BEGIN bounds the schema writes and one COMMIT closes them, tracing real SQL; the negative control (removing the explicit BEGIN) reddens both parametrisations at EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: the ledger.py:881 comment states the context-manager mechanism plainly with no plan or ticket identifier, the test name describes the behaviour it pins, and the commit carries a conventional subject and body.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T190808184784-dispatch-path-regression/gate-after-1.log:1 follow-on: the head gate arm's header names revision 8c3d96f4 rather than the reviewed landing head 7f33be51; the head commit is docs-only so the arm is materially at head, but the receipt is not pinned to a sha a later reader resolves.\nFINDING tests/test_dispatch_returns_without_worker.py:1142 follow-on: the head gate adds one failing id, test_a_discarded_run_is_not_recreated (assert supervisor_pid, pointer pid 0); the base arm passed it, the node records no causal attribution, and the supervisor pointer lifecycle is outside this node's write scope, so it is reported not triaged.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T190808184784-dispatch-path-regression/phase-after-1.log:1 follow-on: the after arm was sampled at load 27-31 while base/before were sampled at 23-27, so part of the 2.653 s overshoot below the historical base median is confounded by host load; the SQL probe's in-transaction receipts support the mechanism independently, but the two arms are not at parity.  ",
+  "review_run_id": "r-20261003T193624807504-review-of-dispatch-path-regression",
+  "reviewed_base_sha": "f83665dcc9474f9a02ae16c92d2a03dab9a5ae75",
+  "reviewed_head_sha": "7f33be51fb4cf912b014671a4f4d0b71c9ff5536",
+  "reviewed_run_id": "r-20261003T190808184784-dispatch-path-regression",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T193624807504-review-of-dispatch-path-regression",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T19:39:56.346342+00:00",
+  "total": 92
+}

@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:3805",
+    "reckon/crew/promotion.py:1344",
+    "reckon/crew/dispatch.py:1665"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T07:15:53.501523+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "4036",
+      "text": "the boundary snapshot is now taken only when launch_kind == \"cli\", so an in-harness dispatch \u2014 the shipped default backend native, reckon/schema/flight-defaults.yaml:16 \u2014 writes neither repository_tree_snapshot on its pointer nor tree-snapshot.json in its run directory, which leaves promotion._repository_tree_boundary_violations returning [] at reckon/crew/promotion.py:1263-1264 and the stray-uncommitted-edit refusal at reckon/crew/promotion.py:1345 never firing for that lane; at base f3b75feb the same assignment was unconditional, so this silently removes a protection that was in force on the default dispatch path."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the full diff f3b75feb..2468e1ca; the launch path is restructured so the snapshot moves into the supervisor, promotion learns to read the run directory's snapshot with a pointer fallback, and the four-case gate is added with no unrelated edit.",
+    "done_when": "read tests/test_dispatch_returns_without_worker.py and the four recorded gate runs; every clause of the four-case done-when is asserted against an independent fact \u2014 a measured dispatch return time, a real SIGKILL observed through an on-disk exit record, and a discarded pointer that stays discarded \u2014 not against the implementation's own report.",
+    "goal": "read reckon/crew/dispatch.py:4028-4069 against the node goal; the landed change does what the goal states \u2014 dispatch writes the pointer naming a detached per-run supervisor and returns, and the supervisor takes the boundary snapshot, spawns the worker and collects its exit.",
+    "manifest": "read the reviewed manifest and ran reckon crew check-manifest on the run; the audit returns ok: true at exit 0, and its claims match the logs, the two commits and the tree I read.",
+    "write_paths": "read both commits c8f0b545 and 2468e1ca against the six declared write paths; the diff touches exactly those six files and nothing else, and the plan's and the evidence anchor's existing content is preserved (96 added lines, 0 removed)."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_returns_without_worker.py fails if dispatch waits for the snapshot, if the supervisor is not the worker's parent, or if no exit record is written, but no test fails when the in-harness lane loses its snapshot.",
+    "evidence": "tests/test_dispatch_returns_without_worker.py records 4 passed in 150.07 s in the run's logs/gate.log with both declared controls failing as declared; the sole gap is that a gate log's first line names no revision, tree or command.",
+    "fit": "the supervisor section at reckon/crew/dispatch.py:4740 follows the surrounding module's idiom and introduces no name the repository naming rules forbid.",
+    "goal_fidelity": "reckon/crew/dispatch.py:4028 moves the boundary snapshot and the worker spawn behind the returning dispatch, which is the goal's own statement, though the same block also drops the snapshot for the in-harness lane the goal never mentions.",
+    "scope_discipline": "every added path lies inside the declared write paths, but reckon/crew/dispatch.py:4036 narrows the boundary snapshot to cli launches, a behaviour change the goal does not imply and the plan section never names."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: f3b75feb8ccdc81818ad273dbd1874f16737ae61\nreviewed_head_sha: 2468e1cafede785e42f48e91cee350943a2b03db\nVERDICT goal: read reckon/crew/dispatch.py:4028-4069 against the node goal; the landed change does what the goal states \u2014 dispatch writes the pointer naming a detached per-run supervisor and returns, and the supervisor takes the boundary snapshot, spawns the worker and collects its exit.\nVERDICT done_when: read tests/test_dispatch_returns_without_worker.py and the four recorded gate runs; every clause of the four-case done-when is asserted against an independent fact \u2014 a measured dispatch return time, a real SIGKILL observed through an on-disk exit record, and a discarded pointer that stays discarded \u2014 not against the implementation's own report.\nVERDICT write_paths: read both commits c8f0b545 and 2468e1ca against the six declared write paths; the diff touches exactly those six files and nothing else, and the plan's and the evidence anchor's existing content is preserved (96 added lines, 0 removed).\nVERDICT manifest: read the reviewed manifest and ran reckon crew check-manifest on the run; the audit returns ok: true at exit 0, and its claims match the logs, the two commits and the tree I read.\nVERDICT diff: read the full diff f3b75feb..2468e1ca; the launch path is restructured so the snapshot moves into the supervisor, promotion learns to read the run directory's snapshot with a pointer fallback, and the four-case gate is added with no unrelated edit.\nCALL_SITES: reckon/crew/promotion.py:3805, reckon/crew/promotion.py:1344, reckon/crew/dispatch.py:1665\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:4028 moves the boundary snapshot and the worker spawn behind the returning dispatch, which is the goal's own statement, though the same block also drops the snapshot for the in-harness lane the goal never mentions.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_dispatch_returns_without_worker.py records 4 passed in 150.07 s in the run's logs/gate.log with both declared controls failing as declared; the sole gap is that a gate log's first line names no revision, tree or command.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: every added path lies inside the declared write paths, but reckon/crew/dispatch.py:4036 narrows the boundary snapshot to cli launches, a behaviour change the goal does not imply and the plan section never names.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_dispatch_returns_without_worker.py fails if dispatch waits for the snapshot, if the supervisor is not the worker's parent, or if no exit record is written, but no test fails when the in-harness lane loses its snapshot.\nSCORE fit: 18\nJUSTIFICATION fit: the supervisor section at reckon/crew/dispatch.py:4740 follows the surrounding module's idiom and introduces no name the repository naming rules forbid.\nFINDING reckon/crew/dispatch.py:4036 the boundary snapshot is now taken only when launch_kind == \"cli\", so an in-harness dispatch \u2014 the shipped default backend native, reckon/schema/flight-defaults.yaml:16 \u2014 writes neither repository_tree_snapshot on its pointer nor tree-snapshot.json in its run directory, which leaves promotion._repository_tree_boundary_violations returning [] at reckon/crew/promotion.py:1263-1264 and the stray-uncommitted-edit refusal at reckon/crew/promotion.py:1345 never firing for that lane; at base f3b75feb the same assignment was unconditional, so this silently removes a protection that was in force on the default dispatch path.\n",
+  "review_run_id": "r-20260924T071553501523-review-of-dispatch-returns-before-the-snapshot",
+  "reviewed_base_sha": "f3b75feb8ccdc81818ad273dbd1874f16737ae61",
+  "reviewed_head_sha": "2468e1cafede785e42f48e91cee350943a2b03db",
+  "reviewed_run_id": "r-20260924T062138025947-dispatch-returns-before-the-snapshot",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T07:28:51.809741+00:00",
+  "total": 83
+}

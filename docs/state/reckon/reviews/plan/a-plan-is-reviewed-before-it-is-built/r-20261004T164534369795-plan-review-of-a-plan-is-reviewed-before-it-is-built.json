@@ -1,0 +1,43 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T16:58:58.829Z",
+  "dispatched_at": "2026-10-04T16:45:49Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:147",
+      "id": "duplicate_owner-1",
+      "reason": "the fingerprint's entire purpose is to move when a plan's prose is rewritten, so a second, independent definition of what a data-reckon block is can drift from the owner's parser and silently stop catching the one edit the review exists to catch; the plan should name _plan_html.py as the owner of the authored-prose span rather than fork a parser.",
+      "text": "plan_fingerprint digests \"the body text outside every data-reckon block\" using its own _AuthoredProseParser (raw html.parser) although the module already imports the plan-document parser owner reckon/_plan_html.py (read_state) and reckon/doccheck.py::_prose_text is a second existing prose extractor",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:272",
+      "id": "duplicate_owner-2",
+      "reason": "it is an internal refactor of plumbing already landed; the record shape, fingerprint keying and dispatch-gate decisions the plan makes are unchanged by routing the layout through a shared helper in review.py.",
+      "text": "plan_review_path (and _target_path at 318) re-derive the store layout \u2014 <review_store_root>/<project>/<name>.json plus a `.at-<blob8>` sibling for a second record of one key \u2014 that reckon/crew/review.py::review_path:992 already owns, differing only in the filename stem",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "fe3fe131d5d6a834c0ae2925f5e9e0435413718150afb362b068581972c7bd96",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T164534369795-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "a1584fa1bb3e1e9982bc9f8dc3f7159fed017c6c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 reckon/crew/plan_review.py hides substantial behaviour behind a small named interface: the content fingerprint (metadata-scalar normalisation plus the derived-scalar exclusions, plan_review.py:66-101,236), the store layout and its idempotent re-store/sibling rule (store_plan_review, _target_path), the report\u2192record grammar (parse_review_report, plan_review.py:709) and recurrence counting (declined_recurrence) sit behind store_plan_review/read_plan_review/plan_fingerprint \u2014 not many thin wrappers over one mechanism.",
+    "duplicate_owner": "a finding \u2014 plan_fingerprint's authored-prose extraction forks the plan-document parser instead of extending its owner; and the store path/sibling convention is re-derived from the code-review store's owner.",
+    "reuse_search": "pass \u2014 the plan and its design brief (c-20260925T1210, D5/D6) name the machinery they extend rather than restate it: the code-review store and reflex (reckon/crew/review.py, reckon/crew/recovery.py::dispatch_review_for_run), the promotion-boundary exempt predicate (_is_review_node), the plan-document reader (reckon/_plan_html.py::read_state) and the interface-budget counter (reckon/interface_counts.py, whose four families public_definitions/cli_options/mcp_views/refusal_families the plan \u00a73 names as its figures), and the code reuses each.",
+    "thin_wrapper": "pass \u2014 the one layer-over-existing-machinery the plan adds, \u00a73's prior-art-and-depth review over the build skill's reuse-map rule, states in its own text why the machinery cannot simply be extended (\u00a73: the rule is \"a coordinator currently remembers to apply\", and the review makes it run without being remembered); D6 likewise records that plan-review dispatch extends the review reflex in recovery.py rather than copying it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.968820+00:00"
+}

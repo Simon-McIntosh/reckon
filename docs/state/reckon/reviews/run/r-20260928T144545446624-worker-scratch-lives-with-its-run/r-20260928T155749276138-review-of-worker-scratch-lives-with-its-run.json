@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144545446624-worker-scratch-lives-with-its-run/gates/after.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144545446624-worker-scratch-lives-with-its-run/gates/base.log",
+    "note": "the reviewed manifest names these two logs under baseline_suite and after_suite; the count and ids are the set difference over them, computed with reckon.crew.review.added_failures_from_gate_logs and controlled in logs/added-failures.log of the reviewing run (a synthetic head log yields 2 ids; an absent head log yields None, not zero)"
+  },
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5515 _worker_runtime_environment sets the run's TMPDIR from ensure_worker_scratch",
+    "reckon/crew/dispatch.py:5542 _worker_runtime_plan composes the CLI launch plan",
+    "reckon/crew/dispatch.py:6420 _supervisor_spawn_worker composes the env Popen receives",
+    "reckon/crew/dispatch.py:4759 the lane-change and resume directive environment",
+    "reckon/crew/promotion.py:3622 _release_run_workspace calls remove_worker_scratch",
+    "reckon/crew/promotion.py:3626 _release_after_promotion is the promotion funnel",
+    "reckon/crew/promotion.py:5142 _remove_discarded_worktree is the discard funnel",
+    "reckon/cli.py:4555 crew_complete",
+    "reckon/cli.py:4363 crew_discard"
+  ],
+  "completed_at": "2026-09-28T16:38:51.294Z",
+  "dispatched_at": "2026-09-28T15:58:07Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144545446624-worker-scratch-lives-with-its-run/manifest.md",
+      "line": "16",
+      "text": "the baseline_suite and after_suite command fields name tests/test_dispatch_spy.py, which exists at neither revision (git cat-file -e 40d23d9:tests/test_dispatch_spy.py refuses), while the logs those fields point at ran tests/test_dispatch_spawns_through_the_fleet.py; the gate evidence and counts stand, but the structured field a promotion reader and a re-runner reads disagrees with the log it names, and re-running it fails on the missing path."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "5433",
+      "text": "worker_scratch_root() resolves through tempfile.gettempdir() and only its docstring asserts the root is node-local, so a dispatcher carrying a shared-storage TMPDIR places every run's scratch on GPFS \u2014 the leak section 6 exists to close \u2014 while reckon/crew/fleet_supervisor.py:219 pins the same variable to /tmp for exactly that reason."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "3666",
+      "text": "the exception fallbacks in _release_after_promotion and _remove_discarded_worktree (reckon/crew/promotion.py:5150) return dicts naming worktree_released, process_signalled and worktree_withheld but no scratch field, so a release that raises leaves the scratch directory in place with nothing in the record saying so, which is the one path where the rule the removal comment states does not hold."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read commit by commit \u2014 c6e49d9 adds the four helpers, the TMPDIR line, one release-step call and three field pass-throughs at reckon/crew/promotion.py:5149-5159, and 1dfda944 adds only the evidence fragment and its figure.",
+    "done_when": "section 6's measure (docs/plans/a-worker-knows-it-is-on-compute.html) is the four properties tests/test_worker_scratch_lives_with_its_run.py asserts, and the head arm ran them at 60 passed against a 56-passed base arm recorded in gates/after.log and gates/base.log.",
+    "goal": "the node's goal \u2014 a private per-run directory under the node-local scratch root, set as the worker's TMPDIR, removed by promotion and discard with the path printed, a sibling run's directory surviving, gate logs still on GPFS \u2014 is what reckon/crew/dispatch.py:5430-5491 and reckon/crew/promotion.py:3622 implement.",
+    "manifest": "read; it reports four new tests passing and both arms (60 and 56, zero failures) with their log paths, but its baseline_suite and after_suite command fields name tests/test_dispatch_spy.py, which exists at neither revision.",
+    "write_paths": "five were declared and git diff-tree 40d23d9..1dfda944 lists exactly reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_worker_scratch_lives_with_its_run.py, docs/evidence/fragments/a-worker-knows-it-is-on-compute/worker-scratch-lives-with-its-run.html and the figure under docs/figures/a-worker-knows-it-is-on-compute/worker-scratch-lives-with-its-run/."
+  },
+  "justifications": {
+    "durability": "under the declared mutation gates/negative_control_pytest.log turns the two removal tests red (2 failed, 2 passed) and their assertions read the filesystem and capsys rather than only the returned dict, while the release exception fallbacks at reckon/crew/promotion.py:3666 and :5150 omit every scratch field.",
+    "evidence": "gates/base.log and gates/after.log carry revision, tree, module and cwd headers and their 56/60 counts reconcile, and my own derivation over those two logs is 0 added ids with a positive control that sees injected FAILED and ERROR ids, but the manifest command fields at manifest.md:16-17 name a nonexistent test file.",
+    "fit": "the helper group at reckon/crew/dispatch.py:5423-5491 sits beside _persisted_worker_environment with mechanism docstrings, ruff adds no finding to either source file (19=19) and the new test file is clean, and the pre-existing format backlog in both touched files is untouched by the added lines.",
+    "goal_fidelity": "reckon/crew/dispatch.py:5515 points every launch path at <root>/<run-id> and reckon/crew/promotion.py:3622 removes it printing the path, but the root resolves through tempfile.gettempdir() at reckon/crew/dispatch.py:5433, so node-locality is inherited from the dispatching process rather than pinned.",
+    "scope_discipline": "git diff-tree 40d23d9..1dfda944 lists exactly the five declared paths, the worktree is clean at 1dfda944, and both messages are conventional with bodies and no plan or AI identifiers."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal \u2014 a private per-run directory under the node-local scratch root, set as the worker's TMPDIR, removed by promotion and discard with the path printed, a sibling run's directory surviving, gate logs still on GPFS \u2014 is what reckon/crew/dispatch.py:5430-5491 and reckon/crew/promotion.py:3622 implement.\nVERDICT done_when: section 6's measure (docs/plans/a-worker-knows-it-is-on-compute.html) is the four properties tests/test_worker_scratch_lives_with_its_run.py asserts, and the head arm ran them at 60 passed against a 56-passed base arm recorded in gates/after.log and gates/base.log.\nVERDICT write_paths: five were declared and git diff-tree 40d23d9..1dfda944 lists exactly reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_worker_scratch_lives_with_its_run.py, docs/evidence/fragments/a-worker-knows-it-is-on-compute/worker-scratch-lives-with-its-run.html and the figure under docs/figures/a-worker-knows-it-is-on-compute/worker-scratch-lives-with-its-run/.\nVERDICT manifest: read; it reports four new tests passing and both arms (60 and 56, zero failures) with their log paths, but its baseline_suite and after_suite command fields name tests/test_dispatch_spy.py, which exists at neither revision.\nVERDICT diff: read commit by commit \u2014 c6e49d9 adds the four helpers, the TMPDIR line, one release-step call and three field pass-throughs at reckon/crew/promotion.py:5149-5159, and 1dfda944 adds only the evidence fragment and its figure.\nCALL_SITES: reckon/crew/dispatch.py:5515 _worker_runtime_environment sets the run's TMPDIR from ensure_worker_scratch, reckon/crew/dispatch.py:5542 _worker_runtime_plan composes the CLI launch plan, reckon/crew/dispatch.py:6420 _supervisor_spawn_worker composes the env Popen receives, reckon/crew/dispatch.py:4759 the lane-change and resume directive environment, reckon/crew/promotion.py:3622 _release_run_workspace calls remove_worker_scratch, reckon/crew/promotion.py:3626 _release_after_promotion is the promotion funnel, reckon/crew/promotion.py:5142 _remove_discarded_worktree is the discard funnel, reckon/cli.py:4555 crew_complete, reckon/cli.py:4363 crew_discard\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:5515 points every launch path at <root>/<run-id> and reckon/crew/promotion.py:3622 removes it printing the path, but the root resolves through tempfile.gettempdir() at reckon/crew/dispatch.py:5433, so node-locality is inherited from the dispatching process rather than pinned.\nSCORE evidence: 18\nJUSTIFICATION evidence: gates/base.log and gates/after.log carry revision, tree, module and cwd headers and their 56/60 counts reconcile, and my own derivation over those two logs is 0 added ids with a positive control that sees injected FAILED and ERROR ids, but the manifest command fields at manifest.md:16-17 name a nonexistent test file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff-tree 40d23d9..1dfda944 lists exactly the five declared paths, the worktree is clean at 1dfda944, and both messages are conventional with bodies and no plan or AI identifiers.\nSCORE durability: 19\nJUSTIFICATION durability: under the declared mutation gates/negative_control_pytest.log turns the two removal tests red (2 failed, 2 passed) and their assertions read the filesystem and capsys rather than only the returned dict, while the release exception fallbacks at reckon/crew/promotion.py:3666 and :5150 omit every scratch field.\nSCORE fit: 19\nJUSTIFICATION fit: the helper group at reckon/crew/dispatch.py:5423-5491 sits beside _persisted_worker_environment with mechanism docstrings, ruff adds no finding to either source file (19=19) and the new test file is clean, and the pre-existing format backlog in both touched files is untouched by the added lines.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144545446624-worker-scratch-lives-with-its-run/manifest.md:16 the baseline_suite and after_suite command fields name tests/test_dispatch_spy.py, which exists at neither revision (git cat-file -e 40d23d9:tests/test_dispatch_spy.py refuses), while the logs those fields point at ran tests/test_dispatch_spawns_through_the_fleet.py; the gate evidence and counts stand, but the structured field a promotion reader and a re-runner reads disagrees with the log it names, and re-running it fails on the missing path.\nFINDING reckon/crew/dispatch.py:5433 worker_scratch_root() resolves through tempfile.gettempdir() and only its docstring asserts the root is node-local, so a dispatcher carrying a shared-storage TMPDIR places every run's scratch on GPFS \u2014 the leak section 6 exists to close \u2014 while reckon/crew/fleet_supervisor.py:219 pins the same variable to /tmp for exactly that reason.\nFINDING reckon/crew/promotion.py:3666 the exception fallbacks in _release_after_promotion and _remove_discarded_worktree (reckon/crew/promotion.py:5150) return dicts naming worktree_released, process_signalled and worktree_withheld but no scratch field, so a release that raises leaves the scratch directory in place with nothing in the record saying so, which is the one path where the rule the removal comment states does not hold.\n",
+  "review_run_id": "r-20260928T155749276138-review-of-worker-scratch-lives-with-its-run",
+  "reviewed_base_sha": "40d23d9bbefd0199d68c74caec573769bed888ff",
+  "reviewed_head_sha": "1dfda94431bf66883d4eee67e8b9a153f81b077f",
+  "reviewed_run_id": "r-20260928T144545446624-worker-scratch-lives-with-its-run",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:01.801739+00:00",
+  "total": 94
+}

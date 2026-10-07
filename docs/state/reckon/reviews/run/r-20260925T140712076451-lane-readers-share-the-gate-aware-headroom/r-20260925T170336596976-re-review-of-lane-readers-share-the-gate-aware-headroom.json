@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/flight.py:877 probe_availability",
+    "reckon/flight.py:1362 _project_lane_reading",
+    "reckon/crew/dispatch.py:2414 _dispatch_lane_reading",
+    "reckon/mcp_views.py:554 _lane_document_fields"
+  ],
+  "completed_at": "2026-09-25T17:55:47.890Z",
+  "dispatched_at": "2026-09-25T17:03:50Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T140712076451-lane-readers-share-the-gate-aware-headroom/gate-head.log",
+      "line": "1",
+      "text": "names rev=4407da02bde039f37a902d7abe7f70877e52e78c while the tree carried the uncommitted repair - the file was written 21 seconds before 9b5fd4b6 landed - so its 5-test output cannot be reproduced from that revision, whose version of the test file holds 4 tests; negative-control-reason.log:2 carries the same stamp, no receipt names the reviewed head 867df89c, and the manifest's after_suite revision says 8f9ef4e3+working-tree, naming the base."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T140712076451-lane-readers-share-the-gate-aware-headroom/negative-control.log",
+      "line": "5",
+      "text": "reads \"no tests collected in 0.00s\" above the same log's own \"F ... 1 failed\", so the receipt a promotion matches reads as a collection failure even though my clean rerun of that control fails at assert 6 == -3 exactly as declared."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit; afa83891 routes the two readers, 4407da02 records the convergence, 9b5fd4b6 replaces the two-arm reason branch with the per-verdict clause map, 867df89c records the repair, all inside the fence.",
+    "done_when": "the done_when names tests/test_lane_readers_share_the_gate_aware_headroom.py and its five cases; the manifest records 5 passed and I reran the file against the committed head content in a scratch tree, where all three readers agree on -3 and on 1.",
+    "goal": "read the source goal beside the head diff; reckon/flight.py:1119 and reckon/crew/dispatch.py:2369 take headroom from lane_document.read_lane_document, and reckon/crew/lane_document.py:201 gives each admission verdict its own clause, with no other production lane-document reader still parsing the engine field.",
+    "manifest": "read; it states the focused gate at 5 passed, base and head sibling suites at 120 passed 2 skipped and 125 passed 2 skipped, and two controls with logs, but its after_suite revision says 8f9ef4e3+working-tree while the log it cites ran at HEAD 4407da02 with the uncommitted repair.",
+    "write_paths": "read the manifest's seven declared paths; git diff 8f9ef4e3..867df89c touches exactly those seven and nothing else."
+  },
+  "justifications": {
+    "durability": "the paused and full guard at tests/test_lane_readers_share_the_gate_aware_headroom.py:203 reddens under the restored two-arm branch with assert \"paused\" in \"admission headroom is -1 (published admission headroom); the gate is open\", and the shared case at line 106 reddens under the declared mutation with assert 6 == -3.",
+    "evidence": "I reran tests/test_lane_readers_share_the_gate_aware_headroom.py against the head content in scratch tree /tmp/rereview-867df89c and got 5 passed with EXIT=0, while the stored head-arm receipt names a revision that cannot produce it (see the gate-head.log finding).",
+    "fit": "the resolver at reckon/flight.py:1045 follows the module's degrade-to-unknown idiom and the clause map at reckon/crew/lane_document.py:101 follows its KEY constants, with the deferred import explained at reckon/flight.py:1055.",
+    "goal_fidelity": "reckon/flight.py:1119 and reckon/crew/dispatch.py:2369 both resolve headroom through lane_document.read_lane_document, and a grep for other readers of router_generation_gate finds only reckon/mcp_views.py:562, which already read through the shared reader.",
+    "scope_discipline": "git diff --name-only 8f9ef4e3..867df89c lists exactly the seven declared write paths, and the plan append stays off the plan-version and plan-modified meta lines."
+  },
+  "project": "reckon",
+  "raw_text": "Independent re-review of run r-20260925T140712076451-lane-readers-share-the-gate-aware-headroom at\nhead 867df89cdbe34db170c8c5df85c24a4015abc5e1 against base 8f9ef4e3509dec4f96318cc4634addce4ea4ee06.\nRead: the source prompt (goal, done_when, write paths, declared control), the source manifest, the four\nlanded commits, the gate and control logs, and a scratch rerun of the named test file at the committed\nhead content (/tmp/rereview-867df89c).\n\nVERDICT goal: read the source goal beside the head diff; reckon/flight.py:1119 and reckon/crew/dispatch.py:2369 take headroom from lane_document.read_lane_document, and reckon/crew/lane_document.py:201 gives each admission verdict its own clause, with no other production lane-document reader still parsing the engine field.\nVERDICT done_when: the done_when names tests/test_lane_readers_share_the_gate_aware_headroom.py and its five cases; the manifest records 5 passed and I reran the file against the committed head content in a scratch tree, where all three readers agree on -3 and on 1.\nVERDICT write_paths: read the manifest's seven declared paths; git diff 8f9ef4e3..867df89c touches exactly those seven and nothing else.\nVERDICT manifest: read; it states the focused gate at 5 passed, base and head sibling suites at 120 passed 2 skipped and 125 passed 2 skipped, and two controls with logs, but its after_suite revision says 8f9ef4e3+working-tree while the log it cites ran at HEAD 4407da02 with the uncommitted repair.\nVERDICT diff: read commit by commit; afa83891 routes the two readers, 4407da02 records the convergence, 9b5fd4b6 replaces the two-arm reason branch with the per-verdict clause map, 867df89c records the repair, all inside the fence.\nCALL_SITES: reckon/flight.py:877 probe_availability, reckon/flight.py:1362 _project_lane_reading, reckon/crew/dispatch.py:2414 _dispatch_lane_reading, reckon/mcp_views.py:554 _lane_document_fields\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/flight.py:1119 and reckon/crew/dispatch.py:2369 both resolve headroom through lane_document.read_lane_document, and a grep for other readers of router_generation_gate finds only reckon/mcp_views.py:562, which already read through the shared reader.\nSCORE evidence: 15\nJUSTIFICATION evidence: I reran tests/test_lane_readers_share_the_gate_aware_headroom.py against the head content in scratch tree /tmp/rereview-867df89c and got 5 passed with EXIT=0, while the stored head-arm receipt names a revision that cannot produce it (see the gate-head.log finding).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 8f9ef4e3..867df89c lists exactly the seven declared write paths, and the plan append stays off the plan-version and plan-modified meta lines.\nSCORE durability: 19\nJUSTIFICATION durability: the paused and full guard at tests/test_lane_readers_share_the_gate_aware_headroom.py:203 reddens under the restored two-arm branch with assert \"paused\" in \"admission headroom is -1 (published admission headroom); the gate is open\", and the shared case at line 106 reddens under the declared mutation with assert 6 == -3.\nSCORE fit: 19\nJUSTIFICATION fit: the resolver at reckon/flight.py:1045 follows the module's degrade-to-unknown idiom and the clause map at reckon/crew/lane_document.py:101 follows its KEY constants, with the deferred import explained at reckon/flight.py:1055.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T140712076451-lane-readers-share-the-gate-aware-headroom/gate-head.log:1 names rev=4407da02bde039f37a902d7abe7f70877e52e78c while the tree carried the uncommitted repair - the file was written 21 seconds before 9b5fd4b6 landed - so its 5-test output cannot be reproduced from that revision, whose version of the test file holds 4 tests; negative-control-reason.log:2 carries the same stamp, no receipt names the reviewed head 867df89c, and the manifest's after_suite revision says 8f9ef4e3+working-tree, naming the base.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T140712076451-lane-readers-share-the-gate-aware-headroom/negative-control.log:5 reads \"no tests collected in 0.00s\" above the same log's own \"F ... 1 failed\", so the receipt a promotion matches reads as a collection failure even though my clean rerun of that control fails at assert 6 == -3 exactly as declared.\nREVIEWED_BASE_SHA: 8f9ef4e3509dec4f96318cc4634addce4ea4ee06\nREVIEWED_HEAD_SHA: 867df89cdbe34db170c8c5df85c24a4015abc5e1",
+  "review_run_id": "r-20260925T170336596976-re-review-of-lane-readers-share-the-gate-aware-headroom",
+  "reviewed_base_sha": "8f9ef4e3509dec4f96318cc4634addce4ea4ee06",
+  "reviewed_head_sha": "867df89cdbe34db170c8c5df85c24a4015abc5e1",
+  "reviewed_run_id": "r-20260925T140712076451-lane-readers-share-the-gate-aware-headroom",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T17:46:43.222584+00:00",
+  "total": 92
+}

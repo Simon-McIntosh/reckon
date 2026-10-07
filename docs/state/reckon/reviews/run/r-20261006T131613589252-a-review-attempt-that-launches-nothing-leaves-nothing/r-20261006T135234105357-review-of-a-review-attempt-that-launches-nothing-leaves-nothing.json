@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "25460c88caf4e22fb4a649f2f8ce457edf9b1ee2",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:2642",
+    "reckon/crew/recovery.py:4158",
+    "reckon/crew/recovery.py:11421"
+  ],
+  "completed_at": "2026-10-06T14:02:08.158Z",
+  "dispatched_at": "2026-10-06T13:52:54Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T131613589252-a-review-attempt-that-launches-nothing-leaves-nothing/logs/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's first line records revision=HEAD (working tree) rather than the sha it ran at, so recorded_log_revision returns None and the 55-passed result cannot be tied to a commit from the log alone; the manifest's after_suite names 222db7e1, and naming that sha on the header line would let a reader reconcile the log with the commit without trusting the manifest."
+    },
+    {
+      "file": "tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py",
+      "line": "190",
+      "severity": "follow-on",
+      "text": "follow-on: test_the_removal_is_one_exit_at_the_composing_caller_not_one_per_branch asserts source.count(\"shutil.rmtree(\") == 1 and \"ignore_errors\" not in source over the whole of recovery.py, so an unrelated future edit to that module \u2014 a legitimate rmtree or ignore_errors keyed to a different call \u2014 would redden the test although the guard it protects is unchanged; scoping the read to _discard_composed_plan_review would assert the same property without the false-coupling."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read against base 25460c88, four commits. 2b68ccf6 first added a removal in each refusal branch plus an ancestors-pruning helper; 222db7e1 replaced that with one discard at the composing caller and a discard_error reported on the report, recording report_directory_created instead of an ancestor list; 57b5c922 and ae129648 land the evidence fragment. At head the removal is one call at the call site and one shutil.rmtree inside a private helper; no refusal branch removes the directory itself.",
+    "done_when": "Every section-27 dispatch condition holds at head: a paused-lane refusal on a synthetic project leaves no new directory under the report root and still returns lane-paused (test_a_paused_lane_leaves_no_run_directory_and_still_reports_lane_paused), an admitted dispatch keeps its brief, snapshot and sidecar (test_an_admitted_dispatch_keeps_its_run_directory), a directory that existed before the call survives a refusal (test_a_run_directory_that_existed_before_the_call_survives_a_refusal), the existing review-dispatch tests pass (49 at base, 55 at head, both EXIT=0), and public_definitions is 1481 at both base 25460c88 and head ae129648, which I recomputed independently with reckon.interface_counts.count_revision. The one-time cleanup is, by the plan's own words, a separate operational node and is not part of this change.",
+    "goal": "The node implements section 27's dispatch half \u2014 a plan-review attempt that launches nothing leaves no run directory behind. The plan-subject path in dispatch_review_for_run (reckon/crew/recovery.py:2344) holds the composed fields, calls _dispatch_composed_review once under the plan's dispatch lock, and calls _discard_composed_plan_review once when the returned report did not dispatch; the composer records report_directory_created so only a directory this call created is ever removed; the refusal payload is unchanged (a paused lane still returns error lane-paused with lane_gate). Verified at head ae129648 and reproduced independently.",
+    "manifest": "Reads status complete, commits 2b68ccf6, 57b5c922, 222db7e1 and ae129648, names the gate command and its result (55 passed at head / 49 at base), carries test_logs gate-head.log, gate-base.log and negative-control-lane-paused.log under the run directory, and records baseline_suite and after_suite arms naming revision, command, exit and log_path. I reproduced the head module (6 passed) and the base arm (head module against base 25460c88: 5 failed, 1 passed) independently.",
+    "write_paths": "Every changed path lies inside the run's declared write paths: reckon/crew/recovery.py, tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-review-attempt-that-launches-nothing-leaves-nothing.html, per the diffstat of 25460c88..ae129648. No shared index, sprint state or other plan was touched."
+  },
+  "justifications": {
+    "durability": "the declared negative control \u2014 skipping the one discard call \u2014 reddens three cases, the paused-lane listing assertion among them, so each added assertion names a condition under which it fails, and test_a_run_directory_that_existed_before_the_call_survives_a_refusal seeds a delivered report.md and asserts it survives untouched.",
+    "evidence": "the head module reproduces (6 passed, EXIT=0), the base arm fails the module (5 failed, 1 passed at 25460c88), the declared negative control genuinely reddens the paused-lane listing case, and public_definitions is 1481 at both revisions; deducted one because logs/gate-head.log:1 records revision=HEAD (working tree) rather than a sha, so the head result cannot be tied to a commit from the log alone.",
+    "fit": "the new names are mechanism-first (_discard_composed_plan_review, report_directory_created), the helper is private so nothing public changes, and no plan, sprint or ticket identifier appears in the code, symbols or comments.",
+    "goal_fidelity": "reckon/crew/recovery.py:2355 holds the composed fields, calls the dispatch once and discards exactly when report.get(\"dispatched\") is falsy, matching section 27 without a removal copied into each branch.",
+    "reuse": "a search of reckon/ for shutil.rmtree and for remove_/discard_ helpers found no owned mechanism that removes a composed directory and reports a failed removal; remove_worker_scratch (reckon/crew/dispatch.py:8578) is a different capability, so nothing is forked.",
+    "scope_discipline": "the diffstat of 25460c88..ae129648 is exactly recovery.py, the test module and the evidence fragment, all inside the declared write paths, and no shared index or plan state was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node implements section 27's dispatch half \u2014 a plan-review attempt that launches nothing leaves no run directory behind. The plan-subject path in dispatch_review_for_run (reckon/crew/recovery.py:2344) holds the composed fields, calls _dispatch_composed_review once under the plan's dispatch lock, and calls _discard_composed_plan_review once when the returned report did not dispatch; the composer records report_directory_created so only a directory this call created is ever removed; the refusal payload is unchanged (a paused lane still returns error lane-paused with lane_gate). Verified at head ae129648 and reproduced independently.\nVERDICT done_when: Every section-27 dispatch condition holds at head: a paused-lane refusal on a synthetic project leaves no new directory under the report root and still returns lane-paused (test_a_paused_lane_leaves_no_run_directory_and_still_reports_lane_paused), an admitted dispatch keeps its brief, snapshot and sidecar (test_an_admitted_dispatch_keeps_its_run_directory), a directory that existed before the call survives a refusal (test_a_run_directory_that_existed_before_the_call_survives_a_refusal), the existing review-dispatch tests pass (49 at base, 55 at head, both EXIT=0), and public_definitions is 1481 at both base 25460c88 and head ae129648, which I recomputed independently with reckon.interface_counts.count_revision. The one-time cleanup is, by the plan's own words, a separate operational node and is not part of this change.\nVERDICT write_paths: Every changed path lies inside the run's declared write paths: reckon/crew/recovery.py, tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-review-attempt-that-launches-nothing-leaves-nothing.html, per the diffstat of 25460c88..ae129648. No shared index, sprint state or other plan was touched.\nVERDICT manifest: Reads status complete, commits 2b68ccf6, 57b5c922, 222db7e1 and ae129648, names the gate command and its result (55 passed at head / 49 at base), carries test_logs gate-head.log, gate-base.log and negative-control-lane-paused.log under the run directory, and records baseline_suite and after_suite arms naming revision, command, exit and log_path. I reproduced the head module (6 passed) and the base arm (head module against base 25460c88: 5 failed, 1 passed) independently.\nVERDICT diff: Read against base 25460c88, four commits. 2b68ccf6 first added a removal in each refusal branch plus an ancestors-pruning helper; 222db7e1 replaced that with one discard at the composing caller and a discard_error reported on the report, recording report_directory_created instead of an ancestor list; 57b5c922 and ae129648 land the evidence fragment. At head the removal is one call at the call site and one shutil.rmtree inside a private helper; no refusal branch removes the directory itself.\nCALL_SITES: reckon/cli.py:2642, reckon/crew/recovery.py:4158, reckon/crew/recovery.py:11421\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:2355 holds the composed fields, calls the dispatch once and discards exactly when report.get(\"dispatched\") is falsy, matching section 27 without a removal copied into each branch.\nSCORE evidence: 19\nJUSTIFICATION evidence: the head module reproduces (6 passed, EXIT=0), the base arm fails the module (5 failed, 1 passed at 25460c88), the declared negative control genuinely reddens the paused-lane listing case, and public_definitions is 1481 at both revisions; deducted one because logs/gate-head.log:1 records revision=HEAD (working tree) rather than a sha, so the head result cannot be tied to a commit from the log alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diffstat of 25460c88..ae129648 is exactly recovery.py, the test module and the evidence fragment, all inside the declared write paths, and no shared index or plan state was touched.\nSCORE durability: 20\nJUSTIFICATION durability: the declared negative control \u2014 skipping the one discard call \u2014 reddens three cases, the paused-lane listing assertion among them, so each added assertion names a condition under which it fails, and test_a_run_directory_that_existed_before_the_call_survives_a_refusal seeds a delivered report.md and asserts it survives untouched.\nSCORE fit: 20\nJUSTIFICATION fit: the new names are mechanism-first (_discard_composed_plan_review, report_directory_created), the helper is private so nothing public changes, and no plan, sprint or ticket identifier appears in the code, symbols or comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/ for shutil.rmtree and for remove_/discard_ helpers found no owned mechanism that removes a composed directory and reports a failed removal; remove_worker_scratch (reckon/crew/dispatch.py:8578) is a different capability, so nothing is forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261006T131613589252-a-review-attempt-that-launches-nothing-leaves-nothing/logs/gate-head.log:1 follow-on: the head gate log's first line records revision=HEAD (working tree) rather than the sha it ran at, so recorded_log_revision returns None and the 55-passed result cannot be tied to a commit from the log alone; the manifest's after_suite names 222db7e1, and naming that sha on the header line would let a reader reconcile the log with the commit without trusting the manifest.\nFINDING tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py:190 follow-on: test_the_removal_is_one_exit_at_the_composing_caller_not_one_per_branch asserts source.count(\"shutil.rmtree(\") == 1 and \"ignore_errors\" not in source over the whole of recovery.py, so an unrelated future edit to that module \u2014 a legitimate rmtree or ignore_errors keyed to a different call \u2014 would redden the test although the guard it protects is unchanged; scoping the read to _discard_composed_plan_review would assert the same property without the false-coupling.",
+  "review_run_id": "r-20261006T135234105357-review-of-a-review-attempt-that-launches-nothing-leaves-nothing",
+  "reviewed_base_sha": "25460c88caf4e22fb4a649f2f8ce457edf9b1ee2",
+  "reviewed_head_sha": "ae129648d9a83d8e8bdfaa2188799648fb74fceb",
+  "reviewed_run_id": "r-20261006T131613589252-a-review-attempt-that-launches-nothing-leaves-nothing",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T14:00:30.740778+00:00",
+  "total": 119
+}

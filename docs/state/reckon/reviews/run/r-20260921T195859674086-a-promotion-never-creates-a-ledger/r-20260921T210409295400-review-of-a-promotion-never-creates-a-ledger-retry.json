@@ -1,0 +1,99 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempts_observed": {
+    "attempts": 3,
+    "note": "two earlier review dispatches of this run were superseded before storing anything; no prior record existed at the fenced path, so this record carries no superseded verdict"
+  },
+  "backend": "local",
+  "base_reproduction": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T195859674086-a-promotion-never-creates-a-ledger/reproduction-absent-ledger.log",
+    "result": "absent_write_version=1 stored_runs=1 beside shrink_refused=LedgerError runs=1267->1",
+    "revision": "dd09c6d7a1b2f42f78a28d01445ffb2f1d9104e3"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:3606"
+  ],
+  "commits_read": [
+    "89a574d25a5aca909681fa6c52431c1645c89706",
+    "3cae6100fdce2d260b65eb58fb7f3f77ae067b0f"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T21:04:09.295400+00:00",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1752",
+      "text": "the refusal reddens 31 existing tests in tests/test_ledger.py with no record of it: that file measures 4 failed / 91 passed at dd09c6d7 and 35 failed / 60 passed at 3cae6100 while being byte-identical across the two revisions, since every one of the added failures calls append_run as the way to create a fresh project, so the breakage is visible to any later suite run but absent from the manifest, from follow_ons and from the plan record."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "1745",
+      "text": "the docstring names allow_create=True as the route for a genuinely new project, but the sole production caller, reckon/crew/promotion.py:3606, never passes it, so at this revision a new project cannot initialise a ledger through any production path and the door the refusal offers is reachable only from tests."
+    }
+  ],
+  "gate_rerun": {
+    "command": "PYTHONPATH=<a-promotion-never-creates-a-ledger> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_promotion_never_creates_a_ledger.py",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T210409295400-review-of-a-promotion-never-creates-a-ledger-retry/reviewer-gate.log",
+    "result": "4 passed, exit 0",
+    "revision": "3cae6100fdce2d260b65eb58fb7f3f77ae067b0f"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit \u2014 89a574d2 is the guard plus its four-case file (reckon/ledger.py 33 added, 5 removed; the new test file 74 added) and 3cae6100 is the landing record, and the plan diff adds one comment block without touching the plan-version or plan-modified meta lines.",
+    "done_when": "the done-when named tests/test_a_promotion_never_creates_a_ledger.py with three assertions, a pasted ruff delta, and a rule that an out-of-scope failure is reported under follow_ons; I re-ran that file in the reviewed worktree at 3cae6100 (4 passed, exit 0), read the three assertions, and confirmed the ruff digits are pasted, but the follow_ons rule was not honoured for the module failures this change adds.",
+    "goal": "the node's goal was to refuse a promotion that finds no ledger file instead of letting it write a fresh store, and the landed code does that at reckon/ledger.py:1752, refusing the absent resolved ledger before the shadow-store write and naming the file, the run store and the explicit initialisation route, with reckon/ledger.py:649-658 refusing a present ledger whose members or runs are not lists.",
+    "manifest": "read; it names both commits, base dd09c6d7, the focused and adjacent counts with their logs, the reproduction and negative-control receipts, and honestly records baseline_suite completed:false and an after_suite covering only the new four-case file, so it is complete about what it looked at and silent about the module it runs inside.",
+    "write_paths": "the manifest declares five paths and the full diff dd09c6d7..3cae6100 touches four of them, with both HTML records insertions-only (31 and 5 added lines, 0 removed) and no path outside the set, so the write fence held even though the declared figure directory went unused."
+  },
+  "justifications": {
+    "durability": "the guard is pinned by four focused cases and the committed blob at 3cae6100 carries allow_create, but the landed revision leaves 31 pre-existing module tests red with no attribution, so the next suite gate inherits failures this change caused.",
+    "evidence": "the run's receipts are real \u2014 the reproduction log shows absent_write_version=1 beside the 1267->1 refusal and the negative control reddens with DID NOT RAISE LedgerError \u2014 but its only suite measurement is its own new file (baseline not established) and follow_ons is none, so the 31 tests its guard reddens in tests/test_ledger.py went unmeasured.",
+    "fit": "the refusal speaks in the module's own voice and names the module's own _run_store_location() at reckon/ledger.py:1755, but the remedy it names, allow_create=True, has no production caller \u2014 promotion.py:3606 is the only one and does not pass it.",
+    "goal_fidelity": "reckon/ledger.py:1752 refuses the absent ledger before any write and 649-658 refuses the malformed collections, which is the goal's refusal plus the same collapse it named.",
+    "scope_discipline": "`git diff --numstat dd09c6d7 3cae6100` lists exactly the declared paths with both HTML records append-only, but tests/test_ledger.py, the file this change visibly breaks, is left outside the record entirely."
+  },
+  "module_suite": {
+    "added_failures": 31,
+    "base": {
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T210409295400-review-of-a-promotion-never-creates-a-ledger-retry/reviewer-ledger-suite-base-full.log",
+      "result": "4 failed, 91 passed",
+      "revision": "dd09c6d7a1b2f42f78a28d01445ffb2f1d9104e3"
+    },
+    "file": "tests/test_ledger.py",
+    "head": {
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T210409295400-review-of-a-promotion-never-creates-a-ledger-retry/reviewer-ledger-suite.log",
+      "result": "35 failed, 60 passed",
+      "revision": "3cae6100fdce2d260b65eb58fb7f3f77ae067b0f"
+    },
+    "identical_across_revisions": true,
+    "instrument_note": "a first base attempt from a partial tree extract reported 79 setup errors in 6.65s because the archive omitted skills/, docs/ and scripts/ that the file's fixtures read; it was discarded and the base re-measured from a full tree extract, which is the log cited here",
+    "removed_failures": 0
+  },
+  "negative_control_check": {
+    "declared_mutation": "remove the absent-ledger refusal so a promotion can create a fresh ledger; tests/test_a_promotion_never_creates_a_ledger.py must fail",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T195859674086-a-promotion-never-creates-a-ledger/negative-control-absent-ledger.log",
+    "result": "1 failed, DID NOT RAISE LedgerError"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal was to refuse a promotion that finds no ledger file instead of letting it write a fresh store, and the landed code does that at reckon/ledger.py:1752, refusing the absent resolved ledger before the shadow-store write and naming the file, the run store and the explicit initialisation route, with reckon/ledger.py:649-658 refusing a present ledger whose members or runs are not lists.\nVERDICT done_when: the done-when named tests/test_a_promotion_never_creates_a_ledger.py with three assertions, a pasted ruff delta, and a rule that an out-of-scope failure is reported under follow_ons; I re-ran that file in the reviewed worktree at 3cae6100 (4 passed, exit 0), read the three assertions, and confirmed the ruff digits are pasted, but the follow_ons rule was not honoured for the module failures this change adds.\nVERDICT write_paths: the manifest declares five paths and the full diff dd09c6d7..3cae6100 touches four of them, with both HTML records insertions-only (31 and 5 added lines, 0 removed) and no path outside the set, so the write fence held even though the declared figure directory went unused.\nVERDICT manifest: read; it names both commits, base dd09c6d7, the focused and adjacent counts with their logs, the reproduction and negative-control receipts, and honestly records baseline_suite completed:false and an after_suite covering only the new four-case file, so it is complete about what it looked at and silent about the module it runs inside.\nVERDICT diff: read commit by commit \u2014 89a574d2 is the guard plus its four-case file (reckon/ledger.py 33 added, 5 removed; the new test file 74 added) and 3cae6100 is the landing record, and the plan diff adds one comment block without touching the plan-version or plan-modified meta lines.\nCALL_SITES: reckon/crew/promotion.py:3606\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1752 refuses the absent ledger before any write and 649-658 refuses the malformed collections, which is the goal's refusal plus the same collapse it named.\nSCORE evidence: 12\nJUSTIFICATION evidence: the run's receipts are real \u2014 the reproduction log shows absent_write_version=1 beside the 1267->1 refusal and the negative control reddens with DID NOT RAISE LedgerError \u2014 but its only suite measurement is its own new file (baseline not established) and follow_ons is none, so the 31 tests its guard reddens in tests/test_ledger.py went unmeasured.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: `git diff --numstat dd09c6d7 3cae6100` lists exactly the declared paths with both HTML records append-only, but tests/test_ledger.py, the file this change visibly breaks, is left outside the record entirely.\nSCORE durability: 17\nJUSTIFICATION durability: the guard is pinned by four focused cases and the committed blob at 3cae6100 carries allow_create, but the landed revision leaves 31 pre-existing module tests red with no attribution, so the next suite gate inherits failures this change caused.\nSCORE fit: 16\nJUSTIFICATION fit: the refusal speaks in the module's own voice and names the module's own _run_store_location() at reckon/ledger.py:1755, but the remedy it names, allow_create=True, has no production caller \u2014 promotion.py:3606 is the only one and does not pass it.\nFINDING reckon/ledger.py:1752 the refusal reddens 31 existing tests in tests/test_ledger.py with no record of it: that file measures 4 failed / 91 passed at dd09c6d7 and 35 failed / 60 passed at 3cae6100 while being byte-identical across the two revisions, since every one of the added failures calls append_run as the way to create a fresh project, so the breakage is visible to any later suite run but absent from the manifest, from follow_ons and from the plan record.\nFINDING reckon/ledger.py:1745 the docstring names allow_create=True as the route for a genuinely new project, but the sole production caller, reckon/crew/promotion.py:3606, never passes it, so at this revision a new project cannot initialise a ledger through any production path and the door the refusal offers is reachable only from tests.\n",
+  "review_run_id": "r-20260921T210409295400-review-of-a-promotion-never-creates-a-ledger-retry",
+  "reviewed_base_sha": "dd09c6d7a1b2f42f78a28d01445ffb2f1d9104e3",
+  "reviewed_head_sha": "3cae6100fdce2d260b65eb58fb7f3f77ae067b0f",
+  "reviewed_run_id": "r-20260921T195859674086-a-promotion-never-creates-a-ledger",
+  "reviewer_head_sha": "0d122a2f8bcb81a2ed05643b88accdcea5adf04d",
+  "reviewer_run_id": "r-20260921T210409295400-review-of-a-promotion-never-creates-a-ledger-retry",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T21:23:46.265695+00:00",
+  "total": 83
+}

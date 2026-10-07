@@ -24,7 +24,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="152">
+<meta name="plan-version" content="170">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
@@ -513,6 +513,60 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261004T121951276204-shadow-pick-off-critical-path" data-who="reckon-build" data-when="2026-10-04T16:40:56Z">
     <div class="r-comment-body"><p>Explicit and deterministic dispatches launch before their advisory picker; five alternating slow-client pairs measured a 4.235 s median paired reduction, the repaired dispatch gate passed 186/186, and the updated routing, shadow, and supervisor tests passed 27/27 together serially at the final head.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T022329056429-stale-reading-reaches-jev" data-who="reckon-build" data-when="2026-10-07T04:41:54.189Z">
+    <div class="r-comment-body"><p>Carried a stale account-window reading into the picker's dispatch candidate (utilisation, burn_multiple, pace_allowance, days_to_reset, resets_at, plus new stale and budget_age_s) instead of nulling it with a reason; live codex candidates show burn_multiple 1.406, pace_allowance 0.665, utilisation_pct 85.0, stale true, budget_age_s 4889.9 s; head gate 258 passed at 106afb36d against base 254, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T051538986038-review-of-stale-reading-reaches-jev" data-who="reckon-build" data-when="2026-10-07T05:31:55.430Z">
+    <div class="r-comment-body"><p>Review of r-20261007T022329056429-stale-reading-reaches-jev stored at reviews/reckon/r-20261007T022329056429-stale-reading-reaches-jev.at-106afb36dc38c4549adc62554bd60719f4b6e8db.json; scored goal_fidelity 19, evidence 19, scope_discipline 18, durability 19, fit 19, reuse 17 (total 111), reviewed_base_sha 5b947ae9e, reviewed_head_sha 106afb36d, added_failure_count 0 with no added ids; one follow-on finding (two disagreeing staleness derivations reaching Jev).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T055630350553-review-of-codex-banked-reset" data-who="reckon-build" data-when="2026-10-07T06:13:55.308Z">
+    <div class="r-comment-body"><p>An independent review of r-20261007T022200354849-codex-banked-reset is stored as a parsed six-dimension record at both granted paths; it scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 17, fit 18, reuse 19 (total 112), records reviewed_base_sha 5b947ae9eabe806a05523c957cfe14e4b13872ef and reviewed_head_sha 44636a5f08a669dd18c565197e7945874eddb854, carries added_failure_count 0 with added_failure_ids [] derived from the reviewed run's baseline_suite (152 passed EXIT=0 at 5b947ae9) and after_suite (158 passed EXIT=0 at b68f4da6a) gate logs, and reports three follow-on findings (a tautological store-isolation assertion, an unserialized observe read-modify-write, and reset_available not reaching the picker candidate).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T043246695894-lane-and-model-design" data-who="reckon-build" data-when="2026-10-07T04:56:35.066Z">
+    <div class="r-comment-body"><p>Design only, no plan or repository edit: report.md answers the six questions (schema, dispatch surface, picker, history, migration order, call-site census) with census.txt beside it, and names node 'host-flight-collapses-claude' as the one that retires the claude-opus backend block; the lead must approve lane names, bare --model, and when the derived names retire before node 1 dispatches.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T051619983156-review-of-lane-and-model-design" data-who="reckon-build" data-when="2026-10-07T05:30:13.671Z">
+    <div class="r-comment-body"><p>independent review of r-20261007T043246695894-lane-and-model-design stored; the design report scores 111/120 (goal_fidelity 20, evidence 16, scope_discipline 20, durability 15, fit 20, reuse 20) over the empty diff at 65d0bf6e756ce6ab406d2fe0e89047f31b684bb0, with two follow-on findings (report.md:104 mis-cites parse_overrides at reckon/flight.py:2243 vs the real :2260; report.md:5/:278/:314 name a census.txt artifact that was never written).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T051156651332-jev-prompt-carries-what-it-weighs" data-who="reckon-build" data-when="2026-10-07T05:48:36.244Z">
+    <div class="r-comment-body"><p>State and questions render as one Python mapping through a single tojson each; every fact the guidance names is present and hostile text stays a string value; representative 9-candidate token estimate 1175 -&gt; 1478 (bound 1500); gate base 192 passed / head 201 passed, 0 added failures; commit 5b859be9c.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T042853127894-slow-dispatch-phases" data-who="reckon-build" data-when="2026-10-07T05:22:00.734Z">
+    <div class="r-comment-body"><p>no repository changes (read-only role); evidence and logs landed under the run directory.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T063435245210-review-of-new-work-names-no-lane" data-who="reckon-build" data-when="2026-10-07T06:51:19.223Z">
+    <div class="r-comment-body"><p>review of run r-20261007T041913587977-new-work-names-no-lane (plan reckon:one-typesafe-model-picker §6) stored at reviews/reckon/r-20261007T041913587977-new-work-names-no-lane.json and the .at-72a3fdb54 revision copy; reviewed base 494df0b11762da8531276069fd5a19b7b8b19d33, reviewed head 72a3fdb54bc828a636b10659b4deca4d8f04249d; scores goal_fidelity 19 / evidence 17 / scope_discipline 20 / durability 18 / fit 18 / reuse 18 (total 110); added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite (gate-base.log, 292 passed EXIT=0) and after_suite (gate-ruling.log, 28 passed EXIT=0); four follow-on findings, no blocker.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T063637446343-review-of-arm-lock-never-held-by-a-follower" data-who="reckon-build" data-when="2026-10-07T06:52:48.490Z">
+    <div class="r-comment-body"><p>Stored the independent review of run r-20261007T051352523439-arm-lock-never-held-by-a-follower at the head-keyed review path: status parsed, six dimensions scored 18/18/19/19/18/20 (total 112 of 120), revisions base 43181a642 head 90cb25078, added_failure_count 0, one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T063602120236-review-of-jev-prompt-carries-what-it-weighs" data-who="reckon-build" data-when="2026-10-07T06:54:01.216Z">
+    <div class="r-comment-body"><p>Independent review of jev-prompt-carries-what-it-weighs stored at both write paths; reviewed base 352ff827e head 8e5f22d6b, added_failure_count 0 over added_failure_ids [], scores goal_fidelity 20 / evidence 19 / scope_discipline 20 / durability 20 / fit 19 / reuse 20, total 118.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T063736994443-review-of-congested-local-lane-reaches-the-picker" data-who="reckon-build" data-when="2026-10-07T06:56:17.772Z">
+    <div class="r-comment-body"><p>Independent review of r-20261007T052724684363: 114/120 across the six dimensions (goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 18, reuse 19); the reviewed delta ade36b77d..762d6158 is test-only, adds 0 failures, and its behaviour already held at base (picker runs at dispatch.py:6767 before plan_dispatch at :6780), with one follow-on that cli.py's lane-paused payload omits picker_selection.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T041913587977-new-work-names-no-lane" data-who="reckon-build" data-when="2026-10-07T06:15:43.898Z">
+    <div class="r-comment-body"><p>one-typesafe-model-picker §6 — a composed remedy that names a dispatch verb (dispatch, review-plan, shadow) has its lane flags removed so the picker routes the node or holds it, while a remedy that continues a run (resume, redispatch, repair) keeps the lane the run was carried on; the build/create/edit skills state the same default and an unnamed review runs locally or holds through review_excluded_backends.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T063504510869-review-of-slow-dispatch-phases" data-who="reckon-build" data-when="2026-10-07T07:02:37.014Z">
+    <div class="r-comment-body"><p>review attached to r-20261007T042853127894-slow-dispatch-phases: 6-dimension record scored total 92/120 (goal_fidelity 15, evidence 14, scope_discipline 17, durability 9, fit 17, reuse 20) over base=head 9635d54f, carrying added_failure_count null and added_failure_ids [] derived from the reviewed manifest's baseline_suite/after_suite (both "not run"); findings: report:12 harness not deposited, report:75 outlier inferred not measured.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T063532781045-review-of-subscription-lanes-record-no-spend" data-who="reckon-build" data-when="2026-10-07T07:07:01.741Z">
+    <div class="r-comment-body"><p>independent review of r-20261007T043032932270-subscription-lanes-record-no-spend (plan reckon:one-typesafe-model-picker §6, reviewed base 0090375ca20867f919986a8bf86699f405d976b1, reviewed head 99aefbaccf7ef806de3df6d52d64fee9be41a739) stored at ~/.config/reckon/crew/reviews/reckon/ scoring goal_fidelity 18, evidence 15, scope_discipline 19, durability 14, fit 15, reuse 15 (total 96)</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T052724684363-congested-local-lane-reaches-the-picker" data-who="reckon-build" data-when="2026-10-07T05:45:45Z">
+    <div class="r-comment-body"><p>Picker already precedes resolved-backend admission: under headroom -1 and session slots 0, four new dispatch cases pass (metered launch, local refusal, hold, explicit local refusal); gate 327/327 at base and 331/331 at head, zero added failures; negative control EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T051352523439-arm-lock-never-held-by-a-follower" data-who="reckon-build" data-when="2026-10-07T05:32:40Z">
+    <div class="r-comment-body"><p>Bounded watch arm-lock contention and orphan seat release; moved follower delivery checks outside the mutex, retained descriptor isolation and single-producer launch. Head gate 255 passed, 1 skipped with zero added failures; declared descriptor-leak control failed its flock test; two concurrent armings launched exactly one producer.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T063707288016-review-of-publisher-refreshes-stale-windows" data-who="reckon-build" data-when="2026-10-07T07:03:39.327Z">
+    <div class="r-comment-body"><p>Reviewed r-20261007T052613021938-publisher-refreshes-stale-windows (base</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T022200354849-codex-banked-reset" data-who="reckon-build" data-when="2026-10-07T07:13:33.397Z">
+    <div class="r-comment-body"><p>landing: docs/evidence/fragments/one-typesafe-model-picker/codex-banked-reset.html — a banked reset is a durable per-group flag (`reckon crew budget-reset --group &lt;g&gt; --available|--used`) that counts one extra full window in the group&#x27;s pace allowance and clears itself when a reset boundary jumps ahead of schedule; a group with no banked reset derives the allowance it derived before, so a pace replay reproduces the recorded row; the flag store is written under one lock shared with the command surface; base 205 passed / head 212 passed, zero added failures, negative control EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>

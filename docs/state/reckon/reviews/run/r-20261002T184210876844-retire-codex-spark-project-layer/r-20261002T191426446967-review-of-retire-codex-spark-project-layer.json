@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's own gate logs base-tests.log and head-tests.log both report 47 passed / EXIT=0 over tests/test_backends.py and tests/test_a_review_never_runs_in_harness.py, so the head arm adds zero failure ids; neither file reads docs/state/reckon/flight.yaml, so the zero is by construction rather than by coverage, and the head arm was re-run here at the delivered tree to confirm 47 passed.",
+  "base_log_revision": "2a581fb443537002de44c581f544abc78fac9d3e",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/flight.py:1054",
+    "reckon/cli.py:732",
+    "reckon/crew/recovery.py:1322"
+  ],
+  "completed_at": "2026-10-02T19:27:26.901Z",
+  "dispatched_at": "2026-10-02T19:14:52Z",
+  "findings": [
+    {
+      "file": "docs/state/reckon/flight.yaml",
+      "line": "58",
+      "severity": "follow-on",
+      "text": "the node's named gate (tests/test_backends.py and tests/test_a_review_never_runs_in_harness.py) does not read the file the node changed, so head 47 passed against base 47 passed records zero added failure ids without exercising the deletion; a test asserting codex-spark is absent from the resolved project layer would guard it, and tests/ is outside this node's write scope."
+    }
+  ],
+  "head_log_revision": "2a581fb443537002de44c581f544abc78fac9d3e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the project flight layer is resolved by reckon/flight.py:1054 through the reckon flight command (reckon/cli.py:732), and review_excluded_backends is consumed by reckon/crew/recovery.py:1322.",
+    "diff": "one conventional commit with a body and no AI trailer on the reviewed worktree, clean at 5e6fa792b.",
+    "done_when": "the named gate passes at head with zero added failure ids, but the gate files do not read the changed file; the change's own listing measure reproduces without error.",
+    "goal": "remove the codex-spark backend entry and the codex-spark item under review_excluded_backends from the project flight layer; achieved and verified in the resolved config.",
+    "manifest": "read; status complete, one commit, landing and checkpoint present; baseline_suite/after_suite null so added-failure figures derive from test_logs.",
+    "merged_head": "main advanced to c24550bd4a9ee1e9ee696a4a7ba7a4d0a15aa095 during this review and now contains 5e6fa792b; the literal `reckon flight --project reckon` on the main checkout reports codex-spark absent from backends, so the goal holds at the merged head, not only at the worktree layer.",
+    "write_paths": "diff 2a581fb..5e6fa792b touches exactly the two declared paths, 8 deletions and 24 insertions, nothing outside."
+  },
+  "justifications": {
+    "durability": "no test reads the project flight layer, so the invariant is unguarded; the node was fenced to flight.yaml and a fragment with no tests/ in scope and honestly declared negative_control none, making the guard a follow-on.",
+    "evidence": "the listing measure reproduces at the resolved worktree layer and the caveat that the literal command still reads the un-promoted main checkout is accurate; the head arm re-runs at 47 passed; but the named gate files do not read the changed file so the base/head equality carries no coverage, and the head log header names the base revision rather than the delivered commit. The reviewed worktree was reclaimed (promoted) partway through this review; a gate re-run issued after removal reported two failures from tests/test_a_review_never_runs_in_harness.py, which do not read the changed file and pass 4/4 three times on the now-merged main, so those failures were collateral of the concurrent teardown, not of the change. At the merged head (main c24550bd) the literal flight listing confirms codex-spark absent.",
+    "fit": "the edit follows the flight.yaml format and removes whole entries only; the commit is conventional with a body and no AI trailer or plan/ticket identifier; the fragment follows the evidence-article convention.",
+    "goal_fidelity": "the codex-spark backend entry and the codex-spark review_excluded_backends item are removed, no reference to it remains in the file, and the host layer defines none, so the resolved config no longer names it; the section mapping is loose (the plan's \u00a73 done-when is the currency table; codex-spark's disposition is \u00a72), so the point withheld is about where this lands, not whether it is done.",
+    "scope_discipline": "the diff is confined to the two declared write paths with 8 deletions in the config and 24 insertions in the fragment, with no shared plan, index or sprint mutation."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"remove codex-spark from reckon's project flight layer\"; docs/state/reckon/flight.yaml no longer carries the codex-spark backend entry nor the codex-spark item under review_excluded_backends, the resolved project layer read from this worktree (--checkout-path) lists the nine remaining backends without it, and the host layer (dotfiles/reckon/flight.yaml) defines no codex-spark, so the resolved config no longer names it.\nVERDICT done_when: the gate's two test files pass at head (47 passed) and base (47 passed), zero added failure ids, but neither file reads docs/state/reckon/flight.yaml \u2014 test_backends.py is launch/stream translation over fixtures, and test_a_review_never_runs_in_harness.py builds a synthetic config \u2014 so the two-arm comparison proves nothing about this change; the change's own measure (resolved flight listing) reproduces without error.\nVERDICT write_paths: diff 2a581fb..5e6fa792b touches exactly the two declared paths \u2014 docs/state/reckon/flight.yaml (8 deletions, no other line changed) and the evidence fragment (24 insertions); no file outside the fence and no plan/index/sprint mutation.\nVERDICT manifest: read; status complete, one commit 5e6fa792b, checkpoint and landing present; baseline_suite/after_suite are null, so the added-failure figures are derived from the run's own test_logs base-tests.log and head-tests.log (both 47 passed, EXIT=0).\nVERDICT diff: one commit on the reviewed worktree, conventional subject config(flight): and a body, no AI trailer; worktree clean at the delivered head.\nCALL_SITES: reckon/flight.py:1054, reckon/cli.py:732, reckon/crew/recovery.py:1322\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the entry and the review-exclusion item are both gone, no dangling reference remains anywhere in the file (grep codex-spark returns nothing), and the host layer defines no codex-spark, so the resolved config truly stops naming it; one point withheld because the section linchpin is loose \u2014 the plan's \u00a73 done-when is the provider/family currency table, the codex-spark disposition is \u00a72, and \u00a711 already recorded it retired, so this is a stale-pin cleanup landing under \u00a73 rather than \u00a73's stated deliverable.\nSCORE evidence: 16\nJUSTIFICATION evidence: the measure reproduces independently \u2014 at the reviewed worktree the resolved backends are [claude,claude-haiku,claude-opus,clive,codex,codex-astra,codex-luna,codex-terra,native] with no codex-spark and review_excluded_backends lacks codex-spark, while the literal command on the main checkout still shows codex-spark (unpromoted), exactly the caveat the worker flagged; the head arm was re-run here at the delivered tree and gives 47 passed. Points withheld: the named gate files do not read the changed file, so the 47==47 base/head comparison is vacuous as coverage of this change, and the head-tests.log header names revision 2a581fb443537002de44c581f544abc78fac9d3e (the base sha) rather than the delivered commit 5e6fa792b, so the head arm's log does not record the revision it ran at.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 2a581fb..5e6fa792b names exactly docs/state/reckon/flight.yaml and docs/evidence/fragments/one-typesafe-model-picker/retire-codex-spark-project-layer.html, 8 deletions and 24 insertions, no file outside the two declared write paths, no shared plan, index or sprint state touched.\nSCORE durability: 16\nJUSTIFICATION durability: there is no guard \u2014 no test reads the project flight layer, so nothing would fail if codex-spark were re-added; the node declares negative_control none for a config deletion, which is honest, and it was fenced to flight.yaml plus a fragment (no tests/ in scope), so the missing guard is a follow-on rather than a node defect, but the change ships permanently unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: the flight.yaml edit matches the file's own two-space mapping and list style and removes only whole entries; the commit is conventional with a body explaining why (no default, role or spec-level mapping routed work to codex-spark) and carries no AI trailer and no plan/ticket identifier; the evidence fragment follows the r-evidence article convention. One point withheld only because the commit body's claim that untouched host layers keep host-defined backends resolving, while accurate, could be read as leaving codex-spark reachable, which it does not.\nFINDING docs/state/reckon/flight.yaml:58 the node's named gate (tests/test_backends.py and tests/test_a_review_never_runs_in_harness.py) does not read the file this node changed \u2014 the former exercises launch/stream translation over fixtures and the latter builds a synthetic config \u2014 so head 47 passed against base 47 passed records zero added failure ids without exercising the deletion; a test asserting codex-spark is absent from the resolved project layer would guard it, and tests/ is outside this node's write scope.\nreviewed_base_sha: 2a581fb443537002de44c581f544abc78fac9d3e\nreviewed_head_sha: 5e6fa792b1c86e10a7d9c70280c93c07c881abb0\nMERGED_HEAD main c24550bd4a9ee1e9ee696a4a7ba7a4d0a15aa095 now contains 5e6fa792b; the literal `reckon flight --project reckon` reports codex-spark absent from backends, so the goal holds at the merged head.",
+  "review_run_id": "r-20261002T191426446967-review-of-retire-codex-spark-project-layer",
+  "reviewed_base_sha": "2a581fb443537002de44c581f544abc78fac9d3e",
+  "reviewed_head_sha": "5e6fa792b1c86e10a7d9c70280c93c07c881abb0",
+  "reviewed_run_id": "r-20261002T184210876844-retire-codex-spark-project-layer",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T191426446967-review-of-retire-codex-spark-project-layer",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T19:22:44.135265+00:00",
+  "total": 90
+}

@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/cli.py:4058",
+    "reckon/crew/promotion.py:3949 (_complete_locked)",
+    "reckon/crew/promotion.py:4152",
+    "reckon/crew/runs.py:830 (_shared_write_paths)",
+    "reckon/crew/dispatch.py:1231",
+    "reckon/crew/dispatch.py:1275"
+  ],
+  "completed_at": "2026-09-25T23:21:51.871Z",
+  "dispatched_at": "2026-09-25T23:01:25Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against base ef4a961b; 81f9317c adds 12 lines to reckon/crew/promotion.py (:1389 resolver, :1422 exemption) and 179 added / 19 replaced lines to tests/test_crew_promotion_scope.py (the _pointer pid argument, _declare_shared_write_paths, and four cases from three test functions), and e6333677 adds 53 lines to the cumulative evidence record, a 57-line figure and 13 lines to the plan section, with no plan-version or plan-modified meta touched.",
+    "done_when": "read; its clauses \u2014 an at-base failing added assertion, the two-file gate in one invocation with zero added failures, a ruff report against base, and the live-peer/temp-home fixture \u2014 are each recorded with committed logs, and my re-derivations match: 1 failed, 3 passed at base product with the committed test file, and 76 passed exit 0 at the committed head in one invocation.",
+    "goal": "read the reviewed pointer's goal \u2014 crew complete --accept-path must treat a co-claim on a declared shared-write path as dispatch does, i.e. not a conflict; at head, reckon/crew/promotion.py:1389 resolves the project list through runs._shared_write_paths and :1422 skips the refusal only when the peer's claim names exactly the listed file, which is dispatch's own rule at reckon/crew/dispatch.py:1289.",
+    "manifest": "read at the run directory; it records both commits, the gate arms (72 base to 76 head), the four added cases, the declared negative control whose red log's first line repeats the declaration verbatim, the ruff and format deltas, and one follow-on; each figure I re-derived matched, including the base archive identity (base-suite equals git archive ef4a961b) and the dead-pointer refusal divergence it names, which the base loop already had.",
+    "write_paths": "read the five granted paths from the reviewed run's pointer and the manifest's orientation list; git diff --numstat ef4a961b..e6333677 lists exactly five files, every one inside them, 0 deletions on the two cumulative documents, and the figure newly added."
+  },
+  "justifications": {
+    "durability": "each added case reddens under the regression it guards \u2014 exemption removal, exemption ignoring the list (:544), and containment-based exemption (:582's rendered/artifact.png parameter), all re-run by me \u2014 but no case pins the mirror direction, a peer claim deeper than the accepted path.",
+    "evidence": "every done-when arm is recorded in committed logs and I re-derived the load-bearing ones at the exact revisions (76 passed at e6333677; 1 failed/3 passed at base product), with ruff 10 to 10 and format delta zero in my own arms.",
+    "fit": "the fix reuses runs._shared_write_paths rather than re-reading the list, adds the import in sorted position at reckon/crew/promotion.py:55, mirrors the surrounding comment idiom, and introduces no plan or ticket identifier in source, tests or figure.",
+    "goal_fidelity": "the exemption admits exactly the listed file and refuses every other case, reusing the same resolver and matching dispatch's rule at reckon/crew/dispatch.py:1289, with the two refusal paths asserted through the command at tests/test_crew_promotion_scope.py:544 and :582.",
+    "scope_discipline": "all five changed files are inside the granted paths with 0 deletions across the cumulative documents, and the test file's 19 replaced lines are the _pointer refactor the live-pid clause implies."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the reviewed pointer's goal \u2014 crew complete --accept-path must treat a co-claim on a declared shared-write path as dispatch does, i.e. not a conflict; at head, reckon/crew/promotion.py:1389 resolves the project list through runs._shared_write_paths and :1422 skips the refusal only when the peer's claim names exactly the listed file, which is dispatch's own rule at reckon/crew/dispatch.py:1289.\nVERDICT done_when: read; its clauses \u2014 an at-base failing added assertion, the two-file gate in one invocation with zero added failures, a ruff report against base, and the live-peer/temp-home fixture \u2014 are each recorded with committed logs, and my re-derivations match: 1 failed, 3 passed at base product with the committed test file, and 76 passed exit 0 at the committed head in one invocation.\nVERDICT write_paths: read the five granted paths from the reviewed run's pointer and the manifest's orientation list; git diff --numstat ef4a961b..e6333677 lists exactly five files, every one inside them, 0 deletions on the two cumulative documents, and the figure newly added.\nVERDICT manifest: read at the run directory; it records both commits, the gate arms (72 base to 76 head), the four added cases, the declared negative control whose red log's first line repeats the declaration verbatim, the ruff and format deltas, and one follow-on; each figure I re-derived matched, including the base archive identity (base-suite equals git archive ef4a961b) and the dead-pointer refusal divergence it names, which the base loop already had.\nVERDICT diff: read commit by commit against base ef4a961b; 81f9317c adds 12 lines to reckon/crew/promotion.py (:1389 resolver, :1422 exemption) and 179 added / 19 replaced lines to tests/test_crew_promotion_scope.py (the _pointer pid argument, _declare_shared_write_paths, and four cases from three test functions), and e6333677 adds 53 lines to the cumulative evidence record, a 57-line figure and 13 lines to the plan section, with no plan-version or plan-modified meta touched.\nCALL_SITES: reckon/cli.py:4058, reckon/crew/promotion.py:3949 (_complete_locked), reckon/crew/promotion.py:4152, reckon/crew/runs.py:830 (_shared_write_paths), reckon/crew/dispatch.py:1231, reckon/crew/dispatch.py:1275\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the exemption admits exactly the listed file and refuses every other case, reusing the same resolver and matching dispatch's rule at reckon/crew/dispatch.py:1289, with the two refusal paths asserted through the command at tests/test_crew_promotion_scope.py:544 and :582.\nSCORE evidence: 20\nJUSTIFICATION evidence: every done-when arm is recorded in committed logs and I re-derived the load-bearing ones at the exact revisions (76 passed at e6333677; 1 failed/3 passed at base product), with ruff 10 to 10 and format delta zero in my own arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five changed files are inside the granted paths with 0 deletions across the cumulative documents, and the test file's 19 replaced lines are the _pointer refactor the live-pid clause implies.\nSCORE durability: 19\nJUSTIFICATION durability: each added case reddens under the regression it guards \u2014 exemption removal, exemption ignoring the list (:544), and containment-based exemption (:582's rendered/artifact.png parameter), all re-run by me \u2014 but no case pins the mirror direction, a peer claim deeper than the accepted path.\nSCORE fit: 20\nJUSTIFICATION fit: the fix reuses runs._shared_write_paths rather than re-reading the list, adds the import in sorted position at reckon/crew/promotion.py:55, mirrors the surrounding comment idiom, and introduces no plan or ticket identifier in source, tests or figure.",
+  "review_run_id": "r-20260925T230114162284-review-of-accepted-shared-path-is-not-a-conflict",
+  "reviewed_base_sha": "ef4a961b795cae250761d1d7120db1c11244e20b",
+  "reviewed_head_sha": "e6333677a06dc641a65fd8ae3aef1aeea63486b3",
+  "reviewed_run_id": "r-20260925T224614549756-accepted-shared-path-is-not-a-conflict",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T23:18:43.012516+00:00",
+  "total": 99
+}

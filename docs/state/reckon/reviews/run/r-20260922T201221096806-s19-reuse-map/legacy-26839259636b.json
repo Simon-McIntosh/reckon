@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "~/.config/reckon/crew/reports/s19-reuse-map.md",
+      "line": "115",
+      "path_exists": true,
+      "text": "the closing table omits two write paths claimed by two rows each \u2014 reckon/crew/runs.py (WDR-1 and WDR-2, whose own dependency note at line 36 declares them independent, so a wave sized from this map puts two writers on one file and meets the collision as a mid-wave refusal, the outcome the table exists to prevent) and tests/test_member_registration_commits.py (WDR-4 and ARDWNIL-5)."
+    },
+    {
+      "file": "~/.config/reckon/crew/reports/s19-reuse-map.md",
+      "line": "118",
+      "path_exists": true,
+      "text": "the table lists reckon/crew/dispatch.py with 7 rows while 8 rows claim it in their write-path columns (WDR-6 is omitted); the \"7\" figure is carried into the landing record's evidence_inputs and would reach the plan as the sequencing figure."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T201221096806-s19-reuse-map/check_map.py",
+      "line": "79",
+      "path_exists": true,
+      "text": "clause 4, \"no tracked repository file is changed by this node\", is a comment over a dead assignment (marked = sorted(anchors)); the file holds no git or subprocess call at all, so the done-when's last clause is unmeasured by the gate that its manifest records as the evidence."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T201221096806-s19-reuse-map/check_map.py",
+      "line": "58",
+      "path_exists": true,
+      "text": "clause 3 counts a row-line mention anywhere in the row, not a claim in the write-path column, and runs in one direction only (listed entry must be claimed twice), so it passes on the live report while two correctly claimed paths are absent from the table it verifies."
+    },
+    {
+      "file": "~/.config/reckon/crew/reports/s19-reuse-map.md",
+      "line": "101",
+      "path_exists": true,
+      "text": "the SSSAP-5c row names parse_review, store_review and read_review for a capability already present at the revision the map read \u2014 reckon/crew/review.py at 2ad5cb1b carries REVIEW_REVISION_KEY, carried_revision and REVISION_FIELDS \u2014 so the row needs the freshness pass its own \u00a73 row received, or a re-scope to the consumer side."
+    },
+    {
+      "file": "~/.config/reckon/crew/reports/s19-reuse-map.md",
+      "line": "27",
+      "path_exists": true,
+      "text": "three of 21 rows carry no file:line anchor in their symbols column (WDR-6, TOL-3, ARCSTF-3) against the done-when's \"each row names at least one existing symbol as file:line verified by grep\"; 18 of 21 rows carry one, and the gate's clause 2 checks only the anchors that exist, so the per-row clause is unchecked."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no commit to read; git status --porcelain in /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/s19-reuse-map is empty at 2ad5cb1b, so the delivered change is the report file plus the run directory's gate, log and landing record, none of them tracked.",
+    "done_when": "the measure's clauses are met except two, and the gate does not check either: rows present 21/21 and anchors resolving 29/29 are confirmed by me independently, but the closing table omits write paths claimed by two rows (reckon/crew/runs.py by WDR-1 and WDR-2, tests/test_member_registration_commits.py by WDR-4 and ARDWNIL-5) and undercounts a third, and the clause \"no tracked repository file is changed\" is true of the tree (git status --porcelain empty, HEAD 2ad5cb1b) yet no gate clause measures it.",
+    "goal": "the goal is a reuse map naming, per implementable section of the five S19 plans, the existing symbols to extend and exclusive write paths; the report at ~/.config/reckon/crew/reports/s19-reuse-map.md carries 21 rows matching the required section set (I re-derived the section lists from docs/plans/*.html: worker-death-is-recorded \u00a75's six ordered items map to WDR-1..6 in order, TOL \u00a71-\u00a73, a-review-can-see-the-figure \u00a71-\u00a73, a-review-dies-where-nobody-is-looking \u00a73/\u00a75/\u00a76/\u00a77, scoring-should-stop-a-promotion \u00a72c/\u00a73/\u00a75c/\u00a76), and every one of the 62 file:line anchor occurrences (55 distinct) resolves in the reviewed worktree at 2ad5cb1b to the symbol the row names (spot-read: reckon/crew/recovery.py:246 is the literal \"--local\", dispatch.py:4163 is the \"if size: return\" that discards the exit status, node.py:30 is _TERMINAL_RUN_PHASES).",
+    "manifest": "read; status complete, commits \"none\" with the reason, tests naming check_map.py and its printed counts, test_logs naming map-gate.log and grep-evidence.log, negative_control_log \"none:\" with the reason, and a note recording that the gate's clause 3 fired on a first-draft shared-path claim that was a reader, not a writer; the landing record is staged untracked in the run directory, and its evidence_inputs asks the coordinator to splice it.",
+    "write_paths": "the declared fence is four paths \u2014 the report at ~/.config/reckon/crew/reports/s19-reuse-map.md, docs/evidence/archive/worker-death-is-recorded-landing.html, docs/figures/worker-death-is-recorded, docs/plans/worker-death-is-recorded.html; the report is at the first, and the three tracked paths are byte-identical to base, which is what the same done-when's \"no tracked repository file is changed\" clause requires."
+  },
+  "justifications": {
+    "durability": "the only guard is check_map.py, which lives in the run directory and resolves anchors through the reviewed worktree path, so it stops running exactly when that worktree is reclaimed, and no repository test asserts on the report or on the 21 rows it carries.",
+    "evidence": "check_map.py's clauses 1 and 3 do fire when falsified (I re-ran it on scratch copies: a dropped WDR-5 row exits 1 with \"clause 1: missing rows\", a table entry no row backs exits 1 with \"clause 3 ... claimed by 0 row(s)\", control PASS), yet the gate's own result was recorded beside a table it cannot see the omissions in.",
+    "fit": "the report's row vocabulary and backticked file:line anchors match the sibling reuse map's form, and check_map.py reads as the repository's own harness style, with one dead assignment at check_map.py:80 and a count in the prose (11 paths, 4 by three or more rows) not re-derivable from the row columns.",
+    "goal_fidelity": "the per-section naming is accurate and anchor-verified (reckon/crew/recovery.py:2232 classify_pointer, reckon/crew/routing.py:1262 _register_session_member, reckon/crew/refusals.py:18 DISPATCH_REFUSAL_REMEDIES all land where the rows say), but the closing table and the dispatchability note are the map's second product and they miss paths.",
+    "scope_discipline": "git -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/s19-reuse-map status --porcelain is empty at HEAD 2ad5cb1bb3fb00972d1b0c9d24bacab4b01eab65, so no tracked file was written, and the report sits at the one non-repository path the fence names."
+  },
+  "node": "review-of-s19-reuse-map",
+  "project": "reckon",
+  "raw_text": "REVISION: 2ad5cb1bb3fb00972d1b0c9d24bacab4b01eab65\nVERDICT goal: the goal is a reuse map naming, per implementable section of the five S19 plans, the existing symbols to extend and exclusive write paths; the report at ~/.config/reckon/crew/reports/s19-reuse-map.md carries 21 rows matching the required section set (I re-derived the section lists from docs/plans/*.html: worker-death-is-recorded \u00a75's six ordered items map to WDR-1..6 in order, TOL \u00a71-\u00a73, a-review-can-see-the-figure \u00a71-\u00a73, a-review-dies-where-nobody-is-looking \u00a73/\u00a75/\u00a76/\u00a77, scoring-should-stop-a-promotion \u00a72c/\u00a73/\u00a75c/\u00a76), and every one of the 62 file:line anchor occurrences (55 distinct) resolves in the reviewed worktree at 2ad5cb1b to the symbol the row names (spot-read: reckon/crew/recovery.py:246 is the literal \"--local\", dispatch.py:4163 is the \"if size: return\" that discards the exit status, node.py:30 is _TERMINAL_RUN_PHASES).\nVERDICT done_when: the measure's clauses are met except two, and the gate does not check either: rows present 21/21 and anchors resolving 29/29 are confirmed by me independently, but the closing table omits write paths claimed by two rows (reckon/crew/runs.py by WDR-1 and WDR-2, tests/test_member_registration_commits.py by WDR-4 and ARDWNIL-5) and undercounts a third, and the clause \"no tracked repository file is changed\" is true of the tree (git status --porcelain empty, HEAD 2ad5cb1b) yet no gate clause measures it.\nVERDICT write_paths: the declared fence is four paths \u2014 the report at ~/.config/reckon/crew/reports/s19-reuse-map.md, docs/evidence/archive/worker-death-is-recorded-landing.html, docs/figures/worker-death-is-recorded, docs/plans/worker-death-is-recorded.html; the report is at the first, and the three tracked paths are byte-identical to base, which is what the same done-when's \"no tracked repository file is changed\" clause requires.\nVERDICT manifest: read; status complete, commits \"none\" with the reason, tests naming check_map.py and its printed counts, test_logs naming map-gate.log and grep-evidence.log, negative_control_log \"none:\" with the reason, and a note recording that the gate's clause 3 fired on a first-draft shared-path claim that was a reader, not a writer; the landing record is staged untracked in the run directory, and its evidence_inputs asks the coordinator to splice it.\nVERDICT diff: there is no commit to read; git status --porcelain in /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/s19-reuse-map is empty at 2ad5cb1b, so the delivered change is the report file plus the run directory's gate, log and landing record, none of them tracked.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the per-section naming is accurate and anchor-verified (reckon/crew/recovery.py:2232 classify_pointer, reckon/crew/routing.py:1262 _register_session_member, reckon/crew/refusals.py:18 DISPATCH_REFUSAL_REMEDIES all land where the rows say), but the closing table and the dispatchability note are the map's second product and they miss paths.\nSCORE evidence: 12\nJUSTIFICATION evidence: check_map.py's clauses 1 and 3 do fire when falsified (I re-ran it on scratch copies: a dropped WDR-5 row exits 1 with \"clause 1: missing rows\", a table entry no row backs exits 1 with \"clause 3 ... claimed by 0 row(s)\", control PASS), yet the gate's own result was recorded beside a table it cannot see the omissions in.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git -C /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s19-20260922/s19-reuse-map status --porcelain is empty at HEAD 2ad5cb1bb3fb00972d1b0c9d24bacab4b01eab65, so no tracked file was written, and the report sits at the one non-repository path the fence names.\nSCORE durability: 10\nJUSTIFICATION durability: the only guard is check_map.py, which lives in the run directory and resolves anchors through the reviewed worktree path, so it stops running exactly when that worktree is reclaimed, and no repository test asserts on the report or on the 21 rows it carries.\nSCORE fit: 17\nJUSTIFICATION fit: the report's row vocabulary and backticked file:line anchors match the sibling reuse map's form, and check_map.py reads as the repository's own harness style, with one dead assignment at check_map.py:80 and a count in the prose (11 paths, 4 by three or more rows) not re-derivable from the row columns.\nFINDING ~/.config/reckon/crew/reports/s19-reuse-map.md:115 the closing table omits two write paths claimed by two rows each \u2014 reckon/crew/runs.py (WDR-1 and WDR-2, whose own dependency note at line 36 declares them independent, so a wave sized from this map puts two writers on one file and meets the collision as a mid-wave refusal, the outcome the table exists to prevent) and tests/test_member_registration_commits.py (WDR-4 and ARDWNIL-5).\nFINDING ~/.config/reckon/crew/reports/s19-reuse-map.md:118 the table lists reckon/crew/dispatch.py with 7 rows while 8 rows claim it in their write-path columns (WDR-6 is omitted); the \"7\" figure is carried into the landing record's evidence_inputs and would reach the plan as the sequencing figure.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T201221096806-s19-reuse-map/check_map.py:79 clause 4, \"no tracked repository file is changed by this node\", is a comment over a dead assignment (marked = sorted(anchors)); the file holds no git or subprocess call at all, so the done-when's last clause is unmeasured by the gate that its manifest records as the evidence.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T201221096806-s19-reuse-map/check_map.py:58 clause 3 counts a row-line mention anywhere in the row, not a claim in the write-path column, and runs in one direction only (listed entry must be claimed twice), so it passes on the live report while two correctly claimed paths are absent from the table it verifies.\nFINDING ~/.config/reckon/crew/reports/s19-reuse-map.md:101 the SSSAP-5c row names parse_review, store_review and read_review for a capability already present at the revision the map read \u2014 reckon/crew/review.py at 2ad5cb1b carries REVIEW_REVISION_KEY, carried_revision and REVISION_FIELDS \u2014 so the row needs the freshness pass its own \u00a73 row received, or a re-scope to the consumer side.\nFINDING ~/.config/reckon/crew/reports/s19-reuse-map.md:27 three of 21 rows carry no file:line anchor in their symbols column (WDR-6, TOL-3, ARCSTF-3) against the done-when's \"each row names at least one existing symbol as file:line verified by grep\"; 18 of 21 rows carry one, and the gate's clause 2 checks only the anchors that exist, so the per-row clause is unchecked.",
+  "review_run_id": "legacy-26839259636b",
+  "review_run_id_source": "derived",
+  "reviewed_revision": "2ad5cb1bb3fb00972d1b0c9d24bacab4b01eab65",
+  "reviewed_run_id": "r-20260922T201221096806-s19-reuse-map",
+  "scores": {
+    "durability": 10,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-22T21:59:56.296882+00:00",
+  "total": 73
+}

@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T12:31:55.318Z",
+  "dispatched_at": "2026-10-05T12:26:19Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:598",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a716's stated compatibility mechanism is insufficient for records written between \u00a714 and \u00a716, so the section must add the intermediate form or restate the coverage rule.",
+      "text": "`_fingerprint_forms` returns exactly `{plan_fingerprint(content), plan_fingerprint(content, legacy=True)}`; \u00a716 redefines the default `plan_fingerprint` to the digest of a sorted per-section set, so after \u00a716 a record stored under the current (post-landing-collapse) whole-document digest matches neither the new current form nor the pre-collapse legacy form and earns a fresh review \u2014 the re-review wave \u00a714's correction (eleven stored sidecars flipping) and \u00a716 itself exist to prevent; \u00a716 should retain the pre-\u00a716 current digest as an additional recognised form, or narrow its claim that \"a record stored before this change ... still satisfies the gate\"",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_views.py:2080",
+      "id": "duplicate_owner-1",
+      "reason": "the finding names the file to extend, and \u00a716 must cite and resolve the workspace/structure layer (hoist the enumerator into reckon/_store.py) rather than implying a new walker.",
+      "text": "`_authored_section_headings` already returns a plan's authored `(identity, heading)` pairs in document order, handling the h2-id and wrapper-id cases, which is the enumeration \u00a716's per-section walk needs; \u00a716 names only `reckon/_store.py`'s `_section_heading`/`landed_section_ids` (single-id extent and a landed-id set, neither of which enumerates), so the walk would become a third section segmenter beside _store.py and mcp_views.py",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:42",
+      "id": "interface_budget-1",
+      "reason": "\u00a72 is already landed at impl 0.6, so stating its interface accounting now edits documentation of shipped work rather than changing what is built; \u00a716, the pending node, already complies.",
+      "text": "\u00a72's own text adds a subsystem's surface \u2014 the review store module, the `crew review-plan` command with its options, the `plan-review` crew view and the `plan-review-missing` refusal family \u2014 and names none of it as retired, merged, or impossible to retire, the one rule \u00a73 itself imposes on sections; \u00a716 by contrast satisfies the rule in its own text",
+      "type": "interface_budget",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "11ca8c4c81ece9d0f8730008b4835709f347025bb18903395df2b6a37935f559",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 61,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T122601445991-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "2063692fd70ab2135d66c6014355f79f499ca0e7",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 reckon/crew/plan_review.py (994 lines) hides the record shape, the store, the version-keyed path, the fingerprint join and the response bookkeeping behind the public functions, and \u00a716 adds the per-section coverage question to that same owner rather than to a new module.",
+    "duplicate_owner": "a finding \u2014 \u00a716 proposes a per-section authored walk but cites no existing enumerator; `reckon/mcp_views.py:2080 _authored_section_headings` already enumerates a plan's authored sections in document order and should be the owner extended (or hoisted into reckon/_store.py) rather than a third walker accreting in plan_review.py.",
+    "interface_budget": "a finding \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 accounts for its own surface (one new public definition, no new refusal family), but \u00a72 adds the review store, the `crew review-plan` options (reckon/cli.py:2579), the `plan-review` MCP view (reckon/mcp.py:4301) and the `plan-review-missing` refusal family (reckon/cli.py:2119) with no in-text statement of what it retires or merges, or why nothing can be.",
+    "reuse_search": "pass \u2014 the plan cites the mechanisms it extends, naming the build skill's reuse-map rule (skills/reckon-build/SKILL.md:91) that \u00a73 turns into a review and the code-review reflex that \u00a72's store and \u00a716's fingerprint reuse (reckon/crew/recovery.py:520 `_review_dispatch_fields` dispatches both a run subject and a plan subject through one composer).",
+    "thin_wrapper": "a finding \u2014 \u00a716's compatibility story reuses `_fingerprint_forms` (reckon/crew/plan_review.py:598), which carries only two digests, so it cannot keep a record stored under the current pre-\u00a716 definition current once \u00a716 redefines the current digest."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.940643+00:00"
+}

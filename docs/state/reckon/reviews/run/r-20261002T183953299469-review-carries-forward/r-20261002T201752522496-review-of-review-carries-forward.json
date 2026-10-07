@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:dispatch_review_for_run",
+    "reckon/crew/recovery.py:dispatch_awaiting_reviews"
+  ],
+  "completed_at": "2026-10-02T20:29:29.242Z",
+  "dispatched_at": "2026-10-02T20:18:20Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T183953299469-review-carries-forward/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when clause that the recovery, obligations and review-reflex modules add no failure against the base is unmeasured, because baseline_suite names no log and the after_suite arm (delta.log) never reached a summary line, so the node's own measure is only partly evidenced."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 2a581fb4; cc17465e adds the recovery helpers and the five tests, 8b9b6800 adds the evidence fragment, both inside the declared scope.",
+    "done_when": "the done_when names three cases in tests/test_review_carries_forward.py, a recorded negative control, and no added failure in the recovery/obligations/review-reflex modules; gate.log records 5 passed at cc17465e and negative-control.log records EXIT=1, but the delta-module arm was never completed (delta.log carries no summary line).",
+    "goal": "the goal is to carry a stored review forward over data-only commits and re-review only runtime-source ones; reckon/crew/recovery.py:1339 carry_review_forward does exactly that, re-storing the record over a no-runtime-source move and returning a light review otherwise.",
+    "manifest": "read; it reports 5 passed for tests/test_review_carries_forward.py at cc17465e, names gate.log / negative-control.log / delta.log, and records the delta arm still running under follow_ons.",
+    "write_paths": "declared scope is reckon/crew/recovery.py, reckon/crew/obligations.py, tests/test_review_carries_forward.py and the evidence fragment/figure dirs; the diff touches recovery.py, the test file and the fragment, every one declared."
+  },
+  "justifications": {
+    "durability": "tests/test_review_carries_forward.py:245 is confirmed by the negative control to redden when the carried-forward write is removed, and tests/test_review_carries_forward.py:293 forces the shared classifier to show the verdict is not re-derived.",
+    "evidence": "tests/test_review_carries_forward.py:1 records 5 passed at cc17465e and the negative control is logged, but the done_when clause that the delta modules add no failure is unmeasured (manifest.md:14 names no base log).",
+    "fit": "the helpers at reckon/crew/recovery.py:1339 follow the module's existing naming and delegate classification to review_tiers.changes_runtime_source rather than a second predicate.",
+    "goal_fidelity": "reckon/crew/recovery.py:1339 lands carry-forward, light re-review, withdrawal and settle as the goal states, all reached through the shared selection.",
+    "scope_discipline": "every changed path in the diff is inside the declared write paths, and reckon/crew/recovery.py carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to carry a stored review forward over data-only commits and re-review only runtime-source ones; reckon/crew/recovery.py:1339 carry_review_forward does exactly that, re-storing the record over a no-runtime-source move and returning a light review otherwise.\nVERDICT done_when: the done_when names three cases in tests/test_review_carries_forward.py, a recorded negative control, and no added failure in the recovery/obligations/review-reflex modules; gate.log records 5 passed at cc17465e and negative-control.log records EXIT=1, but the delta-module arm was never completed (delta.log carries no summary line).\nVERDICT write_paths: declared scope is reckon/crew/recovery.py, reckon/crew/obligations.py, tests/test_review_carries_forward.py and the evidence fragment/figure dirs; the diff touches recovery.py, the test file and the fragment, every one declared.\nVERDICT manifest: read; it reports 5 passed for tests/test_review_carries_forward.py at cc17465e, names gate.log / negative-control.log / delta.log, and records the delta arm still running under follow_ons.\nVERDICT diff: read commit by commit against base 2a581fb4; cc17465e adds the recovery helpers and the five tests, 8b9b6800 adds the evidence fragment, both inside the declared scope.\nCALL_SITES: reckon/crew/recovery.py:dispatch_review_for_run, reckon/crew/recovery.py:dispatch_awaiting_reviews\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:1339 lands carry-forward, light re-review, withdrawal and settle as the goal states, all reached through the shared selection.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_review_carries_forward.py:1 records 5 passed at cc17465e and the negative control is logged, but the done_when clause that the delta modules add no failure is unmeasured (manifest.md:14 names no base log).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path in the diff is inside the declared write paths, and reckon/crew/recovery.py carries nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_carries_forward.py:245 is confirmed by the negative control to redden when the carried-forward write is removed, and tests/test_review_carries_forward.py:293 forces the shared classifier to show the verdict is not re-derived.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers at reckon/crew/recovery.py:1339 follow the module's existing naming and delegate classification to review_tiers.changes_runtime_source rather than a second predicate.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T183953299469-review-carries-forward/manifest.md:14 follow-on: the done_when clause that the recovery, obligations and review-reflex modules add no failure against the base is unmeasured, because baseline_suite names no log and the after_suite arm (delta.log) never reached a summary line, so the node's own measure is only partly evidenced.",
+  "review_run_id": "r-20261002T201752522496-review-of-review-carries-forward",
+  "reviewed_base_sha": "2a581fb443537002de44c581f544abc78fac9d3e",
+  "reviewed_head_sha": "8b9b68003621bc7c7f173ae69e04345b781ef22a",
+  "reviewed_run_id": "r-20261002T183953299469-review-carries-forward",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T20:26:37.859829+00:00",
+  "total": 87
+}

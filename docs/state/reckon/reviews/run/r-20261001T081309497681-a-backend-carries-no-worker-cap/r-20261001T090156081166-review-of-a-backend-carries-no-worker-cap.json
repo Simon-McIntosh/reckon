@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/summary.py:483",
+    "reckon/crew/dispatch.py:634"
+  ],
+  "completed_at": "2026-10-01T09:09:15.073Z",
+  "dispatched_at": "2026-10-01T09:02:26Z",
+  "findings": [
+    {
+      "file": "reckon/_flight_schema.py",
+      "line": "282",
+      "severity": "follow-on",
+      "text": "follow-on: the max_concurrent_runs field description still says dispatch counts non-terminal pointers and refuses a dispatch past the ceiling, which the landed change makes false; the file is outside the node's declared write paths."
+    },
+    {
+      "file": "reckon/schema/flight.yaml",
+      "line": "485",
+      "severity": "follow-on",
+      "text": "follow-on: the key's published description mirrors the same now-false enforcement claim, so the flight schema documents a cap dispatch no longer applies."
+    },
+    {
+      "file": "reckon/crew/summary.py",
+      "line": "278",
+      "severity": "follow-on",
+      "text": "follow-on: roster_bound's backend and occupancy parameters are no longer read by the retired entry, leaving two dead arguments its callers still supply."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 531027092; 208cc43d3 turns the roster bound into a retired entry, drops the roster refusal branch, rewrites the bound comments, updates three test files and adds one, and 11a32aa4f adds only the evidence fragment.",
+    "done_when": "the done-when names tests/test_backend_carries_no_worker_cap.py with a stub backend declaring max_concurrent_runs: 2, three non-terminal pointers and a fourth dispatch admitted, a retired summary entry, and a spent 2-core reservation still refused; the file drives all three and the manifest records base and head each 14 failed at -n 8 with zero added ids.",
+    "goal": "the node's goal is to retire the max_concurrent_runs roster cap from dispatch while the partition-cores and login-memory bounds stay enforced; reckon/crew/summary.py:284-302 reports the roster entry retired and reckon/crew/dispatch.py:640-653 refuses only on summary.binding_bound, so the cap no longer refuses.",
+    "manifest": "read; it states head 14 failed/1579 passed/2 skipped EXIT=1 at 208cc43d3, the base arm the same 14 ids EXIT=1, a logged negative control EXIT=1, commits 208cc43d3 and 11a32aa4f, base revision 531027092, and names gate_head.log, gate_base.log, gate_head_candidates.log and negative-control.log.",
+    "write_paths": "read the manifest's declared paths; every path in the diff (reckon/crew/dispatch.py, reckon/crew/summary.py, tests/test_backend_carries_no_worker_cap.py, tests/test_crew_binding_bound.py, tests/test_concurrency_bound_refuses_by_name.py, tests/test_lane_concurrency_ceiling.py, docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-backend-carries-no-worker-cap.html) is inside them."
+  },
+  "justifications": {
+    "durability": "negative-control.log reddens all three new cases with EXIT=1 when the roster enforcement is restored in summary.py, so tests/test_backend_carries_no_worker_cap.py fails if the change regresses, though two pre-existing ceiling tests became vacuous.",
+    "evidence": "gate_head.log and gate_base.log each end \"14 failed, 1579 passed, 2 skipped\" with byte-identical failing-id sets (base_fail.txt and head_fail.txt), so the run adds no failing id, and negative-control.log ends EXIT=1 with the fourth dispatch refused under restored enforcement.",
+    "fit": "the retired entry follows the Bound idiom and the docstrings state the mechanism, but reckon/crew/summary.py:278 leaves roster_bound's backend and occupancy parameters unread.",
+    "goal_fidelity": "reckon/crew/summary.py:284-302 returns the roster entry as value \"retired\" with utilisation None and admits_one_more True, and reckon/crew/dispatch.py:640-653 refuses only on summary.binding_bound, so max_concurrent_runs no longer refuses any dispatch.",
+    "scope_discipline": "the seven changed paths are all inside the manifest's declared write paths, and no bound other than the roster is altered."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to retire the max_concurrent_runs roster cap from dispatch while the partition-cores and login-memory bounds stay enforced; reckon/crew/summary.py:284-302 reports the roster entry retired and reckon/crew/dispatch.py:640-653 refuses only on summary.binding_bound, so the cap no longer refuses.\nVERDICT done_when: the done-when names tests/test_backend_carries_no_worker_cap.py with a stub backend declaring max_concurrent_runs: 2, three non-terminal pointers and a fourth dispatch admitted, a retired summary entry, and a spent 2-core reservation still refused; the file drives all three and the manifest records base and head each 14 failed at -n 8 with zero added ids.\nVERDICT write_paths: read the manifest's declared paths; every path in the diff (reckon/crew/dispatch.py, reckon/crew/summary.py, tests/test_backend_carries_no_worker_cap.py, tests/test_crew_binding_bound.py, tests/test_concurrency_bound_refuses_by_name.py, tests/test_lane_concurrency_ceiling.py, docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-backend-carries-no-worker-cap.html) is inside them.\nVERDICT manifest: read; it states head 14 failed/1579 passed/2 skipped EXIT=1 at 208cc43d3, the base arm the same 14 ids EXIT=1, a logged negative control EXIT=1, commits 208cc43d3 and 11a32aa4f, base revision 531027092, and names gate_head.log, gate_base.log, gate_head_candidates.log and negative-control.log.\nVERDICT diff: read commit by commit against base 531027092; 208cc43d3 turns the roster bound into a retired entry, drops the roster refusal branch, rewrites the bound comments, updates three test files and adds one, and 11a32aa4f adds only the evidence fragment.\nCALL_SITES: reckon/crew/summary.py:483, reckon/crew/dispatch.py:634\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/summary.py:284-302 returns the roster entry as value \"retired\" with utilisation None and admits_one_more True, and reckon/crew/dispatch.py:640-653 refuses only on summary.binding_bound, so max_concurrent_runs no longer refuses any dispatch.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate_head.log and gate_base.log each end \"14 failed, 1579 passed, 2 skipped\" with byte-identical failing-id sets (base_fail.txt and head_fail.txt), so the run adds no failing id, and negative-control.log ends EXIT=1 with the fourth dispatch refused under restored enforcement.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the seven changed paths are all inside the manifest's declared write paths, and no bound other than the roster is altered.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log reddens all three new cases with EXIT=1 when the roster enforcement is restored in summary.py, so tests/test_backend_carries_no_worker_cap.py fails if the change regresses, though two pre-existing ceiling tests became vacuous.\nSCORE fit: 18\nJUSTIFICATION fit: the retired entry follows the Bound idiom and the docstrings state the mechanism, but reckon/crew/summary.py:278 leaves roster_bound's backend and occupancy parameters unread.\nFINDING reckon/_flight_schema.py:282 follow-on: the max_concurrent_runs field description still says dispatch counts non-terminal pointers and refuses a dispatch past the ceiling, which the landed change makes false; the file is outside the node's declared write paths.\nFINDING reckon/schema/flight.yaml:485 follow-on: the key's published description mirrors the same now-false enforcement claim, so the flight schema documents a cap dispatch no longer applies.\nFINDING reckon/crew/summary.py:278 follow-on: roster_bound's backend and occupancy parameters are no longer read by the retired entry, leaving two dead arguments its callers still supply.",
+  "review_run_id": "r-20261001T090156081166-review-of-a-backend-carries-no-worker-cap",
+  "reviewed_base_sha": "531027092cec6e94ef32f4ab83a4c84eb3f7b1c5",
+  "reviewed_head_sha": "11a32aa4f19162373e056878c1990014c9bdee7c",
+  "reviewed_run_id": "r-20261001T081309497681-a-backend-carries-no-worker-cap",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T09:08:15.375166+00:00",
+  "total": 96
+}

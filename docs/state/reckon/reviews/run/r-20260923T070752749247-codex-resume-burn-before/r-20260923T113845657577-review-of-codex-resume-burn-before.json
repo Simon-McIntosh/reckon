@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T11:38:45.657577+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T070752749247-codex-resume-burn-before/census.py",
+      "line": "115",
+      "text": "the classifier assigns cross-task whenever the session's prior task belonged to a different run id ('same-run' if prior == rid else 'cross-task'), and prior is always the previous run id, so same-run is unreachable except for a duplicated run id; task identity is never compared, so same_run: 0 is an artifact of the classifier rather than a measurement, and a same-task resume would be counted as cross-task, inverting the distinction plan \u00a76 depends on."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T070752749247-codex-resume-burn-before/census.py",
+      "line": "162",
+      "text": "the positive control is selected as the cross-task row with the largest first value above the median (cand.sort(key=first, reverse=True); pos = cand[0]), so it is the parser's own maximum and cannot fail the falsifier it is meant to answer; positive_control.argv_evidence is null, so the control is not independently known to have resumed and the done-when's falsifier is unmet as written."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit eb8db19a against base 1746242009; docs-only, four files, all inside the declared scope; the data artifact parses and its arithmetic reproduces (inherited sum 172,082,502 exactly; fresh median 40,997).",
+    "done_when": "the done_when requires the positive control be a run \"whose argv carries a resume\"; the node's own manifest (blockers) and the data's argv_note record that no codex run's durable argv carries the token, and positive_control.argv_evidence is null, so the named falsifier is unmet as written; the SLURM scan, the parse, and a same-parser non-zero control are present.",
+    "goal": "the node goal is to state in tokens what codex runs spent carrying another task's session; the landed record states 172,082,502 inherited input tokens over 1,358 resumed runs. The \"another task's\" attribution rests on the plan's premise that a member-keyed resume was cross-task, not on a task-ject comparison, but the figure itself is computed and stated.",
+    "manifest": "read; it reports status complete, one commit eb8db19a, a docs-only change, no suite, and its own blocker naming the unsatisfiable argv clause, which is the honest account.",
+    "write_paths": "the manifest declares four write paths; git diff --stat 1746242009 eb8db19a lists exactly those four files and nothing outside the fence."
+  },
+  "justifications": {
+    "durability": "no test guards the census parser, and its same-run branch at census.py:115 is unreachable, so nothing would fail if the classifier regressed.",
+    "evidence": "census-all_debug.log records one compute-node srun and the data reproduces, but the falsifier \"known from its argv\" is unmet (positive_control.argv_evidence is null at docs/research/data/codex-resume-burn.json) and the control is the parser's own maximum.",
+    "fit": "the plan and archive follow the repo's landed-note idiom with project-absolute figure src /reckon/figures/new-work-gets-a-new-worker/first-request-input.png, and the JSON keys carry no plan labels.",
+    "goal_fidelity": "docs/research/data/codex-resume-burn.json states inherited_tokens_total 172,082,502 for 1,358 runs, which is the goal's figure, though the cross-task attribution is the plan's premise rather than a task-identity comparison.",
+    "scope_discipline": "git diff --stat 17462420091dc96f1b4273d2f9ce040ce90f1b07 eb8db19a lists exactly the four manifest write paths and no file outside the fence."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to state in tokens what codex runs spent carrying another task's session; the landed record states 172,082,502 inherited input tokens over 1,358 resumed runs. The \"another task's\" attribution rests on the plan's premise that a member-keyed resume was cross-task, not on a task-ject comparison, but the figure itself is computed and stated.\nVERDICT done_when: the done_when requires the positive control be a run \"whose argv carries a resume\"; the node's own manifest (blockers) and the data's argv_note record that no codex run's durable argv carries the token, and positive_control.argv_evidence is null, so the named falsifier is unmet as written; the SLURM scan, the parse, and a same-parser non-zero control are present.\nVERDICT write_paths: the manifest declares four write paths; git diff --stat 1746242009 eb8db19a lists exactly those four files and nothing outside the fence.\nVERDICT manifest: read; it reports status complete, one commit eb8db19a, a docs-only change, no suite, and its own blocker naming the unsatisfiable argv clause, which is the honest account.\nVERDICT diff: read commit eb8db19a against base 1746242009; docs-only, four files, all inside the declared scope; the data artifact parses and its arithmetic reproduces (inherited sum 172,082,502 exactly; fresh median 40,997).\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/research/data/codex-resume-burn.json states inherited_tokens_total 172,082,502 for 1,358 runs, which is the goal's figure, though the cross-task attribution is the plan's premise rather than a task-identity comparison.\nSCORE evidence: 12\nJUSTIFICATION evidence: census-all_debug.log records one compute-node srun and the data reproduces, but the falsifier \"known from its argv\" is unmet (positive_control.argv_evidence is null at docs/research/data/codex-resume-burn.json) and the control is the parser's own maximum.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 17462420091dc96f1b4273d2f9ce040ce90f1b07 eb8db19a lists exactly the four manifest write paths and no file outside the fence.\nSCORE durability: 8\nJUSTIFICATION durability: no test guards the census parser, and its same-run branch at census.py:115 is unreachable, so nothing would fail if the classifier regressed.\nSCORE fit: 17\nJUSTIFICATION fit: the plan and archive follow the repo's landed-note idiom with project-absolute figure src /reckon/figures/new-work-gets-a-new-worker/first-request-input.png, and the JSON keys carry no plan labels.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T070752749247-codex-resume-burn-before/census.py:115 the classifier assigns cross-task whenever the session's prior task belonged to a different run id ('same-run' if prior == rid else 'cross-task'), and prior is always the previous run id, so same-run is unreachable except for a duplicated run id; task identity is never compared, so same_run: 0 is an artifact of the classifier rather than a measurement, and a same-task resume would be counted as cross-task, inverting the distinction plan \u00a76 depends on.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T070752749247-codex-resume-burn-before/census.py:162 the positive control is selected as the cross-task row with the largest first value above the median (cand.sort(key=first, reverse=True); pos = cand[0]), so it is the parser's own maximum and cannot fail the falsifier it is meant to answer; positive_control.argv_evidence is null, so the control is not independently known to have resumed and the done-when's falsifier is unmet as written.",
+  "review_run_id": "r-20260923T113845657577-review-of-codex-resume-burn-before",
+  "reviewed_base": "17462420091dc96f1b4273d2f9ce040ce90f1b07",
+  "reviewed_base_sha": "17462420091dc96f1b4273d2f9ce040ce90f1b07",
+  "reviewed_commit": "eb8db19a0fc8df3936f4605eecee04bff21101bb",
+  "reviewed_head_sha": "eb8db19a0fc8df3936f4605eecee04bff21101bb",
+  "reviewed_run_id": "r-20260923T070752749247-codex-resume-burn-before",
+  "reviewer_run_id": "r-20260923T113845657577-review-of-codex-resume-burn-before",
+  "scores": {
+    "durability": 8,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T11:58:52.672771+00:00",
+  "total": 74
+}

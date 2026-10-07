@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9e5081bb32085947e24a8b17921c94c7935e32df",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5320",
+    "reckon/crew/dispatch.py:5328",
+    "reckon/cli.py:1869"
+  ],
+  "completed_at": "2026-10-03T07:34:12.250Z",
+  "dispatched_at": "2026-10-03T07:24:34Z",
+  "findings": [
+    {
+      "file": "logs/head-arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's revision header reads 9e5081bb3 (the base) rather than the landed 8483293d0, because the arm ran against the worktree before the commit existed, so the reviewed run's base_log_revision and head_log_revision both name the base and the after_suite object's revision (9e5081bb3) does not identify the promoted commit; the module path on the same header (the worktree) and the manifest's commit sha are what tie the arm to the change, and my independent rerun of the test file at 8483293d0 (logs/head-review.log, 3 passed) confirms the arm measured the landed code."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2387",
+      "severity": "follow-on",
+      "text": "follow-on: the filter drops a pair when either side is a granted landing path, so a live claim on an ancestor directory of the node's landing topic \u2014 a peer holding docs/figures while the node holds docs/figures/<plan> \u2014 is excluded from the directory-claim judgement at dispatch.py:5336 and admitted, where at base _live_conflict_is_a_directory_claim (dispatch.py:2343) returned True for that row and the dispatch was refused; I confirmed the flip by importing each tree's module (logs/ancestor-probe.log: base judgement True, head outside_granted_landing False), so the fragment's \"the refusal is unchanged\" does not hold for an ancestor-directory claim, which no case in the test file exercises."
+    }
+  ],
+  "head_log_revision": "9e5081bb32085947e24a8b17921c94c7935e32df",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 8483293d0 against base 9e5081bb3 commit by commit; it renames _candidate_scope_entries to _resolved_node_scope_entries (dispatch.py:2120) and rebuilds the filter on top, adds _granted_landing_paths (dispatch.py:2145) and _live_conflict_outside_granted_landing (dispatch.py:2367), and rewires _live_conflict_rows (dispatch.py:2241) and the plan_dispatch directory-row filter (dispatch.py:5320-5340), all inside the declared scope.",
+    "done_when": "the done-when names tests/test_granted_path_is_a_claim.py with three cases and a base failure; I independently reproduced base 9e5081bb3 at 1 failed (test_a_granted_landing_collision_is_reported) and 2 passed, and head 8483293d0 at 3 passed from the reviewed tree (logs/base-review.log, logs/head-review.log), matching the manifest's xdist arms of 1 failed 230 passed and 231 passed.",
+    "goal": "the node goal asks that a path the dispatcher grants be compared against live claims like a caller-named path; reckon/crew/dispatch.py:2241 _live_conflict_rows now falls through to the overlap comparison for a granted landing path the node itself holds instead of skipping it, and tests/test_granted_path_is_a_claim.py:163 shows a granted three-path collision reported with both runs named.",
+    "manifest": "read; it records the base arm at 1 failed 230 passed exit 1, the head arm at 231 passed exit 0 with no added failure id, the declared mutation red (1 failed, 2 passed), zero ruff delta, and completed baseline_suite/after_suite objects with a revision header on each gate log.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py, tests/test_granted_path_is_a_claim.py, docs/evidence/fragments/crew-runtime-positive-controls/granted-path-is-a-claim.html and the figures topic; commit 8483293d0 touches exactly the first three (git show --stat) and the reviewed worktree at 8483293d0 is clean."
+  },
+  "justifications": {
+    "durability": "tests/test_granted_path_is_a_claim.py:169 reddens under the declared mutation landing=set() (logs/negative-control.log, 1 failed/2 passed), and its assertions compare the dry-run payload against the test's own SHARED constants rather than a value the code under test supplied.",
+    "evidence": "the manifest's records and my independent reruns agree \u2014 logs/base-review.log and logs/head-review.log reproduce 1 failed/2 passed then 3 passed at the two revisions \u2014 but the head log's revision header names the base (9e5081bb3) not the landed commit, and the done-when's \"and in conflicts\" half is unasserted because the dry-run payload emits only live_conflicts (dispatch.py:3350).",
+    "fit": "the new helpers at dispatch.py:2120-2394 follow the module's underscore-private, one-docstring-per-helper idiom beside _shared_landing_paths (dispatch.py:1903) and introduce no name the repository naming rules forbid.",
+    "goal_fidelity": "dispatch.py:2261 now skips a landing claim only when the node does not itself hold it and reports it otherwise, so a granted collision reads like a caller-named one, which tests/test_granted_path_is_a_claim.py:169 asserts through the real dry-run payload.",
+    "scope_discipline": "git show --stat for 8483293d0 lists only reckon/crew/dispatch.py, tests/test_granted_path_is_a_claim.py and the evidence fragment, all within the manifest's declared paths, and the worktree is clean."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal asks that a path the dispatcher grants be compared against live claims like a caller-named path; reckon/crew/dispatch.py:2241 _live_conflict_rows now falls through to the overlap comparison for a granted landing path the node itself holds instead of skipping it, and tests/test_granted_path_is_a_claim.py:163 shows a granted three-path collision reported with both runs named.\nVERDICT done_when: the done-when names tests/test_granted_path_is_a_claim.py with three cases and a base failure; I independently reproduced base 9e5081bb3 at 1 failed (test_a_granted_landing_collision_is_reported) and 2 passed, and head 8483293d0 at 3 passed from the reviewed tree (logs/base-review.log, logs/head-review.log), matching the manifest's xdist arms of 1 failed 230 passed and 231 passed.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, tests/test_granted_path_is_a_claim.py, docs/evidence/fragments/crew-runtime-positive-controls/granted-path-is-a-claim.html and the figures topic; commit 8483293d0 touches exactly the first three (git show --stat) and the reviewed worktree at 8483293d0 is clean.\nVERDICT manifest: read; it records the base arm at 1 failed 230 passed exit 1, the head arm at 231 passed exit 0 with no added failure id, the declared mutation red (1 failed, 2 passed), zero ruff delta, and completed baseline_suite/after_suite objects with a revision header on each gate log.\nVERDICT diff: read commit 8483293d0 against base 9e5081bb3 commit by commit; it renames _candidate_scope_entries to _resolved_node_scope_entries (dispatch.py:2120) and rebuilds the filter on top, adds _granted_landing_paths (dispatch.py:2145) and _live_conflict_outside_granted_landing (dispatch.py:2367), and rewires _live_conflict_rows (dispatch.py:2241) and the plan_dispatch directory-row filter (dispatch.py:5320-5340), all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:5320, reckon/crew/dispatch.py:5328, reckon/cli.py:1869\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: dispatch.py:2261 now skips a landing claim only when the node does not itself hold it and reports it otherwise, so a granted collision reads like a caller-named one, which tests/test_granted_path_is_a_claim.py:169 asserts through the real dry-run payload.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's records and my independent reruns agree \u2014 logs/base-review.log and logs/head-review.log reproduce 1 failed/2 passed then 3 passed at the two revisions \u2014 but the head log's revision header names the base (9e5081bb3) not the landed commit, and the done-when's \"and in conflicts\" half is unasserted because the dry-run payload emits only live_conflicts (dispatch.py:3350).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat for 8483293d0 lists only reckon/crew/dispatch.py, tests/test_granted_path_is_a_claim.py and the evidence fragment, all within the manifest's declared paths, and the worktree is clean.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_granted_path_is_a_claim.py:169 reddens under the declared mutation landing=set() (logs/negative-control.log, 1 failed/2 passed), and its assertions compare the dry-run payload against the test's own SHARED constants rather than a value the code under test supplied.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers at dispatch.py:2120-2394 follow the module's underscore-private, one-docstring-per-helper idiom beside _shared_landing_paths (dispatch.py:1903) and introduce no name the repository naming rules forbid.\nFINDING logs/head-arm.log:1 follow-on: the head arm's revision header reads 9e5081bb3 (the base) rather than the landed 8483293d0, because the arm ran against the worktree before the commit existed, so the reviewed run's base_log_revision and head_log_revision both name the base and the after_suite object's revision (9e5081bb3) does not identify the promoted commit; the module path on the same header (the worktree) and the manifest's commit sha are what tie the arm to the change, and my independent rerun of the test file at 8483293d0 (logs/head-review.log, 3 passed) confirms the arm measured the landed code.\nFINDING reckon/crew/dispatch.py:2387 follow-on: the filter drops a pair when either side is a granted landing path, so a live claim on an ancestor directory of the node's landing topic \u2014 a peer holding docs/figures while the node holds docs/figures/<plan> \u2014 is excluded from the directory-claim judgement at dispatch.py:5336 and admitted, where at base _live_conflict_is_a_directory_claim (dispatch.py:2343) returned True for that row and the dispatch was refused; I confirmed the flip by importing each tree's module (logs/ancestor-probe.log: base judgement True, head outside_granted_landing False), so the fragment's \"the refusal is unchanged\" does not hold for an ancestor-directory claim, which no case in the test file exercises.\nreviewed_base_sha: 9e5081bb32085947e24a8b17921c94c7935e32df\nreviewed_head_sha: 8483293d05338a26f638a58fdb01d1c5d1bfc1ba",
+  "review_run_id": "r-20261003T072400872556-review-of-granted-path-is-a-claim",
+  "reviewed_base_sha": "9e5081bb32085947e24a8b17921c94c7935e32df",
+  "reviewed_head_sha": "8483293d05338a26f638a58fdb01d1c5d1bfc1ba",
+  "reviewed_run_id": "r-20261003T063655507273-granted-path-is-a-claim",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:07.134110+00:00",
+  "total": 91
+}

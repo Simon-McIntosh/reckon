@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_producer_holds_a_lease.py::test_a_renewed_producer_outlives_three_lease_intervals"
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery.py:_scoped_watch_event",
+    "reckon/crew/recovery.py:watch_ticker",
+    "reckon/cli.py:_needs_you_runs",
+    "reckon/crew/runs.py:_watch_stream_snapshots"
+  ],
+  "completed_at": "2026-10-02T18:03:08.983Z",
+  "dispatched_at": "2026-10-02T17:25:38Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-ends-with-its-owner/an-unchanged-run-costs-one-stat.html",
+      "line": "29",
+      "severity": "blocking",
+      "text": "blocking: the fragment records head c9f6c1fd0 as 451 passed / EXIT=0 with zero added failures, but the head_arm.log the manifest's after_suite names carries revision 34b85d753 and '1 failed, 450 passed' / EXIT=1 (tests/test_producer_holds_a_lease.py::test_a_renewed_producer_outlives_three_lease_intervals); the recorded gate result does not reconcile with the log it cites, so the run's own evidence does not show the zero-added-failure measure its done-when requires."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "7945",
+      "severity": "follow-on",
+      "text": "follow-on: the snapshot reuse key omits the review-store identities and the worktree head that recovery.py:5882 _classification_inputs already includes for the same classification, while the snapshot's classification depends on the stored review (recovery.py:6368) and on _classification_inputs' git-head token, so a review landing on a watched run, or a review tree head moving, with the four files unchanged serves a stale classification until another keyed file moves."
+    },
+    {
+      "file": "tests/test_an_unchanged_run_costs_one_stat.py",
+      "line": "254",
+      "severity": "follow-on",
+      "text": "follow-on: the reuse-versus-whole-recompute equivalence assertion compares only (run_id, state, classification), so a regression that diverged between the two paths in detail, next_action or quiet_seconds would pass the test that exists to show the reuse path cannot disagree with the full-recompute path."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit \u2014 e1e700399 (per-run snapshot cache, stat key, refresh, pure stall helper), c9f6c1fd0 (fresh-liveness gate, promotion ledger row in the key; garbled subject and stray body text), 34b85d753 (evidence fragment), all inside scope.",
+    "done_when": "the done-when names tests/test_an_unchanged_run_costs_one_stat.py driving the snapshot path over unchanged runs asserting no opens; the manifest's after_suite log (head_arm.log) is red, so the zero-added-failure limb is not shown.",
+    "goal": "the goal is a producer poll over an unchanged run reusing its snapshot after one stat per file; reckon/crew/recovery.py:8194 _watch_snapshot serves the cache via the key at recovery.py:7945 and the refresh at recovery.py:8036.",
+    "manifest": "read; it states the arms and the negative control, but its after_suite block (revision c9f6c1fd0, exit_status 0, failure_count 0) does not reconcile with the head_arm.log it names (revision 34b85d753, EXIT=1, 1 failed).",
+    "write_paths": "the diff d2df6df9d..34b85d753 changes exactly reckon/crew/recovery.py, tests/test_an_unchanged_run_costs_one_stat.py and the evidence fragment, all inside the manifest's declared paths and no file outside them."
+  },
+  "justifications": {
+    "durability": "the cumulative stall reading is a pure helper shared by the fresh and reused paths and the negative control (negative_control.log, revision c9f6c1fd0) reddens the no-open assertion (opens 3, EXIT=1); docked because tests/test_an_unchanged_run_costs_one_stat.py:254 compares only (run_id, state, classification) and no test guards a review-store or worktree-head change to the reuse key.",
+    "evidence": "the base arm log base_arm.log (revision d2df6df9d) reads 446 passed / EXIT=0 and the head arm log head_arm.log reads revision 34b85d753 and '1 failed, 450 passed' / EXIT=1, so the recorded after_suite result contradicts the log it cites.",
+    "fit": "the helpers _snapshot_stat_key, _remember_snapshot, _fresh_liveness, _refresh_snapshot and _stall_reading are mechanism-named and mirror the module's _classification_inputs memo idiom; docked for the garbled commit subject of c9f6c1fd0 and the missing trailing newline in tests/test_an_unchanged_run_costs_one_stat.py.",
+    "goal_fidelity": "reckon/crew/recovery.py:7945 keys reuse on the pointer, manifest, stream, exit record, run directory and promotion ledger row and recovery.py:8036 recomputes only the silence from the poll's own moment; docked because the key omits the review store and worktree head that recovery.py:5882 _classification_inputs carries and the row depends on.",
+    "scope_discipline": "every path in the diff over d2df6df9d..34b85d753 is inside the manifest's declared write paths and the unnamed docs/figures path was correctly left empty."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a producer poll over a run whose files are unchanged that reuses its previous snapshot after one stat per file; reckon/crew/recovery.py:8194 _watch_snapshot serves the cached snapshot via the stat key at recovery.py:7945 and the refresh at recovery.py:8036.\nVERDICT done_when: the done-when names tests/test_an_unchanged_run_costs_one_stat.py driving the snapshot path over unchanged runs asserting no opens and a stat per file, plus a recompute on a manifest rewrite, a stream append and an exit record, plus base/head arms with zero added failures; the arms are recorded, but the after_suite log the manifest names (head_arm.log) is red, so the zero-added-failure limb is not shown.\nVERDICT write_paths: the manifest declares reckon/crew/recovery.py, tests/test_an_unchanged_run_costs_one_stat.py, the evidence fragment and a figures directory; the diff over d2df6df9d..34b85d753 changes exactly the first three, all inside scope.\nVERDICT manifest: read; it states the arms and the negative control, but its after_suite block (revision c9f6c1fd0, exit_status 0, failure_count 0, 451 passed) does not reconcile with the head_arm.log it names (revision 34b85d753, 1 failed / 450 passed, EXIT=1).\nVERDICT diff: read commit by commit \u2014 e1e700399 (per-run snapshot cache, stat key, refresh, pure stall helper), c9f6c1fd0 (fresh-liveness gate, promotion ledger row in the key; garbled subject and stray body text), 34b85d753 (evidence fragment), all inside scope.\nCALL_SITES: reckon/crew/recovery.py:_scoped_watch_event, reckon/crew/recovery.py:watch_ticker, reckon/cli.py:_needs_you_runs, reckon/crew/runs.py:_watch_stream_snapshots\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:7945 keys reuse on the pointer, manifest, stream, exit record, run directory and promotion ledger row and recovery.py:8036 recomputes only the silence from the poll's moment, which is the stated mechanism; docked because the key omits the review store and the worktree head that recovery.py:5882 _classification_inputs carries and that classify_pointer's row (recovery.py:6368) depends on.\nSCORE evidence: 8\nJUSTIFICATION evidence: the base arm log (base_arm.log, revision d2df6df9d) is 446 passed / EXIT=0, but the head arm log the manifest's after_suite names (head_arm.log) reads revision 34b85d753 and '1 failed, 450 passed' / EXIT=1, so the recorded head result is contradicted by the log it cites and the done-when's zero-added-failure measure is unmet on the log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff d2df6df9d..34b85d753 touches only reckon/crew/recovery.py, tests/test_an_unchanged_run_costs_one_stat.py and the evidence fragment, all inside the manifest's declared write paths, and the docs/figures path the done-when does not name was correctly left empty.\nSCORE durability: 13\nJUSTIFICATION durability: the negative control (negative_control.log, revision c9f6c1fd0) disables reuse and reddens test_an_unchanged_poll_opens_no_file_and_stats_each (opens 3, EXIT=1), so the no-open assertion is a real guard, and the fresh-liveness gate is exercised by the lease tests; docked because tests/test_an_unchanged_run_costs_one_stat.py:254 compares only (run_id, state, classification) between the reuse and whole-recompute arms and no test guards a review-store or worktree-head change to the reuse key.\nSCORE fit: 15\nJUSTIFICATION fit: the new helpers _snapshot_stat_key, _remember_snapshot, _fresh_liveness, _refresh_snapshot and _stall_reading are mechanism-named and mirror the module's existing _classification_inputs memo idiom at recovery.py:5882; docked for the garbled subject of c9f6c1fd0 ('is not the art') and its stray body text, and for tests/test_an_unchanged_run_costs_one_stat.py having no trailing newline.\nFINDING docs/evidence/fragments/a-crew-process-ends-with-its-owner/an-unchanged-run-costs-one-stat.html:29 blocking: the fragment records head c9f6c1fd0 as 451 passed / EXIT=0 with zero added failures, but the head_arm.log the manifest's after_suite names carries revision 34b85d753 and '1 failed, 450 passed' / EXIT=1 (tests/test_producer_holds_a_lease.py::test_a_renewed_producer_outlives_three_lease_intervals); the recorded gate result does not reconcile with the log it cites, so the run's own evidence does not show the zero-added-failure measure its done-when requires.\nFINDING reckon/crew/recovery.py:7945 follow-on: the snapshot reuse key omits the review-store identities and the worktree head that recovery.py:5882 _classification_inputs already includes for the same classification, while the snapshot's classification depends on the stored review (recovery.py:6368) and on _review_tree(record)'s head, so a review landing on a watched run, or a worktree head move, with the four files unchanged serves a stale classification until another keyed file moves.\nFINDING tests/test_an_unchanged_run_costs_one_stat.py:254 follow-on: the reuse-versus-whole-recompute equivalence assertion compares only (run_id, state, classification), so a regression that diverged between the two paths in detail, next_action or quiet_seconds would pass the test that exists to show the reuse path cannot disagree with a fresh one.\n",
+  "review_run_id": "r-20261002T172508292671-review-of-an-unchanged-run-costs-one-stat",
+  "reviewed_base_sha": "d2df6df9d4a68a75d1a8102bfc3468621788d86c",
+  "reviewed_head_sha": "34b85d75381cd7b47de5d736ae73399877bfc512",
+  "reviewed_run_id": "r-20261002T140705119158-an-unchanged-run-costs-one-stat",
+  "scores": {
+    "durability": 13,
+    "evidence": 8,
+    "fit": 15,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T17:50:30.541416+00:00",
+  "total": 72
+}

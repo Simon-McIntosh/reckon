@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T00:25:04.864Z",
+  "dispatched_at": "2026-10-03T00:13:33Z",
+  "findings": [
+    {
+      "file": "docs/research/scripts/scan_local_lane_deaths.py",
+      "line": "524",
+      "severity": "follow-on",
+      "text": "follow-on: the added within-window rate line is not ruff-formatted (ruff format --check would rewrap it); the manifest discloses this and defers the reformat because it would change the scanner's sha256 and invalidate the digest the committed scan records."
+    },
+    {
+      "file": "docs/research/local-lane-death-rate.html",
+      "line": "180",
+      "severity": "follow-on",
+      "text": "follow-on: the after block is compared against the plan's published 29.4% before-rate (392 deaths in 1333 attempts) rather than the before block the same scan produced (393 in 1342, 29.3%); the page discloses the corpus drift, so the comparison is sound, but the headline pairs a plan figure with a fresh scan."
+    },
+    {
+      "file": "tests/test_the_local_lane_death_rate_is_stated.py",
+      "line": "215",
+      "severity": "follow-on",
+      "text": "follow-on: the committed stated test's after branch asserts only that the headline count is positive and its population truthy, so it would not catch a rescan that moved the committed after figures; the durable assertion of the window's behaviour lives only in the synthetic-corpus gate."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found: the scanner is a research script run by hand (docs/research/local-lane-death-rate.html:92) and imported only by the new test, so no runtime code reaches the change",
+    "diff": "read commit by commit against 605a4d9d5: da03f91bd gives build_after_block the headline/within_window_all_efforts/control shape, moves its call after the controls are computed, updates the scanner summary line and every page figure, and adds tests/test_death_scan_after_window.py; 9a1c56f94 adds the 112-line evidence fragment and touches no plan file.",
+    "done_when": "\u00a710's done-when asks the after block to state the review count, the death count and rate with its interval, and the before-rate it is compared against; docs/research/data/local-lane-deaths.json now carries after_state measured with after.deaths.headline {count 22, attempts 467, rate 0.0471}, after.rate_ci95 {low 0.031-0.070} and before.deaths.headline 393/1342, which is that measure.",
+    "goal": "the node was dispatched to re-run docs/research/scripts/scan_local_lane_deaths.py over the post-move after window and state its after block beside the before block; docs/research/local-lane-death-rate.html:178-197 states 22 deaths in 467 review attempts at high since 2026-09-30T18:36Z (4.7%, Wilson 3.1-7.0%) against the before-rate.",
+    "manifest": "read; it records both commits, the four gate arms with their log paths (head stated 7 passed, head windowing 3 passed, base stated 7 passed, base windowing 3 failed EXIT=1), the negative control EXIT=1, and discloses the one in-window attempt dated by mtime and the deferred ruff format.",
+    "write_paths": "the fence grants the data file, the page, the scanner, a new test and an evidence fragment; git diff --name-status 605a4d9d5..9a1c56f94 changes exactly docs/research/data/local-lane-deaths.json, docs/research/local-lane-death-rate.html, docs/research/scripts/scan_local_lane_deaths.py, tests/test_death_scan_after_window.py and the evidence fragment under docs/evidence/fragments/."
+  },
+  "justifications": {
+    "durability": "removing the after-window filter turns tests/test_death_scan_after_window.py:185 and :208 red (negative-control-window-removed.log EXIT=1, 2 failed), so the added assertions fail on the regression this change exists to prevent.",
+    "evidence": "tests/test_death_scan_after_window.py:171-231 pins the window count, death count, Wilson interval and not-measurable state on a synthetic corpus and removing the window filter fails it, while the real committed figures are only shape-checked by tests/test_the_local_lane_death_rate_is_stated.py:206-220.",
+    "fit": "build_after_block and its new keys (positive_control, completion_control, within_window_all_efforts) are named by mechanism and mirror the before block; ruff check is clean and the single unformatted line is the disclosed follow-on.",
+    "goal_fidelity": "docs/research/data/local-lane-deaths.json carries the after window the goal names: after.deaths.headline count 22 of 467, rate 0.0471, Wilson 0.031-0.070, beside the before headline 393 of 1342.",
+    "scope_discipline": "git diff --name-status 605a4d9d5..9a1c56f94 changes only the five paths the manifest declares, all inside the node's fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node was dispatched to re-run docs/research/scripts/scan_local_lane_deaths.py over the post-move after window and state its after block beside the before block; docs/research/local-lane-death-rate.html:178-197 states 22 deaths in 467 review attempts at high since 2026-09-30T18:36Z (4.7%, Wilson 3.1-7.0%) against the before-rate.\nVERDICT done_when: \u00a710's done-when asks the after block to state the review count, the death count and rate with its interval, and the before-rate it is compared against; docs/research/data/local-lane-deaths.json now carries after_state measured with after.deaths.headline {count 22, attempts 467, rate 0.0471}, after.rate_ci95 {low 0.031-0.070} and before.deaths.headline 393/1342, which is that measure.\nVERDICT write_paths: the fence grants the data file, the page, the scanner, a new test and an evidence fragment; git diff --name-status 605a4d9d5..9a1c56f94 changes exactly those five paths.\nVERDICT manifest: read; it records both commits, the four gate arms with their log paths (head stated 7 passed, head windowing 3 passed, base stated 7 passed, base windowing 3 failed EXIT=1), the negative control EXIT=1, and discloses the one in-window attempt dated by mtime and the deferred ruff format.\nVERDICT diff: read commit by commit against 605a4d9d5: da03f91bd gives build_after_block the headline/within_window_all_efforts/control shape, moves its call after the controls are computed, updates the scanner summary line and every page figure, and adds tests/test_death_scan_after_window.py; 9a1c56f94 adds the 112-line evidence fragment and touches no plan file.\nCALL_SITES: no production call sites found: the scanner is a research script run by hand (docs/research/local-lane-death-rate.html:92) and imported only by the new test, so no runtime code reaches the change\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/research/data/local-lane-deaths.json carries the after window the goal names: after.deaths.headline count 22 of 467, rate 0.0471, Wilson 0.031-0.070, beside the before headline 393 of 1342.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_death_scan_after_window.py:171-231 pins the window count, death count, Wilson interval and not-measurable state on a synthetic corpus and removing the window filter fails it, while the real committed figures are only shape-checked by tests/test_the_local_lane_death_rate_is_stated.py:206-220.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 605a4d9d5..9a1c56f94 changes only the five paths the manifest declares, all inside the node's fence.\nSCORE durability: 18\nJUSTIFICATION durability: removing the after-window filter turns tests/test_death_scan_after_window.py:185 and :208 red (negative-control-window-removed.log EXIT=1, 2 failed), so the added assertions fail on the regression this change exists to prevent.\nSCORE fit: 18\nJUSTIFICATION fit: build_after_block and its new keys (positive_control, completion_control, within_window_all_efforts) are named by mechanism and mirror the before block; ruff check is clean and the single unformatted line is the disclosed follow-on.\nFINDING docs/research/scripts/scan_local_lane_deaths.py:524 follow-on: the added within-window rate line is not ruff-formatted (ruff format --check would rewrap it); the manifest discloses this and defers the reformat because it would change the scanner's sha256 and invalidate the digest the committed scan records.\nFINDING docs/research/local-lane-death-rate.html:180 follow-on: the after block is compared against the plan's published 29.4% before-rate (392 deaths in 1333 attempts) rather than the before block the same scan produced (393 in 1342, 29.3%); the page discloses the corpus drift, so the comparison is sound, but the headline pairs a plan figure with a fresh scan.\nFINDING tests/test_the_local_lane_death_rate_is_stated.py:215 follow-on: the committed stated test's after branch asserts only that the headline count is positive and its population truthy, so it would not catch a rescan that moved the committed after figures; the durable assertion of the window's behaviour lives only in the synthetic-corpus gate.\n",
+  "review_run_id": "r-20261003T001258526198-review-of-death-rate-record-agrees-with-its-data",
+  "reviewed_base_sha": "605a4d9d599b6eb87d71ce03c71677e6d1a45e69",
+  "reviewed_head_sha": "9a1c56f94b2b8f73f43aeb29f7d4bcf48be0ac2d",
+  "reviewed_run_id": "r-20261002T224450436186-death-rate-record-agrees-with-its-data",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T001258526198-review-of-death-rate-record-agrees-with-its-data",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T00:31:00+00:00",
+  "total": 93
+}

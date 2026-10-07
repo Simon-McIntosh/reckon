@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest records baseline_suite and after_suite as none, so no base/head gate-log pair exists to derive added failures from; the reviewer independently ran the reviewed head gate (55 passed) and the two verdict-exercising files the gate omitted (18 passed), both with zero failures.",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/snapshot.py:161",
+    "reckon/crew/picker/replay.py:42",
+    "reckon/crew/picker/snapshot.py:105"
+  ],
+  "completed_at": "2026-10-02T14:55:39.806Z",
+  "dispatched_at": "2026-10-02T14:30:38Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/replay.py",
+      "line": "118",
+      "severity": "follow-on",
+      "text": "follow-on: refused_model_picks is zero by construction on the live replay path: a candidate whose serving observation is \"refused\" is excluded in snapshot.py:228-229 and never enters offered, so it can never be the selection _summary reads; with every probe stubbed refused, offered is empty and the node reported as made non-zero only moves in the unit test's hand-built row. This does not block the node's latency deliverable, which is verified, but the fragment's claim that the figure \"can be non-zero\" is unmet and should be corrected or the count redefined before it is relied on."
+    }
+  ],
+  "head_log_revision": "600de8767c4bd2211ff649bec064a5a76115dfed",
+  "item_aggregate": 84,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s): shared_verdict_inputs at snapshot.py:161 (live pick path) and replay.py:42 (replay), and _competence_verdict shared at snapshot.py:105.",
+    "diff": "read one change at a time against cd5059bd; four changes, six files, all inside the declared scope.",
+    "done_when": "six items; (1),(2),(3),(5),(6) asserted by tests and reproduced green, item (4) recorded unmet and deferred by the coordinator in docs/evidence/fragments/one-typesafe-model-picker/picker-latency.html with replay-after.log (EXIT=1, read-only lane-probe lock); item (5)'s grep names two files the gate omitted and both pass at the head.",
+    "goal": "the goal is \"cut the picker's per-pick latency by sharing ledger and budget reads\"; the ledger read and docs scan are shared once per pick, but the replay refused-model figure the node also reports as corrected cannot be non-zero on the live path.",
+    "manifest": "read; status complete, item (4) deferred; baseline_suite and after_suite recorded as none, so no added-failure count is derivable.",
+    "write_paths": "read the node's declared fence; the diff cd5059bd..d34d905 touches exactly the six declared paths and adds no file outside them."
+  },
+  "justifications": {
+    "durability": "the sharing guard is falsified by the declared mutation (negative-control.log, exit 1) and derives from synthesised ledger rows; the refused-count summary test passes only on a row state the live picker cannot select.",
+    "evidence": "gate reproduces independently at the head (55 passed) and the two omitted verdict-exercising files pass (18 passed); negative control valid; item (4) unmet and the refused-count test is not reachable in production.",
+    "fit": "reuses the existing project_cache_status seam with a name-free default preserving dispatch.py's per-call behaviour; resource_scan_scope is existing; new symbols are mechanism-named.",
+    "goal_fidelity": "one ledger read and one docs scan per pick are delivered (1 vs 9); the replay refused-model correction is not reachable on the live path.",
+    "scope_discipline": "the diff cd5059bd..d34d905 touches exactly the six declared paths, no file outside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"cut the picker's per-pick latency by sharing ledger and budget reads\"; reckon/crew/routing.py:2553 shared_verdict_inputs loads the capability cache and the project freshness key once and snapshot.py:161 threads that bundle into every candidate's _fit, so a nine-candidate pick reads the ledger once instead of nine times (tests/test_picker_latency.py::test_ledger_loader_runs_once_per_pick, reproduced 1 vs 10 under the declared negative control), and pick()/replay enter resources.resource_scan_scope() so the docs tree is scanned once; the ledger-sharing half of the goal is delivered, but the replay refused-model figure the node also claims to fix remains zero by construction on the live path.\nVERDICT done_when: six items; (1),(2),(3),(5),(6) are asserted by tests and reproduce green, item (4) is recorded unmet and deferred in docs/evidence/fragments/one-typesafe-model-picker/picker-latency.html with replay-after.log (read-only ~/.config lane-probe lock, EXIT=1); item (5)'s grep names tests/test_crew_runs.py and tests/test_effective_window_slot.py beyond the three files the gate ran, and I ran those two at the reviewed head (18 passed, EXIT=0).\nVERDICT write_paths: read the node's declared fence; the diff cd5059bd..d34d905 touches exactly the six declared paths and adds no file outside them.\nVERDICT manifest: read; it reports status complete and item (4) deferred, but records baseline_suite and after_suite as none, so an added-failure count cannot be derived from the reviewed run's own logs.\nVERDICT diff: read one change at a time against cd5059bd; four changes (7801089, 3d191e1, 600de87, d34d905), six files: the shared-verdict seam in routing.py/snapshot.py, the replay summary rewrite, the new test file and the evidence fragment.\nCALL_SITES: reckon/crew/picker/snapshot.py:161, reckon/crew/picker/replay.py:42, reckon/crew/picker/snapshot.py:105\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: shared_verdict_inputs thread one ledger read per pick (nine-candidate fixture: 1 read vs 9 at base) plus one docs scan; but the replay refused_model_picks the node also reports as corrected is still zero by construction, because a candidate whose serving probe returns \"refused\" is excluded from offered and can never be selected, so the figure the node says \"can be non-zero\" cannot be non-zero on the live path.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate reproduces independently at the head (55 passed, EXIT=0), the two verdict-exercising files the gate omitted pass (18 passed), and the declared negative control is valid (restoring a per-candidate ledger read makes the call-count test read 10 == 1, EXIT=1, a failing id the head arm does not fail); item (4) is unmet and deferred, and test_replay_counts_a_picked_model_its_observation_refuses validates a row state the production picker cannot emit.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff cd5059bd..d34d905 touches exactly the six declared paths, with no file outside the fence and no edit to prompts.py, the templates or lane_context.py owned by the concurrent node.\nSCORE durability: 17\nJUSTIFICATION durability: the sharing guard is falsified by the declared mutation (negative-control.log, exit 1), and its figures come from synthesised ledger rows the code reads rather than values the test injected; the replay summary tests are durable units but the refused-count one passes only because it hand-builds a row the live picker cannot select.\nSCORE fit: 19\nJUSTIFICATION fit: shared_verdict_inputs reuses the existing capabilities.project_cache_status/load_capabilities seam and threads through the existing snapshot.candidates/_fit signatures with a default of None preserving dispatch.py's per-call behaviour; resource_scan_scope is an existing read-only-pass helper; the new symbols (shared_verdict_inputs, _summary, REFUSED_STATUSES) are mechanism-named with no plan, sprint or ticket identifier.\nFINDING reckon/crew/picker/replay.py:118 finding: refused_model_picks is zero by construction on the live replay path - a candidate whose serving observation is \"refused\" is excluded in snapshot.py:228-229 (reasons.append(\"availability: \" + availability)) and never enters offered, so it can never be the selection _summary reads; with every probe stubbed refused, offered is =[] and the summary reads refused_model_picks 0 (review-reachability-refused-picks.log), so the figure the node reports as made non-zero only moves in the unit test's hand-built row. REFUSED_STATUSES also carries \"logged-out\", which probe_lane_availability never emits (its vocabulary is served/refused/unavailable), and omits \"unavailable\".\nreviewed_base_sha: cd5059bd25c2fafd16b5051d073d3e6d956a9dc1\nreviewed_head_sha: d34d905ad34d39d9a74d5f8d5f9991d88487c39b",
+  "review_run_id": "r-20261002T143011041791-review-of-picker-latency",
+  "reviewed_base_sha": "cd5059bd25c2fafd16b5051d073d3e6d956a9dc1",
+  "reviewed_head_sha": "d34d905ad34d39d9a74d5f8d5f9991d88487c39b",
+  "reviewed_run_id": "r-20261002T132743882305-picker-latency",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T143011041791-review-of-picker-latency",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T14:55:19.082632+00:00",
+  "total": 84
+}

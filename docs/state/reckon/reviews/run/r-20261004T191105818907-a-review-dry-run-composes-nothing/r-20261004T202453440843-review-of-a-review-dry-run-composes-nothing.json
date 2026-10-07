@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "count and ids derived by added_failures_from_gate_logs over the two logs the reviewed manifest names under baseline_suite and after_suite; both logs print full tests/<file>::<test> ids and their failure sets are identical, so the reviewed run added no failing test.",
+  "backend": "local",
+  "base_log_revision": "f31a38d86c60218d71c838c63ceb956d35ccd00b",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:2624",
+    "reckon/crew/recovery.py:4146",
+    "reckon/crew/recovery.py:4207",
+    "reckon/crew/obligations.py:143"
+  ],
+  "completed_at": "2026-10-04T20:30:35.732Z",
+  "dispatched_at": "2026-10-04T20:25:11Z",
+  "findings": [
+    {
+      "file": "tests/test_review_plan_command.py",
+      "line": "271",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded negative control's header and the manifest claim it reddens the before-and-after listing assertion, but the logged first failure is line 271's brief-existence assertion; the listing assertion at line 273 would also fire under the mutation because the restored write creates the brief and the run directory, so only the first-failure attribution is off."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "556",
+      "severity": "follow-on",
+      "text": "follow-on: the preview builds the sidecar path from `plan_review._REVIEW_SIDECAR_NAME`, a private name read across the module boundary; a public accessor would keep the coupling honest, as the composer's own comment asks."
+    }
+  ],
+  "head_log_revision": "a1edaf4bcd728731d763ebaf04a9b1f747afc899",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against f31a38d86 \u2014 6b025b925 threads a `write` flag through the composer and adds `_standing_plan_review`, a1edaf4bc adds only the evidence fragment, 29169bbcb adds only the arm-comparison fragment, so runtime source changes only in 6b025b925.",
+    "done_when": "\u00a76's three assertions hold and I reproduced the focused gate at head \u2014 `pytest tests/test_review_plan_command.py` 21 passed EXIT=0; `test_review_plan_dry_run_leaves_the_report_root_unchanged` lists the report root before and after two previews and asserts it unchanged, `test_review_plan_real_dispatch_writes_the_composed_artifacts` asserts the run directory, brief.md, plan.html and plan-review.json, and the recorded negative control reddens the dry-run test (EXIT=1).",
+    "goal": "\u00a76's deliverable is met \u2014 `review-plan --dry-run` composes a plan review's report directory, brief, plan snapshot and sidecar in memory and writes none of them: `_review_dispatch_fields(record, write=False)` returns the composed brief under `brief_text` and its mkdir/snapshot/brief/sidecar writes sit inside `if write:` (reckon/crew/recovery.py:559-576), and `dispatch_review_for_run`'s plan dry-run branch returns before the report root is created and before `dispatch.lock` is opened (recovery.py:2297-2314).",
+    "manifest": "read; status complete; both `baseline_suite` and `after_suite` are JSON blocks with `completed: true` and literal `env -C <abs> ... pytest ...` commands (no placeholders), and both named logs print full `tests/<file>::<test>` ids with identical failure sets.",
+    "write_paths": "`git diff --name-only f31a38d86..29169bbcb` is exactly the three declared write paths \u2014 reckon/crew/recovery.py, tests/test_review_plan_command.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-review-dry-run-composes-nothing.html \u2014 and the reviewed worktree at 29169bbcb is clean."
+  },
+  "justifications": {
+    "durability": "`test_review_plan_dry_run_leaves_the_report_root_unchanged` asserts independent filesystem facts (the returned brief path absent, the report-root listing `[]`) and the recorded negative control shows it reddens when the early write is restored; the guard is scoped to the report root, so a preview writing elsewhere would not be caught.",
+    "evidence": "the focused gate reproduces (21 passed EXIT=0) and both suite arms in the manifest now reconcile \u2014 `annotate_review_of_run` derives added_failure_count 0 over logs whose failure sets are identical \u2014 with one residual note that the negative-control log's own first failure is tests/test_review_plan_command.py:271, not the listing assertion its header names.",
+    "fit": "the change extends the single composer with a `write` flag and folds the duplicated in-flight scan into `_standing_plan_review` (recovery.py:2255), but builds the sidecar path from the private `plan_review._REVIEW_SIDECAR_NAME` across the module boundary (recovery.py:556) and stages the composed brief into a TemporaryDirectory for the preview's digest.",
+    "goal_fidelity": "recovery.py:559-576 gates every plan-branch write behind `if write:` and recovery.py:2297-2314 returns the preview before the report root or the lock is created, so the deliverable holds and nothing the goal does not imply was added.",
+    "scope_discipline": "the diff is exactly the three declared paths and the reviewed worktree at 29169bbcb is clean."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a76's deliverable is met \u2014 `review-plan --dry-run` composes a plan review's report directory, brief, plan snapshot and sidecar in memory and writes none of them: `_review_dispatch_fields(record, write=False)` returns the composed brief under `brief_text` and its mkdir/snapshot/brief/sidecar writes sit inside `if write:` (reckon/crew/recovery.py:559-576), and `dispatch_review_for_run`'s plan dry-run branch returns before the report root is created and before `dispatch.lock` is opened (recovery.py:2297-2314).\nVERDICT done_when: \u00a76's three assertions hold and I reproduced the focused gate at head \u2014 `pytest tests/test_review_plan_command.py` 21 passed EXIT=0; `test_review_plan_dry_run_leaves_the_report_root_unchanged` lists the report root before and after two previews and asserts it unchanged, `test_review_plan_real_dispatch_writes_the_composed_artifacts` asserts the run directory, brief.md, plan.html and plan-review.json, and the recorded negative control reddens the dry-run test (EXIT=1).\nVERDICT write_paths: `git diff --name-only f31a38d86..29169bbcb` is exactly the three declared write paths \u2014 reckon/crew/recovery.py, tests/test_review_plan_command.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-review-dry-run-composes-nothing.html \u2014 and the reviewed worktree at 29169bbcb is clean.\nVERDICT manifest: read; status complete; both `baseline_suite` and `after_suite` are JSON blocks with `completed: true` and literal `env -C <abs> ... pytest ...` commands (no placeholders), and both named logs print full `tests/<file>::<test>` ids with identical failure sets.\nVERDICT diff: read commit by commit against f31a38d86 \u2014 6b025b925 threads a `write` flag through the composer and adds `_standing_plan_review`, a1edaf4bc adds only the evidence fragment, 29169bbcb adds only the arm-comparison fragment, so runtime source changes only in 6b025b925.\nCALL_SITES: reckon/cli.py:2624, reckon/crew/recovery.py:4146, reckon/crew/recovery.py:4207, reckon/crew/obligations.py:143\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: recovery.py:559-576 gates every plan-branch write behind `if write:` and recovery.py:2297-2314 returns the preview before the report root or the lock is created, so the deliverable holds and nothing the goal does not imply was added.\nSCORE evidence: 19\nJUSTIFICATION evidence: the focused gate reproduces (21 passed EXIT=0) and both suite arms in the manifest now reconcile \u2014 `annotate_review_of_run` derives added_failure_count 0 over logs whose failure sets are identical \u2014 with one residual note that the negative-control log's own first failure is tests/test_review_plan_command.py:271, not the listing assertion its header names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is exactly the three declared paths and the reviewed worktree at 29169bbcb is clean.\nSCORE durability: 19\nJUSTIFICATION durability: `test_review_plan_dry_run_leaves_the_report_root_unchanged` asserts independent filesystem facts (the returned brief path absent, the report-root listing `[]`) and the recorded negative control shows it reddens when the early write is restored; the guard is scoped to the report root, so a preview writing elsewhere would not be caught.\nSCORE fit: 17\nJUSTIFICATION fit: the change extends the single composer with a `write` flag and folds the duplicated in-flight scan into `_standing_plan_review` (recovery.py:2255), but builds the sidecar path from the private `plan_review._REVIEW_SIDECAR_NAME` across the module boundary (recovery.py:556) and stages the composed brief into a TemporaryDirectory for the preview's digest.\nFINDING tests/test_review_plan_command.py:271 follow-on: the recorded negative control's header and the manifest claim it reddens the before-and-after listing assertion, but the logged first failure is line 271's brief-existence assertion; the listing assertion at line 273 would also fire under the mutation because the restored write creates the brief and the run directory, so only the first-failure attribution is off.\nFINDING reckon/crew/recovery.py:556 follow-on: the preview builds the sidecar path from `plan_review._REVIEW_SIDECAR_NAME`, a private name read across the module boundary; a public accessor would keep the coupling honest, as the composer's own comment asks.\nreviewed_base_sha: f31a38d86c60218d71c838c63ceb956d35ccd00b\nreviewed_head_sha: 29169bbcb38727965c23f05074fae34c47d6b1d8",
+  "review_run_id": "r-20261004T202453440843-review-of-a-review-dry-run-composes-nothing",
+  "reviewed_base_sha": "f31a38d86c60218d71c838c63ceb956d35ccd00b",
+  "reviewed_commits": [
+    "6b025b925a41000ba88157ffa0acc653eeb3c223",
+    "a1edaf4bcd728731d763ebaf04a9b1f747afc899",
+    "29169bbcb38727965c23f05074fae34c47d6b1d8"
+  ],
+  "reviewed_head_sha": "29169bbcb38727965c23f05074fae34c47d6b1d8",
+  "reviewed_run_id": "r-20261004T191105818907-a-review-dry-run-composes-nothing",
+  "reviewer_run_id": "r-20261004T202453440843-review-of-a-review-dry-run-composes-nothing",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T20:29:15.919473+00:00",
+  "total": 95
+}

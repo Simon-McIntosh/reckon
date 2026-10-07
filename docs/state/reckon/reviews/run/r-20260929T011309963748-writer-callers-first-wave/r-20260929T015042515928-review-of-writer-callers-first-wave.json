@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 11,
+  "call_sites": [
+    "reckon/_backends.py:2086",
+    "reckon/_backends.py:1626",
+    "reckon/_backends.py:1749",
+    "reckon/capabilities.py:1103",
+    "reckon/crew/fleet_supervisor.py:235",
+    "reckon/crew/placement.py:128",
+    "reckon/crew/plan_review.py:380",
+    "reckon/crew/carryover_census.py:190",
+    "reckon/resources.py:1001",
+    "reckon/serve.py:913",
+    "reckon/serve.py:1118"
+  ],
+  "completed_at": "2026-09-29T02:22:14.191Z",
+  "dispatched_at": "2026-09-29T01:51:03Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "387",
+      "text": "the sibling temporary is opened with the caller's mode passed to os.open, whose mode the umask filters, so a caller asking for 0o600 can land 0o400: the pre-migration _write_private_json called os.chmod(temporary, 0o600) and its own comment at reckon/_backends.py:2096 states that a stricter umask must not leave the file below the mode the caller asked for, and the divergence reproduces under umask 277 as base 0o600 against head 0o400 while umask 022 and 077 agree."
+    },
+    {
+      "file": "tests/test_writer_callers_first_wave.py",
+      "line": "437",
+      "text": "assert mode == 0o640 encodes the ambient umask of the host that recorded it, so the assertion fails under umask 077 with 384 != 416 and holds only where the umask leaves 0o640 intact; _process_default_mode at :69 shows the derivation the same file already uses for its mode=None cases."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011309963748-writer-callers-first-wave/manifest.md",
+      "line": "27",
+      "text": "failure_attribution is empty and follow_ons is empty while the head arm exits 1 with 11 failures in the existing test files of touched modules (tests/test_backends.py, tests/test_capabilities.py, tests/test_crew_placement.py, tests/test_crew_lane_agnostic_placement.py), so the done-when's exit-0 clause is unmet and a reader cannot tell pre-existing from caused without recomputing the arm delta by hand."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011309963748-writer-callers-first-wave/manifest.md",
+      "line": "28",
+      "text": "measurement_module holds the path of the measuring script rather than the absolute __file__ of the module under test as imported, which is what the manifest contract asks for, and measure_writers.py prints no module.__file__ at all, so the identity of the tree the base arm measured is recoverable only from baseline_suite.command's PYTHONPATH; line 29 carries two working directories in prose rather than the one resolved directory the key asks for."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011309963748-writer-callers-first-wave/base-arm.log",
+      "line": "1",
+      "text": "the gate log opens on the pytest progress line and names neither its revision, nor its tree, nor its command, so the log a later reader is handed cannot be attributed on its own; the same defect was filed against r-20260928T215628176452-one-timestamp-parser's head arm, so its remedy belongs in the dispatch template rather than in this node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 11 production call site(s)",
+    "diff": "read both commits against a15e11cb and every hunk is inside the declared scope; the second commit is the fragment and its figure only, so the code the head arm measured at fbc29bca is the code at the reviewed head.",
+    "done_when": "the done-when names the four parameters and the four callers' requirements, \"No second writer is added\", the eight writers, the two decoders, the recorded base readings, the mid-write failure test and the directory-fsync test, and all eight writers do call the shared writer; its clause that the existing test file of each touched module passes at exit 0 is not met, since the head arm exits 1 with 11 failures it records no attribution for.",
+    "goal": "the goal asks for the shared writer's parameters and the first wave of writers and two decoders moved onto the shared helpers with every caller's output kept, and the diff adds indent, sort_keys, mode, fsync_directory and create_parents at reckon/_store.py:437, routes all eight named writers through it and deletes reckon/_backends.py:_number and reckon/crew/carryover_census.py:_measured, but the owner-only mode is not kept under a umask that clears the owner bit.",
+    "manifest": "read; it reads complete with two commits, 12 changed paths, the fragment as landing, four logs, both armed arm JSONs and the negative-control path, but failure_attribution is empty and follow_ons is empty across 11 residual head failures, and measurement_module names the measuring script rather than the module under test.",
+    "write_paths": "read the declared write paths from the reviewed run's prompt.txt and the changed paths from its manifest; the 12 changed paths are exactly the declared set, with nothing outside it and no untracked file left behind."
+  },
+  "justifications": {
+    "durability": "the delegation tests land the change by patching a name each migrated module must now carry, and the base arm shows all of them failing before it, but tests/test_writer_callers_first_wave.py:437 asserts 0o640 and passes only while the ambient umask leaves that mode intact.",
+    "evidence": "both arms and the negative control are recorded and their delta re-derives to 0 added against 23 base and 11 head failures, but failure_attribution at manifest.md:27 is empty against a stated exit-0 criterion and every mode reading was taken under the ambient umask alone.",
+    "fit": "reckon/_backends.py:2086 and its seven peers follow the surrounding module idiom with the private helpers deleted rather than left dead, and no name or comment carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/_store.py:387 creates the sibling temporary with the caller's mode filtered by the umask, where the pre-migration code chmodded past it, so the private writer's owner-only mode is not the property it was.",
+    "scope_discipline": "the 12 changed paths at manifest.md:20 are exactly the declared write paths and nothing else, and the ruff finding count falls from 48 to 45 over the nine shared source files."
+  },
+  "node": "review-of-writer-callers-first-wave",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T011309963748-writer-callers-first-wave\n(plan a-worker-reuses-before-it-writes, section 3; node writer-callers-first-wave; role implement; spec guided)\nreviewed_base_sha: a15e11cbf453c71af872bc9e402ac9c1224bd929\nreviewed_head_sha: c359e7b72ee6f63c390faab9c96b3c0b21bba16c\nRead: the reviewed run's prompt.txt and manifest.md, the plan section, both commits against the base, the new test file, base-arm.log, head-arm.log, negative-control.log, both arm JSONL files and failed-id lists, the two file-set files, measure_writers.py and the evidence fragment.\nRe-derived independently: the added-failure set over the two arming logs (23 base ids, 11 head ids, head-minus-base empty, 12 resolved); both arms cover the same 20 test paths; the negative control's declared mutation reproduces the failure it names; and the two code findings below, by running the landed modules under a umask that clears the owner bits.\nVERDICT goal: the goal asks for the shared writer's parameters and the first wave of writers and two decoders moved onto the shared helpers with every caller's output kept, and the diff adds indent, sort_keys, mode, fsync_directory and create_parents at reckon/_store.py:437, routes all eight named writers through it and deletes reckon/_backends.py:_number and reckon/crew/carryover_census.py:_measured, but the owner-only mode is not kept under a umask that clears the owner bit.\nVERDICT done_when: the done-when names the four parameters and the four callers' requirements, \"No second writer is added\", the eight writers, the two decoders, the recorded base readings, the mid-write failure test and the directory-fsync test, and all eight writers do call the shared writer; its clause that the existing test file of each touched module passes at exit 0 is not met, since the head arm exits 1 with 11 failures it records no attribution for.\nVERDICT write_paths: read the declared write paths from the reviewed run's prompt.txt and the changed paths from its manifest; the 12 changed paths are exactly the declared set, with nothing outside it and no untracked file left behind.\nVERDICT manifest: read; it reads complete with two commits, 12 changed paths, the fragment as landing, four logs, both armed arm JSONs and the negative-control path, but failure_attribution is empty and follow_ons is empty across 11 residual head failures, and measurement_module names the measuring script rather than the module under test.\nVERDICT diff: read both commits against a15e11cb and every hunk is inside the declared scope; the second commit is the fragment and its figure only, so the code the head arm measured at fbc29bca is the code at the reviewed head.\nCALL_SITES: reckon/_backends.py:2086, reckon/_backends.py:1626, reckon/_backends.py:1749, reckon/capabilities.py:1103, reckon/crew/fleet_supervisor.py:235, reckon/crew/placement.py:128, reckon/crew/plan_review.py:380, reckon/crew/carryover_census.py:190, reckon/resources.py:1001, reckon/serve.py:913, reckon/serve.py:1118\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/_store.py:387 creates the sibling temporary with the caller's mode filtered by the umask, where the pre-migration code chmodded past it, so the private writer's owner-only mode is not the property it was.\nSCORE evidence: 16\nJUSTIFICATION evidence: both arms and the negative control are recorded and their delta re-derives to 0 added against 23 base and 11 head failures, but failure_attribution at manifest.md:27 is empty against a stated exit-0 criterion and every mode reading was taken under the ambient umask alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the 12 changed paths at manifest.md:20 are exactly the declared write paths and nothing else, and the ruff finding count falls from 48 to 45 over the nine shared source files.\nSCORE durability: 17\nJUSTIFICATION durability: the delegation tests land the change by patching a name each migrated module must now carry, and the base arm shows all of them failing before it, but tests/test_writer_callers_first_wave.py:437 asserts 0o640 and passes only while the ambient umask leaves that mode intact.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_backends.py:2086 and its seven peers follow the surrounding module idiom with the private helpers deleted rather than left dead, and no name or comment carries a plan, sprint or ticket identifier.\nFINDING reckon/_store.py:387 the sibling temporary is opened with the caller's mode passed to os.open, whose mode the umask filters, so a caller asking for 0o600 can land 0o400: the pre-migration _write_private_json called os.chmod(temporary, 0o600) and its own comment at reckon/_backends.py:2096 states that a stricter umask must not leave the file below the mode the caller asked for, and the divergence reproduces under umask 277 as base 0o600 against head 0o400 while umask 022 and 077 agree.\nFINDING tests/test_writer_callers_first_wave.py:437 assert mode == 0o640 encodes the ambient umask of the host that recorded it, so the assertion fails under umask 077 with 384 != 416 and holds only where the umask leaves 0o640 intact; _process_default_mode at :69 shows the derivation the same file already uses for its mode=None cases.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011309963748-writer-callers-first-wave/manifest.md:27 failure_attribution is empty and follow_ons is empty while the head arm exits 1 with 11 failures in the existing test files of touched modules (tests/test_backends.py, tests/test_capabilities.py, tests/test_crew_placement.py, tests/test_crew_lane_agnostic_placement.py), so the done-when's exit-0 clause is unmet and a reader cannot tell pre-existing from caused without recomputing the arm delta by hand.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011309963748-writer-callers-first-wave/manifest.md:28 measurement_module holds the path of the measuring script rather than the absolute __file__ of the module under test as imported, which is what the manifest contract asks for, and measure_writers.py prints no module.__file__ at all, so the identity of the tree the base arm measured is recoverable only from baseline_suite.command's PYTHONPATH; line 29 carries two working directories in prose rather than the one resolved directory the key asks for.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011309963748-writer-callers-first-wave/base-arm.log:1 the gate log opens on the pytest progress line and names neither its revision, nor its tree, nor its command, so the log a later reader is handed cannot be attributed on its own; the same defect was filed against r-20260928T215628176452-one-timestamp-parser's head arm, so its remedy belongs in the dispatch template rather than in this node.",
+  "review_run_id": "r-20260929T015042515928-review-of-writer-callers-first-wave",
+  "reviewed_base_sha": "a15e11cbf453c71af872bc9e402ac9c1224bd929",
+  "reviewed_head_sha": "c359e7b72ee6f63c390faab9c96b3c0b21bba16c",
+  "reviewed_run_id": "r-20260929T011309963748-writer-callers-first-wave",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T015042515928-review-of-writer-callers-first-wave",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T02:16:45.654235+00:00",
+  "total": 89
+}

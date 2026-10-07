@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's baseline_suite records 3 failures at revision 2a581fb (the three test_worker_slots_rest_on_an_observed_window window cases) and its after_suite records 0 failures at revision ccf844cd, both completed to their summary lines, so the head arm adds no failure id and added_failure_count is 0; this was confirmed here by re-running tests/test_run_time_profile.py on the delivered tree at ccf844cd, which reports 11 passed at EXIT=0.",
+  "base_log_revision": "2a581fb443537002de44c581f544abc78fac9d3e",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/picker/lane_context.py:220",
+    "reckon/crew/picker/lane_context.py:276"
+  ],
+  "completed_at": "2026-10-02T19:29:58.081Z",
+  "dispatched_at": "2026-10-02T19:24:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/run_time_profile.py",
+      "line": "424",
+      "severity": "follow-on",
+      "text": "the window gate is implemented as a substring match, \"worker slots\" in str(allowance.get(\"source\") or \"\"), against the human-readable source labels returned by reckon/crew/dispatch.py:5346,5353,5360; the coupling fails safe (withholding worker_slots) but is invisible, so a future reword of any source label silently stops local_lane_load carrying the field, and the positive-window test at tests/test_run_time_profile.py:259 is the only thing that would catch it."
+    }
+  ],
+  "head_log_revision": "ccf844cd0673df135d58fd6ebe1bd43685cff7af",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/picker/lane_context.py:220 and reckon/crew/picker/lane_context.py:276.",
+    "diff": "read commit by commit against 2a581fb; run_time_profile.py gains the import, a docstring paragraph and the six-line gate, tests gain a parametrised three-case test and one positive test, and the fragment is a new landed-report article.",
+    "done_when": "the done_when names observed_seconds 0, -5 and absent yielding null and 600 yielding the published figure; tests/test_run_time_profile.py:231 and :259 assert exactly those cases, base arm 3 failed and head 11 passed with zero added failure ids, and the reuse-not-reimplement clause is met by importing _lane_worker_allowance.",
+    "goal": "the node goal is to make local_lane_load ignore worker slots published without router history; reckon/crew/run_time_profile.py:421 now calls the dispatcher's own _lane_worker_allowance and carries the admission worker_slots only when the reader's source names a slot figure.",
+    "manifest": "read; status complete, one commit ccf844cd0673df135d58fd6ebe1bd43685cff7af, landing and checkpoint present, baseline_suite 3 failures and after_suite 0 failures both completed.",
+    "write_paths": "the manifest declares run_time_profile.py, test_run_time_profile.py and the evidence fragment; git diff 2a581fb..ccf844cd changes exactly those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_run_time_profile.py:231 varies observed_seconds against a constant published worker_slots of 5 and asserts the output flips to None, an assertion that fails under the regression it guards - the recorded negative control turns all three cases red at EXIT=1 - while tests/test_run_time_profile.py:259 pins the positive case; two points withheld because the gate is reached through a substring test on a human-readable label.",
+    "evidence": "the gate asserts the done_when exactly, and its result is recorded rather than claimed - base-arm.log records 3 failed / 8 passed with the three window case ids at EXIT=1 and head.log records 11 passed at EXIT=0, and a reviewer re-run at head on the delivered tree reproduces 11 passed; one point withheld because the base arm ran the base module against the head test file, a same-revision mixed-tree measurement rather than a clean checkout of the base commit.",
+    "fit": "the change matches the module's idiom, importing a sibling private reader as reckon/cli.py and reckon/crew/runs.py already do from reckon/crew/dispatch.py, and adds a docstring paragraph in the file's own register; two points withheld because reckon/crew/run_time_profile.py:424 derives a control-flow decision from str(allowance.get('source')) matching the literal 'worker slots', coupling the two surfaces through prose.",
+    "goal_fidelity": "reckon/crew/run_time_profile.py:421-425 withholds worker_slots on a zero, negative or absent window and carries it on a positive one, matching the same _lane_worker_allowance window test the dispatch path already applies (reckon/crew/dispatch.py:5323), so the load reading and the allowance can no longer disagree on the carry/withhold decision; one point withheld because the field carried is the global admission figure even when the reader's source was a session or new-session share, so the two surfaces agree on whether to carry, not always on which figure.",
+    "scope_discipline": "git diff 2a581fb..ccf844cd names exactly reckon/crew/run_time_profile.py, tests/test_run_time_profile.py and docs/evidence/fragments/one-typesafe-model-picker/lane-load-honours-observed-window.html, 152 insertions and 2 deletions, no file outside the three declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make local_lane_load ignore worker slots published without router history; reckon/crew/run_time_profile.py:421 now calls the dispatcher's own _lane_worker_allowance and carries the admission worker_slots only when the reader's source names a slot figure, so the field is withheld on a zero, negative or absent observed window.\nVERDICT done_when: the done_when names observed_seconds 0, -5 and absent each yielding null worker_slots and 600 yielding the published figure; tests/test_run_time_profile.py:231 and :259 assert exactly those cases, the base arm fails the three parametrised cases and the head arm passes 11 with zero added failure ids, and the reuse-not-reimplement clause is met by importing _lane_worker_allowance from reckon/crew/dispatch.py.\nVERDICT write_paths: the manifest declares reckon/crew/run_time_profile.py, tests/test_run_time_profile.py and the evidence fragment; git diff 2a581fb..ccf844cd changes exactly those three paths and nothing else.\nVERDICT manifest: read; status complete, one commit ccf844cd0673df135d58fd6ebe1bd43685cff7af, landing and checkpoint present, baseline_suite and after_suite both non-null and completed with 3 and 0 failures, and the head log header names the delivered revision.\nVERDICT diff: read commit by commit against 2a581fb; run_time_profile.py gains the import, one docstring paragraph and the six-line gate that reads allowance.source, tests/test_run_time_profile.py gains a parametrised three-case test and one positive-window test plus a fixture update, and the fragment is a new landed-report article.\nCALL_SITES: reckon/crew/picker/lane_context.py:220, reckon/crew/picker/lane_context.py:276\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/run_time_profile.py:421-425 withholds worker_slots on a zero, negative or absent window and carries it on a positive one, matching the same _lane_worker_allowance window test the dispatch path already applies (reckon/crew/dispatch.py:5323), so the load reading and the allowance can no longer disagree on the carry/withhold decision; one point withheld because the field carried is the global admission figure even when the reader's source was a session or new-session share, so the two surfaces agree on whether to carry, not always on which figure.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate asserts the done_when exactly, and its result is recorded rather than claimed - base-arm.log records 3 failed / 8 passed with the three window case ids at EXIT=1 and head.log records 11 passed at EXIT=0, and a reviewer re-run at reckon/crew/run_time_profile.py head on the delivered tree reproduces 11 passed; one point withheld because the base arm ran the base module against the head test file, which is the correct base arm but is a same-revision mixed-tree measurement rather than a clean checkout of the base commit.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 2a581fb..ccf844cd names exactly reckon/crew/run_time_profile.py, tests/test_run_time_profile.py and docs/evidence/fragments/one-typesafe-model-picker/lane-load-honours-observed-window.html, 152 insertions and 2 deletions, no file outside the three declared write paths and no shared plan, index or sprint state touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_run_time_profile.py:231 varies observed_seconds against a constant published worker_slots of 5 and asserts the output flips to None, an assertion that fails under the very regression it guards - the node's recorded negative control reinstates the ungated read and turns all three cases red at EXIT=1 - while tests/test_run_time_profile.py:259 pins the positive case so an always-null regression also reddens; two points withheld because the gate is reached only through a substring test on a human-readable label, so a rename of the allowance source strings would be caught only by the positive test rather than by a type or constant the test could name.\nSCORE fit: 18\nJUSTIFICATION fit: the change matches the module's idiom, importing a sibling private reader the way reckon/cli.py and reckon/crew/runs.py already do from reckon/crew/dispatch.py, adds a docstring paragraph in the file's own register, and introduces no name the repository naming rules forbid; two points withheld because reckon/crew/run_time_profile.py:424 derives a control-flow decision from str(allowance.get(\"source\")) matching the literal \"worker slots\", coupling the two surfaces through prose rather than through a shared constant or flag.\nFINDING reckon/crew/run_time_profile.py:424 follow-on: the window gate is implemented as a substring match, \"worker slots\" in str(allowance.get(\"source\") or \"\"), against the human-readable source labels returned by reckon/crew/dispatch.py:5346,5353,5360; the coupling fails safe (withholding worker_slots) but is invisible, so a future reword of any source label silently stops local_lane_load carrying the field, and the positive-window test at tests/test_run_time_profile.py:259 is the only thing that would catch it.\nreviewed_base_sha: 2a581fb443537002de44c581f544abc78fac9d3e\nreviewed_head_sha: ccf844cd0673df135d58fd6ebe1bd43685cff7af",
+  "review_run_id": "r-20261002T192413480713-review-of-lane-load-honours-observed-window",
+  "reviewed_base_sha": "2a581fb443537002de44c581f544abc78fac9d3e",
+  "reviewed_head_sha": "ccf844cd0673df135d58fd6ebe1bd43685cff7af",
+  "reviewed_run_id": "r-20261002T184258840182-lane-load-honours-observed-window",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T192413480713-review-of-lane-load-honours-observed-window",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T19:30:00.000000+00:00",
+  "total": 94
+}

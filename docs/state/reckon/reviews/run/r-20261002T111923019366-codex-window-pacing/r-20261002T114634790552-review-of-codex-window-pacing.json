@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "sonnet",
+  "base_log_revision": "41b4c413ec3ce2729ef7adda4ba9bf193667d65c",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:4323",
+    "reckon/cli.py:1176",
+    "reckon/crew/dispatch.py:5646"
+  ],
+  "completed_at": "2026-10-02T12:05:19.458Z",
+  "dispatched_at": "2026-10-02T11:46:59Z",
+  "findings": [
+    {
+      "file": "reckon/budget.py",
+      "line": "2664",
+      "severity": "follow-on",
+      "text": "follow-on: _clock_for_window returns None for any reported length that is neither 300, 10,080 nor greater than 10,080, so an account reporting, say, a 1,440-minute window is silently dropped by _state_window_reading (budget.py:1747) and its group falls back to a stale receipt instead of pacing by the reported window."
+    },
+    {
+      "file": "tests/test_budget_window_length.py",
+      "line": "68",
+      "severity": "follow-on",
+      "text": "follow-on: the week test's fixture is built at 10,080 minutes, the value the code falls back to when no reported length is treated as operative, so its derived == 0.0733 assertion at line 79 passes under both the corrected and the fixed-week code and guards nothing the month test at line 57 does not already guard."
+    }
+  ],
+  "head_log_revision": "86b5bfe7f13ceb36c833bba2101654fa8312bda4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against 41b4c413ec3ce2729ef7adda4ba9bf193667d65c; 399 insertions across reckon/budget.py, reckon/crew/window_reading.py, tests/test_budget_window_length.py and the evidence fragment, nothing else.",
+    "done_when": "the three measures are present - tests/test_budget_window_length.py:57 and :68 scale the allowance with each window's elapsed fraction, :82 shows a primary-only account admitted and not unreadable, and docs/evidence/fragments/one-typesafe-model-picker/codex-window-pacing.html records a live read naming the operative window length, utilisation, burn and allowance.",
+    "goal": "7 asks the codex lane to pace by the quota window the provider reports; reckon/budget.py:1920 _group_allowance derives a primary-only group's allowance as the operative window's elapsed fraction times budget.pace_multiple, and reckon/crew/window_reading.py:59 retains the reported length, so the 43,200-minute fixture at tests/test_budget_window_length.py:57 returns 0.0733 rather than a fixed-week figure.",
+    "manifest": "read; status complete, commits 9bb5a4c68e38b4e6bada9b60e07dbc6d0d37a6dc and 86b5bfe7f13ceb36c833bba2101654fa8312bda4, with baseline-gate.log and after-gate.log recorded.",
+    "write_paths": "the reviewed manifest declares reckon/budget.py, reckon/crew/budget_group.py, reckon/crew/window_reading.py, reckon/crew/reserve.py, tests/test_budget_window_length.py, the evidence fragment and a figures dir; the diff touches only budget.py, window_reading.py, tests/test_budget_window_length.py and the fragment, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_budget_window_length.py:65 reddens under the recorded fixed-week mutant (negative-control-fixed-week.log), but tests/test_budget_window_length.py:79 names the 10,080-minute case the code already defaults to and so cannot redden on the regression it describes.",
+    "evidence": "the gate in after-gate.log ran the five named files at 86b5bfe7f and recorded 148 passed with 1 pre-existing failure, and docs/evidence/fragments/one-typesafe-model-picker/codex-window-pacing.html records the live read at 10,080 min, 1.00 percent and 0.5586 percent.",
+    "fit": "reckon/budget.py:2019 and reckon/crew/window_reading.py:253 follow the surrounding dataclass-and-helper style, ruff check reports only the two pre-existing findings at budget.py:56 and budget.py:259, and no name violates the naming rules.",
+    "goal_fidelity": "reckon/budget.py:1920 paces the primary-only group by the reported window's elapsed fraction and budget.py:2664 retains that length, but a reported length between 300 and 10,080 minutes (for example 1,440) maps to None and is dropped, so pacing still does not follow every length the provider could report.",
+    "scope_discipline": "the two commits touch only reckon/budget.py, reckon/crew/window_reading.py, tests/test_budget_window_length.py and the fragment, every one inside the reviewed manifest's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: 7 asks the codex lane to pace by the quota window the provider reports; reckon/budget.py:1920 _group_allowance derives a primary-only group's allowance as the operative window's elapsed fraction times budget.pace_multiple, and reckon/crew/window_reading.py:59 retains the reported length, so the 43,200-minute fixture at tests/test_budget_window_length.py:57 returns 0.0733 rather than a fixed-week figure.\nVERDICT done_when: the three measures are present - tests/test_budget_window_length.py:57 and :68 scale the allowance with each window's elapsed fraction, :82 shows a primary-only account admitted and not unreadable, and docs/evidence/fragments/one-typesafe-model-picker/codex-window-pacing.html records a live read naming the operative window length, utilisation, burn and allowance.\nVERDICT write_paths: the reviewed manifest declares reckon/budget.py, reckon/crew/budget_group.py, reckon/crew/window_reading.py, reckon/crew/reserve.py, tests/test_budget_window_length.py, the evidence fragment and a figures dir; the diff touches only budget.py, window_reading.py, tests/test_budget_window_length.py and the fragment, all inside the declared scope.\nVERDICT manifest: read; status complete, commits 9bb5a4c68e38b4e6bada9b60e07dbc6d0d37a6dc and 86b5bfe7f13ceb36c833bba2101654fa8312bda4, with baseline-gate.log and after-gate.log recorded.\nVERDICT diff: read both commits against 41b4c413ec3ce2729ef7adda4ba9bf193667d65c; 399 insertions across reckon/budget.py, reckon/crew/window_reading.py, tests/test_budget_window_length.py and the evidence fragment, nothing else.\nCALL_SITES: reckon/mcp.py:4323, reckon/cli.py:1176, reckon/crew/dispatch.py:5646\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/budget.py:1920 paces the primary-only group by the reported window's elapsed fraction and budget.py:2664 retains that length, but a reported length between 300 and 10,080 minutes (for example 1,440) maps to None and is dropped, so pacing still does not follow every length the provider could report.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate in after-gate.log ran the five named files at 86b5bfe7f and recorded 148 passed with 1 pre-existing failure, and docs/evidence/fragments/one-typesafe-model-picker/codex-window-pacing.html records the live read at 10,080 min, 1.00 percent and 0.5586 percent.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only reckon/budget.py, reckon/crew/window_reading.py, tests/test_budget_window_length.py and the fragment, every one inside the reviewed manifest's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_budget_window_length.py:65 reddens under the recorded fixed-week mutant (negative-control-fixed-week.log), but tests/test_budget_window_length.py:79 names the 10,080-minute case the code already defaults to and so cannot redden on the regression it describes.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/budget.py:2019 and reckon/crew/window_reading.py:253 follow the surrounding dataclass-and-helper style, ruff check reports only the two pre-existing findings at budget.py:56 and budget.py:259, and no name violates the naming rules.\nFINDING reckon/budget.py:2664 follow-on: _clock_for_window returns None for any reported length that is neither 300, 10,080 nor greater than 10,080, so an account reporting, say, a 1,440-minute window is silently dropped by _state_window_reading (budget.py:1747) and its group falls back to a stale receipt instead of pacing by the reported window.\nFINDING tests/test_budget_window_length.py:68 follow-on: the week test's fixture is built at 10,080 minutes, the value the code falls back to when no reported length is treated as operative, so its derived == 0.0733 assertion at line 79 passes under both the corrected and the fixed-week code and guards nothing the month test at line 57 does not already guard.",
+  "review_run_id": "r-20261002T114634790552-review-of-codex-window-pacing",
+  "reviewed_base_sha": "41b4c413ec3ce2729ef7adda4ba9bf193667d65c",
+  "reviewed_head_sha": "86b5bfe7f13ceb36c833bba2101654fa8312bda4",
+  "reviewed_run_id": "r-20261002T111923019366-codex-window-pacing",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T12:01:18.268240+00:00",
+  "total": 91
+}

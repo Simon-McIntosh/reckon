@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3094b21e36963301819137e77cbd5ec49144c49c",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/summary.py:cores_bound",
+    "reckon/crew/dispatch.py:_refuse_over_concurrency_ceiling"
+  ],
+  "completed_at": "2026-10-01T07:56:24.081Z",
+  "dispatched_at": "2026-10-01T07:48:26Z",
+  "findings": [
+    {
+      "file": "tests/test_the_cores_bound_reads_the_reservation.py",
+      "line": "87",
+      "severity": "follow-on",
+      "text": "follow-on: no case discriminates reservation_occupancy from occupancy; every scenario sits at or below the 28 admitted cores (scenario 1 is 20 live of which 1 placed, scenarios 2-3 place every live pointer), so reverting the placed-only threading at reckon/crew/summary.py:368 to use occupancy leaves all four cases green. Measured directly against the landed module: cores_bound(occupancy=20, reservation_occupancy=20) and cores_bound(occupancy=20, reservation_occupancy=1) both admit, and only occupancy >= 29 separates them, so the done-when's second clause (count only placed live workers) is implemented but unguarded."
+    },
+    {
+      "file": "reckon/crew/summary.py",
+      "line": "321",
+      "severity": "follow-on",
+      "text": "follow-on: _reservation_admitted_cores reads the unkeyed record through read_reservation() with no project, while the sibling roster refusal at reckon/crew/dispatch.py:578 reads read_reservation(project) and honours the legacy per-project fallback, so during migration a project holding only a legacy reservation is roster-bounded yet reports the cores bound unknown; the two readers of the one shared record disagree about which record is the shared one."
+    }
+  ],
+  "head_log_revision": "e0f4e0feb46a33a2ae43979a868409cc0878a09b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 3094b21e; 343 insertions and 62 deletions across five files, all inside the declared scope, changing the cores bound's admitted-size source and its occupancy population.",
+    "done_when": "the done-when names four scenarios driven in tests/test_the_cores_bound_reads_the_reservation.py; the manifest records the focused gate 20 passed and both population arms, and I re-ran the three named files at e0f4e0feb for 20 passed.",
+    "goal": "the node's goal is that the partition cores bound read the shared reservation's admitted cores and count only placed live workers; reckon/crew/summary.py:358 reads the admitted size from the published record and :368 measures the bound against the placed population.",
+    "manifest": "read; it reports status complete, commit e0f4e0feb, focused gate 20 passed EXIT=0, population base 14 failed/1245 passed vs head 14 failed/1249 passed, negative control 4 failed EXIT=1.",
+    "write_paths": "read the manifest's declared paths; reckon/crew/summary.py, reckon/crew/dispatch.py, the new test file and the two updated bound tests are the only paths in the diff."
+  },
+  "justifications": {
+    "durability": "the admitted-size half is guarded (the declared negative control reddens case 1), but no assertion in tests/test_the_cores_bound_reads_the_reservation.py fails if the placed-only reservation_occupancy threading at reckon/crew/summary.py:368 were reverted to occupancy.",
+    "evidence": "the done-when's four scenarios are driven in tests/test_the_cores_bound_reads_the_reservation.py and the manifest records the gate 20 passed and both population arms, though scenario 1 is asserted in a form that admits under either occupancy reading.",
+    "fit": "the change follows the module's existing lazy-import and Bound idiom at reckon/crew/summary.py:358 and reuses occupying_the_reservation rather than re-deriving the roster population.",
+    "goal_fidelity": "reckon/crew/summary.py:358 reads the admitted size from placement.read_reservation().size.cores and :368 measures the bound against reservation_occupancy, exactly the two clauses of the goal.",
+    "scope_discipline": "every path in the diff (reckon/crew/summary.py, reckon/crew/dispatch.py, tests/test_the_cores_bound_reads_the_reservation.py, tests/test_crew_binding_bound.py, tests/test_concurrency_bound_refuses_by_name.py) is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the partition cores bound read the shared reservation's admitted cores and count only placed live workers; reckon/crew/summary.py:358 reads the admitted size from the published record and :368 measures the bound against the placed population.\nVERDICT done_when: the done-when names four scenarios driven in tests/test_the_cores_bound_reads_the_reservation.py; the manifest records the focused gate 20 passed and both population arms, and I re-ran the three named files at e0f4e0feb for 20 passed.\nVERDICT write_paths: read the manifest's declared paths; reckon/crew/summary.py, reckon/crew/dispatch.py, the new test file and the two updated bound tests are the only paths in the diff.\nVERDICT manifest: read; it reports status complete, commit e0f4e0feb, focused gate 20 passed EXIT=0, population base 14 failed/1245 passed vs head 14 failed/1249 passed, negative control 4 failed EXIT=1.\nVERDICT diff: read commit by commit against 3094b21e; 343 insertions and 62 deletions across five files, all inside the declared scope, changing the cores bound's admitted-size source and its occupancy population.\nCALL_SITES: reckon/crew/summary.py:cores_bound, reckon/crew/dispatch.py:_refuse_over_concurrency_ceiling\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/summary.py:358 reads the admitted size from placement.read_reservation().size.cores and :368 measures the bound against reservation_occupancy, exactly the two clauses of the goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: the done-when's four scenarios are driven in tests/test_the_cores_bound_reads_the_reservation.py and the manifest records the gate 20 passed and both population arms, though scenario 1 is asserted in a form that admits under either occupancy reading.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/summary.py, reckon/crew/dispatch.py, tests/test_the_cores_bound_reads_the_reservation.py, tests/test_crew_binding_bound.py, tests/test_concurrency_bound_refuses_by_name.py) is inside the manifest's declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: the admitted-size half is guarded (the declared negative control reddens case 1), but no assertion in tests/test_the_cores_bound_reads_the_reservation.py fails if the placed-only reservation_occupancy threading at reckon/crew/summary.py:368 were reverted to occupancy.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's existing lazy-import and Bound idiom at reckon/crew/summary.py:358 and reuses occupying_the_reservation rather than re-deriving the roster population.\nFINDING tests/test_the_cores_bound_reads_the_reservation.py:87 follow-on: no case discriminates reservation_occupancy from occupancy; every scenario sits at or below the 28 admitted cores (scenario 1 is 20 live of which 1 placed, scenarios 2-3 place every live pointer), so reverting the placed-only threading at reckon/crew/summary.py:368 to use occupancy leaves all four cases green. Measured directly against the landed module: cores_bound(occupancy=20, reservation_occupancy=20) and cores_bound(occupancy=20, reservation_occupancy=1) both admit, and only occupancy >= 29 separates them, so the done-when's second clause (count only placed live workers) is implemented but unguarded.\nFINDING reckon/crew/summary.py:321 follow-on: _reservation_admitted_cores reads the unkeyed record through read_reservation() with no project, while the sibling roster refusal at reckon/crew/dispatch.py:578 reads read_reservation(project) and honours the legacy per-project fallback, so during migration a project holding only a legacy reservation is roster-bounded yet reports the cores bound unknown; the two readers of the one shared record disagree about which record is the shared one.\n",
+  "review_run_id": "r-20261001T074805101620-review-of-the-cores-bound-reads-the-reservation",
+  "reviewed_base_sha": "3094b21e36963301819137e77cbd5ec49144c49c",
+  "reviewed_head_sha": "e0f4e0feb46a33a2ae43979a868409cc0878a09b",
+  "reviewed_run_id": "r-20261001T071443173988-the-cores-bound-reads-the-reservation",
+  "role": "review",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T07:54:53.258942+00:00",
+  "total": 86
+}

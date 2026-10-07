@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "973630e798c505920933f97d9a0bcddfa2f4145e",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete",
+    "reckon/crew/promotion.py:_read_pointer_or_rebuild",
+    "reckon/crew/promotion.py:_landing_scope_products"
+  ],
+  "completed_at": "2026-10-02T01:07:29.397Z",
+  "dispatched_at": "2026-10-02T00:58:40Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T003351727134-discarded-run-promotes-after-its-commits-land/manifest.md",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "follow-on: the armed manifest records its base and head arm commands and results only in the free-text tests: and test_logs: lines and omits the machine-readable baseline_suite and after_suite fields, so a reader that derives added failures from the manifest (the review annotation and the promotion suite-delta check) reads this run's suite evidence as unmeasured rather than as the measured zero the two arm logs show."
+    }
+  ],
+  "head_log_revision": "d0cb23522b363d6a4f9a0d034801dd87bfbdd193",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commits d0cb23522 and 871e598cc against base 973630e79; promotion.py +15 in _rebuild_record_from_run_directory, the new test +265, the fragment +37, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_discarded_run_promotes_after_its_commits_land.py and its manifest records 1 passed for the gate and 55 passed for each of the base and head arms of test_a_run_can_always_be_reconciled.py and test_crew_promotion.py, EXIT=0.",
+    "goal": "the node's goal is that a run discarded to free its claim, whose commit then reaches main through a follow-on merge, promotes from its surviving run directory; promotion.py:4500-4508 recovers the rebuilt record's write scope from the durable manifest's changed_paths so its own cited commit is not refused as outside an empty declaration.",
+    "manifest": "read; status complete, naming the gate, both arms, the declared negative control and their logs in the run directory.",
+    "write_paths": "the declared paths are reckon/crew/promotion.py, tests/test_discarded_run_promotes_after_its_commits_land.py and the evidence fragment; the diff 973630e79..871e598cc touches only those three."
+  },
+  "justifications": {
+    "durability": "reverting the promotion.py:4500-4508 block leaves node.write_paths empty, so _landing_scope_products refuses the predecessor's commit as outside scope and the case at tests/test_discarded_run_promotes_after_its_commits_land.py:249 reddens; the declared negative control forces the same refusal by removing the reconcile path.",
+    "evidence": "tests/test_discarded_run_promotes_after_its_commits_land.py:249 calls crew.complete on the pointerless predecessor and its assertions at :254-265 require exactly one row citing pred_commit with the follow-on row unchanged, recorded as 1 passed with the 55/55 arms and the logged negative control.",
+    "fit": "the added block sits inside _rebuild_record_from_run_directory beside the existing supervisor and manifest reconstruction, reuses parse_manifest and _changed_paths_inside_repository, and introduces no plan or ticket identifier.",
+    "goal_fidelity": "promotion.py:4500-4508 sets the rebuilt record's node.write_paths from the manifest's changed_paths, which promotion.py:6421 in _landing_scope_products reads, so the discarded run's cited commit is contained by its own surviving declaration.",
+    "scope_discipline": "every path in the diff 973630e79..871e598cc is one of the three declared write paths, and the change adds no capability the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a run discarded to free its claim, whose commit then reaches main through a follow-on merge, promotes from its surviving run directory; promotion.py:4500-4508 recovers the rebuilt record's write scope from the durable manifest's changed_paths so its own cited commit is not refused as outside an empty declaration.\nVERDICT done_when: the done_when names tests/test_discarded_run_promotes_after_its_commits_land.py and its manifest records 1 passed for the gate and 55 passed for each of the base and head arms of test_a_run_can_always_be_reconciled.py and test_crew_promotion.py, EXIT=0.\nVERDICT write_paths: the declared paths are reckon/crew/promotion.py, tests/test_discarded_run_promotes_after_its_commits_land.py and the evidence fragment; the diff 973630e79..871e598cc touches only those three.\nVERDICT manifest: read; status complete, naming the gate, both arms, the declared negative control and their logs in the run directory.\nVERDICT diff: read commits d0cb23522 and 871e598cc against base 973630e79; promotion.py +15 in _rebuild_record_from_run_directory, the new test +265, the fragment +37, all inside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:complete, reckon/crew/promotion.py:_read_pointer_or_rebuild, reckon/crew/promotion.py:_landing_scope_products\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: promotion.py:4500-4508 sets the rebuilt record's node.write_paths from the manifest's changed_paths, which promotion.py:6421 in _landing_scope_products reads, so the discarded run's cited commit is contained by its own surviving declaration.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_discarded_run_promotes_after_its_commits_land.py:249 calls crew.complete on the pointerless predecessor and its assertions at :254-265 require exactly one row citing pred_commit with the follow-on row unchanged, recorded as 1 passed with the 55/55 arms and the logged negative control.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff 973630e79..871e598cc is one of the three declared write paths, and the change adds no capability the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: reverting the promotion.py:4500-4508 block leaves node.write_paths empty, so _landing_scope_products refuses the predecessor's commit as outside scope and the case at tests/test_discarded_run_promotes_after_its_commits_land.py:249 reddens; the declared negative control forces the same refusal by removing the reconcile path.\nSCORE fit: 18\nJUSTIFICATION fit: the added block sits inside _rebuild_record_from_run_directory beside the existing supervisor and manifest reconstruction, reuses parse_manifest and _changed_paths_inside_repository, and introduces no plan or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T003351727134-discarded-run-promotes-after-its-commits-land/manifest.md:10 follow-on: the armed manifest records its base and head arm commands and results only in the free-text tests: and test_logs: lines and omits the machine-readable baseline_suite and after_suite fields, so a reader that derives added failures from the manifest (the review annotation and the promotion suite-delta check) reads this run's suite evidence as unmeasured rather than as the measured zero the two arm logs show.\n",
+  "review_run_id": "r-20261002T005818516493-review-of-discarded-run-promotes-after-its-commits-land",
+  "reviewed_base_sha": "973630e798c505920933f97d9a0bcddfa2f4145e",
+  "reviewed_head_sha": "871e598cc759e496877310d8586fbbdde90941ac",
+  "reviewed_run_id": "r-20261002T003351727134-discarded-run-promotes-after-its-commits-land",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T01:06:28+00:00",
+  "total": 89
+}

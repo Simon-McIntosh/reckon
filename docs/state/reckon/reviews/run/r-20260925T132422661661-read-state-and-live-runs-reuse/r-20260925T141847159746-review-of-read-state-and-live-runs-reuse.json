@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_store.py::read_state (via _read_state)",
+    "reckon/roadmap.py:1488",
+    "reckon/mcp_views.py:2280"
+  ],
+  "completed_at": "2026-09-25T14:59:38.571Z",
+  "dispatched_at": "2026-09-25T14:19:03Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "472",
+      "text": "the state and the text are now two independent stat-keyed lookups, so a write landing between them pairs a state parsed from the old bytes with text from the new bytes and _unparsed_section_warnings at reckon/_store.py:377 then reports authored children of a section the stale state shows empty; one read produced both before this change."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against the base; 2b05c42b adds the stat-keyed read_state_file memo and the recorded-classification reuse with two test files, and b6d88e88 adds the qualified evidence record and figure, all inside the declared scope.",
+    "done_when": "read the dispatch's quantitative measure against the run directory; the memo assertions are in tests/test_read_state_memo.py, the recorded-classification assertions in tests/test_partition_live_runs_recorded.py, the three-call timings in after-audit.log and after-roadmap.log, the declared mutation in negative-control.log, and the unmet audit clause is recorded rather than dropped.",
+    "goal": "read the node goal and the landed change in reckon/mcp_views.py:1157 and reckon/_plan_html.py:610; roadmap summary is under the bound at a 1.33 s median while audit stays above it at 8.01 s, so the reuse itself landed for both reads but the joint five-second outcome holds only for roadmap.",
+    "manifest": "read; it records status blocked, names gate.log and six further logs that exist on disk, and states the audit median as 8.01 s rather than claiming the five-second bound.",
+    "write_paths": "read the manifest's declared paths against git diff --stat 490ad6c0907b49a9a06b476dfb7353d21fb9d86b..b6d88e887700211df0ef8b0831a57fb6b548f8fe; all eight changed paths are inside the declared eight and the worktree is clean at head."
+  },
+  "justifications": {
+    "durability": "tests/test_read_state_memo.py:71 reddens on the declared path-only mutation while the unchanged-read and isolation cases stay green, and tests/test_partition_live_runs_recorded.py:45 fails if a recorded run is observed again, so each guard names the regression it catches.",
+    "evidence": "after-roadmap.log and after-audit.log carry nonempty guards for every timed call, negative-control.log opens with the declared mutation string and reddens three invalidation cases, and the failing audit clause is recorded in the run manifest rather than omitted.",
+    "fit": "reckon/_plan_html.py:610 reuses file_memo.memoized exactly as parse_meta does at reckon/_plan_html.py:1203 and reckon/mcp_views.py:1102 mirrors sprint_liveness._recorded_states, with no name carrying a plan label.",
+    "goal_fidelity": "reckon/mcp_views.py:1166 consumes the producer's recorded verdict and roadmap lands at 1.33 s, but audit reads 8.01 s in after-audit.log because the direct from_html loop in reckon/mcp.py is untouched, so the joint bound is half met.",
+    "scope_discipline": "git diff 490ad6c0907b49a9a06b476dfb7353d21fb9d86b..b6d88e887700211df0ef8b0831a57fb6b548f8fe touches only the eight declared paths, adding no edit outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal and the landed change in reckon/mcp_views.py:1157 and reckon/_plan_html.py:610; roadmap summary is under the bound at a 1.33 s median while audit stays above it at 8.01 s, so the reuse itself landed for both reads but the joint five-second outcome holds only for roadmap.\nVERDICT done_when: read the dispatch's quantitative measure against the run directory; the memo assertions are in tests/test_read_state_memo.py, the recorded-classification assertions in tests/test_partition_live_runs_recorded.py, the three-call timings in after-audit.log and after-roadmap.log, the declared mutation in negative-control.log, and the unmet audit clause is recorded rather than dropped.\nVERDICT write_paths: read the manifest's declared paths against git diff --stat 490ad6c0907b49a9a06b476dfb7353d21fb9d86b..b6d88e887700211df0ef8b0831a57fb6b548f8fe; all eight changed paths are inside the declared eight and the worktree is clean at head.\nVERDICT manifest: read; it records status blocked, names gate.log and six further logs that exist on disk, and states the audit median as 8.01 s rather than claiming the five-second bound.\nVERDICT diff: read both commits against the base; 2b05c42b adds the stat-keyed read_state_file memo and the recorded-classification reuse with two test files, and b6d88e88 adds the qualified evidence record and figure, all inside the declared scope.\nCALL_SITES: reckon/_store.py::read_state (via _read_state), reckon/roadmap.py:1488, reckon/mcp_views.py:2280\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:1166 consumes the producer's recorded verdict and roadmap lands at 1.33 s, but audit reads 8.01 s in after-audit.log because the direct from_html loop in reckon/mcp.py is untouched, so the joint bound is half met.\nSCORE evidence: 16\nJUSTIFICATION evidence: after-roadmap.log and after-audit.log carry nonempty guards for every timed call, negative-control.log opens with the declared mutation string and reddens three invalidation cases, and the failing audit clause is recorded in the run manifest rather than omitted.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 490ad6c0907b49a9a06b476dfb7353d21fb9d86b..b6d88e887700211df0ef8b0831a57fb6b548f8fe touches only the eight declared paths, adding no edit outside them.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_read_state_memo.py:71 reddens on the declared path-only mutation while the unchanged-read and isolation cases stay green, and tests/test_partition_live_runs_recorded.py:45 fails if a recorded run is observed again, so each guard names the regression it catches.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_plan_html.py:610 reuses file_memo.memoized exactly as parse_meta does at reckon/_plan_html.py:1203 and reckon/mcp_views.py:1102 mirrors sprint_liveness._recorded_states, with no name carrying a plan label.\nFINDING reckon/_store.py:472 the state and the text are now two independent stat-keyed lookups, so a write landing between them pairs a state parsed from the old bytes with text from the new bytes and _unparsed_section_warnings at reckon/_store.py:377 then reports authored children of a section the stale state shows empty; one read produced both before this change.\n",
+  "review_run_id": "r-20260925T141847159746-review-of-read-state-and-live-runs-reuse",
+  "reviewed_base_sha": "490ad6c0907b49a9a06b476dfb7353d21fb9d86b",
+  "reviewed_head_sha": "b6d88e887700211df0ef8b0831a57fb6b548f8fe",
+  "reviewed_run_id": "r-20260925T132422661661-read-state-and-live-runs-reuse",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T14:54:14.876490+00:00",
+  "total": 86
+}

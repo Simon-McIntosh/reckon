@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140618988787-preflight-reports-runs-remaining/gate-head.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140618988787-preflight-reports-runs-remaining/gate-base.log",
+    "count_derivation": "pytest FAILED/ERROR node ids in the after log minus those in the baseline log, by the store's own added_failures_from_gate_logs"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:1140",
+    "reckon/mcp.py:3965"
+  ],
+  "completed_at": "2026-09-28T18:40:31.358Z",
+  "dispatched_at": "2026-09-28T18:07:24Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140618988787-preflight-reports-runs-remaining/gate-head.log",
+      "line": "1",
+      "text": "the head arm's log opens with a banner (\"HEAD ARM -- run at the committed head, foreground\") where its own manifest contract puts the revision, tree and command on the first line and the base arm does exactly that, so a reader or tool taking the first line of the head log learns no revision for the arm that carries the landed result; the repair that named the full command left the first-line form unmet."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against fb747528; 4b458d3f changes the divisor at reckon/budget.py:2027 from the receipt count to the intervals the rise spans, adds the two-receipt case, and 45435adc/1533d6fe move the plan, the archive, the figure and the control count to the interval figures, with docs and code agreeing at the head.",
+    "done_when": "the done-when asks that a synthetic wave projected past its reset be refused with the runs-remaining figure in the refusal; tests/test_preflight_runs_remaining.py:547-580 asserts \"13.75 runs remain\" and the reset stamp in the refusal text, and re-running that file at the committed head from a git-extracted scratch tree gives 14 passed at exit 0.",
+    "goal": "the goal is to report runs remaining before the weekly reset per budget group and role and refuse a wave projected past it; reckon/budget.py:2151 divides the group's remaining seven-day window by the flow-priced mean, 2140 repeats it per role, and 2198 names the runs remaining and the reset in the refusal, so every named element is reported where the goal names it.",
+    "manifest": "read; baseline_suite and after_suite now carry armed JSON naming per-arm log_path, so the store's own resolver derives a measured added_failure_count of 0, and the correction block records the interval divisor beside its seam; my own application of review.added_failures_from_gate_logs over gate-base.log and gate-head.log returns (0, []) and the head log names its full ten-file command, which retires the prior review's elided-command finding.",
+    "write_paths": "read the manifest's seven declared paths; git diff --stat fb747528..1533d6fe lists five files -- reckon/budget.py, tests/test_preflight_runs_remaining.py, docs/plans/the-fleet-reports-its-velocity.html, docs/evidence/archive/the-fleet-reports-its-velocity-landed.html and docs/figures/the-fleet-reports-its-velocity/quota-runway.png -- and every one is inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the receipt-count divisor at reckon/budget.py:2027 reddens 7 of the 14 cases in tests/test_preflight_runs_remaining.py, the two-receipt case at line 241 and the refusal case at line 547 among them, and those assertions are anchored to the fixture's own start, end and count rather than to the code under test.",
+    "evidence": "both arms carry armed JSON with log_path, revisions fb747528/1533d6fe, 192 and 206 passed at EXIT=0 and module paths inside the reviewed tree, my own re-run of tests/test_preflight_runs_remaining.py at the committed head passes 14/14 from committed bytes, and the live-ledger probe reproduces the node's rise and interval figures exactly; the head log's first line names no revision.",
+    "fit": "the estimator keeps the module's unmeasured-not-zero idiom, the mechanism names (_run_cost_flow, RUNWAY_TRAILING_DAYS, format_refusal) and the rewritten docstring states the n-1 interval mechanism, and the diff introduces no plan label or version token.",
+    "goal_fidelity": "reckon/budget.py:2027 now divides each window's rise by the intervals it spans, so the mean 2151 divides the remaining window by is a per-interval cost rather than the low by n/(n-1) figure the prior review found, and only the payload's priced_runs still counts receipts against that divisor.",
+    "scope_discipline": "every path in git diff --stat fb747528..1533d6fe lies inside the manifest's seven declared write paths, and the correction reuses pace.drain_deadline and budget_group.declared_groups rather than restating them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to report runs remaining before the weekly reset per budget group and role and refuse a wave projected past it; reckon/budget.py:2151 divides the group's remaining seven-day window by the flow-priced mean, 2140 repeats it per role, and 2198 names the runs remaining and the reset in the refusal, so every named element is reported where the goal names it.\nVERDICT done_when: the done-when asks that a synthetic wave projected past its reset be refused with the runs-remaining figure in the refusal; tests/test_preflight_runs_remaining.py:547-580 asserts \"13.75 runs remain\" and the reset stamp in the refusal text, and re-running that file at the committed head from a git-extracted scratch tree gives 14 passed at exit 0.\nVERDICT write_paths: read the manifest's seven declared paths; git diff --stat fb747528..1533d6fe lists five files -- reckon/budget.py, tests/test_preflight_runs_remaining.py, docs/plans/the-fleet-reports-its-velocity.html, docs/evidence/archive/the-fleet-reports-its-velocity-landed.html and docs/figures/the-fleet-reports-its-velocity/quota-runway.png -- and every one is inside them.\nVERDICT manifest: read; baseline_suite and after_suite now carry armed JSON naming per-arm log_path, so the store's own resolver derives a measured added_failure_count of 0, and the correction block records the interval divisor beside its seam; my own application of review.added_failures_from_gate_logs over gate-base.log and gate-head.log returns (0, []) and the head log names its full ten-file command, which retires the prior review's elided-command finding.\nVERDICT diff: read commit by commit against fb747528; 4b458d3f changes the divisor at reckon/budget.py:2027 from the receipt count to the intervals the rise spans, adds the two-receipt case, and 45435adc/1533d6fe move the plan, the archive, the figure and the control count to the interval figures, with docs and code agreeing at the head.\nCALL_SITES: reckon/cli.py:1140, reckon/mcp.py:3965\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/budget.py:2027 now divides each window's rise by the intervals it spans, so the mean 2151 divides the remaining window by is a per-interval cost rather than the low by n/(n-1) figure the prior review found, and only the payload's priced_runs still counts receipts against that divisor.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms carry armed JSON with log_path, revisions fb747528/1533d6fe, 192 and 206 passed at EXIT=0 and module paths inside the reviewed tree, my own re-run of tests/test_preflight_runs_remaining.py at the committed head passes 14/14 from committed bytes, and the live-ledger probe reproduces the node's rise and interval figures exactly; the head log's first line names no revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat fb747528..1533d6fe lies inside the manifest's seven declared write paths, and the correction reuses pace.drain_deadline and budget_group.declared_groups rather than restating them.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the receipt-count divisor at reckon/budget.py:2027 reddens 7 of the 14 cases in tests/test_preflight_runs_remaining.py, the two-receipt case at line 241 and the refusal case at line 547 among them, and those assertions are anchored to the fixture's own start, end and count rather than to the code under test.\nSCORE fit: 19\nJUSTIFICATION fit: the estimator keeps the module's unmeasured-not-zero idiom, the mechanism names (_run_cost_flow, RUNWAY_TRAILING_DAYS, format_refusal) and the rewritten docstring states the n-1 interval mechanism, and the diff introduces no plan label or version token.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140618988787-preflight-reports-runs-remaining/gate-head.log:1 the head arm's log opens with a banner (\"HEAD ARM -- run at the committed head, foreground\") where its own manifest contract puts the revision, tree and command on the first line and the base arm does exactly that, so a reader or tool taking the first line of the head log learns no revision for the arm that carries the landed result; the repair that named the full command left the first-line form unmet.",
+  "review_run_id": "r-20260928T180707688785-review-of-preflight-reports-runs-remaining",
+  "reviewed_base_sha": "fb7475289c1d5e0230e6c146dc44891b02a23420",
+  "reviewed_head_sha": "1533d6fe57cc961276065e96902a7da59b3e4d0c",
+  "reviewed_run_id": "r-20260928T140618988787-preflight-reports-runs-remaining",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T18:33:49.646383+00:00",
+  "total": 95
+}

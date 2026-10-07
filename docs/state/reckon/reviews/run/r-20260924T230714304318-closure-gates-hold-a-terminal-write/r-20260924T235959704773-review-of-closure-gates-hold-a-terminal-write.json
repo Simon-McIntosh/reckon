@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:2870",
+    "reckon/serve.py:1866",
+    "reckon/mcp_views.py:1542",
+    "reckon/roadmap.py:1070"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T23:59:59.704773+00:00",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "1866",
+      "text": "the served plan view still runs unpassed_gate_blockers over every gate, so a plan whose only open gate is a closure gate renders as blocked while reckon/roadmap.py:1070 reports the same plan in ready_now, and that divergence is reachable only because this change introduced transition gates."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "1542",
+      "text": "the MCP blocking projection makes the same unfiltered call, so mcp_blocking carries a closure gate as a blocker beside the roadmap's own closure_blockers entry for that one gate."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "328",
+      "text": "a pending decision-lockable gate forces its decision row to open, and reckon/roadmap.py:1084 makes any open decision remove the plan from ready_now, so of the two transitions this change models as one edge the decision one idles the plan while the plan-terminal one does not."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against c924a244; e280d50f adds the tests, figure and docs, 3fb14fb2 lands the schema, plan-HTML read/write, store refusals and roadmap derivation, e1d2c312 repairs sparse legacy serialisation, and 8ff3d41f plus c563da20 are documentation, with every path inside the declared scope.",
+    "done_when": "the measure asks for both directions plus an executed negative control, and tests/test_closure_gates.py carries the ready direction at :70-80, the refusal at :84-100 and the accepted-after-verdict direction at :104-121, with the control at negative-control.log.",
+    "goal": "the goal is a plan carrying a closure gate that stays dispatchable while a terminal write is refused until the gate has a verdict; reckon/roadmap.py:1083 filters transition gates out of the execution blockers so the plan reaches ready_now, and reckon/_store.py:2028-2040 refuses the write naming the gate and its gating plan.",
+    "manifest": "read; it names the five commits, nine changed paths, both suite arms with their failure ids and the declared-mutation log, and its counts reproduce against baseline.log (8 failed, 2747 passed) and current-head.log (7 failed, 2784 passed).",
+    "write_paths": "the dispatch fenced eight paths and this diff touches nine; the ninth, docs/_shared/plan.schema.json, is covered by the recorded user scope extension in scope-extension.json, and the worktree is clean at c563da20."
+  },
+  "justifications": {
+    "durability": "the declared mutation recorded at negative-control.log:1 and :3 removes the refusal call in reckon/_store.py and reddens tests/test_closure_gates.py:84-100 across all seven terminal statuses, but the control covers one of the three refusal points (reckon/_store.py:1998, :2109 rest on their own assertions).",
+    "evidence": "the gate ran and its result is on disk, but the head arm recorded in after_suite is revision 8ff3d41f rather than the reviewed head c563da20, so the reviewed head is covered by the docs-only argument in the manifest checkpoint rather than by a log taken there.",
+    "fit": "reckon/_store.py:2104 reuses the terminal-set detection shape that reckon/_store.py:2067 already uses, the guarded model_serializer at reckon/_schema.py:731 keeps legacy gate records sparse, and no plan or sprint label reaches the source; the deduction is the unfiltered blocker list at reckon/serve.py:1866.",
+    "goal_fidelity": "reckon/roadmap.py:1083 keeps a transition-gated plan in ready_now and dispatchable while reckon/_store.py:2028 refuses that plan's terminal write naming gate and gating plan, so the goal is met on the roadmap; the deduction is that reckon/serve.py:1866 answers the same question the other way.",
+    "scope_discipline": "every path in `git diff --stat c924a244..c563da20` lies inside the dispatch fence or the extension recorded in scope-extension.json, and no commit carries anything the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a plan carrying a closure gate that stays dispatchable while a terminal write is refused until the gate has a verdict; reckon/roadmap.py:1083 filters transition gates out of the execution blockers so the plan reaches ready_now, and reckon/_store.py:2028-2040 refuses the write naming the gate and its gating plan.\nVERDICT done_when: the measure asks for both directions plus an executed negative control, and tests/test_closure_gates.py carries the ready direction at :70-80, the refusal at :84-100 and the accepted-after-verdict direction at :104-121, with the control at negative-control.log.\nVERDICT write_paths: the dispatch fenced eight paths and this diff touches nine; the ninth, docs/_shared/plan.schema.json, is covered by the recorded user scope extension in scope-extension.json, and the worktree is clean at c563da20.\nVERDICT manifest: read; it names the five commits, nine changed paths, both suite arms with their failure ids and the declared-mutation log, and its counts reproduce against baseline.log (8 failed, 2747 passed) and current-head.log (7 failed, 2784 passed).\nVERDICT diff: read commit by commit against c924a244; e280d50f adds the tests, figure and docs, 3fb14fb2 lands the schema, plan-HTML read/write, store refusals and roadmap derivation, e1d2c312 repairs sparse legacy serialisation, and 8ff3d41f plus c563da20 are documentation, with every path inside the declared scope.\nCALL_SITES: reckon/mcp.py:2870, reckon/serve.py:1866, reckon/mcp_views.py:1542, reckon/roadmap.py:1070\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:1083 keeps a transition-gated plan in ready_now and dispatchable while reckon/_store.py:2028 refuses that plan's terminal write naming gate and gating plan, so the goal is met on the roadmap; the deduction is that reckon/serve.py:1866 answers the same question the other way.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate ran and its result is on disk, but the head arm recorded in after_suite is revision 8ff3d41f rather than the reviewed head c563da20, so the reviewed head is covered by the docs-only argument in the manifest checkpoint rather than by a log taken there.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff --stat c924a244..c563da20` lies inside the dispatch fence or the extension recorded in scope-extension.json, and no commit carries anything the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation recorded at negative-control.log:1 and :3 removes the refusal call in reckon/_store.py and reddens tests/test_closure_gates.py:84-100 across all seven terminal statuses, but the control covers one of the three refusal points (reckon/_store.py:1998, :2109 rest on their own assertions).\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_store.py:2104 reuses the terminal-set detection shape that reckon/_store.py:2067 already uses, the guarded model_serializer at reckon/_schema.py:731 keeps legacy gate records sparse, and no plan or sprint label reaches the source; the deduction is the unfiltered blocker list at reckon/serve.py:1866.\nFINDING reckon/serve.py:1866 the served plan view still runs unpassed_gate_blockers over every gate, so a plan whose only open gate is a closure gate renders as blocked while reckon/roadmap.py:1070 reports the same plan in ready_now, and that divergence is reachable only because this change introduced transition gates.\nFINDING reckon/mcp_views.py:1542 the MCP blocking projection makes the same unfiltered call, so mcp_blocking carries a closure gate as a blocker beside the roadmap's own closure_blockers entry for that one gate.\nFINDING reckon/roadmap.py:328 a pending decision-lockable gate forces its decision row to open, and reckon/roadmap.py:1084 makes any open decision remove the plan from ready_now, so of the two transitions this change models as one edge the decision one idles the plan while the plan-terminal one does not.\n",
+  "review_run_id": "r-20260924T235959704773-review-of-closure-gates-hold-a-terminal-write",
+  "reviewed_base_sha": "c924a2446aca0078438a59ea05a18b1ae3978072",
+  "reviewed_head_sha": "c563da20d3f172073d3a5fde23c32006e3046309",
+  "reviewed_run_id": "r-20260924T230714304318-closure-gates-hold-a-terminal-write",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T01:05:12.009006+00:00",
+  "total": 92
+}

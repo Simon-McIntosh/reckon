@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_refuse_over_reservation_roster",
+    "reckon/crew/dispatch.py:apply_backend_placement",
+    "reckon/crew/runs.py:ensure_placement_reservation",
+    "reckon/cli.py:crew_placement"
+  ],
+  "completed_at": "2026-09-29T10:49:32.522Z",
+  "dispatched_at": "2026-09-29T09:38:48Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "3567",
+      "text": "the crew_placement option help still tells the operator that the omitted --project form reads \"the pre-project host-global record, which belongs to no project\", and the docstring at 3573-3581 still says the record is keyed by project; both are false after this change, since a named project now reads the one shared record that case 1 exercises, so the operator-facing contract documents the retired keying. The node disclosed it as a follow-on and cli.py is held by a concurrent node, so it fell outside the fence."
+    },
+    {
+      "file": "reckon/crew/placement.py",
+      "line": "344",
+      "text": "the comment above the reservation's project field says the project is \"Carried in the record as well as in the path\", but reservation_path() no longer carries a project component, so the comment asserts a path part that does not exist; the file is inside this diff and the comment was passed without correction."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read as one commit against d13744c8, six paths, +432/-100: the record becomes unkeyed with a legacy read for migration (reckon/crew/placement.py:74-160), apply_backend_placement and the roster refusal follow that one record (reckon/crew/dispatch.py:463-486, 5973-5983), and occupying_the_reservation keeps only pointers that record a placement.",
+    "done_when": "the done_when names tests/test_reservation_is_shared_across_projects.py with its four cases, both arms and an executed negative control; logs/head-arm.log records 51 passed with EXIT=0 over the four named files against 46 on the base arm, and my headed re-run in logs/reviewed-head-rerun.log records 4 passed at the commit itself.",
+    "goal": "the goal is one placement reservation that every project resolves and a roster that counts placed runs fleet-wide; reckon/crew/placement.py:118 reads the single unkeyed record for every project and reckon/crew/placement.py:392 counts a seat from the placement the pointer records, so both halves of the goal are implemented.",
+    "manifest": "read; it reports complete at ba07b277 with both arms and their log paths, zero failures each, the executed negative control with its mutation recorded, and it discloses that the cli.py docstring still describes the retired per-project keying rather than leaving that for a reader to find.",
+    "write_paths": "the node declared seven write paths and the landed commit ba07b277 stays inside six of them (reckon/crew/placement.py, reckon/crew/dispatch.py, three test files, the evidence fragment) and leaves the declared figures directory unused rather than filling it gratuitously."
+  },
+  "justifications": {
+    "durability": "each of the four cases names the change that reddens it and the declared negative control restores per-project keying with case 1 reddening as predicted, but the legacy-unlink added to clear_reservation (reckon/crew/placement.py:148-160) is reached by no test and no caller.",
+    "evidence": "logs/head-arm.log records 51 passed and EXIT=0 over the four named files with zero failures on the base arm, but its header names d13744c8 with uncommitted changes rather than the commit it is stored under, which I closed with a headed re-run at ba07b277 (4 passed, EXIT=0, clean tree).",
+    "fit": "the new symbols reservation_path, legacy_reservation_path and the unkeyed record follow the module's idiom, but two statements of the retired keying survive in reach at reckon/crew/placement.py:344 and reckon/cli.py:3573.",
+    "goal_fidelity": "reckon/crew/placement.py:118 resolves the one unkeyed record for whichever project asks and reckon/crew/placement.py:392 counts a seat from the recorded placement fact, which is the goal's rule taken over placed runs rather than project membership.",
+    "scope_discipline": "every path in ba07b277 lies inside the declared write paths and the declared figures directory was left unused, so nothing was added that the goal does not imply."
+  },
+  "node": "reservation-is-shared-across-projects",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one placement reservation that every project resolves and a roster that counts placed runs fleet-wide; reckon/crew/placement.py:118 reads the single unkeyed record for every project and reckon/crew/placement.py:392 counts a seat from the placement the pointer records, so both halves of the goal are implemented.\nVERDICT done_when: the done_when names tests/test_reservation_is_shared_across_projects.py with its four cases, both arms and an executed negative control; logs/head-arm.log records 51 passed with EXIT=0 over the four named files against 46 on the base arm, and my headed re-run in logs/reviewed-head-rerun.log records 4 passed at the commit itself.\nVERDICT write_paths: the node declared seven write paths and the landed commit ba07b277 stays inside six of them (reckon/crew/placement.py, reckon/crew/dispatch.py, three test files, the evidence fragment) and leaves the declared figures directory unused rather than filling it gratuitously.\nVERDICT manifest: read; it reports complete at ba07b277 with both arms and their log paths, zero failures each, the executed negative control with its mutation recorded, and it discloses that the cli.py docstring still describes the retired per-project keying rather than leaving that for a reader to find.\nVERDICT diff: read as one commit against d13744c8, six paths, +432/-100: the record becomes unkeyed with a legacy read for migration (reckon/crew/placement.py:74-160), apply_backend_placement and the roster refusal follow that one record (reckon/crew/dispatch.py:463-486, 5973-5983), and occupying_the_reservation keeps only pointers that record a placement.\nCALL_SITES: reckon/crew/dispatch.py:_refuse_over_reservation_roster, reckon/crew/dispatch.py:apply_backend_placement, reckon/crew/runs.py:ensure_placement_reservation, reckon/cli.py:crew_placement\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/placement.py:118 resolves the one unkeyed record for whichever project asks and reckon/crew/placement.py:392 counts a seat from the recorded placement fact, which is the goal's rule taken over placed runs rather than project membership.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-arm.log records 51 passed and EXIT=0 over the four named files with zero failures on the base arm, but its header names d13744c8 with uncommitted changes rather than the commit it is stored under, which I closed with a headed re-run at ba07b277 (4 passed, EXIT=0, clean tree).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in ba07b277 lies inside the declared write paths and the declared figures directory was left unused, so nothing was added that the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: each of the four cases names the change that reddens it and the declared negative control restores per-project keying with case 1 reddening as predicted, but the legacy-unlink added to clear_reservation (reckon/crew/placement.py:148-160) is reached by no test and no caller.\nSCORE fit: 18\nJUSTIFICATION fit: the new symbols reservation_path, legacy_reservation_path and the unkeyed record follow the module's idiom, but two statements of the retired keying survive in reach at reckon/crew/placement.py:344 and reckon/cli.py:3573.\nFINDING reckon/cli.py:3567 the crew_placement option help still tells the operator that the omitted --project form reads \"the pre-project host-global record, which belongs to no project\", and the docstring at 3573-3581 still says the record is keyed by project; both are false after this change, since a named project now reads the one shared record that case 1 exercises, so the operator-facing contract documents the retired keying. The node disclosed it as a follow-on and cli.py is held by a concurrent node, so it fell outside the fence.\nFINDING reckon/crew/placement.py:344 the comment above the reservation's project field says the project is \"Carried in the record as well as in the path\", but reservation_path() no longer carries a project component, so the comment asserts a path part that does not exist; the file is inside this diff and the comment was passed without correction.",
+  "review_run_id": "r-20260929T093834684275-review-of-reservation-is-shared-across-projects",
+  "reviewed_base_sha": "d13744c8eceb0ba6228a3d26672b9957b5cf0fad",
+  "reviewed_head_sha": "ba07b277424dc8f611a2e445feef694d82c32e61",
+  "reviewed_run_id": "r-20260929T085733108021-reservation-is-shared-across-projects",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T093834684275-review-of-reservation-is-shared-across-projects",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:02.509010+00:00",
+  "total": 95
+}

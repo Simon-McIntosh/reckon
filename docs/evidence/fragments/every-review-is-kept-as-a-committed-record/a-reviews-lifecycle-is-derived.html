@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="A review's lifecycle is derived, never stored">
+  <meta name="plan-summary" content="reckon/crew/review_lifecycle.py derives one state for any stored review — landed, superseded, open or answered — from the record and its subject's state, writing nothing. A plan review lands when its plan has shipped or every section it read is now done; a run review lands when its run has a ledger row. Superseding, and open versus answered, are derived the same way. HOT_STATES is the pair a hot-set view reads.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>A review's lifecycle is derived, never stored | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A review's lifecycle is derived, never stored</h1>
+
+    <section id="a-reviews-lifecycle-is-derived-anchor">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/review_lifecycle.py</code> (new):
+        <code>lifecycle(record, *, plan_state=None, run_closed=None,
+        later_records=())</code> returns the first of <code>landed</code>,
+        <code>superseded</code>, <code>open</code>, <code>answered</code> that
+        holds for a stored plan or run review, deriving it from the record and
+        its subject's state and writing nothing. A plan review is landed when
+        its plan's status is <code>shipped</code>/<code>done</code>/<code>archived</code>,
+        or when every section named in its <code>section_digests</code> is now
+        declared <code>done</code>; a run review is landed when its reviewed run
+        has a ledger row (promoted, or closed without promotion). Superseding is
+        a later review of the same
+        subject — same plan under the same rubric (design and content separate,
+        as <code>plan_review.is_design_review</code> does), or the same
+        reviewed run — ordered by plan version then dispatch time, or by
+        dispatch time for a run. A run review is open while a finding whose
+        severity is not <code>follow-on</code> has no answer in the record's
+        <code>responses</code> or <code>response_events</code>; a plan review
+        is open on <code>plan_review.unanswered_findings</code>, exactly as the
+        dispatch gate reads it. <code>HOT_STATES = {"open", "answered"}</code>
+        is the pair a default view reads. <code>review_lifecycles(project)</code>
+        is the thin loader: plan reviews through
+        <code>plan_review.list_plan_reviews</code>, run reviews through the
+        run-review store readers, plan states through the plan parser,
+        promotions through the ledger's run-id reader; it returns each record's
+        path with its state.</p>
+      <p>Gate: <code>tests/test_review_lifecycle.py</code> (new) plus
+        <code>tests/test_plan_review_store.py</code> —
+        30 passed, EXIT=0.</p>
+    </section>
+  </main>
+</body>
+</html>

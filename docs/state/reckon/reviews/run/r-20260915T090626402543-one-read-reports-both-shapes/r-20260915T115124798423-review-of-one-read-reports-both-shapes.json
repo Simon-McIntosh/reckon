@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T11:51:24.798423+00:00",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "1948",
+      "text": "endpoint_closures is absent from the ready_now rows even though every ready item carries it on the dispatch surface, so a reader querying the field named for the ready set gets nothing; a live read of the reckon project reproduced empty ready_now closure fields, matching the gap the coordinator recorded as the field landing on the adjacent surface."
+    },
+    {
+      "file": "tests/test_roadmap.py",
+      "line": "767",
+      "text": "the test aliases result['immediate_roadmap'] as 'ready', asserting the surface the implementation chose rather than the field the done-when names, so the ready-named surface's silence passed the node's own gate undetected."
+    }
+  ],
+  "justifications": {
+    "durability": "both new gate cases fail at base with KeyError 'endpoint_closures' (tests/test_roadmap.py:743 and tests/test_roadmap.py:824) and the byte-identity case at tests/test_roadmap.py:847 fails if membership is written rather than derived, so a regression of this change fails loudly.",
+    "evidence": "the recorded gate asserts only the dispatch surface (tests/test_roadmap.py:767) and the live receipt counts only with_endpoint_closures on immediate_roadmap, so the ready-named surface the done-when names is never measured by the node's own evidence and an independent live read found ready_now carrying zero endpoint_closures.",
+    "fit": "the endpoint_memberships index built from the existing _dependency_endpoints rows at reckon/roadmap.py:1498 follows the surrounding idiom, but the new test at tests/test_roadmap.py:767 aliases result['immediate_roadmap'] as 'ready', a name the contract gives to a different field, masking the gap until a live read.",
+    "goal_fidelity": "reckon/roadmap.py:1802 adds endpoint_closures to every immediate_roadmap dispatch row while reckon/roadmap.py:1948 returns the ready_now rows raw, so the field is absent from the surface the section's done-when names as the ready set, even though every ready item appears once with its closures on the dispatch queue.",
+    "scope_discipline": "commit 51361af0 touches only reckon/roadmap.py and tests/test_roadmap.py and commit 1a9fa39c only the two declared plan and evidence HTML paths, all inside the run's declared write paths."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:1802 adds endpoint_closures to every immediate_roadmap dispatch row while reckon/roadmap.py:1948 returns the ready_now rows raw, so the field is absent from the surface the section's done-when names as the ready set, even though every ready item appears once with its closures on the dispatch queue.\nSCORE evidence: 18\nJUSTIFICATION evidence: the recorded gate asserts only the dispatch surface (tests/test_roadmap.py:767) and the live receipt counts only with_endpoint_closures on immediate_roadmap, so the ready-named surface the done-when names is never measured by the node's own evidence and an independent live read found ready_now carrying zero endpoint_closures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 51361af0 touches only reckon/roadmap.py and tests/test_roadmap.py and commit 1a9fa39c only the two declared plan and evidence HTML paths, all inside the run's declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: both new gate cases fail at base with KeyError 'endpoint_closures' (tests/test_roadmap.py:743 and tests/test_roadmap.py:824) and the byte-identity case at tests/test_roadmap.py:847 fails if membership is written rather than derived, so a regression of this change fails loudly.\nSCORE fit: 18\nJUSTIFICATION fit: the endpoint_memberships index built from the existing _dependency_endpoints rows at reckon/roadmap.py:1498 follows the surrounding idiom, but the new test at tests/test_roadmap.py:767 aliases result['immediate_roadmap'] as 'ready', a name the contract gives to a different field, masking the gap until a live read.\nFINDING reckon/roadmap.py:1948 endpoint_closures is absent from the ready_now rows even though every ready item carries it on the dispatch surface, so a reader querying the field named for the ready set gets nothing; a live read of the reckon project reproduced empty ready_now closure fields, matching the gap the coordinator recorded as the field landing on the adjacent surface.\nFINDING tests/test_roadmap.py:767 the test aliases result['immediate_roadmap'] as 'ready', asserting the surface the implementation chose rather than the field the done-when names, so the ready-named surface's silence passed the node's own gate undetected.\n",
+  "review_run_id": "r-20260915T115124798423-review-of-one-read-reports-both-shapes",
+  "reviewed_base": "3332b9d38bea812c5d37d60feec50eb6d2a08aee",
+  "reviewed_commit": "1a9fa39c",
+  "reviewed_run_id": "r-20260915T090626402543-one-read-reports-both-shapes",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T12:34:12+00:00",
+  "total": 93
+}

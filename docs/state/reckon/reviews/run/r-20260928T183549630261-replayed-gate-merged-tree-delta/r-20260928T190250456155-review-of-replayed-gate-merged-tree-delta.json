@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T183549630261-replayed-gate-merged-tree-delta/gate-merged-355a8864.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T183549630261-replayed-gate-merged-tree-delta/gate-base-19d9f51f.log"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:2098 compose_landed_record on the served evidence path",
+    "reckon/mcp.py:1139 compose_landed_record on the MCP read path",
+    "reckon/doccheck.py:1230 compose_landed_record in the doc check",
+    "reckon/evidence.py:460 the composer that globs docs/evidence/fragments/<plan>/<node>.html at reckon/evidence.py:527."
+  ],
+  "completed_at": "2026-09-28T19:25:39.166Z",
+  "dispatched_at": "2026-09-28T19:03:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T183549630261-replayed-gate-merged-tree-delta/manifest.md",
+      "line": "21",
+      "text": "artifacts names .../reports/reckon/s22-coord/replayed-gate-merged-tree-delta/report.md, but that directory is empty and the report exists only as the run directory's own report.md, so a reader following the record opens nothing."
+    },
+    {
+      "file": "docs/figures/a-worker-is-charged-to-a-job/replayed-gate-merged-tree-delta/arm-comparison.svg",
+      "line": "24",
+      "text": "the merged-arm label \"355a8864 (second parent 3a9eec99)\" reads as if 355a8864 were the second parent; it is the merge commit whose second parent is 3a9eec99, and this figure is the artifact most likely to be read on its own."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 19d9f51f \u2014 3efc2b0a adds the evidence fragment and the arm-comparison figure, f71f8579 amends one plan-commits meta line in the fragment.",
+    "done_when": "the dispatch's measure asks for two header-bearing logs, a report stating both arms' counts and the set difference, and manifest fields baseline_suite/after_suite; I re-derived the set difference from the two gate logs (11 ids each, added [] and removed []) and both manifest fields name those logs, but the report the fence places at the declared path is not there.",
+    "goal": "the goal is a test-role measurement of whether merge 355a8864 adds failing tests against its first parent 19d9f51f, and both arms' logs carry a probe line resolving the module under test inside their own tree (/tmp/promotion-arms/base/reckon/crew/promotion.py and /tmp/promotion-arms/merged/reckon/crew/promotion.py), which I re-ran to the same exit 0.",
+    "manifest": "read the run's manifest; it records status complete, both gate logs by path under baseline_suite and after_suite with failure_count 11 and identical failure_ids in each, and `reckon crew check-manifest --run r-20260928T183549630261-replayed-gate-merged-tree-delta` on it now returns ok:true with no findings.",
+    "write_paths": "the dispatch fences three paths; the two commits change only docs/evidence/fragments/a-worker-is-charged-to-a-job/replayed-gate-merged-tree-delta.html and docs/figures/a-worker-is-charged-to-a-job/replayed-gate-merged-tree-delta/arm-comparison.svg (156 insertions, no deletions), while the first declared path holds no file."
+  },
+  "justifications": {
+    "durability": "this node ships no executable change and no repository test guards its record, but its instrument is falsified \u2014 the injected-FAILED control log is reported added by the same differ (re-verified against the base log) and /tmp/promotion-arms/probe.py exits 3 outside its tree.",
+    "evidence": "both gate logs open with revision, tree, probe and command headers and end in EXIT=1 with 11 failed/340 passed and 11 failed/342 passed, matching the manifest, but the report the fence locates at the declared path is absent (manifest.md:21).",
+    "fit": "the fragment sits at docs/evidence/fragments/a-worker-is-charged-to-a-job/replayed-gate-merged-tree-delta.html with a project-absolute figure src, the ledgered-node path and naming reckon/evidence.py:515 reads and reckon/evidence.py:527 globs for, and both commits carry conventional subjects with bodies.",
+    "goal_fidelity": "the two arms differ by exactly the merge under test \u2014 tests/test_verify_gate_replay_is_diagnosable.py and the promotion.py replay marker exist only in the merged tree, verified in the surviving scratch trees \u2014 so the empty added set answers the question posed.",
+    "scope_discipline": "the two commits touch only the two declared repository paths and no source file, but the report went to the run directory instead of the first declared path, leaving reports/reckon/s22-coord/replayed-gate-merged-tree-delta/ empty."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a test-role measurement of whether merge 355a8864 adds failing tests against its first parent 19d9f51f, and both arms' logs carry a probe line resolving the module under test inside their own tree (/tmp/promotion-arms/base/reckon/crew/promotion.py and /tmp/promotion-arms/merged/reckon/crew/promotion.py), which I re-ran to the same exit 0.\nVERDICT done_when: the dispatch's measure asks for two header-bearing logs, a report stating both arms' counts and the set difference, and manifest fields baseline_suite/after_suite; I re-derived the set difference from the two gate logs (11 ids each, added [] and removed []) and both manifest fields name those logs, but the report the fence places at the declared path is not there.\nVERDICT write_paths: the dispatch fences three paths; the two commits change only docs/evidence/fragments/a-worker-is-charged-to-a-job/replayed-gate-merged-tree-delta.html and docs/figures/a-worker-is-charged-to-a-job/replayed-gate-merged-tree-delta/arm-comparison.svg (156 insertions, no deletions), while the first declared path holds no file.\nVERDICT manifest: read the run's manifest; it records status complete, both gate logs by path under baseline_suite and after_suite with failure_count 11 and identical failure_ids in each, and `reckon crew check-manifest --run r-20260928T183549630261-replayed-gate-merged-tree-delta` on it now returns ok:true with no findings.\nVERDICT diff: read commit by commit against 19d9f51f \u2014 3efc2b0a adds the evidence fragment and the arm-comparison figure, f71f8579 amends one plan-commits meta line in the fragment.\nCALL_SITES: reckon/serve.py:2098 compose_landed_record on the served evidence path, reckon/mcp.py:1139 compose_landed_record on the MCP read path, reckon/doccheck.py:1230 compose_landed_record in the doc check, reckon/evidence.py:460 the composer that globs docs/evidence/fragments/<plan>/<node>.html at reckon/evidence.py:527.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the two arms differ by exactly the merge under test \u2014 tests/test_verify_gate_replay_is_diagnosable.py and the promotion.py replay marker exist only in the merged tree, verified in the surviving scratch trees \u2014 so the empty added set answers the question posed.\nSCORE evidence: 16\nJUSTIFICATION evidence: both gate logs open with revision, tree, probe and command headers and end in EXIT=1 with 11 failed/340 passed and 11 failed/342 passed, matching the manifest, but the report the fence locates at the declared path is absent (manifest.md:21).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the two commits touch only the two declared repository paths and no source file, but the report went to the run directory instead of the first declared path, leaving reports/reckon/s22-coord/replayed-gate-merged-tree-delta/ empty.\nSCORE durability: 15\nJUSTIFICATION durability: this node ships no executable change and no repository test guards its record, but its instrument is falsified \u2014 the injected-FAILED control log is reported added by the same differ (re-verified against the base log) and /tmp/promotion-arms/probe.py exits 3 outside its tree.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment sits at docs/evidence/fragments/a-worker-is-charged-to-a-job/replayed-gate-merged-tree-delta.html with a project-absolute figure src, the ledgered-node path and naming reckon/evidence.py:515 reads and reckon/evidence.py:527 globs for, and both commits carry conventional subjects with bodies.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T183549630261-replayed-gate-merged-tree-delta/manifest.md:21 artifacts names .../reports/reckon/s22-coord/replayed-gate-merged-tree-delta/report.md, but that directory is empty and the report exists only as the run directory's own report.md, so a reader following the record opens nothing.\nFINDING docs/figures/a-worker-is-charged-to-a-job/replayed-gate-merged-tree-delta/arm-comparison.svg:24 the merged-arm label \"355a8864 (second parent 3a9eec99)\" reads as if 355a8864 were the second parent; it is the merge commit whose second parent is 3a9eec99, and this figure is the artifact most likely to be read on its own.\n",
+  "review_run_id": "r-20260928T190250456155-review-of-replayed-gate-merged-tree-delta",
+  "reviewed_base_sha": "19d9f51f17cb97d94615b9dc1db59233831983d2",
+  "reviewed_head_sha": "f71f857936768c455b1bbfbe095189689453f176",
+  "reviewed_run_id": "r-20260928T183549630261-replayed-gate-merged-tree-delta",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T19:20:46.963717+00:00",
+  "total": 86
+}

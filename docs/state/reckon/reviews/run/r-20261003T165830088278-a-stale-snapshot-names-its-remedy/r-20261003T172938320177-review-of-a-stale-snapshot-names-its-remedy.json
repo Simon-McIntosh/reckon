@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "count and ids derived from the reviewed run's own gate logs (logs/base-arm.log as base, logs/head-arm.log as head): base reports 2 failed (the .venv interpreter case, an extraction artifact, and the in-budget stop case, which the serial recheck passes), head reports 0 failed (135 passed EXIT=0), so no failing id is present at head that was absent at base. The reviewed manifest records no baseline_suite/after_suite fields (it carries a test_logs array), so the store's canonical derivation over those two named fields reads unmeasured.",
+  "after_suite": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-stale-snapshot-names-its-remedy /home/ITER/mcintos/Code/reckon/.venv/bin/python -P -m pytest -p no:cacheprovider -n 8 --timeout=300 --basetemp=/tmp/reckon-crew-scratch/r-20261003T165830088278-a-stale-snapshot-names-its-remedy/basetemp-head -q <the 10 head-arm test files>",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165830088278-a-stale-snapshot-names-its-remedy/logs/head-arm.log",
+    "revision": "8fd155b61bbdd86df87dbf4cbc1901a983e4c705"
+  },
+  "backend": "clive",
+  "baseline_suite": {
+    "command": "PYTHONPATH=/tmp/reckon-crew-scratch/r-20261003T165830088278-a-stale-snapshot-names-its-remedy/base-arm.op5LjK /home/ITER/mcintos/Code/reckon/.venv/bin/python -P -m pytest -p no:cacheprovider -n 8 --timeout=300 --basetemp=/tmp/reckon-crew-scratch/r-20261003T165830088278-a-stale-snapshot-names-its-remedy/basetemp-base -q <the 9 base-arm test files>",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_hook_installer.py::test_the_coordinator_commands_name_the_repository_interpreter",
+      "tests/test_stop_hook_reads_the_snapshot.py::test_a_not_fresh_snapshot_derives_inline_within_the_budget"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165830088278-a-stale-snapshot-names-its-remedy/logs/base-arm.log",
+    "revision": "37b089a36278a768ab8f35877d25a5bb72baa473"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:_prompt:780 (not_fresh_line; producer_lease_is_live is reached only through it)"
+  ],
+  "completed_at": "2026-10-03T17:46:03.117Z",
+  "dispatched_at": "2026-10-03T17:33:51Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165830088278-a-stale-snapshot-names-its-remedy/manifest.md",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the declared orientation_write_paths name docs/figures/the-obligations-hook-reads-a-snapshot/a-stale-snapshot-names-its-remedy, which the run did not create, so the record's declared scope overstates the delivery even though no out-of-scope file landed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165830088278-a-stale-snapshot-names-its-remedy/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest records baseline_suite/after_suite as absent (a test_logs array stands in their place), so the store's canonical added-failure derivation over those two named fields reads unmeasured; the run's own gate logs support 0 added failures (base 2 failed, head 0 failed) and I reproduced that derivation with added_failures_from_gate_logs."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against the base; 5aa9b4a38624a adds the lease reader (producer_lease_seconds, producer_lease_path, producer_lease_is_live) and the STALE_SNAPSHOT branch, 8fd155b61 adds only the evidence fragment, all inside the declared paths.",
+    "done_when": "the done_when asks a test with a live producer lease beside a stale followerless snapshot asserting the follow remedy, a second case with no live lease asserting --ensure, and a negative control restoring the single --ensure line; tests/test_a_stale_snapshot_names_its_remedy.py supplies all three and I re-ran it at head 8fd155b61 (5 passed, EXIT=0), and the reviewed run's logs/negative-control.log reddens exactly the live-lease case (EXIT=1).",
+    "goal": "the node goal (plan section s16, the-obligations-hook-reads-a-snapshot) is that the not-current line names this session's own follower when a live producer lease stands beside a stale snapshot and keeps `reckon crew watch --ensure` otherwise; the landed `not_fresh_line` at reckon/hooks/coordinator_obligations.py:731 branches on `state == module.STALE_SNAPSHOT and producer_lease_is_live(project)` and emits `reckon crew follow --project {project} --session {session}`, else the seat command.",
+    "manifest": "read; status complete, commits 5aa9b4a38624a (the fix) and 8fd155b61 (the evidence fragment), negative_control_log present with a bare EXIT=1; its baseline_suite/after_suite fields are absent (it records a test_logs array instead), so the store's canonical added-failure derivation over those two named fields reads unmeasured.",
+    "write_paths": "the manifest declares coordinator_obligations.py, the new test file, an evidence fragment and a figure directory; the diff 37b089a36278a768ab8f35877d25a5bb72baa473..8fd155b61bbdd86df87dbf4cbc1901a983e4c705 touches the first three only (438 insertions / 8 deletions) and creates no figure."
+  },
+  "justifications": {
+    "durability": "the negative control at logs/negative-control.log restores the base's single seat command and reddens tests/test_a_stale_snapshot_names_its_remedy.py::test_a_stale_snapshot_beside_a_live_lease_names_the_follower (EXIT=1), so the added assertions are load-bearing rather than self-satisfying.",
+    "evidence": "the reviewed run's own logs support the measure (head-arm.log 135 passed EXIT=0, base-arm.log 2 failed, negative-control.log EXIT=1 with the live-lease case reddening), but the manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165830088278-a-stale-snapshot-names-its-remedy/manifest.md:11 records test_logs rather than baseline_suite/after_suite, so the store's canonical added-failure derivation over those two fields is unmeasured.",
+    "fit": "the new helpers follow the module's own lazy `snapshot_module()` idiom and mechanism-named style at reckon/hooks/coordinator_obligations.py:645-692, with no plan label, version or author name introduced.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:731-737 names the follower arming for a stale snapshot beside a live lease and keeps the seat command for every other reading, exactly as s16 asks.",
+    "scope_discipline": "the diff 37b089a36278a768ab8f35877d25a5bb72baa473..8fd155b61bbdd86df87dbf4cbc1901a983e4c705 is the fix file, the new test file and the evidence fragment, each inside the manifest's declared write paths; no product, plan or index file is touched."
+  },
+  "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165830088278-a-stale-snapshot-names-its-remedy/logs/negative-control.log",
+  "negative_control_note": "the declared mutation restores the base's single `reckon crew watch --ensure` line in an extracted head tree; the live-lease case fails with the seat-command line (EXIT=1, 1 failed / 4 passed) and the head arm does not fail that id, so the follow-remedy branch is load-bearing.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (plan section s16, the-obligations-hook-reads-a-snapshot) is that the not-current line names this session's own follower when a live producer lease stands beside a stale snapshot and keeps `reckon crew watch --ensure` otherwise; the landed `not_fresh_line` at reckon/hooks/coordinator_obligations.py:731 branches on `state == module.STALE_SNAPSHOT and producer_lease_is_live(project)` and emits `reckon crew follow --project {project} --session {session}`, else the seat command.\nVERDICT done_when: the done_when asks a test with a live producer lease beside a stale followerless snapshot asserting the follow remedy, a second case with no live lease asserting --ensure, and a negative control restoring the single --ensure line; tests/test_a_stale_snapshot_names_its_remedy.py supplies all three and I re-ran it at head 8fd155b61 (5 passed, EXIT=0), and the reviewed run's logs/negative-control.log reddens exactly the live-lease case (EXIT=1).\nVERDICT write_paths: the manifest declares coordinator_obligations.py, the new test file, an evidence fragment and a figure directory; the diff 37b089a36278a768ab8f35877d25a5bb72baa473..8fd155b61bbdd86df87dbf4cbc1901a983e4c705 touches the first three only (438 insertions / 8 deletions) and creates no figure.\nVERDICT manifest: read; status complete, commits 5aa9b4a38624a (the fix) and 8fd155b61 (the evidence fragment), negative_control_log present with a bare EXIT=1; its baseline_suite/after_suite fields are absent (it records a test_logs array instead), so the store's canonical added-failure derivation over those two named fields reads unmeasured.\nVERDICT diff: read commit by commit against the base; 5aa9b4a38624a adds the lease reader (producer_lease_seconds, producer_lease_path, producer_lease_is_live) and the STALE_SNAPSHOT branch, 8fd155b61 adds only the evidence fragment, all inside the declared paths.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:_prompt:780 (not_fresh_line; producer_lease_is_live is reached only through it)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:731-737 names the follower arming for a stale snapshot beside a live lease and keeps the seat command for every other reading, exactly as s16 asks.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed run's own logs support the measure (head-arm.log 135 passed EXIT=0, base-arm.log 2 failed, negative-control.log EXIT=1 with the live-lease case reddening), but the manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165830088278-a-stale-snapshot-names-its-remedy/manifest.md:11 records test_logs rather than baseline_suite/after_suite, so the store's canonical added-failure derivation over those two fields is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 37b089a36278a768ab8f35877d25a5bb72baa473..8fd155b61bbdd86df87dbf4cbc1901a983e4c705 is the fix file, the new test file and the evidence fragment, each inside the manifest's declared write paths; no product, plan or index file is touched.\nSCORE durability: 20\nJUSTIFICATION durability: the negative control at logs/negative-control.log restores the base's single seat command and reddens tests/test_a_stale_snapshot_names_its_remedy.py::test_a_stale_snapshot_beside_a_live_lease_names_the_follower (EXIT=1), so the added assertions are load-bearing rather than self-satisfying.\nSCORE fit: 20\nJUSTIFICATION fit: the new helpers follow the module's own lazy `snapshot_module()` idiom and mechanism-named style at reckon/hooks/coordinator_obligations.py:645-692, with no plan label, version or author name introduced.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165830088278-a-stale-snapshot-names-its-remedy/manifest.md:3 follow-on: the declared orientation_write_paths name docs/figures/the-obligations-hook-reads-a-snapshot/a-stale-snapshot-names-its-remedy, which the run did not create, so the record's declared scope overstates the delivery even though no out-of-scope file landed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T165830088278-a-stale-snapshot-names-its-remedy/manifest.md:11 follow-on: the manifest records baseline_suite/after_suite as absent (a test_logs array stands in their place), so the store's canonical added-failure derivation over those two named fields reads unmeasured; the run's own gate logs support 0 added failures (base 2 failed, head 0 failed) and I reproduced that derivation with added_failures_from_gate_logs.",
+  "review_run_id": "r-20261003T172938320177-review-of-a-stale-snapshot-names-its-remedy",
+  "reviewed_base_sha": "37b089a36278a768ab8f35877d25a5bb72baa473",
+  "reviewed_head_sha": "8fd155b61bbdd86df87dbf4cbc1901a983e4c705",
+  "reviewed_run_id": "r-20261003T165830088278-a-stale-snapshot-names-its-remedy",
+  "reviewer_run_id": "r-20261003T172938320177-review-of-a-stale-snapshot-names-its-remedy",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T17:43:47.771911+00:00",
+  "total": 98
+}

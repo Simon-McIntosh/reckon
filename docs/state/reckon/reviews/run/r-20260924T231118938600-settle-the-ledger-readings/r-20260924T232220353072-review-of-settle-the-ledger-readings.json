@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T23:22:20.353072+00:00",
+  "findings": [
+    {
+      "file": "docs/plans/the-ledger-is-one-file-per-run.html",
+      "line": "231",
+      "text": "the decision carries data-leaning=\"per-file-serialiser\", an attribute the plan schema neither parses (reckon/_plan_html.py:349 read_state reads only data-key/data-choice/data-when/data-by for decisions, and the renderer at :733 re-emits exactly those four) nor any other reader reads, so the first state write of any kind drops it \u2014 as it already has at 72556b5b \u2014 leaving the leaning machine-readable only through the ctx prose it duplicates."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 9b0ab299; 698f597a rewrites the \u00a73 measure sentence and the falsifier to the row-anchored reading, adds the five-line settlement comment and the ten-line decisions section, adds the 63-line cumulative evidence record, and moves the plan-version meta 10 -> 11 as the two neighbouring doc commits do.",
+    "done_when": "the done_when's clauses are each met \u2014 the settlement comment (docs/plans/the-ledger-is-one-file-per-run.html:226) quotes both replacements verbatim, the decision at :231 names the two options whose costs match the promotion.py sequence I read, and `reckon audit-doc` reported OK for both files, which I reproduced at the reviewed head (gate_recheck.log).",
+    "goal": "the reviewed node's goal is that the plan's two remaining load-bearing readings each have one reading and the re-record omission is a recorded decision; at 698f597a \u00a73's measure and falsifier (docs/plans/the-ledger-is-one-file-per-run.html:147-158) carry one row-anchored reading each and the decisions section (:229-238) carries integrated-gate-recording with two code-costed options, so the goal is met.",
+    "manifest": "read; it carries commits [698f597a], both changed paths, the gate command with its result, the audit log path, three evidence_inputs and a follow-on, and its own claim of a clean `reckon crew check-manifest` reproduces as {\"findings\": [], \"ok\": true} at reviewed_check_manifest.log.",
+    "write_paths": "the declared scope is the plan page, the cumulative evidence record and the figures directory; `git show 698f597a --name-only` lists exactly the first two, no path lies outside them, and the reviewed worktree is clean at 698f597a."
+  },
+  "justifications": {
+    "durability": "no assertion fails if \u00a73's settled sentence is re-split \u2014 audit-doc checks plan structure, not the reading \u2014 and the delivered leaning carrier at docs/plans/the-ledger-is-one-file-per-run.html:231 is already gone at 72556b5b.",
+    "evidence": "I reproduced `audit-doc` OK at the reviewed head for both files (gate_recheck.log), the code reproduction the evidence record quotes verifies against promotion.py:870-890, and the diff's removed lines are the read-back's L-1 and L-2 quotes verbatim, but the recorded audit log names revision 9b0ab299 because it ran before the commit.",
+    "fit": "the settlement comment, decision block and meta shapes match the plan's neighbours, but the data-leaning attribute at docs/plans/the-ledger-is-one-file-per-run.html:231 appears in no other plan and in no parser.",
+    "goal_fidelity": "the settled sentences at docs/plans/the-ledger-is-one-file-per-run.html:147-152 and :155-158 classify the \u00a71-window promotion file as left untouched and excluded from the count, resolving both readings the fourth read-back recorded at read-back.md:216-250.",
+    "scope_discipline": "`git show 698f597a --name-only` lists exactly the two declared non-figure paths with no code changed, and the plan-version bump matches the doc-edit idiom of the neighbouring commits 9daf2842 and 2ac6b8ec."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that the plan's two remaining load-bearing readings each have one reading and the re-record omission is a recorded decision; at 698f597a \u00a73's measure and falsifier (docs/plans/the-ledger-is-one-file-per-run.html:147-158) carry one row-anchored reading each and the decisions section (:229-238) carries integrated-gate-recording with two code-costed options, so the goal is met.\nVERDICT done_when: the done_when's clauses are each met \u2014 the settlement comment (docs/plans/the-ledger-is-one-file-per-run.html:226) quotes both replacements verbatim, the decision at :231 names the two options whose costs match the promotion.py sequence I read, and `reckon audit-doc` reported OK for both files, which I reproduced at the reviewed head (gate_recheck.log).\nVERDICT write_paths: the declared scope is the plan page, the cumulative evidence record and the figures directory; `git show 698f597a --name-only` lists exactly the first two, no path lies outside them, and the reviewed worktree is clean at 698f597a.\nVERDICT manifest: read; it carries commits [698f597a], both changed paths, the gate command with its result, the audit log path, three evidence_inputs and a follow-on, and its own claim of a clean `reckon crew check-manifest` reproduces as {\"findings\": [], \"ok\": true} at reviewed_check_manifest.log.\nVERDICT diff: read commit by commit against base 9b0ab299; 698f597a rewrites the \u00a73 measure sentence and the falsifier to the row-anchored reading, adds the five-line settlement comment and the ten-line decisions section, adds the 63-line cumulative evidence record, and moves the plan-version meta 10 -> 11 as the two neighbouring doc commits do.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the settled sentences at docs/plans/the-ledger-is-one-file-per-run.html:147-152 and :155-158 classify the \u00a71-window promotion file as left untouched and excluded from the count, resolving both readings the fourth read-back recorded at read-back.md:216-250.\nSCORE evidence: 17\nJUSTIFICATION evidence: I reproduced `audit-doc` OK at the reviewed head for both files (gate_recheck.log), the code reproduction the evidence record quotes verifies against promotion.py:870-890, and the diff's removed lines are the read-back's L-1 and L-2 quotes verbatim, but the recorded audit log names revision 9b0ab299 because it ran before the commit.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git show 698f597a --name-only` lists exactly the two declared non-figure paths with no code changed, and the plan-version bump matches the doc-edit idiom of the neighbouring commits 9daf2842 and 2ac6b8ec.\nSCORE durability: 14\nJUSTIFICATION durability: no assertion fails if \u00a73's settled sentence is re-split \u2014 audit-doc checks plan structure, not the reading \u2014 and the delivered leaning carrier at docs/plans/the-ledger-is-one-file-per-run.html:231 is already gone at 72556b5b.\nSCORE fit: 16\nJUSTIFICATION fit: the settlement comment, decision block and meta shapes match the plan's neighbours, but the data-leaning attribute at docs/plans/the-ledger-is-one-file-per-run.html:231 appears in no other plan and in no parser.\nFINDING docs/plans/the-ledger-is-one-file-per-run.html:231 the decision carries data-leaning=\"per-file-serialiser\", an attribute the plan schema neither parses (reckon/_plan_html.py:349 read_state reads only data-key/data-choice/data-when/data-by for decisions, and the renderer at :733 re-emits exactly those four) nor any other reader reads, so the first state write of any kind drops it \u2014 as it already has at 72556b5b \u2014 leaving the leaning machine-readable only through the ctx prose it duplicates.\nreviewed_base_sha: 9b0ab2997e792c02e23ae187fff427c89f29cbb2\nreviewed_head_sha: 698f597ab08df782004ac5de0435230d3230f146",
+  "review_run_id": "r-20260924T232220353072-review-of-settle-the-ledger-readings",
+  "reviewed_base_sha": "9b0ab2997e792c02e23ae187fff427c89f29cbb2",
+  "reviewed_head_sha": "698f597ab08df782004ac5de0435230d3230f146",
+  "reviewed_run_id": "r-20260924T231118938600-settle-the-ledger-readings",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T23:56:25.087543+00:00",
+  "total": 84
+}

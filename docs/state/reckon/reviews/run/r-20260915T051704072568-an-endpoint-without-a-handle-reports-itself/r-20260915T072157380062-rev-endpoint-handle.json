@@ -1,0 +1,36 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T07:21:57.380062+00:00",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "1501",
+      "text": "the terminal-status filter suppresses endpoint-without-handle for a structural endpoint whose endpoint plan is terminal, an exception absent from the exact section contract: the live plan says a structurally endpoint plan carrying no handle raises the finding, and its locked rationale says every structural endpoint should report until a handle is authored. A direct probe with a shipped closed-endpoint depending on a live-foundation confirmed endpoints=[closed-endpoint] while terminal_findings=[]; none of the four added tests exercises a terminal endpoint. Remove this skip or first record an explicit plan decision authorising the lifecycle exception, then add the terminal case to the gate."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_roadmap.py:575-641 pins the positive warning shape, handle silence, leaf silence, and verdict neutrality through build_roadmap, while reckon/roadmap.py:1497 reuses one endpoint derivation for diagnostics and payload output; docked three because no lifecycle-parameterized case covers terminal endpoints, so the exact all-structural-endpoints contract can regress into the narrower live-only interpretation without a gate failure.",
+    "evidence": "tests/test_roadmap.py:575-641 supplies the named four-case gate, which independently passed 34/0 against reviewed content unchanged from 35bd95d, while durable implementation logs show base 30/0, after 34/0, adjacent smoke 116/0, and schema identity 1/0; docked two because the matrix omits the terminal structural-endpoint state and therefore lets the unplanned filter pass.",
+    "fit": "reckon/roadmap.py:1497-1516 uses the existing _dependency_endpoints derivation, _finding vocabulary, wiring_findings surface, and locked warn severity while avoiding a second closure traversal; docked two because line 1501 imports a terminal-status precedent as policy even though this plan did not author that exception, fitting the adjacent precedent better than the exact local contract.",
+    "goal_fidelity": "reckon/roadmap.py:1497-1516 implements the main live-work contract by emitting endpoint-without-handle at warn with complete closure membership while handled endpoints and ordinary leaves stay silent and verdict fields remain unchanged; docked four because line 1501 adds a terminal-endpoint exception absent from the exact live-plan done-when, and the independent probe showed a shipped structural endpoint over a live prerequisite remains in endpoints but emits no finding.",
+    "scope_discipline": "commit 981e323 touches only reckon/roadmap.py and tests/test_roadmap.py, commit 35bd95d touches only docs/plans/roadmap-answers-both-shapes.html and docs/evidence/archive/roadmap-answers-both-shapes-landed.html, the implementing worktree is clean at 35bd95d, both commits are ancestors of the assigned review head, and no reviewed path changed afterward."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:1497-1516 implements the main live-work contract by emitting endpoint-without-handle at warn with complete closure membership while handled endpoints and ordinary leaves stay silent and verdict fields remain unchanged; docked four because line 1501 adds a terminal-endpoint exception absent from the exact live-plan done-when, and the independent probe showed a shipped structural endpoint over a live prerequisite remains in endpoints but emits no finding.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_roadmap.py:575-641 supplies the named four-case gate, which independently passed 34/0 against reviewed content unchanged from 35bd95d, while durable implementation logs show base 30/0, after 34/0, adjacent smoke 116/0, and schema identity 1/0; docked two because the matrix omits the terminal structural-endpoint state and therefore lets the unplanned filter pass.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 981e323 touches only reckon/roadmap.py and tests/test_roadmap.py, commit 35bd95d touches only docs/plans/roadmap-answers-both-shapes.html and docs/evidence/archive/roadmap-answers-both-shapes-landed.html, the implementing worktree is clean at 35bd95d, both commits are ancestors of the assigned review head, and no reviewed path changed afterward.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_roadmap.py:575-641 pins the positive warning shape, handle silence, leaf silence, and verdict neutrality through build_roadmap, while reckon/roadmap.py:1497 reuses one endpoint derivation for diagnostics and payload output; docked three because no lifecycle-parameterized case covers terminal endpoints, so the exact all-structural-endpoints contract can regress into the narrower live-only interpretation without a gate failure.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/roadmap.py:1497-1516 uses the existing _dependency_endpoints derivation, _finding vocabulary, wiring_findings surface, and locked warn severity while avoiding a second closure traversal; docked two because line 1501 imports a terminal-status precedent as policy even though this plan did not author that exception, fitting the adjacent precedent better than the exact local contract.\nFINDING reckon/roadmap.py:1501 the terminal-status filter suppresses endpoint-without-handle for a structural endpoint whose endpoint plan is terminal, an exception absent from the exact section contract: the live plan says a structurally endpoint plan carrying no handle raises the finding, and its locked rationale says every structural endpoint should report until a handle is authored. A direct probe with a shipped closed-endpoint depending on a live-foundation confirmed endpoints=[closed-endpoint] while terminal_findings=[]; none of the four added tests exercises a terminal endpoint. Remove this skip or first record an explicit plan decision authorising the lifecycle exception, then add the terminal case to the gate.\n",
+  "review_run_id": "r-20260915T072157380062-rev-endpoint-handle",
+  "reviewed_base": "bd555ca920f49ed7b1239199b372e56b45048a81",
+  "reviewed_commit": "35bd95d87628c69158fd143367f26ba0d64bea2e",
+  "reviewed_run_id": "r-20260915T051704072568-an-endpoint-without-a-handle-reports-itself",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T07:29:12Z",
+  "total": 89
+}

@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-25T11:44:49.020Z",
+  "dispatched_at": "2026-09-25T11:05:58Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082101656238-worker-stop-binds-the-manifest/manifest.md",
+      "line": "11",
+      "text": "negative_control_log joins three absolute paths with commas, and promotion resolves the whole value as one path: I drove the real check at head and it refused with \"which cannot be read\", while the same field carrying the first path alone was accepted with verdict matched, so this run fails the negative-control check at promotion."
+    },
+    {
+      "file": "docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html",
+      "line": "118",
+      "text": "the supersession note names negative-control-cap-record.log as the replacement for both earlier paragraphs while quoting counts eight and three; eight is the ignores-status receipt, so a reader following it for the original declared mutation lands on a log whose first line is a different mutation, which negative-control-ignores-status.log already names correctly in the section above."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit across seven commits, adding the 204-line hook, its 301-line test file, the gate figure, and the node's cumulative documentation sections, with two revisions answering an earlier review and this one.",
+    "done_when": "the plan's hook-test bullet is covered by tests/test_worker_stop_hook.py and its 13-pass gate, which I reproduced at b656dfd7; the dispatch-side environment bullet remains outside this node's fence and is declared as its follow-on; the declared-mutation bullet is now evidenced by negative-control-ignores-status.log, whose first line is the declared string verbatim.",
+    "goal": "the node goal is a Claude Code Stop hook refusing a worker's turn end while its run manifest is unfinished; reckon/hooks/worker_stop.py:146 is the decision, blocking while the manifest is absent or non-terminal and allowing complete, blocked and failed.",
+    "manifest": "read; it records 13 passed at df9c79d9, reproduces at head, but its negative_control_log line joins three absolute paths with commas where the contract asks for the bare path alone, which promotion.py:3584 cannot read.",
+    "write_paths": "read the manifest's five declared paths; git diff --name-only b453d763..b656dfd7 lists exactly those five and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_stop_hook.py:253 fails when stop_hook_active is ignored, as the record's negative-control-stop-hook-active.log shows at one failed and twelve passed.",
+    "evidence": "the 13-pass gate reproduces at head and all three receipts name their declared string on line 1, but the manifest's negative_control_log at manifest.md:11 is comma-joined and that field is refused by promotion.py:3584.",
+    "fit": "reckon/hooks/worker_stop.py is stdlib-only beside reckon/hooks/native_agent_guard.py, mode 100755, ruff clean at head, and carries no forbidden name, as my own ruff run at head confirmed.",
+    "goal_fidelity": "reckon/hooks/worker_stop.py:152-158 blocks on any status outside complete/blocked/failed and emits nothing when no run resolves, which is the node goal.",
+    "scope_discipline": "git diff --name-only b453d7632ec4d56392caba3b1efde4aa0475b23b b656dfd7 shows exactly the five declared write paths, 631 insertions and no deletions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a Claude Code Stop hook refusing a worker's turn end while its run manifest is unfinished; reckon/hooks/worker_stop.py:146 is the decision, blocking while the manifest is absent or non-terminal and allowing complete, blocked and failed.\nVERDICT done_when: the plan's hook-test bullet is covered by tests/test_worker_stop_hook.py and its 13-pass gate, which I reproduced at b656dfd7; the dispatch-side environment bullet remains outside this node's fence and is declared as its follow-on; the declared-mutation bullet is now evidenced by negative-control-ignores-status.log, whose first line is the declared string verbatim.\nVERDICT write_paths: read the manifest's five declared paths; git diff --name-only b453d763..b656dfd7 lists exactly those five and nothing else.\nVERDICT manifest: read; it records 13 passed at df9c79d9, reproduces at head, but its negative_control_log line joins three absolute paths with commas where the contract asks for the bare path alone, which promotion.py:3584 cannot read.\nVERDICT diff: read commit by commit across seven commits, adding the 204-line hook, its 301-line test file, the gate figure, and the node's cumulative documentation sections, with two revisions answering an earlier review and this one.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/worker_stop.py:152-158 blocks on any status outside complete/blocked/failed and emits nothing when no run resolves, which is the node goal.\nSCORE evidence: 15\nJUSTIFICATION evidence: the 13-pass gate reproduces at head and all three receipts name their declared string on line 1, but the manifest's negative_control_log at manifest.md:11 is comma-joined and that field is refused by promotion.py:3584.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only b453d7632ec4d56392caba3b1efde4aa0475b23b b656dfd7 shows exactly the five declared write paths, 631 insertions and no deletions.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_worker_stop_hook.py:253 fails when stop_hook_active is ignored, as the record's negative-control-stop-hook-active.log shows at one failed and twelve passed.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/hooks/worker_stop.py is stdlib-only beside reckon/hooks/native_agent_guard.py, mode 100755, ruff clean at head, and carries no forbidden name, as my own ruff run at head confirmed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T082101656238-worker-stop-binds-the-manifest/manifest.md:11 negative_control_log joins three absolute paths with commas, and promotion resolves the whole value as one path: I drove the real check at head and it refused with \"which cannot be read\", while the same field carrying the first path alone was accepted with verdict matched, so this run fails the negative-control check at promotion.\nFINDING docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html:118 the supersession note names negative-control-cap-record.log as the replacement for both earlier paragraphs while quoting counts eight and three; eight is the ignores-status receipt, so a reader following it for the original declared mutation lands on a log whose first line is a different mutation, which negative-control-ignores-status.log already names correctly in the section above.\nreviewed_base_sha: b453d7632ec4d56392caba3b1efde4aa0475b23b\nreviewed_head_sha: b656dfd7d6a0d595ae1dd91e64c85b2f4fb398fe",
+  "review_run_id": "r-20260925T110541579257-re-review-of-worker-stop-binds-the-manifest",
+  "reviewed_base_sha": "b453d7632ec4d56392caba3b1efde4aa0475b23b",
+  "reviewed_head_sha": "b656dfd7d6a0d595ae1dd91e64c85b2f4fb398fe",
+  "reviewed_run_id": "r-20260925T082101656238-worker-stop-binds-the-manifest",
+  "reviewer_run_id": "r-20260925T110541579257-re-review-of-worker-stop-binds-the-manifest",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T11:37:08.024762+00:00",
+  "total": 90
+}

@@ -1,0 +1,38 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T12:58:12.966818+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/crew-observability-truth-landed.html",
+      "line": "678",
+      "text": "the same 53-pass figure is anchored to two different heads across the node's own artifacts: the evidence section and the plan landing comment cite '46 passing cases at base 3332b9d to 53 at a30af4f8', while the node's own after_suite observation and final.log record the suite revision as d7a7dc5. Independently re-ran the gate at both heads and got 53 at each (docs commit d7a7dc5 does not touch test files), so the figure is correct under either reading; the cited and logged heads simply disagree, which is an internal bookkeeping inconsistency in the record rather than a wrong measurement."
+    }
+  ],
+  "justifications": {
+    "durability": "running the final tests/test_manifest_parse_format.py against the base source fails the three literal-text cases (3 failed, 50 passed), so those tests pin the fix and the safe-form/control cases pin the unchanged behaviours.",
+    "evidence": "independently materialised base 3332b9d (46 passed) and final d7a7dc5 (53 passed) via git archive and re-ran tests/test_manifest_parse_format.py from each tree, matching the node's baseline.log/final.log, and re-derived the reproduction pair that the 3 corrupt spellings decode to numbers at base and literals at final.",
+    "fit": "reckon/crew/reports.py:561 reuses the extracted _split_bracketed_list helper so _decode_bracketed_list and _coerce_commit_identifiers share one splitting rule, and the new names are mechanism-descriptive with no banned labels; docked one for the record-internal head-citation inconsistency above.",
+    "goal_fidelity": "reckon/crew/reports.py:414 routes only the commits field through _coerce_commit_identifiers, which parses a bracketed string via _split_bracketed_list so [29937e892], [29937e8] and [1e5] each keep their literal text instead of inf or a float.",
+    "scope_discipline": "git diff 3332b9d..d7a7dc5 --name-only lists exactly the four declared write paths (reckon/crew/reports.py, tests/test_manifest_parse_format.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/plans/crew-observability-truth.html) and nothing else."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:414 routes only the commits field through _coerce_commit_identifiers, which parses a bracketed string via _split_bracketed_list so [29937e892], [29937e8] and [1e5] each keep their literal text instead of inf or a float.\nSCORE evidence: 20\nJUSTIFICATION evidence: independently materialised base 3332b9d (46 passed) and final d7a7dc5 (53 passed) via git archive and re-ran tests/test_manifest_parse_format.py from each tree, matching the node's baseline.log/final.log, and re-derived the reproduction pair that the 3 corrupt spellings decode to numbers at base and literals at final.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 3332b9d..d7a7dc5 --name-only lists exactly the four declared write paths (reckon/crew/reports.py, tests/test_manifest_parse_format.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/plans/crew-observability-truth.html) and nothing else.\nSCORE durability: 20\nJUSTIFICATION durability: running the final tests/test_manifest_parse_format.py against the base source fails the three literal-text cases (3 failed, 50 passed), so those tests pin the fix and the safe-form/control cases pin the unchanged behaviours.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/reports.py:561 reuses the extracted _split_bracketed_list helper so _decode_bracketed_list and _coerce_commit_identifiers share one splitting rule, and the new names are mechanism-descriptive with no banned labels; docked one for the record-internal head-citation inconsistency above.\nFINDING docs/evidence/archive/crew-observability-truth-landed.html:678 the same 53-pass figure is anchored to two different heads across the node's own artifacts: the evidence section and the plan landing comment cite '46 passing cases at base 3332b9d to 53 at a30af4f8', while the node's own after_suite observation and final.log record the suite revision as d7a7dc5. Independently re-ran the gate at both heads and got 53 at each (docs commit d7a7dc5 does not touch test files), so the figure is correct under either reading; the cited and logged heads simply disagree, which is an internal bookkeeping inconsistency in the record rather than a wrong measurement.",
+  "review_run_id": "r-20260915T125812966818-review-of-a-commit-identifier-is-never-a-number",
+  "reviewed_base": "3332b9d38bea812c5d37d60feec50eb6d2a08aee",
+  "reviewed_commit": "d7a7dc5231e74063346fe9f1f96603f6ec388aae",
+  "reviewed_run_id": "r-20260915T090617465885-a-commit-identifier-is-never-a-number",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T13:49:08+00:00",
+  "total": 99
+}

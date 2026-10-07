@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "zero added against the base: the reviewed after_suite (gate.log) records 2421 passed EXIT=0 with no failing id, and the baseline_suite's single failure tests/test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet is attributed scaffolding, so it is not a code failure the head arm repeats; the head arm's new test file is absent from the base arm.",
+  "base_log_revision": "044fca510a1b8b985d465b5b790dca358287965f",
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/_schema.py:589",
+    "reckon/roadmap.py:221",
+    "reckon/roadmap.py:281",
+    "reckon/roadmap.py:818",
+    "reckon/roadmap.py:944",
+    "reckon/roadmap.py:2471",
+    "reckon/roadmap.py:2605",
+    "reckon/roadmap.py:3004",
+    "reckon/_store.py:2770",
+    "reckon/crew/promotion.py:7276"
+  ],
+  "completed_at": "2026-10-07T07:21:01.618Z",
+  "dispatched_at": "2026-10-07T06:59:00Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2952",
+      "severity": "follow-on",
+      "text": "follow-on: the readiness block derives the plan view from _plan_authored_state twice for one plan (implementable_sections at 2952 and again for the section_attempts comprehension at 2961), and each call builds a fresh dict copy of the row before the memoised file read; hoisting the authored view once per plan would drop the duplicate construction per report."
+    },
+    {
+      "file": "docs/evidence/fragments/section-contract-and-computed-impl/section-refs-resolve-declared-sections.html",
+      "line": "46",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment identifies the three roadmap staged-ref sites by absolute line numbers (after 831, section-scoped 947, hard 2470); those numbers move on the next edit to roadmap.py, so the anchor a reader follows can point at unrelated code. Name the functions (_after_edges, _section_scoped_edges, _build_roadmap) instead of the lines."
+    }
+  ],
+  "head_log_revision": "b93352322a6246ec5076ca0d797c2f3fe048afe3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call sites of the owner across reckon/_schema.py, reckon/roadmap.py, reckon/_store.py and reckon/crew/promotion.py",
+    "diff": "read both commits against base 044fca510; b93352322 carries the schema, roadmap and promotion change and the new test file, aa016363f is the docs-only evidence fragment, and no merge absorption appears in the range.",
+    "done_when": "the done-when asks for a target plan whose only evidence of s8 is its declaration and one whose only evidence is a typed record, both resolving with no missing-dependency-section and section_found true at each roadmap staged-ref site, with an undeclared ref still earning the finding, and the pre-existing readers passing unchanged. tests/test_section_refs_resolve_declared_sections.py carries these cases and passes (10 passed, EXIT=0); the manifest records gate head 2421 passed at b93352322 and a base arm 2411 passed and 1 failed attributed scaffolding.",
+    "goal": "the node's goal is that every site asking whether a plan declares a section answers through declared_section_identities, with file-aware reads from the inventoried checkout and _declared_stages retired. The four ref sites, the gate-ref fallback, promotion and the readiness split all call the owner; the private union is gone; the file-aware read is threaded with docs_dir and returns a file's typed sections as well as its declarations.",
+    "manifest": "read; status complete, commits b93352322 and aa016363f, changed_paths and negative_control_log populated as bare paths, baseline_suite and after_suite both completed true with literal commands, and failure_attribution maps the base failure to scaffolding.",
+    "write_paths": "read the dispatch FENCE scope and the manifest's changed_paths; every path in the diff is inside the declared write set, and the granted figure directory is untouched."
+  },
+  "justifications": {
+    "durability": "The new tests assert behaviour independent of the implementation: a declaration-only row and a record-only row each resolve ref s8 through section_dependency_refusals and report section_found true at all three roadmap sites, a ref to an undeclared section still earns missing-dependency-section at each site, and the file-aware path is exercised with a discovery-shaped row for both authored forms. The negative control pins the schema site by mutation. The one gap: the three roadmap sites and the readiness and attempts reads are shown by positive cases rather than by a mutation each, so a future regression that reverted one roadmap site to plan_section_anchors would need the suite, not the control, to catch it.",
+    "evidence": "The head arm is recorded (gate.log, 2421 passed, EXIT=0, header revision b93352322 at the reviewed worktree) and the base arm is recorded (gate-base.log, 2411 passed and 1 failed, EXIT=1) with the single failure attributed scaffolding: git rev-parse HEAD refuses because the extracted tree has no .git, so test_well_formed_evidence_record_with_resolving_shas_is_quiet cannot run and is not a code failure the head arm repeats. The declared negative control reproduces (negative-control.log, 1 failed, test_a_declaration_only_section_resolves, EXIT=1); I independently re-applied the same mutation in a scratch copy, restoring plan_section_anchors at _schema.py:589, and the same id reddened. malformed-identifiers.log carries a positive control (the grammar rejects 'not a section!' and accepts 's8'), so its zero is a reading rather than a blind scan. Held at 18 rather than 20 because the base arm's baseline is itself degraded by the scaffolding failure, so the added-failure count of zero rests on a baseline whose one failing test could not execute.",
+    "fit": "Naming, docstrings and module style follow the surrounding code; the renamed _plan_authored_state names its widened role (declarations and typed records) and its docstring states the file-fallback rule. The commits are conventional with bodies and carry no plan, sprint or ticket identifier and no attribution trailer. The one blemish is in the evidence fragment, which cites absolute roadmap line numbers (831, 947, 2470) as anchors, a moving absolute in a durable document.",
+    "goal_fidelity": "Every clause of plan section 15 is met. The four ref-validation sites now answer through declared_section_identities: reckon/_schema.py:589 section_dependency_refusals, and the roadmap staged-ref checks for after (_after_edges, roadmap.py:818), section-scoped (_section_scoped_edges, roadmap.py:944) and hard (_build_roadmap, roadmap.py:2471) edges. The private _declared_stages union is retired in favour of the owner; the _gate_section_refs fallback (roadmap.py:221) and promotion.py:7276 reach the owner too, and the readiness split (roadmap.py:3004) unions the owner's set so a typed-record-only section appears. The file-aware read (_plan_authored_state) is threaded with the inventoried docs_dir into the after, section-scoped and declared_for sites and reads a plan file's typed sections as well as its declarations, so a section living only in the file resolves at every site. plan_section_anchors keeps its narrower gate and comment meaning.",
+    "reuse": "_declared_stages is retired in favour of declared_section_identities, so one function now answers section existence for refs, gates and decision scopes, a genuine de-duplication and the change's main reuse win; plan_section_anchors is retained but only for its narrower gate and comment role, and no caller is left holding a fork of the union. Held below 19 because _plan_authored_state is called twice for the same plan in the readiness block (roadmap.py:2953 and 2962), each call building a fresh dict copy of the row before the memoised file read, and _gate_section_edges.declared_for rebuilds a set from the owner's frozenset on every target lookup; both are bounded by the memoised read, so efficiency only.",
+    "scope_discipline": "The diff touches exactly reckon/_schema.py, reckon/roadmap.py, reckon/crew/promotion.py, tests/test_section_refs_resolve_declared_sections.py and docs/evidence/fragments/section-contract-and-computed-impl/section-refs-resolve-declared-sections.html, every one inside the dispatch FENCE scope list; no shared project index, sprint state, other plan or out-of-scope path is touched, and the granted figure directory is not written. No breach, and no declared path left under-delivered."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every site asking whether a plan declares a section answers through declared_section_identities, with file-aware reads from the inventoried checkout and _declared_stages retired. The four ref sites (reckon/_schema.py:589; roadmap after _after_edges:818, section-scoped _section_scoped_edges:944, hard _build_roadmap:2471) call the owner; the gate-ref fallback (roadmap.py:221), promotion.py:7276 and the readiness split (roadmap.py:3004) reach it too; the private union is gone; the file-aware read is threaded with docs_dir and returns a file's typed sections as well as its declarations.\nVERDICT done_when: a target plan whose only evidence of s8 is its declaration and one whose only evidence is a typed record each resolve with no missing-dependency-section and section_found true at each roadmap staged-ref site; an undeclared ref still earns the finding; pre-existing readers pass unchanged. tests/test_section_refs_resolve_declared_sections.py carries these cases and passes (10 passed EXIT=0); gate head 2421 passed at b93352322, base arm 2411 passed and 1 failed attributed scaffolding.\nVERDICT write_paths: every path in the diff (reckon/_schema.py, reckon/roadmap.py, reckon/crew/promotion.py, the new test file, the evidence fragment) is inside the dispatch write set; the granted figure directory is untouched.\nVERDICT manifest: read; status complete, commits b93352322 and aa016363f, negative_control_log a bare path, baseline_suite and after_suite completed true with literal commands and failure_attribution naming the scaffolding base failure.\nVERDICT diff: read both commits against base 044fca510; b93352322 is the code change and new test file, aa016363f is the docs-only evidence fragment, no merge absorption in the range.\nCALL_SITES: reckon/_schema.py:589, reckon/roadmap.py:221, reckon/roadmap.py:281, reckon/roadmap.py:818, reckon/roadmap.py:944, reckon/roadmap.py:2471, reckon/roadmap.py:2605, reckon/roadmap.py:3004, reckon/_store.py:2770, reckon/crew/promotion.py:7276\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 19\nSCORE durability: 17\nSCORE fit: 18\nSCORE reuse: 17\nFINDING reckon/roadmap.py:2952 follow-on: the readiness block derives the plan view from _plan_authored_state twice for one plan (implementable_sections at 2952 and again for section_attempts at 2961), each call copying the row dict before the memoised file read; hoist the authored view once per plan.\nFINDING docs/evidence/fragments/section-contract-and-computed-impl/section-refs-resolve-declared-sections.html:46 follow-on: the fragment identifies the three roadmap staged-ref sites by absolute line numbers (831, 947, 2470), which move on the next edit to roadmap.py; name the functions instead of the lines.",
+  "review_run_id": "r-20261007T065829208546-review-of-section-refs-resolve-declared-sections",
+  "reviewed_base_sha": "044fca510a1b8b985d465b5b790dca358287965f",
+  "reviewed_head_sha": "aa016363f14e668375593c7bc90f64575c849d9e",
+  "reviewed_run_id": "r-20261007T061527609186-section-refs-resolve-declared-sections",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T07:11:30.000000+00:00",
+  "total": 108
+}

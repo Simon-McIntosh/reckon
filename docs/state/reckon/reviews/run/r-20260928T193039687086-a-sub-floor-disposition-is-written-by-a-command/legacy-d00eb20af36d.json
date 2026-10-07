@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:303",
+    "reckon/crew/promotion.py:4548",
+    "reckon/crew/recovery.py:562",
+    "reckon/cli.py:3859"
+  ],
+  "completed_at": "2026-09-28T22:12:43.399Z",
+  "dispatched_at": "2026-09-28T19:31:00Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "3856",
+      "text": "the empty pointer is resolved against the caller: recovery._review_tree({}) sees Path(''), which is '.' and a directory, so a run answered that has no live pointer takes its tree and head from whatever repository the operator stands in \u2014 the state the comment at reckon/cli.py:3853 says is answered with no tree and no head. Measured from this review's own store: the same call for the same run with the same stored record exits 0 from a directory that is not a repository and exits 1 from a repository whose HEAD differs from the record's, refusing because \"the run's work is at\" the caller's HEAD; the accepted direction answers a record for a revision the caller's directory carries, which is the comparison reckon/crew/obligations.py:255-258 says the fallback exists to avoid."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 5636e306 \u2014 857e514c adds the command and its module, 96ab817c the fragment and figure, 0d77df3d the writer-gate repair (reckon/crew/review.py:1089, reckon/cli.py:3850) and two refusals, 041be0b1 the corrected numbers \u2014 with nothing outside the declared paths.",
+    "done_when": "the measure names tests/test_sub_floor_disposition_has_a_writer.py, and its cases are there \u2014 the fold and exemption row-clearing cases at tests/test_sub_floor_disposition_has_a_writer.py:217 and :237, the refusal cases at :358 and the shipped-floor case at :391 \u2014 with the base arm's eight failures exactly that module's command cases and the head arm green.",
+    "goal": "the goal is a crew command that retires a sub-floor review dimension through record_dimension_disposition instead of an edit by hand, and reckon/cli.py:3793 defines crew dispose with its write at reckon/cli.py:3883.",
+    "manifest": "read; it records four arms under arms/ with their log paths, and arms/after_suite.log ends 51 passed EXIT=0 at 0d77df3d as the manifest states.",
+    "write_paths": "the declared paths are reckon/cli.py, reckon/crew/review.py, tests/test_sub_floor_disposition_has_a_writer.py, the fragment and the figures directory, and git diff --stat 5636e306 041be0b1 lists exactly those six files and no other."
+  },
+  "justifications": {
+    "durability": "tests/test_sub_floor_disposition_has_a_writer.py:277-293 reddens on the pre-repair source (arms/pre_repair.log) and the mutation arm reddens the unknown-kind cases, but every case writes a live pointer at :96, so the pointerless branch named in the finding has no assertion.",
+    "evidence": "arms/after_suite.log ends 51 passed EXIT=0 at 0d77df3d and arms/baseline_suite.log ends EXIT=1 with the new module's command cases failing, so the gate measures the measure's own cases and both results are on disk.",
+    "fit": "the command follows the neighbouring crew subcommands (reckon/cli.py:3911) and resolves the run's tree through the same private recovery helpers reckon/crew/obligations.py:306 already uses, with no name the repository's naming rules forbid.",
+    "goal_fidelity": "reckon/cli.py:3883 records the entry through record_dimension_disposition, and my own run of the command cleared the durability row at 041be0b1, though the pointerless branch at reckon/cli.py:3856 answers the caller's own repository instead of the run.",
+    "scope_discipline": "git diff --stat 5636e306 041be0b1 lists only the declared paths, and the two refusals added at reckon/crew/review.py:1362 and :1367 answer a defect the earlier review named rather than new scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a crew command that retires a sub-floor review dimension through record_dimension_disposition instead of an edit by hand, and reckon/cli.py:3793 defines crew dispose with its write at reckon/cli.py:3883.\nVERDICT done_when: the measure names tests/test_sub_floor_disposition_has_a_writer.py, and its cases are there \u2014 the fold and exemption row-clearing cases at tests/test_sub_floor_disposition_has_a_writer.py:217 and :237, the refusal cases at :358 and the shipped-floor case at :391 \u2014 with the base arm's eight failures exactly that module's command cases and the head arm green.\nVERDICT write_paths: the declared paths are reckon/cli.py, reckon/crew/review.py, tests/test_sub_floor_disposition_has_a_writer.py, the fragment and the figures directory, and git diff --stat 5636e306 041be0b1 lists exactly those six files and no other.\nVERDICT manifest: read; it records four arms under arms/ with their log paths, and arms/after_suite.log ends 51 passed EXIT=0 at 0d77df3d as the manifest states.\nVERDICT diff: read commit by commit against 5636e306 \u2014 857e514c adds the command and its module, 96ab817c the fragment and figure, 0d77df3d the writer-gate repair (reckon/crew/review.py:1089, reckon/cli.py:3850) and two refusals, 041be0b1 the corrected numbers \u2014 with nothing outside the declared paths.\nCALL_SITES: reckon/crew/obligations.py:303, reckon/crew/promotion.py:4548, reckon/crew/recovery.py:562, reckon/cli.py:3859\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/cli.py:3883 records the entry through record_dimension_disposition, and my own run of the command cleared the durability row at 041be0b1, though the pointerless branch at reckon/cli.py:3856 answers the caller's own repository instead of the run.\nSCORE evidence: 19\nJUSTIFICATION evidence: arms/after_suite.log ends 51 passed EXIT=0 at 0d77df3d and arms/baseline_suite.log ends EXIT=1 with the new module's command cases failing, so the gate measures the measure's own cases and both results are on disk.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 5636e306 041be0b1 lists only the declared paths, and the two refusals added at reckon/crew/review.py:1362 and :1367 answer a defect the earlier review named rather than new scope.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_sub_floor_disposition_has_a_writer.py:277-293 reddens on the pre-repair source (arms/pre_repair.log) and the mutation arm reddens the unknown-kind cases, but every case writes a live pointer at :96, so the pointerless branch named in the finding has no assertion.\nSCORE fit: 19\nJUSTIFICATION fit: the command follows the neighbouring crew subcommands (reckon/cli.py:3911) and resolves the run's tree through the same private recovery helpers reckon/crew/obligations.py:306 already uses, with no name the repository's naming rules forbid.\nFINDING reckon/cli.py:3856 the empty pointer is resolved against the caller: recovery._review_tree({}) sees Path(''), which is '.' and a directory, so a run answered that has no live pointer takes its tree and head from whatever repository the operator stands in \u2014 the state the comment at reckon/cli.py:3853 says is answered with no tree and no head. Measured from this review's own store: the same call for the same run with the same stored record exits 0 from a directory that is not a repository and exits 1 from a repository whose HEAD differs from the record's, refusing because \"the run's work is at\" the caller's HEAD; the accepted direction answers a record for a revision the caller's directory carries, which is the comparison reckon/crew/obligations.py:255-258 says the fallback exists to avoid.",
+  "review_run_id": "legacy-d00eb20af36d",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "5636e30629cb0ad1830bf9a93eb59a20bd22283f",
+  "reviewed_head_sha": "041be0b1091c0eceabc368a855f4cd7bcf12c510",
+  "reviewed_run_id": "r-20260928T193039687086-a-sub-floor-disposition-is-written-by-a-command",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T21:41:03.349735+00:00",
+  "total": 91
+}

@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own gate arms: the base arm focused-gate-base.log (revision f74b81bfd, 10 passed) and the head arm focused-gate-head.log (revision c2b47ae39, 14 passed) both end EXIT=0 with zero failing ids, so no test failed in either arm; the run's baseline_suite and after_suite manifest fields are null and the arms are named under tests/test_logs instead.",
+  "backend": "clive",
+  "base_log_revision": "f74b81bfdd1980eae10274a291c098973cd130a9",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:2183"
+  ],
+  "completed_at": "2026-10-03T14:18:10.614Z",
+  "dispatched_at": "2026-10-03T14:07:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "1496",
+      "severity": "follow-on",
+      "text": "follow-on: when the stored record names a head but no base, base_sha is empty and the delivered diff is never read, so _review_delivered_paths returns only the cited paths and a move over the reviewed run's own deliverable can still be carried; the guard treats a missing pair as an empty set rather than as an unprovable one, unlike its unreadable-history branch which returns None."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T134223505249-a-review-is-not-carried-over-its-own-deliverable/logs/focused-gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head-arm log header names revision c2b47ae39, the fix commit, while the reviewed head is cc8d7a8ff (the test commit that added the carried_forward assertions), so the head log does not itself attest the reviewed head even though the test file content was final at the arm."
+    }
+  ],
+  "head_log_revision": "c2b47ae39c1dbc4019605afcf7f72cea845a924e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "Two commits land the change: c2b47ae39 adds _repo_relative_cited_path, _review_delivered_paths, the touches_delivered_work field in review_head_move (recovery.py:1560) and the refusal branch in carry_review_forward (recovery.py:1611); cc8d7a8ff adds the carried_forward-mark assertions to the new test file.",
+    "done_when": "All four required cases are present and isolated in tests/test_a_review_is_not_carried_over_its_own_deliverable.py: a move over the reviewed diff's test file (:160) is not carried, a move over a finding-cited path (:188) is not carried, a move over an unrelated record (:214) is still carried and asserts its carried_forward mark, and a move over runtime source (:236) still earns the light re-review; the declared negative control reddens the two deliverable cases.",
+    "goal": "The landed change at reckon/crew/recovery.py:1570 (carry_review_forward) adds a delivered-work guard so a stored review no longer carries onto a head that moved over a path the reviewed diff changed or a stored finding cites, which is exactly the node goal; the runtime-source rule still fires first (recovery.py:1599).",
+    "manifest": "Read; status complete, tests names the focused gate over three files with head 14 passed and base 10 passed, test_logs names the head, base and negative-control logs, and its baseline_suite/after_suite arm fields are null with the arms named under tests/test_logs instead.",
+    "write_paths": "The diff touches only reckon/crew/recovery.py and the new tests/test_a_review_is_not_carried_over_its_own_deliverable.py, both inside the node's declared write scope; neither of the two other fenced test files was modified and nothing outside the grant was written."
+  },
+  "justifications": {
+    "durability": "The four added cases each name a condition under which they fail and the negative control reddens the deliverable-path and cited-path cases, but a stored record naming a head with no base leaves base_sha empty at recovery.py:1496 so the delivered set falls back to cited paths alone instead of being treated as unprovable, leaving that legacy shape unchecked.",
+    "evidence": "The focused gate over tests/test_a_review_is_not_carried_over_its_own_deliverable.py, tests/test_review_carries_forward.py and tests/test_reflex_keys_on_reviewed_run_and_head.py reproduced at 14 passed EXIT=0 and the negative control is red as declared, but the head gate log header records revision c2b47ae39 (the fix commit) rather than the reviewed head cc8d7a8ff and the arms sit under tests/test_logs rather than the baseline_suite/after_suite fields.",
+    "fit": "The new functions _repo_relative_cited_path and _review_delivered_paths in recovery.py follow the module's helper idiom, reuse review_tiers.changes_runtime_source and carried_revision_pair rather than a second classifier, and carry mechanism-based docstrings with no plan labels or ticket references.",
+    "goal_fidelity": "recovery.py:1611 refuses to carry when move[\"touches_delivered_work\"] and records carried False with the touched paths and reason on the run pointer, and recovery.py:1560 computes that flag as the overlap of the moved paths with the reviewed diff plus every finding-cited path, which is precisely the done-when.",
+    "scope_discipline": "git diff f74b81bfd..cc8d7a8ff changes only reckon/crew/recovery.py and the new test file, both declared write paths, with no unrelated edit and no touched path outside the grant."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The landed change at reckon/crew/recovery.py:1570 (carry_review_forward) adds a delivered-work guard so a stored review no longer carries onto a head that moved over a path the reviewed diff changed or a stored finding cites, which is exactly the node goal; the runtime-source rule still fires first (recovery.py:1599).\nVERDICT done_when: All four required cases are present and isolated in tests/test_a_review_is_not_carried_over_its_own_deliverable.py: a move over the reviewed diff's test file (:160) is not carried, a move over a finding-cited path (:188) is not carried, a move over an unrelated record (:214) is still carried and asserts its carried_forward mark, and a move over runtime source (:236) still earns the light re-review; the declared negative control reddens the two deliverable cases.\nVERDICT write_paths: The diff touches only reckon/crew/recovery.py and the new tests/test_a_review_is_not_carried_over_its_own_deliverable.py, both inside the node's declared write scope; neither of the two other fenced test files was modified and nothing outside the grant was written.\nVERDICT manifest: Read; status complete, tests names the focused gate over three files with head 14 passed and base 10 passed, test_logs names the head, base and negative-control logs, and its baseline_suite/after_suite arm fields are null with the arms named under tests/test_logs instead.\nVERDICT diff: Two commits land the change: c2b47ae39 adds _repo_relative_cited_path, _review_delivered_paths, the touches_delivered_work field in review_head_move (recovery.py:1560) and the refusal branch in carry_review_forward (recovery.py:1611); cc8d7a8ff adds the carried_forward-mark assertions to the new test file.\nCALL_SITES: reckon/crew/recovery.py:2183\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: recovery.py:1611 refuses to carry when move[\"touches_delivered_work\"] and records carried False with the touched paths and reason on the run pointer, and recovery.py:1560 computes that flag as the overlap of the moved paths with the reviewed diff plus every finding-cited path, which is precisely the done-when.\nSCORE evidence: 19\nJUSTIFICATION evidence: The focused gate over tests/test_a_review_is_not_carried_over_its_own_deliverable.py, tests/test_review_carries_forward.py and tests/test_reflex_keys_on_reviewed_run_and_head.py reproduced at 14 passed EXIT=0 and the negative control is red as declared, but the head gate log header records revision c2b47ae39 (the fix commit) rather than the reviewed head cc8d7a8ff and the arms sit under tests/test_logs rather than the baseline_suite/after_suite fields.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff f74b81bfd..cc8d7a8ff changes only reckon/crew/recovery.py and the new test file, both declared write paths, with no unrelated edit and no touched path outside the grant.\nSCORE durability: 19\nJUSTIFICATION durability: The four added cases each name a condition under which they fail and the negative control reddens the deliverable-path and cited-path cases, but a stored record naming a head with no base leaves base_sha empty at recovery.py:1496 so the delivered set falls back to cited paths alone instead of being treated as unprovable, leaving that legacy shape unchecked.\nSCORE fit: 20\nJUSTIFICATION fit: The new functions _repo_relative_cited_path and _review_delivered_paths in recovery.py follow the module's helper idiom, reuse review_tiers.changes_runtime_source and carried_revision_pair rather than a second classifier, and carry mechanism-based docstrings with no plan labels or ticket references.\nreviewed_base_sha: f74b81bfdd1980eae10274a291c098973cd130a9\nreviewed_head_sha: cc8d7a8ff42d8e5ecff8ed338058634f37777909\nFINDING reckon/crew/recovery.py:1496 follow-on: when the stored record names a head but no base, base_sha is empty and the delivered diff is never read, so _review_delivered_paths returns only the cited paths and a move over the reviewed run's own deliverable can still be carried; the guard treats a missing pair as an empty set rather than as an unprovable one, unlike its unreadable-history branch which returns None.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T134223505249-a-review-is-not-carried-over-its-own-deliverable/logs/focused-gate-head.log:1 follow-on: the head-arm log header names revision c2b47ae39, the fix commit, while the reviewed head is cc8d7a8ff (the test commit that added the carried_forward assertions), so the head log does not itself attest the reviewed head even though the test file content was final at the arm.\n",
+  "review_run_id": "r-20261003T140655710111-review-of-a-review-is-not-carried-over-its-own-deliverable",
+  "reviewed_base_sha": "f74b81bfdd1980eae10274a291c098973cd130a9",
+  "reviewed_commits": [
+    "c2b47ae39",
+    "cc8d7a8ff"
+  ],
+  "reviewed_head_sha": "cc8d7a8ff42d8e5ecff8ed338058634f37777909",
+  "reviewed_run_id": "r-20261003T134223505249-a-review-is-not-carried-over-its-own-deliverable",
+  "reviewer_run_id": "r-20261003T140655710111-review-of-a-review-is-not-carried-over-its-own-deliverable",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T14:16:00Z",
+  "total": 98
+}

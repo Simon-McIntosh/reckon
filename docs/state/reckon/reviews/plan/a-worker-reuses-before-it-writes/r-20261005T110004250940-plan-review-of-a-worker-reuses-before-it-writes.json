@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T11:09:37.415Z",
+  "dispatched_at": "2026-10-05T11:01:41Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:419",
+      "id": "interface_budget-1",
+      "reason": "\u00a78 already names the one addition and states in-text why the family cannot shrink, which satisfies the accounting rule as written; the private name is a cheaper variant of a compliant section, not a defect in the plan's own reasoning.",
+      "text": "\u00a78 promotes `_write_through_sibling_temporary` to the public name `write_atomically` (+1 on public_definitions 1474), but all ~15 migrating call sites named in \u00a78/\u00a79 are in-package, so a private `_write_atomically` would hide the same behaviour behind the same interface and add no public surface; the section accounts for the addition (\"the one addition is the price of a single owner\") without stating why a private name is unavailable",
+      "type": "interface_budget",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "e23d15f625f30988c9b6c6fc5bd2680a812b6b29faa7c45272083b918ad1956b",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 96,
+  "project": "reckon",
+  "responses": {
+    "interface_budget-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "reckon/_store.py is a private module by its own name, so every definition in it is package-internal whatever its spelling; its sibling write_json_atomically follows the same convention, and a leading-underscore name imported across fifteen modules is the cross-module private use the naming rules discourage; the +1 is accounted for in the section",
+      "when": "2026-10-05T11:12:21.062724+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T110004250940-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "5b8c41989553621e482310b4af515533fcd00f2f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a78 promotes one private primitive to a single public writer that hides temporary creation, `O_EXCL` retry, chmod, fsync, replace and cleanup; \u00a79 adds one detection function over `definitions` and forbids new helper functions in every migrating module, so complexity sits behind small interfaces rather than behind a spread of wrappers.",
+    "duplicate_owner": "pass \u2014 the plan names the owner to extend (`reckon/_store.py:write_atomically`) and routes the surviving forks to it; the census predicate is kept only as a frozen measurement, reconciled with the runtime rule by a parity assertion, which is a one-owner direction rather than a fork.",
+    "interface_budget": "a finding \u2014 public_definitions 1474, cli_options 317, mcp_views 33, refusal_families 23; \u00a78 adds `write_atomically` to the public-definitions family although every caller is inside the reckon package and a leading-underscore name serves them at zero public cost, and the section names the addition's cost without naming the private alternative.",
+    "reuse_search": "pass \u2014 the plan names the mechanism it extends for each section: `reckon/_store.py:_write_through_sibling_temporary` (\u00a78), `reckon/interface_counts.py:read_trees`/`definitions` (\u00a79), and the frozen census predicate `primitive_concepts` in `docs/research/data/crew-pattern-review/code-depth/census.py`; all three exist and match the plan's description.",
+    "thin_wrapper": "pass \u2014 \u00a78 explicitly justifies keeping `write_json_atomically` as the JSON adapter over the promoted name (\"not a second owner of the mechanism\") rather than as a parallel path, and \u00a79 states \"No new function is added to any migrating module\"."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T11:12:12.081905+00:00"
+}

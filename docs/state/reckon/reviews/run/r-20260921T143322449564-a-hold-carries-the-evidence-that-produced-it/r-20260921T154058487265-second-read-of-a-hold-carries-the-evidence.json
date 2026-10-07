@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T15:40:58.487265+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/hold.py",
+      "line": "96",
+      "text": "[P3] The docstring says a borrowed figure is refused \"before anything else is asked of it\", but the borrow test at reckon/crew/hold.py:122 runs on the resolved reading, so a borrowed reading past its shelf life asks the probe first (measured: probe asked once, hold refused) while a fresh borrowed reading asks nothing; both borrow tests use fresh readings so the ordering the docstring claims is never pinned, and a stale borrowed reading is the case where a probe call and a hold refusal are one edit apart."
+    }
+  ],
+  "independent_probe_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T154058487265-second-read-of-a-hold-carries-the-evidence/logs/hold-teeth-probe.json",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read both commits against ac96f615, the first adding reckon/crew/hold.py and tests/test_hold.py and the second appending the plan section and the evidence anchor; the plan diff writes no meta or status line and stays inside the declared paths.",
+    "done_when": "All four declared measures are asserted: tests/test_hold.py:87 parametrizes the four omissions separately and asserts raised.value.field with no message inspection, tests/test_hold.py:119 asserts the re-query and the probe's adopted figure, tests/test_hold.py:169 asserts the state unknown directly and then holds nothing, and tests/test_hold.py:227 asserts a borrowed figure yields no hold with the probe never asked.",
+    "goal": "The goal is a hold that carries the evidence that produced it, and reckon/crew/hold.py:61 defines Hold over group, figure, age_seconds and source while reckon/crew/hold.py:84 resolves the figure through staleness before any hold exists, so the landed module does what the goal states.",
+    "manifest": "Read the manifest at its own path; its 13-pass gate was reproduced independently at the reviewed revision and both named commits exist, but its evidence_inputs do not mention that the borrow test is never exercised on a stale reading, which is where reckon/crew/hold.py:116 asks the probe before refusing.",
+    "write_paths": "git diff ac96f615f32e5093caea1dd3383d62a678ee8be4..2bf15c90 changes exactly the four paths the manifest declares, 631 insertions and no other path, and no path outside reckon/crew/hold.py and tests/test_hold.py carries behaviour."
+  },
+  "justifications": {
+    "durability": "Tests exist that fail when the change regresses, proved by two independent mutations of a scratch copy. logs/hold-teeth-B-constructor-refusal-removed.log shows all four omission cases failing and logs/hold-teeth-A-unknown-guard-removed.log names test_a_failed_requery_yields_unknown_and_does_not_hold.",
+    "evidence": "The gate measures what the done_when asserts and its result is recorded, with both singled-out behaviours falsified under removal. logs/focused-hold.log records 13 passed at the reviewed revision and logs/hold-teeth-A-unknown-guard-removed.log shows the named test failing when the unknown guard is deleted.",
+    "fit": "The module follows the idiom of its neighbours and introduces no name the naming rules forbid. reckon/crew/hold.py:61 uses the frozen slotted dataclass and underscore helpers of reckon/crew/budget_group.py:31, and no name or comment carries a plan or ticket identifier.",
+    "goal_fidelity": "The landed module refuses to exist without its evidence and refuses borrowed and unknown figures, which is the whole of the goal. reckon/crew/hold.py:78 raises per missing fact and reckon/crew/hold.py:122 returns None for a figure whose pool is not the group's.",
+    "scope_discipline": "The diff stays inside the declared write paths and carries nothing the goal does not imply. git diff ac96f615f32e5093caea1dd3383d62a678ee8be4..2bf15c90 lists only reckon/crew/hold.py, tests/test_hold.py and the two declared docs paths."
+  },
+  "measure_assertions": [
+    {
+      "measure": "a hold without a named group, figure, age and source cannot be constructed, by requiring the constructor to refuse and never by checking a formatted string",
+      "receipt": "tests/test_hold.py:87 deletes one of the four facts per parametrized case and asserts raised.value.field == omitted; a scratch copy whose refusal loop is removed fails all four cases (logs/hold-teeth-B-constructor-refusal-removed.log), and a scratch copy whose message text is rewritten with the field attribute kept still passes 13 (logs/hold-teeth-C-message-rewritten.log), so the check is on the attribute and not on a string.",
+      "verdict": "asserted"
+    },
+    {
+      "measure": "a hold computed from a reading past its shelf life is asserted to re-query and adopt the new figure",
+      "receipt": "tests/test_hold.py:119 asserts the probe was called once, that the hold's figure is 97.0 and explicitly not the stale 80.0 it replaced, and that the hold's age is the probe's; tests/test_hold.py:147 pins the other half by forbidding a re-query inside shelf life; independent probe reproduced both directions.",
+      "verdict": "asserted"
+    },
+    {
+      "measure": "a failed re-query is asserted to yield unknown and to not hold",
+      "receipt": "tests/test_hold.py:169 asserts resolved.serving_state == unknown on a direct resolution and then asserts hold is None with the message \"a failed re-query was read as a figure and held on\", so the non-hold is asserted by identity, never inferred from the state; deleting the unknown guard from a scratch copy fails this test and test_an_unknown_serving_state_does_not_hold, and the reading that remains after the failed re-query is 95.0 against a ceiling of 90.0, which is what makes the None attributable to the unknown guard rather than to a coincidence.",
+      "verdict": "asserted"
+    },
+    {
+      "measure": "a borrowed probe reading is asserted never to become a group's position",
+      "receipt": "tests/test_hold.py:227 holds a fresh codex-main figure at 95.0 against a spark ceiling of 50.0 with a probe that raises if called, and tests/test_hold.py:249 repeats it with the source key deleted; both yield None and neither calls the probe. Not covered: the same reading past its shelf life, where the probe is asked before the borrow test returns None (measured on the same group and ceiling).",
+      "verdict": "asserted"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is a hold that carries the evidence that produced it, and reckon/crew/hold.py:61 defines Hold over group, figure, age_seconds and source while reckon/crew/hold.py:84 resolves the figure through staleness before any hold exists, so the landed module does what the goal states.\nVERDICT done_when: All four declared measures are asserted: tests/test_hold.py:87 parametrizes the four omissions separately and asserts raised.value.field with no message inspection, tests/test_hold.py:119 asserts the re-query and the probe's adopted figure, tests/test_hold.py:169 asserts the state unknown directly and then holds nothing, and tests/test_hold.py:227 asserts a borrowed figure yields no hold with the probe never asked.\nVERDICT write_paths: git diff ac96f615f32e5093caea1dd3383d62a678ee8be4..2bf15c90 changes exactly the four paths the manifest declares, 631 insertions and no other path, and no path outside reckon/crew/hold.py and tests/test_hold.py carries behaviour.\nVERDICT manifest: Read the manifest at its own path; its 13-pass gate was reproduced independently at the reviewed revision and both named commits exist, but its evidence_inputs do not mention that the borrow test is never exercised on a stale reading, which is where reckon/crew/hold.py:116 asks the probe before refusing.\nVERDICT diff: Read both commits against ac96f615, the first adding reckon/crew/hold.py and tests/test_hold.py and the second appending the plan section and the evidence anchor; the plan diff writes no meta or status line and stays inside the declared paths.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: The landed module refuses to exist without its evidence and refuses borrowed and unknown figures, which is the whole of the goal. reckon/crew/hold.py:78 raises per missing fact and reckon/crew/hold.py:122 returns None for a figure whose pool is not the group's.\nSCORE evidence: 18\nJUSTIFICATION evidence: The gate measures what the done_when asserts and its result is recorded, with both singled-out behaviours falsified under removal. logs/focused-hold.log records 13 passed at the reviewed revision and logs/hold-teeth-A-unknown-guard-removed.log shows the named test failing when the unknown guard is deleted.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff stays inside the declared write paths and carries nothing the goal does not imply. git diff ac96f615f32e5093caea1dd3383d62a678ee8be4..2bf15c90 lists only reckon/crew/hold.py, tests/test_hold.py and the two declared docs paths.\nSCORE durability: 19\nJUSTIFICATION durability: Tests exist that fail when the change regresses, proved by two independent mutations of a scratch copy. logs/hold-teeth-B-constructor-refusal-removed.log shows all four omission cases failing and logs/hold-teeth-A-unknown-guard-removed.log names test_a_failed_requery_yields_unknown_and_does_not_hold.\nSCORE fit: 19\nJUSTIFICATION fit: The module follows the idiom of its neighbours and introduces no name the naming rules forbid. reckon/crew/hold.py:61 uses the frozen slotted dataclass and underscore helpers of reckon/crew/budget_group.py:31, and no name or comment carries a plan or ticket identifier.\nFINDING reckon/crew/hold.py:96 [P3] The docstring says a borrowed figure is refused \"before anything else is asked of it\", but the borrow test at reckon/crew/hold.py:122 runs on the resolved reading, so a borrowed reading past its shelf life asks the probe first (measured: probe asked once, hold refused) while a fresh borrowed reading asks nothing; both borrow tests use fresh readings so the ordering the docstring claims is never pinned, and a stale borrowed reading is the case where a probe call and a hold refusal are one edit apart.\n",
+  "review_limitations": [
+    "Re-ran only the single test file the gate names, at the reviewed revision; the 33-test wider run and the ruff counts in the manifest were read as reported, not rerun.",
+    "The two mutation probes run against a scratch copy of the reviewed tree, so they measure what the landed tests catch, not what a live consumer would do.",
+    "This review attaches findings and scores only; it repairs nothing, promotes nothing and does not verify the merged head."
+  ],
+  "review_run_id": "r-20260921T154058487265-second-read-of-a-hold-carries-the-evidence",
+  "reviewed_base_sha": "ac96f615f32e5093caea1dd3383d62a678ee8be4",
+  "reviewed_head_sha": "2bf15c90",
+  "reviewed_run_id": "r-20260921T143322449564-a-hold-carries-the-evidence-that-produced-it",
+  "reviewer_run_id": "r-20260921T154058487265-second-read-of-a-hold-carries-the-evidence",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T143322449564-a-hold-carries-the-evidence-that-produced-it/manifest.md",
+  "source_manifest_sha256": "79be7e6e232e4a7d7c6cba66934670c740ad9bc9ab6dd77eb2cae6fbf87e00f5",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-budget-20260921/a-hold-carries-the-evidence-that-produced-it",
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T16:08:51.387637+00:00",
+  "total": 94
+}

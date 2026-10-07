@@ -1,0 +1,41 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T09:39:45.368057+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "376",
+      "text": "the repair still accepts a present status with no determinable word in the JSON form: parse_manifest('{\"status\": null}') returns a normalised manifest carrying status None because fields.get cannot distinguish a missing key from a present null value; this contradicts the node goal and the evidence claim that every present status reaches the vocabulary refusal, and no new case covers this format."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_manifest_parse_format.py:598-645 provides load-bearing regressions for all six quoted undeterminable shapes, all recognised quoted words, and non-status empty scalars, but omits the accepted JSON null form named in the finding.",
+    "evidence": "tests/test_manifest_parse_format.py:598-645 asserts the named text-domain measure and the independent prescribed gate reproduced 3 failed and 103 passed with the same three pre-existing failure ids, but the stated input-domain coverage does not include a present JSON null status.",
+    "fit": "reckon/crew/reports.py:375-383 keeps the repair inside the existing status-refusal helper and introduces no forbidden name, though the fields.get check retains an ambiguity between a missing status and a present null status.",
+    "goal_fidelity": "reckon/crew/reports.py:376 now sends every text status value produced by quote stripping through the recognised-word check, but a JSON status value of null still returns status None rather than refusing an undeterminable verdict.",
+    "scope_discipline": "the clean diff from 83a0fb7e through 91a60678 changes only reckon/crew/reports.py, tests/test_manifest_parse_format.py, and the two declared plan-evidence paths, all within the node fence."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:376 now sends every text status value produced by quote stripping through the recognised-word check, but a JSON status value of null still returns status None rather than refusing an undeterminable verdict.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_manifest_parse_format.py:598-645 asserts the named text-domain measure and the independent prescribed gate reproduced 3 failed and 103 passed with the same three pre-existing failure ids, but the stated input-domain coverage does not include a present JSON null status.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the clean diff from 83a0fb7e through 91a60678 changes only reckon/crew/reports.py, tests/test_manifest_parse_format.py, and the two declared plan-evidence paths, all within the node fence.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_manifest_parse_format.py:598-645 provides load-bearing regressions for all six quoted undeterminable shapes, all recognised quoted words, and non-status empty scalars, but omits the accepted JSON null form named in the finding.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/reports.py:375-383 keeps the repair inside the existing status-refusal helper and introduces no forbidden name, though the fields.get check retains an ambiguity between a missing status and a present null status.\nFINDING reckon/crew/reports.py:376 the repair still accepts a present status with no determinable word in the JSON form: parse_manifest('{\"status\": null}') returns a normalised manifest carrying status None because fields.get cannot distinguish a missing key from a present null value; this contradicts the node goal and the evidence claim that every present status reaches the vocabulary refusal, and no new case covers this format.\n",
+  "review_run_id": "r-20260917T093945368057-review-of-an-undeterminable-status-is-still-refused",
+  "reviewed_base_sha": "83a0fb7e0f933b2d8146f1ec4c6d5b1313da29b6",
+  "reviewed_commits": [
+    "5ef2c9a0081cbfdccadb1fbd4649cb17e01c35cb",
+    "91a60678d5e2bc3f9ebbe91254452518e9c26ff3"
+  ],
+  "reviewed_head_sha": "91a60678d5e2bc3f9ebbe91254452518e9c26ff3",
+  "reviewed_run_id": "r-20260917T091820996392-an-undeterminable-status-is-still-refused",
+  "reviewer_run_id": "r-20260917T093945368057-review-of-an-undeterminable-status-is-still-refused",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T09:46:11.572983+00:00",
+  "total": 93
+}

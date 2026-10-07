@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T14:03:17.468448+00:00",
+  "findings": [
+    {
+      "file": "docs/AGENTS.md",
+      "line": "106",
+      "text": "the passage still states that Restart=on-failure covers crashes and names that policy for the server unit, and the landed change moved exactly that unit because reckon/service.py renders it, so the document now names a value no generated unit carries; the node named tests/test_service.py and reckon/crew/node.py as what it could not reach and did not name this one, which states the removed policy to every reader of the repository guidance."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read the single commit 8096c0ff against base 26d6df25; it changes one word in each template, adds the 90-line case file, and appends the landing summary and the evidence section, with nothing outside the declared scope and nothing the goal does not imply.",
+    "done_when": "Each clause of the diff-side done_when maps to a case or a recorded log: the rendered-text assertion at tests/test_watcher_unit_restart.py:68-71 (Restart=always plus a parsed RestartSec bound of 30), the separate negative half at tests/test_watcher_unit_restart.py:79, the enumeration at tests/test_watcher_unit_restart.py:83, and the declared mutation, whose red log's first line repeats the declaration verbatim; I re-ran the named file over the reviewed content and got 6 passed, and reproduced the declaration myself at 2 failed, 4 passed.",
+    "goal": "The goal is that every unit this repository generates for a watcher brings back a watcher that exited cleanly, and the landed change does that: reckon/crew/runs.py:1998 and reckon/service.py:37 both carry Restart=always with RestartSec=5, which I confirmed by reading the templates at the reviewed head and by rendering both generators under a redirected RECKON_HOME.",
+    "manifest": "Read; its load-bearing numbers reproduce under my own measurement -- 6 passed on the named file, 2 failed 4 passed under the declared mutation, and the enumeration control at 1 failed -- and its one out-of-scope red at tests/test_service.py:28 is named rather than hidden, which I confirmed by reading that assertion as it stood at the reviewed head.",
+    "write_paths": "Read the five declared paths against the diffstat of base 26d6df25 to head 8096c0ff, which lists exactly reckon/crew/runs.py, reckon/service.py, tests/test_watcher_unit_restart.py and the two documents, all inside the fence."
+  },
+  "justifications": {
+    "durability": "with the declared mutation restored the two cases at tests/test_watcher_unit_restart.py:64 and tests/test_watcher_unit_restart.py:75 fail, and the enumeration case at tests/test_watcher_unit_restart.py:83 was shown to fire against a planted third template.",
+    "evidence": "tests/test_watcher_unit_restart.py:64-83 asserts the measure from rendered text, and I reproduced both its green result (6 passed) and the declared mutation (2 failed, 4 passed) in my own tree.",
+    "fit": "tests/test_watcher_unit_restart.py follows the idiom of the surrounding suite, with parametrised cases over a fixture that redirects RECKON_HOME into tmp_path and descriptive names carrying no version or plan label.",
+    "goal_fidelity": "reckon/crew/runs.py:1998 and reckon/service.py:37 carry Restart=always with RestartSec=5, which is the policy the goal asks of a watcher that exits cleanly.",
+    "scope_discipline": "the diffstat from base 26d6df25 to head 8096c0ff lists only the five declared paths, each carrying the minimal change the goal implies."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "This review judges run r-20260921T123846054559-watcher-unit-restarts-always at its own head 8096c0ff against the brief it was dispatched with. Everything below was read from that tree; the results I quote as my own were produced in my own worktree, whose copies of reckon/crew/runs.py, reckon/service.py and tests/test_watcher_unit_restart.py are identical byte for byte to the reviewed head.\nVERDICT goal: The goal is that every unit this repository generates for a watcher brings back a watcher that exited cleanly, and the landed change does that: reckon/crew/runs.py:1998 and reckon/service.py:37 both carry Restart=always with RestartSec=5, which I confirmed by reading the templates at the reviewed head and by rendering both generators under a redirected RECKON_HOME.\nVERDICT done_when: Each clause of the diff-side done_when maps to a case or a recorded log: the rendered-text assertion at tests/test_watcher_unit_restart.py:68-71 (Restart=always plus a parsed RestartSec bound of 30), the separate negative half at tests/test_watcher_unit_restart.py:79, the enumeration at tests/test_watcher_unit_restart.py:83, and the declared mutation, whose red log's first line repeats the declaration verbatim; I re-ran the named file over the reviewed content and got 6 passed, and reproduced the declaration myself at 2 failed, 4 passed.\nVERDICT write_paths: Read the five declared paths against the diffstat of base 26d6df25 to head 8096c0ff, which lists exactly reckon/crew/runs.py, reckon/service.py, tests/test_watcher_unit_restart.py and the two documents, all inside the fence.\nVERDICT manifest: Read; its load-bearing numbers reproduce under my own measurement -- 6 passed on the named file, 2 failed 4 passed under the declared mutation, and the enumeration control at 1 failed -- and its one out-of-scope red at tests/test_service.py:28 is named rather than hidden, which I confirmed by reading that assertion as it stood at the reviewed head.\nVERDICT diff: Read the single commit 8096c0ff against base 26d6df25; it changes one word in each template, adds the 90-line case file, and appends the landing summary and the evidence section, with nothing outside the declared scope and nothing the goal does not imply.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1998 and reckon/service.py:37 carry Restart=always with RestartSec=5, which is the policy the goal asks of a watcher that exits cleanly.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_watcher_unit_restart.py:64-83 asserts the measure from rendered text, and I reproduced both its green result (6 passed) and the declared mutation (2 failed, 4 passed) in my own tree.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diffstat from base 26d6df25 to head 8096c0ff lists only the five declared paths, each carrying the minimal change the goal implies.\nSCORE durability: 17\nJUSTIFICATION durability: with the declared mutation restored the two cases at tests/test_watcher_unit_restart.py:64 and tests/test_watcher_unit_restart.py:75 fail, and the enumeration case at tests/test_watcher_unit_restart.py:83 was shown to fire against a planted third template.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_watcher_unit_restart.py follows the idiom of the surrounding suite, with parametrised cases over a fixture that redirects RECKON_HOME into tmp_path and descriptive names carrying no version or plan label.\nFINDING docs/AGENTS.md:106 the passage still states that Restart=on-failure covers crashes and names that policy for the server unit, and the landed change moved exactly that unit because reckon/service.py renders it, so the document now names a value no generated unit carries; the node named tests/test_service.py and reckon/crew/node.py as what it could not reach and did not name this one, which states the removed policy to every reader of the repository guidance.",
+  "review_run_id": "r-20260921T140317468448-review-of-watcher-unit-restarts-always",
+  "reviewed_base_sha": "26d6df25680ac385446f9db0c86f339ddb57fece",
+  "reviewed_head_sha": "8096c0ff47cc31d15b8075620debbf7633a6571c",
+  "reviewed_run_id": "r-20260921T123846054559-watcher-unit-restarts-always",
+  "reviewer_head_sha": "c25fafaca8bfda4b37949fb27c3cb81d56492b86",
+  "reviewer_run_id": "r-20260921T140317468448-review-of-watcher-unit-restarts-always",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T14:55:05.945316+00:00",
+  "total": 90
+}

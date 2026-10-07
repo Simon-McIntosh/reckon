@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T01:52:39.446525+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011708390047-a-failed-launch-test-expects-the-refusal/manifest.md",
+      "line": "11",
+      "text": "test_logs omits the log carrying the \"pytest tests/test_crew.py (head) -> 1 failed, 204 passed\" result (~/.cache/a-failed-launch-test/head-set.log, whose 205 collected tests and single red id match it), and that file opens with pytest output rather than the revision/tree/command header the manifest grammar requires, so the result's receipt is unlisted and the file cannot identify its own revision."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit \u2014 c11eaf2f is the single-hunk test edit, 8b9ee037 adds the figure and its generator, 9fd5a738 appends the plan landing note; no production module changes.",
+    "done_when": "each clause reads true at tests/test_crew.py:2534-2547 \u2014 the CrewError expectation, the __cause__ pin, the unchanged no-worktree/no-pointer assertions, the one-hunk diff \u2014 and I re-derived its target arms at both ends and under the declared unwrap, with the test_crew.py receipt unlisted as the FINDING names.",
+    "goal": "the goal is that the failed-launch worktree test expects the CrewError refusal the launcher fix raises, and tests/test_crew.py:2537 now opens on crew.CrewError at head, which is what reckon/crew/dispatch.py:4119-4122 raises.",
+    "manifest": "read; its tests line, test_logs, measurement module/cwd and negative-control note reconcile with the logs and with the plan's landed note, save for one unlisted log named in the FINDING.",
+    "write_paths": "the four declared paths cover all five changed files in eafdb655..9fd5a738 \u2014 tests/test_crew.py, docs/plans/the-suite-is-green-at-head.html, docs/evidence/archive/the-suite-is-green-at-head-landed.html, and the two files under docs/figures/the-suite-is-green-at-head/ \u2014 and nothing else changed."
+  },
+  "justifications": {
+    "durability": "the edited test is the guard \u2014 the unwrap I applied at reckon/crew/dispatch.py:4119-4122 reddens it with OSError: no such executable \u2014 and each added assertion at tests/test_crew.py:2546-2547 names the condition that fails it.",
+    "evidence": "I re-derived the target arms in my own scratch tree \u2014 2 passed at head with module.__file__ under that tree, red with CrewError at reckon/crew/dispatch.py:4119 on the base test, red with OSError propagating under the unwrap \u2014 but one stated result's only receipt is an unlisted, header-less log (manifest.md:11).",
+    "fit": "the excinfo/__cause__ form matches the idiom already at tests/test_rollback_asks_head.py, the three commits are conventional with bodies, and the landed content adds no name or comment the naming rules forbid.",
+    "goal_fidelity": "tests/test_crew.py:2537-2547 makes the assertion expect crew.CrewError and pins the launcher's OSError as its cause, which is the goal sentence delivered against the head code at reckon/crew/dispatch.py:4109-4122.",
+    "scope_discipline": "every changed path in eafdb655..9fd5a738 lies inside the declared write paths, the docs append into the plan's notes region and the cumulative evidence file with zero deletions, and no plan-version/plan-modified meta line is touched."
+  },
+  "node": "review-of-a-failed-launch-test-expects-the-refusal",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260925T011708390047-a-failed-launch-test-expects-the-refusal, read at head 9fd5a738abffa868b3237929c7b93176b04ba90c against base eafdb655e50828738ec99568bf537a1dc1976c7c, through the reviewed worktree by git -C. The reviewed head is not an ancestor of the reviewing run's base; the merge belongs to the coordinator.\n\nreviewed_base_sha: eafdb655e50828738ec99568bf537a1dc1976c7c\nreviewed_head_sha: 9fd5a738abffa868b3237929c7b93176b04ba90c\n\nVERDICT goal: the goal is that the failed-launch worktree test expects the CrewError refusal the launcher fix raises, and tests/test_crew.py:2537 now opens on crew.CrewError at head, which is what reckon/crew/dispatch.py:4119-4122 raises.\nVERDICT done_when: each clause reads true at tests/test_crew.py:2534-2547 \u2014 the CrewError expectation, the __cause__ pin, the unchanged no-worktree/no-pointer assertions, the one-hunk diff \u2014 and I re-derived its target arms at both ends and under the declared unwrap, with the test_crew.py receipt unlisted as the FINDING names.\nVERDICT write_paths: the four declared paths cover all five changed files in eafdb655..9fd5a738 \u2014 tests/test_crew.py, docs/plans/the-suite-is-green-at-head.html, docs/evidence/archive/the-suite-is-green-at-head-landed.html, and the two files under docs/figures/the-suite-is-green-at-head/ \u2014 and nothing else changed.\nVERDICT manifest: read; its tests line, test_logs, measurement module/cwd and negative-control note reconcile with the logs and with the plan's landed note, save for one unlisted log named in the FINDING.\nVERDICT diff: read commit by commit \u2014 c11eaf2f is the single-hunk test edit, 8b9ee037 adds the figure and its generator, 9fd5a738 appends the plan landing note; no production module changes.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew.py:2537-2547 makes the assertion expect crew.CrewError and pins the launcher's OSError as its cause, which is the goal sentence delivered against the head code at reckon/crew/dispatch.py:4109-4122.\nSCORE evidence: 18\nJUSTIFICATION evidence: I re-derived the target arms in my own scratch tree \u2014 2 passed at head with module.__file__ under that tree, red with CrewError at reckon/crew/dispatch.py:4119 on the base test, red with OSError propagating under the unwrap \u2014 but one stated result's only receipt is an unlisted, header-less log (manifest.md:11).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path in eafdb655..9fd5a738 lies inside the declared write paths, the docs append into the plan's notes region and the cumulative evidence file with zero deletions, and no plan-version/plan-modified meta line is touched.\nSCORE durability: 19\nJUSTIFICATION durability: the edited test is the guard \u2014 the unwrap I applied at reckon/crew/dispatch.py:4119-4122 reddens it with OSError: no such executable \u2014 and each added assertion at tests/test_crew.py:2546-2547 names the condition that fails it.\nSCORE fit: 18\nJUSTIFICATION fit: the excinfo/__cause__ form matches the idiom already at tests/test_rollback_asks_head.py, the three commits are conventional with bodies, and the landed content adds no name or comment the naming rules forbid.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011708390047-a-failed-launch-test-expects-the-refusal/manifest.md:11 test_logs omits the log carrying the \"pytest tests/test_crew.py (head) -> 1 failed, 204 passed\" result (~/.cache/a-failed-launch-test/head-set.log, whose 205 collected tests and single red id match it), and that file opens with pytest output rather than the revision/tree/command header the manifest grammar requires, so the result's receipt is unlisted and the file cannot identify its own revision.",
+  "review_run_id": "r-20260925T015239446525-review-of-a-failed-launch-test-expects-the-refusal",
+  "reviewed_base_sha": "eafdb655e50828738ec99568bf537a1dc1976c7c",
+  "reviewed_head_sha": "9fd5a738abffa868b3237929c7b93176b04ba90c",
+  "reviewed_run_id": "r-20260925T011708390047-a-failed-launch-test-expects-the-refusal",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T02:23:33.139536+00:00",
+  "total": 95
+}

@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/cli.py:2267",
+    "reckon/cli.py:2343",
+    "reckon/cli.py:2382 (follower gates on runs.producer_live)",
+    "reckon/cli.py:2933 (ensure_watcher_service)",
+    "reckon/cli.py:3143 and reckon/mcp.py:3680 (project_watch_visibility)",
+    "reckon/crew/dispatch.py:841 and reckon/crew/dispatch.py:866 (watch_state admission)"
+  ],
+  "completed_at": "2026-09-25T21:08:50.463Z",
+  "dispatched_at": "2026-09-25T20:29:45Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "I read the single commit b9a9cf779cce09891c11e60ddf12a8037f57587c against its base 9a9cb581 and found host-scoped liveness, erasure and reconciliation in reckon/crew/runs.py, a new refusal type at reckon/service.py:50, one landing comment and one evidence anchor in the docs, and nothing outside those files.",
+    "done_when": "I read the done_when against the recorded gate and reproduced it: the four named tests are the only base-only failure ids in a set comparison of /tmp/wsh-base.log (16 failed) against gate-head-rerun.log (11 failed, zero head-only ids), and the follower-delivery question is answered in the manifest with reckon/cli.py:2267, the gate I read at the reviewed head.",
+    "goal": "I read the goal against the diff and found it delivered: reckon/crew/runs.py:1619 stamps each seat with the producer's host, runs.py:1433 judges a foreign, hostless or erased seat by its transition stream rather than by a pid this host cannot answer for, and runs.py:2573 routes a linger refusal to the session-owned process producer.",
+    "manifest": "I read the manifest and found its head and base gate results recorded with their logs, the two repairs and the delivery answer stated, and the fence's \"8 known base failures\" disclosed as stale against a measured 11.",
+    "write_paths": "I read the manifest's six declared paths and compared them with git diff --name-only base..head, whose five files \u2014 reckon/crew/runs.py, reckon/service.py, tests/test_watch_seat_across_hosts.py, docs/plans/the-fleet-counters-count-the-fleet.html and docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html \u2014 all lie inside them."
+  },
+  "justifications": {
+    "durability": "my own arms falsify all five tests \u2014 the base tree reddens all five (review-base-arm.log), the declared pre-change rule reddens the four seat tests (review-mut-declared-foreign-erase.log, 4 failed), a hostless-erase mutation reddens tests/test_watch_seat_across_hosts.py:125 (review-mut-hostless-erased-by-pid.log), and reverting reckon/service.py:201 to a plain ServiceError reddens :220 (review-mut-linger-reverted.log) \u2014 so the two assertions the prior review showed could not fail are now independently falsified.",
+    "evidence": "gate-head-rerun.log records 11 failed / 219 passed at the head against 16 failed / 214 passed at base in /tmp/wsh-base.log, and my own comm of the two logs' FAILED ids leaves exactly the five new test ids base-only with no head-only id; one point is withheld only because the done_when's exclusion set names eight base ids while eleven are excluded.",
+    "fit": "ruff check --no-cache and ruff format --check are clean on all three code paths in a git-archive tree at the same revision (measured by me), the helpers follow the module's private-helper and mechanism-docstring idiom, and the diff introduces no plan, ticket or version reference.",
+    "goal_fidelity": "reckon/crew/runs.py:1433 makes delivery follow the stream for a seat this host cannot attribute and runs.py:2573 adds the linger fallback, but the hostless branch at runs.py:1492-1494 still erases a hostless record from here once the stream is stale too, a narrower reading of the followup's \"never erased by pid alone\" than runs.py:1477, which never erases a foreign seat.",
+    "scope_discipline": "every one of the five files changed by 9a9cb581..b9a9cf77 lies inside the declared write paths, and the plan edit adds a single landing comment without touching plan meta or resolving the open followup."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: I read the goal against the diff and found it delivered: reckon/crew/runs.py:1619 stamps each seat with the producer's host, runs.py:1433 judges a foreign, hostless or erased seat by its transition stream rather than by a pid this host cannot answer for, and runs.py:2573 routes a linger refusal to the session-owned process producer.\nVERDICT done_when: I read the done_when against the recorded gate and reproduced it: the four named tests are the only base-only failure ids in a set comparison of /tmp/wsh-base.log (16 failed) against gate-head-rerun.log (11 failed, zero head-only ids), and the follower-delivery question is answered in the manifest with reckon/cli.py:2267, the gate I read at the reviewed head.\nVERDICT write_paths: I read the manifest's six declared paths and compared them with git diff --name-only base..head, whose five files \u2014 reckon/crew/runs.py, reckon/service.py, tests/test_watch_seat_across_hosts.py, docs/plans/the-fleet-counters-count-the-fleet.html and docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html \u2014 all lie inside them.\nVERDICT manifest: I read the manifest and found its head and base gate results recorded with their logs, the two repairs and the delivery answer stated, and the fence's \"8 known base failures\" disclosed as stale against a measured 11.\nVERDICT diff: I read the single commit b9a9cf779cce09891c11e60ddf12a8037f57587c against its base 9a9cb581 and found host-scoped liveness, erasure and reconciliation in reckon/crew/runs.py, a new refusal type at reckon/service.py:50, one landing comment and one evidence anchor in the docs, and nothing outside those files.\nCALL_SITES: reckon/cli.py:2267, reckon/cli.py:2343, reckon/cli.py:2382 (follower gates on runs.producer_live), reckon/cli.py:2933 (ensure_watcher_service), reckon/cli.py:3143 and reckon/mcp.py:3680 (project_watch_visibility), reckon/crew/dispatch.py:841 and reckon/crew/dispatch.py:866 (watch_state admission)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1433 makes delivery follow the stream for a seat this host cannot attribute and runs.py:2573 adds the linger fallback, but the hostless branch at runs.py:1492-1494 still erases a hostless record from here once the stream is stale too, a narrower reading of the followup's \"never erased by pid alone\" than runs.py:1477, which never erases a foreign seat.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head-rerun.log records 11 failed / 219 passed at the head against 16 failed / 214 passed at base in /tmp/wsh-base.log, and my own comm of the two logs' FAILED ids leaves exactly the five new test ids base-only with no head-only id; one point is withheld only because the done_when's exclusion set names eight base ids while eleven are excluded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the five files changed by 9a9cb581..b9a9cf77 lies inside the declared write paths, and the plan edit adds a single landing comment without touching plan meta or resolving the open followup.\nSCORE durability: 20\nJUSTIFICATION durability: my own arms falsify all five tests \u2014 the base tree reddens all five (review-base-arm.log), the declared pre-change rule reddens the four seat tests (review-mut-declared-foreign-erase.log, 4 failed), a hostless-erase mutation reddens tests/test_watch_seat_across_hosts.py:125 (review-mut-hostless-erased-by-pid.log), and reverting reckon/service.py:201 to a plain ServiceError reddens :220 (review-mut-linger-reverted.log) \u2014 so the two assertions the prior review showed could not fail are now independently falsified.\nSCORE fit: 20\nJUSTIFICATION fit: ruff check --no-cache and ruff format --check are clean on all three code paths in a git-archive tree at the same revision (measured by me), the helpers follow the module's private-helper and mechanism-docstring idiom, and the diff introduces no plan, ticket or version reference.\n",
+  "review_run_id": "r-20260925T202931435866-review-of-watcher-seat-survives-other-hosts",
+  "reviewed_base_sha": "9a9cb581b458c498db384b3e8b9dee9520bdf0d1",
+  "reviewed_head_sha": "b9a9cf779cce09891c11e60ddf12a8037f57587c",
+  "reviewed_run_id": "r-20260925T164609522941-watcher-seat-survives-other-hosts",
+  "role": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T20:58:25.712897+00:00",
+  "total": 98
+}

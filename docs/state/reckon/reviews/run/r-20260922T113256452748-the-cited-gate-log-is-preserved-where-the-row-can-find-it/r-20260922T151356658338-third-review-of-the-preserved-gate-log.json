@@ -1,0 +1,125 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 1,
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:3669",
+    "reckon/crew/promotion.py:2410",
+    "reckon/cli.py:3131"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T15:13:56.658338+00:00",
+  "evidence_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T151356658338-third-review-of-the-preserved-gate-log/gate.log",
+    "test-logs/head-cohort.log",
+    "test-logs/base-cohort.log",
+    "negative-control.log",
+    "negative-control-relocation.log",
+    "negative-control-refusal.log"
+  ],
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T113256452748-the-cited-gate-log-is-preserved-where-the-row-can-find-it/manifest.md",
+      "line": "14",
+      "text": "after_suite's parenthetical calls fe1bf820 \"this node's head\" while line 7 of the same manifest lists db4e9a58 as the head, and db4e9a58 landed after the suite ran, so at delivery the label names a revision the manifest's own commits line contradicts; the observation itself is sound because db4e9a58 changes only the archive evidence file and the owned paths were the same at both revisions, and the repair is to name the revision the suite measured rather than the head, with no re-run needed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read all five commits against base 01eeb308caec57684d5bb79664dbd0749b2d1798 commit by commit; the change is one module-private helper plus its five-case gate, followed by three documentation commits, and reckon/crew/promotion.py and tests/test_gate_log_is_preserved.py are byte-identical between the node head db4e9a58 and the merged head 05c3fe77 this review's tree sits at (git diff --numstat over the five paths lists neither file), the merge's one-line archive plan-verifies replacement and the plan's version/impl scalars being server-owned bookkeeping rather than node content.",
+    "done_when": "the pointer's done_when names four behaviours plus a cohort delta at a declared base and the declared mutation verbatim on the red log's first line; tests/test_gate_log_is_preserved.py carries the four behaviours at :180, :207, :240, :274 and :313, the manifest records 5 passed with the cohort pair under test-logs/, and I re-ran the byte comparison of negative-control.log line 1 against node.negative_control on the pointer - equal, with the declared sentence occurring exactly once in the file.",
+    "goal": "the goal at the run pointer asks for a promotion that copies the cited gate log where the row can still find it, and reckon/crew/promotion.py:540-587 does exactly that with its single production call at :3669 inside _complete_locked, one line ahead of the record build at :3670 - the only site in reckon/ where a ledger record is built, since ledger.build_record has no other caller - so every promotion that records a gate check records the copy's path.",
+    "manifest": "read the delivered manifest in the run directory; status complete, the five commits listed, the tests line naming the focused gate and the cohort pair, negative_control_log a bare path, and the four added failure ids named by file and line as out of scope rather than triaged - but one claim is stale at delivery, after_suite's parenthetical calling fe1bf820 \"this node's head\" while the head the same manifest lists is db4e9a58 (finding 1).",
+    "write_paths": "the pointer declares five paths and git diff --name-only 01eeb308..db4e9a58 returns exactly those five - reckon/crew/promotion.py, tests/test_gate_log_is_preserved.py, docs/plans/work-does-not-fall-to-the-coordinator.html, docs/figures/work-does-not-fall-to-the-coordinator/cited-gate-log-preservation.svg and the archive evidence file - with each commit's own stat inside them (bd576e66 the copy, 54d0a8d2 the best-effort correction, 1911969e the test retarget, fe1bf820 plan-only, db4e9a58 evidence-only)."
+  },
+  "justifications": {
+    "durability": "every one of the five cases reddens under a named control the node ran and recorded - :180, :207 and :240 under the declared no-copy mutation, :274 under the relocation control, :313 under the refusal control - and the two assertions round one called tautological now read the row back from the ledger and delete the cited original before asserting bytes, docked one for the two assertions that cannot fail (:204 is subsumed by :203's containment, and :300's containment is trivially true for a citation already inside the directory).",
+    "evidence": "tests/test_gate_log_is_preserved.py is named with 5 passed, the cohort pair and all three control logs are on disk under test-logs/ and the run directory with their declarations on line 1, and the four added failure ids are attributed by file and line - docked one because the manifest's after_suite calls fe1bf820 this node's head while db4e9a58 is the head it lists (finding 1), a stale label over an otherwise sound measurement.",
+    "fit": "reckon/crew/promotion.py:540-587 is a module-private helper with a rationale docstring in the file's own idiom, its constant sits beside its user as the file's other constants do (compare :390 and :3081), it adds no public surface and no CLI option, and neither the code, the constant, the docstring nor the tests carries a plan label, ticket reference, version number or project name.",
+    "goal_fidelity": "reckon/crew/promotion.py:3669 copies the cited log into the run directory and hands the record build at :3670 the copy's path on the sole route that builds a row, and the two cases the goal does not ask it to change (a citation already inside the run directory at :579, an unresolvable one at :572) are returned unchanged, which is what the goal's own wording implies rather than a deviation from it.",
+    "scope_discipline": "git diff --name-only 01eeb308..db4e9a58 returns exactly the five declared write paths, the two code-bearing commits stay on the files the goal needs, and the four failures the change adds in tests/test_crew_gate_log_agrees.py were reported with file and line rather than edited out of the fence."
+  },
+  "model": "deepseek-v4.1-flash",
+  "prior_findings": [
+    {
+      "disposition": "verified fixed at the evidence-complete head by byte comparison rather than by reading the manifest's claim: negative-control.log line 1 is equal to node.negative_control on the run pointer and the declared sentence occurs exactly once in the file, so the declaration a reader meets first is the declared mutation and not a restatement of it (gate.log, cmp result EQUAL with one occurrence)",
+      "n": 1,
+      "prior_verdict": {
+        "reviewed_revision": "54d0a8d2fdb5fee3ad90668adf8cdc691d44d9cb",
+        "scores": {
+          "durability": 17,
+          "evidence": 14,
+          "fit": 19,
+          "goal_fidelity": 19,
+          "scope_discipline": 19
+        },
+        "total": 88
+      },
+      "raised": "the delivered red log does not contain the mutation declared on the run pointer anywhere, so promotion raises CrewError at reckon/crew/promotion.py:3324 and the row cannot be written without --waive-negative-control; the manifest's claim that the mutation sits verbatim on line 1 is false, line 1 is a header and the declared wording appears nowhere in the file.",
+      "raised_at": "the delivered negative-control.log and the run pointer's node.negative_control at 54d0a8d2",
+      "source": "stored review from r-20260922T134814459123-review-of-the-preserved-gate-log, reviewed revision 54d0a8d2, superseded by the round-2 record",
+      "status": "fixed"
+    },
+    {
+      "disposition": "verified fixed: the two path-string comparisons are gone, replaced by reads of the ledger row through _row(...)[\"gate_check\"][\"log_path\"] at :202, :231, :265 and :299, and the outlives case deletes the cited original at :232 before asserting the recorded copy resolves with the cited bytes at :233-234, so neither assertion can hold under the declared no-copy mutation; the two no-op cases now redden under their own declared controls (negative-control-relocation.log and negative-control-refusal.log, 1 failed and 4 passed each)",
+      "n": 2,
+      "prior_verdict": {
+        "reviewed_revision": "54d0a8d2fdb5fee3ad90668adf8cdc691d44d9cb",
+        "scores": {
+          "durability": 17,
+          "evidence": 14,
+          "fit": 19,
+          "goal_fidelity": 19,
+          "scope_discipline": 19
+        },
+        "total": 88
+      },
+      "raised": "this assertion and the one at :290 compare the row's recorded value with the variable the test itself passed in, so both hold under the declared mutation and add no durability weight to the change.",
+      "raised_at": "tests/test_gate_log_is_preserved.py:260 and :290 at 54d0a8d2",
+      "source": "stored review from r-20260922T134814459123-review-of-the-preserved-gate-log, reviewed revision 54d0a8d2, superseded by the round-2 record",
+      "status": "fixed"
+    },
+    {
+      "disposition": "verified fixed: the anchor the plan's section link resolves to is present once in the archive evidence file at the evidence-complete head and once in the served document, the sibling anchor the-agreement-cases-cite-the-recorded-copy reads one in the same trees as a known-present control, and on the same mainline tree before the merge (5cdacb7a) the cited anchor reads zero while the control still reads one, so the before/after is a real change and not a moved instrument",
+      "n": 1,
+      "prior_verdict": {
+        "reviewed_revision": "fe1bf82030194dca7cc87dfcf7e6887ded362be8",
+        "scores": {
+          "durability": 18,
+          "evidence": 18,
+          "fit": 19,
+          "goal_fidelity": 19,
+          "scope_discipline": 20
+        },
+        "total": 94
+      },
+      "raised": "the section's own full-record link, \"cited gate log preservation evidence\", points at /reckon/evidence/archive/work-does-not-fall-to-the-coordinator-landed#the-cited-gate-log-is-copied-where-the-row-can-find-it, and that anchor is in neither the working-tree evidence file nor the served page: grep for it returns zero in both while the sibling anchor the-agreement-cases-cite-the-recorded-copy returns one in both, so the instrument is shown to see an anchor known present. The link was introduced by this node's first commit bd576e66 and the node declares the evidence file as a write path while committing no change to it, so the plan cites a record that was never written - the same defect this section removes, one layer along, and cheap to repair by writing the landed section into the declared file or dropping the link, with no code change and no new fence.",
+      "raised_at": "docs/plans/work-does-not-fall-to-the-coordinator.html:165 at fe1bf820",
+      "source": "stored review from r-20260922T143739976144-re-review-of-the-preserved-gate-log, reviewed revision fe1bf820, superseded by this record",
+      "status": "fixed"
+    }
+  ],
+  "prior_review_note": "this record supersedes two earlier reviews of the same run: r-20260922T134814459123-review-of-the-preserved-gate-log, which scored it 88 at its pre-correction head 54d0a8d2 with two findings, and r-20260922T143739976144-re-review-of-the-preserved-gate-log, which scored it 94 at fe1bf820 with one finding; both verdicts are carried under prior_findings with a disposition for each of their three findings, and both earlier records are preserved verbatim beside this node's run directory under superseded-rounds/ (round-1.json was round two's own preservation, round-2.json is a copy of the record this write replaced)",
+  "project": "reckon",
+  "raw_text": "REVISION: db4e9a58bac061c95d70b3fbefaa79195331ef41\n\nVERDICT goal: the goal at the run pointer asks for a promotion that copies the cited gate log where the row can still find it, and reckon/crew/promotion.py:540-587 does exactly that with its single production call at :3669 inside _complete_locked, one line ahead of the record build at :3670 - the only site in reckon/ where a ledger record is built, since ledger.build_record has no other caller - so every promotion that records a gate check records the copy's path.\nVERDICT done_when: the pointer's done_when names four behaviours plus a cohort delta at a declared base and the declared mutation verbatim on the red log's first line; tests/test_gate_log_is_preserved.py carries the four behaviours at :180, :207, :240, :274 and :313, the manifest records 5 passed with the cohort pair under test-logs/, and I re-ran the byte comparison of negative-control.log line 1 against node.negative_control on the pointer - equal, with the declared sentence occurring exactly once in the file.\nVERDICT write_paths: the pointer declares five paths and git diff --name-only 01eeb308..db4e9a58 returns exactly those five - reckon/crew/promotion.py, tests/test_gate_log_is_preserved.py, docs/plans/work-does-not-fall-to-the-coordinator.html, docs/figures/work-does-not-fall-to-the-coordinator/cited-gate-log-preservation.svg and the archive evidence file - with each commit's own stat inside them (bd576e66 the copy, 54d0a8d2 the best-effort correction, 1911969e the test retarget, fe1bf820 plan-only, db4e9a58 evidence-only).\nVERDICT manifest: read the delivered manifest in the run directory; status complete, the five commits listed, the tests line naming the focused gate and the cohort pair, negative_control_log a bare path, and the four added failure ids named by file and line as out of scope rather than triaged - but one claim is stale at delivery, after_suite's parenthetical calling fe1bf820 \"this node's head\" while the head the same manifest lists is db4e9a58 (finding 1).\nVERDICT diff: read all five commits against base 01eeb308caec57684d5bb79664dbd0749b2d1798 commit by commit; the change is one module-private helper plus its five-case gate, followed by three documentation commits, and reckon/crew/promotion.py and tests/test_gate_log_is_preserved.py are byte-identical between the node head db4e9a58 and the merged head 05c3fe77 this review's tree sits at (git diff --numstat over the five paths lists neither file), the merge's one-line archive plan-verifies replacement and the plan's version/impl scalars being server-owned bookkeeping rather than node content.\nCALL_SITES: reckon/crew/promotion.py:3669, reckon/crew/promotion.py:2410, reckon/cli.py:3131\n\nSCORE goal_fidelity: 20\nSCORE evidence: 19\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 20\n\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:3669 copies the cited log into the run directory and hands the record build at :3670 the copy's path on the sole route that builds a row, and the two cases the goal does not ask it to change (a citation already inside the run directory at :579, an unresolvable one at :572) are returned unchanged, which is what the goal's own wording implies rather than a deviation from it.\nJUSTIFICATION evidence: tests/test_gate_log_is_preserved.py is named with 5 passed, the cohort pair and all three control logs are on disk under test-logs/ and the run directory with their declarations on line 1, and the four added failure ids are attributed by file and line - docked one because the manifest's after_suite calls fe1bf820 this node's head while db4e9a58 is the head it lists (finding 1), a stale label over an otherwise sound measurement.\nJUSTIFICATION scope_discipline: git diff --name-only 01eeb308..db4e9a58 returns exactly the five declared write paths, the two code-bearing commits stay on the files the goal needs, and the four failures the change adds in tests/test_crew_gate_log_agrees.py were reported with file and line rather than edited out of the fence.\nJUSTIFICATION durability: every one of the five cases reddens under a named control the node ran and recorded - :180, :207 and :240 under the declared no-copy mutation, :274 under the relocation control, :313 under the refusal control - and the two assertions round one called tautological now read the row back from the ledger and delete the cited original before asserting bytes, docked one for the two assertions that cannot fail (:204 is subsumed by :203's containment, and :300's containment is trivially true for a citation already inside the directory).\nJUSTIFICATION fit: reckon/crew/promotion.py:540-587 is a module-private helper with a rationale docstring in the file's own idiom, its constant sits beside its user as the file's other constants do (compare :390 and :3081), it adds no public surface and no CLI option, and neither the code, the constant, the docstring nor the tests carries a plan label, ticket reference, version number or project name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T113256452748-the-cited-gate-log-is-preserved-where-the-row-can-find-it/manifest.md:14 after_suite's parenthetical calls fe1bf820 \"this node's head\" while line 7 of the same manifest lists db4e9a58 as the head, and db4e9a58 landed after the suite ran, so at delivery the label names a revision the manifest's own commits line contradicts; the observation itself is sound because db4e9a58 changes only the archive evidence file and the owned paths were the same at both revisions, and the repair is to name the revision the suite measured rather than the head, with no re-run needed.",
+  "read_at_merged_head": "05c3fe77393029635a19ee9fc8a7fe51f6a79f4d",
+  "review_run_id": "r-20260922T151356658338-third-review-of-the-preserved-gate-log",
+  "reviewed_base_sha": "01eeb308caec57684d5bb79664dbd0749b2d1798",
+  "reviewed_head_sha": "db4e9a58bac061c95d70b3fbefaa79195331ef41",
+  "reviewed_revision": "db4e9a58bac061c95d70b3fbefaa79195331ef41",
+  "reviewed_run_id": "r-20260922T113256452748-the-cited-gate-log-is-preserved-where-the-row-can-find-it",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T15:36:04.630124+00:00",
+  "total": 98
+}

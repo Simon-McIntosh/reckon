@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-29T06:38:49.435Z",
+  "dispatched_at": "2026-09-29T05:53:37Z",
+  "findings": [
+    {
+      "file": "docs/research/data/crew-contract-baseline/measure.py",
+      "line": "389",
+      "text": "the bracketing control cannot fail on the regression it names: its predicate compares the tight cost against own-previous (821) instead of against the loose cost (after-previous), so reinstating the pre-repair rule at measure.py:233 (<= becomes <) leaves it printing \"bracketing control: True load bracketed on its own request (146533)\" while the reference figure silently moves 5,410 -> 6,231 (receipt: evidence/bracket-control-mutation.log), and its verdict is printed at measure.py:436 without changing the exit status, so a False verdict would still ship as EXIT=0."
+    },
+    {
+      "file": "docs/research/data/crew-contract-baseline/baseline.log",
+      "line": "1",
+      "text": "the log's first line names revision 9522a833, which does not contain the per-session accounting that produced the log (that landed in 097a3e61), so a reader resolving the named revision finds an instrument reporting a different baseline (a per-load median of 6,231); re-running the committed instrument at the reviewed head 8ca1f795 reproduces every other line of this log byte-for-byte (receipt: evidence/gate-rerun.diff)."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-contract-fits-one-read/crew-contract-token-baseline.html",
+      "line": "73",
+      "text": "the sentence \"it holds four qualifying sessions and only two complete ones\" mixes two selection predicates and, read naturally, is false: for 2026-09-26 alone the landed instrument reports five selected sessions of which two have a complete per-session total, and of the four sessions that recorded a SKILL.md load only one (1d1d2f0d) has a complete total; the two complete sessions under the landed rule include 5b2accfd, whose only load is a reference read, and the committed log carries no 09-26-only run for a reader to check the sentence against."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against a34a62bb -- b1f967c9 adds the instrument and its log, 9522a833 adds the fragment and the figure, 097a3e61 replaces the per-load median with per-session totals and adds the two exclusions, the figure script and the controls, 8ca1f795 fills the fragment's evidence-commit with 097a3e61 -- and no hunk reaches outside the declared paths.",
+    "done_when": "the fence's gate is the instrument and the log it writes, and I re-ran the committed instrument at the reviewed head and reproduced every per-session total, the median (20,484.0), both controls and the word counts (11,181 plus 23,726 against the 12,000-word ceiling) from docs/research/data/crew-contract-baseline/baseline.log, the only difference being that log's own revision line; the fence asks for five sessions that loaded SKILL.md on 2026-09-26 and the log selects over 2026-09-26 and 2026-09-25 because the baseline date alone yields two complete sessions, which the log prints, so the deviation is recorded rather than concealed.",
+    "goal": "the goal is a recorded pre-rewrite figure for the input tokens a coordinator spends loading the reckon-build skill and its references before its first dispatch, and docs/evidence/fragments/the-crew-contract-fits-one-read/crew-contract-token-baseline.html:23 records a median of 20,484 tokens over five per-session totals, which is the per-session sum the goal names; the date window is widened to 2026-09-25 and the shortfall stated in the same fragment at lines 73-74.",
+    "manifest": "status complete, with tests naming the measure command and its EXIT=0, test_logs naming the committed log, and artifacts/evidence_inputs carrying the five session ids, the per-session figures, the widened dates and the requirement that the after-side reuse the selection and exclusions; baseline_suite and after_suite are empty because this node armed no test suite and its scope holds no test module, so the added-failure count is unmeasured rather than zero.",
+    "write_paths": "the three declared paths are docs/research/data/crew-contract-baseline, docs/evidence/fragments/the-crew-contract-fits-one-read/crew-contract-token-baseline.html and docs/figures/the-crew-contract-fits-one-read/crew-contract-token-baseline, and all five files of the diff (measure.py, figure.py, baseline.log, the fragment, the PNG) sit inside them with nothing else changed."
+  },
+  "justifications": {
+    "durability": "the bracketing control at docs/research/data/crew-contract-baseline/measure.py:389 stays green with the loose bracket reinstated (evidence/bracket-control-mutation.log), and its verdict never reaches the exit status set at measure.py:433.",
+    "evidence": "the log reproduces at the reviewed head with only its revision line differing (evidence/gate-rerun.diff), and that line names 9522a833, a revision whose instrument cannot produce the log.",
+    "fit": "measure.py and figure.py are named by what they do, carry no plan or stage label, and both are clean under ruff check and ruff format --check.",
+    "goal_fidelity": "docs/evidence/fragments/the-crew-contract-fits-one-read/crew-contract-token-baseline.html:23 states the median of 20,484 over per-session totals, matching the five totals and the median in docs/research/data/crew-contract-baseline/baseline.log.",
+    "scope_discipline": "every path in the four commits' diff is inside the declared write paths and the committed output is 113 KB against the fence's 200 KB."
+  },
+  "node": "review-of-crew-contract-token-baseline",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T041258061768-crew-contract-token-baseline\n(plan the-crew-contract-fits-one-read, section 3; node crew-contract-token-baseline; role implement; spec guided)\nreviewed_base_sha: a34a62bbfa3f95be7b996e0f80e842651493745a\nreviewed_head_sha: 8ca1f7958addf721a2736fd48557fa73780081d7\n\nVERDICT goal: the goal is a recorded pre-rewrite figure for the input tokens a coordinator spends loading the reckon-build skill and its references before its first dispatch, and docs/evidence/fragments/the-crew-contract-fits-one-read/crew-contract-token-baseline.html:23 records a median of 20,484 tokens over five per-session totals, which is the per-session sum the goal names; the date window is widened to 2026-09-25 and the shortfall stated in the same fragment at lines 73-74.\nVERDICT done_when: the fence's gate is the instrument and the log it writes, and I re-ran the committed instrument at the reviewed head and reproduced every per-session total, the median (20,484.0), both controls and the word counts (11,181 plus 23,726 against the 12,000-word ceiling) from docs/research/data/crew-contract-baseline/baseline.log, the only difference being that log's own revision line; the fence asks for five sessions that loaded SKILL.md on 2026-09-26 and the log selects over 2026-09-26 and 2026-09-25 because the baseline date alone yields two complete sessions, which the log prints, so the deviation is recorded rather than concealed.\nVERDICT write_paths: the three declared paths are docs/research/data/crew-contract-baseline, docs/evidence/fragments/the-crew-contract-fits-one-read/crew-contract-token-baseline.html and docs/figures/the-crew-contract-fits-one-read/crew-contract-token-baseline, and all five files of the diff (measure.py, figure.py, baseline.log, the fragment, the PNG) sit inside them with nothing else changed.\nVERDICT manifest: status complete, with tests naming the measure command and its EXIT=0, test_logs naming the committed log, and artifacts/evidence_inputs carrying the five session ids, the per-session figures, the widened dates and the requirement that the after-side reuse the selection and exclusions; baseline_suite and after_suite are empty because this node armed no test suite and its scope holds no test module, so the added-failure count is unmeasured rather than zero.\nVERDICT diff: read commit by commit against a34a62bb -- b1f967c9 adds the instrument and its log, 9522a833 adds the fragment and the figure, 097a3e61 replaces the per-load median with per-session totals and adds the two exclusions, the figure script and the controls, 8ca1f795 fills the fragment's evidence-commit with 097a3e61 -- and no hunk reaches outside the declared paths.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-crew-contract-fits-one-read/crew-contract-token-baseline.html:23 states the median of 20,484 over per-session totals, matching the five totals and the median in docs/research/data/crew-contract-baseline/baseline.log.\nSCORE evidence: 16\nJUSTIFICATION evidence: the log reproduces at the reviewed head with only its revision line differing (evidence/gate-rerun.diff), and that line names 9522a833, a revision whose instrument cannot produce the log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the four commits' diff is inside the declared write paths and the committed output is 113 KB against the fence's 200 KB.\nSCORE durability: 14\nJUSTIFICATION durability: the bracketing control at docs/research/data/crew-contract-baseline/measure.py:389 stays green with the loose bracket reinstated (evidence/bracket-control-mutation.log), and its verdict never reaches the exit status set at measure.py:433.\nSCORE fit: 19\nJUSTIFICATION fit: measure.py and figure.py are named by what they do, carry no plan or stage label, and both are clean under ruff check and ruff format --check.\nFINDING docs/research/data/crew-contract-baseline/measure.py:389 the bracketing control cannot fail on the regression it names: its predicate compares the tight cost against own-previous (821) instead of against the loose cost (after-previous), so reinstating the pre-repair rule at measure.py:233 (<= becomes <) leaves it printing \"bracketing control: True load bracketed on its own request (146533)\" while the reference figure silently moves 5,410 -> 6,231 (receipt: evidence/bracket-control-mutation.log), and its verdict is printed at measure.py:436 without changing the exit status, so a False verdict would still ship as EXIT=0.\nFINDING docs/research/data/crew-contract-baseline/baseline.log:1 the log's first line names revision 9522a833, which does not contain the per-session accounting that produced the log (that landed in 097a3e61), so a reader resolving the named revision finds an instrument reporting a different baseline (a per-load median of 6,231); re-running the committed instrument at the reviewed head 8ca1f795 reproduces every other line of this log byte-for-byte (receipt: evidence/gate-rerun.diff).\nFINDING docs/evidence/fragments/the-crew-contract-fits-one-read/crew-contract-token-baseline.html:73 the sentence \"it holds four qualifying sessions and only two complete ones\" mixes two selection predicates and, read naturally, is false: for 2026-09-26 alone the landed instrument reports five selected sessions of which two have a complete per-session total, and of the four sessions that recorded a SKILL.md load only one (1d1d2f0d) has a complete total; the two complete sessions under the landed rule include 5b2accfd, whose only load is a reference read, and the committed log carries no 09-26-only run for a reader to check the sentence against.",
+  "review_run_id": "r-20260929T055321097273-review-of-crew-contract-token-baseline",
+  "reviewed_base_sha": "a34a62bbfa3f95be7b996e0f80e842651493745a",
+  "reviewed_head_sha": "8ca1f7958addf721a2736fd48557fa73780081d7",
+  "reviewed_run_id": "r-20260929T041258061768-crew-contract-token-baseline",
+  "reviewer": {
+    "node": "review-of-crew-contract-token-baseline",
+    "run_id": "r-20260929T055321097273-review-of-crew-contract-token-baseline"
+  },
+  "reviewer_run_id": "r-20260929T055321097273-review-of-crew-contract-token-baseline",
+  "role": "review",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T06:19:12.371622+00:00",
+  "total": 85
+}

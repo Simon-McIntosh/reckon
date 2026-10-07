@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived through the store's own reader (reckon/crew/review.py:1068) over the reviewed run's own baseline_suite/after_suite gate logs: base gate-base.log (revision 33c5e761d, 8 failed/134 passed/EXIT=1) and head gate-head.log (revision 490ba52aa1a26c9db307cccb2ddd33e5ed671637, 142 passed/EXIT=0) -> (0, []). Positive control: the same reader extracts all 8 present base ids, so the zero is a measurement rather than a blind parser. Base bytes are base source with the head test files copied in, so the 8 base failures are this node's own new cases failing against base source -- the guard reproduces at base and the head arm retires every one.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:4659 (_manifest_wait caller)",
+    "reckon/crew/recovery.py:5227 (external_wait)",
+    "reckon/crew/resumption.py sweep lift path"
+  ],
+  "completed_at": "2026-10-01T06:16:29.801Z",
+  "dispatched_at": "2026-10-01T06:02:02Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T032824765628-a-wait-ages-on-its-stream/manifest.md",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: orientation_write_paths lists the five originally fenced paths while the diff changes seven; the widening that admits tests/test_ticker_renders_wait_facts.py and tests/test_wait_facts_reach_the_event.py is recorded only in the run's resume-1-advice.txt, so a reader comparing the manifest against the diff cannot account for the two from the manifest alone."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T032824765628-a-wait-ages-on-its-stream/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm is headed 490ba52aa while the node's final commit is 9ec2b57fe, so the gate does not cover the final head; the residual commit is docs-only (the evidence fragment), so no behavioural difference is untested, but the mismatch is visible to a reader tying the count to a revision."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "3684",
+      "severity": "follow-on",
+      "text": "follow-on: _WAIT_PROBE_EXTERNAL_REFERENCE accepts any vector containing a digit, a slash, a dollar sign or a backtick anywhere, so a constant probe such as [\"git\", \"rev-parse\", \"HEAD2\"] is accepted as able to differ; the reference rule is a character-class proxy rather than a resolved reference, which over-accepts at the margin."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 33c5e761d -- 4506eadf7 adds _wait_probe_cannot_fail and the refusal; 490ba52aa changes the two fixture probes from a printf stand-in to reading a file the test writes; 210b00353 and 9ec2b57fe record the landing in the evidence fragment; no assertion, skip or xfail added or deleted, and no plan or ticket label in any new name or comment.",
+    "done_when": "read clause by clause against the run's own logs -- the new tests/test_a_wait_ages_on_its_stream.py carries the four named cases (stale-manifest/fresh-stream not in alarm, both-stale in alarm, echo/git probes reported unable to fail, pid/job-id/port/path accepted); the declared negative control reddens the fresh-stream case (negative-control.log 1 failed/EXIT=1); the head arm is green (gate-head.log 142 passed/EXIT=0) and the base arm shows the eight new cases failing against base source (gate-base.log 8 failed/134 passed/EXIT=1); fixtures synthesise runs under the isolated home and assert the real pointer directory untouched both sides; both arms are recorded as JSON with completed true and literal absolute-path commands; each pytest process holds its own basetemp.",
+    "goal": "the goal is both halves of f-cot-the-wait-predicate-settled-by-three-corrections -- age a declared wait on stream freshness, and accept a probe only when its result can differ; reckon/crew/recovery.py:3695 adds _wait_probe_cannot_fail and its refusal at :4562, and _declared_wait_age_seconds (:4430) already took the newer of declaration and stream_mtime at base so it is pinned by tests rather than reimplemented, which is what the contract asks where the behaviour is already correct.",
+    "manifest": "read; status complete, four commits, seven changed paths listed, the new-rules and the stream clock each with a figure, the literal tests command with absolute paths and no placeholder, baseline_suite and after_suite both present and completed, negative_control_log named by bare path, and half one honestly recorded as not reproducing at base.",
+    "write_paths": "the run was fenced to reckon/crew/recovery.py, reckon/crew/ticker.py, tests/test_a_wait_ages_on_its_stream.py, the evidence fragment and the figures directory; the diff to HEAD changes five files inside that set (recovery.py, the new test file, the fragment, and two existing wait fixture files) and nothing else; the two fixture files (tests/test_ticker_renders_wait_facts.py, tests/test_wait_facts_reach_the_event.py) were outside the opening dispatch's five-path fence and were added by the coordinator's resume advice, whose scope is recorded in resume-1-advice.txt and constrains the edit to the two probe lines."
+  },
+  "justifications": {
+    "durability": "tests/test_a_wait_ages_on_its_stream.py:158 fails when the stream term is removed from _declared_wait_age_seconds, as the executed negative control shows, and :218 keeps the both-stale alarm so the guard suppresses an alarm rather than disabling the clock.",
+    "evidence": "the reviewed manifest's baseline_suite (gate-base.log, 8 failed/134 passed/EXIT=1) and after_suite (gate-head.log, 142 passed/EXIT=0) let the store's own reader derive the added-failure count from the run's gate logs, and the negative control is executed.",
+    "fit": "reckon/crew/recovery.py:3695 follows the surrounding measured-narrative idiom, reuses runs_dir/pointer_path/_write_json and the existing refusal vocabulary, and introduces no forbidden plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery.py:3695 reads a probe for whether its result can differ and :4562 refuses echo pending and git rev-parse HEAD against exit 0, while :3684 accepts a job id, pid, port or path, and the refusal reaches resumption.sweep's lift decision rather than only the display row.",
+    "scope_discipline": "reckon/crew/recovery.py and tests/test_a_wait_ages_on_its_stream.py carry the change and the two fixture edits are the coordinator-widened fence recorded in resume-1-advice.txt, but the manifest's orientation_write_paths (manifest.md:3) still names five paths where the diff changes seven."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is both halves of f-cot-the-wait-predicate-settled-by-three-corrections -- age a declared wait on stream freshness, and accept a probe only when its result can differ; reckon/crew/recovery.py:3695 adds _wait_probe_cannot_fail and its refusal at :4562, and _declared_wait_age_seconds (:4430) already took the newer of declaration and stream_mtime at base so it is pinned by tests rather than reimplemented, which is what the contract asks where the behaviour is already correct.\nVERDICT done_when: read clause by clause against the run's own logs -- the new tests/test_a_wait_ages_on_its_stream.py carries the four named cases (stale-manifest/fresh-stream not in alarm, both-stale in alarm, echo/git probes reported unable to fail, pid/job-id/port/path accepted); the declared negative control reddens the fresh-stream case (negative-control.log 1 failed/EXIT=1); the head arm is green (gate-head.log 142 passed/EXIT=0) and the base arm shows the eight new cases failing against base source (gate-base.log 8 failed/134 passed/EXIT=1); fixtures synthesise runs under the isolated home and assert the real pointer directory untouched both sides; both arms are recorded as JSON with completed true and literal absolute-path commands; each pytest process holds its own basetemp.\nVERDICT write_paths: the run was fenced to reckon/crew/recovery.py, reckon/crew/ticker.py, tests/test_a_wait_ages_on_its_stream.py, the evidence fragment and the figures directory; the diff to HEAD changes five files inside that set (recovery.py, the new test file, the fragment, and two existing wait fixture files) and nothing else; the two fixture files (tests/test_ticker_renders_wait_facts.py, tests/test_wait_facts_reach_the_event.py) were outside the opening dispatch's five-path fence and were added by the coordinator's resume advice, whose scope is recorded in resume-1-advice.txt and constrains the edit to the two probe lines.\nVERDICT manifest: read; status complete, four commits, seven changed paths listed, the new-rules and the stream clock each with a figure, the literal tests command with absolute paths and no placeholder, baseline_suite and after_suite both present and completed, negative_control_log named by bare path, and half one honestly recorded as not reproducing at base.\nVERDICT diff: read commit by commit against 33c5e761d -- 4506eadf7 adds _wait_probe_cannot_fail and the refusal; 490ba52aa changes the two fixture probes from a printf stand-in to reading a file the test writes; 210b00353 and 9ec2b57fe record the landing in the evidence fragment; no assertion, skip or xfail added or deleted, and no plan or ticket label in any new name or comment.\nCALL_SITES: reckon/crew/recovery.py:4659 (_manifest_wait caller), reckon/crew/recovery.py:5227 (external_wait), reckon/crew/resumption.py sweep lift path\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:3695 reads a probe for whether its result can differ and :4562 refuses echo pending and git rev-parse HEAD against exit 0, while :3684 accepts a job id, pid, port or path, and the refusal reaches resumption.sweep's lift decision rather than only the display row.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed manifest's baseline_suite (gate-base.log, 8 failed/134 passed/EXIT=1) and after_suite (gate-head.log, 142 passed/EXIT=0) let the store's own reader derive the added-failure count from the run's gate logs, and the negative control is executed.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: reckon/crew/recovery.py and tests/test_a_wait_ages_on_its_stream.py carry the change and the two fixture edits are the coordinator-widened fence recorded in resume-1-advice.txt, but the manifest's orientation_write_paths (manifest.md:3) still names five paths where the diff changes seven.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_wait_ages_on_its_stream.py:158 fails when the stream term is removed from _declared_wait_age_seconds, as the executed negative control shows, and :218 keeps the both-stale alarm so the guard suppresses an alarm rather than disabling the clock.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery.py:3695 follows the surrounding measured-narrative idiom, reuses runs_dir/pointer_path/_write_json and the existing refusal vocabulary, and introduces no forbidden plan, sprint or ticket label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T032824765628-a-wait-ages-on-its-stream/manifest.md:3 follow-on: orientation_write_paths lists the five originally fenced paths while the diff changes seven; the widening that admits tests/test_ticker_renders_wait_facts.py and tests/test_wait_facts_reach_the_event.py is recorded only in the run's resume-1-advice.txt, so a reader comparing the manifest against the diff cannot account for the two from the manifest alone.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T032824765628-a-wait-ages-on-its-stream/gate-head.log:1 follow-on: the head arm is headed 490ba52aa while the node's final commit is 9ec2b57fe, so the gate does not cover the final head; the residual commit is docs-only (the evidence fragment), so no behavioural difference is untested, but the mismatch is visible to a reader tying the count to a revision.\nFINDING reckon/crew/recovery.py:3684 follow-on: _WAIT_PROBE_EXTERNAL_REFERENCE accepts any vector containing a digit, a slash, a dollar sign or a backtick anywhere, so a constant probe such as [\"git\", \"rev-parse\", \"HEAD2\"] is accepted as able to differ; the reference rule is a character-class proxy rather than a resolved reference, which over-accepts at the margin.",
+  "review_run_id": "r-20261001T060145234271-review-of-a-wait-ages-on-its-stream",
+  "reviewed_base_sha": "33c5e761d89f0b824441d24c5a980ba2725631f7",
+  "reviewed_head_sha": "9ec2b57fe7421d0f3b1f798eb5bb47e6d2d72433",
+  "reviewed_run_id": "r-20261001T032824765628-a-wait-ages-on-its-stream",
+  "reviewer_run_id": "r-20261001T060145234271-review-of-a-wait-ages-on-its-stream",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T06:14:28.491163+00:00",
+  "total": 92
+}

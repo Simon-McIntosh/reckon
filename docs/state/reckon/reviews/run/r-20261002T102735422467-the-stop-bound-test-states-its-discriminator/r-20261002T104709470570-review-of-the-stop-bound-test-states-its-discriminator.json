@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs. The reviewed run declares no armed suite: baseline_suite and after_suite are null in its manifest, so there is no suite arm pair to subtract. Its own gate logs are gate-head.log (head arm: 3 passed, EXIT=0, failure_count 0, failure_ids []) and negative-control.log (mutation: 1 failed, 2 passed, EXIT=1). I supplied the missing base arm independently by git-archiving revision 7a8981b4a (the orientation base): 3 passed, EXIT=0, failure_count 0, failure_ids []. Head arm failure_count 0 minus base arm failure_count 0 gives zero added failure ids. Independently reproduced in scratch trees: base 3 passed EXIT=0, head 3 passed EXIT=0, mutation 1 failed/2 passed EXIT=1.",
+  "backend": "clive",
+  "base_log_revision": "7a8981b4a5042a24eaaf9a7a66dc7051d14fc088",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T10:58:48.740Z",
+  "dispatched_at": "2026-10-02T10:47:34Z",
+  "findings": [
+    {
+      "file": "tests/test_a_stopped_run_ends_its_supervisor.py",
+      "line": "283",
+      "severity": "follow-on",
+      "text": "follow-on: the declared negative control reddens the case at the wait ceiling, not at the new bound. Withholding the escalation (grace 600 s) leaves the supervisor alive past CEILING_SECONDS (90 s), so _wait_until raises (line 134) before line 283's 40 s bound is reached; the control therefore demonstrates the ceiling, not the assertion the node added. The new bound's own window (40 s, 90 s) is non-empty -- unlike the old line's empty window -- but no executed case drives the supervisor to exit inside it, so the bound's falsifiability rests on the derivation rather than on a demonstration."
+    },
+    {
+      "file": "tests/test_a_stopped_run_ends_its_supervisor.py",
+      "line": "95",
+      "severity": "follow-on",
+      "text": "follow-on: LOAD_MARGIN_SECONDS (30.0) is three times the ~10 s drain it wraps (SUPERVISOR_STOP_DRAIN_SECONDS = 3*3.0 + 1.0), so the 40 s bound is dominated by the load margin: a supervisor whose escalation regressed by up to about 30 s would still pass. The bound catches large overruns (40 s-90 s) but is insensitive to a modest drain regression. Read as an upper bound generous for a loaded node, not as a tight measure of the escalation."
+    },
+    {
+      "file": "docs/evidence/fragments/a-crew-process-ends-with-its-owner/the-stop-bound-test-states-its-discriminator.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node wrote an evidence fragment although its brief states a small node 'writes no figure and no evidence prose', and its done-when names no artifact. The fragment is within the declared write path, so this is a brief-internal inconsistency rather than a scope breach, but the emitted fragment is a near-empty stub (title, meta description, and a single landing line) carrying no logs or figures."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T102735422467-the-stop-bound-test-states-its-discriminator/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's first line names rev=7a8981b4a5042a24eaaf9a7a66dc7051d14fc088 -- the pre-commit HEAD / orientation base -- rather than the commit a07308f67 the gate's content became. The gate ran before the commit was made, so the header understates the revision the tree carried. The tree field and the command reconcile, and the head-arm content is unambiguous from the commit, but the header revision is not the revision the tested content landed at."
+    }
+  ],
+  "head_log_revision": "a07308f67eb73ae91f12cbe5ace222c41a179100",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Not applicable: the change edits a test module and an evidence fragment only; it introduces no production code path. The constants it reads (dispatch_module._WORKER_MANIFEST_POLL_SECONDS, dispatch.py:8638) are pre-existing.",
+    "diff": "Node's own: +36/-15 on the test module and +23/-0 on the fragment, 59 insertions and 15 deletions across two files, all inside the declared write paths.",
+    "done_when": "The file passes and the declared negative control is executed and logged. Head a07308f67: 3 passed EXIT=0, reproduced. Mutation RECKON_STOP_SUPERVISOR_NEGATIVE_CONTROL=1: 1 failed (test_the_supervisor_exits_within_the_bound_after_a_stop), 2 passed, EXIT=1, reproduced, matching the run's own negative-control.log.",
+    "goal": "Replace the unfalsifiable elapsed bound in tests/test_a_stopped_run_ends_its_supervisor.py with one that can fail. Done: the ignored-stop case now bounds at 40 s and the ends-on-stop case at 36 s, both derived from the supervisor's own poll interval plus the stop grace plus a load margin, and both strictly under the 90 s wait ceiling, giving a non-empty window (40 s, 90 s).",
+    "manifest": "status complete; commits a07308f67; landing, tests, test_logs, negative_control_log, negative_control_note, artifacts, evidence_inputs all populated; changed_paths match the diff. baseline_suite and after_suite are null (the node is not armed with a suite; its evidence fence names only the test file and the control). negative_control_log names negative-control.log, whose last line is EXIT=1 with one failing id the head arm does not fail. The record is coherent.",
+    "write_paths": "Declared: tests/test_a_stopped_run_ends_its_supervisor.py, docs/evidence/fragments/a-crew-process-ends-with-its-owner/the-stop-bound-test-states-its-discriminator.html, and a docs/figures directory. The diff touches the first two; no figure is emitted. No foreign path."
+  },
+  "justifications": {
+    "durability": "The repaired bound is attributable and derived, not guessed: SUPERVISOR_POLL_SECONDS reads dispatch_module._WORKER_MANIFEST_POLL_SECONDS so the bound moves with the supervisor's own poll interval, and the drain decomposition (notice, stop grace, escalate, reap) is stated in the comment. The declared mutation falsifies the behaviour the case guards -- withholding the stop-grace escalation reddens test_the_supervisor_exits_within_the_bound_after_a_stop (EXIT=1), reproduced. Docked two points for two limitations: first, the negative control demonstrates the 90 s ceiling, not the new 40 s bound (the mutation's grace is 600 s, so the supervisor outlives the ceiling and _wait_until raises before the elapsed bound is ever evaluated), leaving the bound's own falsifiability unexercised by any case; second, LOAD_MARGIN_SECONDS (30 s) is three times the ~10 s drain it wraps, so a supervisor whose escalation regressed by up to ~30 s would still pass, and the assertion is dominated by the margin rather than the drain. Neither is a defect against the done-when, which asked only for a bound that can fail, but a later reader should not read the control as evidence that the bound bites.",
+    "evidence": "The reviewed run's own record is complete and readable: status complete, commits a07308f67, changed_paths [tests/test_a_stopped_run_ends_its_supervisor.py, docs/evidence/fragments/a-crew-process-ends-with-its-owner/the-stop-bound-test-states-its-discriminator.html], landing present, tests and test_logs populated, negative_control_log naming negative-control.log whose last line is EXIT=1 with one failing id the head arm does not fail. I independently rebuilt both arms in scratch trees git-archived at the reviewed revisions from the shared object store: base 7a8981b4a -> 3 passed EXIT=0 (repro/base.log); head a07308f67 -> 3 passed EXIT=0 (repro/head.log); the declared mutation RECKON_STOP_SUPERVISOR_NEGATIVE_CONTROL=1 at head -> 1 failed, 2 passed, EXIT=1, failing id tests/test_a_stopped_run_ends_its_supervisor.py::test_the_supervisor_exits_within_the_bound_after_a_stop, which the head arm passes (repro/neg.log), matching the run's own negative-control.log. Both arms are ruff-clean on the test module. Docked one point because the reviewed run declares no armed baseline_suite or after_suite (both null in its manifest), so the added-failure comparison rests on base and head arms I built, not on the run's own suite records; and its head gate-log header names rev=7a8981b4a (the pre-commit HEAD) rather than the commit, because the gate ran before the commit was made.",
+    "fit": "The change sits where the constants that describe the same behaviour already live: the new SUPERVISOR_POLL_SECONDS / SUPERVISOR_STOP_DRAIN_SECONDS / SUPERVISOR_PROMPT_DRAIN_SECONDS / LOAD_MARGIN_SECONDS block sits beside STOP_GRACE_SECONDS, MUTATION_STOP_GRACE_SECONDS, WORKER_SLEEP_SECONDS and CEILING_SECONDS, reusing their idiom. Names read as what they measure; the two changed comments explain the mechanism and the reason the old bound was empty. No version suffixes, no plan/sprint/ticket identifiers in symbols, comments or the test filename, and no AI attribution. The test module is ruff-clean at both base and head ('All checks passed!' each), so the node adds no findings; no product source is edited, so dispatch.py's findings are unchanged.",
+    "goal_fidelity": "The done-when asked for the toothless elapsed bound in tests/test_a_stopped_run_ends_its_supervisor.py to be replaced by one that can fail, with the choice named in the commit body and the declared negative control executed and logged. The node did exactly that. The old line `assert elapsed < WORKER_SLEEP_SECONDS` (120 s) sat after `_wait_until(..., timeout=CEILING_SECONDS)` (90 s), and _wait_until raises when the supervisor's pid is still alive at the ceiling (tests/test_a_stopped_run_ends_its_supervisor.py:134), so elapsed could never exceed ~90 s and the assertion was unfalsifiable; I confirmed this by running the base arm (base revision 7a8981b4a): 3 passed EXIT=0 with the old line present, i.e. the assertion never fired. The head replaces it with `SUPERVISOR_STOP_DRAIN_SECONDS + LOAD_MARGIN_SECONDS` = 3*3.0 + 1.0 + 30.0 = 40 s for the ignored-stop case and 2*3.0 + 30.0 = 36 s for the ends-on-stop case (tests/test_a_stopped_run_ends_its_supervisor.py:283, 320), both strictly under the 90 s ceiling, so a supervisor that overruns its escalation drains past the bound but inside the wait and fails there -- a non-empty falsifiable window of (40 s, 90 s). The constants read dispatch_module._WORKER_MANIFEST_POLL_SECONDS (dispatch.py:8638 = 3.0), so the bound tracks the poll loop it measures. The commit body names the derived-bound choice over deletion and its reason. Docked one point because the declared negative control reddens at the ceiling, not at the new bound, so the bound's own window is demonstrated only by inspection, not by any executed case.",
+    "scope_discipline": "The node's whole change is two files inside its declared write paths: git show --numstat a07308f67 is +36/-15 on tests/test_a_stopped_run_ends_its_supervisor.py and +23/-0 on docs/evidence/fragments/a-crew-process-ends-with-its-owner/the-stop-bound-test-states-its-discriminator.html (59 insertions, 15 deletions, two files). No plan HTML, no ledger, no index, no sprint state, no foreign source path is touched. The reviewed worktree at the-stop-bound-test-states-its-discriminator is clean at a07308f67 (no uncommitted entries). The node additionally wrote the evidence fragment although its brief states a small node 'writes no figure and no evidence prose'; the fragment is a declared write path, so this is a brief-internal inconsistency rather than a scope breach, and it is recorded as a follow-on."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the toothless elapsed bound in tests/test_a_stopped_run_ends_its_supervisor.py is replaced by a derived bound (40 s ignored-stop, 36 s ends-on-stop), both under the 90 s ceiling, giving a non-empty falsifiable window; confirmed by running base and head arms.\nVERDICT done_when: head 3 passed EXIT=0, mutation 1 failed/2 passed EXIT=1, both reproduced independently and matching the run's own logs.\nVERDICT write_paths: diff is two files inside the declared paths (+36/-15 test, +23/-0 fragment); no foreign path; worktree clean.\nVERDICT manifest: status complete; commits a07308f67; landing/tests/test_logs/negative_control_log populated; baseline_suite and after_suite null (not armed); record coherent.\nVERDICT evidence: all three arms independently rebuilt and reproduced; both arms ruff-clean; docked one because the run declares no armed suite and its head log header names the base revision.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the empty-window assertion is replaced by a bound whose window is (40, 90); the commit names the derived-bound choice; docked one because the control reddens the ceiling, not the bound.\nSCORE evidence: 19\nJUSTIFICATION evidence: base 3 passed, head 3 passed, mutation 1 failed/2 passed, all reproduced; run's own logs reconcile; docked one for the absent armed suite and the base-revision header.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: two files, 59+/15-, exactly the declared paths; worktree clean; no plan/ledger/index touched.\nSCORE durability: 18\nJUSTIFICATION durability: the bound is derived from the supervisor's own poll interval and the mutation falsifies the escalation; docked two because the bound's window is unexercised by any case and the 30 s margin dominates the 10 s drain.\nSCORE fit: 20\nJUSTIFICATION fit: constants sit beside their siblings, names describe the mechanism, comments state the reason, no banned labels or attribution, ruff-clean at base and head.",
+  "review_run_id": "r-20261002T104709470570-review-of-the-stop-bound-test-states-its-discriminator",
+  "reviewed_base_sha": "7a8981b4a5042a24eaaf9a7a66dc7051d14fc088",
+  "reviewed_head_sha": "a07308f67eb73ae91f12cbe5ace222c41a179100",
+  "reviewed_run_id": "r-20261002T102735422467-the-stop-bound-test-states-its-discriminator",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T10:57:00Z",
+  "total": 96
+}

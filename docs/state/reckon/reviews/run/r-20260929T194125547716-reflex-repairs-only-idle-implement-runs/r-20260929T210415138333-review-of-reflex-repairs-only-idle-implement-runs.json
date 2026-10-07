@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "25dabb312d926dfc7081e887f9628e51a45062ce",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/resumption.py:1297",
+    "reckon/crew/recovery.py:1925",
+    "reckon/cli.py:4181"
+  ],
+  "completed_at": "2026-09-29T21:34:07.804Z",
+  "dispatched_at": "2026-09-29T21:04:35Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194125547716-reflex-repairs-only-idle-implement-runs/arm-base.log",
+      "line": "3",
+      "text": "the base arm's header line names /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/reflex-repairs-only-idle-implement-runs/reckon/crew/recovery.py as module.__file__, but the arm ran the base tree: its own DeprecationWarning frames cite /tmp/repair-base-tree/tests/test_liveness_is_read_when_it_is_used.py:60 (the head arm's same warning cites the worktree copy), and re-resolving the recorded cwd /tmp/repair-base-tree with PYTHONPATH set to it returns /tmp/repair-base-tree/reckon/crew/recovery.py; the header a reader uses to confirm which module a scratch-tree arm measured therefore asserts the opposite of what the run did, while the manifest's measurement_module names the base path correctly."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194125547716-reflex-repairs-only-idle-implement-runs/negative-control.log",
+      "line": "27",
+      "text": "the declared negative-control log ends at the pytest summary line and carries no bare EXIT= line, so the shape the manifest contract gives that log is incomplete even though the red is real and correctly attributed (the resumed-worker no-dispatch assertion at tests/test_reflex_dispatches_one_repair.py:404)."
+    },
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/reflex-repairs-only-idle-implement-runs/tests/test_reflex_dispatches_one_repair.py",
+      "line": "216",
+      "text": "_write_worker_record is defined and never called, so the worker-record liveness refusal in reckon/crew/recovery.py:1386 has no driving test in this file and the helper is dead code."
+    }
+  ],
+  "head_log_revision": "7db5adb25",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit by commit \u2014 7db5adb25 (recovery.py dispatch pass, its guards and the 14-test file) and db89a867d (the evidence fragment alone, `git diff --name-status` confirms it changes no source). The repair.py half is load-bearing rather than cosmetic: the placeholder blanker at reckon/crew/node.py:136 blanks only double quotes and backticks, so the single-quoted `<id>` placeholders the composer used to write would be read as an unresolved placeholder and refused by validate_node (reckon/crew/dispatch.py:3377), and negative_control_finding (reckon/crew/node.py:892, applied at dispatch.py:3385) refuses a composed node whose scope names test files with no negative_control declared.",
+    "done_when": "The done-when is the focused file plus the arm comparison; I re-ran the focused file in the reviewed worktree at db89a867d (tests/test_reflex_dispatches_one_repair.py, 14 passed in 30.87s, EXIT=0) and re-derived both arms' failure-id sets from their own logs: head ids are a strict subset of base ids, so added is 0, and the head population is exactly the 102 tests/ files my independent AST scan finds importing reckon.crew.recovery or reckon.crew.repair.",
+    "goal": "The goal is one composed repair node per finding-bearing implement review round, and dispatch_repair_for_run (reckon/crew/recovery.py:1551) delivers it: tests/test_reflex_dispatches_one_repair.py:285 drives a real sweep over a stored three-finding review and observes exactly one repair whose brief names all three content-derived ids, which I reproduced (14 passed, EXIT=0), with the recorded narrowing that a round whose findings cite only run records dispatches nothing (reckon/crew/recovery.py:1418).",
+    "manifest": "Read in full; both suite records' failure ids match the logs exactly (32 base ids, 31 head ids, set-equal), its added-failure claim re-derives to zero through the store's own reader, and its two evidence shortfalls are the base log header and the unterminated negative-control log named in the findings below.",
+    "write_paths": "The manifest declares five orientation_write_paths and `git diff --name-status 25dabb312 db89a867d` lists four files, every one inside that set (reckon/crew/recovery.py, reckon/crew/repair.py, tests/test_reflex_dispatches_one_repair.py, docs/evidence/fragments/a-review-is-sized-to-its-risk/reflex-repairs-only-idle-implement-runs.html); the declared docs/figures/ path is unused, and a fence is not a quota."
+  },
+  "justifications": {
+    "durability": "Each guard names the condition that reddens it \u2014 removing the live-or-resumed check reddens tests/test_reflex_dispatches_one_repair.py:394, as negative-control.log demonstrates \u2014 but the worker-record liveness branch (reckon/crew/recovery.py:1386) and the died-without-ledger redispatch branch of _repair_in_flight (recovery.py:1520) carry no test.",
+    "evidence": "The focused gate reproduces (14 passed, EXIT=0) and the store's own reader derives 0 added failures with both arms' id lists matching the manifest exactly, but the base arm's header asserts the wrong module under test (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194125547716-reflex-repairs-only-idle-implement-runs/arm-base.log:3) and the declared negative-control log lacks its EXIT= terminator (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194125547716-reflex-repairs-only-idle-implement-runs/negative-control.log:27).",
+    "fit": "The report-and-return idiom matches dispatch_review_for_run beside it (reckon/crew/recovery.py:1128), the new names are mechanism-named (REPAIR_DISPATCH_FIELD, _repairable_scope, REPAIR_NODE_PREFIX), and the source carries no plan, ticket or role-attribution string.",
+    "goal_fidelity": "recovery.py:1551 composes through repair.py:259 and the sweep dispatches it at recovery.py:1925, which is the goal's sentence; the record-only refusal at recovery.py:1418 is a deliberate, disclosed narrowing of \"the union of the paths the findings name\" beyond what the plan's \u00a73 words require.",
+    "scope_discipline": "`git diff --name-status 25dabb312 db89a867d` lists only the four declared paths, and both supporting fixes are implied by the composed node having to validate at dispatch (reckon/crew/dispatch.py:3377)."
+  },
+  "node": "review-of-reflex-repairs-only-idle-implement-runs",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is one composed repair node per finding-bearing implement review round, and dispatch_repair_for_run (reckon/crew/recovery.py:1551) delivers it: tests/test_reflex_dispatches_one_repair.py:285 drives a real sweep over a stored three-finding review and observes exactly one repair whose brief names all three content-derived ids, which I reproduced (14 passed, EXIT=0), with the recorded narrowing that a round whose findings cite only run records dispatches nothing (reckon/crew/recovery.py:1418).\nVERDICT done_when: The done-when is the focused file plus the arm comparison; I re-ran the focused file in the reviewed worktree at db89a867d (tests/test_reflex_dispatches_one_repair.py, 14 passed in 30.87s, EXIT=0) and re-derived both arms' failure-id sets from their own logs: head ids are a strict subset of base ids, so added is 0, and the head population is exactly the 102 tests/ files my independent AST scan finds importing reckon.crew.recovery or reckon.crew.repair.\nVERDICT write_paths: The manifest declares five orientation_write_paths and `git diff --name-status 25dabb312 db89a867d` lists four files, every one inside that set (reckon/crew/recovery.py, reckon/crew/repair.py, tests/test_reflex_dispatches_one_repair.py, docs/evidence/fragments/a-review-is-sized-to-its-risk/reflex-repairs-only-idle-implement-runs.html); the declared docs/figures/ path is unused, and a fence is not a quota.\nVERDICT manifest: Read in full; both suite records' failure ids match the logs exactly (32 base ids, 31 head ids, set-equal), its added-failure claim re-derives to zero through the store's own reader, and its two evidence shortfalls are the base log header and the unterminated negative-control log named in the findings below.\nVERDICT diff: Read commit by commit \u2014 7db5adb25 (recovery.py dispatch pass, its guards and the 14-test file) and db89a867d (the evidence fragment alone, `git diff --name-status` confirms it changes no source). The repair.py half is load-bearing rather than cosmetic: the placeholder blanker at reckon/crew/node.py:136 blanks only double quotes and backticks, so the single-quoted `<id>` placeholders the composer used to write would be read as an unresolved placeholder and refused by validate_node (reckon/crew/dispatch.py:3377), and negative_control_finding (reckon/crew/node.py:892, applied at dispatch.py:3385) refuses a composed node whose scope names test files with no negative_control declared.\nCALL_SITES: reckon/crew/resumption.py:1297, reckon/crew/recovery.py:1925, reckon/cli.py:4181\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: recovery.py:1551 composes through repair.py:259 and the sweep dispatches it at recovery.py:1925, which is the goal's sentence; the record-only refusal at recovery.py:1418 is a deliberate, disclosed narrowing of \"the union of the paths the findings name\" beyond what the plan's \u00a73 words require.\nSCORE evidence: 18\nJUSTIFICATION evidence: The focused gate reproduces (14 passed, EXIT=0) and the store's own reader derives 0 added failures with both arms' id lists matching the manifest exactly, but the base arm's header asserts the wrong module under test (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194125547716-reflex-repairs-only-idle-implement-runs/arm-base.log:3) and the declared negative-control log lacks its EXIT= terminator (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194125547716-reflex-repairs-only-idle-implement-runs/negative-control.log:27).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --name-status 25dabb312 db89a867d` lists only the four declared paths, and both supporting fixes are implied by the composed node having to validate at dispatch (reckon/crew/dispatch.py:3377).\nSCORE durability: 18\nJUSTIFICATION durability: Each guard names the condition that reddens it \u2014 removing the live-or-resumed check reddens tests/test_reflex_dispatches_one_repair.py:394, as negative-control.log demonstrates \u2014 but the worker-record liveness branch (reckon/crew/recovery.py:1386) and the died-without-ledger redispatch branch of _repair_in_flight (recovery.py:1520) carry no test.\nSCORE fit: 20\nJUSTIFICATION fit: The report-and-return idiom matches dispatch_review_for_run beside it (reckon/crew/recovery.py:1128), the new names are mechanism-named (REPAIR_DISPATCH_FIELD, _repairable_scope, REPAIR_NODE_PREFIX), and the source carries no plan, ticket or role-attribution string.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194125547716-reflex-repairs-only-idle-implement-runs/arm-base.log:3 the base arm's header line names /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/reflex-repairs-only-idle-implement-runs/reckon/crew/recovery.py as module.__file__, but the arm ran the base tree: its own DeprecationWarning frames cite /tmp/repair-base-tree/tests/test_liveness_is_read_when_it_is_used.py:60 (the head arm's same warning cites the worktree copy), and re-resolving the recorded cwd /tmp/repair-base-tree with PYTHONPATH set to it returns /tmp/repair-base-tree/reckon/crew/recovery.py; the header a reader uses to confirm which module a scratch-tree arm measured therefore asserts the opposite of what the run did, while the manifest's measurement_module names the base path correctly.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T194125547716-reflex-repairs-only-idle-implement-runs/negative-control.log:27 the declared negative-control log ends at the pytest summary line and carries no bare EXIT= line, so the shape the manifest contract gives that log is incomplete even though the red is real and correctly attributed (the resumed-worker no-dispatch assertion at tests/test_reflex_dispatches_one_repair.py:404).\nFINDING /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/reflex-repairs-only-idle-implement-runs/tests/test_reflex_dispatches_one_repair.py:216 _write_worker_record is defined and never called, so the worker-record liveness refusal in reckon/crew/recovery.py:1386 has no driving test in this file and the helper is dead code.\nreviewed_base_sha: 25dabb312d926dfc7081e887f9628e51a45062ce\nreviewed_head_sha: db89a867d666d0f707f5513676eb1f02bbe60038\n",
+  "review_run_id": "r-20260929T210415138333-review-of-reflex-repairs-only-idle-implement-runs",
+  "reviewed_base_sha": "25dabb312d926dfc7081e887f9628e51a45062ce",
+  "reviewed_head_sha": "db89a867d666d0f707f5513676eb1f02bbe60038",
+  "reviewed_run_id": "r-20260929T194125547716-reflex-repairs-only-idle-implement-runs",
+  "reviewer_run_id": "r-20260929T210415138333-review-of-reflex-repairs-only-idle-implement-runs",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T21:26:31.537160+00:00",
+  "total": 94
+}

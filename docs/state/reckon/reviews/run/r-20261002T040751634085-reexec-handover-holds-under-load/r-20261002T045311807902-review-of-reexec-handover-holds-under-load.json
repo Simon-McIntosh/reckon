@@ -1,0 +1,38 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-02T04:57:32.826Z",
+  "dispatched_at": "2026-10-02T04:53:29Z",
+  "findings": [],
+  "justifications": {
+    "durability": "the negative-control log logs/negative-control.log restores the immediate zero-wait worker and the id reddens with the exact empty-carrier JSONDecodeError at tests/test_a_reexec_keeps_its_children.py:416, so the assertion carried[\"pids\"] == [pid] names a condition under which it fails; the held worker drops the wall-clock dependence the race was made of, which is the repair the done_when asks for.",
+    "evidence": "the gate in the manifest is ten consecutive head -n 8 runs of the group (logs/head-n8-run1..10.log, 0 reexec-file failures each) against five base runs (logs/base-n8-run1..5.log), and that is what the done_when asserts; the one caveat is that the original 2.0s fixed-sleep race did not reproduce red on this node, so the reproduction rests on the declared mutation rather than a base-arm red.",
+    "fit": "the added helper _WAITING_WORKER and the worker_code parameter at tests/test_a_reexec_keeps_its_children.py:57 and :128 follow the module's existing _WORKER pattern, and no plan, sprint or version label appears in any symbol, filename or comment.",
+    "goal_fidelity": "the node goal is that the reloader handover test passes under the parallel suite as it does alone; tests/test_a_reexec_keeps_its_children.py:388 holds the probe worker on a release file so its lifetime bounds on the condition the export needs, and the ten recorded head runs bear that out.",
+    "scope_discipline": "the diff 825bf5bc..107b42cfd touches exactly two files - tests/test_a_reexec_keeps_its_children.py and docs/evidence/fragments/the-suite-is-green-at-head/reexec-handover-holds-under-load.html - both inside the declared write paths, with 65 insertions and 4 deletions and no production file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the reloader handover test passes under the parallel suite as it does alone; the landed test tests/test_a_reexec_keeps_its_children.py:388 now holds its probe worker on a release file so its lifetime bounds on the condition the export reads, and the ten recorded head runs bear that out.\nVERDICT done_when: the done_when names ten consecutive -n 8 runs of tests/test_a_reexec_keeps_its_children.py with tests/test_crew.py and zero added failures; the manifest records exactly that, with logs/head-n8-run1..10.log and logs/base-n8-run1..5.log present on disk.\nVERDICT write_paths: read the reviewed manifest's three declared write paths; the diff touches tests/test_a_reexec_keeps_its_children.py and docs/evidence/fragments/the-suite-is-green-at-head/reexec-handover-holds-under-load.html, both inside that scope, and the unused figures path is simply not written.\nVERDICT manifest: read; it records the ten head runs, the five base runs, the negative control and the follow-on, and each named log exists under the run's own logs directory.\nVERDICT diff: read commit by commit against 825bf5bc8; 3084d18a9 adds the held-worker helper and its release handshake, 107b42cfd records the evidence fragment, and no production code changes.\nCALL_SITES: reckon/cli.py:_FollowerReloader.poll, reckon/crew/dispatch.py:_export_launched_workers_for_reexec\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_reexec_keeps_its_children.py:388 replaces the fixed 2.0s sleep with a release-file wait, which is the goal's repair.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate logs/head-n8-run1..10.log show 0 reexec-file failures across ten -n 8 runs and logs/base-n8-run1..5.log show the same two foreign test_crew.py failures, though the original 2.0s race did not itself reproduce red on this node.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 825bf5bc8..107b42cfd changes only the declared test file and evidence fragment, with no production file touched.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control.log restores the zero-wait worker and the assertion at tests/test_a_reexec_keeps_its_children.py:416 reddens with the empty-carrier JSONDecodeError, so the guard names a failing condition.\nSCORE fit: 19\nJUSTIFICATION fit: the added _WAITING_WORKER helper and worker_code parameter at tests/test_a_reexec_keeps_its_children.py:57 mirror the module's existing _WORKER idiom and carry no plan or version label.\n",
+  "review_run_id": "r-20261002T045311807902-review-of-reexec-handover-holds-under-load",
+  "reviewed_base_sha": "825bf5bc8d9fb4b1f269ec8712392eda0085a8ef",
+  "reviewed_head_sha": "107b42cfd7348697bfae3b8964d1be3814b55a23",
+  "reviewed_run_id": "r-20261002T040751634085-reexec-handover-holds-under-load",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T045311807902-review-of-reexec-handover-holds-under-load",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T04:56:17.330767+00:00",
+  "total": 96
+}

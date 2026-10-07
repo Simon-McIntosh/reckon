@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1708",
+    "reckon/crew/dispatch.py:4120",
+    "reckon/crew/dispatch.py:5232",
+    "reckon/crew/dispatch.py:6686"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T09:20:58.131570+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "5433",
+      "text": "the stop flag is read once at :5415 and never again before this fork, so a stop delivered in that gap sets the flag after the read and the worker is spawned with the signal already spent, running the very defect the node fixes in a window microseconds wide."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "5390",
+      "text": "the handler's post-spawn job has no test: no suite delivers a group stop to a live supervisor after its worker spawns, so a supervisor that ended instead of recording the stop's exit would pass every file the gate and the base/after arms run."
+    },
+    {
+      "file": "tests/test_stop_before_spawn_spawns_nothing.py",
+      "line": "7",
+      "text": "the docstring's \"It used to be ignored\" is changelog prose, which the repository naming rule bans in comments and docstrings; the invariant form keeps the failure mode and drops the chronology."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 6daecfc1; d47c6a70 carries the code change with 53 added and 13 deleted lines in reckon/crew/dispatch.py, the deletions being the two SIG_IGN lines and the docstrings around them, while ccf6d34a and 99b75c64 add only the two docs with zero deletions in the range.",
+    "done_when": "the done_when's measure is present and re-checked \u2014 tests/test_stop_before_spawn_spawns_nothing.py:293 holds a real supervisor inside the stubbed snapshot, :407 sends the group stop, :423 asserts no worker record and :443 the launch-failure exit record, and the executed negative control's log repeats the declared string on its first line; I re-ran the named test at the reviewed head and it passed in 2.49 s.",
+    "goal": "the node goal is that a stop delivered to the per-run supervisor before it spawns the worker means no worker is spawned for that run; reckon/crew/dispatch.py:5412 installs the recording handler and reckon/crew/dispatch.py:5415-5431 abandons the launch when the stop arrived during the snapshot.",
+    "manifest": "read in full; it names three commits each with a body, a gate result of 1 passed in 2.17 s at d47c6a70, the control log whose first line repeats the declared string, base 10 passed against after 11 passed, and one after-arm session case that failed once and then passed 6 of 6 isolated re-runs.",
+    "write_paths": "the manifest declares five paths and git diff 6daecfc1..99b75c64 touches four of them, with all 471 added test lines and both docs additions inside the declared scope and no path outside it."
+  },
+  "justifications": {
+    "durability": "the executed negative control's declared mutation reddens tests/test_stop_before_spawn_spawns_nothing.py:423 with the no-worker assertion's own message, but no assertion covers the post-spawn stop the same handler serves, which is the second finding below.",
+    "evidence": "tests/test_stop_before_spawn_spawns_nothing.py:400-445 asserts the held snapshot, the absent worker and the launch-failure record, its gate log names its own revision and the imported module, and my re-run of that file at the reviewed head passed 1 test in 2.49 s.",
+    "fit": "the new names and docstrings state their mechanism, yet tests/test_stop_before_spawn_spawns_nothing.py:7 keeps a changelog sentence the repository comment rule bans.",
+    "goal_fidelity": "reckon/crew/dispatch.py:5415-5431 abandons the launch once the stop arrived during the snapshot, which is the goal, but the check-to-fork gap is the first finding below.",
+    "scope_discipline": "git diff --numstat 6daecfc1..99b75c64 lists only reckon/crew/dispatch.py, tests/test_stop_before_spawn_spawns_nothing.py and the two declared docs, and the docs add 106 lines without deleting any."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a stop delivered to the per-run supervisor before it spawns the worker means no worker is spawned for that run; reckon/crew/dispatch.py:5412 installs the recording handler and reckon/crew/dispatch.py:5415-5431 abandons the launch when the stop arrived during the snapshot.\nVERDICT done_when: the done_when's measure is present and re-checked \u2014 tests/test_stop_before_spawn_spawns_nothing.py:293 holds a real supervisor inside the stubbed snapshot, :407 sends the group stop, :423 asserts no worker record and :443 the launch-failure exit record, and the executed negative control's log repeats the declared string on its first line; I re-ran the named test at the reviewed head and it passed in 2.49 s.\nVERDICT write_paths: the manifest declares five paths and git diff 6daecfc1..99b75c64 touches four of them, with all 471 added test lines and both docs additions inside the declared scope and no path outside it.\nVERDICT manifest: read in full; it names three commits each with a body, a gate result of 1 passed in 2.17 s at d47c6a70, the control log whose first line repeats the declared string, base 10 passed against after 11 passed, and one after-arm session case that failed once and then passed 6 of 6 isolated re-runs.\nVERDICT diff: read commit by commit against 6daecfc1; d47c6a70 carries the code change with 53 added and 13 deleted lines in reckon/crew/dispatch.py, the deletions being the two SIG_IGN lines and the docstrings around them, while ccf6d34a and 99b75c64 add only the two docs with zero deletions in the range.\nCALL_SITES: reckon/crew/dispatch.py:1708, reckon/crew/dispatch.py:4120, reckon/crew/dispatch.py:5232, reckon/crew/dispatch.py:6686\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:5415-5431 abandons the launch once the stop arrived during the snapshot, which is the goal, but the check-to-fork gap is the first finding below.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_stop_before_spawn_spawns_nothing.py:400-445 asserts the held snapshot, the absent worker and the launch-failure record, its gate log names its own revision and the imported module, and my re-run of that file at the reviewed head passed 1 test in 2.49 s.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 6daecfc1..99b75c64 lists only reckon/crew/dispatch.py, tests/test_stop_before_spawn_spawns_nothing.py and the two declared docs, and the docs add 106 lines without deleting any.\nSCORE durability: 18\nJUSTIFICATION durability: the executed negative control's declared mutation reddens tests/test_stop_before_spawn_spawns_nothing.py:423 with the no-worker assertion's own message, but no assertion covers the post-spawn stop the same handler serves, which is the second finding below.\nSCORE fit: 18\nJUSTIFICATION fit: the new names and docstrings state their mechanism, yet tests/test_stop_before_spawn_spawns_nothing.py:7 keeps a changelog sentence the repository comment rule bans.\nFINDING reckon/crew/dispatch.py:5433 the stop flag is read once at :5415 and never again before this fork, so a stop delivered in that gap sets the flag after the read and the worker is spawned with the signal already spent, running the very defect the node fixes in a window microseconds wide.\nFINDING reckon/crew/dispatch.py:5390 the handler's post-spawn job has no test: no suite delivers a group stop to a live supervisor after its worker spawns, so a supervisor that ended instead of recording the stop's exit would pass every file the gate and the base/after arms run.\nFINDING tests/test_stop_before_spawn_spawns_nothing.py:7 the docstring's \"It used to be ignored\" is changelog prose, which the repository naming rule bans in comments and docstrings; the invariant form keeps the failure mode and drops the chronology.\n",
+  "review_run_id": "r-20260925T092058131570-review-of-stop-before-spawn-spawns-nothing",
+  "reviewed_base_sha": "6daecfc17f00ad90153ea988761b6dfd54150145",
+  "reviewed_head_sha": "99b75c647a4120ac34b4f51bc67e852450db1516",
+  "reviewed_run_id": "r-20260925T075119261016-stop-before-spawn-spawns-nothing",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T11:06:40.592563+00:00",
+  "total": 93
+}

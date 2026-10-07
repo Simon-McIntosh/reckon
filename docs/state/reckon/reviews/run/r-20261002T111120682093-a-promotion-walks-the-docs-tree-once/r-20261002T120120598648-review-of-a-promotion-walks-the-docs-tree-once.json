@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (5d35145df, completed, 1 failure: tests/test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet) and after_suite (4ae1a9613, completed, 0 failures); added ids = after_ids - base_ids = empty. The base failure is a non-git-scratch-tree artifact, not a revision defect, but it does not affect the subtraction.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_store.py:248",
+    "reckon/mcp.py:3509",
+    "reckon/crew/routing.py:1679"
+  ],
+  "completed_at": "2026-10-02T12:23:37.103Z",
+  "dispatched_at": "2026-10-02T12:01:46Z",
+  "findings": [
+    {
+      "file": "reckon/resources.py",
+      "line": "531",
+      "severity": "blocking",
+      "text": "blocking: _tree_entries returns the cached Resource set whenever the directory-level signature matches, but the signature is only each directory's mtime_ns and HTML entry count, and a document rewritten in place leaves both unchanged; because resolve_resource matches on the cached resource.slug (reckon/resources.py:640) and the reuse never re-invokes identify_resource, an in-place change to a document's plan-slug or reckon-type is never seen. Reproduced: after rewriting one plan file's plan-slug meta in place, resolve_resource(new-slug) returned None and resolve_resource(old-slug) returned the file, while a fresh scan gave the opposite (reviewer-logs/inplace-identity-staleness.log). The docstring at reckon/resources.py:476-478 claims the file memo re-parses such a file, but the memo is only consulted inside identify_resource, which the reuse bypasses. The change also widens reuse from an explicit 'with resource_scan_scope()' block to a process-wide cache with no expiry, so a long-lived process (the MCP server, the producer) serves stale identity until a file is added, removed or moved in that tree. This breaks the done-when's requirement that the bounded read give the same answer as the full read."
+    },
+    {
+      "file": "logs/base-arm.log",
+      "line": "135",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's single reported failure, tests/test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet, is a subprocess.CalledProcessError from 'git -C /tmp/reckon-crew-scratch/.../base-arm rev-parse HEAD' returning exit 128, because the base arm ran in a non-git scratch tree; the same test passes at base in a real git worktree (reviewer-logs/base-schema-test-in-git-worktree.log). The manifest's failure_attribution { } and its statement that the failure 'reproduces at the base revision' mischaracterize a base-arm environment artifact as a revision defect; added_failure_count is unaffected because the head arm has no failures."
+    },
+    {
+      "file": "logs/head-arm.log",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the head-arm log header reads '# rev: 5d35145dfb2bc3f85c598b8730df0131b86a9dd1' (the base) although the run is the head arm, so the log misnames the revision it measured; head-arm-suite.log:4 names 4ae1a9613 correctly, and the arms also collected 2145/2147 tests where a fresh collection of the same ten files in either tree yields 2149, an unexplained difference."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 5d35145df: 4ae1a9613 adds _Unidentified, the process-wide _TREE_ENTRIES cache, _docs_tree_signature, _scan_tree and _tree_entries and rewrites iter_resources to filter the reused set (reckon/resources.py:448-580), and 73e10feac adds only the evidence fragment.",
+    "done_when": "the plan's done-when asks that the metadata index reuse a digest-keyed cache for files whose bytes are unchanged and that 'the bounded read gives the same answer as the full read on a synthetic repository'; tests/test_a_promotion_walks_the_docs_tree_once.py:112 pins the scan count and :130/:141/:152 assert the duplicate, archived and added-file guarantees, which I re-ran at head (4 passed, EXIT=0).",
+    "goal": "the node's goal is to bound the promotion's plan-metadata read, reusing one docs-tree scan per unchanged tree instead of reopening and re-parsing the corpus once per slug; reckon/resources.py:531 (_tree_entries) returns the classified set while a directory signature matches, and reckon/resources.py:546 (iter_resources) applies the archived/legacy filters to it.",
+    "manifest": "read; it records the node gate 4 passed EXIT=0, a base and head arm of the ten pre-existing resource-touching test files at -n 8 (base 2144 passed / 1 failed / EXIT=1, head 2147 passed / 0 failed / EXIT=0), a negative control 2 failed EXIT=1, a warm reprofile (resolve_resource 19.22 s / 8 calls vs 20.33 s / 8; fresh _scan_tree 8 to 3), and the fragment; its baseline_suite/after_suite fields both completed.",
+    "write_paths": "the manifest declares reckon/resources.py, reckon/_store.py, the new test module and the evidence fragment/figures; git diff --name-status 5d35145df 73e10feac changes exactly reckon/resources.py (M), tests/test_a_promotion_walks_the_docs_tree_once.py (A) and the fragment (A), so the diff stays inside the fence."
+  },
+  "justifications": {
+    "durability": "the declared mutation (RECKON_TEST_DROP_TREE_REUSE=1, tests/test_a_promotion_walks_the_docs_tree_once.py:52) reddens test_one_promotion_scans_each_tree_once and test_archived_plan_resolves_through_the_archive_fallback, so the reuse guard fires, but no test covers an in-place identity change, so the regression class that breaks the equivalence guarantee is unguarded.",
+    "evidence": "the node gate and the negative control reproduce under my re-run (4 passed EXIT=0; 2 failed EXIT=1, logs/negative-control.log) and added_failure_count derives to 0, but the base arm's single 'failure' is an artifact of its non-git scratch tree and the head-arm log names the base revision.",
+    "fit": "the cache sits beside the existing _SCAN_SCOPE idiom with a threading.Lock and a frozen dataclass sentinel (reckon/resources.py:448-463), but the docstring at reckon/resources.py:476-478 claims a rewritten document 'is re-parsed by the file memo', which the reuse path does not do.",
+    "goal_fidelity": "the reuse and its speedup land and the added-file, duplicate and archived guarantees hold (reckon/resources.py:552-568), but the reused answer diverges from a full scan when an in-place content edit changes a document's identity, so the node's own equivalence done-when is not met.",
+    "scope_discipline": "git diff --name-status 5d35145df 73e10feac lists only reckon/resources.py, tests/test_a_promotion_walks_the_docs_tree_once.py and the fragment, all inside the declared paths, with reckon/_store.py and the figures directory untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to bound the promotion's plan-metadata read, reusing one docs-tree scan per unchanged tree instead of reopening and re-parsing the corpus once per slug; reckon/resources.py:531 (_tree_entries) returns the classified set while a directory signature matches, and reckon/resources.py:546 (iter_resources) applies the archived/legacy filters to it.\nVERDICT done_when: the plan's done-when asks that the metadata index reuse a digest-keyed cache for files whose bytes are unchanged and that 'the bounded read gives the same answer as the full read on a synthetic repository'; tests/test_a_promotion_walks_the_docs_tree_once.py:112 pins the scan count and :130/:141/:152 assert the duplicate, archived and added-file guarantees, which I re-ran at head (4 passed, EXIT=0).\nVERDICT write_paths: the manifest declares reckon/resources.py, reckon/_store.py, the new test module and the evidence fragment/figures; git diff --name-status 5d35145df 73e10feac changes exactly reckon/resources.py (M), tests/test_a_promotion_walks_the_docs_tree_once.py (A) and the fragment (A), so the diff stays inside the fence.\nVERDICT manifest: read; it records the node gate 4 passed EXIT=0, a base and head arm of the ten pre-existing resource-touching test files at -n 8 (base 2144 passed / 1 failed / EXIT=1, head 2147 passed / 0 failed / EXIT=0), a negative control 2 failed EXIT=1, a warm reprofile (resolve_resource 19.22 s / 8 calls vs 20.33 s / 8; fresh _scan_tree 8 to 3), and the fragment; its baseline_suite/after_suite fields both completed.\nVERDICT diff: read commit by commit against 5d35145df: 4ae1a9613 adds _Unidentified, the process-wide _TREE_ENTRIES cache, _docs_tree_signature, _scan_tree and _tree_entries and rewrites iter_resources to filter the reused set (reckon/resources.py:448-580), and 73e10feac adds only the evidence fragment.\nCALL_SITES: reckon/_store.py:248, reckon/mcp.py:3509, reckon/crew/routing.py:1679\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: the reuse and its speedup land and the added-file, duplicate and archived guarantees hold (reckon/resources.py:552-568), but the reused answer diverges from a full scan when an in-place content edit changes a document's identity, so the node's own equivalence done-when is not met.\nSCORE evidence: 14\nJUSTIFICATION evidence: the node gate and the negative control reproduce under my re-run (4 passed EXIT=0; 2 failed EXIT=1, logs/negative-control.log) and added_failure_count derives to 0, but the base arm's single 'failure' is an artifact of its non-git scratch tree and the head-arm log names the base revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 5d35145df 73e10feac lists only reckon/resources.py, tests/test_a_promotion_walks_the_docs_tree_once.py and the fragment, all inside the declared paths, with reckon/_store.py and the figures directory untouched.\nSCORE durability: 15\nJUSTIFICATION durability: the declared mutation (RECKON_TEST_DROP_TREE_REUSE=1, tests/test_a_promotion_walks_the_docs_tree_once.py:52) reddens test_one_promotion_scans_each_tree_once and test_archived_plan_resolves_through_the_archive_fallback, so the reuse guard fires, but no test covers an in-place identity change, so the regression class that breaks the equivalence guarantee is unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: the cache sits beside the existing _SCAN_SCOPE idiom with a threading.Lock and a frozen dataclass sentinel (reckon/resources.py:448-463), but the docstring at reckon/resources.py:476-478 claims a rewritten document 'is re-parsed by the file memo', which the reuse path does not do.\nFINDING reckon/resources.py:531 blocking: _tree_entries returns the cached Resource set whenever the directory-level signature matches, but the signature is only each directory's mtime_ns and HTML entry count, and a document rewritten in place leaves both unchanged; because resolve_resource matches on the cached resource.slug (reckon/resources.py:640) and the reuse never re-invokes identify_resource, an in-place change to a document's plan-slug or reckon-type is never seen. Reproduced: after rewriting one plan file's plan-slug meta in place, resolve_resource(new-slug) returned None and resolve_resource(old-slug) returned the file, while a fresh scan gave the opposite (reviewer-logs/inplace-identity-staleness.log). The docstring at reckon/resources.py:476-478 claims the file memo re-parses such a file, but the memo is only consulted inside identify_resource, which the reuse bypasses. The change also widens reuse from an explicit 'with resource_scan_scope()' block to a process-wide cache with no expiry, so a long-lived process (the MCP server, the producer) serves stale identity until a file is added, removed or moved in that tree. This breaks the done-when's requirement that the bounded read give the same answer as the full read.\nFINDING logs/base-arm.log:135 follow-on: the base arm's single reported failure, tests/test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet, is a subprocess.CalledProcessError from 'git -C /tmp/reckon-crew-scratch/.../base-arm rev-parse HEAD' returning exit 128, because the base arm ran in a non-git scratch tree; the same test passes at base in a real git worktree (reviewer-logs/base-schema-test-in-git-worktree.log). The manifest's failure_attribution { } and its statement that the failure 'reproduces at the base revision' mischaracterize a base-arm environment artifact as a revision defect; added_failure_count is unaffected because the head arm has no failures.\nFINDING logs/head-arm.log:3 follow-on: the head-arm log header reads '# rev: 5d35145dfb2bc3f85c598b8730df0131b86a9dd1' (the base) although the run is the head arm, so the log misnames the revision it measured; head-arm-suite.log:4 names 4ae1a9613 correctly, and the arms also collected 2145/2147 tests where a fresh collection of the same ten files in either tree yields 2149, an unexplained difference.",
+  "review_run_id": "r-20261002T120120598648-review-of-a-promotion-walks-the-docs-tree-once",
+  "reviewed_base_sha": "5d35145dfb2bc3f85c598b8730df0131b86a9dd1",
+  "reviewed_head_sha": "73e10feac3673aef1e920929834d83737e8db326",
+  "reviewed_run_id": "r-20261002T111120682093-a-promotion-walks-the-docs-tree-once",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T120120598648-review-of-a-promotion-walks-the-docs-tree-once",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T12:19:53.077242+00:00",
+  "total": 79
+}

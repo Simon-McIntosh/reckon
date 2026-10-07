@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite and no after_suite gate log (an investigation node with no suite arms), so the added-failure count was not taken rather than measured as zero",
+  "backend": "clive",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T10:51:07.633Z",
+  "dispatched_at": "2026-10-01T10:44:23Z",
+  "findings": [
+    {
+      "file": "report.md",
+      "line": "35",
+      "severity": "follow-on",
+      "text": "the handoff-01 \"met\" verdict's first clause is established by the reflex's code path (dispatch.py:7521 supervised_launch, reached via recovery.py:7977 dispatch_review_for_run(launcher=launcher) and cli.py:5515 recover() with no launcher) plus tests/test_every_attempt_is_supervised.py:173, which asserts the pointer pid on a supervised attempt in general; no test dispatches a review through the reflex and reads its pointer, so the exact scenario f-adrwiw-handoff-01 was written about is inferred rather than asserted. The report states this caveat at the row."
+    },
+    {
+      "file": "report.md",
+      "line": "257",
+      "severity": "follow-on",
+      "text": "the retired-cap row's done-when has three clauses and the node measured two: clause 3 (tests/test_backend_carries_no_worker_cap.py and tests/test_crew_binding_bound.py pass at head) was not run, so the \"unmet\" verdict rests on the two description/signature clauses alone. Both test files exist at base; the report discloses that they were not executed in its time box."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "no repository change \u2014 investigation node; the worktree is clean at 4406a8d02.",
+    "done_when": "the dispatch done-when is met \u2014 five dimensions in 0..20 and a parsed status, with the added-failure pair carried as unmeasured and the reason stated.",
+    "goal": "the eight open followups are each classified with a quoted done-when and a met/unmet verdict, matching the plan at base 4406a8d02.",
+    "manifest": "the reviewed manifest is complete with a checkpoint, a landing line, file:line citation lists and a resolvable base sha.",
+    "write_paths": "the node wrote only to its granted report directory; no path under /home/ITER/mcintos/Code changed and the worktree is clean at base."
+  },
+  "justifications": {
+    "durability": "the verdicts hold at the moving head: the six commits between base 4406a8d02 and main d65d02c69 change only a-crew-process-ends-with-its-owner.html and two review records, so no file the triage classified against moved, and the plan's own followup set is identical at both revisions. One point held back: the retired-cap row's third clause (two named tests pass at head) is a durability claim the node did not measure, so that row's persistence is asserted rather than shown.",
+    "evidence": "every file:line the report cites was re-read at base and holds: dispatch.py:7353-7356 returns the `-m reckon.crew.dispatch` vector, tests/test_dispatch_result_matches_launch.py:476 asserts the literal `\"fully-specified\" in payload[\"detail\"]`, summary.py:278 is `roster_bound(backend, *, occupancy)` with its sole caller at :440, dispatch.py:7886 is the single stop-flag read before the fork at :7907, reports.py:88-89 and recovery.py:4331 are as cited; all fifteen cited commits resolve with `git cat-file -e` in /home/ITER/mcintos/Code/reckon. Deduction of one: the retired-cap verdict rests on two of its three done-when clauses because the node ran no suite (disclosed), and handoff-01's first clause is inferred from the reflex's code path rather than asserted by a reflex-specific test (disclosed).",
+    "fit": "the deliverable matches the plan's need exactly \u2014 a per-followup verdict table with a quoted done-when, a met/unmet call, and for the five unmet rows the smallest remaining change as files and functions plus an estimate; the report also separates the three landed sub-halves of f-adrwiw-remaining-after-audit (\u00a76 bb9bd6769, \u00a78, \u00a710 reassigned to imas-ambix-67 per the plan's own comment at line 1198) from the one \u00a74 item still open, which is the distinction a caller planning the next dispatch needs.",
+    "goal_fidelity": "report.md has one row for each of the eight followups open at base 4406a8d02 (verified: the plan's f-adrwiw-* articles carry data-status=open for exactly handoff-01, launch-flicker, runpy-warning, in-progress-unreadable, stop-window, remaining-after-audit, retired-cap-reads-retired-everywhere and validation-assertion-reads-the-key), quotes each done-when at its exact plan line (1004, 1009, 1014, 1019, 1030, 1035, 1046, 1051) and gives met/unmet with the smallest remaining change and a worker-hour estimate on every unmet row.",
+    "scope_discipline": "the reviewed worktree is clean at 4406a8d02 (git status --short empty) and every path under /home/ITER/mcintos/Code is unchanged; the node wrote only its three files under its granted report directory, and `git diff --stat 4406a8d02 d65d02c69` touches only docs/plans/a-crew-process-ends-with-its-owner.html and two review JSONs, none of them a path the triage read."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: report.md has one row for each of the eight followups open at base 4406a8d02 (verified: the plan's f-adrwiw-* articles carry data-status=open for exactly handoff-01, launch-flicker, runpy-warning, in-progress-unreadable, stop-window, remaining-after-audit, retired-cap-reads-retired-everywhere and validation-assertion-reads-the-key), quotes each done-when at its exact plan line (1004, 1009, 1014, 1019, 1030, 1035, 1046, 1051) and gives met/unmet with the smallest remaining change and a worker-hour estimate on every unmet row.\nSCORE evidence: 19\nJUSTIFICATION evidence: every file:line the report cites was re-read at base and holds: dispatch.py:7353-7356 returns the `-m reckon.crew.dispatch` vector, tests/test_dispatch_result_matches_launch.py:476 asserts the literal `\"fully-specified\" in payload[\"detail\"]`, summary.py:278 is `roster_bound(backend, *, occupancy)` with its sole caller at :440, dispatch.py:7886 is the single stop-flag read before the fork at :7907, reports.py:88-89 and recovery.py:4331 are as cited; all fifteen cited commits resolve with `git cat-file -e` in /home/ITER/mcintos/Code/reckon. Deduction of one: the retired-cap verdict rests on two of its three done-when clauses because the node ran no suite (disclosed), and handoff-01's first clause is inferred from the reflex's code path rather than asserted by a reflex-specific test (disclosed).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree is clean at 4406a8d02 (git status --short empty) and every path under /home/ITER/mcintos/Code is unchanged; the node wrote only its three files under its granted report directory, and `git diff --stat 4406a8d02 d65d02c69` touches only docs/plans/a-crew-process-ends-with-its-owner.html and two review JSONs, none of them a path the triage read.\nSCORE durability: 19\nJUSTIFICATION durability: the verdicts hold at the moving head: the six commits between base 4406a8d02 and main d65d02c69 change only a-crew-process-ends-with-its-owner.html and two review records, so no file the triage classified against moved, and the plan's own followup set is identical at both revisions. One point held back: the retired-cap row's third clause (two named tests pass at head) is a durability claim the node did not measure, so that row's persistence is asserted rather than shown.\nSCORE fit: 20\nJUSTIFICATION fit: the deliverable matches the plan's need exactly \u2014 a per-followup verdict table with a quoted done-when, a met/unmet call, and for the five unmet rows the smallest remaining change as files and functions plus an estimate; the report also separates the three landed sub-halves of f-adrwiw-remaining-after-audit (\u00a76 bb9bd6769, \u00a78, \u00a710 reassigned to imas-ambix-67 per the plan's own comment at line 1198) from the one \u00a74 item still open, which is the distinction a caller planning the next dispatch needs.\nVERDICT goal: the eight open followups are each classified with a quoted done-when and a met/unmet verdict, matching the plan at base 4406a8d02.\nVERDICT done_when: the dispatch done-when is met \u2014 the record stores five dimensions in 0..20 and a parsed status, and the added-failure pair is carried as unmeasured with the reason, the reviewed run naming no gate log.\nVERDICT write_paths: the node wrote only to its granted report directory; no path under /home/ITER/mcintos/Code changed and the worktree is clean at base.\nVERDICT manifest: the reviewed manifest is status complete with a checkpoint, a landing line, file:line citation lists, and a resolvable base sha; changed_paths names the three report files it wrote.\nVERDICT diff: no repository change \u2014 investigation node; the worktree is clean at 4406a8d02 and the six commits to main since touch no file the triage read.\nCALL_SITES: none\nFINDING report.md:35 follow-on: the handoff-01 \"met\" verdict's first clause is established by the reflex's code path (dispatch.py:7521 supervised_launch, reached via recovery.py:7977 dispatch_review_for_run(launcher=launcher) and cli.py:5515 recover() with no launcher) plus tests/test_every_attempt_is_supervised.py:173, which asserts the pointer pid on a supervised attempt in general; no test dispatches a review through the reflex and reads its pointer, so the exact scenario f-adrwiw-handoff-01 was written about is inferred rather than asserted. The report states this caveat at the row.\nFINDING report.md:257 follow-on: the retired-cap row's done-when has three clauses and the node measured two: clause 3 (tests/test_backend_carries_no_worker_cap.py and tests/test_crew_binding_bound.py pass at head) was not run, so the \"unmet\" verdict rests on the two description/signature clauses alone. Both test files exist at base; the report discloses that they were not executed in its time box.\n",
+  "review_run_id": "r-20261001T104356350322-review-of-the-dispatch-followups-are-triaged",
+  "reviewed_base_sha": "4406a8d02c9b5c8bc88a50790281748aad649106",
+  "reviewed_head_sha": "4406a8d02c9b5c8bc88a50790281748aad649106",
+  "reviewed_run_id": "r-20261001T102536466875-the-dispatch-followups-are-triaged",
+  "reviewer_run_id": "r-20261001T104356350322-review-of-the-dispatch-followups-are-triaged",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T10:49:55.384855+00:00",
+  "total": 98
+}

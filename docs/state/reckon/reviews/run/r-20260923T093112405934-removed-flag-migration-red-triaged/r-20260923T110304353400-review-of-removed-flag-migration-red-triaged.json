@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T11:03:04.353400+00:00",
+  "findings": [
+    {
+      "file": "docs/plans/a-follower-keeps-your-work-in-view.html",
+      "line": "181",
+      "text": "the evidence link targets /reckon/plans/a-follower-keeps-your-work-in-view#removed-flag-migration while the plan page contains no element with that id (grep count 0) and the anchor lives in docs/evidence/archive/a-follower-keeps-your-work-in-view-landed.html, so the link does not reach the record its own text names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read against base 2a895ef3; tests/test_removed_flag_migration.py +13/-3 (a docstring paragraph, the wait predicate and the final set assertion), the evidence file +88/-0, the figure +42/-0 and the plan comment +3/-0.",
+    "done_when": "the manifest's evidence_inputs name the base reproduction and the corrected pass with counts; logs/base_full_file.log:133 records 2 failed, 4 passed at base 2a895ef3 and logs/after_target_test.log:2 records 1 passed at b6790921, and logs/negative_control.log records the declared mutation.",
+    "goal": "read the source node's goal and its manifest; the landed change corrects tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter to the state vocabulary the reducer emits, which is what the goal asks for.",
+    "manifest": "read in full at the run directory; it states the correction, the failure counts and the mutation, and names its three test logs and the negative-control log.",
+    "write_paths": "the manifest declares four write paths; git show --numstat at b6790921 changes exactly those four files and nothing outside them."
+  },
+  "justifications": {
+    "durability": "narrowing the follower's selection to {\"working\"} in a scratch copy reddens the corrected test at _wait_for (tests/test_removed_flag_migration.py:363), though the corrected literals also move with the reducer's vocabulary.",
+    "evidence": "the base failure, the corrected pass and the mutation are each recorded in the run's logs, but the manifest's tests line quotes \"base: 1 failed in 36.31s\", a figure that appears in no recorded log.",
+    "fit": "the change follows the file's idiom and introduces no forbidden name, but the landing comment at docs/plans/a-follower-keeps-your-work-in-view.html:181 links to a plans route that carries no such anchor, unlike the evidence-archive links its own text names.",
+    "goal_fidelity": "at the reviewed revision reckon/crew/recovery.py:3675 reduces a scoring classification to state \"completed_unpromoted\" and reserves \"complete\" for promotable runs.",
+    "scope_discipline": "git show --numstat at b6790921 touches only the four declared paths, and docs/evidence/archive/a-follower-keeps-your-work-in-view-landed.html gains 88 lines with 0 deletions, so the cumulative record was spliced rather than replaced."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node's goal and its manifest; the landed change corrects tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter to the state vocabulary the reducer emits, which is what the goal asks for.\nVERDICT done_when: the manifest's evidence_inputs name the base reproduction and the corrected pass with counts; logs/base_full_file.log:133 records 2 failed, 4 passed at base 2a895ef3 and logs/after_target_test.log:2 records 1 passed at b6790921, and logs/negative_control.log records the declared mutation.\nVERDICT write_paths: the manifest declares four write paths; git show --numstat at b6790921 changes exactly those four files and nothing outside them.\nVERDICT manifest: read in full at the run directory; it states the correction, the failure counts and the mutation, and names its three test logs and the negative-control log.\nVERDICT diff: read against base 2a895ef3; tests/test_removed_flag_migration.py +13/-3 (a docstring paragraph, the wait predicate and the final set assertion), the evidence file +88/-0, the figure +42/-0 and the plan comment +3/-0.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: at the reviewed revision reckon/crew/recovery.py:3675 reduces a scoring classification to state \"completed_unpromoted\" and reserves \"complete\" for promotable runs.\nSCORE evidence: 19\nJUSTIFICATION evidence: the base failure, the corrected pass and the mutation are each recorded in the run's logs, but the manifest's tests line quotes \"base: 1 failed in 36.31s\", a figure that appears in no recorded log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --numstat at b6790921 touches only the four declared paths, and docs/evidence/archive/a-follower-keeps-your-work-in-view-landed.html gains 88 lines with 0 deletions, so the cumulative record was spliced rather than replaced.\nSCORE durability: 19\nJUSTIFICATION durability: narrowing the follower's selection to {\"working\"} in a scratch copy reddens the corrected test at _wait_for (tests/test_removed_flag_migration.py:363), though the corrected literals also move with the reducer's vocabulary.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the file's idiom and introduces no forbidden name, but the landing comment at docs/plans/a-follower-keeps-your-work-in-view.html:181 links to a plans route that carries no such anchor, unlike the evidence-archive links its own text names.\nFINDING docs/plans/a-follower-keeps-your-work-in-view.html:181 the evidence link targets /reckon/plans/a-follower-keeps-your-work-in-view#removed-flag-migration while the plan page contains no element with that id (grep count 0) and the anchor lives in docs/evidence/archive/a-follower-keeps-your-work-in-view-landed.html, so the link does not reach the record its own text names.",
+  "review_run_id": "r-20260923T110304353400-review-of-removed-flag-migration-red-triaged",
+  "reviewed_base_sha": "2a895ef308595241dd0635306b599998d626b6da",
+  "reviewed_head_sha": "b6790921f95398b2684352e9b93bc03426c8deb5",
+  "reviewed_run_id": "r-20260923T093112405934-removed-flag-migration-red-triaged",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T12:15:26+00:00",
+  "total": 96
+}

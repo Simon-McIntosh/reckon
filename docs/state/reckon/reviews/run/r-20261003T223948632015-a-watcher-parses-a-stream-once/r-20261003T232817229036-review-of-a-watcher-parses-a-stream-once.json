@@ -1,0 +1,95 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "commits_read": [
+    "6db8d13e16c40dd097d060dfc21ff1b3f1cdeb24",
+    "2161a89d1",
+    "ea557e5a25a8e833cf412c1c80199e33916e5f88",
+    "977aaf7542100c2387702915a9fb1a76bf1875fe"
+  ],
+  "completed_at": "2026-10-03T23:33:33.429Z",
+  "dispatched_at": "2026-10-03T23:28:38Z",
+  "evidence": {
+    "independent_focused": {
+      "exit_status": 0,
+      "passed": 2,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T232817229036-review-of-a-watcher-parses-a-stream-once/independent-focused.log",
+      "revision": "977aaf7542100c2387702915a9fb1a76bf1875fe"
+    },
+    "negative_control": {
+      "declared_mutation_matches_final_head": true,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T223948632015-a-watcher-parses-a-stream-once/negative-control.log",
+      "reason": "negative-control.log ran at ea557e5a2 with RECKON_TEST_DISABLE_STREAM_CACHE=1 and the head's uncached branch, recording ten full-parse snapshots and EXIT=1; the reviewed head 977aaf754 changes only docs."
+    },
+    "target_gate_logs": {
+      "added_failure_count": 0,
+      "added_failure_ids": [],
+      "after_suite": {
+        "completed": true,
+        "failure_count": 0,
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T223948632015-a-watcher-parses-a-stream-once/after-suite.log",
+        "passed": 222,
+        "revision": "ea557e5a2"
+      },
+      "baseline_suite": {
+        "completed": true,
+        "failure_count": 0,
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T223948632015-a-watcher-parses-a-stream-once/baseline-suite.log",
+        "passed": 220,
+        "revision": "81b535347259d3e171447e1be7880affb700ef03"
+      }
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-watcher-parses-a-stream-once/reckon/_backends.py",
+      "line": "3553",
+      "severity": "follow-on",
+      "text": "_PARSED_STREAMS is a module-level OrderedDict mutated without a lock by cached_stream_events (:3594-3601) and indexed at :3610, while reckon/serve.py:3914 serves discovery from a ThreadingHTTPServer and _discovery_lock at :1680 is per-(project,docs_dir), so concurrent discoveries of different projects can iterate and evict the dict concurrently (RuntimeError: OrderedDict mutated during iteration) or miss at :3610; codebase idiom guards shared caches (mcp_views._PROBE_CACHE_LOCK, serve._SIGNATURE_MEMO_LOCK)."
+    }
+  ],
+  "follow_ons": [
+    "reckon/_backends.py:3553 _PARSED_STREAMS is shared across the ThreadingHTTPServer's concurrent discovery threads without a lock; guard it as reckon/mcp_views.py:75 and reckon/serve.py:994 guard their caches. This is outside the review node's write fence, so it is recorded here rather than repaired."
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/_backends.py:_observe_run_stream, reckon/crew/recovery.py:_admission_refusal, reckon/crew/promotion.py:_terminal_stream_data",
+    "diff": "Read all four commits against base 81b535347; 6db8d13e1 adds the cache and routes promotion, ea557e5a2 routes admission refused events through it, 2161a89d1 adds the test, 977aaf754 records the evidence fragment; no tracked path escapes the fence.",
+    "done_when": "Read tests/test_watch_stream_parse_is_cached.py; it builds a 20,000-event stream, asserts full_snapshots<=1 over ten snapshots, parses==[1] for one appended event, classification parity after every snapshot, and admission_opens==[] with <=1 full parse across ten partition_live_runs calls; independently reran green (2 passed) and the cache-disabled control reddens 10-of-10.",
+    "goal": "Read the node goal and plan \u00a79; reckon/_backends.py:3557 adds cached_stream_events keyed on (st_dev, st_ino, st_size, st_mtime_ns) with append-only extension, and all three named reading paths route through it (_observe_run_stream at :4015, recovery._admission_refusal at :4604, promotion._terminal_stream_data at :4311).",
+    "manifest": "Read the target manifest; it records four commits, the 23-test focused gate, the 220->222 parser import suite, the cache-disabled negative control, and base/head measure numbers with their logs.",
+    "write_paths": "Read the target manifest's six declared paths and the diff stat; five changed paths are all inside them and the worktree is clean at head."
+  },
+  "justifications": {
+    "durability": "negative-control.log proves the at-most-one-parse assertion fails when the cache is disabled and gate-split.log proves the admission assertion caught the pre-ea557e5a2 unrouted path, but no test exercises the concurrent-mutation path named in the finding.",
+    "evidence": "tests/test_watch_stream_parse_is_cached.py asserts every done-when item and I independently reran it green, while negative-control.log records ten full parses and EXIT=1 for the cache-disabled arm.",
+    "fit": "the cache follows reckon/_backends.py idiom and names nothing forbidden, but it introduces an unsynchronised module-level shared cache where reckon/mcp_views.py:75 and reckon/serve.py:994 guard comparable shared caches with a lock.",
+    "goal_fidelity": "reckon/_backends.py:3557-3601 caches parsed records against file identity with append-only extension and routes observe_log, _admission_refusal and _terminal_stream_data through it, matching the goal.",
+    "scope_discipline": "the five changed paths are a subset of the manifest's six declared write paths and no commit touches anything the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the node goal and plan \u00a79; reckon/_backends.py:3557 adds cached_stream_events keyed on (st_dev, st_ino, st_size, st_mtime_ns) with append-only extension, and all three named reading paths route through it (_observe_run_stream at :4015, recovery._admission_refusal at :4604, promotion._terminal_stream_data at :4311).\nVERDICT done_when: Read tests/test_watch_stream_parse_is_cached.py; it builds a 20,000-event stream, asserts full_snapshots<=1 over ten snapshots, parses==[1] for one appended event, classification parity after every snapshot, and admission_opens==[] with <=1 full parse across ten partition_live_runs calls; independently reran green (2 passed) and the cache-disabled control reddens 10-of-10.\nVERDICT write_paths: Read the target manifest's six declared paths and the diff stat; five changed paths (reckon/_backends.py, reckon/crew/recovery.py, reckon/crew/promotion.py, tests/test_watch_stream_parse_is_cached.py, docs/evidence/fragments/.../a-watcher-parses-a-stream-once.html) are all inside them and the worktree is clean at head.\nVERDICT manifest: Read the target manifest; it records four commits, the 23-test focused gate, the 220->222 parser import suite, the cache-disabled negative control, and base/head measure numbers with their logs.\nVERDICT diff: Read all four commits against base 81b535347; 6db8d13e1 adds the cache and routes promotion, ea557e5a2 routes admission refused events through it, 2161a89d1 adds the test, 977aaf754 records the evidence fragment; no tracked path escapes the fence.\nCALL_SITES: reckon/_backends.py:_observe_run_stream, reckon/crew/recovery.py:_admission_refusal, reckon/crew/promotion.py:_terminal_stream_data\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_backends.py:3557-3601 caches parsed records against file identity with append-only extension and routes observe_log, _admission_refusal and _terminal_stream_data through it, matching the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_watch_stream_parse_is_cached.py asserts every done-when item and I independently reran it green, while negative-control.log records ten full parses and EXIT=1 for the cache-disabled arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the five changed paths are a subset of the manifest's six declared write paths and no commit touches anything the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control.log proves the at-most-one-parse assertion fails when the cache is disabled and gate-split.log proves the admission assertion caught the pre-ea557e5a2 unrouted path, but no test exercises the concurrent-mutation path named below.\nSCORE fit: 15\nJUSTIFICATION fit: the cache follows reckon/_backends.py idiom and names nothing forbidden, but it introduces an unsynchronised module-level shared cache where reckon/mcp_views.py:75 and reckon/serve.py:994 guard comparable shared caches with a lock.\nFINDING reckon/_backends.py:3553 follow-on: _PARSED_STREAMS is a module-level OrderedDict mutated without a lock by cached_stream_events (:3594-3601) and indexed at :3610, while reckon/serve.py:3914 serves discovery from a ThreadingHTTPServer and _discovery_lock at :1680 is per-(project,docs_dir), so concurrent discoveries of different projects can iterate and evict the dict concurrently (RuntimeError: OrderedDict mutated during iteration) or miss at :3610; codebase idiom guards shared caches (mcp_views._PROBE_CACHE_LOCK, serve._SIGNATURE_MEMO_LOCK).\n",
+  "review_limitations": [
+    "Read the target's recorded reproduction, focused gate, evidence fragment and base/head measure logs; independently reran the named test file tests/test_watch_stream_parse_is_cached.py at the reviewed head (2 passed), but did not rerun the 222-test import suite or the base arm.",
+    "This review attaches findings and scores only; it does not repair source, update the target manifest, merge commits, promote the target run or verify the merged primary head.",
+    "The call-site list is the set of runtime reach measured by reading the source; it is not a dynamic trace."
+  ],
+  "review_run_id": "r-20261003T232817229036-review-of-a-watcher-parses-a-stream-once",
+  "reviewed_base_sha": "81b535347259d3e171447e1be7880affb700ef03",
+  "reviewed_head_sha": "977aaf7542100c2387702915a9fb1a76bf1875fe",
+  "reviewed_run_id": "r-20261003T223948632015-a-watcher-parses-a-stream-once",
+  "reviewer_run_id": "r-20261003T232817229036-review-of-a-watcher-parses-a-stream-once",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T223948632015-a-watcher-parses-a-stream-once/manifest.md",
+  "source_manifest_sha256": "2bdaf26a0716e6de1d115ddb392ee3f16b993a241f8d83609d79652aff08c1d9",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-watcher-parses-a-stream-once",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T23:32:32+00:00",
+  "total": 87
+}

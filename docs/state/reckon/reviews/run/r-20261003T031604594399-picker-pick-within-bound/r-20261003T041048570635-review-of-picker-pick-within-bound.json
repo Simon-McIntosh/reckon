@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "base_suite_note": "reviewed run manifest baseline_suite: arm base, revision a3e0bc206ccca11427d9ed76753e41179395be38, 51 passed / 0 failed, log gate-base-repair.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/lane_context.py:344",
+    "reckon/crew/picker/lane_context.py:404",
+    "reckon/crew/picker/prompts.py:48"
+  ],
+  "completed_at": "2026-10-03T04:16:56.129Z",
+  "dispatched_at": "2026-10-03T04:11:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/lane_context.py",
+      "line": "254",
+      "severity": "follow-on",
+      "text": "follow-on: removing the guard makes the pick's cost scale with the number of distinct projects that have a live local worker, one whole-ledger run_time_profile read each (~0.6-3.4 s on this GPFS); the fragment measures only one foreign project and no test bounds the read count, so several live foreign projects could push the pick back over its 5 s bound."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/picker-pick-within-bound.html",
+      "line": "110",
+      "severity": "follow-on",
+      "text": "follow-on: the commit inserts a truncated duplicate \"<p><strong>Gate.</strong> Base arm and head arm run the picker test files with\" immediately above the real Gate paragraph, so the fragment renders a dangling half-sentence."
+    }
+  ],
+  "head_log_revision": null,
+  "head_suite_note": "reviewed run manifest after_suite: arm head, revision 2aa51fa61f98ac75473004d366df6ba121b598af, 51 passed / 0 failed, log gate-head.log",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 2aa51fa6 against a3e0bc2; the foreign-project guard is removed so every live local owner is profiled once, the test now pins the opposite edge, and the fragment records the cost and corrects the earlier overclaim.",
+    "done_when": "the done-when is the pick latency inside the 5 s bound; the manifest records base and head arms at 51 passed / 0 failed with zero added failures, and the fragment measures about 1.37 s with no live foreign worker and near 2.0 s with one.",
+    "goal": "the node's goal under plan s6 (f-otmp-pick-timeouts) is to bring the dispatch-path pick inside its 5 s bound with an honest local-load figure; this delta corrects expected_wait_s at reckon/crew/picker/lane_context.py:224.",
+    "manifest": "read; status complete, commits 9e45069bb/a3e0bc206/2aa51fa61, baseline_suite and after_suite both 51 passed / 0 failed, negative-control-repair.log names the red.",
+    "write_paths": "read the manifest's declared paths; the delta touches only reckon/crew/picker/lane_context.py, tests/test_picker_pick_within_bound.py and the evidence fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the guard makes tests/test_picker_pick_within_bound.py:146 fail with read == [] (recorded red), and the side-effect list read is independent of the value under test.",
+    "evidence": "gate results are recorded (gate-base-repair.log and gate-head.log, 51 passed / 0 failed each) and negative-control-repair.log shows the exact test failing at EXIT=1, but the suite fields carry no log_path or revision header and the fragment repeats a truncated Gate paragraph.",
+    "fit": "the comment at lane_context.py:254 states the mechanism in the surrounding voice with no plan, ticket or author identifiers.",
+    "goal_fidelity": "lane_context.py:254 now profiles each live local owner regardless of project, restoring the whole-live-load figure the previous revision narrowed.",
+    "scope_discipline": "the diff changes only lane_context.py, its test and the fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal under plan s6 (f-otmp-pick-timeouts) is to bring the dispatch-path pick inside its 5 s bound with an honest local-load figure; this delta corrects expected_wait_s at reckon/crew/picker/lane_context.py:224.\nVERDICT done_when: the done-when is the pick latency inside the 5 s bound; the manifest records base and head arms at 51 passed / 0 failed with zero added failures, and the fragment measures about 1.37 s with no live foreign worker and near 2.0 s with one.\nVERDICT write_paths: read the manifest's declared paths; the delta touches only reckon/crew/picker/lane_context.py, tests/test_picker_pick_within_bound.py and the evidence fragment, all inside them.\nVERDICT manifest: read; status complete, commits 9e45069bb/a3e0bc206/2aa51fa61, baseline_suite and after_suite both 51 passed / 0 failed, negative-control-repair.log names the red.\nVERDICT diff: read 2aa51fa6 against a3e0bc2; the foreign-project guard is removed so every live local owner is profiled once, the test now pins the opposite edge, and the fragment records the cost and corrects the earlier overclaim.\nCALL_SITES: reckon/crew/picker/lane_context.py:344, reckon/crew/picker/lane_context.py:404, reckon/crew/picker/prompts.py:48\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: lane_context.py:254 now profiles each live local owner regardless of project, restoring the whole-live-load figure the previous revision narrowed.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate results are recorded (gate-base-repair.log and gate-head.log, 51 passed / 0 failed each) and negative-control-repair.log shows the exact test failing at EXIT=1, but the suite fields carry no log_path or revision header and the fragment repeats a truncated Gate paragraph.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff changes only lane_context.py, its test and the fragment, all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the guard makes tests/test_picker_pick_within_bound.py:146 fail with read == [] (recorded red), and the side-effect list read is independent of the value under test.\nSCORE fit: 19\nJUSTIFICATION fit: the comment at lane_context.py:254 states the mechanism in the surrounding voice with no plan, ticket or author identifiers.\nFINDING reckon/crew/picker/lane_context.py:254 follow-on: removing the guard makes the pick's cost scale with the number of distinct projects that have a live local worker, one whole-ledger run_time_profile read each (~0.6-3.4 s on this GPFS); the fragment measures only one foreign project and no test bounds the read count, so several live foreign projects could push the pick back over its 5 s bound.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/picker-pick-within-bound.html:110 follow-on: the commit inserts a truncated duplicate \"<p><strong>Gate.</strong> Base arm and head arm run the picker test files with\" immediately above the real Gate paragraph, so the fragment renders a dangling half-sentence.\nreviewed_base_sha: a3e0bc206ccca11427d9ed76753e41179395be38\nreviewed_head_sha: 2aa51fa61f98ac75473004d366df6ba121b598af\n",
+  "review_run_id": "r-20261003T041048570635-review-of-picker-pick-within-bound",
+  "reviewed_base_sha": "a3e0bc206ccca11427d9ed76753e41179395be38",
+  "reviewed_head_sha": "2aa51fa61f98ac75473004d366df6ba121b598af",
+  "reviewed_run_id": "r-20261003T031604594399-picker-pick-within-bound",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T04:19:00+00:00",
+  "total": 92
+}

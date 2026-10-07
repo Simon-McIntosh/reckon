@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7fbe5fd8963bdb30816189f515c709c37d913f3b",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/ledger.py:build_record"
+  ],
+  "completed_at": "2026-10-03T10:05:12.515Z",
+  "dispatched_at": "2026-10-03T09:59:38Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T092905759281-disposition-reaches-the-ledger-row/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite \"revision\" names 3e23dbe100d18022060fb04854c4dc0a5d13be2f, which resolves to no git object, while the head arm's own log header reads 3e23dbe100d18022060fb10201db3dbfd534f082, so the durable record carries a sha a reader cannot check."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T092905759281-disposition-reaches-the-ledger-row/manifest.md",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when requires tests/test_ledger.py, tests/test_routing_evidence_fields.py and the promotion tests to keep passing, but 7 ids in test_routing_evidence_fields.py and 2 in test_crew_promotion.py are red at both arms; the worker accepts \"adds no failure id\" as the reading, which is narrower than the done_when's clause."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "137",
+      "severity": "follow-on",
+      "text": "follow-on: the row now declares a disposition field but no production consumer reads it, so the plan's measure that the rendered row reads that field is unserved by this node; recorded so the section is not closed on the field alone."
+    }
+  ],
+  "head_log_revision": "3e23dbe100d18022060fb10201db3dbfd534f082",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 7fbe5fd8; three commits add promotion._recorded_disposition and its call at promotion.py:7837, the disposition key at ledger.py:137/1706/1840, and the five-test file, and no other source is touched.",
+    "done_when": "the done_when names tests/test_disposition_reaches_the_ledger_row.py, the field declared in the row schema, both rows read back, and both gate arms; reckon/ledger.py:137 declares \"disposition\" in RECORD_FIELDS and the manifest's two arms ran with pytest -n 8 --timeout=300 (head 9 failed/177 passed, adding no failing id), but its clause that tests/test_ledger.py, tests/test_routing_evidence_fields.py and the promotion tests keep passing is unmet - 9 ids are red at both arms.",
+    "goal": "the node goal is that a run's disposition verb reaches its committed ledger row; reckon/crew/promotion.py:1404 reads the pointer's closure_disposition.kind and reckon/crew/promotion.py:7869 passes it into ledger.build_record, which writes it at reckon/ledger.py:1840, null when the pointer carried none.",
+    "manifest": "read; status complete, three commits, baseline_suite 13 failed/173 passed and after_suite 9 failed/177 passed with completed true, negative_control_log named, but the after_suite \"revision\" names 3e23dbe100d18022060fb04854c4dc0a5d13be2f, which resolves to no git object while the head arm's own log header reads 3e23dbe100d18022060fb10201db3dbfd534f082.",
+    "write_paths": "read the manifest's declared paths; the diff touches exactly reckon/crew/promotion.py, reckon/ledger.py and tests/test_disposition_reaches_the_ledger_row.py, all inside the five declared paths, and the declared fragment and figure paths are unused."
+  },
+  "justifications": {
+    "durability": "tests/test_disposition_reaches_the_ledger_row.py:161 asserts the row's verb read back from the promoted ledger, and the manifest's negative control (dropping the disposition= argument at promotion.py:7869) reddens 3 ids the head arm passes; the closed-set test at :216 drives record_run_disposition's own refusal.",
+    "evidence": "the two arms are recorded with revision headers and EXIT lines in logs/base-arm.2.log (13 failed, 173 passed) and logs/head-arm.log (9 failed, 177 passed), re-derived here to added_failure_count 0, and the node's own file passes 5/5 at 38a1ee19 in logs/head-single.log; docked because the manifest's after_suite revision is an unresolvable sha and the done_when's \"keep passing\" clause is literally unmet.",
+    "fit": "the new helper and field follow the surrounding RECORD_FIELDS and build_record idiom (reckon/ledger.py:137, :1840) and no changed name carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/promotion.py:1404 reads the recorded verb and promotion.py:7869 writes it to the row via ledger.py:1840, null when absent, so the committed row carries the verb the goal names; docked one because the plan's fuller measure also asks the rendered row to read the field, which no surface does yet.",
+    "scope_discipline": "every path in the diff (promotion.py, ledger.py, the new test file) is inside the declared write paths and the change adds no field or file the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a run's disposition verb reaches its committed ledger row; reckon/crew/promotion.py:1404 reads the pointer's closure_disposition.kind and reckon/crew/promotion.py:7869 passes it into ledger.build_record, which writes it at reckon/ledger.py:1840, null when the pointer carried none.\nVERDICT done_when: the done_when names tests/test_disposition_reaches_the_ledger_row.py, the field declared in the row schema, both rows read back, and both gate arms; reckon/ledger.py:137 declares \"disposition\" in RECORD_FIELDS and the manifest's two arms ran with pytest -n 8 --timeout=300 (head 9 failed/177 passed, adding no failing id), but its clause that tests/test_ledger.py, tests/test_routing_evidence_fields.py and the promotion tests keep passing is unmet - 9 ids are red at both arms.\nVERDICT write_paths: read the manifest's declared paths; the diff touches exactly reckon/crew/promotion.py, reckon/ledger.py and tests/test_disposition_reaches_the_ledger_row.py, all inside the five declared paths, and the declared fragment and figure paths are unused.\nVERDICT manifest: read; status complete, three commits, baseline_suite 13 failed/173 passed and after_suite 9 failed/177 passed with completed true, negative_control_log named, but the after_suite \"revision\" names 3e23dbe100d18022060fb04854c4dc0a5d13be2f, which resolves to no git object while the head arm's own log header reads 3e23dbe100d18022060fb10201db3dbfd534f082.\nVERDICT diff: read commit by commit against base 7fbe5fd8; three commits add promotion._recorded_disposition and its call at promotion.py:7837, the disposition key at ledger.py:137/1706/1840, and the five-test file, and no other source is touched.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/ledger.py:build_record\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1404 reads the recorded verb and promotion.py:7869 writes it to the row via ledger.py:1840, null when absent, so the committed row carries the verb the goal names; docked one because the plan's fuller measure also asks the rendered row to read the field, which no surface does yet.\nSCORE evidence: 16\nJUSTIFICATION evidence: the two arms are recorded with revision headers and EXIT lines in logs/base-arm.2.log (13 failed, 173 passed) and logs/head-arm.log (9 failed, 177 passed), re-derived here to added_failure_count 0, and the node's own file passes 5/5 at 38a1ee19 in logs/head-single.log; docked because the manifest's after_suite revision is an unresolvable sha and the done_when's \"keep passing\" clause is literally unmet.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (promotion.py, ledger.py, the new test file) is inside the declared write paths and the change adds no field or file the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_disposition_reaches_the_ledger_row.py:161 asserts the row's verb read back from the promoted ledger, and the manifest's negative control (dropping the disposition= argument at promotion.py:7869) reddens 3 ids the head arm passes; the closed-set test at :216 drives record_run_disposition's own refusal.\nSCORE fit: 19\nJUSTIFICATION fit: the new helper and field follow the surrounding RECORD_FIELDS and build_record idiom (reckon/ledger.py:137, :1840) and no changed name carries a plan, sprint or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T092905759281-disposition-reaches-the-ledger-row/manifest.md:21 follow-on: the after_suite \"revision\" names 3e23dbe100d18022060fb04854c4dc0a5d13be2f, which resolves to no git object, while the head arm's own log header reads 3e23dbe100d18022060fb10201db3dbfd534f082, so the durable record carries a sha a reader cannot check.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T092905759281-disposition-reaches-the-ledger-row/manifest.md:26 follow-on: the done_when requires tests/test_ledger.py, tests/test_routing_evidence_fields.py and the promotion tests to keep passing, but 7 ids in test_routing_evidence_fields.py and 2 in test_crew_promotion.py are red at both arms; the worker accepts \"adds no failure id\" as the reading, which is narrower than the done_when's clause.\nFINDING reckon/ledger.py:137 follow-on: the row now declares a disposition field but no production consumer reads it, so the plan's measure that the rendered row reads that field is unserved by this node; recorded so the section is not closed on the field alone.",
+  "review_run_id": "r-20261003T095908463843-review-of-disposition-reaches-the-ledger-row",
+  "reviewed_base_sha": "7fbe5fd8963bdb30816189f515c709c37d913f3b",
+  "reviewed_head_sha": "38a1ee1929913ddab24c41cb16abe12e692c6b1a",
+  "reviewed_run_id": "r-20261003T092905759281-disposition-reaches-the-ledger-row",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T10:20:00Z",
+  "total": 93
+}

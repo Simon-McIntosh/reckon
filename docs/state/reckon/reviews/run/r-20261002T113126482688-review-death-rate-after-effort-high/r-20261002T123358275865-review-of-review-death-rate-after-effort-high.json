@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T12:54:04.585Z",
+  "dispatched_at": "2026-10-02T12:34:25Z",
+  "findings": [
+    {
+      "file": "tests/test_the_local_lane_death_rate_is_stated.py",
+      "line": "206",
+      "severity": "follow-on",
+      "text": "follow-on: the scanner's new windowing code is untested \u2014 the covering test reads the committed data file whose after is null, so its after-branch returns early and the node's change can regress with a green gate."
+    },
+    {
+      "file": "docs/research/data/local-lane-deaths.json",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the committed measurement artifact still carries after:null and after_state not_produced, contradicting the after block the page and the run-dir scan state; regenerating it is outside the node's write scope."
+    },
+    {
+      "file": "docs/research/local-lane-death-rate.html",
+      "line": "201",
+      "severity": "follow-on",
+      "text": "follow-on: the page states the rerun reproduces the before-rate but the manifest records 393/1343=0.2926 against the published 29.4% (392/1333); the node explains the xhigh cell grows through pre-move runs resumed after the move, so the comparison is sound while the literal \"reproduces the published before-rate\" clause is not exact."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against ff112f9f: 651ab0d6c adds instant/wilson_interval/build_after_block/fold_rows_exit_records and the --since/--until options to the scanner, and 37bb3741f adds the after-block paragraphs to the scanner's page and retitles \u00a75.",
+    "done_when": "\u00a710's done-when asks the after block to state the review count, the death count and rate with its interval, and the before-rate it is compared against; docs/research/local-lane-death-rate.html:173-201 states 17 of 343 (5.0%, 95% Wilson 3.1-7.8%) against the 29.4% before-rate and carries the discrimination counts (46 of this effort before the window, 0 other efforts inside).",
+    "goal": "the node's goal is to measure the local-lane review death rate at effort high since dotfiles f3f653a; its scan output states 343 reviews at effort high in [2026-09-30T18:36Z, 2026-10-02T12:15:33Z), 17 deaths, rate 0.0496 with a 95% Wilson interval 0.0312-0.0779.",
+    "manifest": "read; it records the scan command with absolute paths and output path, the two suite-log paths, the covering-test result 7 passed EXIT=0, and discloses that the committed data file still carries after:null.",
+    "write_paths": "the node's fence grants docs/research/local-lane-death-rate.html and docs/research/scripts/scan_local_lane_deaths.py plus a fragment path and a figures directory; git diff --name-status ff112f9f..37bb3741f changes exactly those two files."
+  },
+  "justifications": {
+    "durability": "no test references scan_local_lane_deaths.py or build_after_block (grep over tests/ returns nothing) and tests/test_the_local_lane_death_rate_is_stated.py passes unchanged at the base revision, so nothing fails if the new windowing or Wilson-interval code regresses.",
+    "evidence": "the scan actually produced the after block (run-dir scan-after-window.json: 343/17/0.0496, measurable True) and its log records the exact command, but the gate the manifest names (tests/test_the_local_lane_death_rate_is_stated.py) reads the committed docs/research/data/local-lane-deaths.json, which still carries after:null, so the recorded 7 passed does not exercise the node's change.",
+    "fit": "the new constants and functions (AFTER_REVIEW_EFFORT, MIN_WINDOW_REVIEWS, build_after_block at docs/research/scripts/scan_local_lane_deaths.py:426, wilson_interval at :406) are named by mechanism and follow the script's existing style.",
+    "goal_fidelity": "the after block the page and scan carry states the review count, deaths, rate with its 95% interval and the 29.4% before-rate (docs/research/local-lane-death-rate.html:173), which is what \u00a710 and the node goal ask.",
+    "scope_discipline": "git diff ff112f9f..37bb3741f changes only docs/research/scripts/scan_local_lane_deaths.py and docs/research/local-lane-death-rate.html, both inside the declared fence, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to measure the local-lane review death rate at effort high since dotfiles f3f653a; its scan output states 343 reviews at effort high in [2026-09-30T18:36Z, 2026-10-02T12:15:33Z), 17 deaths, rate 0.0496 with a 95% Wilson interval 0.0312-0.0779.\nVERDICT done_when: \u00a710's done-when asks the after block to state the review count, the death count and rate with its interval, and the before-rate it is compared against; docs/research/local-lane-death-rate.html:173-201 states 17 of 343 (5.0%, 95% Wilson 3.1-7.8%) against the 29.4% before-rate and carries the discrimination counts (46 of this effort before the window, 0 other efforts inside).\nVERDICT write_paths: the node's fence grants docs/research/local-lane-death-rate.html and docs/research/scripts/scan_local_lane_deaths.py plus a fragment path and a figures directory; git diff --name-status ff112f9f..37bb3741f changes exactly those two files.\nVERDICT manifest: read; it records the scan command with absolute paths and output path, the two suite-log paths, the covering-test result 7 passed EXIT=0, and discloses that the committed data file still carries after:null.\nVERDICT diff: read commit by commit against ff112f9f: 651ab0d6c adds instant/wilson_interval/build_after_block/fold_rows_exit_records and the --since/--until options to the scanner, and 37bb3741f adds the after-block paragraphs to the scanner's page and retitles \u00a75.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the after block the page and scan carry states the review count, deaths, rate with its 95% interval and the 29.4% before-rate (docs/research/local-lane-death-rate.html:173), which is what \u00a710 and the node goal ask.\nSCORE evidence: 15\nJUSTIFICATION evidence: the scan actually produced the after block (run-dir scan-after-window.json: 343/17/0.0496, measurable True) and its log records the exact command, but the gate the manifest names (tests/test_the_local_lane_death_rate_is_stated.py) reads the committed docs/research/data/local-lane-deaths.json, which still carries after:null, so the recorded 7 passed does not exercise the node's change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff ff112f9f..37bb3741f changes only docs/research/scripts/scan_local_lane_deaths.py and docs/research/local-lane-death-rate.html, both inside the declared fence, and nothing else.\nSCORE durability: 8\nJUSTIFICATION durability: no test references scan_local_lane_deaths.py or build_after_block (grep over tests/ returns nothing) and tests/test_the_local_lane_death_rate_is_stated.py passes unchanged at the base revision, so nothing fails if the new windowing or Wilson-interval code regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the new constants and functions (AFTER_REVIEW_EFFORT, MIN_WINDOW_REVIEWS, build_after_block at docs/research/scripts/scan_local_lane_deaths.py:426, wilson_interval at :406) are named by mechanism and follow the script's existing style.\nFINDING tests/test_the_local_lane_death_rate_is_stated.py:206 follow-on: the scanner's new windowing code is untested \u2014 the covering test reads the committed data file whose after is null, so its after-branch returns early and the node's change can regress with a green gate.\nFINDING docs/research/data/local-lane-deaths.json:1 follow-on: the committed measurement artifact still carries after:null and after_state not_produced, contradicting the after block the page and the run-dir scan state; regenerating it is outside the node's write scope.\nFINDING docs/research/local-lane-death-rate.html:201 follow-on: the page states the rerun reproduces the before-rate but the manifest records 393/1343=0.2926 against the published 29.4% (392/1333); the node explains the xhigh cell grows through pre-move runs resumed after the move, so the comparison is sound while the literal \"reproduces the published before-rate\" clause is not exact.",
+  "review_run_id": "r-20261002T123358275865-review-of-review-death-rate-after-effort-high",
+  "reviewed_base_sha": "ff112f9f01e00ca5d0ea338a5b60cafb821e5e18",
+  "reviewed_head_sha": "37bb3741f5cbfc2c575074ec41e3794e1f1e7700",
+  "reviewed_run_id": "r-20261002T113126482688-review-death-rate-after-effort-high",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T123358275865-review-of-review-death-rate-after-effort-high",
+  "scores": {
+    "durability": 8,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T12:50:19.311984+00:00",
+  "total": 81
+}

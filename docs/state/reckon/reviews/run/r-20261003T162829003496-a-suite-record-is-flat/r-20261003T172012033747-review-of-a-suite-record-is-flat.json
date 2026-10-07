@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "count and ids derived from the reviewed run's own baseline_suite and after_suite gate logs. baseline_suite (4d1feeed9, base-population.log) records 10 failing ids, all in tests/test_gate_evidence.py; after_suite (b9de9a368, head-population-provisioned.log) records 0 failures. after minus baseline is 0: no failing id is present at head that was absent at base. I confirmed the same ten ids in base-population.log and in the scratch head arm (head-population.log), and zero FAILED lines in head-population-provisioned.log, and reproduced the guard myself: audit_manifest refuses the terminal-keyed and measurement-keyed shapes and passes a flat record (probe-guard.log).",
+  "after_suite": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -rf --tb=line -n 8 --basetemp=/tmp/reckon-crew-scratch/r-20261003T162829003496-a-suite-record-is-flat/head-prov-QJbHGa/basetemp tests/test_a_control_log_is_judged_at_write.py tests/test_a_review_manifest_passes_its_own_check.py tests/test_a_review_promotes_what_it_passed.py tests/test_a_suite_record_is_flat.py tests/test_an_unmarked_finding_is_refused_at_write.py tests/test_brief_prompt.py tests/test_check_manifest_resolves_named_commits.py tests/test_control_gate_repairs.py tests/test_crew.py tests/test_crew_help_names_its_state.py tests/test_crew_recovery.py tests/test_gate_evidence.py tests/test_manifest_check_command.py tests/test_manifest_measurement_keys_declared.py tests/test_manifest_parse_format.py tests/test_skill_contracts.py tests/test_time_fence_follows_the_attempt.py tests/test_valid_wait_keeps_its_state.py tests/test_worker_prompt_contract.py tests/test_write_scope_agreement.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T162829003496-a-suite-record-is-flat/head-population-provisioned.log",
+    "revision": "b9de9a3689fa0449205ced0c286673a9a5563702"
+  },
+  "backend": "deepseek-v4.1-flash",
+  "baseline_suite": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -rf --tb=line -n 8 tests/test_a_control_log_is_judged_at_write.py tests/test_a_review_manifest_passes_its_own_check.py tests/test_a_review_promotes_what_it_passed.py tests/test_an_unmarked_finding_is_refused_at_write.py tests/test_brief_prompt.py tests/test_check_manifest_resolves_named_commits.py tests/test_control_gate_repairs.py tests/test_crew.py tests/test_crew_help_names_its_state.py tests/test_crew_recovery.py tests/test_gate_evidence.py tests/test_manifest_check_command.py tests/test_manifest_measurement_keys_declared.py tests/test_manifest_parse_format.py tests/test_skill_contracts.py tests/test_time_fence_follows_the_attempt.py tests/test_valid_wait_keeps_its_state.py tests/test_worker_prompt_contract.py tests/test_write_scope_agreement.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 10,
+    "failure_ids": [
+      "tests/test_gate_evidence.py::test_armed_promotion_refuses_missing_observation_and_keeps_pointer",
+      "tests/test_gate_evidence.py::test_armed_promotion_refuses_added_failures_with_ids",
+      "tests/test_gate_evidence.py::test_added_failure_ids_matches_promotions_suite_delta_arithmetic",
+      "tests/test_gate_evidence.py::test_reasoned_waiver_promotes_and_stores_observations",
+      "tests/test_gate_evidence.py::test_promoted_run_stores_failure_attribution_beside_added_ids",
+      "tests/test_gate_evidence.py::test_repair_run_with_only_baseline_failures_is_clean",
+      "tests/test_gate_evidence.py::test_added_failure_with_no_attribution_entry_still_refuses",
+      "tests/test_gate_evidence.py::test_attribution_naming_a_pre_existing_failure_is_dropped",
+      "tests/test_gate_evidence.py::test_known_bad_promotion_with_twenty_added_failures_is_refused",
+      "tests/test_gate_evidence.py::test_fifteen_repair_promotions_with_no_added_failures_are_accepted"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T162829003496-a-suite-record-is-flat/base-population.log",
+    "revision": "4d1feeed905d145a3130e71293f2cfdf1233f1d7"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:5238 (crew check-manifest)"
+  ],
+  "completed_at": "2026-10-03T17:28:21.143Z",
+  "dispatched_at": "2026-10-03T17:20:37Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T162829003496-a-suite-record-is-flat/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: the record's two suite arms were run in different trees: baseline_suite (base-population.log) is a git-archive scratch copy in which 10 tests/test_gate_evidence.py ids fail, while after_suite (head-population-provisioned.log) is the provisioned worktree, so the pair is not a matched base/head measurement and the zero-added figure rests on the head arm alone. The worker discloses the artifact under follow_ons and ran a scratch head arm with the identical 10 ids, giving a matched delta of zero, so no added failure is concealed \u2014 only the pair's provenance is uneven."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base: reports.py adds the shape predicate and finding and calls them for both suite fields before the armed block, so a non-flat mapping is refused for any status; the test file feeds the two delivered keyed shapes as literals; the fragment records the arms. No product file outside reports.py is touched.",
+    "done_when": "tests/test_a_suite_record_is_flat.py (5 tests) passes at head e2a0db70e: I ran it with the root interpreter (5 passed in 0.66s, EXIT=0), and exercised audit_manifest directly against both delivered shapes (both refused naming the field), a flat record (ok) and a prose not-run value (ok) \u2014 the guard fires and the record over the named population is green at head (632 passed, 0:10:44).",
+    "goal": "the node goal is that crew check-manifest refuse a baseline_suite or after_suite that is not one flat record, naming the field and the keys a flat record needs; the change adds _is_flat_suite_record and _flat_suite_record_finding to audit_manifest in reckon/crew/reports.py and a test file asserting both delivered shapes are refused, a flat record passes and a prose not-run value keeps its treatment.",
+    "manifest": "read; status complete, three commits (b9de9a368 code+test, 760de97b fragment, e2a0db70e fragment), negative_control_log present with EXIT=1, and a flat baseline_suite/after_suite pair carrying the canonical fields \u2014 the reviewed run now passes its own crew check-manifest (ok: true, findings []).",
+    "write_paths": "the manifest declares reckon/crew/reports.py, tests/test_a_suite_record_is_flat.py, docs/evidence/fragments/crew-runtime-positive-controls/a-suite-record-is-flat.html and a figures dir; the diff 4d1feeed..e2a0db70e touches exactly reports.py (+73), the test file (+278) and the fragment (+39) \u2014 every path inside the declared scope, no file outside it, and the declared figures dir is unused (no figure is named by the done-when)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_suite_record_is_flat.py::test_a_terminal_keyed_record_is_refused_naming_the_field fails if _flat_suite_record_finding is removed: the negative control restoring the base reports.py reddens it (assert True is False), and the assertions compare the audit output against literal finding text, never against a value the test itself passed in.",
+    "evidence": "tests/test_a_suite_record_is_flat.py asserts the refusal for both keyed shapes and the pass for a flat record, and negative-control.log reddens 3 of the 5 at base (EXIT=1); the deduction to 18 is that the recorded baseline arm is a scratch copy whose 10 tests/test_gate_evidence.py failures are an instrument artifact, so the record's base/head pair is not matched and the zero-added figure rests on the head arm alone.",
+    "fit": "reckon/crew/reports.py:863 mirrors the surrounding predicate/finding idiom beside _validate_suite_observation, the comment names the mechanism (why the shape is judged early) rather than a plan or ticket, and no symbol, file or comment carries a plan label.",
+    "goal_fidelity": "reckon/crew/reports.py:1772-1789 judges baseline_suite and after_suite for every status and adds the flat-record finding, so check-manifest reports a keyed record while its author can still flatten it \u2014 the two delivered shapes are refused and a flat record passes (probe-guard.log).",
+    "scope_discipline": "the diff 4d1feeed..e2a0db70e is reckon/crew/reports.py, tests/test_a_suite_record_is_flat.py and the evidence fragment only \u2014 every path inside the declared write scope, nothing the goal does not imply."
+  },
+  "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T162829003496-a-suite-record-is-flat/negative-control.log",
+  "negative_control_note": "restoring the base revision's reckon/crew/reports.py in a scratch copy of the head tree reddens 3 of the 5 added tests (test_a_terminal_keyed_record_is_refused_naming_the_field, test_a_measurement_keyed_record_is_refused_naming_the_field, test_the_finding_lists_the_keys_a_flat_record_needs) and leaves the flat and prose cases green, EXIT=1 \u2014 the shape refusal is load-bearing and the unmutated head arm is green.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that crew check-manifest refuse a baseline_suite or after_suite that is not one flat record, naming the field and the keys a flat record needs; the change adds _is_flat_suite_record and _flat_suite_record_finding to audit_manifest in reckon/crew/reports.py and a test file asserting both delivered shapes are refused, a flat record passes and a prose not-run value keeps its treatment.\nVERDICT done_when: tests/test_a_suite_record_is_flat.py (5 tests) passes at head e2a0db70e: I ran it with the root interpreter (5 passed in 0.66s, EXIT=0), and exercised audit_manifest directly against both delivered shapes (both refused naming the field), a flat record (ok) and a prose not-run value (ok) \u2014 the guard fires and the record over the named population is green at head (632 passed, 0:10:44).\nVERDICT write_paths: the manifest declares reckon/crew/reports.py, tests/test_a_suite_record_is_flat.py, docs/evidence/fragments/crew-runtime-positive-controls/a-suite-record-is-flat.html and a figures dir; the diff 4d1feeed..e2a0db70e touches exactly reports.py (+73), the test file (+278) and the fragment (+39) \u2014 every path inside the declared scope, no file outside it, and the declared figures dir is unused (no figure is named by the done-when).\nVERDICT manifest: read; status complete, three commits (b9de9a368 code+test, 760de97b fragment, e2a0db70e fragment), negative_control_log present with EXIT=1, and a flat baseline_suite/after_suite pair carrying the canonical fields \u2014 the reviewed run now passes its own crew check-manifest (ok: true, findings []).\nVERDICT diff: read commit by commit against base: reports.py adds the shape predicate and finding and calls them for both suite fields before the armed block, so a non-flat mapping is refused for any status; the test file feeds the two delivered keyed shapes as literals; the fragment records the arms. No product file outside reports.py is touched.\nCALL_SITES: reckon/cli.py:5238 (crew check-manifest)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:1772-1789 judges baseline_suite and after_suite for every status and adds the flat-record finding, so check-manifest reports a keyed record while its author can still flatten it \u2014 the two delivered shapes are refused and a flat record passes (probe-guard.log).\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_suite_record_is_flat.py asserts the refusal for both keyed shapes and the pass for a flat record, and negative-control.log reddens 3 of the 5 at base (EXIT=1); the deduction to 18 is that the recorded baseline arm is a scratch copy whose 10 tests/test_gate_evidence.py failures are an instrument artifact, so the record's base/head pair is not matched and the zero-added figure rests on the head arm alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 4d1feeed..e2a0db70e is reckon/crew/reports.py, tests/test_a_suite_record_is_flat.py and the evidence fragment only \u2014 every path inside the declared write scope, nothing the goal does not imply.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_suite_record_is_flat.py::test_a_terminal_keyed_record_is_refused_naming_the_field fails if _flat_suite_record_finding is removed: the negative control restoring the base reports.py reddens it (assert True is False), and the assertions compare the audit output against literal finding text, never against a value the test itself passed in.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/reports.py:863 mirrors the surrounding predicate/finding idiom beside _validate_suite_observation, the comment names the mechanism (why the shape is judged early) rather than a plan or ticket, and no symbol, file or comment carries a plan label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T162829003496-a-suite-record-is-flat/manifest.md:16 follow-on: follow-on: the record's two suite arms were run in different trees: baseline_suite (base-population.log) is a git-archive scratch copy in which 10 tests/test_gate_evidence.py ids fail, while after_suite (head-population-provisioned.log) is the provisioned worktree, so the pair is not a matched base/head measurement and the zero-added figure rests on the head arm alone. The worker discloses the artifact under follow_ons and ran a scratch head arm with the identical 10 ids, giving a matched delta of zero, so no added failure is concealed \u2014 only the pair's provenance is uneven.",
+  "review_run_id": "r-20261003T172012033747-review-of-a-suite-record-is-flat",
+  "reviewed_base_sha": "4d1feeed905d145a3130e71293f2cfdf1233f1d7",
+  "reviewed_head_sha": "e2a0db70e4347d558e60a36e116dc0cf23b88de7",
+  "reviewed_run_id": "r-20261003T162829003496-a-suite-record-is-flat",
+  "reviewer_run_id": "r-20261003T172012033747-review-of-a-suite-record-is-flat",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T17:26:47.206399+00:00",
+  "total": 98
+}

@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "count and ids derived by added_failures_from_gate_logs over the two logs the reviewed manifest names under baseline_suite (arm-base-importers.log) and after_suite (arm-head-importers.log); both completed to EXIT=0 with 137 and 139 passed and no FAILED/ERROR ids, so the reviewed run added no failing test.",
+  "backend": "local",
+  "base_log_revision": "16f324f71455d509c8efa82354a10c411adaf244",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:476",
+    "reckon/crew/recovery.py:570",
+    "reckon/crew/routing.py:2613"
+  ],
+  "completed_at": "2026-10-04T21:28:43.645Z",
+  "dispatched_at": "2026-10-04T21:23:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "7277",
+      "severity": "follow-on",
+      "text": "follow-on: _LANDING_COMMENT_PREFIX ('c-run-') duplicates the new RUN_COMMENT_PREFIX in plan_review.py \u2014 two spellings of one grammar that can drift; promotion.py is outside this node's write scope, so the node correctly left it, and the new test pins the two together in behaviour by driving promotion._record_landing_comment and asserting its id starts with module.RUN_COMMENT_PREFIX; promotion could later import the plan_review constant."
+    }
+  ],
+  "head_log_revision": "92c7413aa4db83a96f602332e0ee177d7281c2c7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites of plan_fingerprint: reckon/crew/recovery.py:476, reckon/crew/recovery.py:570 and reckon/crew/routing.py:2613 \u2014 the sweep and the dispatch gate share the one function, so the exclusion reaches every comparison.",
+    "diff": "read commit by commit against 16f324f71: 92c7413aa adds RUN_COMMENT_PREFIX, _without_run_comments and threads it through plan_fingerprint, and adds the two-case test; dba6dbb27 adds only the evidence fragment, so runtime source changes only in 92c7413aa.",
+    "done_when": "verified, both sides reproduced independently: tests/test_a_run_comment_earns_no_plan_review.py drives promotion._record_landing_comment against a synthesised mounted project and asserts the fingerprint is equal after a run comment and different after an authored one, then drives recovery.dispatch_awaiting_reviews and asserts no review is composed for the run comment and one is composed for the authored comment; I ran the file at head (2 passed, EXIT=0) and, at the module level, confirmed equal/moved and that bypassing _without_run_comments reddens the equal assertion.",
+    "goal": "verified: \u00a78 asks that a promotion's run comment (id beginning c-run-) be left out of the fingerprint the sweep compares while an authored comment, section, decision or prose change still moves it; at the reviewed head plan_fingerprint digests _without_run_comments(_as_state(plan)) (reckon/crew/plan_review.py:288-320), dropping c-run- records and any section left empty, so a plan holding only run comments digests as one holding none.",
+    "manifest": "read: status complete; baseline_suite names arm-base-importers.log (rev 16f324f71, completed, 137 passed, 0 failures) and after_suite names arm-head-importers.log (rev 92c7413aa, completed, 139 passed, 0 failures); negative_control_log is the bare path to negative-control-folded-back.log; the focused gate and repro logs sit beside them.",
+    "write_paths": "verified: git diff --name-only 16f324f71..dba6dbb27 is exactly the three declared paths \u2014 reckon/crew/plan_review.py, tests/test_a_run_comment_earns_no_plan_review.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-run-comment-earns-no-plan-review.html \u2014 and the reviewed worktree at dba6dbb27 is clean."
+  },
+  "justifications": {
+    "durability": "two commits carry conventional subjects and bodies with no attribution, plan label or version number; the manifest is complete and was written incrementally; the gate, negative-control and reproduction logs sit under the run directory; the test synthesises a mounted project under RECKON_HOME rather than reading or writing the real crew home; deducted one because the test couples to the private promotion._record_landing_comment signature.",
+    "evidence": "strong and independently reproduced: two population arms are durable run-dir logs (137 vs 139 passed, 0 failures, both completed to EXIT=0) bracketing the change, the fold-back negative control is red EXIT=1 with both new test ids failing, the repro log shows the base defect (fingerprint e26fa10b\u21922e3202c9 before the change), and I re-ran the new test file (2 passed) and the module-level boundary plus mutant; one point withheld because the arm logs print pytest summaries only, so the 137/139 figures are summary receipts rather than per-test listings.",
+    "fit": "the change extends the single shared plan_fingerprint so the sweep, the dispatch gate and the sidecar all inherit the exclusion rather than each filtering separately, and _without_run_comments returns unrecognised shapes untouched; deducted two because RUN_COMMENT_PREFIX re-spells the run-comment grammar that promotion.py:7277 already holds as _LANDING_COMMENT_PREFIX, so the two constant spellings can drift.",
+    "goal_fidelity": "the change does exactly what \u00a78 asked and no more: _without_run_comments removes comment records whose id starts with RUN_COMMENT_PREFIX ('c-run-') and drops a section left empty, plan_fingerprint digests the normalised state, and every authored comment, section, decision and prose change still moves the digest because the normalisation removes only records it can classify as run comments (plan_review.py:245-320).",
+    "scope_discipline": "the diff touches only the three declared paths and nothing outside them; recovery.py was in the write grant but needed no change and is untouched, promotion.py (whose _LANDING_COMMENT_PREFIX the change mirrors) is correctly left alone and flagged as a follow-on, and the reviewed worktree at dba6dbb27 is clean."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a78 asks that a promotion's run comment (id beginning c-run-) be left out of the fingerprint the sweep compares while an authored comment, section, decision or prose change still moves it; at the reviewed head plan_fingerprint digests _without_run_comments(_as_state(plan)) (reckon/crew/plan_review.py:288-320), dropping c-run- records and any section left empty.\nVERDICT done_when: tests/test_a_run_comment_earns_no_plan_review.py drives promotion._record_landing_comment and asserts the fingerprint is equal after a run comment and different after an authored one, then drives recovery.dispatch_awaiting_reviews and asserts no review is composed for the run comment and one is for the authored comment; I ran the file at head (2 passed EXIT=0) and reproduced the boundary at the module level, with the fold-back bypass reddening the equal assertion.\nVERDICT write_paths: git diff --name-only 16f324f71..dba6dbb27 is exactly reckon/crew/plan_review.py, tests/test_a_run_comment_earns_no_plan_review.py and the evidence fragment; the reviewed worktree at dba6dbb27 is clean.\nVERDICT manifest: read; status complete; baseline_suite arm-base-importers.log rev 16f324f71 completed 137 passed 0 failures, after_suite arm-head-importers.log rev 92c7413aa completed 139 passed 0 failures; negative_control_log names negative-control-folded-back.log.\nVERDICT diff: read against base; 92c7413aa adds RUN_COMMENT_PREFIX, _without_run_comments and threads it through plan_fingerprint plus the test; dba6dbb27 adds only the fragment, so runtime source changes only in 92c7413aa.\nCALL_SITES: reckon/crew/recovery.py:476, reckon/crew/recovery.py:570, reckon/crew/routing.py:2613\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: _without_run_comments removes comment records whose id starts with RUN_COMMENT_PREFIX ('c-run-') and drops a section left empty, plan_fingerprint digests the normalised state, and every authored comment, section, decision and prose change still moves the digest.\nSCORE evidence: 19\nJUSTIFICATION evidence: two durable population arms (137 vs 139 passed, 0 failures, both EXIT=0) bracket the change, the fold-back negative control is red EXIT=1 with both new ids failing, the repro log shows the base defect, and I re-ran the new test file (2 passed) and the module-level boundary plus mutant; deducted one because the arm logs print summaries only.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is exactly the three declared paths; recovery.py granted but untouched; promotion.py correctly left alone and flagged; the reviewed worktree is clean.\nSCORE durability: 19\nJUSTIFICATION durability: two commits carry conventional subjects and bodies with no attribution, plan label or version number; the manifest is complete and incremental; the logs are durable under the run directory; the test isolates under RECKON_HOME; deducted one for coupling to the private promotion._record_landing_comment.\nSCORE fit: 18\nJUSTIFICATION fit: the change extends the single shared plan_fingerprint so the sweep, the dispatch gate and the sidecar inherit the exclusion, and _without_run_comments leaves unrecognised shapes untouched; deducted two because RUN_COMMENT_PREFIX re-spells the grammar promotion.py:7277 already holds as _LANDING_COMMENT_PREFIX.\nFINDING reckon/crew/promotion.py:7277 follow-on: _LANDING_COMMENT_PREFIX duplicates the new RUN_COMMENT_PREFIX, two spellings of one grammar that can drift; promotion.py is outside the node's write scope so the node correctly left it, and the new test pins the two together in behaviour; promotion could later import the plan_review constant.",
+  "review_run_id": "r-20261004T212340799879-review-of-a-run-comment-earns-no-plan-review",
+  "reviewed_base_sha": "16f324f71455d509c8efa82354a10c411adaf244",
+  "reviewed_commits": [
+    "92c7413aa4db83a96f602332e0ee177d7281c2c7",
+    "dba6dbb27e432be8a5fcd241b168a03e6a363cf6"
+  ],
+  "reviewed_head_sha": "dba6dbb27e432be8a5fcd241b168a03e6a363cf6",
+  "reviewed_run_id": "r-20261004T210239048516-a-run-comment-earns-no-plan-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T21:27:20.060785+00:00",
+  "total": 96
+}

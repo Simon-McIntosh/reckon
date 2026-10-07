@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/serve.py:1867",
+    "reckon/mcp_views.py:1546",
+    "reckon/roadmap.py:297",
+    "reckon/roadmap.py:337",
+    "reckon/roadmap.py:1101",
+    "reckon/roadmap.py:1862"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T02:43:13.288800+00:00",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "1933",
+      "text": "the row's effective_status blocker list was narrowed to open_decisions, but no guard catches a revert: restoring decision_blockers here leaves all 107 text-only tests that read readiness or effective_status green (measured in a scratch tree at this head), and tests/test_closure_gates.py:76 covers only the decision-free plan-terminal fixture while tests/test_transition_gates_read_alike.py:162-163 asserts the served and the MCP rows \u2014 so the roadmap row would render blocked for a plan whose gate holds a choice, the exact symptom section 6 exists to remove."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2318",
+      "text": "the top-level decision tally was narrowed to open_decisions_report, and reverting it to decision_blockers_report likewise leaves the same 107 guards green (measured), so a gated decision silently re-counts as open in the roadmap payload's decision_readiness block."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011148256501-surfaces-read-the-closure-split/manifest.md",
+      "line": "14",
+      "text": "the manifest omits measurement_module and measurement_cwd although its base arm measured a scratch tree exported to /tmp/base-reckon, which this node's own manifest spec requires them for; the shortfall is mitigated but not cured by cohort-base.log's header naming the pinned module and its cd, which is the evidence those keys exist to carry."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "met \u2014 445 insertions across seven files; the split is computed once in reckon/roadmap.py (execution_gates:272, closure_blockers:287, unsettled_decisions:362, the gated status at :337) and both readers consume it, while 0e4e159d removed the two MCP summary keys whose size the payload budget forbids (tests/test_mcp_views.py:260, :735).",
+    "done_when": "met \u2014 tests/test_transition_gates_read_alike.py:167 and :179 build exactly the two fixtures named and assert, for each, that the roadmap's ready_now, the served payload and the MCP projection agree and name the same blockers; the declared negative control ran twice and failed the closure-gate case at tests/test_transition_gates_read_alike.py:160 with the gate-borne blocker quoted, then passed 3/3 after the revert.",
+    "goal": "met \u2014 both readers now consume the roadmap's execution/closure split: reckon/serve.py:1867 extends the served plan's blockers from unpassed_gate_blockers(execution_gates(plan)) and reckon/mcp_views.py:1546 does the same for the MCP projection, so a plan whose only open gate is a decision-transition gate keeps its row in ready_now, names gate_blockers as empty and reads active on both surfaces.",
+    "manifest": "met with one recorded gap \u2014 status, commits, both suite arms, the negative-control log and follow_ons are present, and the cohort arithmetic reconciles (base 2 failed/826 passed/21 skipped/4 errors; head 1 failed/834 passed/21 skipped; zero added failure ids); measurement_module and measurement_cwd are absent although the base arm measured a scratch tree, which this node's own manifest spec requires them for.",
+    "write_paths": "met \u2014 git show --stat over 6277e533..ef4151e7 touches only the seven declared paths (the figures path carries one added PNG); no path outside the fence appears in any of the five commits."
+  },
+  "justifications": {
+    "durability": "two changed behaviour sites in the roadmap status stack are unguarded \u2014 restoring the pre-change spelling at reckon/roadmap.py:1933 or :2318 leaves all 107 text-only tests that read readiness or effective_status green (measured in a scratch tree at this head, log f1-line-arm.log in the reviewing run's directory), so the transition split can silently regress to the symptom section 6 exists to remove.",
+    "evidence": "the declared control is a real refusal at the named assertion, twice, with the post-revert pass, and the cohort delta shows zero added failure ids; one point withheld because the base arm's scratch tree is not recorded in the manifest's measurement keys.",
+    "fit": "the split is expressed as public roadmap functions consumed by both readers, matching the module's existing separation, and the new test file's name and fixture style match its neighbours; one point withheld because two of the five commit subjects scope by the plan's own name, which the commit-message rule forbids (7 of the last 800 commits carry one).",
+    "goal_fidelity": "the two readers consume the split and both fixtures assert agreement; one point withheld because the roadmap row's own effective_status \u2014 a value the goal's agreement claim also covers \u2014 is carried by an unguarded line.",
+    "scope_discipline": "all five commits stay inside the seven declared paths, no path outside the fence appears in git show --stat, and no shared sprint or foreign plan state was touched."
+  },
+  "node": "review-of-surfaces-read-the-closure-split",
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 0bd7a7c9667176b07d0d7912d07a1e8739581d03\nreviewed_head_sha: ef4151e753c6a5e895cb0261c3c8b15d34d0c07d\nVERDICT goal: met \u2014 both readers now consume the roadmap's execution/closure split: reckon/serve.py:1867 extends the served plan's blockers from unpassed_gate_blockers(execution_gates(plan)) and reckon/mcp_views.py:1546 does the same for the MCP projection, so a plan whose only open gate is a decision-transition gate keeps its row in ready_now, names gate_blockers as empty and reads active on both surfaces.\nVERDICT done_when: met \u2014 tests/test_transition_gates_read_alike.py:167 and :179 build exactly the two fixtures named and assert, for each, that the roadmap's ready_now, the served payload and the MCP projection agree and name the same blockers; the declared negative control ran twice and failed the closure-gate case at tests/test_transition_gates_read_alike.py:160 with the gate-borne blocker quoted, then passed 3/3 after the revert.\nVERDICT write_paths: met \u2014 git show --stat over 6277e533..ef4151e7 touches only the seven declared paths (the figures path carries one added PNG); no path outside the fence appears in any of the five commits.\nVERDICT manifest: met with one recorded gap \u2014 status, commits, both suite arms, the negative-control log and follow_ons are present, and the cohort arithmetic reconciles (base 2 failed/826 passed/21 skipped/4 errors; head 1 failed/834 passed/21 skipped; zero added failure ids); measurement_module and measurement_cwd are absent although the base arm measured a scratch tree, which this node's own manifest spec requires them for.\nVERDICT diff: met \u2014 445 insertions across seven files; the split is computed once in reckon/roadmap.py (execution_gates:272, closure_blockers:287, unsettled_decisions:362, the gated status at :337) and both readers consume it, while 0e4e159d removed the two MCP summary keys whose size the payload budget forbids (tests/test_mcp_views.py:260, :735).\nCALL_SITES: reckon/serve.py:1867, reckon/mcp_views.py:1546, reckon/roadmap.py:297, reckon/roadmap.py:337, reckon/roadmap.py:1101, reckon/roadmap.py:1862\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the two readers consume the split and both fixtures assert agreement; one point withheld because the roadmap row's own effective_status \u2014 a value the goal's agreement claim also covers \u2014 is carried by an unguarded line.\nSCORE evidence: 19\nJUSTIFICATION evidence: the declared control is a real refusal at the named assertion, twice, with the post-revert pass, and the cohort delta shows zero added failure ids; one point withheld because the base arm's scratch tree is not recorded in the manifest's measurement keys.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five commits stay inside the seven declared paths, no path outside the fence appears in git show --stat, and no shared sprint or foreign plan state was touched.\nSCORE durability: 16\nJUSTIFICATION durability: two changed behaviour sites in the roadmap status stack are unguarded \u2014 restoring the pre-change spelling at reckon/roadmap.py:1933 or :2318 leaves all 107 text-only tests that read readiness or effective_status green (measured in a scratch tree at this head, log f1-line-arm.log in the reviewing run's directory), so the transition split can silently regress to the symptom section 6 exists to remove.\nSCORE fit: 19\nJUSTIFICATION fit: the split is expressed as public roadmap functions consumed by both readers, matching the module's existing separation, and the new test file's name and fixture style match its neighbours; one point withheld because two of the five commit subjects scope by the plan's own name, which the commit-message rule forbids (7 of the last 800 commits carry one).\nFINDING reckon/roadmap.py:1933 the row's effective_status blocker list was narrowed to open_decisions, but no guard catches a revert: restoring decision_blockers here leaves all 107 text-only tests that read readiness or effective_status green (measured in a scratch tree at this head), and tests/test_closure_gates.py:76 covers only the decision-free plan-terminal fixture while tests/test_transition_gates_read_alike.py:162-163 asserts the served and the MCP rows \u2014 so the roadmap row would render blocked for a plan whose gate holds a choice, the exact symptom section 6 exists to remove.\nFINDING reckon/roadmap.py:2318 the top-level decision tally was narrowed to open_decisions_report, and reverting it to decision_blockers_report likewise leaves the same 107 guards green (measured), so a gated decision silently re-counts as open in the roadmap payload's decision_readiness block.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T011148256501-surfaces-read-the-closure-split/manifest.md:14 the manifest omits measurement_module and measurement_cwd although its base arm measured a scratch tree exported to /tmp/base-reckon, which this node's own manifest spec requires them for; the shortfall is mitigated but not cured by cohort-base.log's header naming the pinned module and its cd, which is the evidence those keys exist to carry.\n",
+  "review_run_id": "r-20260925T024313288800-review-of-surfaces-read-the-closure-split",
+  "reviewed_base_sha": "0bd7a7c9667176b07d0d7912d07a1e8739581d03",
+  "reviewed_head_sha": "ef4151e753c6a5e895cb0261c3c8b15d34d0c07d",
+  "reviewed_run_id": "r-20260925T011148256501-surfaces-read-the-closure-split",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T03:25:32.809623+00:00",
+  "total": 93
+}

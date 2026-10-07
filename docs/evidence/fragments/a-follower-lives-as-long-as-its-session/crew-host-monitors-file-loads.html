@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-lives-as-long-as-its-session">
+  <meta name="plan-evidence-for" content="a-follower-lives-as-long-as-its-session">
+  <title>The crew-host plugin's monitors file loads | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="crew-host-monitors-file-loads">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>The crew-host plugin's monitors file loads</h2>
+      </header>
+      <p id="crew-host-monitors-file-loads-landing">
+        <code>plugins/crew-host/monitors/monitors.json</code> is a bare JSON array
+        of monitor entries, the shape Claude Code's loader validates at that path.
+        Reproduced before the change: <code>claude --plugin-dir plugins/crew-host
+        plugin list --json</code> reported <code>monitors load failed &hellip;
+        expected array, received object</code>. After the change the same command
+        reports the plugin with no <code>errors</code>.
+        <code>tests/test_session_host_plugin.py</code> asserts the array shape and
+        the allowed entry keys, and runs the loader against the directory; 6 tests
+        pass with a bare <code>EXIT=0</code>. Applying the declared mutation —
+        wrapping the array back under a <code>monitors</code> key — fails the shape
+        test and the loader test (2 failed, <code>EXIT=1</code>).
+      </p>
+    </section>
+  </main>
+</body>
+</html>

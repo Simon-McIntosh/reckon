@@ -1,0 +1,40 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T11:07:09.027182+00:00",
+  "findings": [
+    {
+      "file": "reckon/_flight_schema.py",
+      "line": "208",
+      "text": "the regenerated module gains one UP045 finding because the generator emits Optional[bool] for the new field; measured with ruff --select UP045 it reads 72 findings at base 8ca2c3c against 73 at head, a +1 delta agreeing with the worker's report, and it is the fenced follow-on the worker already declared that only editing scripts/regen_flight_schema.py can remove while preserving byte-identity regeneration."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_flight.py:1289 fails if the census stops reporting an undeclared backend, and tests/test_flight.py:654 fails if the census leaks into a dispatch payload.",
+    "evidence": "tests/test_flight.py:623 ranges the census over a reporting, an unstated and a null backend, and tests/test_flight.py:124 and :140 assert both committed artifacts regenerate byte-identically from the schema source.",
+    "fit": "reckon/schema/flight.yaml:281 declares metered beside budget_check in the same voice and reckon/flight.py:821 sits with the other report helpers, but the regenerated module grows the lint surface by one finding.",
+    "goal_fidelity": "reckon/flight.py:854 adds undeclared_meteredness to the configuration-inspection report, and an independent re-run of the report on this host names all nine undeclared backends including clive and native.",
+    "scope_discipline": "the diff 8ca2c3c..14e34cd touches exactly the five declared write paths with 103 insertions and no deletions."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/flight.py:854 adds undeclared_meteredness to the configuration-inspection report, and an independent re-run of the report on this host names all nine undeclared backends including clive and native.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_flight.py:623 ranges the census over a reporting, an unstated and a null backend, and tests/test_flight.py:124 and :140 assert both committed artifacts regenerate byte-identically from the schema source.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 8ca2c3c..14e34cd touches exactly the five declared write paths with 103 insertions and no deletions.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_flight.py:1289 fails if the census stops reporting an undeclared backend, and tests/test_flight.py:654 fails if the census leaks into a dispatch payload.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/schema/flight.yaml:281 declares metered beside budget_check in the same voice and reckon/flight.py:821 sits with the other report helpers, but the regenerated module grows the lint surface by one finding.\nFINDING reckon/_flight_schema.py:208 the regenerated module gains one UP045 finding because the generator emits Optional[bool] for the new field; measured with ruff --select UP045 it reads 72 findings at base 8ca2c3c against 73 at head, a +1 delta agreeing with the worker's report, and it is the fenced follow-on the worker already declared that only editing scripts/regen_flight_schema.py can remove while preserving byte-identity regeneration.\n",
+  "review_run_id": "r-20260914T110709027182-review-of-flight-declares-meteredness",
+  "reviewed_run_id": "r-20260914T094141156549-flight-declares-meteredness",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260914T110709027182-review-of-flight-declares-meteredness",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T12:16:28.664975+00:00",
+  "total": 95
+}

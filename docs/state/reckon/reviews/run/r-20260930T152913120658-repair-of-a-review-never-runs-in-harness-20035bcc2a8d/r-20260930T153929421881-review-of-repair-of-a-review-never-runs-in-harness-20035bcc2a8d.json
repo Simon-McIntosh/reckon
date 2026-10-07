@@ -1,0 +1,46 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery.py:1353 dispatch_review_for_run composes the reason into the awaiting-lane report",
+    "reckon/crew/recovery.py:1000 _record_review_dispatch writes it onto the run's own pointer",
+    "reckon/crew/resumption.py:936 reads the awaiting_lane outcome as a per-writer count"
+  ],
+  "completed_at": "2026-09-30T15:53:02.580Z",
+  "dispatched_at": "2026-09-30T15:39:41Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read over 20035bcc2a8d..663c30a6ef, 19 insertions and 4 deletions across 2 paths, both in scope; the recovery hunk appends a second `parts` entry built from `_review_in_harness_backends(config)` \u2014 the same set `_review_lane_candidates` filters before ordering at reckon/crew/recovery.py:1177 \u2014 and the test hunk adds the two assertions above while leaving the other three tests untouched.",
+    "done_when": "the done_when asks that the repair commit a change answering each finding and that its manifest name every finding by id as `acted <id>: <commit>` with none left unanswered; the manifest carries one line, `acted fbe05943601: 663c30a6ef52e95a46e2346f38e4c00aa6b7f1f6`, which is the 1-finding set in full, and the commit it names is the worktree head.",
+    "goal": "the goal is to repair finding fbe05943601 on run r-20260930T143654216516, and the diff at 663c30a6ef answers both halves of it \u2014 reckon/crew/recovery.py:1218 now appends the in-harness drop to the no-lane hold reason, and tests/test_a_review_never_runs_in_harness.py:246 asserts the reason names it.",
+    "manifest": "read; it states the gate command with both log paths and its result (tests/test_a_review_never_runs_in_harness.py, 4 passed, EXIT=0), and the negative-control log records the reverted hunk, the pre-fix reason text and the red assertion at EXIT=1.",
+    "write_paths": "read from the manifest's orientation block; the two paths the diff touches, reckon/crew/recovery.py and tests/test_a_review_never_runs_in_harness.py, are declared first, and the landing line states why the other two grants were not written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_never_runs_in_harness.py:246 reddens on exactly the reverted production hunk, with negative-control.log showing the pre-fix reason text, and the fixture declares launch \"in-harness\" literally at line 59 rather than through the constant the assertion reads.",
+    "evidence": "tests/test_a_review_never_runs_in_harness.py reads 4 passed at 663c30a6ef in the manifest's gate log and in an independent re-run, and negative-control.log reddens the assertion the finding named on the reverted hunk; the run's manifest carries no armed baseline_suite/after_suite pair, so no added-failure delta is derivable for it.",
+    "fit": "the new clause reuses the `parts.append` idiom and the IN_HARNESS_LAUNCH constant of the function it sits in at reckon/crew/recovery.py:1218, and its docstring states the mechanism rather than the finding.",
+    "goal_fidelity": "reckon/crew/recovery.py:1218-1224 names each rule that removed a lane, so the in-harness-only fleet the finding describes now reads a cause instead of a bare hold.",
+    "scope_discipline": "both changed paths are inside the declared write paths and the diff carries nothing else, the two unused grants (the evidence fragment and the figure directory) being left unwritten."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to repair finding fbe05943601 on run r-20260930T143654216516, and the diff at 663c30a6ef answers both halves of it \u2014 reckon/crew/recovery.py:1218 now appends the in-harness drop to the no-lane hold reason, and tests/test_a_review_never_runs_in_harness.py:246 asserts the reason names it.\nVERDICT done_when: the done_when asks that the repair commit a change answering each finding and that its manifest name every finding by id as `acted <id>: <commit>` with none left unanswered; the manifest carries one line, `acted fbe05943601: 663c30a6ef52e95a46e2346f38e4c00aa6b7f1f6`, which is the 1-finding set in full, and the commit it names is the worktree head.\nVERDICT write_paths: read from the manifest's orientation block; the two paths the diff touches, reckon/crew/recovery.py and tests/test_a_review_never_runs_in_harness.py, are declared first, and the landing line states why the other two grants were not written.\nVERDICT manifest: read; it states the gate command with both log paths and its result (tests/test_a_review_never_runs_in_harness.py, 4 passed, EXIT=0), and the negative-control log records the reverted hunk, the pre-fix reason text and the red assertion at EXIT=1.\nVERDICT diff: read over 20035bcc2a8d..663c30a6ef, 19 insertions and 4 deletions across 2 paths, both in scope; the recovery hunk appends a second `parts` entry built from `_review_in_harness_backends(config)` \u2014 the same set `_review_lane_candidates` filters before ordering at reckon/crew/recovery.py:1177 \u2014 and the test hunk adds the two assertions above while leaving the other three tests untouched.\nCALL_SITES: reckon/crew/recovery.py:1353 dispatch_review_for_run composes the reason into the awaiting-lane report, reckon/crew/recovery.py:1000 _record_review_dispatch writes it onto the run's own pointer, reckon/crew/resumption.py:936 reads the awaiting_lane outcome as a per-writer count\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:1218-1224 names each rule that removed a lane, so the in-harness-only fleet the finding describes now reads a cause instead of a bare hold.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_review_never_runs_in_harness.py reads 4 passed at 663c30a6ef in the manifest's gate log and in an independent re-run, and negative-control.log reddens the assertion the finding named on the reverted hunk; the run's manifest carries no armed baseline_suite/after_suite pair, so no added-failure delta is derivable for it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both changed paths are inside the declared write paths and the diff carries nothing else, the two unused grants (the evidence fragment and the figure directory) being left unwritten.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_review_never_runs_in_harness.py:246 reddens on exactly the reverted production hunk, with negative-control.log showing the pre-fix reason text, and the fixture declares launch \"in-harness\" literally at line 59 rather than through the constant the assertion reads.\nSCORE fit: 19\nJUSTIFICATION fit: the new clause reuses the `parts.append` idiom and the IN_HARNESS_LAUNCH constant of the function it sits in at reckon/crew/recovery.py:1218, and its docstring states the mechanism rather than the finding.",
+  "review_run_id": "r-20260930T153929421881-review-of-repair-of-a-review-never-runs-in-harness-20035bcc2a8d",
+  "reviewed_base_sha": "20035bcc2a8de5bc495e5ffdedb5389e6c9e23d5",
+  "reviewed_head_sha": "663c30a6ef52e95a46e2346f38e4c00aa6b7f1f6",
+  "reviewed_run_id": "r-20260930T152913120658-repair-of-a-review-never-runs-in-harness-20035bcc2a8d",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T15:50:54.760775+00:00",
+  "total": 95
+}

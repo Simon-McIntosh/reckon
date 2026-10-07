@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:30:31.877Z",
+  "dispatched_at": "2026-10-05T14:26:35Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:1034",
+      "id": "duplicate_owner-1",
+      "reason": "the author must either reconcile the comment-based and card-based landings on one recogniser or state in the section why they are distinct questions, before putting a second one beside the first.",
+      "text": "\u00a718 hoists the comment-based outstanding-sections reader into `reckon/_store.py`, but that module already owns the card-based landed-section recogniser `landed_section_ids(html_text)` (used by `plan_review.plan_fingerprint` at plan_review.py:425), and \u00a718 names neither it nor the relation between the two notions of \"landed\"; two disjoint definitions of a landed section placed in one module drift apart and a reader cannot tell which question each answers",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py:7212",
+      "id": "duplicate_owner-2",
+      "reason": "the author must move or reconcile the landing-comment notion and its prefix as part of the hoist, rather than forking a function whose dependency stays behind in another layer.",
+      "text": "\u00a718 hoists `_plan_remaining_sections` (promotion.py:7236) to `_store.py`, but that reader depends on `_landed_sections` and its `_LANDING_COMMENT_PREFIX = \"c-run-\"`, which already duplicates `plan_review.RUN_COMMENT_PREFIX` (plan_review.py:123); moving the reader alone leaves the hoisted `_store.py` public function importing the crew layer for a constant that has a core owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:368",
+      "id": "deep_module-1",
+      "reason": "keep the public function returning the one current digest and hold the form selection (current, pre-collapse, present whole-document) inside `_fingerprint_forms` or a private sibling, so the interface the call sites use does not grow.",
+      "text": "\u00a716 turns `plan_fingerprint(plan, *, legacy: bool)` into a three-valued named mode, yet every production caller passing a flag is the private `_fingerprint_forms` (plan_review.py:603) and the ~30 remaining call sites pass nothing; the multi-form set already has its single home, so widening the public function's signature adds surface over machinery the private helper owns",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:167",
+      "id": "interface_budget-1",
+      "reason": "either make the predicate module-private (keeping `public_definitions` flat) or add the one line \u00a718 already carries stating why a cross-module reader needs a public name.",
+      "text": "\u00a716 adds a public coverage predicate \"the gate and the sweep read\", but both consumers live in `reckon/crew/` alongside `plan_review.py`, unlike \u00a718 which explicitly justifies its public home as the price of a cross-module mechanism; the section states why nothing is retired yet not why the new definition cannot be module-private",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f5b31a9645f6784fd0e7e7707e2036d481a0eca3322ef32901755530eebe7a9a",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 76,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T142618216761-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "72771dbd42501e6a1a40add0960ecfc49bff5c56",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the section-set fingerprint widens the public `plan_fingerprint` signature to a three-valued mode that only the private `_fingerprint_forms` consumes, spreading one concept across two interfaces.",
+    "duplicate_owner": "a finding \u2014 \u00a718 adds a second \"which sections are still work\" mechanism to `reckon/_store.py`, which already owns a landed-section recogniser, and the plan does not name it.",
+    "interface_budget": "a finding \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds a public coverage definition whose consumers (the gate and the sweep) sit in the same `reckon/crew/` package and does not state why it cannot be module-private.",
+    "reuse_search": "pass \u2014 the design cites the owners it extends: \u00a717 names `_StructuredSectionSpanParser`/`structured_section_spans` in `reckon/_plan_html.py` and the store's `_section_heading`/`_section_body_end`, \u00a718 names `promotion._plan_remaining_sections` and `doccheck._implementable_section_ids`, and \u00a716 names `plan_fingerprint`/`_authored_prose`/`landed_section_ids`, so no scanner or reader is proposed where one exists.",
+    "thin_wrapper": "pass \u2014 \u00a716 states why the coverage predicate is not a wrapper over `read_plan_review` (it joins a set of outstanding sections to the union of stored digests) and \u00a717 extends the existing raw-text parser rather than adding a scanner, each with the honest-change justification the item asks for."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.895177+00:00"
+}

@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Measured: neither logs/baseline-suite.log nor logs/after-suite.log reports any FAILED or ERROR node id, so the set difference is empty. The same line-oriented extraction finds FAILED tests/test_summaries_list_live_and_recent_sprints.py::test_both_summaries_list_live_open_and_recently_closed in logs/negative-control-mutation.log, which is the positive control that the instrument reads a failure when one is present.",
+  "base_log_revision": "192aa9a4cca25fa3251d5d3d6ce786afc41a6491",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/roadmap.py:_build_roadmap",
+    "reckon/mcp.py:_discovery_summary",
+    "reckon/flight.py:validate_layer",
+    "reckon/flight.py:sprint_recent_days"
+  ],
+  "completed_at": "2026-09-29T21:44:17.103Z",
+  "dispatched_at": "2026-09-29T21:29:29Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "1116",
+      "text": "CLOSED_SPRINT_STATUSES is assigned at module level twice - here as {done, shipped} and again at line 1645 as {done, shipped, closed, archived} - and the later binding wins, so sprint_summary_rows never sees the summary's own two-member set: an archived or closed sprint is treated as closed, dropped when it carries no close date and ordered into the recently-closed bucket instead of the open one, contrary to the section rule that every sprint not done or shipped is listed."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "2094",
+      "text": "summary[\"sprints\"] is an int count, set at line 2068, for a project with no qualifying sprint and a list of row dicts for a project with one, so a single field carries two shapes and a consumer reading the count breaks on exactly the projects that have sprints; the roadmap side avoided this by exposing the rows on a new summary_sprints key."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204340453599-summaries-list-live-and-recent-sprints/logs/after-suite.log",
+      "line": "1",
+      "text": "The head arm's header records revision 192aa9a4, the dispatch base, beside the tree label worktree(after), so the 148-passed count is not tied to the reviewed head 685657cbc by the reviewed run's own evidence; the same base sha is repeated as after_suite.revision in the manifest."
+    }
+  ],
+  "gate_logs": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204340453599-summaries-list-live-and-recent-sprints/logs/after-suite.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204340453599-summaries-list-live-and-recent-sprints/logs/baseline-suite.log",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204340453599-summaries-list-live-and-recent-sprints/logs/negative-control-mutation.log"
+  },
+  "head_log_revision": "192aa9a4cca25fa3251d5d3d6ce786afc41a6491",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read commit by commit against the base: cffc63fd5 carries the builder, the flight window key, the discovery call and the test; 685657cbc adds only the evidence fragment.",
+    "done_when": "The done_when names a synthetic four-sprint ordering case and a response-budget reading; tests/test_summaries_list_live_and_recent_sprints.py:160 asserts the order on both surfaces and :206 asserts the budget, and the manifest records both results.",
+    "goal": "The node goal is that discovery and the roadmap summary both list open and recently closed sprints; reckon/mcp.py:2086 and reckon/roadmap.py:2831 feed one shared builder, and the head test asserts both surfaces return it.",
+    "manifest": "Read; it states 148 passed against a 143-passed baseline, names both gate logs and the negative-control log, and its stated totals reconcile with the logs it cites.",
+    "write_paths": "Read the manifest's declared paths; all six files in the diff sit inside them and nothing else changed between the base and the head."
+  },
+  "justifications": {
+    "durability": "The declared mutation reddens tests/test_summaries_list_live_and_recent_sprints.py:164 as logs/negative-control-mutation.log records, but every fixture sprint is active, planned, done or shipped, so the rebound set at reckon/roadmap.py:1116 and the int arm of reckon/mcp.py:2094 are unguarded.",
+    "evidence": "Both gate logs are on disk and end EXIT=0 with no FAILED or ERROR line, but the head arm's own header at logs/after-suite.log:1 records revision 192aa9a4, the dispatch base, beside the tree label worktree(after).",
+    "fit": "reckon/roadmap.py:1116 reintroduces the module-level name CLOSED_SPRINT_STATUSES that reckon/roadmap.py:1645 already owns, and reckon/mcp.py:2094 leaves summary[\"sprints\"] an int for a sprint-less project and a list otherwise, which is the two-shapes-for-one-read pattern this repository has already had to repair once.",
+    "goal_fidelity": "The shared builder returns the declared row shape at reckon/roadmap.py:1236 and both surfaces call it, but reckon/roadmap.py:1116 is rebound at :1645, so an archived or closed sprint is windowed as closed instead of listed as open.",
+    "scope_discipline": "git diff --stat 192aa9a4 685657cbc names exactly the six declared write paths, and no figure directory was created under the declared figures path."
+  },
+  "plan": "a-sprint-is-live-while-a-crew-works-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that discovery and the roadmap summary both list open and recently closed sprints; reckon/mcp.py:2086 and reckon/roadmap.py:2831 feed one shared builder, and the head test asserts both surfaces return it.\nVERDICT done_when: The done_when names a synthetic four-sprint ordering case and a response-budget reading; tests/test_summaries_list_live_and_recent_sprints.py:160 asserts the order on both surfaces and :206 asserts the budget, and the manifest records both results.\nVERDICT write_paths: Read the manifest's declared paths; all six files in the diff sit inside them and nothing else changed between the base and the head.\nVERDICT manifest: Read; it states 148 passed against a 143-passed baseline, names both gate logs and the negative-control log, and its stated totals reconcile with the logs it cites.\nVERDICT diff: Read commit by commit against the base: cffc63fd5 carries the builder, the flight window key, the discovery call and the test; 685657cbc adds only the evidence fragment.\nCALL_SITES: reckon/roadmap.py:_build_roadmap, reckon/mcp.py:_discovery_summary, reckon/flight.py:validate_layer, reckon/flight.py:sprint_recent_days\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: The shared builder returns the declared row shape at reckon/roadmap.py:1236 and both surfaces call it, but reckon/roadmap.py:1116 is rebound at :1645, so an archived or closed sprint is windowed as closed instead of listed as open.\nVERDICT call_sites: verified 4 production call site(s)\nSCORE evidence: 15\nJUSTIFICATION evidence: Both gate logs are on disk and end EXIT=0 with no FAILED or ERROR line, but the head arm's own header at logs/after-suite.log:1 records revision 192aa9a4, the dispatch base, beside the tree label worktree(after).\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: git diff --stat 192aa9a4 685657cbc names exactly the six declared write paths, and no figure directory was created under the declared figures path.\nSCORE durability: 13\nJUSTIFICATION durability: The declared mutation reddens tests/test_summaries_list_live_and_recent_sprints.py:164 as logs/negative-control-mutation.log records, but every fixture sprint is active, planned, done or shipped, so the rebound set at reckon/roadmap.py:1116 and the int arm of reckon/mcp.py:2094 are unguarded.\nSCORE fit: 12\nJUSTIFICATION fit: reckon/roadmap.py:1116 reintroduces the module-level name CLOSED_SPRINT_STATUSES that reckon/roadmap.py:1645 already owns, and reckon/mcp.py:2094 leaves summary[\"sprints\"] an int for a sprint-less project and a list otherwise, which is the two-shapes-for-one-read pattern this repository has already had to repair once.\nFINDING reckon/roadmap.py:1116 CLOSED_SPRINT_STATUSES is assigned at module level twice - here as {done, shipped} and again at line 1645 as {done, shipped, closed, archived} - and the later binding wins, so sprint_summary_rows never sees the summary's own two-member set: an archived or closed sprint is treated as closed, dropped when it carries no close date and ordered into the recently-closed bucket instead of the open one, contrary to the section rule that every sprint not done or shipped is listed.\nFINDING reckon/mcp.py:2094 summary[\"sprints\"] is an int count, set at line 2068, for a project with no qualifying sprint and a list of row dicts for a project with one, so a single field carries two shapes and a consumer reading the count breaks on exactly the projects that have sprints; the roadmap side avoided this by exposing the rows on a new summary_sprints key.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T204340453599-summaries-list-live-and-recent-sprints/logs/after-suite.log:1 The head arm's header records revision 192aa9a4, the dispatch base, beside the tree label worktree(after), so the 148-passed count is not tied to the reviewed head 685657cbc by the reviewed run's own evidence; the same base sha is repeated as after_suite.revision in the manifest.\n",
+  "review_node": "review-of-summaries-list-live-and-recent-sprints",
+  "review_run_id": "r-20260929T212907518895-review-of-summaries-list-live-and-recent-sprints",
+  "reviewed_base_sha": "192aa9a4cca25fa3251d5d3d6ce786afc41a6491",
+  "reviewed_head_sha": "685657cbcd28417d6e3d75eba9a1259cc4c55e48",
+  "reviewed_run_id": "r-20260929T204340453599-summaries-list-live-and-recent-sprints",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 12,
+    "goal_fidelity": 14,
+    "scope_discipline": 16
+  },
+  "section": "s3",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:02.929001+00:00",
+  "total": 70
+}

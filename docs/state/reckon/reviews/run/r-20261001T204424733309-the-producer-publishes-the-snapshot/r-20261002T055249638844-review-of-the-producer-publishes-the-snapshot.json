@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3fadeb60e5d96c0ec4009c570947145937abbc59",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/runs.py:list_live",
+    "reckon/crew/runs.py:_project_watch_claim"
+  ],
+  "completed_at": "2026-10-02T06:20:10.235Z",
+  "dispatched_at": "2026-10-02T05:53:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "178",
+      "severity": "follow-on",
+      "text": "follow-on: _process_is_running is defined but never called, and _records_the_live_producer at line 188 compares only the recorded start time, so the zombie exclusion the function's own comment describes is not applied and a zombie producer still carrying its start time reads as fresh; _NOT_FRESH_REASONS at line 54 is likewise defined and never referenced."
+    },
+    {
+      "file": "tests/test_obligations_snapshot_is_published.py",
+      "line": "204",
+      "severity": "follow-on",
+      "text": "follow-on: the trailing comment marker __T5__ names no mechanism and appears nowhere else in the repository, so it reads as a deliverable-id token leaked into a source comment rather than a description of the assertion."
+    }
+  ],
+  "head_log_revision": "615933def45f82128e11239f906cc2124a1e5017",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 7790fdcba27985e67ae598f4d4c5176b5134f994 against 3fadeb60e5d96c0ec4009c570947145937abbc59; four files, 1016 insertions and 16 deletions \u2014 reckon/crew/obligation_snapshot.py (new, 483 lines), reckon/crew/runs.py (producer wiring and a re-entrancy guard), tests/test_obligations_snapshot_is_published.py (new, 341 lines, six cases) and the evidence fragment.",
+    "done_when": "the done_when names a new tests/test_obligations_snapshot_is_published.py plus every tests/ file naming runs.watch, watch_registration, obligations( or crew watch, run at base and head with the added-failure set stated; the manifest records both arms with revisions and log paths and the six new cases, and the two arms' failure id sets are identical so none is added.",
+    "goal": "the node's goal is to land the plan's \u00a72 producer publish: every registered session's obligations snapshot written through a new module carrying the atomic writer, the reader and the freshness rule; reckon/crew/obligation_snapshot.py:432 sweep() derives and publishes; the producer reaches it through reckon/crew/runs.py:1571 _publish_obligation_snapshots on each sweep.",
+    "manifest": "read; it records status complete, both gate arms (baseline 3fadeb60e, head 615933def) with literal commands, log paths, completed true; the added-failure count derived from the two logs is zero (identical nine-id sets); the declared negative control is named and its log present; follow_ons lists the nine untouched pre-existing failures.",
+    "write_paths": "the declared write paths are reckon/crew/obligation_snapshot.py, reckon/crew/runs.py, tests/test_obligations_snapshot_is_published.py, an evidence fragment under docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/ and a docs/figures directory; the diff touches the module, runs.py, the test and the fragment, every one inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_obligations_snapshot_is_published.py:178 asserts the stored snapshot's live_payload equals an independent obligations() call, :212 injects a rename failure and asserts the previous snapshot survives, :264 covers pid reuse and each not-fresh reason, and :53 is falsified by the recorded negative control.",
+    "evidence": "the manifest's baseline_suite and after_suite name both gate logs (gate/base-xdist.log, gate/head-xdist.log) and their revisions, and the two logs' failure-id sets are id-for-id identical so the added-failure count is zero; the declared negative control at negative-control.log shows the import case failing under the mutation (['reckon._plan_html']) with EXIT=1; the manifest's after_suite.failure_ids is written as prose rather than the id list the field names, which is a shape wart the logs make up for.",
+    "fit": "the module mirrors the existing follower_code_stamp algorithm and the surrounding crew idiom and introduces no banned name, but reckon/crew/obligation_snapshot.py:178 _process_is_running and :54 _NOT_FRESH_REASONS are dead, and the test carries a bare marker at tests/test_obligations_snapshot_is_published.py:204.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:432 sweep() writes each registered session's snapshot atomically (write_snapshot:365) on the three triggers \u00a72 names, and reckon/crew/runs.py:1571 _publish_obligation_snapshots drives it from the watch producer, matching the plan's \u00a72 and \u00a73.",
+    "scope_discipline": "every path in reckon/crew/runs.py, reckon/crew/obligation_snapshot.py, tests/test_obligations_snapshot_is_published.py and the fragment is a declared write path; the only out-of-change lines are two incidental ruff reformats (renew_producer_lease and the watch_producer_identity detail string) carried in the same file the change edits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to land the plan's \u00a72 producer publish: every registered session's obligations snapshot written through a new module carrying the atomic writer, the reader and the freshness rule; reckon/crew/obligation_snapshot.py:432 sweep() derives and publishes; the producer reaches it through reckon/crew/runs.py:1571 _publish_obligation_snapshots on each sweep.\nVERDICT done_when: the done_when names a new tests/test_obligations_snapshot_is_published.py plus every tests/ file naming runs.watch, watch_registration, obligations( or crew watch, run at base and head with the added-failure set stated; the manifest records both arms with revisions and log paths and the six new cases, and the two arms' failure id sets are identical so none is added.\nVERDICT write_paths: the declared write paths are reckon/crew/obligation_snapshot.py, reckon/crew/runs.py, tests/test_obligations_snapshot_is_published.py, an evidence fragment under docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/ and a docs/figures directory; the diff touches the module, runs.py, the test and the fragment, every one inside them.\nVERDICT manifest: read; it records status complete, both gate arms (baseline 3fadeb60e, head 615933def) with literal commands, log paths, completed true; the added-failure count derived from the two logs is zero (identical nine-id sets); the declared negative control is named and its log present; follow_ons lists the nine untouched pre-existing failures.\nVERDICT diff: read 7790fdcba27985e67ae598f4d4c5176b5134f994 against 3fadeb60e5d96c0ec4009c570947145937abbc59; four files, 1016 insertions and 16 deletions \u2014 reckon/crew/obligation_snapshot.py (new, 483 lines), reckon/crew/runs.py (producer wiring and a re-entrancy guard), tests/test_obligations_snapshot_is_published.py (new, 341 lines, six cases) and the evidence fragment.\nCALL_SITES: reckon/crew/runs.py:list_live, reckon/crew/runs.py:_project_watch_claim\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:432 sweep() writes each registered session's snapshot atomically (write_snapshot:365) on the three triggers \u00a72 names, and reckon/crew/runs.py:1571 _publish_obligation_snapshots drives it from the watch producer, matching the plan's \u00a72 and \u00a73.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite name both gate logs (gate/base-xdist.log, gate/head-xdist.log) and their revisions, and the two logs' failure-id sets are id-for-id identical so the added-failure count is zero; the declared negative control at negative-control.log shows the import case failing under the mutation (['reckon._plan_html']) with EXIT=1; the manifest's after_suite.failure_ids is written as prose rather than the id list the field names, which is a shape wart the logs make up for.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in reckon/crew/runs.py, reckon/crew/obligation_snapshot.py, tests/test_obligations_snapshot_is_published.py and the fragment is a declared write path; the only out-of-change lines are two incidental ruff reformats (renew_producer_lease and the watch_producer_identity detail string) carried in the same file the change edits.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_obligations_snapshot_is_published.py:178 asserts the stored snapshot's live_payload equals an independent obligations() call, :212 injects a rename failure and asserts the previous snapshot survives, :264 covers pid reuse and each not-fresh reason, and :53 is falsified by the recorded negative control.\nSCORE fit: 17\nJUSTIFICATION fit: the module mirrors the existing follower_code_stamp algorithm and the surrounding crew idiom and introduces no banned name, but reckon/crew/obligation_snapshot.py:178 _process_is_running and :54 _NOT_FRESH_REASONS are dead, and the test carries a bare marker at tests/test_obligations_snapshot_is_published.py:204.\nFINDING reckon/crew/obligation_snapshot.py:178 follow-on: _process_is_running is defined but never called, and _records_the_live_producer at line 188 compares only the recorded start time, so the zombie exclusion the function's own comment describes is not applied and a zombie producer still carrying its start time reads as fresh; _NOT_FRESH_REASONS at line 54 is likewise defined and never referenced.\nFINDING tests/test_obligations_snapshot_is_published.py:204 follow-on: the trailing comment marker __T5__ names no mechanism and appears nowhere else in the repository, so it reads as a deliverable-id token leaked into a source comment rather than a description of the assertion.",
+  "review_run_id": "r-20261002T055249638844-review-of-the-producer-publishes-the-snapshot",
+  "reviewed_base_sha": "3fadeb60e5d96c0ec4009c570947145937abbc59",
+  "reviewed_head_sha": "7790fdcba27985e67ae598f4d4c5176b5134f994",
+  "reviewed_run_id": "r-20261001T204424733309-the-producer-publishes-the-snapshot",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T06:12:29.732553+00:00",
+  "total": 90
+}

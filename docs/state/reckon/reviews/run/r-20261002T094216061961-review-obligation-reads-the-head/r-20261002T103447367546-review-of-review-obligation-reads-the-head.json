@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:_crew",
+    "reckon/hooks/coordinator_obligations.py:resolve"
+  ],
+  "completed_at": "2026-10-02T10:55:49.345Z",
+  "dispatched_at": "2026-10-02T10:35:09Z",
+  "findings": [
+    {
+      "file": "tests/test_review_obligation_reads_the_head.py",
+      "line": "154",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when states each case fails before the change, but the current-head case passes at the base arm (base-gate.log records 1 failed, the moved-head id only) and the moved-head case fails at base only on the absent reviewed_head key (the base classifier already read review-missing, not review-ready), so the reported review-ready-at-a-moved-head defect is exercised only by the declared negative control and not by the base arm."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "261",
+      "severity": "follow-on",
+      "text": "follow-on: the promotable-stale-versus-review-ready decision is encoded twice, in the _classification_kind closure at line 239 and again in the review-complete branch at line 261, so the two can drift; and the elif at line 262 re-checks not same_revision, a condition select_review_for_head already guaranteed when it returns a described head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 4d0c843e; 8de4ca55b adds _review_duty_item and routes the scoring/promotable rows through it in obligations.py (+94/-10) with the 169-line test, and ad89adb03 adds the 54-line evidence fragment; nothing outside the declared paths changed.",
+    "done_when": "the done-when names a moved-head case reading review-missing naming both heads (tests/test_review_obligation_reads_the_head.py:133, asserting kind, reviewed_head and head) and a current-head case reading review-ready (line 154); both pass at head (logs/head-gate.log, 149 passed) but only the moved-head case fails at base (logs/base-gate.log, 1 failed + 148 passed), so the done-when clause \"each case fails before the change\" is not met.",
+    "goal": "the node goal is that the review-ready and review-missing duties read the review select_review_for_head selects for the run's current worktree head, and reckon/crew/obligations.py:211 _review_duty_item reads exactly that selector (recovery.select_review_for_head, the same call promotion uses at reckon/crew/promotion.py:6163) for the head _review_head_and_tree returns from the live pointer.",
+    "manifest": "read; status complete, records commits 8de4ca55b and ad89adb03, a base arm at 4d0c843e (1 failed, 148 passed) and a head arm at 8de4ca55b (149 passed, EXIT=0), each log naming its revision on line 1 and ending with a bare EXIT= line; negative_control_log names gate-negative-control.log (EXIT=1).",
+    "write_paths": "the declared paths are reckon/crew/obligations.py, tests/test_review_obligation_reads_the_head.py and the evidence fragment; the base..head diff touches exactly those three, and the declared docs/figures directory is unemitted."
+  },
+  "justifications": {
+    "durability": "the moved-head case at tests/test_review_obligation_reads_the_head.py:133 fails if _review_duty_item is reverted (base arm, KeyError reviewed_head) and the declared mutation that ignores the head reddens it via review-ready (gate-negative-control.log, EXIT=1), while the current-head case guards nothing at base.",
+    "evidence": "the gate ran the new test plus the 17 tests/ files the text search returns (18 total) at base and head with complete logs and EXIT= lines, but its base arm shows the current-head case passing, so the done-when's \"each case fails before the change\" is not asserted by the gate.",
+    "fit": "_review_duty_item follows the _live_item idiom of reckon/crew/obligations.py:208 and reuses the shared selector rather than writing a second one, leaving only the promotable/grace decision duplicated between the closure at line 239 and the branch at line 261.",
+    "goal_fidelity": "reckon/crew/obligations.py:211 _review_duty_item reads recovery.select_review_for_head for the run's current head and emits review-missing with both heads when the stored record describes another revision, which is the goal.",
+    "scope_discipline": "the base..head diff is confined to reckon/crew/obligations.py, tests/test_review_obligation_reads_the_head.py and the declared evidence fragment, so the change stays inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the review-ready and review-missing duties read the review select_review_for_head selects for the run's current worktree head, and reckon/crew/obligations.py:211 _review_duty_item reads exactly that selector (recovery.select_review_for_head, the same call promotion uses at reckon/crew/promotion.py:6163) for the head _review_head_and_tree returns from the live pointer.\nVERDICT done_when: the done-when names a moved-head case reading review-missing naming both heads (tests/test_review_obligation_reads_the_head.py:133, asserting kind, reviewed_head and head) and a current-head case reading review-ready (line 154); both pass at head (logs/head-gate.log, 149 passed) but only the moved-head case fails at base (logs/base-gate.log, 1 failed + 148 passed), so the done-when clause \"each case fails before the change\" is not met.\nVERDICT write_paths: the declared paths are reckon/crew/obligations.py, tests/test_review_obligation_reads_the_head.py and the evidence fragment; the base..head diff touches exactly those three, and the declared docs/figures directory is unemitted.\nVERDICT manifest: read; status complete, records commits 8de4ca55b and ad89adb03, a base arm at 4d0c843e (1 failed, 148 passed) and a head arm at 8de4ca55b (149 passed, EXIT=0), each log naming its revision on line 1 and ending with a bare EXIT= line; negative_control_log names gate-negative-control.log (EXIT=1).\nVERDICT diff: read commit by commit against base 4d0c843e; 8de4ca55b adds _review_duty_item and routes the scoring/promotable rows through it in obligations.py (+94/-10) with the 169-line test, and ad89adb03 adds the 54-line evidence fragment; nothing outside the declared paths changed.\nCALL_SITES: reckon/mcp.py:_crew, reckon/hooks/coordinator_obligations.py:resolve\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:211 _review_duty_item reads recovery.select_review_for_head for the run's current head and emits review-missing with both heads when the stored record describes another revision, which is the goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate ran the new test plus the 17 tests/ files the text search returns (18 total) at base and head with complete logs and EXIT= lines, but its base arm shows the current-head case passing, so the done-when's \"each case fails before the change\" is not asserted by the gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the base..head diff is confined to reckon/crew/obligations.py, tests/test_review_obligation_reads_the_head.py and the declared evidence fragment, so the change stays inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the moved-head case at tests/test_review_obligation_reads_the_head.py:133 fails if _review_duty_item is reverted (base arm, KeyError reviewed_head) and the declared mutation that ignores the head reddens it via review-ready (gate-negative-control.log, EXIT=1), while the current-head case guards nothing at base.\nSCORE fit: 18\nJUSTIFICATION fit: _review_duty_item follows the _live_item idiom of reckon/crew/obligations.py:208 and reuses the shared selector rather than writing a second one, leaving only the promotable/grace decision duplicated between the closure at line 239 and the branch at line 261.\nFINDING tests/test_review_obligation_reads_the_head.py:154 follow-on: the done-when states each case fails before the change, but the current-head case passes at the base arm (base-gate.log records 1 failed, the moved-head id only) and the moved-head case fails at base only on the absent reviewed_head key (the base classifier already read review-missing, not review-ready), so the reported review-ready-at-a-moved-head defect is exercised only by the declared negative control and not by the base arm.\nFINDING reckon/crew/obligations.py:261 follow-on: the promotable-stale-versus-review-ready decision is encoded twice, in the _classification_kind closure at line 239 and again in the review-complete branch at line 261, so the two can drift; and the elif at line 262 re-checks not same_revision, a condition select_review_for_head already guaranteed when it returns a described head.\n",
+  "review_run_id": "r-20261002T103447367546-review-of-review-obligation-reads-the-head",
+  "reviewed_base_sha": "4d0c843ecaf49c5c5254c17a052444d6390f653d",
+  "reviewed_head_sha": "ad89adb03fadfea3f1735cf058f037166041b357",
+  "reviewed_run_id": "r-20261002T094216061961-review-obligation-reads-the-head",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T10:51:42.792731+00:00",
+  "total": 90
+}

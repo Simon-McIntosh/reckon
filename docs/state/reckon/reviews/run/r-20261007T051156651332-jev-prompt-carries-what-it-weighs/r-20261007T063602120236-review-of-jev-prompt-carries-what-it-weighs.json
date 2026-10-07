@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived from the reviewed run's own gate logs: baseline_suite (rev 352ff827e) exit_status 0, completed true, failure_count 0, failure_ids []; after_suite (rev 8e5f22d6b) exit_status 0, completed true, failure_count 0, failure_ids []. Head minus base is the empty set, so added_failure_count 0 and added_failure_ids [].",
+  "base_log_revision": "352ff827e7fdb0fb3e01bd9420b5bee8dd74168c",
+  "completed_at": "2026-10-07T06:54:01.216Z",
+  "dispatched_at": "2026-10-07T06:36:24Z",
+  "findings": [],
+  "head_log_revision": "8e5f22d6b9fd3b16015f551df273968a63818b6e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against base 352ff827e; 5b859be9c renders state and questions from Python mappings (prompts.py, both templates) and updates the three picker tests that pinned the old literal layout; 8e5f22d6b lands the evidence fragment. Everything in the delta is inside the declared scope.",
+    "done_when": "the done_when names five items: one Python mapping rendered through a single tojson per template, the node/candidate field set, per-candidate lane and model beside backend, a questions glossary, hostile-text tests, and a before/after token estimate. All five are present at head; the manifest records gate base 192 passed EXIT=0 and head 201 passed EXIT=0 (0 added failures), the declared negative control at EXIT=1, and representative-state tokens 1175 before / 1478 after against the 1500 bound.",
+    "goal": "the node's goal is that Jev's prompt carries every fact its instructions ask it to weigh in a format that cannot break; the delta builds one Python mapping per template at reckon/crew/picker/prompts.py:96 (build_state) and :155 (build_questions) and renders each through a single tojson filter (prompts.py:90) over state.jinja and questions.jinja, so a value travels as JSON data and cannot add a key or close a brace.",
+    "manifest": "read; it records commits 5b859be9c and 8e5f22d6b, the gate 201 passed EXIT=0 over base 192 passed EXIT=0, the negative control at EXIT=1 naming test_every_fact_the_instructions_name_is_present, the token estimate log, and a complete status.",
+    "write_paths": "the manifest declares the two picker templates, reckon/crew/picker/prompts.py, __init__.py, types.py, the five picker test files and the evidence fragment; every path in the 352ff827e..8e5f22d6b delta (prompts.py, state.jinja, questions.jinja, tests/test_picker.py, tests/test_picker_pressure.py, tests/test_picker_return_time.py, tests/test_*jev*, the fragment) is inside them, and types.py/__init__.py were left untouched though granted."
+  },
+  "justifications": {
+    "durability": "the declared negative control (drop stale and budget_age_s from the rendered state) produced a red log at EXIT=1 with three failing ids headed by test_every_fact_the_instructions_name_is_present, which the head arm passes (EXIT=0), so the guard is shown to fire rather than merely to pass.",
+    "evidence": "tests/test_jev_prompt_carries_what_it_weighs.py carries the named cases: test_hostile_text_stays_a_string_and_cannot_add_structure, test_hostile_text_is_escaped_in_the_raw_rendering, test_hostile_candidate_values_cannot_break_the_questions, test_background_fields_render_when_present_and_null_when_absent, test_every_fact_the_instructions_name_is_present and test_questions_explain_every_weighed_field; my re-run of tests/test_jev_prompt_carries_what_it_weighs.py with tests/test_picker.py gave 39 passed EXIT=0. One small deduction: test_picker.py:280 changed test_missing_live_fact_raises from UndefinedError to AttributeError, a semantic change beyond the old-literal-layout updates the brief scoped, though a necessary consequence of building the mapping in Python and still a loud raise on a missing fact.",
+    "fit": "the change extends render() in prompts.py and reuses lane_context.build and the Candidate dataclass; the templates now hold only static prose and a single tojson, which is the shape the brief asked for. Minor: the missing-fact guard is now a bare attribute access, so its failure mode reads AttributeError rather than a template UndefinedError.",
+    "goal_fidelity": "prompts.py:96 build_state emits the node facts (write_path_count, negative_control_declared), each candidate's lane (family) and model as separate fields beside backend, and the four budget fields read with getattr so an absent reading renders null; prompts.py:155 build_questions emits the glossary; state.jinja:1 and questions.jinja:5 render their mapping through one tojson each, so no literal comma or brace can desync the structure.",
+    "reuse": "no new capability is duplicated: lane_context.build still derives return_times and local_lane, the existing json filter is aliased to tojson rather than reimplemented, and no new dependency is added.",
+    "scope_discipline": "all four product/test paths and the fragment in the delta are inside the declared write paths; the granted types.py and __init__.py are untouched and no concurrent node's paths were modified."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Jev's prompt carries every fact its instructions name in a format that cannot break; the delta builds one Python mapping per template (prompts.py:96 build_state, :155 build_questions) rendered through one tojson each.\nVERDICT done_when: all five done-when items present at head; gate base 192 passed EXIT=0, head 201 passed EXIT=0, 0 added failures; negative control EXIT=1; tokens 1175->1478 against the 1500 bound.\nVERDICT write_paths: every path in the 352ff827e..8e5f22d6b delta is inside the declared write paths; types.py and __init__.py untouched though granted.\nVERDICT manifest: read; commits 5b859be9c and 8e5f22d6b, gate 201/192 EXIT=0, negative control at EXIT=1, status complete.\nVERDICT diff: two commits against 352ff827e; the code commit renders state and questions from Python mappings and updates three picker tests, the second lands the evidence fragment.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: build_state emits node write_path_count and negative_control_declared, each candidate's lane and model beside backend, and the four budget fields read with getattr so an absent reading is null; both templates render one tojson of their mapping, so a value cannot add a key or close a brace.\nSCORE evidence: 19\nJUSTIFICATION evidence: the new test file covers hostile text, structure, null-when-absent and the glossary; my re-run of tests/test_jev_prompt_carries_what_it_weighs.py with tests/test_picker.py gave 39 passed EXIT=0; the only deduction is the UndefinedError->AttributeError change in test_missing_live_fact_raises, a necessary but out-of-brief-literal change.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all delta paths are inside the declared write paths and no concurrent node's paths were touched.\nSCORE durability: 20\nJUSTIFICATION durability: the declared negative control produced EXIT=1 with test_every_fact_the_instructions_name_is_present failing, which the head arm passes, so the guard is shown to fire.\nSCORE fit: 19\nJUSTIFICATION fit: the change extends render() and reuses lane_context.build and Candidate; the missing-fact guard is now a bare attribute access (AttributeError) rather than a template UndefinedError.\nSCORE reuse: 20\nJUSTIFICATION reuse: lane_context.build still derives return_times and local_lane, the json filter is aliased to tojson, and no dependency is added.",
+  "review_run_id": "r-20261007T063602120236-review-of-jev-prompt-carries-what-it-weighs",
+  "reviewed_base_sha": "352ff827e7fdb0fb3e01bd9420b5bee8dd74168c",
+  "reviewed_head_sha": "8e5f22d6b9fd3b16015f551df273968a63818b6e",
+  "reviewed_run_id": "r-20261007T051156651332-jev-prompt-carries-what-it-weighs",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:46:00+00:00",
+  "total": 118
+}

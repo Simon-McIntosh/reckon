@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "1c20ca680a2b35119f6256431c5c62ef53b7bc34",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/repair.py:99 review_findings"
+  ],
+  "completed_at": "2026-09-30T22:09:11.536Z",
+  "dispatched_at": "2026-09-30T22:02:23Z",
+  "findings": [],
+  "head_log_revision": "6d0a0ad67fa171a77b47ae195b70fd471eae07f0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "three commits over 1c20ca68 - 58c9f21b5 feat, 970f9dd14 style, 6d0a0ad67 docs - 407 insertions and 6 deletions across four paths, of which review.py adds the vocabulary constant, the _stated_severity helper and the conditional severity key, and rewrites no finding's file, line or text.",
+    "done_when": "the fence names the new test plus three readers at base and head, a base reproduction, a declared control, per-arm JSON and header-and-EXIT logs; the manifest records base 15 passed EXIT=0 and head 25 passed EXIT=0 with no added id, logs/repro-base.out shows the blocking finding parsing to ['file','line','text'] at base while its score still parses as a positive control, and the fragment records the change.",
+    "goal": "the goal asks for one declared severity vocabulary whose blocking value is named explicitly, the parser reading it into its own field, and no severity on a finding that states none; at 6d0a0ad67 reckon/crew/review.py:114 declares FINDING_SEVERITIES = (\"blocking\", \"follow-on\") with BLOCKING_FINDING_SEVERITY at :115, reckon/crew/prompts/review.md:100 teaches the emission form with both values, and _stated_severity at review.py:294 records a value only for a declared opening word.",
+    "manifest": "read at the run directory as manifest.md, status complete; baseline_suite and after_suite carry completed true, failure_count 0 and literal absolute-path commands, and each arm log names its revision on the first line and ends with a bare EXIT= line.",
+    "write_paths": "the declared scope is reckon/crew/review.py, reckon/crew/prompts/review.md, the new test and the fragment plus an unused figures path; the diff touches exactly those four files, all inside the grant, and no peer path was touched."
+  },
+  "justifications": {
+    "durability": "the declared control reddens five cases including the blocking one (logs/negative-control.log, 5 failed, 5 passed, EXIT=1), though test_every_declared_severity_parses_to_its_own_value at tests/test_a_finding_says_whether_it_blocks.py:59 takes its case set from FINDING_SEVERITIES itself, so the prompt-text pin at :144 is what holds the other side.",
+    "evidence": "the base reproduction at logs/repro-base.out, the head round-trip at tests/test_a_finding_says_whether_it_blocks.py:161 and the declared control are all recorded, but the plan's \"the ten existing records keep parsing\" is asserted against synthetic shapes at tests/test_a_finding_says_whether_it_blocks.py:133 rather than against the stored records themselves.",
+    "fit": "the constant and helper follow the module's own tuple-and-regex idiom at reckon/crew/review.py:114, names state the mechanism, and the three commits are conventional with bodies and carry no attribution or plan identifier.",
+    "goal_fidelity": "reckon/crew/review.py:114 declares the vocabulary once and names the blocking value on its own at :115, _stated_severity at :294 records a value only when the opening word is declared, and tests/test_a_finding_says_whether_it_blocks.py:82 asserts a finding with no word carries no severity key.",
+    "scope_discipline": "the diff touches exactly reckon/crew/review.py, reckon/crew/prompts/review.md, tests/test_a_finding_says_whether_it_blocks.py and the fragment, all inside the declared paths, with the declared figures path unused and no peer path touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks for one declared severity vocabulary whose blocking value is named explicitly, the parser reading it into its own field, and no severity on a finding that states none; at 6d0a0ad67 reckon/crew/review.py:114 declares FINDING_SEVERITIES = (\"blocking\", \"follow-on\") with BLOCKING_FINDING_SEVERITY at :115, reckon/crew/prompts/review.md:100 teaches the emission form with both values, and _stated_severity at review.py:294 records a value only for a declared opening word.\nVERDICT done_when: the fence names the new test plus three readers at base and head, a base reproduction, a declared control, per-arm JSON and header-and-EXIT logs; the manifest records base 15 passed EXIT=0 and head 25 passed EXIT=0 with no added id, logs/repro-base.out shows the blocking finding parsing to ['file','line','text'] at base while its score still parses as a positive control, and the fragment records the change.\nVERDICT write_paths: the declared scope is reckon/crew/review.py, reckon/crew/prompts/review.md, the new test and the fragment plus an unused figures path; the diff touches exactly those four files, all inside the grant, and no peer path was touched.\nVERDICT manifest: read at the run directory as manifest.md, status complete; baseline_suite and after_suite carry completed true, failure_count 0 and literal absolute-path commands, and each arm log names its revision on the first line and ends with a bare EXIT= line.\nVERDICT diff: three commits over 1c20ca68 - 58c9f21b5 feat, 970f9dd14 style, 6d0a0ad67 docs - 407 insertions and 6 deletions across four paths, of which review.py adds the vocabulary constant, the _stated_severity helper and the conditional severity key, and rewrites no finding's file, line or text.\nCALL_SITES: reckon/crew/repair.py:99 review_findings\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:114 declares the vocabulary once and names the blocking value on its own at :115, _stated_severity at :294 records a value only when the opening word is declared, and tests/test_a_finding_says_whether_it_blocks.py:82 asserts a finding with no word carries no severity key.\nSCORE evidence: 19\nJUSTIFICATION evidence: the base reproduction at logs/repro-base.out, the head round-trip at tests/test_a_finding_says_whether_it_blocks.py:161 and the declared control are all recorded, but the plan's \"the ten existing records keep parsing\" is asserted against synthetic shapes at tests/test_a_finding_says_whether_it_blocks.py:133 rather than against the stored records themselves.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly reckon/crew/review.py, reckon/crew/prompts/review.md, tests/test_a_finding_says_whether_it_blocks.py and the fragment, all inside the declared paths, with the declared figures path unused and no peer path touched.\nSCORE durability: 19\nJUSTIFICATION durability: the declared control reddens five cases including the blocking one (logs/negative-control.log, 5 failed, 5 passed, EXIT=1), though test_every_declared_severity_parses_to_its_own_value at tests/test_a_finding_says_whether_it_blocks.py:59 takes its case set from FINDING_SEVERITIES itself, so the prompt-text pin at :144 is what holds the other side.\nSCORE fit: 20\nJUSTIFICATION fit: the constant and helper follow the module's own tuple-and-regex idiom at reckon/crew/review.py:114, names state the mechanism, and the three commits are conventional with bodies and carry no attribution or plan identifier.",
+  "review_run_id": "r-20260930T220207308064-review-of-a-finding-says-whether-it-blocks",
+  "reviewed_base_sha": "1c20ca680a2b35119f6256431c5c62ef53b7bc34",
+  "reviewed_head_sha": "6d0a0ad67fa171a77b47ae195b70fd471eae07f0",
+  "reviewed_run_id": "r-20260930T213947598269-a-finding-says-whether-it-blocks",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T00:25:00.000000+00:00",
+  "total": 98
+}

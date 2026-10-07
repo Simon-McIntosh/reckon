@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:crew_complete",
+    "reckon/crew/promotion.py:complete",
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/promotion.py:_release_after_promotion",
+    "reckon/crew/promotion.py:_release_run_workspace"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T08:15:30.112694+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2924",
+      "text": "the release withholds whenever _resume_worktree_retention (promotion.py:2813) returns a record, and a real run always resolves a session \u2014 of four live pointers probed, each of the three whose worktree still exists resolved one (one from the pointer, two through the stream fallback) \u2014 so the removal branch is reachable only by a record with no session id and no readable stream, the state the new test's clean fixture is built in, and the fleet problem the node exists for is untouched."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "3013",
+      "text": "the gate guard returns before _release_run_workspace, so a failed promotion no longer signals a leftover writer's process group and no longer carries worktree_audit; the same call at base signalled for that verdict, and no case in the module records a pid, so the change is unmeasured either way."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read hunk by hunk against 6daecfc1; three behaviours change in promotion.py \u2014 the own-claim exclusion, the gate guard that returns before the release, and the release outcome written onto the ledger row through a bounded amend-retry that rolls back and reports ledger_recorded false when it exhausts, so a failed record cannot masquerade as a successful one.",
+    "done_when": "the named gate is green at head \u2014 re-run from the reviewed worktree, 1 passed, exit 0, recheck-gate.log \u2014 and the module asserts on-disk state, the recorded reason and the stored row for all five cases; the declared mutation removes the live-pointer check and reddens the live-reference case at tests/test_promotion_releases_its_worktree.py:184 while the other four stay green.",
+    "goal": "read against the five cases the node's spec names; a failed gate keeps its tree with the reason \"not passing\" (promotion.py:3012-3020), the promoted run no longer withholds its own tree through its own live claim (promotion.py:2937-2942), and the decision lands on the committed ledger row (promotion.py:3033-3099) \u2014 but the removal case the spec names first cannot fire for a real run, because a recoverable session always yields a retention record (promotion.py:2813) and the release withholds before any classification runs (promotion.py:2924); the guard's blocked half is unreachable too, since complete() validates the verdict against ledger.GATE_VERDICTS, which holds passed, failed and not-run.",
+    "manifest": "read in full; commits, changed_paths, measurement_module and measurement_cwd, negative_control_log with its note, and both suite arms carrying their revisions and log paths are present, and every named log exists on disk.",
+    "write_paths": "the manifest declares five paths and c676b011 touches exactly four of them \u2014 the declared figures directory is untouched; promotion.py 105+/1-, tests/test_promotion_releases_its_worktree.py 199+/0, and both cumulative documents appended to (evidence 34+/1, the single deletion a trailing-newline repair on a closing tag; plan 15+/0)."
+  },
+  "justifications": {
+    "durability": "five cases assert on-disk state, the recorded reason and the stored row, and the live-pointer case carries an executed negative control; unmeasured are the own-claim filter (the promoted run's pointer is unlinked before the claims are read, so no case can exercise it), the process-skip in the guard (no case records a pid), and the removal branch in the production state the first finding names.",
+    "evidence": "the gate, the two suite arms (54 passed at 6daecfc1, 55 at c676b011) and the declared mutation's red case are all recorded with existing logs, and my own re-run of the named gate at head is green; the deduction is that the clean case's fixture state \u2014 no session id, no stream, no pid \u2014 is exactly the state in which the removal branch is reachable, so the evidence cannot distinguish the feature working from the feature being inert.",
+    "fit": "the helpers follow the module's private-helper and docstring idiom, no added name carries a plan or version label \u2014 the test's section fixture value mirrors the pointer field it stands for \u2014 and the commit subject is conventional with a body.",
+    "goal_fidelity": "three of the spec's retention conditions hold as written and the outcome is recorded on the row, but the primary case \u2014 passing, reachable, clean, removed \u2014 is unreachable for a real run through the session retention at promotion.py:2924, and the guard's second verdict half can never fire.",
+    "scope_discipline": "the commit touches only the declared paths, the two cumulative documents carry insertions only apart from one trailing-newline repair, and nothing outside promotion.py and the new module is edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read against the five cases the node's spec names; a failed gate keeps its tree with the reason \"not passing\" (promotion.py:3012-3020), the promoted run no longer withholds its own tree through its own live claim (promotion.py:2937-2942), and the decision lands on the committed ledger row (promotion.py:3033-3099) \u2014 but the removal case the spec names first cannot fire for a real run, because a recoverable session always yields a retention record (promotion.py:2813) and the release withholds before any classification runs (promotion.py:2924); the guard's blocked half is unreachable too, since complete() validates the verdict against ledger.GATE_VERDICTS, which holds passed, failed and not-run.\nVERDICT done_when: the named gate is green at head \u2014 re-run from the reviewed worktree, 1 passed, exit 0, recheck-gate.log \u2014 and the module asserts on-disk state, the recorded reason and the stored row for all five cases; the declared mutation removes the live-pointer check and reddens the live-reference case at tests/test_promotion_releases_its_worktree.py:184 while the other four stay green.\nVERDICT write_paths: the manifest declares five paths and c676b011 touches exactly four of them \u2014 the declared figures directory is untouched; promotion.py 105+/1-, tests/test_promotion_releases_its_worktree.py 199+/0, and both cumulative documents appended to (evidence 34+/1, the single deletion a trailing-newline repair on a closing tag; plan 15+/0).\nVERDICT manifest: read in full; commits, changed_paths, measurement_module and measurement_cwd, negative_control_log with its note, and both suite arms carrying their revisions and log paths are present, and every named log exists on disk.\nVERDICT diff: read hunk by hunk against 6daecfc1; three behaviours change in promotion.py \u2014 the own-claim exclusion, the gate guard that returns before the release, and the release outcome written onto the ledger row through a bounded amend-retry that rolls back and reports ledger_recorded false when it exhausts, so a failed record cannot masquerade as a successful one.\nCALL_SITES: reckon/cli.py:crew_complete, reckon/crew/promotion.py:complete, reckon/crew/promotion.py:_complete_locked, reckon/crew/promotion.py:_release_after_promotion, reckon/crew/promotion.py:_release_run_workspace\nFINDING reckon/crew/promotion.py:2924 the release withholds whenever _resume_worktree_retention (promotion.py:2813) returns a record, and a real run always resolves a session \u2014 of four live pointers probed, each of the three whose worktree still exists resolved one (one from the pointer, two through the stream fallback) \u2014 so the removal branch is reachable only by a record with no session id and no readable stream, the state the new test's clean fixture is built in, and the fleet problem the node exists for is untouched.\nFINDING reckon/crew/promotion.py:3013 the gate guard returns before _release_run_workspace, so a failed promotion no longer signals a leftover writer's process group and no longer carries worktree_audit; the same call at base signalled for that verdict, and no case in the module records a pid, so the change is unmeasured either way.\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: three of the spec's retention conditions hold as written and the outcome is recorded on the row, but the primary case \u2014 passing, reachable, clean, removed \u2014 is unreachable for a real run through the session retention at promotion.py:2924, and the guard's second verdict half can never fire.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate, the two suite arms (54 passed at 6daecfc1, 55 at c676b011) and the declared mutation's red case are all recorded with existing logs, and my own re-run of the named gate at head is green; the deduction is that the clean case's fixture state \u2014 no session id, no stream, no pid \u2014 is exactly the state in which the removal branch is reachable, so the evidence cannot distinguish the feature working from the feature being inert.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit touches only the declared paths, the two cumulative documents carry insertions only apart from one trailing-newline repair, and nothing outside promotion.py and the new module is edited.\nSCORE durability: 16\nJUSTIFICATION durability: five cases assert on-disk state, the recorded reason and the stored row, and the live-pointer case carries an executed negative control; unmeasured are the own-claim filter (the promoted run's pointer is unlinked before the claims are read, so no case can exercise it), the process-skip in the guard (no case records a pid), and the removal branch in the production state the first finding names.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers follow the module's private-helper and docstring idiom, no added name carries a plan or version label \u2014 the test's section fixture value mirrors the pointer field it stands for \u2014 and the commit subject is conventional with a body.",
+  "review_run_id": "r-20260925T081530112694-review-of-promotion-releases-its-worktree",
+  "reviewed_base_sha": "6daecfc17f00ad90153ea988761b6dfd54150145",
+  "reviewed_head_sha": "c676b011dad96a083a31f320592b7d68da212687",
+  "reviewed_run_id": "r-20260925T075055787676-promotion-releases-its-worktree",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T10:19:34.224074+00:00",
+  "total": 86
+}

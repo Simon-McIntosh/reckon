@@ -29,14 +29,22 @@ RETURN_TIME_KEYS = {
     "stale",
 }
 CANDIDATE_KEYS = {
+    "backend",
+    "lane",
+    "model",
     "availability",
     "utilisation_pct",
     "burn_multiple",
     "pace_allowance",
+    "days_to_reset",
     "resets_at",
     "worker_slots",
     "congestion",
-    "outcomes_14_days",
+    "outcomes",
+    "budget_source",
+    "budget_age_s",
+    "stale",
+    "reset_available",
 }
 
 

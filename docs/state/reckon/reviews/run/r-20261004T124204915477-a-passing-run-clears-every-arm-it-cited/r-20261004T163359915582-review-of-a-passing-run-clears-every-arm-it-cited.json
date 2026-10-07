@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6a04552fd",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:_release_run_workspace",
+    "reckon/crew/promotion.py:_release_after_promotion",
+    "reckon/crew/promotion.py:_remove_discarded_worktree"
+  ],
+  "completed_at": "2026-10-04T16:39:24.544Z",
+  "dispatched_at": "2026-10-04T16:34:22Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/a-passing-run-clears-every-arm-it-cited.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node declares docs/figures/crew-runtime-positive-controls/a-passing-run-clears-every-arm-it-cited but created no figure, so the fragment carries none although a small diagram of the removal reach (temp-root bound, protections, live-run citations) would communicate the bounded removal the text describes in prose."
+    }
+  ],
+  "head_log_revision": "5f5c43d85",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from base 6a04552fd to head fe1c36834; nine commits touching three files (reckon/crew/promotion.py +312, the test file +364, the fragment +46), all inside the declared write paths.",
+    "done_when": "the done_when names a synthesized-temp-root test plus the promotion-import population adding no failure; tests/test_a_passing_run_clears_its_arms.py asserts both removals, log survival, the live-run keep and the outside-root keep, and the population is 497 passed at base and 497 passed at head.",
+    "goal": "the node goal is to make promotion of a run whose gate passed remove every directory outside the repository and the run directory that its manifest cites as a test arm, basetemp or control tree; reckon/crew/promotion.py:6344 remove_cited_arms reads only the structured fields that declare a path and removes each under the node-local temp root after copying its logs first.",
+    "manifest": "read; it reports the focused file 4 passed EXIT=0, the population 497 passed EXIT=0 at both arms, and names every gate and negative-control log on disk, reconciling each count with the log it cites.",
+    "write_paths": "the node declares reckon/crew/promotion.py, tests/test_a_passing_run_clears_its_arms.py, the evidence fragment and a figures directory; the diff at 6a04552fd..fe1c36834 touches the first three and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_passing_run_clears_its_arms.py fails if the change regresses, shown by the negative controls at base 6a04552fd (3 failed, EXIT=1), at the reviewed head 675ef337f (3 failed, EXIT=1) and at 128f6efe5 (1 failed/3 passed, EXIT=1), each reddening on the branch its fix removed.",
+    "evidence": "tests/test_a_passing_run_clears_its_arms.py covers every clause of the done_when and the population arm is 497 passed EXIT=0 at head against 497 passed EXIT=0 at base, so the done_when's 'adds no failure' is now demonstrated rather than attributed.",
+    "fit": "the change reuses reckon/crew/dispatch.py:8252 worker_scratch_root and reckon/crew/dispatch.py:8275 tree_size_bytes, the shared parse_manifest and run_directory_of, and extends the existing release path at reckon/crew/promotion.py:6628, with mechanism-named symbols and no banned label.",
+    "goal_fidelity": "reckon/crew/promotion.py:6344 remove_cited_arms removes each declared arm under the node-local temp root after copying its cited logs into <run>/cleared-arms and records removals, keeps and copied logs on the release mapping.",
+    "scope_discipline": "the diff 6a04552fd..fe1c36834 touches only reckon/crew/promotion.py, tests/test_a_passing_run_clears_its_arms.py and the node's own evidence fragment, every path inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make promotion of a run whose gate passed remove every directory outside the repository and the run directory that its manifest cites as a test arm, basetemp or control tree; reckon/crew/promotion.py:6344 remove_cited_arms reads only the structured fields that declare a path and removes each under the node-local temp root after copying its logs first.\nVERDICT done_when: the done_when names a synthesized-temp-root test plus the promotion-import population adding no failure; tests/test_a_passing_run_clears_its_arms.py asserts both removals, log survival, the live-run keep and the outside-root keep, and the population is 497 passed at base and 497 passed at head.\nVERDICT write_paths: the node declares reckon/crew/promotion.py, tests/test_a_passing_run_clears_its_arms.py, the evidence fragment and a figures directory; the diff at 6a04552fd..fe1c36834 touches the first three and nothing outside them.\nVERDICT manifest: read; it reports the focused file 4 passed EXIT=0, the population 497 passed EXIT=0 at both arms, and names every gate and negative-control log on disk, reconciling each count with the log it cites.\nVERDICT diff: read commit by commit from base 6a04552fd to head fe1c36834; nine commits touching three files (reckon/crew/promotion.py +312, the test file +364, the fragment +46), all inside the declared write paths.\nCALL_SITES: reckon/crew/promotion.py:_release_run_workspace, reckon/crew/promotion.py:_release_after_promotion, reckon/crew/promotion.py:_remove_discarded_worktree\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:6344 remove_cited_arms removes each declared arm under the node-local temp root after copying its cited logs into <run>/cleared-arms and records removals, keeps and copied logs on the release mapping.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_passing_run_clears_its_arms.py covers every clause of the done_when and the population arm is 497 passed EXIT=0 at head against 497 passed EXIT=0 at base, so the done_when's 'adds no failure' is now demonstrated rather than attributed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 6a04552fd..fe1c36834 touches only reckon/crew/promotion.py, tests/test_a_passing_run_clears_its_arms.py and the node's own evidence fragment, every path inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_passing_run_clears_its_arms.py fails if the change regresses, shown by the negative controls at base 6a04552fd (3 failed, EXIT=1), at the reviewed head 675ef337f (3 failed, EXIT=1) and at 128f6efe5 (1 failed/3 passed, EXIT=1), each reddening on the branch its fix removed.\nSCORE fit: 18\nJUSTIFICATION fit: the change reuses reckon/crew/dispatch.py:8252 worker_scratch_root and reckon/crew/dispatch.py:8275 tree_size_bytes, the shared parse_manifest and run_directory_of, and extends the existing release path at reckon/crew/promotion.py:6628, with mechanism-named symbols and no banned label.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/a-passing-run-clears-every-arm-it-cited.html:1 follow-on: the node declares docs/figures/crew-runtime-positive-controls/a-passing-run-clears-every-arm-it-cited but created no figure, so the fragment carries none although a small diagram of the removal reach (temp-root bound, protections, live-run citations) would communicate the bounded removal the text describes in prose.",
+  "review_run_id": "r-20261004T163359915582-review-of-a-passing-run-clears-every-arm-it-cited",
+  "reviewed_base_sha": "6a04552fda5ac51df83f38b37a13ca2658236f79",
+  "reviewed_head_sha": "fe1c3683429b4961c6b767923da85b6e231c2ef5",
+  "reviewed_run_id": "r-20261004T124204915477-a-passing-run-clears-every-arm-it-cited",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T163359915582-review-of-a-passing-run-clears-every-arm-it-cited",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T16:38:25.803436+00:00",
+  "total": 94
+}

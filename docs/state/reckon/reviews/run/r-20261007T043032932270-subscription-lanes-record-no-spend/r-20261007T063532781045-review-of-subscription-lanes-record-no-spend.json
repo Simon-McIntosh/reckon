@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest's baseline_suite names no base gate log (the base arm was not run within the fence), so the added-failure count was not taken; after_suite names gate-head.log, which reports 324 passed with no failing node id",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:8486",
+    "reckon/serve.py:2958",
+    "reckon/capabilities.py:1082",
+    "reckon/cli.py:1694"
+  ],
+  "completed_at": "2026-10-07T07:07:01.741Z",
+  "dispatched_at": "2026-10-07T06:35:54Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "2022",
+      "severity": "follow-on",
+      "text": "follow-on: except (OSError, ValueError) does not catch flight.FlightConfigError (a plain Exception subclass) that read_layer_file raises on a duplicate-key or malformed catalogue; reproduced by pointing RECKON_MODEL_CATALOGUE at a catalogue with a duplicate key, where ledger.build_record raises FlightConfigError instead of returning, so this node adds a new path by which a malformed catalogue stops every ledger write."
+    },
+    {
+      "file": "reckon/crew/picker/outcomes.py",
+      "line": "364",
+      "severity": "follow-on",
+      "text": "follow-on: the subscription_backends block, and capabilities.derive_routing's new billing key, are covered by no assertion in the node's tests or the suite, so a regression that drops or mis-keys them would not redden any test."
+    },
+    {
+      "file": "tests/test_subscription_lanes_record_no_spend.py",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: the module docstring says lanes are declared in the model catalogue (subscription_groups), a key that does not exist, while the implementation rides budget_group with a -sub suffix and the manifest records that a top-level subscription_groups key was rejected by the flight schema."
+    },
+    {
+      "file": "tests/test_ledger.py",
+      "line": "657",
+      "severity": "follow-on",
+      "text": "follow-on: test_metered_backend_cost_is_unchanged still names claude as its metered example and asserts its cost is kept; it passes only because the autouse conftest shield points RECKON_MODEL_CATALOGUE at an absent file, so its green is an artefact rather than evidence that metered billing is unchanged."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "2028",
+      "severity": "follow-on",
+      "text": "follow-on: backend_budget_group re-implements the backend-to-budget_group lookup owned by reckon/crew/budget_group.py, which this node declared as a write path but did not extend, and reads the raw catalogue rather than resolved flight config, so a host or project override of budget_group is ignored by the ledger while flight honours it."
+    }
+  ],
+  "head_log_revision": "5942f67c6b9643ddb6d898f89b76723bbe0ca9ab",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against base 0090375ca; 5942f67c6 carries the ledger/catalogue/capabilities/outcomes change and the new test file, 99aefbacc is the docs-only evidence fragment, and the diffstat is +293/-6 with no merge absorption in the range.",
+    "done_when": "the done_when names the node gate over tests/test_ledger*.py, tests/test_capabilit*.py, tests/test_picker_outcomes.py, tests/test_flight_catalogue_layer.py, tests/test_budget_group*.py and the new tests/test_subscription_lanes_record_no_spend.py; the manifest records 324 passed EXIT=0 at 5942f67c6 and a negative control that reddens two tests (EXIT=1).",
+    "goal": "the node's goal is that a subscription-billed lane records no per-token spend; reckon/ledger.py _label_unmetered_cost nulls cost_usd/cost_usd_cumulative, sets cost_usd_imputed, preserves the harness figure under harness_reported_cost_usd and labels billing: subscription, driven by the claude-sub/codex-sub budget groups declared in docs/state/reckon/model-catalogue.yaml.",
+    "manifest": "read; status complete, commits 5942f67c6 and 99aefbacc, changed_paths and negative_control_log populated, but baseline_suite records the base arm as not-run-within-fence with an empty log_path, so the added-failure count is unmeasured rather than zero.",
+    "write_paths": "read the manifest's declared paths; every path in the diff (reckon/ledger.py, reckon/capabilities.py, reckon/crew/picker/outcomes.py, docs/state/reckon/model-catalogue.yaml, the new test file, the evidence fragment) is inside them, and the declared reckon/crew/budget_group.py is untouched."
+  },
+  "justifications": {
+    "durability": "the added assertions are independent of the code they guard and two are pinned by the negative control, but the new read surfaces (reckon/crew/picker/outcomes.py:364 subscription_backends and derive_routing's billing key) carry no assertion, and the guard at reckon/ledger.py:2022 does not catch the error read_layer_file raises.",
+    "evidence": "the head arm is recorded (gate-head.log, 324 passed EXIT=0) and the negative control reproduces two red tests, but the base arm was not run so the added-failure count is unmeasured, and the autouse shield at tests/conftest.py:129 points RECKON_MODEL_CATALOGUE at an absent file for every module but test_flight_catalogue_layer, so only the five new tests exercise the declaration.",
+    "fit": "the change follows the surrounding module style and carries no plan or ticket label, but tests/test_subscription_lanes_record_no_spend.py:8 names a catalogue key that does not exist and reckon/ledger.py:2009 promises a defence its except clause does not provide.",
+    "goal_fidelity": "reckon/ledger.py `_label_unmetered_cost` nulls the cost fields and labels billing: subscription for a catalogue-declared group, and capabilities/outcomes read it back, but the codex-sub path the evidence fragment names is exercised by no test.",
+    "reuse": "reckon/ledger.py:2028 backend_budget_group forks the backend-to-budget_group lookup owned by reckon/crew/budget_group.py (and reckon/mcp_views.py:624) and reads the raw catalogue rather than resolved flight config, so a host override of budget_group diverges; the lookup is also re-read and re-parsed per call with no memoisation.",
+    "scope_discipline": "every path in the diff is inside the manifest's declared write paths; the declared reckon/crew/budget_group.py is not touched, which is under-delivery rather than a breach."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a subscription-billed lane records no per-token spend; reckon/ledger.py _label_unmetered_cost nulls cost_usd/cost_usd_cumulative, sets cost_usd_imputed, preserves the harness figure under harness_reported_cost_usd and labels billing: subscription, driven by the claude-sub/codex-sub budget groups declared in docs/state/reckon/model-catalogue.yaml.\nVERDICT done_when: the done_when names the node gate over tests/test_ledger*.py, tests/test_capabilit*.py, tests/test_picker_outcomes.py, tests/test_flight_catalogue_layer.py, tests/test_budget_group*.py and the new tests/test_subscription_lanes_record_no_spend.py; the manifest records 324 passed EXIT=0 at 5942f67c6 and a negative control that reddens two tests (EXIT=1).\nVERDICT write_paths: read the manifest's declared paths; every path in the diff (reckon/ledger.py, reckon/capabilities.py, reckon/crew/picker/outcomes.py, docs/state/reckon/model-catalogue.yaml, the new test file, the evidence fragment) is inside them, and the declared reckon/crew/budget_group.py is untouched.\nVERDICT manifest: read; status complete, commits 5942f67c6 and 99aefbacc, changed_paths and negative_control_log populated, but baseline_suite records the base arm as not-run-within-fence with an empty log_path, so the added-failure count is unmeasured rather than zero.\nVERDICT diff: read both commits against base 0090375ca; 5942f67c6 carries the ledger/catalogue/capabilities/outcomes change and the new test file, 99aefbacc is the docs-only evidence fragment, and the diffstat is +293/-6 with no merge absorption in the range.\nCALL_SITES: reckon/crew/promotion.py:8486, reckon/serve.py:2958, reckon/capabilities.py:1082, reckon/cli.py:1694\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py `_label_unmetered_cost` nulls the cost fields and labels billing: subscription for a catalogue-declared group, and capabilities/outcomes read it back, but the codex-sub path the evidence fragment names is exercised by no test.\nSCORE evidence: 15\nJUSTIFICATION evidence: the head arm is recorded (gate-head.log, 324 passed EXIT=0) and the negative control reproduces two red tests, but the base arm was not run so the added-failure count is unmeasured, and the autouse shield at tests/conftest.py:129 points RECKON_MODEL_CATALOGUE at an absent file for every module but test_flight_catalogue_layer, so only the five new tests exercise the declaration.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths; the declared reckon/crew/budget_group.py is not touched, which is under-delivery rather than a breach.\nSCORE durability: 14\nJUSTIFICATION durability: the added assertions are independent of the code they guard and two are pinned by the negative control, but the new read surfaces (reckon/crew/picker/outcomes.py:364 subscription_backends and derive_routing's billing key) carry no assertion, and the guard at reckon/ledger.py:2022 does not catch the error read_layer_file raises.\nSCORE fit: 15\nJUSTIFICATION fit: the change follows the surrounding module style and carries no plan or ticket label, but tests/test_subscription_lanes_record_no_spend.py:8 names a catalogue key that does not exist and reckon/ledger.py:2009 promises a defence its except clause does not provide.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/ledger.py:2028 backend_budget_group forks the backend-to-budget_group lookup owned by reckon/crew/budget_group.py (and reckon/mcp_views.py:624) and reads the raw catalogue rather than resolved flight config, so a host override of budget_group diverges; the lookup is also re-read and re-parsed per call with no memoisation.\nFINDING reckon/ledger.py:2022 follow-on: except (OSError, ValueError) does not catch flight.FlightConfigError (a plain Exception subclass) that read_layer_file raises on a duplicate-key or malformed catalogue; reproduced by pointing RECKON_MODEL_CATALOGUE at a catalogue with a duplicate key, where ledger.build_record raises FlightConfigError instead of returning, so this node adds a new path by which a malformed catalogue stops every ledger write.\nFINDING reckon/crew/picker/outcomes.py:364 follow-on: the subscription_backends block, and capabilities.derive_routing's new billing key, are covered by no assertion in the node's tests or the suite, so a regression that drops or mis-keys them would not redden any test.\nFINDING tests/test_subscription_lanes_record_no_spend.py:8 follow-on: the module docstring says lanes are declared in the model catalogue (subscription_groups), a key that does not exist, while the implementation rides budget_group with a -sub suffix and the manifest records that a top-level subscription_groups key was rejected by the flight schema.\nFINDING tests/test_ledger.py:657 follow-on: test_metered_backend_cost_is_unchanged still names claude as its metered example and asserts its cost is kept; it passes only because the autouse conftest shield points RECKON_MODEL_CATALOGUE at an absent file, so its green is an artefact rather than evidence that metered billing is unchanged.\nFINDING reckon/ledger.py:2028 follow-on: backend_budget_group re-implements the backend-to-budget_group lookup owned by reckon/crew/budget_group.py, which this node declared as a write path but did not extend, and reads the raw catalogue rather than resolved flight config, so a host or project override of budget_group is ignored by the ledger while flight honours it.",
+  "review_run_id": "r-20261007T063532781045-review-of-subscription-lanes-record-no-spend",
+  "reviewed_base_sha": "0090375ca20867f919986a8bf86699f405d976b1",
+  "reviewed_head_sha": "99aefbaccf7ef806de3df6d52d64fee9be41a739",
+  "reviewed_run_id": "r-20261007T043032932270-subscription-lanes-record-no-spend",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:57:06.288721+00:00",
+  "total": 96
+}

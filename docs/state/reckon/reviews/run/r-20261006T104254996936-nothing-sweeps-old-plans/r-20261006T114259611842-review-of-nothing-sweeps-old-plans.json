@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "64e6b337609d64af4fd463154f1fde2454bab0f1",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-06T11:51:41.807Z",
+  "dispatched_at": "2026-10-06T11:43:16Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "follow-on: the module docstring and the plan_fingerprint docstring still state that authored comments and followups are digested except the landing comments a promotion writes, while _without_comments_and_followups drops both keys entirely; the gained commit codifies the section-21 rule in the test but the module's own statement of the rule is still the old one, so a reader of plan_review.py is told the opposite of what plan_fingerprint does."
+    }
+  ],
+  "head_log_revision": "f5eef14c7d1dbf0f4dacbb64519fce188ee5c15e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read against 63bb3c22; the commit removes the sweep case and its _sweep/_quiet helpers and the os/time/recovery imports, retitles the fingerprint case, adds an _edit_a_decision helper, and asserts an authored comment leaves the digest unchanged.",
+    "done_when": "this commit's own subject is the resume finding that the fingerprint case asserted the retired behaviour, and the rewritten case drives plan_fingerprint over a synthesised mounted project and passes at head while failing at base.",
+    "goal": "the gained commit is the resume's test-only fix: it rewrites tests/test_a_run_comment_earns_no_plan_review.py to the rule section 21 established, that comments and followups left the fingerprint's document unit, and deletes the sweep case that drove the plan walk the section's earlier node retired; the fingerprint case now holds a run comment and an authored comment each leaving the digest unchanged while a decision-text edit moves it.",
+    "manifest": "the reviewed manifest reads status complete, commits e2716ca4, 63bb3c22 and f5eef14c7, and now carries baseline_suite (64e6b3376, 2 failed, EXIT=1) and after_suite (f5eef14c7, 0 failed, EXIT=0) with their log paths.",
+    "write_paths": "the commit touches one path, tests/test_a_run_comment_earns_no_plan_review.py, which lies outside the run's originally declared six write paths; the run's manifest records that the resume granted the write in writing and the coordinator pre-accepted it at promotion."
+  },
+  "justifications": {
+    "durability": "the rewritten case drives the real machinery - promotion._record_landing_comment, the plan store and plan_fingerprint over the on-disk plan - and asserts the digest before and after each write rather than a value it fed in, so it fails when the exclusion is reverted.",
+    "evidence": "the head arm passes (independently reproduced: 1 passed EXIT=0) and the base arm fails the same file (2 failed EXIT=1, reproduced from a scratch extraction of 63bb3c22); deducted one because the run's declared negative control targets tests/test_nothing_sweeps_old_plans.py, so the mutation reddening this file's own assertions is the base arm alone.",
+    "fit": "the file keeps its fixture and helpers, the new _edit_a_decision writes a decision the way the plan surface does through _plan_html.read_state/write_state, and the module docstring is updated to the new rule; deducted one because the test names sections, decisions and dependencies while the implementation digests relationships.",
+    "goal_fidelity": "the commit does exactly the resume's acts on the one file it names - the stale assertion that an authored comment moves the fingerprint is corrected to the implemented rule and the test driving the deleted walk is removed - with the plan walk already gone at base.",
+    "reuse": "the change deletes a redundant test and a helper rather than adding a mechanism, and introduces no definition that re-implements one the repository already owns.",
+    "scope_discipline": "the commit's single path lies outside the run's originally declared write paths; the deviation is granted in writing in the resume and pre-accepted at promotion and is recorded in the run's scope_grant line, but check-manifest still reports it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commit is the resume's test-only fix: it rewrites tests/test_a_run_comment_earns_no_plan_review.py to the rule section 21 established, that comments and followups left the fingerprint's document unit, and deletes the sweep case that drove the plan walk the section's earlier node retired; the fingerprint case now holds a run comment and an authored comment each leaving the digest unchanged while a decision-text edit moves it.\nVERDICT done_when: this commit's own subject is the resume finding that the fingerprint case asserted the retired behaviour, and the rewritten case drives plan_fingerprint over a synthesised mounted project and passes at head while failing at base.\nVERDICT write_paths: the commit touches one path, tests/test_a_run_comment_earns_no_plan_review.py, which lies outside the run's originally declared six write paths; the run's manifest records that the resume granted the write in writing and the coordinator pre-accepted it at promotion.\nVERDICT manifest: the reviewed manifest reads status complete, commits e2716ca4, 63bb3c22 and f5eef14c7, and now carries baseline_suite (64e6b3376, 2 failed, EXIT=1) and after_suite (f5eef14c7, 0 failed, EXIT=0) with their log paths.\nVERDICT diff: read against 63bb3c22; the commit removes the sweep case and its _sweep/_quiet helpers and the os/time/recovery imports, retitles the fingerprint case, adds an _edit_a_decision helper, and asserts an authored comment leaves the digest unchanged.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the commit does exactly the resume's acts on the one file it names - the stale assertion that an authored comment moves the fingerprint is corrected to the implemented rule and the test driving the deleted walk is removed - with the plan walk already gone at base.\nSCORE evidence: 19\nJUSTIFICATION evidence: the head arm passes (independently reproduced: 1 passed EXIT=0) and the base arm fails the same file (2 failed EXIT=1, reproduced from a scratch extraction of 63bb3c22); deducted one because the run's declared negative control targets tests/test_nothing_sweeps_old_plans.py, so the mutation reddening this file's own assertions is the base arm alone.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the commit's single path lies outside the run's originally declared write paths; the deviation is granted in writing in the resume and pre-accepted at promotion and is recorded in the run's scope_grant line, but check-manifest still reports it.\nSCORE durability: 20\nJUSTIFICATION durability: the rewritten case drives the real machinery - promotion._record_landing_comment, the plan store and plan_fingerprint over the on-disk plan - and asserts the digest before and after each write rather than a value it fed in, so it fails when the exclusion is reverted.\nSCORE fit: 19\nJUSTIFICATION fit: the file keeps its fixture and helpers, the new _edit_a_decision writes a decision the way the plan surface does through _plan_html.read_state/write_state, and the module docstring is updated to the new rule; deducted one because the test names sections, decisions and dependencies while the implementation digests relationships.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change deletes a redundant test and a helper rather than adding a mechanism, and introduces no definition that re-implements one the repository already owns.\nFINDING reckon/crew/plan_review.py:19 follow-on: the module docstring and the plan_fingerprint docstring still state that authored comments and followups are digested except the landing comments a promotion writes, while _without_comments_and_followups drops both keys entirely; the gained commit codifies the section-21 rule in the test but the module's own statement of the rule is still the old one, so a reader of plan_review.py is told the opposite of what plan_fingerprint does.\nreviewed_base_sha: 63bb3c229bddb77a99cd1f19f503d42fad775568\nreviewed_head_sha: f5eef14c7d1dbf0f4dacbb64519fce188ee5c15e\n",
+  "review_run_id": "r-20261006T114259611842-review-of-nothing-sweeps-old-plans",
+  "reviewed_base_sha": "63bb3c229bddb77a99cd1f19f503d42fad775568",
+  "reviewed_head_sha": "f5eef14c7d1dbf0f4dacbb64519fce188ee5c15e",
+  "reviewed_run_id": "r-20261006T104254996936-nothing-sweeps-old-plans",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:09.089557+00:00",
+  "total": 115
+}

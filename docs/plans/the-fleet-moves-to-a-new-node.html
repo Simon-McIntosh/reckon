@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-sprint" content="S21">
-  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -346,9 +346,9 @@
       Before any real session moves, the tooling moves a throwaway one. On the current
       node, a probe zellij session with two tabs, one holding a short Claude
       conversation and one a shell, is taken through the census, layout and cutover
-      steps back onto the same node. A second
-      probe is cut over onto the new allocation once &sect;10 has held it, before any
-      real session moves.
+      steps back onto the same node. The
+      same rehearsal on the new allocation belongs to &sect;10, which holds that
+      allocation.
     </p>
     <p><strong>Done when:</strong></p>
     <ul>
@@ -419,11 +419,19 @@
 <section data-reckon="section" data-id="s14" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p>A project's producer holds its seat with <code>flock</code> on a file under <code>~/.config/reckon/crew/watch/</code>, and on GPFS <code>flock</code> is node-local, so a producer on each host holds the same seat at once. The registration beside the lock is shared and the last writer wins. Measured on 7 October: one reckon producer on clu-2018 (pid 2118000, registered) and one on the login node (pid 3943404, armed by a login-node dispatch) both appended to the same events file, so every follower line arrived twice. On the login node the registered producer reads as having no live observer, because its pid is on another host, so <code>_ensure_watch_producer</code> calls <code>unwatch</code>; the signal cannot reach the remote pid and <code>unwatch</code> then waits without bound on <code>flock(LOCK_EX)</code>, which the local producer holds for its whole life. A <code>review-plan</code> dispatch sat 18 minutes in <code>locks_lock_inode_wait</code> before it was stopped. Had it acquired the lock it would have rewritten the registration to name the login node, and every dispatch on the fleet node would then have hung the same way.</p><p>The move needs this fixed: it is driven from a login node, and for a time two fleet nodes run side by side. The seat becomes a lease on shared storage, reusing the lease primitive of &sect;5 rather than a second one: the registration names host, pid and job, the holder renews it, and liveness is read from the lease's freshness rather than from a local pid lookup. A dispatch on another host defers to a fresh lease and never unwatches a producer it cannot see; a stale lease is taken over. <code>unwatch</code>'s wait for the seat is bounded and ends in a refusal naming the holder. Followers are unchanged, since they read the shared events file wherever they run.</p><p><strong>Done when:</strong></p><ul><li>A test with two simulated hosts and one shared watch directory arms one producer, and a dispatch on the second host neither starts another nor unwatches the first while its lease is fresh.</li><li>A stale lease is taken over by the second host; the staleness bound is the &sect;5 constant or a named one beside it.</li><li><code>unwatch</code> against a seat that is never released returns a refusal naming the holder within its bound, asserted by a test.</li><li>No test reads or writes the real watch directory.</li></ul>
 
+    <h2 id="s15">§15 — A worker&#x27;s hooks run under reckon&#x27;s interpreter</h2>
+<section data-reckon="section" data-id="s15" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><code>reckon/hooks/install.py</code> binds the obligations hook to the checkout's own <code>.venv/bin/python</code>, and states that the worker stop hook "is standard-library only and keeps its bare script command". It no longer is: <code>worker_stop.py</code> imports <code>reckon._timestamps</code>, which needs <code>datetime.UTC</code> from Python 3.11. A bare command resolves <code>python3</code> through the worker's <code>PATH</code>, and a worker launched from a non-interactive shell on a compute node finds the system Python 3.9. Measured on 7 October: every worker this plan dispatched over ssh to the fleet node ended its turn with <code>ImportError: cannot import name 'UTC' from 'datetime' (/usr/lib64/python3.9/datetime.py)</code> in its stop hook, which is non-blocking, so two workers stopped with work uncommitted or unreported and had to be resumed. The worker git guard is launched the same way and imports reckon, and a guard that cannot import fails open. The move drives steps from a login node into other nodes' shells, so this must hold before it.</p><p>Every hook a worker runs is launched by the checkout's own interpreter, as the obligations hook already is, both in the installed user settings and in each fenced worker's harness settings. The docstring states the rule that now holds.</p><p><strong>Done when:</strong></p><ul><li>A test composes the worker hook commands and finds each names the checkout's <code>.venv/bin/python</code> before the script.</li><li>A test runs the worker stop hook and the git guard through their composed commands with a <code>PATH</code> whose first <code>python3</code> is a stub that exits non-zero, and both still run and decide.</li><li>An installed settings file carrying the bare commands is upgraded in place without a duplicate entry.</li></ul>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-tfmtann-rehearsal" data-section="s9" data-gated-sections="s11,s12,s13" data-status="open" data-verdict="">
     <h4 class="r-gate-measure">A probe session returns in the same tabs, its Claude pane resumed by conversation id, on the current node and on the new node</h4>
     <p class="r-gate-required-evidence">The rehearsal ledgers from §9 and §10, with tab lists and conversation ids before and after.</p>
+    </div>
+<div class="r-gate" data-id="g-tfmtann-seat" data-section="s14" data-gated-sections="s10,s11,s12,s13" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">One producer per project holds across hosts: a dispatch on a second host defers to a fresh producer lease and never unwatches a producer it cannot see</h4>
+    <p class="r-gate-required-evidence">the §14 tests with two simulated hosts and one shared watch directory, passing at the merged head</p>
     </div>
 </section>
 
@@ -483,10 +491,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tfmtann-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build the-fleet-moves-to-a-new-node" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tfmtann-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build the-fleet-moves-to-a-new-node" data-resolved-at="2026-10-07T06:13:23+00:00" data-resolved-by="fleet-move-20261007">
     <h4 class="r-fu-title">Land the fixes and the migrate tooling, then rehearse</h4>
     <div class="r-fu-body"><p>§2 to §8 are implementation; §3, §4, §5 and the standby half of §10 share <code>fleet_supervisor.py</code> or <code>fleet_node.py</code> and are sequenced. §9 follows them. The operational sections wait on the rehearsal gate and on the open decisions.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-moves-to-a-new-node</pre>
+    <p class="r-fu-outcome">Superseded by f-tfmtann-build-order: the content review found §14 missing from the build order and from any gate.</p>
+    </article>
+<article class="r-fu" data-id="f-tfmtann-build-order" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="fleet-move-20261007" data-written-at="2026-10-07" data-recommends-skill="/reckon-build the-fleet-moves-to-a-new-node §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the fixes, the seat lease and the migrate tooling, then rehearse</h4>
+    <div class="r-fu-body"><p>§2 to §8 and §14 are implementation; §3, §4, §5 and the standby half of §10 share <code>fleet_supervisor.py</code> or <code>fleet_node.py</code> and are sequenced, and §14 follows §5 because it reuses §5's lease. §9 follows them. §10 to §13 wait on §14's seat gate, and §11 to §13 also on the rehearsal gate. The first wave waits for f-otmp-codex-gates-block-implement on one-typesafe-model-picker, at the lead's direction.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-moves-to-a-new-node §2</pre>
     </article>
 </section>
   </main>

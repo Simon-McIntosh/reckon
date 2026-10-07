@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs. The reviewed run declares baseline_suite at revision 4d0c843 (logs/gate-base2.log: 2335 passed, EXIT=0, failure_count 0) and after_suite at revision 56fc7173 (logs/gate-head2.log: 2338 passed, EXIT=0, failure_count 0), so the head arm adds no failing id the base arm did not already fail: 0 added. I rebuilt both arms independently from the shared object store: base 4d0c843 -> 2360 passed EXIT=0 (review-logs/rev-gate-base.log), head d3ed0932 -> 2363 passed EXIT=0 (review-logs/rev-gate-head.log), delta +3 being the three new cases, no failure either arm. Nothing added.",
+  "backend": "clive",
+  "base_log_revision": "4d0c843ecaf49c5c5254c17a052444d6390f653d",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:_edit_plan_tool",
+    "reckon/_store.py:apply_ops",
+    "reckon/_plan_html.py:write_state"
+  ],
+  "completed_at": "2026-10-02T11:38:29.820Z",
+  "dispatched_at": "2026-10-02T11:03:18Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/section-contract-and-computed-impl/impl-stays-authorable-while-records-are-partial.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed worktree is dirty at the reviewed head d3ed0932, holding an uncommitted correction of the head-arm figure from 2338 to 2339; the landed revision's fragment states the stale 2338, so promotion lands a landing record that disagrees with its own gate-head3.log (2339, EXIT=0)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T094138017408-impl-stays-authorable-while-records-are-partial/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's after_suite names revision 56fc7173 while its cited log gate-head2.log has header rev 4289e50a, and the arm at the true reviewed head d3ed0932 (gate-head3.log, 2339 passed EXIT=0) is referenced nowhere; a reader cannot tell from the record which revision the head arm exercised."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "2770",
+      "severity": "follow-on",
+      "text": "follow-on: the first-record warning is added on both the append path (_apply_append, line 2510) and the insert path (_apply_insert_section, line 2770), but only append is exercised by tests/test_impl_stays_authorable_while_records_are_partial.py; the insert half of the plan's \"append or insert\" clause carries no test that would redden if it regressed."
+    }
+  ],
+  "head_log_revision": "d3ed0932b30b5538f4f957835335092ed1344763",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit; 4289e50a changes only _store.py and adds the test, 56fc7173 changes only _plan_html.py, d3ed0932 adds only the fragment.",
+    "done_when": "the plan's done-when names three behaviours and a negative control; all three pass and I reproduced base, head and the mutation myself (logs under review-logs/).",
+    "goal": "the landed change makes set impl authorable while a plan's section records are partial; reckon/_store.py:2263 now refuses only when derive_impl_from_sections answers, and reckon/_plan_html.py:1221 gates the writer on the same rule, so a partial plan stores its authored figure.",
+    "manifest": "status complete; three commits, landing, tests, test_logs, negative_control_log and arms populated; its after_suite.revision (56fc7173) does not match the gate-head2.log header (rev 4289e50a), and the true-head arm gate-head3.log is unreferenced.",
+    "write_paths": "declared reckoning/_store.py, reckon/_plan_html.py, tests/test_impl_stays_authorable_while_records_are_partial.py and the evidence fragment; every path in the three commits is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_impl_stays_authorable_while_records_are_partial.py fails on the mutation that restores the any-record refusal in reckon/_store.py (review-logs/rev-negative-control.log: 1 failed, 2 passed, EXIT=1) and the same test reddens on base (review-logs/rev-base-with-test.log: 2 failed, 1 passed).",
+    "evidence": "the reviewed run's own arms (logs/gate-base2.log 2335 passed EXIT=0, logs/gate-head2.log 2338 passed EXIT=0) show no added failure, and I rebuilt base 4d0c843 -> 2360 passed EXIT=0 and head d3ed0932 -> 2363 passed EXIT=0 independently (review-logs/rev-gate-base.log, rev-gate-head.log).",
+    "fit": "the change reuses derive_impl_from_sections from both reckon/_store.py:2263 and reckon/_plan_html.py:1221, names the warning constant by mechanism, and ruff shows the same findings at base and head (27 each; format clean) with the new test file clean.",
+    "goal_fidelity": "reckon/_store.py:2263 fires the refusal only when derive_impl_from_sections returns a figure, and reckon/_plan_html.py:1290 writes the authored plan-impl meta in the same partial case, so set impl lands and reads back authored as the goal states.",
+    "scope_discipline": "the three commits touch only the four declared paths, but the reviewed worktree is left dirty at d3ed0932 with an uncommitted edit to docs/evidence/fragments/section-contract-and-computed-impl/impl-stays-authorable-while-records-are-partial.html."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the landed change makes set impl authorable while a plan's section records are partial; reckon/_store.py:2263 now refuses only when derive_impl_from_sections answers, and reckon/_plan_html.py:1221 gates the writer on the same rule, so a partial plan stores its authored figure.\nVERDICT done_when: the plan's done-when names three behaviours and a negative control; all three pass and I reproduced base, head and the mutation myself (logs under review-logs/).\nVERDICT write_paths: declared reckoning/_store.py, reckon/_plan_html.py, tests/test_impl_stays_authorable_while_records_are_partial.py and the evidence fragment; every path in the three commits is inside them.\nVERDICT manifest: status complete; three commits, landing, tests, test_logs, negative_control_log and arms populated; its after_suite.revision (56fc7173) does not match the gate-head2.log header (rev 4289e50a), and the true-head arm gate-head3.log is unreferenced.\nVERDICT diff: read commit by commit; 4289e50a changes only _store.py and adds the test, 56fc7173 changes only _plan_html.py, d3ed0932 adds only the fragment.\nCALL_SITES: reckon/mcp.py:_edit_plan_tool, reckon/_store.py:apply_ops, reckon/_plan_html.py:write_state\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:2263 fires the refusal only when derive_impl_from_sections returns a figure, and reckon/_plan_html.py:1290 writes the authored plan-impl meta in the same partial case, so set impl lands and reads back authored as the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed run's own arms (logs/gate-base2.log 2335 passed EXIT=0, logs/gate-head2.log 2338 passed EXIT=0) show no added failure, and I rebuilt base 4d0c843 -> 2360 passed EXIT=0 and head d3ed0932 -> 2363 passed EXIT=0 independently (review-logs/rev-gate-base.log, rev-gate-head.log).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the three commits touch only the four declared paths, but the reviewed worktree is left dirty at d3ed0932 with an uncommitted edit to docs/evidence/fragments/section-contract-and-computed-impl/impl-stays-authorable-while-records-are-partial.html.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_impl_stays_authorable_while_records_are_partial.py fails on the mutation that restores the any-record refusal in reckon/_store.py (review-logs/rev-negative-control.log: 1 failed, 2 passed, EXIT=1) and the same test reddens on base (review-logs/rev-base-with-test.log: 2 failed, 1 passed).\nSCORE fit: 20\nJUSTIFICATION fit: the change reuses derive_impl_from_sections from both reckon/_store.py:2263 and reckon/_plan_html.py:1221, names the warning constant by mechanism, and ruff shows the same findings at base and head (27 each; format clean) with the new test file clean.\nFINDING docs/evidence/fragments/section-contract-and-computed-impl/impl-stays-authorable-while-records-are-partial.html:1 follow-on: the reviewed worktree is dirty at the reviewed head d3ed0932, holding an uncommitted correction of the head-arm figure from 2338 to 2339; the landed revision's fragment states the stale 2338, so promotion lands a landing record that disagrees with its own gate-head3.log (2339, EXIT=0).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T094138017408-impl-stays-authorable-while-records-are-partial/manifest.md:21 follow-on: the manifest's after_suite names revision 56fc7173 while its cited log gate-head2.log has header rev 4289e50a, and the arm at the true reviewed head d3ed0932 (gate-head3.log, 2339 passed EXIT=0) is referenced nowhere; a reader cannot tell from the record which revision the head arm exercised.\nFINDING reckon/_store.py:2770 follow-on: the first-record warning is added on both the append path (_apply_append, line 2510) and the insert path (_apply_insert_section, line 2770), but only append is exercised by tests/test_impl_stays_authorable_while_records_are_partial.py; the insert half of the plan's \"append or insert\" clause carries no test that would redden if it regressed.\n",
+  "review_run_id": "r-20261002T110254565404-review-of-impl-stays-authorable-while-records-are-partial",
+  "reviewed_base_sha": "4d0c843ecaf49c5c5254c17a052444d6390f653d",
+  "reviewed_head_sha": "d3ed0932b30b5538f4f957835335092ed1344763",
+  "reviewed_run_id": "r-20261002T094138017408-impl-stays-authorable-while-records-are-partial",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T11:29:43Z",
+  "total": 94
+}

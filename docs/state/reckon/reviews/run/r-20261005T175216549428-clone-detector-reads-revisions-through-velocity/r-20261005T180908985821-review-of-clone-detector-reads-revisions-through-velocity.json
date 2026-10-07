@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed run's manifest carries no baseline_suite or after_suite gate log (both null), so the added-failure count was not taken; the run's single gate.log is a head-only arm at 24e780675 (144 passed, EXIT=0)",
+  "call_site_count": 6,
+  "call_site_note": "production call sites of the changed public readers and their consumers",
+  "call_sites": [
+    "reckon/clones.py:656",
+    "reckon/clones.py:657",
+    "reckon/interface_counts.py:449",
+    "reckon/crew/promotion.py:8287",
+    "reckon/interface_counts.py:460",
+    "reckon/interface_counts.py:520"
+  ],
+  "completed_at": "2026-10-05T18:15:42.388Z",
+  "dispatched_at": "2026-10-05T18:09:31Z",
+  "findings": [
+    {
+      "file": "reckon/velocity.py",
+      "line": "434",
+      "severity": "follow-on",
+      "text": "follow-on, non-blocking: read_blobs maps a git-missing object to None, but read_sources copies those bytes-or-None values straight into its returned dict while its docstring promises bytes; a None would reach the counter's text.decode and the detector's _sources_text as an AttributeError rather than the None reading the callers' error contract expects. Unreachable while every path is listed by ls-tree at that same revision, so this is a latent contract gap rather than a live defect."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites of velocity.read_sources (reckon/clones.py:656 and :657, reckon/interface_counts.py:449), plus the changed consumers' own production callers: clones.promotion_clone_matches from reckon/crew/promotion.py:8287 and interface_counts.read_trees from count_revision (interface_counts.py:460) and count_revision_cached (interface_counts.py:520).",
+    "diff": "Read all three commits against base 620502534: the refactor commit generalises velocity._plan_documents into _tree_paths, adds the public read_sources, rewires interface_counts.read_trees to parse read_sources output, and points the detector at read_sources and run_git while deleting _git/revised_python; the docs commit adds the evidence fragment and the figure; the third commit only adds a trailing newline. No unrelated change.",
+    "done_when": "Every \u00a712 clause holds at the reviewed head: `grep -nE 'def _git|def _cache_root|def revised_python|git archive|tarfile' reckon/clones.py` returns nothing, `grep -n ls-tree reckon/interface_counts.py` returns nothing, `grep -rn revised_python reckon/ tests/` returns nothing, velocity.__all__ carries read_sources, and the run's gate log (revision 24e780675) ends in a bare EXIT=0 with 144 passed.",
+    "goal": "The node goal (\u00a712: the clone detector reads a revision's Python sources through velocity's one reader, retiring its private archive reader and git runner) is met: reckon/clones.py drops _git, revised_python (git archive + tarfile) and the cache resolver's local use, and promotion_clone_matches reads both revisions through velocity.read_sources.",
+    "manifest": "Read the reviewed run's manifest; it states gate 144 passed EXIT=0 at 24e780675, the private-archive-reader negative control at EXIT=1, public_definitions 1477 -> 1477, and names gate.log, negative_control_one_sources_reader.log and public_definitions_measurement.txt.",
+    "write_paths": "Every path in the base..head diff (8 files) is inside the manifest's declared write paths: reckon/clones.py, reckon/velocity.py, reckon/interface_counts.py, the two test files, the evidence fragment, and the figure script and png."
+  },
+  "justifications": {
+    "durability": "tests/test_one_sources_reader_serves_the_detector_and_the_counter.py:104 pins both consumers to the one reader (`interface_counts.read_sources is velocity.read_sources`, `clones.read_sources is velocity.read_sources`) and its spy records the prefixes, and the negative control (private archive reader restored in clones.py) reddens it with `assert '' in by_prefix`, so the guards are shown to fire.",
+    "evidence": "the reviewed run's gate.log carries a header naming revision 24e780675, the tree and the literal pytest command, then 144 passed and a bare EXIT=0; one point withheld because the gate ran at the source head 24e780675 while the reviewed head is the later evidence-only commit 77e0ae4f7, and the run carried no base arm so added_failure_count is unmeasured.",
+    "fit": "velocity._tree_paths sits beside _plan_documents, which it generalises, and read_sources sits beside read_blobs, which it composes; the detector imports the two public names and adds only the private _sources_text decoder, following the surrounding style, and introduces no plan, sprint or ticket name.",
+    "goal_fidelity": "reckon/clones.py:649 reads both revisions through velocity.read_sources with no prefix (the whole tracked tree) and _git/revised_python are gone, so the detector's sources are the one reader's output rather than its own git-archive reader, while the counter parses read_sources under its reckon prefix (interface_counts.py:449).",
+    "reuse": "read_sources composes the generalised _tree_paths with the repository's existing read_blobs rather than forking a lister or a blob loop, and retires the detector's duplicate _git/revised_python; a capability search over reckon/ found no other whole-tree .py-at-revision reader to extend, and the counter's former private ls-tree listing is removed in favour of the same reader.",
+    "scope_discipline": "every path in the 620502534..77e0ae4f7 diff (reckon/clones.py, reckon/velocity.py, reckon/interface_counts.py, the two test files, the evidence fragment and the figure) is inside the manifest's declared write paths, and nothing touches the shared plan, project index or sprint state."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261005T180908985821-review-of-clone-detector-reads-revisions-through-velocity",
+  "reviewed_base_sha": "6205025347f8ac1b92fb51f784ed3be057b5be73",
+  "reviewed_head_sha": "77e0ae4f7e6a6fdcdeb19ec7b96c952acde2e2d7",
+  "reviewed_run_id": "r-20261005T175216549428-clone-detector-reads-revisions-through-velocity",
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T18:26:00+00:00",
+  "total": 117
+}

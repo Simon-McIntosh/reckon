@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:crew_observe",
+    "reckon/crew/recovery.py:4413"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T07:10:23.453794+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/worker-death-is-recorded-landed.html",
+      "line": "307",
+      "text": "the gate paragraph cites docs/figures/worker-death-is-recorded/session-id-capture.json as a gate artefact, but no such file exists (the figures directory holds only logs, scripts and the svg) and the report is docs/research/data/session-id-capture.json cited at line 299, so a reader following the anchor finds nothing."
+    },
+    {
+      "file": "docs/figures/worker-death-is-recorded/session_id_capture_census.py",
+      "line": "22",
+      "text": "the census generator hardcodes its own producing worktree as REPO and inserts it on sys.path, so the report at docs/research/data/session-id-capture.json cannot be regenerated once the worktree is removed, while the sibling generator session_id_capture_figure.py:12 resolves its directory from Path(__file__)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commits 320ece2d and 1aff17a0 against base 75b39d4d; the code commit adds _dispatch_session_absence and _capture_session_absence to reckon/crew/dispatch.py with the four tests and the census/figures, and the docs commit adds the section-5.4 landing record plus its evidence anchor.",
+    "done_when": "the done-when names docs/research/data/session-id-capture.json, the capture path, four tests in tests/test_every_run_carries_a_session_id.py and a negative control; the manifest records the gate and I re-ran the four new tests at the landed head (4 passed in 1.38s).",
+    "goal": "the node's goal is that every newly dispatched run records a session id or names why it could not; reckon/crew/dispatch.py:3850 writes a session_id_absent into the pointer at dispatch and dispatch.py:4785 writes the id, or the named point capture reached, on every observation.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637086142-every-dispatched-run-carries-a-session-id/manifest.md; it reports 13 passed / 6 failed against a base of 9 passed / 6 failed with the same six failures, and names both its gate and negative-control logs.",
+    "write_paths": "read the manifest's declared fence; every path in the landed diff is inside it, and reckon/crew/routing.py was declared and left unchanged because grep confirms it holds no session-id capture path."
+  },
+  "justifications": {
+    "durability": "each of the four added assertions in tests/test_every_run_carries_a_session_id.py compares against a literal point name or an independently written stream value, and each names a mutation (remove the reason fallback at dispatch.py:4789) under which it reddens, as the negative-control log demonstrates for three of them.",
+    "evidence": "the four tests in tests/test_every_run_carries_a_session_id.py assert the done-when's two cases and pass at the landed head, and the negative-control log at docs/figures/worker-death-is-recorded/negative-control-session-id.log reproduces the declared mutation verbatim and reddens three tests; docked because the census at docs/research/data/session-id-capture.json is a single live measurement reproducible only while the worktree survives (session_id_capture_census.py:22 pins its own absolute path).",
+    "fit": "the new symbols _dispatch_session_absence and _capture_session_absence in reckon/crew/dispatch.py:4930 are mechanism-descriptive with no plan labels, but the evidence anchor cites a path that does not exist and the census generator hardcodes its own worktree path against the sibling idiom.",
+    "goal_fidelity": "reckon/crew/dispatch.py:3850 records a session_id_absent at dispatch and dispatch.py:4785 records the id or the capture point on every observation, which is exactly the goal's records-a-session-id-or-records-why-it-could-not contract.",
+    "scope_discipline": "every path in the diff of 320ece2d..1aff17a0 is inside the declared fence, and reckon/crew/routing.py was declared and left untouched with a verified justification."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every newly dispatched run records a session id or names why it could not; reckon/crew/dispatch.py:3850 writes a session_id_absent into the pointer at dispatch and dispatch.py:4785 writes the id, or the named point capture reached, on every observation.\nVERDICT done_when: the done-when names docs/research/data/session-id-capture.json, the capture path, four tests in tests/test_every_run_carries_a_session_id.py and a negative control; the manifest records the gate and I re-ran the four new tests at the landed head (4 passed in 1.38s).\nVERDICT write_paths: read the manifest's declared fence; every path in the landed diff is inside it, and reckon/crew/routing.py was declared and left unchanged because grep confirms it holds no session-id capture path.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T051637086142-every-dispatched-run-carries-a-session-id/manifest.md; it reports 13 passed / 6 failed against a base of 9 passed / 6 failed with the same six failures, and names both its gate and negative-control logs.\nVERDICT diff: read commits 320ece2d and 1aff17a0 against base 75b39d4d; the code commit adds _dispatch_session_absence and _capture_session_absence to reckon/crew/dispatch.py with the four tests and the census/figures, and the docs commit adds the section-5.4 landing record plus its evidence anchor.\nCALL_SITES: reckon/cli.py:crew_observe, reckon/crew/recovery.py:4413\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:3850 records a session_id_absent at dispatch and dispatch.py:4785 records the id or the capture point on every observation, which is exactly the goal's records-a-session-id-or-records-why-it-could-not contract.\nSCORE evidence: 18\nJUSTIFICATION evidence: the four tests in tests/test_every_run_carries_a_session_id.py assert the done-when's two cases and pass at the landed head, and the negative-control log at docs/figures/worker-death-is-recorded/negative-control-session-id.log reproduces the declared mutation verbatim and reddens three tests; docked because the census at docs/research/data/session-id-capture.json is a single live measurement reproducible only while the worktree survives (session_id_capture_census.py:22 pins its own absolute path).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff of 320ece2d..1aff17a0 is inside the declared fence, and reckon/crew/routing.py was declared and left untouched with a verified justification.\nSCORE durability: 19\nJUSTIFICATION durability: each of the four added assertions in tests/test_every_run_carries_a_session_id.py compares against a literal point name or an independently written stream value, and each names a mutation (remove the reason fallback at dispatch.py:4789) under which it reddens, as the negative-control log demonstrates for three of them.\nSCORE fit: 17\nJUSTIFICATION fit: the new symbols _dispatch_session_absence and _capture_session_absence in reckon/crew/dispatch.py:4930 are mechanism-descriptive with no plan labels, but the evidence anchor cites a path that does not exist and the census generator hardcodes its own worktree path against the sibling idiom.\nFINDING docs/evidence/archive/worker-death-is-recorded-landed.html:307 the gate paragraph cites docs/figures/worker-death-is-recorded/session-id-capture.json as a gate artefact, but no such file exists (the figures directory holds only logs, scripts and the svg) and the report is docs/research/data/session-id-capture.json cited at line 299, so a reader following the anchor finds nothing.\nFINDING docs/figures/worker-death-is-recorded/session_id_capture_census.py:22 the census generator hardcodes its own producing worktree as REPO and inserts it on sys.path, so the report at docs/research/data/session-id-capture.json cannot be regenerated once the worktree is removed, while the sibling generator session_id_capture_figure.py:12 resolves its directory from Path(__file__).\nREVIEWED_BASE_SHA: 75b39d4d663649eeac7596b50667bafb0f8cfb8a\nREVIEWED_HEAD_SHA: 1aff17a07ee240c2a4f2fe6da135e709830bb391",
+  "review_run_id": "r-20260923T071023453794-review-of-every-dispatched-run-carries-a-session-id",
+  "reviewed_base_sha": "75b39d4d663649eeac7596b50667bafb0f8cfb8a",
+  "reviewed_head_sha": "1aff17a07ee240c2a4f2fe6da135e709830bb391",
+  "reviewed_run_id": "r-20260923T051637086142-every-dispatched-run-carries-a-session-id",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T07:41:56.352848+00:00",
+  "total": 92
+}

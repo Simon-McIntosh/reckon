@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs: baseline_suite (revision 61a4439ac, completed true, failure_count 52, failure_ids listed) and after_suite (revision 658bfb18, completed true, failure_count 0, failure_ids []). added ids = after_ids - base_ids = empty, so the change added no failing test. The head arm ran two docs-only commits before the final head, so it measures the code+tests exactly and the evidence-fragment tail is unmeasured by it.",
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/velocity.py:1560 (_landed receipts reader)"
+  ],
+  "completed_at": "2026-10-03T21:47:50.171Z",
+  "dispatched_at": "2026-10-03T21:42:29Z",
+  "findings": [
+    {
+      "file": "tests/test_a_crew_verb_ok_reads_its_outcome.py",
+      "line": "60",
+      "severity": "follow-on",
+      "text": "follow-on: the emit-site enumeration guards only the defect's exact shape - a dict literal carrying \"ok\": True beside a **spread - and only inside top-level functions whose name starts with crew_. A regression that reintroduces a constant success through a helper, or through a plain \"ok\": True dict the spread test skips over, would not redden it. The scratch negative control restores precisely the guarded shape, so it confirms the guard fires on that shape and not on the boundary."
+    },
+    {
+      "file": "reckon/velocity.py",
+      "line": "1560",
+      "severity": "follow-on",
+      "text": "follow-on: a production reader of the changed answer is not named in the evidence fragment's readers section. velocity.py:1560 reads crew complete/promote receipt objects and skips any whose ok is not true; crew_complete (reckon/cli.py:6398) is one of the rewritten sites. The reading is unchanged for emitted outcomes, because complete's only non-raising negative path already published explicit ok:false and its other refusals raise, but a reader whose reading could move with the rule was left unexamined and unstated."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit: 16fb070c8 adds the helper and rewrites the literal sites, 3b68e21c3/62d5be2da/15a86e7de classify held routing, review and skip outcomes, 658bfb18c/297932bde/1ef417f11 are evidence-fragment docs; the six widened test files change only exit-code and ok expectations for refusal, failed-replay, finding and red-suite outcomes.",
+    "done_when": "the done_when names tests/test_a_crew_verb_ok_reads_its_outcome.py; I re-ran it in the reviewed worktree at head and read 25 passed EXIT=0, it enumerates emit sites (test_crew_emit_sites_do_not_put_literal_success_beside_a_result), drives two verbs to refusal (preflight hold, suite null exit) and one to success through real entry points, and the base/head flat suite records sit in the manifest with failure_ids.",
+    "goal": "the node's goal is to make every crew verb payload in reckon/cli.py publish an ok derived from the result it carries, through one helper, keeping an explicit ok, publishing false for a refusal/skip/unmeasured outcome and true for success, with exit status following; head 1ef417f11 does this via _crew_result_ok and _emit_crew_result (reckon/cli.py:996-1046), and an independent AST scan over the crew_* functions finds 0 literal ok-true spreads against 32 at base 61a4439ac.",
+    "manifest": "read; status complete, commits 16fb070c8 through 1ef417f11, changed_paths, landing, tests, test_logs, negative_control_log, baseline_suite and after_suite all populated with completed true, failure_count 52 base / 0 head, and the added-failure derivation reads 0 added ids.",
+    "write_paths": "the manifest declares reckon/cli.py, the new test, the evidence fragment, and six test files added by the coordinator's resume ruling (resume-1-advice.txt); git diff --name-status base..head lists exactly those nine paths plus the evidence fragment, with no plan HTML, ledger, index or foreign file touched."
+  },
+  "justifications": {
+    "durability": "the enumeration test has a demonstrated negative control (restore one literal preflight spread in a scratch copy, EXIT=1) and the shape test asserts helper output against independent literal expectations over 21 cases; held one point because the guard covers only the spread-dict shape in crew_* top-level functions.",
+    "evidence": "the named gate test passes at head (25 passed EXIT=0, re-run here) and both flat suite arms are recorded with failure_ids; the head arm log names revision 658bfb18c, two docs-only commits before the final head, so the measurement is representative but was not re-taken at 1ef417f11.",
+    "fit": "reckon/cli.py:996 keeps the module's docstring-and-helper idiom, commits carry conventional subjects with bodies, the evidence fragment follows the r-evidence meta shape, and no plan, ticket, version or attribution token appears.",
+    "goal_fidelity": "reckon/cli.py:996-1046 derives ok from the result in one helper and every crew_* emit site calls it; an independent AST scan over base and head finds 32 literal ok-true spreads at 61a4439ac and 0 at 1ef417f11, and exit status follows via _emit_crew_result's Exit(failure_exit).",
+    "scope_discipline": "git diff --name-status 61a4439ac 1ef417f11 lists only the declared paths, and the six extra test files were authorised by the coordinator's resume ruling in resume-1-advice.txt; no plan, ledger, index or foreign path is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node makes every crew verb payload in reckon/cli.py derive ok from its result through one helper (_crew_result_ok/_emit_crew_result, reckon/cli.py:996-1046); an independent AST scan finds 0 literal ok-true spreads in crew_* functions at head against 32 at base 61a4439ac, and exit status follows the verdict.\nVERDICT done_when: tests/test_a_crew_verb_ok_reads_its_outcome.py re-run in the reviewed worktree reads 25 passed EXIT=0; it enumerates the emit sites, drives preflight and suite to refusal and preflight-clear to success through real entry points, and the base/head flat records sit in the manifest.\nVERDICT write_paths: git diff --name-status 61a4439ac 1ef417f11 lists exactly the declared cli.py, new test, evidence fragment and six test files the coordinator's resume ruling added; nothing outside them is touched.\nVERDICT manifest: read; status complete, commits 16fb070c8..1ef417f11, both suite arms completed true with 52 base / 0 head failure ids, negative_control_log named, added-failure derivation reads 0 ids.\nVERDICT diff: read commit by commit; three fix commits rewrite the literal sites and classify hold/review/skip outcomes, three docs commits land the evidence fragment. The six widened test files only change exit-code and ok expectations for refusal, failed-replay, finding and red-suite outcomes.\nCALL_SITES: reckon/velocity.py:1560 (_landed receipts reader)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:996-1046 derives ok from the result in one helper every crew_* site calls, and exit status follows through Exit(failure_exit) at reckon/cli.py:1042.\nSCORE evidence: 18\nJUSTIFICATION evidence: the named gate test passes at head (25 passed EXIT=0, re-run here) and both flat arms are recorded with failure_ids, but the head arm log names revision 658bfb18c, two docs-only commits before the final head 1ef417f11.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 61a4439ac 1ef417f11 lists only the declared paths and the six test files authorised by resume-1-advice.txt; no plan, ledger or index path is touched.\nSCORE durability: 18\nJUSTIFICATION durability: test_crew_emit_sites_do_not_put_literal_success_beside_a_result has a demonstrated scratch negative control (EXIT=1) and the shape test asserts independent literals, but the guard covers only the spread-dict shape in crew_* top-level functions.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/cli.py:996 keeps the module's helper idiom, the commits carry conventional subjects with bodies, and the evidence fragment follows the meta shape with no plan or attribution token.\nFINDING tests/test_a_crew_verb_ok_reads_its_outcome.py:60 follow-on: the enumeration guards only the exact shape (dict literal with \"ok\": True beside a **spread) in top-level crew_* functions, so a regression through a helper or a plain dict would not redden it.\nFINDING reckon/velocity.py:1560 follow-on: a production reader of crew complete/promote receipts' ok exists and is not named in the evidence readers section; its reading is unchanged for emitted outcomes but was left unexamined.\n",
+  "review_run_id": "r-20261003T214207788962-review-of-a-crew-verb-ok-reads-its-outcome",
+  "reviewed_base_sha": "61a4439acfab64bb85cbacc69d75454e01d89b94",
+  "reviewed_head_sha": "1ef417f11ec9403b372b73a78f92da58276030fd",
+  "reviewed_run_id": "r-20261003T194714763191-a-crew-verb-ok-reads-its-outcome",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T214207788962-review-of-a-crew-verb-ok-reads-its-outcome",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T21:52:00+00:00",
+  "total": 94
+}

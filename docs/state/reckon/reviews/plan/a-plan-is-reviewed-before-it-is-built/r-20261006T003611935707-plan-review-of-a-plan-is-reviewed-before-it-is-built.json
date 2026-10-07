@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T00:41:51.509Z",
+  "dispatched_at": "2026-10-06T00:36:33Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-plan-is-reviewed-before-it-is-built.html:167",
+      "id": "deep_module-1",
+      "reason": "the section must either state a second slice for the pre-collapse form (keeping card interiors) or drop that recognised form, because as written the byte-identity test the node iterates against cannot hold for the pre-collapse form.",
+      "text": "\u00a716 states all three recognised fingerprint forms are produced from \"the same sliced prose\", but the pre-collapse (legacy) form keeps landed-card interiors whereas the slicer subtracts \"every landed card's interior except its heading element\", and `_AuthoredProseParser` drops card interiors only when `skip_landed_cards=True` (`reckon/crew/plan_review.py:213,230,242`), the `legacy=False` path keeping them whole (line 430 calls `_authored_prose(document)`); so one slicer cannot reproduce both the present whole-document form and the pre-collapse form, and \u00a716 names no producer for the latter",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d19304736f1bd76367b8fd36291be13710e19b0a1040ef5cba883d31f16bff51",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 154,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T003611935707-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "7efc94fb595a329d4db0f292f98c063b6b183152",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 `section_prose` on `reckon/_plan_html.py` is proposed as the single producer of the prose behind all three fingerprint forms, but it cannot produce the pre-collapse form whose prose keeps landed-card interiors, so the design leaves an unnamed second producer.",
+    "duplicate_owner": "pass \u2014 the plan extends owners rather than forking: `structured_section_spans` gains `every_marked_element` on `reckon/_plan_html.py`, `_TAG_RE` and `section_record_id` are reused as-is, `roadmap.implementable_sections` is read unchanged, and `recovery._plan_review_pending` is superseded rather than sat beside (the done-when requires `grep -n 'read_plan_review(' reckon/crew/recovery.py` to return nothing).",
+    "interface_budget": "pass \u2014 public_definitions 1480, cli_options 317, mcp_views 33, refusal_families 23. \u00a716 adds exactly one public definition (`section_prose`, 1480\u21921481) and its own accounting names the reader merge that funds it, states the retired `legacy` parameter and the moved private names, and records that the refusal reuses the `plan-review-missing` family (refusal_families +0); \u00a720 adds none and retires none. The supplied count 1480 matches the section's stated base.",
+    "reuse_search": "pass \u2014 \u00a716 names its census instruments and each resolves in the tree: `grep -rn 'stripped_strings' reckon/` returns three sites, all in `reckon/mcp_views.py` (2072 `authored_plan_text`, 2137 `_record_text_response`, 2238 `_section_response`); `grep -rnw '_TAG_RE' reckon/` returns the definition at `reckon/_plan_html.py:1804` and its single base use inside `count_open_decisions` at `:1823`; `_PROSE_SKIP_TAGS` sits at `reckon/crew/plan_review.py:148` as stated; the dispatch `get_text` reader is named; and `doccheck._prose_text` (`reckon/doccheck.py:298`) is a distinct element-scoped markdown linter, not a plan-section reader, so its omission from the census is correct rather than a gap.",
+    "thin_wrapper": "pass \u2014 \u00a716 justifies `section_prose` as the merge of the three `stripped_strings` readers plus the dispatch `get_text` reader into one, and argues in its own text why the module-private coverage predicate is not a wrapper over `read_plan_review` (that reader joins one record to one digest; the predicate joins `roadmap.implementable_sections` to the union of section digests across `list_plan_reviews`)."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.739574+00:00"
+}

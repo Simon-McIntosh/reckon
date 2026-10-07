@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T18:38:42.104Z",
+  "dispatched_at": "2026-10-05T18:34:33Z",
+  "findings": [
+    {
+      "anchor": "reckon/_schema.py:788",
+      "id": "duplicate_owner-1",
+      "reason": "the node must be told that `implementable_sections` and `plan_executable_remainder` both call the predicate directly (or that the predicate moves to a lower module), not that the schema calls into roadmap, otherwise the first implementation node hits an import cycle.",
+      "text": "\u00a718 says the one implementation is the roadmap list-reader and that `_schema.plan_executable_remainder` is \"expressed over it, returning the count of what `implementable_sections` lists\", but `plan_executable_remainder` lives in `reckon/_schema.py` and `reckon/roadmap.py` already does `from reckon._schema import ...` (reckon/roadmap.py:21), so calling `roadmap.implementable_sections` from the schema is an upward import and a circular one; the same section two sentences later says all three readers call the new `_schema` predicate, which is the non-cyclic form \u2014 the text carries both and an implementer could land the cyclic one",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "aa1006c6dad60da54aef52f001ead06d0ed9f0b77a7e3330b20b5ce1f2618fba",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 111,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T183400367637-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "11be9d64a6b2337747e4c2067a564ae4386466f4",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the three sections hide section identity, span location, prose slicing, per-section digesting and coverage behind a small interface: `plan_fingerprint` (unchanged return), the public `plan_headings`, the machinery-element predicate, and one classification predicate; the new helpers (`_section_digests`, the coverage predicate, the heading-walk rule) are private and each hides real work, not a forwarding pair.",
+    "duplicate_owner": "a finding \u2014 \u00a718 states the schema's count-reader is \"expressed over\" `roadmap.implementable_sections`, which would make reckon/_schema.py import reckon/roadmap.py while roadmap.py already imports `_schema` (reckon/roadmap.py:21), a cycle that contradicts the section's own \"no import runs upward\" claim.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; the three sections account for their additions and their non-retirements in their own text (\u00a716 no public definition, \u00a717 net two with `landed_section_ids` a move and no retirement because both existing readers keep callers, \u00a718 one public predicate with nothing retirable because the three spellings keep distinct questions), and \u00a716 states it reuses the existing plan-review-missing family rather than adding one.",
+    "reuse_search": "pass \u2014 the design sections name the machinery they extend and it exists: `_StructuredSectionSpanParser` and `structured_section_spans` (reckon/_plan_html.py:44,94), `section_record_id`/`section_id_candidates` (reckon/crew/routing.py:224,243), `landed_section_ids` (reckon/_store.py:1075), `roadmap.implementable_sections` (reckon/roadmap.py:106), `_schema.plan_executable_remainder` (reckon/_schema.py:788), and the AST census in `reckon/interface_counts.py`.",
+    "thin_wrapper": "pass \u2014 every retained thin surface states why it cannot be extended: `structured_section_spans` keeps its spans-only contract because reckon/_store.py:1685 and tests import it; the coverage predicate is stated as a join over two existing readers rather than a wrapper of `read_plan_review`; `_authored_prose` keeps its name doing real work (subtract protected spans, drop landed interiors, bucket by identity)."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.812089+00:00"
+}

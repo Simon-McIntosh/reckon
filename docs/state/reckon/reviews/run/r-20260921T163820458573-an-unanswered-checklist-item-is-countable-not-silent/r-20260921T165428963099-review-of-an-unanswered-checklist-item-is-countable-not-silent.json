@@ -1,0 +1,122 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_site_scan": {
+    "direct_named_calls": {
+      "load_review_prompt": [],
+      "parse_review": [],
+      "read_review": [
+        "reckon/crew/recovery.py:261",
+        "reckon/crew/promotion.py:2824"
+      ]
+    },
+    "limitation": "Static named calls in reckon and scripts only; worker-issued interpreter commands and dynamic indirection are not production call-site observations.",
+    "python_files_scanned": 75
+  },
+  "call_site_scope_note": "No production caller of the changed parse_review or load_review_prompt was discovered in 75 Python files under reckon/ and scripts/ at the reviewed head. The scan positively found the two read_review consumers. Inspected recovery._stored_review and promotion._review_row_block read stored records but do not invoke the changed parser; they are not counted as call sites of this change. Worker-issued parser probes and test callers are also not counted. This is a bounded static observation, not a judgment of whether an unwired parser was intended.",
+  "commits_read": [
+    "a1f5a6a54afee663522499e1f1ceca7fe41298b8",
+    "7e11d0bd33fc090713eb28cc2fd46ec96f95bff9",
+    "907f404e8a665b3700aa3f53ae4492187f1576b7",
+    "bbe46b105dda56dbe701535dd80ea7feb792c493"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T16:54:28.963099+00:00",
+  "evidence": {
+    "direct_probe": {
+      "focused_exit_status": 0,
+      "focused_passed": 4,
+      "item_aggregate_for_complete_emission": 6,
+      "legacy_exit_status": 0,
+      "legacy_passed": 6,
+      "missing_call_sites_named_absent": true,
+      "named_site_count": 1,
+      "none_count": 0,
+      "omitted_count_key_absent": true
+    },
+    "focused_receipt": {
+      "exit_status": 0,
+      "independently_rerun": true,
+      "passed": 4,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T165428963099-review-of-an-unanswered-checklist-item-is-countable-not-silent/independent-focused.log"
+    },
+    "impacted_gate": {
+      "exit_status": 1,
+      "failed": 5,
+      "passed": 22,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T165428963099-review-of-an-unanswered-checklist-item-is-countable-not-silent/independent-prompt-parser.log",
+      "scope": "tests/test_review_scoring.py is outside the target node write fence; the failures are recorded under follow_ons."
+    },
+    "legacy_receipt": {
+      "exit_status": 0,
+      "independently_rerun": true,
+      "passed": 6,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T165428963099-review-of-an-unanswered-checklist-item-is-countable-not-silent/independent-legacy.log"
+    },
+    "negative_control": {
+      "declared_mutation_matches_final_head": false,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T163820458573-an-unanswered-checklist-item-is-countable-not-silent/negative-control.log",
+      "reason": "The receipt removes the explicit not-examined sentinel from the earlier implementation, but final head 907f404e uses absent keys; the receipt predates the final source commit."
+    },
+    "scope": {
+      "changed_paths": 5,
+      "declared_paths": 6,
+      "head_clean": true,
+      "out_of_scope_paths": 0
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T163820458573-an-unanswered-checklist-item-is-countable-not-silent/manifest.md",
+      "line": "11-16",
+      "text": "[P2] The durable manifest omits final commits 907f404e and bbe46b10 even though the reviewed worktree is at bbe46b105dda56dbe701535dd80ea7feb792c493; its negative_control.log and negative_control_note describe removal of the earlier not-examined sentinel and were written before the final absent-key correction, so the manifest does not identify the final source or a control applied to it."
+    }
+  ],
+  "follow_ons": [
+    "The independently rerun impacted prompt/parser gate is red at the final head: tests/test_review_scoring.py reports 5 failed and 22 passed because VALID_TEXT has only the original five VERDICT lines, the prompt falsifier requires VERDICT call_sites even though the prompt defines CALL_SITES as the sixth emission, and absent-item assertions still expect the five-item schema. This file is outside the node's declared write paths; update its expectations in a separately scoped test node before treating the repository's related review suite as green.",
+    "The target manifest should be refreshed after final commit bbe46b10 and its negative-control receipt should be regenerated or explicitly superseded; no repair was made because the review node has only the review-record write path."
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Static scan of 75 Python files found no production caller of parse_review or load_review_prompt; recovery.py:261 and promotion.py:2824 consume stored reviews through read_review but do not invoke the changed parser.",
+    "diff": "Read all four target commits separately against the recorded base; source and prompt changes add the sixth item and type-safe absent-key handling, the evidence commits update the plan and archive, and no tracked path escapes the declared scope.",
+    "done_when": "Read the target prompt and independently reran the new four-case gate plus the established call-sites gate; both pass, while the out-of-scope prompt/parser regression gate is separately recorded as red.",
+    "goal": "Read the target prompt; the parser now accounts for call_sites as a sixth checklist item, with named-site and none emissions represented in item_verdicts and omission withheld from the aggregate.",
+    "manifest": "Read the target manifest; its source worktree and changed paths are clear, but commits 907f404e and bbe46b10 and the final negative-control state are missing from the durable record.",
+    "write_paths": "Read the target manifest and compared its six declared paths with the five tracked paths changed from a9f2db7594b84903c6301bcbf7c47dc761f81915 to bbe46b105dda56dbe701535dd80ea7feb792c493; every changed path is inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_call_sites_is_a_checklist_item.py passes 4 tests and tests/test_review_call_sites.py passes 6 at the final head, but tests/test_review_scoring.py remains red and the target manifest omits the final two commits and current control receipt.",
+    "evidence": "The independent focused and legacy receipts pass (4 and 6 tests), but independent-prompt-parser.log records 5 failures and 22 passes in the related existing gate, and the target negative-control receipt predates the final source correction.",
+    "fit": "reckon/crew/review.py:248-256 reuses the existing absent-item and withheld-aggregate mechanism, while lines 221-237 keep literal none as the only explicit zero and classify empty emissions separately; the design fits the existing parser but needs the out-of-scope falsifier update.",
+    "goal_fidelity": "reckon/crew/review.py:80-87 adds call_sites to REVIEW_ITEMS and lines 221-273 map site, none, omitted and empty emissions to distinct item/count states; the independent four-case gate passes.",
+    "scope_discipline": "The target diff from a9f2db7594b84903c6301bcbf7c47dc761f81915 to bbe46b105dda56dbe701535dd80ea7feb792c493 changes five tracked paths, all within the six declared write paths, and the target worktree is clean."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the target prompt; the parser now accounts for call_sites as a sixth checklist item, with named-site and none emissions represented in item_verdicts and omission withheld from the aggregate.\nVERDICT done_when: Read the target prompt and independently reran the new four-case gate plus the established call-sites gate; both pass, while the out-of-scope prompt/parser regression gate is separately recorded as red.\nVERDICT write_paths: Read the target manifest and compared its six declared paths with the five tracked paths changed from a9f2db7594b84903c6301bcbf7c47dc761f81915 to bbe46b105dda56dbe701535dd80ea7feb792c493; every changed path is inside the fence.\nVERDICT manifest: Read the target manifest; its source worktree and changed paths are clear, but commits 907f404e and bbe46b10 and the final negative-control state are missing from the durable record.\nVERDICT diff: Read all four target commits separately against the recorded base; source and prompt changes add the sixth item and type-safe absent-key handling, the evidence commits update the plan and archive, and no tracked path escapes the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:80-87 adds call_sites to REVIEW_ITEMS and lines 221-273 map site, none, omitted and empty emissions to distinct item/count states; the independent four-case gate passes.\nSCORE evidence: 13\nJUSTIFICATION evidence: The independent focused and legacy receipts pass (4 and 6 tests), but independent-prompt-parser.log records 5 failures and 22 passes in the related existing gate, and the target negative-control receipt predates the final source correction.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The target diff from a9f2db7594b84903c6301bcbf7c47dc761f81915 to bbe46b105dda56dbe701535dd80ea7feb792c493 changes five tracked paths, all within the six declared write paths, and the target worktree is clean.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_call_sites_is_a_checklist_item.py passes 4 tests and tests/test_review_call_sites.py passes 6 at the final head, but tests/test_review_scoring.py remains red and the target manifest omits the final two commits and current control receipt.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/review.py:248-256 reuses the existing absent-item and withheld-aggregate mechanism, while lines 221-237 keep literal none as the only explicit zero and classify empty emissions separately; the design fits the existing parser but needs the out-of-scope falsifier update.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T163820458573-an-unanswered-checklist-item-is-countable-not-silent/manifest.md:11-16 [P2] The durable manifest omits final commits 907f404e and bbe46b10 even though the reviewed worktree is at bbe46b105dda56dbe701535dd80ea7feb792c493; its negative_control.log and negative_control_note describe removal of the earlier not-examined sentinel and were written before the final absent-key correction, so the manifest does not identify the final source or a control applied to it.\n",
+  "review_limitations": [
+    "Read the recorded target reproduction, focused gate and plan/evidence receipts; independently reran the new four-case gate, the established call-sites gate, and the related prompt/parser gate, but did not run the full repository suite.",
+    "This review attaches findings and scores only. It does not repair source, update the target manifest, merge commits, promote the target run or verify the merged primary head.",
+    "The static call-site census covers named Python calls in the target checkout and cannot observe worker-issued interpreter commands or dynamic indirection."
+  ],
+  "review_run_id": "r-20260921T165428963099-review-of-an-unanswered-checklist-item-is-countable-not-silent",
+  "reviewed_base_sha": "a9f2db7594b84903c6301bcbf7c47dc761f81915",
+  "reviewed_head_sha": "bbe46b105dda56dbe701535dd80ea7feb792c493",
+  "reviewed_run_id": "r-20260921T163820458573-an-unanswered-checklist-item-is-countable-not-silent",
+  "reviewer_run_id": "r-20260921T165428963099-review-of-an-unanswered-checklist-item-is-countable-not-silent",
+  "scores": {
+    "durability": 13,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T163820458573-an-unanswered-checklist-item-is-countable-not-silent/manifest.md",
+  "source_manifest_sha256": "e4ba5fbcb96dae5f54990063ecf5a7b2d77de5bb0c7cf2b708a75435d0abf14d",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/an-unanswered-checklist-item-is-countable-not-silent",
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T19:03:21+02:00",
+  "total": 78
+}

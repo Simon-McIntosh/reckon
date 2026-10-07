@@ -1,0 +1,140 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_follower_rearm_shows_nothing_twice.py::test_a_terminal_rearm_shows_the_burst_under_one_frame_line"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "added_failures_source": {
+    "base_log": "/home/ITER/mcintos/.cache/reckon-s25/cli-arm-base.log",
+    "control": "a synthetic pair carrying one known new FAILED line returned count 1 and that id before the real pair was read, and the run's own id files agree with the derivation",
+    "derivation": "reckon.crew.review.added_failures_from_gate_logs",
+    "head_log": "/home/ITER/mcintos/.cache/reckon-s25/cli-arm-merged.log",
+    "note": "both logs are complete and end with EXIT=; neither names the revision it ran at on any line, and the arm that carries the change is the 07e76f0a tree with this commit's patch applied"
+  },
+  "base_log_revision": null,
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:291"
+  ],
+  "completed_at": "2026-09-29T19:32:39.869Z",
+  "dispatched_at": "2026-09-29T14:11:53Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.cache/reckon-s25/cli-population.txt",
+      "line": "1",
+      "text": "this 117-file list, built from the base tree and used for both arms, contains no entry for tests/test_cli_settings_writer_reuses_the_store.py, so the head arm never collected the change's own tests and the done-when's \"every tests/ file that imports reckon.cli\" holds for the base tree only, while the node's own later head-arm header records 118 such files at the head tree."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141132754558-cli-settings-writer-delegates-the-replace/manifest.md",
+      "line": "16",
+      "text": "measurement_module names /tmp/base-arm-1409199/reckon/cli.py, the base arm of the earlier run-directory pair whose own header marks revision fdb116e2 and whose chunk A was killed at the node time fence, and measurement_cwd names the reviewed worktree, so neither field describes the arms the baseline_suite and after_suite records name and, with both named logs headerless, the store's own revision reader returns null for each and the added-failure count cannot be tied to a commit from the record alone."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read 6862bd999 against base fdb116e212, 3 files changed, 239 insertions(+), 8 deletions(-): cli.py:178 hands the payload to the shared writer and loses its own temporary creation, chmod and rename, and the new test file rebuilds the pre-migration writer at tests/test_cli_settings_writer_reuses_the_store.py:38 as the oracle for the head assertions.",
+    "done_when": "the done-when names a new test recording the written bytes, both modes, both refusals and the absence of a leftover temporary at head, plus two arms over every tests/ file importing reckon.cli with both logs ending in EXIT=; the arms exist and end with EXIT=1, I re-ran the recording test file at head (9 passed), but the arms ran over 117 files built from the base tree so the node's own new test file was in neither arm, and the head added one failing id rather than none.",
+    "goal": "the node goal is to delegate the atomic replacement inside reckon/cli.py:_write_json_atomically to reckon._store.write_json_atomically without changing what it writes or refuses; reckon/cli.py:178-190 now calls the shared writer with fsync=False, indent=2, sort_keys=False, ensure_ascii=False and the revision's own mode, and the unchanged-bytes early return and both concurrent-edit refusals stay above it in cli.py.",
+    "manifest": "read; it records both arms' summaries, the one head-only id with its 5-of-5 isolation logs, the negative control and the commit, while its measurement_module and measurement_cwd name the trees of the earlier arms in the run directory that were killed at the node time fence rather than the arms its baseline_suite and after_suite records name.",
+    "write_paths": "read the four declared paths; the commit touches exactly three files \u2014 reckon/cli.py, tests/test_cli_settings_writer_reuses_the_store.py and the declared evidence fragment \u2014 and git show --stat for 6862bd999 lists nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_cli_settings_writer_reuses_the_store.py:38 rebuilds the base revision's writer and compares head's bytes, new-file mode, 0o640 mode, both refusals and leftover-temporary state against it, and the declared mutation at negative_control.log:1 reddens the two mode rows (384 against 416).",
+    "evidence": "the two logs the record names end with EXIT=1 and their summaries reproduce (cli-arm-base.log: 44 failed, 1986 passed, 7 skipped; cli-arm-merged.log: 43 failed, 1987 passed, 7 skipped), but neither log's first line names its revision, tree or command, the population they ran over excludes the node's own new test file, and my derivation from those two logs returns added_failure_count 1 rather than the done-when's zero.",
+    "fit": "the delegation at reckon/cli.py:178 passes only the shared writer's documented keywords, and tests/test_cli_settings_writer_reuses_the_store.py:1 names what it guards by mechanism rather than by any plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/cli.py:178-190 passes fsync=False, indent=2, sort_keys=False, ensure_ascii=False and mode=mode to reckon/_store.py:458, leaving only the temporary write and rename to the shared writer while the early return, both refusals and the ClickException wrapping stay at cli.py:153-192.",
+    "scope_discipline": "git show --stat 6862bd999 lists only reckon/cli.py, tests/test_cli_settings_writer_reuses_the_store.py and the fragment docs/evidence/fragments/a-worker-reuses-before-it-writes/cli-settings-writer-delegates-the-replace.html, all three inside the declared paths and nothing beyond them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to delegate the atomic replacement inside reckon/cli.py:_write_json_atomically to reckon._store.write_json_atomically without changing what it writes or refuses; reckon/cli.py:178-190 now calls the shared writer with fsync=False, indent=2, sort_keys=False, ensure_ascii=False and the revision's own mode, and the unchanged-bytes early return and both concurrent-edit refusals stay above it in cli.py.\nVERDICT done_when: the done-when names a new test recording the written bytes, both modes, both refusals and the absence of a leftover temporary at head, plus two arms over every tests/ file importing reckon.cli with both logs ending in EXIT=; the arms exist and end with EXIT=1, I re-ran the recording test file at head (9 passed), but the arms ran over 117 files built from the base tree so the node's own new test file was in neither arm, and the head added one failing id rather than none.\nVERDICT write_paths: read the four declared paths; the commit touches exactly three files \u2014 reckon/cli.py, tests/test_cli_settings_writer_reuses_the_store.py and the declared evidence fragment \u2014 and git show --stat for 6862bd999 lists nothing else.\nVERDICT manifest: read; it records both arms' summaries, the one head-only id with its 5-of-5 isolation logs, the negative control and the commit, while its measurement_module and measurement_cwd name the trees of the earlier arms in the run directory that were killed at the node time fence rather than the arms its baseline_suite and after_suite records name.\nVERDICT diff: read 6862bd999 against base fdb116e212, 3 files changed, 239 insertions(+), 8 deletions(-): cli.py:178 hands the payload to the shared writer and loses its own temporary creation, chmod and rename, and the new test file rebuilds the pre-migration writer at tests/test_cli_settings_writer_reuses_the_store.py:38 as the oracle for the head assertions.\nCALL_SITES: reckon/cli.py:291\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/cli.py:178-190 passes fsync=False, indent=2, sort_keys=False, ensure_ascii=False and mode=mode to reckon/_store.py:458, leaving only the temporary write and rename to the shared writer while the early return, both refusals and the ClickException wrapping stay at cli.py:153-192.\nSCORE evidence: 14\nJUSTIFICATION evidence: the two logs the record names end with EXIT=1 and their summaries reproduce (cli-arm-base.log: 44 failed, 1986 passed, 7 skipped; cli-arm-merged.log: 43 failed, 1987 passed, 7 skipped), but neither log's first line names its revision, tree or command, the population they ran over excludes the node's own new test file, and my derivation from those two logs returns added_failure_count 1 rather than the done-when's zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 6862bd999 lists only reckon/cli.py, tests/test_cli_settings_writer_reuses_the_store.py and the fragment docs/evidence/fragments/a-worker-reuses-before-it-writes/cli-settings-writer-delegates-the-replace.html, all three inside the declared paths and nothing beyond them.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_cli_settings_writer_reuses_the_store.py:38 rebuilds the base revision's writer and compares head's bytes, new-file mode, 0o640 mode, both refusals and leftover-temporary state against it, and the declared mutation at negative_control.log:1 reddens the two mode rows (384 against 416).\nSCORE fit: 19\nJUSTIFICATION fit: the delegation at reckon/cli.py:178 passes only the shared writer's documented keywords, and tests/test_cli_settings_writer_reuses_the_store.py:1 names what it guards by mechanism rather than by any plan, ticket or version identifier.\nFINDING /home/ITER/mcintos/.cache/reckon-s25/cli-population.txt:1 this 117-file list, built from the base tree and used for both arms, contains no entry for tests/test_cli_settings_writer_reuses_the_store.py, so the head arm never collected the change's own tests and the done-when's \"every tests/ file that imports reckon.cli\" holds for the base tree only, while the node's own later head-arm header records 118 such files at the head tree.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141132754558-cli-settings-writer-delegates-the-replace/manifest.md:16 measurement_module names /tmp/base-arm-1409199/reckon/cli.py, the base arm of the earlier run-directory pair whose own header marks revision fdb116e2 and whose chunk A was killed at the node time fence, and measurement_cwd names the reviewed worktree, so neither field describes the arms the baseline_suite and after_suite records name and, with both named logs headerless, the store's own revision reader returns null for each and the added-failure count cannot be tied to a commit from the record alone.\n",
+  "review_evidence": {
+    "arm_logs": {
+      "base_tail": "44 failed, 1986 passed, 7 skipped in 819.90s (0:13:39)\nEXIT=1",
+      "head_tail": "43 failed, 1987 passed, 7 skipped in 853.55s (0:14:13)\nEXIT=1",
+      "revision_header": null
+    },
+    "derivation_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193250144358-review-of-cli-settings-writer-delegates-the-replace/derive_added_failures.log",
+    "fragment_bytes_sha256": "9c05f70ad290751ba9268d8368e8a136492cc677826d84d4d66c7609ed6b0fcc",
+    "independent_re_run": {
+      "command": "PYTHONPATH=<reviewed worktree> python -m pytest -q -p no:cacheprovider --basetemp=/tmp/rev-bt-cli tests/test_cli_settings_writer_reuses_the_store.py",
+      "header_lines": "revision, tree, command, module_file and cwd on the log's first four lines",
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T193250144358-review-of-cli-settings-writer-delegates-the-replace/review_focused_head.log",
+      "result": "9 passed in 0.45s, EXIT=0",
+      "revision": "6862bd999bec4f40e442c5cd2056481a95e4b1c4"
+    },
+    "population": {
+      "files": 117,
+      "names_the_new_test": false,
+      "path": "/home/ITER/mcintos/.cache/reckon-s25/cli-population.txt"
+    },
+    "run_directory_logs": {
+      "note": "gate_base_arm.log and gate_head_arm.log in the reviewed run directory are an earlier pair, both marked incomplete at the node time fence, and are not the logs the suite records name"
+    }
+  },
+  "review_run_id": "legacy-e71688d410e1",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "fdb116e212e915cd96cb02835abc98a80f103c26",
+  "reviewed_changed_paths": [
+    "reckon/cli.py",
+    "tests/test_cli_settings_writer_reuses_the_store.py",
+    "docs/evidence/fragments/a-worker-reuses-before-it-writes/cli-settings-writer-delegates-the-replace.html"
+  ],
+  "reviewed_commits": [
+    "6862bd999"
+  ],
+  "reviewed_diffstat": "3 files changed, 239 insertions(+), 8 deletions(-)",
+  "reviewed_done_when": "the new test records, with expected values taken from the base revision's function, the written bytes, both modes, both refusals and the absence of leftover temporaries; the two arms run over every tests/ file importing reckon.cli with -n 4 and a separate --basetemp each, both logs end with an EXIT= line, and the head adds no failing test id; the arms ran at base 07e76f0ac795e6c12e615faf5519be5236e38be4 and that base with 6862bd999 applied",
+  "reviewed_goal": "delegate the atomic file replacement inside reckon/cli.py _write_json_atomically to reckon._store.write_json_atomically without changing what the function writes or refuses",
+  "reviewed_head_sha": "6862bd999bec4f40e442c5cd2056481a95e4b1c4",
+  "reviewed_manifest": {
+    "bytes": 12374,
+    "last_modified": "2026-09-29T19:32:18.595764+00:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141132754558-cli-settings-writer-delegates-the-replace/manifest.md",
+    "sha256": "acc3f8597e8ab1092123870ce542864d954be4507330377cdc30b0f68a299332"
+  },
+  "reviewed_node": "cli-settings-writer-delegates-the-replace",
+  "reviewed_plan": "a-worker-reuses-before-it-writes",
+  "reviewed_run_id": "r-20260929T141132754558-cli-settings-writer-delegates-the-replace",
+  "reviewed_suite_fields": {
+    "after_suite": {
+      "exit_status": 1,
+      "log_path": "/home/ITER/mcintos/.cache/reckon-s25/cli-arm-merged.log",
+      "revision": "07e76f0ac795e6c12e615faf5519be5236e38be4 + 6862bd999bec4f40e442c5cd2056481a95e4b1c4",
+      "summary": "43 failed, 1987 passed, 7 skipped in 853.55s"
+    },
+    "baseline_suite": {
+      "exit_status": 1,
+      "log_path": "/home/ITER/mcintos/.cache/reckon-s25/cli-arm-base.log",
+      "revision": "07e76f0ac795e6c12e615faf5519be5236e38be4",
+      "summary": "44 failed, 1986 passed, 7 skipped in 819.90s"
+    }
+  },
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/cli-settings-writer-delegates-the-replace",
+  "reviewed_write_paths": [
+    "reckon/cli.py",
+    "tests/test_cli_settings_writer_reuses_the_store.py",
+    "docs/evidence/fragments/a-worker-reuses-before-it-writes/cli-settings-writer-delegates-the-replace.html",
+    "docs/figures/a-worker-reuses-before-it-writes/cli-settings-writer-delegates-the-replace"
+  ],
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "node": "review-of-cli-settings-writer-delegates-the-replace",
+    "run_id": "r-20260929T193250144358-review-of-cli-settings-writer-delegates-the-replace"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T20:11:28.863908+00:00",
+  "total": 92
+}

@@ -3,9 +3,23 @@
 import json
 import os
 
+import pytest
 from click.testing import CliRunner
 
-from reckon.cli import _skills_source, main
+from reckon.cli import CLAUDE_SKILLS_DIR_ENV, _skills_source, main
+
+
+@pytest.fixture(autouse=True)
+def _resolve_skills_from_the_fixture_home(monkeypatch):
+    """Read the skills directory through ``Path.home``, not the session override.
+
+    Every case here builds its own home and patches ``Path.home`` at it, so the
+    skills-presence check must read that tree. The session-wide override in
+    ``conftest`` would send the check to the session's shared temporary
+    directory instead, so this module removes it and keeps the resolver's
+    ``Path.home`` fallback — still away from the operator's real directory.
+    """
+    monkeypatch.delenv(CLAUDE_SKILLS_DIR_ENV, raising=False)
 
 
 # ── doctor ─────────────────────────────────────────────────────────────────

@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two gate-arm logs (logs/gate_base.log at a2ad2010, logs/gate_head.log at 541af73e) through added_failures_from_gate_logs: the two ids red in the base arm are the deliberate read_plan-must-fail-at-base observation and no id is red at head, so the set difference is empty. The reviewed manifest's baseline_suite/after_suite fields carry no log_path, so the read-path annotation reports unmeasured for this run; that suite-field shape is a finding in this review.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/serve.py:1501 and :1924 (resource_map for served records and the project index)",
+    "reckon/mcp.py:1037",
+    ":1059",
+    ":1128 and :1650 (resource_map behind read_plan and the other typed readers)",
+    "reckon/archive.py:76",
+    "reckon/tags.py:213 and reckon/ledger.py:2707 (iter_resources)",
+    "reckon/project_state.py:886 and :1185 (state rollups)",
+    "reckon/cli.py:5542-5544 (build_migration_manifest and migrate_typed_layout)"
+  ],
+  "completed_at": "2026-09-28T17:59:23.816Z",
+  "dispatched_at": "2026-09-28T17:19:02Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-record-never-conflicts/typed-discovery-skips-evidence-fragments.html",
+      "line": "30",
+      "text": "the fragment says the non-typed context keeps \"_path_type\" from calling ResourceCollision, but no symbol of that name exists in reckon/resources.py \u2014 the function is _path_context at :228, so a reader following the citation finds nothing."
+    },
+    {
+      "file": "docs/evidence/fragments/a-landing-record-never-conflicts/typed-discovery-skips-evidence-fragments.html",
+      "line": "46",
+      "text": "the head-arm row cites logs/gate_head.log for \"43 passed, EXIT=0\" while that log records 77 passed over eight targets; 43 is the 4 new cases plus the 39 in tests/test_typed_resources.py, an arm whose log is not among the three the run kept, so the row's figure cannot be checked from the log it names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T160825030673-typed-discovery-skips-evidence-fragments/manifest.md",
+      "line": "53",
+      "text": "the suite observations carry no log_path and use tree/targets/passed/failed/exit/failed_ids instead of the contract's revision/command/exit_status/log_path/completed/failure_count/failure_ids, so reckon.crew.review.annotate_review_of_run derives \"unmeasured: the reviewed manifest names no base gate log\" for this run and the added-failure accounting a promotion reads goes dark although both arms ran and their logs exist."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against a2ad2010; 541af73e adds 22 lines to reckon/resources.py (the subtree constant at :54, the predicate at :222, and its adoption at :232, :272, :485, :794 and :1021) with a 189-line test file, and 6f3c2a67 adds the fragment and its figure, nothing outside the declared scope.",
+    "done_when": "the done_when asks for base and head arms of the named files, each log header printing its revision and reckon.__file__, FAILED ids per arm, and the read_plan case failing at base; logs/gate_base.log:1-2, :8, :122-125 and logs/gate_head.log:1-2, :8 carry every one of those.",
+    "goal": "the reviewed goal is that reckon/resources.py treat docs/evidence/fragments/ as a known non-resource subtree while every mis-shaped path elsewhere stays refused, and the diff delivers it at reckon/resources.py:54, :222-225, :232, :272, :485, :794 and :1021, with the same iter_resources call yielding 338 resources and no fragment on this tree where the base module still raises ResourceCollision on the fragment path.",
+    "manifest": "read at manifest.md:14-71; its 73-passed base and 77-passed head claims are corroborated by gate_base.log:8 and gate_head.log:8 and its negative-control log is named by absolute path, but its suite observations carry no log_path, which silences the read-path derivation of added failures for this run.",
+    "write_paths": "the declared scope is reckon/resources.py, tests/test_discovery_skips_evidence_fragments.py, the node's own evidence fragment and its figure directory, and git show --stat over 541af73e and 6f3c2a67 touches exactly those four paths."
+  },
+  "justifications": {
+    "durability": "the discovery-set assertions at tests/test_discovery_skips_evidence_fragments.py:146-147 and :154-158 and the refusal at :187 redden when the skip is removed, as the base arm shows, while the slug echoes at :132 and :141 restate the argument the test handed the tool and the map assertion at :160-161 cannot fail for a fragment that raises in _path_context before it can reach the map.",
+    "evidence": "logs/gate_base.log:122-125 records the read_plan case FAILED at base and logs/gate_head.log:8 records 77 passed at head, but manifest.md:53 and :55 name no log_path and the fragment's head row at :46 cites logs/gate_head.log for a 43-passed figure that log does not contain.",
+    "fit": "the constant-plus-predicate shape and the early return at reckon/resources.py:232 follow the module's own idiom at :36-58, while the landed fragment at :30 cites _path_type, a symbol that exists nowhere in the module.",
+    "goal_fidelity": "every discovery walk at reckon/resources.py:485, :794 and :1021 skips the subtree and :232 returns a non-typed context, and an independent run of iter_resources over this tree's docs finds 338 resources with the one fragment excluded where the base module raises ResourceCollision on the same call.",
+    "scope_discipline": "the two commits against a2ad2010 touch exactly the four declared paths, with 22 added lines in reckon/resources.py, the 189-line test file, the fragment and the figure, and no unrelated edit or shared path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed goal is that reckon/resources.py treat docs/evidence/fragments/ as a known non-resource subtree while every mis-shaped path elsewhere stays refused, and the diff delivers it at reckon/resources.py:54, :222-225, :232, :272, :485, :794 and :1021, with the same iter_resources call yielding 338 resources and no fragment on this tree where the base module still raises ResourceCollision on the fragment path.\nVERDICT done_when: the done_when asks for base and head arms of the named files, each log header printing its revision and reckon.__file__, FAILED ids per arm, and the read_plan case failing at base; logs/gate_base.log:1-2, :8, :122-125 and logs/gate_head.log:1-2, :8 carry every one of those.\nVERDICT write_paths: the declared scope is reckon/resources.py, tests/test_discovery_skips_evidence_fragments.py, the node's own evidence fragment and its figure directory, and git show --stat over 541af73e and 6f3c2a67 touches exactly those four paths.\nVERDICT manifest: read at manifest.md:14-71; its 73-passed base and 77-passed head claims are corroborated by gate_base.log:8 and gate_head.log:8 and its negative-control log is named by absolute path, but its suite observations carry no log_path, which silences the read-path derivation of added failures for this run.\nVERDICT diff: read commit by commit against a2ad2010; 541af73e adds 22 lines to reckon/resources.py (the subtree constant at :54, the predicate at :222, and its adoption at :232, :272, :485, :794 and :1021) with a 189-line test file, and 6f3c2a67 adds the fragment and its figure, nothing outside the declared scope.\nCALL_SITES: reckon/serve.py:1501 and :1924 (resource_map for served records and the project index), reckon/mcp.py:1037, :1059, :1128 and :1650 (resource_map behind read_plan and the other typed readers), reckon/archive.py:76, reckon/tags.py:213 and reckon/ledger.py:2707 (iter_resources), reckon/project_state.py:886 and :1185 (state rollups), reckon/cli.py:5542-5544 (build_migration_manifest and migrate_typed_layout)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: every discovery walk at reckon/resources.py:485, :794 and :1021 skips the subtree and :232 returns a non-typed context, and an independent run of iter_resources over this tree's docs finds 338 resources with the one fragment excluded where the base module raises ResourceCollision on the same call.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate_base.log:122-125 records the read_plan case FAILED at base and logs/gate_head.log:8 records 77 passed at head, but manifest.md:53 and :55 name no log_path and the fragment's head row at :46 cites logs/gate_head.log for a 43-passed figure that log does not contain.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits against a2ad2010 touch exactly the four declared paths, with 22 added lines in reckon/resources.py, the 189-line test file, the fragment and the figure, and no unrelated edit or shared path.\nSCORE durability: 17\nJUSTIFICATION durability: the discovery-set assertions at tests/test_discovery_skips_evidence_fragments.py:146-147 and :154-158 and the refusal at :187 redden when the skip is removed, as the base arm shows, while the slug echoes at :132 and :141 restate the argument the test handed the tool and the map assertion at :160-161 cannot fail for a fragment that raises in _path_context before it can reach the map.\nSCORE fit: 16\nJUSTIFICATION fit: the constant-plus-predicate shape and the early return at reckon/resources.py:232 follow the module's own idiom at :36-58, while the landed fragment at :30 cites _path_type, a symbol that exists nowhere in the module.\nFINDING docs/evidence/fragments/a-landing-record-never-conflicts/typed-discovery-skips-evidence-fragments.html:30 the fragment says the non-typed context keeps \"_path_type\" from calling ResourceCollision, but no symbol of that name exists in reckon/resources.py \u2014 the function is _path_context at :228, so a reader following the citation finds nothing.\nFINDING docs/evidence/fragments/a-landing-record-never-conflicts/typed-discovery-skips-evidence-fragments.html:46 the head-arm row cites logs/gate_head.log for \"43 passed, EXIT=0\" while that log records 77 passed over eight targets; 43 is the 4 new cases plus the 39 in tests/test_typed_resources.py, an arm whose log is not among the three the run kept, so the row's figure cannot be checked from the log it names.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T160825030673-typed-discovery-skips-evidence-fragments/manifest.md:53 the suite observations carry no log_path and use tree/targets/passed/failed/exit/failed_ids instead of the contract's revision/command/exit_status/log_path/completed/failure_count/failure_ids, so reckon.crew.review.annotate_review_of_run derives \"unmeasured: the reviewed manifest names no base gate log\" for this run and the added-failure accounting a promotion reads goes dark although both arms ran and their logs exist.",
+  "review_run_id": "r-20260928T171844551736-review-of-typed-discovery-skips-evidence-fragments",
+  "reviewed_base_sha": "a2ad2010b002abba58dc148227e53a84c33ac735",
+  "reviewed_head_sha": "6f3c2a676bac7940ebb5753ee068e85d8ef594cd",
+  "reviewed_run_id": "r-20260928T160825030673-typed-discovery-skips-evidence-fragments",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T17:38:51.765803+00:00",
+  "total": 89
+}

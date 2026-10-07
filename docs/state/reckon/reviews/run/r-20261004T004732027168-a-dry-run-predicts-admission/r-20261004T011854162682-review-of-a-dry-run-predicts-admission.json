@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:plan_dispatch",
+    "reckon/cli.py:crew_dispatch"
+  ],
+  "carried_forward": {
+    "at": "2026-10-04T02:05:23Z",
+    "from": "4b6efe80665b3058d7eda56882d6bf4a2eeeff46",
+    "paths": [
+      "tests/test_granted_path_is_a_claim.py"
+    ],
+    "to": "37e78ae9c64ab4eee087c8efef17e3577abf982c"
+  },
+  "completed_at": "2026-10-04T01:30:35.032Z",
+  "dispatched_at": "2026-10-04T01:19:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "5462",
+      "severity": "follow-on",
+      "text": "the dry-run admission is computed with no own_run_id or own_registered_at, so it cannot model the two racing-claim exemptions the real dispatch applies at reckon/crew/dispatch.py:6739: an earlier-registered peer whose claim has not launched and is later withdrawn makes the real dispatch proceed after the bounded wait at reckon/crew/dispatch.py:7290 while the preview reports scope-conflict, which is the false refusal the plan's measure forbids; narrow, because it needs the racing window and the preview runs before the node registers."
+    },
+    {
+      "file": "tests/test_crew_dryrun.py",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "the fixture backend command was changed from worker to codex to let the new real-dispatch assertions reach launch; under the original command the real dispatch fails at reckon/crew/dispatch.py:6893 with CrewError D22 (no launch translation for 'worker') while the dry run still reports admission admitted at exit 0, so the gate demonstrates dry-run prediction only for a launch-translatable backend and leaves the D22 refusal unmodelled, a gap outside this node's declared scope."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites",
+    "diff": "read against base 792227094; one commit across cli.py, dispatch.py and test_crew_dryrun.py.",
+    "done_when": "the done-when names tests/test_crew_dryrun.py; the manifest records that run and its result as flat suite arms.",
+    "goal": "the goal is that a dry run predict scope admission and mark record-assigned fields; reckon/cli.py:2176 and reckon/crew/dispatch.py:3412 implement both.",
+    "manifest": "read; it states 33 passed at head, 12 for the directory gate, and names its logs.",
+    "write_paths": "read the manifest's declared paths; the diff is inside the three used declared paths."
+  },
+  "justifications": {
+    "durability": "disabling the new guard at reckon/cli.py:2176 in a scratch copy of head makes tests/test_crew_dryrun.py::test_dry_run_refuses_a_live_claim_with_its_owner fail with assert 0 == 7, reproducing the reviewed run's negative-control.log, so the guard is load-bearing; the dock is that the base arm cannot exercise an assertion that did not exist at base.",
+    "evidence": "tests/test_crew_dryrun.py:154 asserts exit 7, ok false and the owner for the held path, :180 admits the free path on both surfaces, and :268 covers the stopped-clean case, with both manifest suite arms completed and green; the dock is that the refusal arm rests on the pre-existing test and prediction holds only for a translatable backend.",
+    "fit": "the preview reuses _raise_repository_scope_conflict and mirrors the real ScopeConflict handler's payload and exit code at reckon/cli.py:2320, and DispatchPlan.as_dict at reckon/crew/dispatch.py:3412 carries admission and record_assignment in the module's own shape, the dock being the static record_assignment literal.",
+    "goal_fidelity": "reckon/cli.py:2176 now answers the held-path dry run with the same error key, conflicting_run_id and exit 7 the real dispatch raises at reckon/cli.py:2320, and reckon/crew/dispatch.py:3412 marks the wave unevaluated; the dock is the unmodelled racing-claim exemptions in the first finding.",
+    "scope_discipline": "git diff 792227094..4b6efe806 touches exactly the declared reckon/cli.py, reckon/crew/dispatch.py and tests/test_crew_dryrun.py (154 insertions, 7 deletions), the declared evidence fragment and figure paths unused as the small-node rule allows, and no peer path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a dispatch dry run predict the dispatch's scope admission and mark record-assigned fields unevaluated; reckon/cli.py:2176 emits a scope-conflict refusal at exit 7 mirroring the real dispatch's handler at reckon/cli.py:2320, and reckon/crew/dispatch.py:3412 adds record_assignment.\nVERDICT done_when: the done-when names tests/test_crew_dryrun.py in a temporary RECKON_HOME; the manifest records tests/test_crew_dryrun.py plus test_crew.py node ids as flat baseline_suite and after_suite records, both completed and green (31 base / 33 head).\nVERDICT write_paths: read the manifest's declared paths (reckon/cli.py, reckon/crew/dispatch.py, tests/test_crew_dryrun.py, plus a declared-but-unused evidence fragment and figure dir); the diff 792227094..4b6efe806 touches exactly the three used paths.\nVERDICT manifest: read; it records 33 passed at head, 12 passed for the directory gate, a reproduction log and a negative control log (1 failing id, EXIT=1), and no blockers.\nVERDICT diff: read against base 792227094; one commit, 154 insertions / 7 deletions across reckon/cli.py, reckon/crew/dispatch.py and tests/test_crew_dryrun.py, reaching production through plan_dispatch and crew_dispatch.\nCALL_SITES: reckon/crew/dispatch.py:plan_dispatch, reckon/cli.py:crew_dispatch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/cli.py:2176 now answers the held-path dry run with the same error key, conflicting_run_id and exit 7 the real dispatch raises at reckon/cli.py:2320, and reckon/crew/dispatch.py:3412 marks the wave unevaluated; the dock is the unmodelled racing-claim exemptions in the first finding.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_crew_dryrun.py:154 asserts exit 7, ok false and the owner for the held path, :180 admits the free path on both surfaces, and :268 covers the stopped-clean case, with both manifest suite arms completed and green; the dock is that the refusal arm rests on the pre-existing test and prediction holds only for a translatable backend.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 792227094..4b6efe806 touches exactly the declared reckon/cli.py, reckon/crew/dispatch.py and tests/test_crew_dryrun.py (154 insertions, 7 deletions), the declared evidence fragment and figure paths unused as the small-node rule allows, and no peer path.\nSCORE durability: 18\nJUSTIFICATION durability: disabling the new guard at reckon/cli.py:2176 in a scratch copy of head makes tests/test_crew_dryrun.py::test_dry_run_refuses_a_live_claim_with_its_owner fail with assert 0 == 7, reproducing the reviewed run's negative-control.log, so the guard is load-bearing; the dock is that the base arm cannot exercise an assertion that did not exist at base.\nSCORE fit: 18\nJUSTIFICATION fit: the preview reuses _raise_repository_scope_conflict and mirrors the real ScopeConflict handler's payload and exit code at reckon/cli.py:2320, and DispatchPlan.as_dict at reckon/crew/dispatch.py:3412 carries admission and record_assignment in the module's own shape, the dock being the static record_assignment literal.\nFINDING reckon/crew/dispatch.py:5462 follow-on: the dry-run admission is computed with no own_run_id or own_registered_at, so it cannot model the two racing-claim exemptions the real dispatch applies at reckon/crew/dispatch.py:6739: an earlier-registered peer whose claim has not launched and is later withdrawn makes the real dispatch proceed after the bounded wait at reckon/crew/dispatch.py:7290 while the preview reports scope-conflict, which is the false refusal the plan's measure forbids; narrow, because it needs the racing window and the preview runs before the node registers.\nFINDING tests/test_crew_dryrun.py:21 follow-on: the fixture backend command was changed from worker to codex to let the new real-dispatch assertions reach launch; under the original command the real dispatch fails at reckon/crew/dispatch.py:6893 with CrewError D22 (no launch translation for 'worker') while the dry run still reports admission admitted at exit 0, so the gate demonstrates dry-run prediction only for a launch-translatable backend and leaves the D22 refusal unmodelled, a gap outside this node's declared scope.",
+  "review_run_id": "r-20261004T011854162682-review-of-a-dry-run-predicts-admission",
+  "reviewed_base_sha": "4b6efe80665b3058d7eda56882d6bf4a2eeeff46",
+  "reviewed_head_sha": "37e78ae9c64ab4eee087c8efef17e3577abf982c",
+  "reviewed_run_id": "r-20261004T004732027168-a-dry-run-predicts-admission",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T011854162682-review-of-a-dry-run-predicts-admission",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T02:05:23Z",
+  "total": 90
+}

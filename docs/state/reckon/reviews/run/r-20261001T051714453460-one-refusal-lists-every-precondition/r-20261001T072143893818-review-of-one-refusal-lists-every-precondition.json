@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:5320",
+    "reckon/crew/promotion.py:4419",
+    "reckon/crew/promotion.py:4471"
+  ],
+  "completed_at": "2026-10-01T07:35:56.791Z",
+  "dispatched_at": "2026-10-01T07:22:05Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest's `baseline_suite:` field is empty, so the base arm it ran (gates/base-arm.log, 2 failed 1 passed) is recorded in no field the promotion suite-delta check or the review's added-failure derivation reads, and the derived added-failure count is unmeasured as a result."
+    },
+    {
+      "file": "docs/evidence/fragments/scoring-should-stop-a-promotion/one-refusal-lists-every-precondition.html",
+      "line": "63",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment says the remainder of the fallout sweep 'is the node's recorded blocker', while the manifest's blockers field reads none and follow_ons credits the coordinator's population run, so the node's own two artifacts disagree about whether fallout work is outstanding."
+    },
+    {
+      "file": "gates/negative-control.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the log's first line names revision ab8f11cea while its tree and the head-only test file it runs are the reviewed worktree's, so the header does not identify the revision whose content the negative control measured."
+    }
+  ],
+  "head_log_revision": "e0434c29b88a58ce92e54fbc53deadb9722d1f47",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against ab8f11cea; 5bfd82b52 moves the preconditions into one collector and e0434c29b restores the canonicalisation the refactor dropped, both inside promotion.py plus the test file and fragment.",
+    "done_when": "the done_when names tests/test_one_refusal_lists_every_precondition.py, the base arm, the declared negative control and the reviewed-head case; the manifest records head 3 passed, base arm 2 failed 1 passed and the negative control 1 failed, and my own re-run of the file at e0434c29b is 3 passed.",
+    "goal": "The node's goal is that crew complete reports every failing promotion precondition in one refusal and names the reviewed head when the manifest's commit list predates it; reckon/crew/promotion.py:4030 (_combined_refusal_text) and :4047 (_require_independently) collect and render the refusals, and :4097 (_unreviewed_refusal) adds the `--commit <reviewed_head>` clause.",
+    "manifest": "read; it reports status complete but its `baseline_suite:` field is empty, so the base arm it ran is recorded in no field the promotion suite-delta check or the review's added-failure derivation reads.",
+    "write_paths": "the manifest fences reckon/crew/promotion.py, tests/test_one_refusal_lists_every_precondition.py and the evidence fragment; `git diff --stat ab8f11cea e0434c29b` touches exactly those three paths."
+  },
+  "justifications": {
+    "durability": "the declared mutation restores the single-refusal shape and reddens tests/test_one_refusal_lists_every_precondition.py::test_two_independent_preconditions_are_reported_by_one_refusal (gates/negative-control.log), and the reviewed-head case asserts the citation the code produces at promotion.py:4131.",
+    "evidence": "the gate named by the done_when is recorded (3 passed at e0434c29b, gates/new-test-head.log) and its negative control reddens the two-precondition test, but the base arm lives only in gates/base-arm.log with the manifest's `baseline_suite:` field empty, so this review's added-failure count derives as unmeasured.",
+    "fit": "the helpers at reckon/crew/promotion.py:4017-4071 follow the module's existing CrewError idiom with no plan label, and ruff reports the same three findings at base and head while the new test file is clean.",
+    "goal_fidelity": "reckon/crew/promotion.py:4047 runs every independent precondition and :4030 renders each failure after the first verbatim, and :4129 names the reviewed head; the head test file passes 3 of 3 at e0434c29b.",
+    "scope_discipline": "the diff against ab8f11cea touches only reckon/crew/promotion.py, tests/test_one_refusal_lists_every_precondition.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that crew complete reports every failing promotion precondition in one refusal and names the reviewed head when the manifest's commit list predates it; reckon/crew/promotion.py:4030 (_combined_refusal_text) and :4047 (_require_independently) collect and render the refusals, and :4097 (_unreviewed_refusal) adds the `--commit <reviewed_head>` clause.\nVERDICT done_when: the done_when names tests/test_one_refusal_lists_every_precondition.py, the base arm, the declared negative control and the reviewed-head case; the manifest records head 3 passed, base arm 2 failed 1 passed and the negative control 1 failed, and my own re-run of the file at e0434c29b is 3 passed.\nVERDICT write_paths: the manifest fences reckon/crew/promotion.py, tests/test_one_refusal_lists_every_precondition.py and the evidence fragment; `git diff --stat ab8f11cea e0434c29b` touches exactly those three paths.\nVERDICT manifest: read; it reports status complete but its `baseline_suite:` field is empty, so the base arm it ran is recorded in no field the promotion suite-delta check or the review's added-failure derivation reads.\nVERDICT diff: read commit by commit against ab8f11cea; 5bfd82b52 moves the preconditions into one collector and e0434c29b restores the canonicalisation the refactor dropped, both inside promotion.py plus the test file and fragment.\nCALL_SITES: reckon/cli.py:5320, reckon/crew/promotion.py:4419, reckon/crew/promotion.py:4471\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:4047 runs every independent precondition and :4030 renders each failure after the first verbatim, and :4129 names the reviewed head; the head test file passes 3 of 3 at e0434c29b.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate named by the done_when is recorded (3 passed at e0434c29b, gates/new-test-head.log) and its negative control reddens the two-precondition test, but the base arm lives only in gates/base-arm.log with the manifest's `baseline_suite:` field empty, so this review's added-failure count derives as unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff against ab8f11cea touches only reckon/crew/promotion.py, tests/test_one_refusal_lists_every_precondition.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation restores the single-refusal shape and reddens tests/test_one_refusal_lists_every_precondition.py::test_two_independent_preconditions_are_reported_by_one_refusal (gates/negative-control.log), and the reviewed-head case asserts the citation the code produces at promotion.py:4131.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers at reckon/crew/promotion.py:4017-4071 follow the module's existing CrewError idiom with no plan label, and ruff reports the same three findings at base and head while the new test file is clean.\nFINDING manifest.md:20 follow-on: the reviewed manifest's `baseline_suite:` field is empty, so the base arm it ran (gates/base-arm.log, 2 failed 1 passed) is recorded in no field the promotion suite-delta check or the review's added-failure derivation reads, and the derived added-failure count is unmeasured as a result.\nFINDING docs/evidence/fragments/scoring-should-stop-a-promotion/one-refusal-lists-every-precondition.html:63 follow-on: the fragment says the remainder of the fallout sweep 'is the node's recorded blocker', while the manifest's blockers field reads none and follow_ons credits the coordinator's population run, so the node's own two artifacts disagree about whether fallout work is outstanding.\nFINDING gates/negative-control.log:1 follow-on: the log's first line names revision ab8f11cea while its tree and the head-only test file it runs are the reviewed worktree's, so the header does not identify the revision whose content the negative control measured.",
+  "review_run_id": "r-20261001T072143893818-review-of-one-refusal-lists-every-precondition",
+  "reviewed_base_sha": "ab8f11cea649964ef3cbae09efc7bd7eccca0bf0",
+  "reviewed_head_sha": "e0434c29b88a58ce92e54fbc53deadb9722d1f47",
+  "reviewed_run_id": "r-20261001T051714453460-one-refusal-lists-every-precondition",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T072143893818-review-of-one-refusal-lists-every-precondition",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T07:34:03.722109+00:00",
+  "total": 91
+}

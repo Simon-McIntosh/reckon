@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_derivation": "derived through review.py's own added_failures_from_gate_logs over the logs the reviewed manifest names at manifest.md:66 and :78 (gates/base-selection.log, gates/head-selection.log); the manifest shape is a YAML block, so the same reader called on that manifest resolves neither log and a read through read_review reports it unmeasured",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:_follow_watch_lines",
+    "reckon/cli.py:crew_follow"
+  ],
+  "completed_at": "2026-09-29T08:12:55.533Z",
+  "dispatched_at": "2026-09-29T03:59:59Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035930031370-rearm-replays-the-fleet-with-recorded-times/manifest.md",
+      "line": "61",
+      "text": "the suite fields are written as a YAML block rather than a one-line JSON object carrying log_path, so review.py's _gate_log_path returns \"revision: 16423b79...\" as the log path and _read_gate_log reads nothing: read_review reports the added-failure count unmeasured instead of the zero these logs support."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "2425",
+      "text": "the guard's comment says a line running past the boundary is read whole by the reader that follows, so it arrives once rather than in halves, but that reader opens at the boundary byte, and a boundary observed mid-line delivers the crossing record twice and truncated (gates/midline-boundary-probe.log)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read all seven commits against 16423b79; reckon/cli.py carries _stream_events_upto, _recorded_fleet_times and _fleet_replay with the boundary capture and the replay branch (reckon/cli.py:2399-2521, :2880-2955), the reannounced row flag and its history-caps use (:3462, :3542), the rewritten and new tests, the harness paragraph, and the evidence fragment with its figure.",
+    "done_when": "this node's stored record parses with all five dimensions scored and carries added_failure_count 0 and no ids, derived from the logs the reviewed manifest names (manifest.md:66, :78); the reviewed node's own done-when \u2014 zero added failing tests by id \u2014 is supported, base log three ids against head log two, the two a subset.",
+    "goal": "at head 026430e6 one arming draws one row per live run at its own recorded state time in ascending order with no run twice (reckon/cli.py:2496-2521; tests/test_follow_rearm_continues.py:193, :353, :395, :444), the follow offset is fixed before the replay reads and the loop opens at that same byte (:2914, :2953-2954; :482), and a stream state the live fleet denies never replaces it (:2514; :540) \u2014 all met, and I confirmed the four named row-policy and flapping cases unmodified; the fifth clause, that the manifest gate records resolve through the review reader, fails.",
+    "manifest": "read; its suite fields are structured (manifest.md:61, :73) but written as a YAML block, which is neither of the shapes the reader supports, so _gate_log_path returns the block's first line (\"revision: 16423b79...\" / \"revision: 026430e6\") as the log path, _read_gate_log reads nothing, and read_review reports the count unmeasured.",
+    "write_paths": "git diff --name-only 16423b79..026430e6 returns eight paths; seven lie inside the reviewed manifest's declared write paths, and the eighth, tests/test_follower_rearm_shows_nothing_twice.py, is named in its scope_deviation and was authorised in advance by the coordinator's resume advice requirement 3."
+  },
+  "justifications": {
+    "durability": "each behaviour the change adds is pinned by a case that reddens under its own mutation \u2014 removing the agreement test at reckon/cli.py:2514 fails tests/test_follow_rearm_continues.py:540, and taking the follow offset after the replay fails :482 (gates/mutation-disagreement.log, gates/mutation-offset.log) \u2014 and the four named cases are unmodified by hash.",
+    "evidence": "the two gate logs support the by-id measure the done-when names, printing their three and two FAILED ids, but because the suites are written as a YAML block (manifest.md:61, :73) reckon's own reader resolves neither log and reports the count unmeasured (gates/reader-resolves-gate.log), and the head log's header names revision 12dc4c68 while manifest.md:74 claims 026430e6.",
+    "fit": "_stream_events_upto, _recorded_fleet_times and _fleet_replay sit beside the follower's existing helpers with mechanism docstrings (reckon/cli.py:2399-2521) and carry no plan, sprint or ticket label.",
+    "goal_fidelity": "the replay contract, the pre-read offset and the live-state authority all sit in reckon/cli.py:2496-2521 and :2914-2954 and each is pinned by a case I confirmed reddens under its own mutation, but the boundary guard at :2425 does not do what its comment claims for a boundary that falls mid-line.",
+    "scope_discipline": "seven of the eight changed paths lie inside the declared write paths, and the eighth (tests/test_follower_rearm_shows_nothing_twice.py) was authorised by the coordinator's own resume advice and declared in the manifest's scope_deviation, its edit confined to the one superseded case."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: at head 026430e6 one arming draws one row per live run at its own recorded state time in ascending order with no run twice (reckon/cli.py:2496-2521; tests/test_follow_rearm_continues.py:193, :353, :395, :444), the follow offset is fixed before the replay reads and the loop opens at that same byte (:2914, :2953-2954; :482), and a stream state the live fleet denies never replaces it (:2514; :540) \u2014 all met, and I confirmed the four named row-policy and flapping cases unmodified; the fifth clause, that the manifest gate records resolve through the review reader, fails.\nVERDICT done_when: this node's stored record parses with all five dimensions scored and carries added_failure_count 0 and no ids, derived from the logs the reviewed manifest names (manifest.md:66, :78); the reviewed node's own done-when \u2014 zero added failing tests by id \u2014 is supported, base log three ids against head log two, the two a subset.\nVERDICT write_paths: git diff --name-only 16423b79..026430e6 returns eight paths; seven lie inside the reviewed manifest's declared write paths, and the eighth, tests/test_follower_rearm_shows_nothing_twice.py, is named in its scope_deviation and was authorised in advance by the coordinator's resume advice requirement 3.\nVERDICT manifest: read; its suite fields are structured (manifest.md:61, :73) but written as a YAML block, which is neither of the shapes the reader supports, so _gate_log_path returns the block's first line (\"revision: 16423b79...\" / \"revision: 026430e6\") as the log path, _read_gate_log reads nothing, and read_review reports the count unmeasured.\nVERDICT diff: read all seven commits against 16423b79; reckon/cli.py carries _stream_events_upto, _recorded_fleet_times and _fleet_replay with the boundary capture and the replay branch (reckon/cli.py:2399-2521, :2880-2955), the reannounced row flag and its history-caps use (:3462, :3542), the rewritten and new tests, the harness paragraph, and the evidence fragment with its figure.\nCALL_SITES: reckon/cli.py:_follow_watch_lines, reckon/cli.py:crew_follow\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the replay contract, the pre-read offset and the live-state authority all sit in reckon/cli.py:2496-2521 and :2914-2954 and each is pinned by a case I confirmed reddens under its own mutation, but the boundary guard at :2425 does not do what its comment claims for a boundary that falls mid-line.\nSCORE evidence: 13\nJUSTIFICATION evidence: the two gate logs support the by-id measure the done-when names, printing their three and two FAILED ids, but because the suites are written as a YAML block (manifest.md:61, :73) reckon's own reader resolves neither log and reports the count unmeasured (gates/reader-resolves-gate.log), and the head log's header names revision 12dc4c68 while manifest.md:74 claims 026430e6.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: seven of the eight changed paths lie inside the declared write paths, and the eighth (tests/test_follower_rearm_shows_nothing_twice.py) was authorised by the coordinator's own resume advice and declared in the manifest's scope_deviation, its edit confined to the one superseded case.\nSCORE durability: 19\nJUSTIFICATION durability: each behaviour the change adds is pinned by a case that reddens under its own mutation \u2014 removing the agreement test at reckon/cli.py:2514 fails tests/test_follow_rearm_continues.py:540, and taking the follow offset after the replay fails :482 (gates/mutation-disagreement.log, gates/mutation-offset.log) \u2014 and the four named cases are unmodified by hash.\nSCORE fit: 19\nJUSTIFICATION fit: _stream_events_upto, _recorded_fleet_times and _fleet_replay sit beside the follower's existing helpers with mechanism docstrings (reckon/cli.py:2399-2521) and carry no plan, sprint or ticket label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T035930031370-rearm-replays-the-fleet-with-recorded-times/manifest.md:61 the suite fields are written as a YAML block rather than a one-line JSON object carrying log_path, so review.py's _gate_log_path returns \"revision: 16423b79...\" as the log path and _read_gate_log reads nothing: read_review reports the added-failure count unmeasured instead of the zero these logs support.\nFINDING reckon/cli.py:2425 the guard's comment says a line running past the boundary is read whole by the reader that follows, so it arrives once rather than in halves, but that reader opens at the boundary byte, and a boundary observed mid-line delivers the crossing record twice and truncated (gates/midline-boundary-probe.log).",
+  "review_run_id": "legacy-c7c985dcad99",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "16423b795127b784ffefbfd4c3944cd583b477f1",
+  "reviewed_head_sha": "026430e6d74bf6a92e093ced46e8f01155f5d4ac",
+  "reviewed_run_id": "r-20260929T035930031370-rearm-replays-the-fleet-with-recorded-times",
+  "reviewer_measurements": {
+    "four_named_cases_at_head": "function bodies extracted by ast at 16423b79 and 026430e6 and hashed: all four byte-identical; the only function changed in either file is the superseded pipe re-arm case",
+    "head_replay_files": "55 passed over the four test files at head (gates/head-replay-files.log)",
+    "mutations": "two scratch-tree mutations, never in the worktree: dropping the agreement test at reckon/cli.py:2514 and taking the follow offset from the stream size after the replay both turn their guarding case red (gates/mutation-disagreement.log, gates/mutation-offset.log)",
+    "noise_pair_repeats": "the case at head isolated: 40 of 40 passed (10 + 30 repeats); 30 isolated runs at main 75fdee2a, where the flake was recorded: 28 passed and 2 failed on 'assert RUN_B in moved, second' with second == [] (gates/noise-pair-10x.log, gates/noise-pair-30x-rr-head-026430e6.log, gates/noise-pair-30x-rr-main-75fdee2a.log, gates/noise-pair-main-flake.log)",
+    "reader_probe": "the reader plus a synthetic control in one run: it resolves a one-line JSON object, a one-line brace block and a bare path, and returns 'revision: 16423b79...' for this manifest's multi-line YAML mapping (gates/reader-resolves-gate.log)"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T09:28:04.504888+00:00",
+  "total": 87
+}

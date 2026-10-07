@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery.py:1848 _reviewed_run_refused_the_round (the refusal guard helper)",
+    "reckon/crew/recovery.py:2552 dispatch_repair_for_run same-round retry guard (records exhausted)",
+    "reckon/crew/resumption.py:781 _resume writes plan.stdin_text (own-deadline prompt) to the advice file",
+    "reckon/crew/dispatch.py:10199 resume_plan \u2014 restates the fence via _restate_time_fence; the correct sibling the fix relies on",
+    "reckon/crew/dispatch.py:10564 change_lane builds the lane-change prompt via _lane_prompt with no _restate_time_fence (out of scope; the unfixed second door)"
+  ],
+  "completed_at": "2026-10-02T21:45:43.509Z",
+  "dispatched_at": "2026-10-02T21:29:40Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "10564",
+      "severity": "blocking",
+      "text": "Defect B's reproduced door is not fixed. The three nova-49 refusals were reached on LANE-CHANGE attempts (r-...msc-figure-cohort-cite-or-retire attempt.json kind=lane-change, r-...ecq-... experiment likewise; r-...mcs-alive-graph-count-series lane-change-5-final.txt refuses citing deadline 2026-10-02T18:03:23Z, the first attempt's clock from its original prompt). change_lane composes its prompt with _lane_prompt and writes it at dispatch.py:10568 to lane-change-<n>-prompt.txt WITHOUT calling _restate_time_fence, so the lane-change prompt carries either the bare advice (continued) or the original full prompt with the original fence (fresh) \u2014 exactly 'the deadline it was handed at first dispatch'. The reviewed change only repairs the sibling door resumption._resume (resumption.py:781). The brief directed that an out-of-scope cause be recorded with its file:line and the change it needs; the manifest records neither this door nor nova-49's records, so the done-when clause 'The manifest names the cause of nova-49's three refusals, citing the records' is unmet. The change it needs: in change_lane, wrap prompt in _restate_time_fence(prompt, record, attempt_started_at=lane_change['changed_at']) before writing lane-change-<n>-prompt.txt, as resume_plan does at dispatch.py:10288."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "1848",
+      "severity": "follow-on",
+      "text": "The refusal marker is not round-scoped. REPAIR_ADVICE_SCOPE_LINE ('Write scope for this round: ') is identical in every round's advice, so _reviewed_run_refused_the_round cannot distinguish a manifest that refused THIS round's advice from one that refused an earlier round's. The guard is narrowed by same_round and prior>=1, so a same-round retry is only suppressed when the review's round id already matches, but a manifest quoting any round's scope line plus a terminal status reads as a refusal. Low risk given the run-level manifest is overwritten each turn; a round-id token in the composed advice would remove the ambiguity."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "The fix commit folds a whole-file ruff format sweep into recovery.py (timezone.utc->UTC at 6651/7815, the typing import reordering at the 12-18 block, and unrelated line rewrapping at 3537/5267/5319/5483/8651/8927/8983/9422). The repo rule holds that a broad relint is its own commit; within a staged file this is permitted, but it obscures the change a reviewer must read and spans lines the node did not otherwise touch."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read the single commit against base 67aa4a7ff. Defect A: adds REPAIR_ADVICE_SCOPE_LINE (956), _reviewed_run_refused_the_round (1848), and the same-round guard at 2552 recording exhausted; _repair_resume_advice now composes the scope line from the constant so marker and advice cannot drift. Defect B: resumption.py:781 writes plan.stdin_text or advice. Both correct for their doors; the compose-vs-restate split in dispatch.py (resume_plan restates at 10288, change_lane does not at 10564) is the unfinished half.",
+    "done_when": "Seven of eight clauses hold. Base reproduction of each defect is recorded (base-repro-repair-retry.log, 2 failed/1 passed) and I reproduced it independently (reviewer-base-repro.log). The refused-advice retry is no longer resumed; the mid-work-death retry still resumes; the resumed prompt carries its own deadline and not the first attempt's \u2014 all three cases pass at head (3 passed, EXIT=0, reviewer head arm) and the new file reddens at base (2 failed). The declared negative control restores the unconditional retry and turns the refused-advice test red (1 failed/2 passed, EXIT=1, independently reproduced). The focused gate is 46 passed EXIT=0 at head (independently reproduced); base 43 passed EXIT=0, 0 added failures. status reads complete. UNMET: the manifest does not name the cause of nova-49's three refusals nor cite their records.",
+    "goal": "Defect A is met: a same-round retry whose ended turn refused the round's advice now records the round exhausted (recovery.py:2552, _reviewed_run_refused_the_round at 1848) rather than re-sending byte-identical advice. Defect B is met only for the resume door: resumption.py:781 now writes plan.stdin_text, so the resumed repair prompt carries the fence _restate_time_fence composed for the attempt now starting. It is not met for the lane-change door (dispatch.py:10564) that the nova-49 evidence actually used, which remains unrecorded.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T204545832773-a-repair-retry-carries-new-input/manifest.md: status complete, commit 9239bac22, both gate arms and the control named with log paths. It records no nova-49 citation for defect B; the follow_ons name mcp.py:4671 and cli.py:5380 (two resume-advice writers) but not dispatch.py:10564, the lane-change door the evidence implicates.",
+    "write_paths": "The diff 67aa4a7ff..9239bac22 lists exactly the three declared paths (recovery.py +~90/-, resumption.py +9/-, tests/test_a_repair_retry_carries_new_input.py new). No plan, sprint or shared index file is touched. The lane-change door that carries the reproduced defect is in dispatch.py, which the brief placed out of scope; it is unfixed and, contrary to the brief, unrecorded."
+  },
+  "justifications": {
+    "durability": "Tests cover all three required cases, the guard degrades toward the retry on an unreadable or non-terminal manifest, it reuses the module's own vocabulary (exhausted, manifest_status_is_terminal, TERMINAL_MANIFEST_STATUSES), and the marker is a single constant shared with the advice text. The marker is not round-scoped, which a reviewer must weigh for long-lived runs.",
+    "evidence": "Strong and independently reproduced: base arm 2 failed/1 passed (EXIT=1), head 3 passed (EXIT=0), negative control 1 failed/2 passed (EXIT=1), focused gate 46 passed EXIT=0 \u2014 all re-run by me at 9239bac22. Deductions for the contract's log-header requirement (the run's gate logs carry no revision/tree/command header and gate-head.log has no EXIT line) and for defect B's evidence resting on a unit test rather than the nova-49 records.",
+    "fit": "Reuses the module's helpers and idioms; the guard is small, placed beside the existing prior>=REPAIR_RESUME_LIMIT branch, and commented in mechanism terms. The unaddressed sibling door and the format churn are the only blemishes.",
+    "goal_fidelity": "Defect A fully; Defect B half: the fix repairs the resume door it could reach and is well tested, but does not reach the lane-change door the cited nova-49 refusals used and records neither that cause nor the records, leaving the diagnosed evidence unexplained \u2014 a material gap against the goal that 'every resumed repair attempt runs under its own deadline'.",
+    "scope_discipline": "The three declared paths are the only code paths in the diff and no shared state is touched; deductions for the whole-file ruff format sweep folded into recovery.py and for the reproduced defect's actual door (dispatch.py) being left unrecorded rather than named with file:line."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Defect A met (same-round refusal recorded exhausted, recovery.py:2552); Defect B met only for the resume door (resumption.py:781 writes plan.stdin_text); the lane-change door the nova-49 evidence used (dispatch.py:10564) is unfixed and unrecorded.\nVERDICT done_when: 7 of 8 clauses hold; base 2 failed/1 passed, head 3 passed, control 1 failed/2 passed, focused gate 46 passed EXIT=0 \u2014 all independently reproduced; UNMET: the manifest does not name the cause of nova-49's three refusals nor cite their records.\nVERDICT write_paths: the diff 67aa4a7ff..9239bac22 lists exactly the three declared paths; no shared state touched; the implicated dispatch.py door is out of scope and unrecorded.\nVERDICT manifest: read; status complete, commit 9239bac22, both arms and the control named; no nova-49 citation for defect B.\nVERDICT diff: read the single commit; Defect A guard + constant, Defect B resumption.py prompt write; the compose-vs-restate split in dispatch.py is the unfinished half.\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: Defect A fully; Defect B repairs only the resume door and neither reaches nor records the lane-change door the cited refusals used.\nSCORE evidence: 17\nJUSTIFICATION evidence: base/head/control/gate independently reproduced; the run's own logs lack the required gate header and the defect-B evidence is a unit test rather than the nova-49 records.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: only the declared paths changed, but a whole-file format sweep is folded into the fix and the reproduced defect's real door is unrecorded.\nSCORE durability: 16\nJUSTIFICATION durability: all three cases tested, guard degrades toward the retry, module vocabulary reused, marker shared with the advice text; the marker is not round-scoped.\nSCORE fit: 16\nJUSTIFICATION fit: reuses module idioms and helpers, guard sits beside the prior-limit branch; the unaddressed sibling door and format churn are the blemishes.",
+  "review_run_id": "r-20261002T212906579994-review-of-a-repair-retry-carries-new-input",
+  "reviewed_base_sha": "67aa4a7ff59b9bdc57fd3d91a1c8802d51b5b2ef",
+  "reviewed_head_sha": "9239bac227945496f836d05481c376746d9755a6",
+  "reviewed_run_id": "r-20261002T204545832773-a-repair-retry-carries-new-input",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 14,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.499048+00:00",
+  "total": 77
+}

@@ -1,0 +1,44 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "commits_read": [
+    "b7dcd4888a038c2b3a108e6c03221c6d658542e0"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T14:35:04.352770+00:00",
+  "findings": [],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read b7dcd488 against 8c877ab295d2d771dcd30e86c49b14f6f2f99f08: it changes only the two declared documentation records, and git diff --check is clean.",
+    "done_when": "The two declared receipt files show the requested focused baseline of 9 passed with exit 0 and the declared removal's 7 failed, 2 passed with exit 1.",
+    "goal": "The source prompt asks for the declared removal rather than the prior unreconciled-fence mutation; the committed plan record and evidence anchor explicitly distinguish those mutations.",
+    "manifest": "Read the complete manifest: it names b7dcd488, both durable logs, all seven mutation-caused failures, and the clean source worktree.",
+    "write_paths": "The manifest declares two durable logs plus the plan and evidence archive; the commit diff touches the declared documentation paths only, and both declared log files are present."
+  },
+  "justifications": {
+    "durability": "The focused test in tests/test_review_reflex_sweep.py rejects removal of the review pass with seven direct failures, while the exact baseline and red receipts are preserved under the durable crew run directory.",
+    "evidence": "negative-control-declared-baseline.log proves the scratch-tree import and 9-pass baseline, while negative-control-declared.log starts with the exact declared mutation and records the expected 7-failure result.",
+    "fit": "The b7dcd488 documentation addition follows the plan's existing r-comment and evidence-section structure, preserves plan status metadata, and its source attribution is limited to the worker record.",
+    "goal_fidelity": "docs/plans/scoring-should-stop-a-promotion.html records that the review-pass removal, rather than withholding unreconciled_override, produces the red focused result required by the source goal.",
+    "scope_discipline": "git diff --name-status 8c877ab295d2d771dcd30e86c49b14f6f2f99f08 b7dcd4888a038c2b3a108e6c03221c6d658542e0 lists only docs/plans/scoring-should-stop-a-promotion.html and docs/evidence/archive/scoring-should-stop-a-promotion-landed.html, both declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source prompt asks for the exact declared removal rather than the prior unreconciled-fence mutation; the committed plan record and evidence anchor explicitly distinguish those mutations.\nVERDICT done_when: the two declared receipt files show the requested focused baseline of 9 passed with exit 0 and the declared removal's 7 failed, 2 passed with exit 1.\nVERDICT write_paths: the manifest declares two durable logs plus the plan and evidence archive; the commit diff touches the declared documentation paths only, and both declared log files are present.\nVERDICT manifest: read the complete manifest; it names b7dcd488, both durable logs, all seven mutation-caused failures, and the clean source worktree.\nVERDICT diff: read b7dcd488 against 8c877ab295d2d771dcd30e86c49b14f6f2f99f08; it changes only the two declared documentation records, and git diff --check is clean.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/plans/scoring-should-stop-a-promotion.html records that the review-pass removal, rather than withholding unreconciled_override, produces the red focused result required by the source goal.\nSCORE evidence: 20\nJUSTIFICATION evidence: negative-control-declared-baseline.log proves the scratch-tree import and 9-pass baseline, while negative-control-declared.log starts with the exact declared mutation and records the expected 7-failure result.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 8c877ab295d2d771dcd30e86c49b14f6f2f99f08 b7dcd4888a038c2b3a108e6c03221c6d658542e0 lists only docs/plans/scoring-should-stop-a-promotion.html and docs/evidence/archive/scoring-should-stop-a-promotion-landed.html, both declared paths.\nSCORE durability: 20\nJUSTIFICATION durability: the focused test in tests/test_review_reflex_sweep.py rejects removal of the review pass with seven direct failures, while the exact baseline and red receipts are preserved under the durable crew run directory.\nSCORE fit: 20\nJUSTIFICATION fit: the b7dcd488 documentation addition follows the plan's existing r-comment and evidence-section structure, preserves plan status metadata, and its source attribution is limited to the worker record.\n",
+  "review_run_id": "r-20260921T143504352770-review-of-declared-sweep-removal-mutation-reddens-the-reflex",
+  "reviewed_base": "8c877ab295d2d771dcd30e86c49b14f6f2f99f08",
+  "reviewed_base_sha": "8c877ab295d2d771dcd30e86c49b14f6f2f99f08",
+  "reviewed_commit": "b7dcd4888a038c2b3a108e6c03221c6d658542e0",
+  "reviewed_head_sha": "b7dcd4888a038c2b3a108e6c03221c6d658542e0",
+  "reviewed_run_id": "r-20260921T141531467381-declared-sweep-removal-mutation-reddens-the-reflex",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T14:45:45Z",
+  "total": 100
+}

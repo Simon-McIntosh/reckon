@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:_follow_resume_plan",
+    "reckon/cli.py:_follow_watch_lines",
+    "reckon/crew/runs.py:follower_dir"
+  ],
+  "completed_at": "2026-09-25T14:27:02.893Z",
+  "dispatched_at": "2026-09-25T10:15:10Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "2184",
+      "text": "the baseline branch emits and yields without recording the place it read, so an arming against a stream that does not exist yet leaves no checkpoint; reproduced at the reviewed revision in a scratch tree, where the first arming emitted both pointer rows and follow_checkpoint.read returned {}, and the second arming replayed the same two rows, while the same probe with the producer advanced left offset 1891 behind and the second arming silent."
+    },
+    {
+      "file": "tests/test_follow_rearm_continues.py",
+      "line": "186",
+      "text": "the gap test compares stream stamps that both fall inside one second, so its assertion passes under the node's own attach-time mutation; in that mutation's recorded log only the replaced-stream test reddens, its fixed past stamps being the assertion that catches it, so the gap-timestamp claim is asserted but not mutation-verified."
+    },
+    {
+      "file": "reckon/crew/follow_checkpoint.py",
+      "line": "153",
+      "text": "write re-derives the stream identity from the path at write time while the offset it records describes a stream the caller has already opened, so a replacement landing in that window records the new file's identity with the old file's offset and the next arming continues at a boundary that describes neither file instead of restarting."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "2184",
+      "text": "the missing first-arm checkpoint is fixed beyond this revision at 8183a9fd, whose own mutation removes the post-baseline write and reddens the quiet-baseline test, so this record documents the state of b7b16d5c rather than an open defect in the tree that now carries it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "a new 176-line module plus 97 changed lines in reckon/cli.py and a 340-line test file; the checkpoint carries its version, project, session, stream path, a dev-and-ino identity, the offset and the reported map; read refuses any foreign or older shape whole rather than trusting a partial record; write is a temp sibling, an fsync and os.replace.",
+    "done_when": "every named item holds \u2014 the new test file passes 5/5 at the reviewed revision in a pinned scratch tree; the ordered gap test, the nothing-new test and the replaced-stream test exist with the assertions the section names, including that no already-running run renders as dispatched; the two declared mutations were each observed to fail (mutation one 4 failed of 5, mutation two 1 failed of 5) with their logs recorded; the real-home isolation test asserts absence before and after on the real follower directory and that the temp home did receive the checkpoint; and ruff over complete archive trees reports the same finding count on reckon/cli.py at base and head, with the new module clean.",
+    "goal": "the section's mechanisms are delivered at the reviewed revision \u2014 a durable per project-and-session checkpoint under the follower directory, a re-arm that continues at the recorded offset and delivers the gap with the stream's own timestamps and no baseline, a fallback that gives only moved runs when the stream was replaced or truncated, and a first arming whose baseline carries the live state \u2014 with one hole: an arming against a stream that does not yet exist emits that baseline and leaves no place behind, so the next arming replays it though nothing moved.",
+    "manifest": "reads complete with the commit list in the prose-none form, changed_paths naming the five touched paths, a gate result and three mutation logs each headed by its declared string, a base-versus-head latency measurement carrying an explicit reading, and the negative-control log and note present; the follow-on entry names the out-of-fence derivation with its file and line.",
+    "write_paths": "the diff 17935dc3..b7b16d5c touches exactly the five declared paths, reckon/cli.py, reckon/crew/follow_checkpoint.py, tests/test_follow_rearm_continues.py, docs/plans/the-fleet-counters-count-the-fleet.html and docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html; reckon/crew/runs.py was not needed for the stream identity, and the recovery-side state derivation the baseline label rides is named as a follow-on rather than edited."
+  },
+  "justifications": {
+    "durability": "the record is written atomically and every read refuses a foreign or older shape whole, but the place it records is re-derived from the stream path at write time while the offset describes an already-open file.",
+    "evidence": "three mutation logs each headed by its declared string, a latency read at base and head with an explicit reading rather than a bare claim, ruff measured on complete archive trees at both revisions, and a positive control inside the isolation test, docked because the gap test's own timestamp assertion survives the mutation it exists to catch.",
+    "fit": "the new module sits beside the runs module it asks for the directory, adds no dependency, follows the package's typed and documented register, and the tests isolate the real config home rather than the machine's.",
+    "goal_fidelity": "every mechanism the section names is implemented and exercised, but the resume path is not durable from an arming whose stream has not been written yet, so the section's own nothing-moved promise fails on that replay.",
+    "scope_discipline": "the diff is exactly the declared write paths, the one out-of-fence dependency found is declared in the manifest rather than edited, and no plan or ticket label reached a symbol, a filename or a comment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section's mechanisms are delivered at the reviewed revision \u2014 a durable per project-and-session checkpoint under the follower directory, a re-arm that continues at the recorded offset and delivers the gap with the stream's own timestamps and no baseline, a fallback that gives only moved runs when the stream was replaced or truncated, and a first arming whose baseline carries the live state \u2014 with one hole: an arming against a stream that does not yet exist emits that baseline and leaves no place behind, so the next arming replays it though nothing moved.\nVERDICT done_when: every named item holds \u2014 the new test file passes 5/5 at the reviewed revision in a pinned scratch tree; the ordered gap test, the nothing-new test and the replaced-stream test exist with the assertions the section names, including that no already-running run renders as dispatched; the two declared mutations were each observed to fail (mutation one 4 failed of 5, mutation two 1 failed of 5) with their logs recorded; the real-home isolation test asserts absence before and after on the real follower directory and that the temp home did receive the checkpoint; and ruff over complete archive trees reports the same finding count on reckon/cli.py at base and head, with the new module clean.\nVERDICT write_paths: the diff 17935dc3..b7b16d5c touches exactly the five declared paths, reckon/cli.py, reckon/crew/follow_checkpoint.py, tests/test_follow_rearm_continues.py, docs/plans/the-fleet-counters-count-the-fleet.html and docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html; reckon/crew/runs.py was not needed for the stream identity, and the recovery-side state derivation the baseline label rides is named as a follow-on rather than edited.\nVERDICT manifest: reads complete with the commit list in the prose-none form, changed_paths naming the five touched paths, a gate result and three mutation logs each headed by its declared string, a base-versus-head latency measurement carrying an explicit reading, and the negative-control log and note present; the follow-on entry names the out-of-fence derivation with its file and line.\nVERDICT diff: a new 176-line module plus 97 changed lines in reckon/cli.py and a 340-line test file; the checkpoint carries its version, project, session, stream path, a dev-and-ino identity, the offset and the reported map; read refuses any foreign or older shape whole rather than trusting a partial record; write is a temp sibling, an fsync and os.replace.\nCALL_SITES: reckon/cli.py:_follow_resume_plan, reckon/cli.py:_follow_watch_lines, reckon/crew/runs.py:follower_dir\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: every mechanism the section names is implemented and exercised, but the resume path is not durable from an arming whose stream has not been written yet, so the section's own nothing-moved promise fails on that replay.\nSCORE evidence: 15\nJUSTIFICATION evidence: three mutation logs each headed by its declared string, a latency read at base and head with an explicit reading rather than a bare claim, ruff measured on complete archive trees at both revisions, and a positive control inside the isolation test, docked because the gap test's own timestamp assertion survives the mutation it exists to catch.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff is exactly the declared write paths, the one out-of-fence dependency found is declared in the manifest rather than edited, and no plan or ticket label reached a symbol, a filename or a comment.\nSCORE durability: 15\nJUSTIFICATION durability: the record is written atomically and every read refuses a foreign or older shape whole, but the place it records is re-derived from the stream path at write time while the offset describes an already-open file.\nSCORE fit: 18\nJUSTIFICATION fit: the new module sits beside the runs module it asks for the directory, adds no dependency, follows the package's typed and documented register, and the tests isolate the real config home rather than the machine's.\nFINDING reckon/cli.py:2184 the baseline branch emits and yields without recording the place it read, so an arming against a stream that does not exist yet leaves no checkpoint; reproduced at the reviewed revision in a scratch tree, where the first arming emitted both pointer rows and follow_checkpoint.read returned {}, and the second arming replayed the same two rows, while the same probe with the producer advanced left offset 1891 behind and the second arming silent.\nFINDING tests/test_follow_rearm_continues.py:186 the gap test compares stream stamps that both fall inside one second, so its assertion passes under the node's own attach-time mutation; in that mutation's recorded log only the replaced-stream test reddens, its fixed past stamps being the assertion that catches it, so the gap-timestamp claim is asserted but not mutation-verified.\nFINDING reckon/crew/follow_checkpoint.py:153 write re-derives the stream identity from the path at write time while the offset it records describes a stream the caller has already opened, so a replacement landing in that window records the new file's identity with the old file's offset and the next arming continues at a boundary that describes neither file instead of restarting.\nFINDING reckon/cli.py:2184 the missing first-arm checkpoint is fixed beyond this revision at 8183a9fd, whose own mutation removes the post-baseline write and reddens the quiet-baseline test, so this record documents the state of b7b16d5c rather than an open defect in the tree that now carries it.",
+  "review_run_id": "r-20260925T113222983921-review-of-follower-rearm-continues-the-stream",
+  "reviewed_base_sha": "17935dc30520689ca7f78e3b9b83c3384f7ed0f5",
+  "reviewed_head_sha": "b7b16d5cfc483e2165238619b84a6af875c977b3",
+  "reviewed_run_id": "r-20260925T101452768368-follower-rearm-continues-the-stream",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T12:46:42.538183+00:00",
+  "total": 82
+}

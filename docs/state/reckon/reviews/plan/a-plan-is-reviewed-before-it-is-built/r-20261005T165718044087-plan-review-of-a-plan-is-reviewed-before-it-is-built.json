@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T17:01:34.242Z",
+  "dispatched_at": "2026-10-05T16:57:35Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/routing.py:2614",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must name that the coverage predicate extends the existing sidecar-aware read at routing.py:2614 (or promote before enumerating), else the first dispatch after a delivered-but-unstored review is refused with a review present, a regression of the gate's stated contract.",
+      "text": "\u00a716 recomposes the gate's coverage question as a union of section digests read from `list_plan_reviews` (stored records only), but the gate today answers with `read_plan_review` preceded by `_store_delivered_plan_review`, which mints and stores a record from a delivered sidecar because \"the coordinator never runs a store step\"; nothing in \u00a716 says the new predicate invokes that promotion path or otherwise folds the sidecar set into the union, so a plan whose only review sits in an unstored sidecar reads as uncovered",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c081bca57b68b5e8784b756d25b5c3e9c1526e2459ac73c360e46fb7a2c8c85b",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 94,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T165718044087-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "8549b2ea51c5d1bbe6bddf0c350c98a221c2b97e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 consolidates thirteen store-local walkers plus four tag helpers onto the one existing raw-text parser and exposes a single reader `plan_headings`, contracting surface rather than spreading it; \u00a718 extends one existing reader (`implementable_sections`) and retires the private copy; \u00a716 adds only module-private helpers.",
+    "duplicate_owner": "a finding \u2014 the \u00a716 coverage predicate enumerates stored reviews through `list_plan_reviews` alone while the gate already owns a delivered-report promotion path (`reckon/crew/routing.py:2614` `_store_delivered_plan_review`), so a review that exists only as a delivered sidecar is not in the union the predicate reads.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a717 is the only section that adds (one public definition, `plan_headings`) and it states the net in its own text with the reason the parser stays private; \u00a716 states nothing is retired because the identity digest and the prose walk keep their names, and \u00a718 states net zero because the change is an optional parameter on an existing name.",
+    "reuse_search": "pass \u2014 \u00a716/\u00a717/\u00a718 each name the mechanism they extend and it exists: `_StructuredSectionSpanParser`/`structured_section_spans` (reckon/_plan_html.py:44,94), `section_record_id`/`section_id_candidates` (reckon/crew/routing.py:215,234), `roadmap.implementable_sections` (reckon/roadmap.py:106), `promotion._plan_remaining_sections` (reckon/crew/promotion.py:7236), `doccheck._implementable_section_ids` (reckon/doccheck.py:1014), and the AST census `interface_counts._staged_writes` (reckon/interface_counts.py:97); every cited symbol was opened and resolves.",
+    "thin_wrapper": "pass \u2014 no section adds a pass-through layer: \u00a717 explicitly reuses the span parser and rewrites each heading walk onto its yield rather than adding a scanner beside it, and \u00a718 deletes `promotion._plan_remaining_sections` into the existing owner instead of wrapping it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.840342+00:00"
+}

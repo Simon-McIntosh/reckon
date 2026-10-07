@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/runs.py:509",
+    "reckon/crew/recovery.py:6265",
+    "reckon/crew/recovery.py:5596",
+    "reckon/crew/recovery.py:3620"
+  ],
+  "completed_at": "2026-09-29T02:14:45.661Z",
+  "dispatched_at": "2026-09-29T01:47:01Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/live-worker-read-dead-still-reproduces/report.md",
+      "line": "104",
+      "text": "section 4 cites `3862 stored_alive` and `3863-3869` for what git show HEAD holds at recovery.py:3859 and 3860-3864, and section 3's table cites recovery.py:3864-3868 for the launcher_host read at 3861-3862, so a document whose deliverable is file:line evidence sends a reader three lines past the construct it names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "there is no diff to read \u2014 the node's deliverable is the report and it landed no repository change (manifest commits: none; its worktree is clean at base 4f75d31d), so the scope item reduces to the absence of a change and there is nothing in it that could stand outside the fence.",
+    "done_when": "the done-when fences a report naming the emitting condition with file:line, each liveness input with where it is read, a verdict per candidate path, the commit that closed any closed path, one repair node with a goal, a failing-at-base test, exclusive write paths and a negative control, and an empty `git status --porcelain`; report.md carries sections 2, 3, 7 and 8 accordingly, and `git status --porcelain` in the node's worktree at 4f75d31d prints nothing.",
+    "goal": "the goal asks whether a watcher still reads a live worker as dead with retained work at current main, names the emitting condition with file:line, and gives a verdict per candidate path; report.md section 2 names the emitting gate at reckon/crew/recovery.py:3620 and section 4 traces the host-mismatch path into it through the ungated overwrite at reckon/crew/runs.py:509, with section 3 giving each candidate its verdict \u2014 host mismatch reproduces, the wrong-pid-record path is closed by 50aff503 and c4576b8a, stale watcher code and the start-time check do not reproduce.",
+    "manifest": "read; it reads complete with commits none, changed_paths [], the report path, the scratch harness and its negative-control note, and the figures it quotes re-derive from an independent run except the live-pointer census, which has moved with the manifest's own claim intact (20 of 25 unproven-alive then; 24 of 29 in my re-run today, 0 emitters either time).",
+    "write_paths": "the fence names exactly one write path, the report under the crew reports tree for session s22-coord; the reviewed worktree is clean at 4f75d31d and the manifest records changed_paths [], so nothing else was written and nothing in the repository changed."
+  },
+  "justifications": {
+    "durability": "the falsifying instrument is the node-local scratch harness (/tmp/lwrd/repro.py), which no reader can re-run once /tmp is reaped, and no repository assertion would fail if this emission regressed; section 8 hands the failing-at-base test to the repair node, which is the right owner but leaves the analysis itself without a durable guard.",
+    "evidence": "every load-bearing claim re-derives from an independent worktree at 4f75d31d (/tmp/lwrd-review/repro.log: case F emits through list_live -> _watch_snapshot, case E reads the same record and emits nothing, case C fires with liveness_proven True; /tmp/lwrd-review/prodscan.log re-runs the field census), except that section 4 cites recovery.py:3862 for the assignment at 3859 and 3863-3869 for the condition at 3860-3864.",
+    "fit": "report.md follows the crew-report idiom and introduces no symbol or file names, and section 8's proposal stays inside the two modules the defect lives in; the one blemish is section 4's block, where a condensed rendering and verbatim quotes share one set of exact-looking line numbers.",
+    "goal_fidelity": "report.md answers each part the goal names \u2014 the gate at reckon/crew/recovery.py:3620, the write that falsifies the value it reads at runs.py:509, and a repair node in section 8 with failing-at-base cases F and H \u2014 and the two line-number slips in section 4's classifier block keep it below full.",
+    "scope_discipline": "the single declared write path is the only thing the node wrote \u2014 its worktree at 4f75d31d prints nothing from `git status --porcelain` and its manifest records changed_paths []."
+  },
+  "node": "review-of-live-worker-read-dead-still-reproduces",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T011639649528-live-worker-read-dead-still-reproduces\n(plan a-stalled-row-says-whether-the-worker-lives, section 3; node live-worker-read-dead-still-reproduces; role investigate)\nReviewed revision: base and head are both 4f75d31d \u2014 the reviewed run recorded no commits, and its pointer names base_sha 4f75d31d with the automatic review dispatched at the same head.\nThe node landed no repository code, so this review reads the report it delivered and re-derives its central claims from an independent worktree at the same revision.\n\nVERDICT goal: the goal asks whether a watcher still reads a live worker as dead with retained work at current main, names the emitting condition with file:line, and gives a verdict per candidate path; report.md section 2 names the emitting gate at reckon/crew/recovery.py:3620 and section 4 traces the host-mismatch path into it through the ungated overwrite at reckon/crew/runs.py:509, with section 3 giving each candidate its verdict \u2014 host mismatch reproduces, the wrong-pid-record path is closed by 50aff503 and c4576b8a, stale watcher code and the start-time check do not reproduce.\nVERDICT done_when: the done-when fences a report naming the emitting condition with file:line, each liveness input with where it is read, a verdict per candidate path, the commit that closed any closed path, one repair node with a goal, a failing-at-base test, exclusive write paths and a negative control, and an empty `git status --porcelain`; report.md carries sections 2, 3, 7 and 8 accordingly, and `git status --porcelain` in the node's worktree at 4f75d31d prints nothing.\nVERDICT write_paths: the fence names exactly one write path, the report under the crew reports tree for session s22-coord; the reviewed worktree is clean at 4f75d31d and the manifest records changed_paths [], so nothing else was written and nothing in the repository changed.\nVERDICT manifest: read; it reads complete with commits none, changed_paths [], the report path, the scratch harness and its negative-control note, and the figures it quotes re-derive from an independent run except the live-pointer census, which has moved with the manifest's own claim intact (20 of 25 unproven-alive then; 24 of 29 in my re-run today, 0 emitters either time).\nVERDICT diff: there is no diff to read \u2014 the node's deliverable is the report and it landed no repository change (manifest commits: none; its worktree is clean at base 4f75d31d), so the scope item reduces to the absence of a change and there is nothing in it that could stand outside the fence.\n\nThe node landed no code, so the CALL_SITES line names the four production touch points the report's central claim passes through, each verified by re-running the harness from an independent tree.\nCALL_SITES: reckon/crew/runs.py:509, reckon/crew/recovery.py:6265, reckon/crew/recovery.py:5596, reckon/crew/recovery.py:3620\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md answers each part the goal names \u2014 the gate at reckon/crew/recovery.py:3620, the write that falsifies the value it reads at runs.py:509, and a repair node in section 8 with failing-at-base cases F and H \u2014 and the two line-number slips in section 4's classifier block keep it below full.\nSCORE evidence: 18\nJUSTIFICATION evidence: every load-bearing claim re-derives from an independent worktree at 4f75d31d (/tmp/lwrd-review/repro.log: case F emits through list_live -> _watch_snapshot, case E reads the same record and emits nothing, case C fires with liveness_proven True; /tmp/lwrd-review/prodscan.log re-runs the field census), except that section 4 cites recovery.py:3862 for the assignment at 3859 and 3863-3869 for the condition at 3860-3864.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the single declared write path is the only thing the node wrote \u2014 its worktree at 4f75d31d prints nothing from `git status --porcelain` and its manifest records changed_paths [].\nSCORE durability: 16\nJUSTIFICATION durability: the falsifying instrument is the node-local scratch harness (/tmp/lwrd/repro.py), which no reader can re-run once /tmp is reaped, and no repository assertion would fail if this emission regressed; section 8 hands the failing-at-base test to the repair node, which is the right owner but leaves the analysis itself without a durable guard.\nSCORE fit: 19\nJUSTIFICATION fit: report.md follows the crew-report idiom and introduces no symbol or file names, and section 8's proposal stays inside the two modules the defect lives in; the one blemish is section 4's block, where a condensed rendering and verbatim quotes share one set of exact-looking line numbers.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/live-worker-read-dead-still-reproduces/report.md:104 section 4 cites `3862 stored_alive` and `3863-3869` for what git show HEAD holds at recovery.py:3859 and 3860-3864, and section 3's table cites recovery.py:3864-3868 for the launcher_host read at 3861-3862, so a document whose deliverable is file:line evidence sends a reader three lines past the construct it names.\nREVIEWED_BASE_SHA: 4f75d31d9692783446c428d9ed3d989a0568b375\nREVIEWED_HEAD_SHA: 4f75d31d9692783446c428d9ed3d989a0568b375\n",
+  "review_run_id": "r-20260929T014642260830-review-of-live-worker-read-dead-still-reproduces",
+  "reviewed_base_sha": "4f75d31d9692783446c428d9ed3d989a0568b375",
+  "reviewed_head_sha": "4f75d31d9692783446c428d9ed3d989a0568b375",
+  "reviewed_run_id": "r-20260929T011639649528-live-worker-read-dead-still-reproduces",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T02:10:04.363251+00:00",
+  "total": 92
+}

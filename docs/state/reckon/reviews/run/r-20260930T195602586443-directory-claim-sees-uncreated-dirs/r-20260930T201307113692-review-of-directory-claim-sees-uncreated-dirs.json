@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "added failures 0 by id, measured by this reviewing run: head ids read from the reviewed run's own gate log (gate-head.log, the single head arm an implement-role node runs) and reproduced in the reviewing run's logs/head-gate-rerun.log at head 3129f05e (9 passed, EXIT=0); base ids from a base arm this review took at 84b6364f (git archive to /tmp/rcq-base, tests/test_directory_claim_asks_first.py, 6 passed, EXIT=0, recorded in the reviewing run's logs/base-arm.log). Neither arm reports a FAILED/ERROR line, so the set difference is empty. The reviewed manifest names no baseline_suite/after_suite fields, so the store's standard read-time annotation (annotate_review_of_run) reports the count unmeasured from those fields; the 0 here is this review's own measurement, not the manifest's. A positive control (a synthetic head log carrying one FAILED line) returned 1 id, so the zero is a measured zero rather than a blind absence.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1730 _dispatch_directory_claim_overlaps_over_live_claims loop calls _directory_claim_overlaps(candidate, claimed)",
+    "reckon/crew/dispatch.py:1858 _directory_claim_overlaps(absolute, claim.absolute_path) in the acceptance-recording path"
+  ],
+  "completed_at": "2026-09-30T20:24:42.677Z",
+  "dispatched_at": "2026-09-30T20:13:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1711",
+      "text": "the absent-directory arm keys on Path.suffix == \"\", so a declared directory whose name contains a dot (e.g. docs/evidence/2026.09 strictly inside a live docs/evidence claim) is read as a file and the operator is not warned, the silent collision the goal exists to prevent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit 3129f05e against base 84b6364f: dispatch.py +25/-6, tests/test_directory_claim_asks_first.py +56, new evidence fragment +26, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_directory_claim_asks_first.py and requires the absent docs/evidence/new-topic under a live docs/evidence claim to warn and, with the flag, to proceed; asserted at tests/test_directory_claim_asks_first.py:294 and :312, gate recorded 9 passed EXIT=0 and reproduced by this review at 3129f05e.",
+    "goal": "the node goal is to make crew dispatch's directory-claim warning also recognise a declared directory that does not yet exist on disk inside another live run's claimed directory; reckon/crew/dispatch.py:1684 _directory_claim_overlaps gains a third arm at :1710-1711 reading an absent no-suffix path strictly inside the claim as a directory, reaching the warning at reckon/crew/dispatch.py:1730 and closing the prior review's finding.",
+    "manifest": "read; it records the gate (9 passed, EXIT=0), the negative control red at EXIT=1 and the basetemp deletions, but names no baseline_suite/after_suite, so the read-time annotation reports the added-failure count unmeasured; this review measured 0 (see added_failures_note).",
+    "write_paths": "the manifest declares four write paths and git diff --name-only 84b6364f 3129f05e lists exactly three files inside them (dispatch.py, the test file, the evidence fragment), the figures path correctly unused."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log records the declared mutation reddening test_an_absent_directory_inside_a_live_claim_warns_and_does_not_proceed on its warning assertion (tests/test_directory_claim_asks_first.py:305, EXIT=1), and the three added assertions compare production output against independently constructed expectations.",
+    "evidence": "the gate names tests/test_directory_claim_asks_first.py and its result (9 passed, EXIT=0) is recorded in gate-head.log with revision/tree/command headers, and this review reproduced it at head 3129f05e in logs/head-gate-rerun.log.",
+    "fit": "the three-arm docstring and the absent-path reading at reckon/crew/dispatch.py:1710 sit in the module's existing style, and no changed path, symbol or comment carries a plan, stage or version label.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1710-1711 reads an absent no-suffix path inside the claim as a directory, matching the goal, but the Path.suffix discriminator misses a declared directory whose name carries a dot, which stays unwarned.",
+    "scope_discipline": "git diff --name-only 84b6364f 3129f05e lists exactly the three declared paths the change needed and no other file."
+  },
+  "node": "review-of-directory-claim-sees-uncreated-dirs",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make crew dispatch's directory-claim warning also recognise a declared directory that does not yet exist on disk inside another live run's claimed directory; reckon/crew/dispatch.py:1684 _directory_claim_overlaps gains a third arm at :1710-1711 that reads an absent no-suffix path strictly inside the claim as a directory, reaching the warning path at reckon/crew/dispatch.py:1730, and closing the prior review's finding that the contained-in arm was unhandled for a not-yet-created directory.\nVERDICT done_when: the done_when names tests/test_directory_claim_asks_first.py and requires a dry run declaring the absent docs/evidence/new-topic inside a live docs/evidence claim to warn and, with --accept-directory-claim, to proceed; that is asserted at tests/test_directory_claim_asks_first.py:294 (warns, exit 2, no acceptance) and :312 (the flag proceeds and records the acceptance), and the recorded gate (gate-head.log: 9 passed, EXIT=0) was reproduced by this review at head 3129f05e (logs/head-gate-rerun.log: 9 passed, EXIT=0).\nVERDICT write_paths: the reviewed manifest declares four write paths and git diff --name-only 84b6364f 3129f05e lists exactly three files, all inside them -- reckon/crew/dispatch.py, tests/test_directory_claim_asks_first.py and docs/evidence/fragments/a-small-change-is-a-small-node/directory-claim-sees-uncreated-dirs.html -- with the fourth (a figures directory) correctly unused because the done-when names no artifact.\nVERDICT manifest: read; it records the gate result (9 passed, EXIT=0), the declared negative control red at EXIT=1, the three-arm edit and the /tmp basetemp deletions, but it names no baseline_suite/after_suite (an implement-role node runs a single head arm), so the store's read-time annotation reports the added-failure count unmeasured; this review measured it as 0 with its own base arm (logs/base-arm.log, 6 passed, EXIT=0) diffed against the head gate, see added_failures_note.\nVERDICT diff: read the single commit 3129f05e against base 84b6364f -- dispatch.py +25/-6 adds the contained-in arm and rewrites the docstring, tests/test_directory_claim_asks_first.py +56 adds three cases, and the evidence fragment is new (+26) -- three files, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:1730, reckon/crew/dispatch.py:1858\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1710-1711 reads an absent no-suffix path inside the claim as a directory, matching the goal, but the Path.suffix discriminator misses a declared directory whose name carries a dot (e.g. docs/evidence/2026.09 inside a live docs/evidence claim), which stays unwarned -- the silent collision the goal exists to prevent.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate names tests/test_directory_claim_asks_first.py and its result (9 passed, EXIT=0) is recorded in gate-head.log with revision/tree/command headers, and this review reproduced it at head 3129f05e in logs/head-gate-rerun.log (9 passed, EXIT=0).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 84b6364f 3129f05e lists exactly the three declared paths the change needed (implementation, test, evidence fragment) and no other file.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control.log records the declared mutation reddening test_an_absent_directory_inside_a_live_claim_warns_and_does_not_proceed on its warning assertion at tests/test_directory_claim_asks_first.py:305 (EXIT=1), and the three added assertions compare production output against independently constructed expectations, so each fails on the regression it guards.\nSCORE fit: 19\nJUSTIFICATION fit: the three-arm docstring and the `not candidate.exists() and candidate.suffix == \"\"` reading at reckon/crew/dispatch.py:1710 sit in the module's existing style, and no changed path, symbol or comment carries a plan, stage or version label.\nFINDING reckon/crew/dispatch.py:1711 the absent-directory arm keys on Path.suffix == \"\", so a declared directory whose name contains a dot (e.g. docs/evidence/2026.09 strictly inside a live docs/evidence claim) is read as a file and the operator is not warned, the silent collision the goal exists to prevent.\n",
+  "review_run_id": "r-20260930T201307113692-review-of-directory-claim-sees-uncreated-dirs",
+  "reviewed_base_sha": "84b6364f162c8a4a04b430f191db7fe34a610e76",
+  "reviewed_head_sha": "3129f05e8a6d180253db35cfddaf5a98ec2c0661",
+  "reviewed_run_id": "r-20260930T195602586443-directory-claim-sees-uncreated-dirs",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T20:22:04.783216+00:00",
+  "total": 95
+}

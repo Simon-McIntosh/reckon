@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no baseline_suite/after_suite gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T08:32:34.192Z",
+  "dispatched_at": "2026-10-01T08:24:00Z",
+  "findings": [
+    {
+      "file": "s21-placed-worker-probe.md",
+      "line": "47",
+      "severity": "follow-on",
+      "text": "follow-on: the sentence that more than one task's worker runs as a step rests on step 1277272.210 serve_leak_dashboard.sh, whose name reads as a service rather than a worker; the conclusion is nonetheless correct in substance, since my re-check of squeue -h -s -j 1277272 showed four concurrent 1277272.* bwrap worker steps, so this is an imprecise exemplar rather than a wrong conclusion."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "empty; the reviewed worktree is at its base c091e7c9 with no commit and a clean tree (git log c091e7c9..HEAD empty), so there is no code diff and the deliverable is the report artifact.",
+    "done_when": "the done-when names a report under 5 KB at s21-placed-worker-probe.md giving four SLURM values, the hostname, and squeue -h -s -j $SLURM_JOB_ID -o '%i %j %M' by job id with every command logged ending EXIT=; the report (3738 bytes) and s21-placed-worker-probe.log carry every element.",
+    "goal": "the node's goal is to record from inside a worker whether it runs as a step in the shared fleet allocation; the report s21-placed-worker-probe.md states the worker is step 1277272.206 named bwrap inside job 1277272.",
+    "manifest": "read; it reports status complete, commits [] with no repository file changed, the squeue check EXIT=0, and the four SLURM values plus hostname.",
+    "write_paths": "the manifest declares one write path, s21-placed-worker-probe.md; the report sits there and the reviewed worktree shows no repository change (git status --porcelain empty)."
+  },
+  "justifications": {
+    "durability": "an observational report has no code path to regress and declares negative_control none, so no assertion fails if the conclusion regresses; the instrument controls are the only check and the recorded step ids are ephemeral (step 1277272.206 absent at my re-check).",
+    "evidence": "the named check ran by job id and every block of s21-placed-worker-probe.log ends EXIT=, with an instrument control (printenv PATH present, S21_PLACED_WORKER_PROBE_ABSENT exit 1), and the report is 3738 bytes under the 5 KB cap.",
+    "fit": "s21-placed-worker-probe.md follows the artifact idiom (titled report, values table, explicit scope section, instrument checks) with no identifier leaking a plan or ticket number.",
+    "goal_fidelity": "s21-placed-worker-probe.md records the worker's own placement from inside it, and I independently reproduced the answer, running as step 1277272.224 bwrap in job 1277272 on 98dci4-clu-2018.",
+    "scope_discipline": "the sole declared write path is s21-placed-worker-probe.md and the reviewed worktree shows no repository change, with the log written under the run directory the done-when mandates."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to record from inside a worker whether it runs as a step in the shared fleet allocation; the report s21-placed-worker-probe.md states the worker is step 1277272.206 named bwrap inside job 1277272.\nVERDICT done_when: the done-when names a report under 5 KB at s21-placed-worker-probe.md giving four SLURM values, the hostname, and squeue -h -s -j $SLURM_JOB_ID -o '%i %j %M' by job id with every command logged ending EXIT=; the report (3738 bytes) and s21-placed-worker-probe.log carry every element.\nVERDICT write_paths: the manifest declares one write path, s21-placed-worker-probe.md; the report sits there and the reviewed worktree shows no repository change (git status --porcelain empty).\nVERDICT manifest: read; it reports status complete, commits [] with no repository file changed, the squeue check EXIT=0, and the four SLURM values plus hostname.\nVERDICT diff: empty; the reviewed worktree is at its base c091e7c9 with no commit and a clean tree (git log c091e7c9..HEAD empty), so there is no code diff and the deliverable is the report artifact.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: s21-placed-worker-probe.md records the worker's own placement from inside it, and I independently reproduced the answer, running as step 1277272.224 bwrap in job 1277272 on 98dci4-clu-2018.\nSCORE evidence: 20\nJUSTIFICATION evidence: the named check ran by job id and every block of s21-placed-worker-probe.log ends EXIT=, with an instrument control (printenv PATH present, S21_PLACED_WORKER_PROBE_ABSENT exit 1), and the report is 3738 bytes under the 5 KB cap.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the sole declared write path is s21-placed-worker-probe.md and the reviewed worktree shows no repository change, with the log written under the run directory the done-when mandates.\nSCORE durability: 16\nJUSTIFICATION durability: an observational report has no code path to regress and declares negative_control none, so no assertion fails if the conclusion regresses; the instrument controls are the only check and the recorded step ids are ephemeral (step 1277272.206 absent at my re-check).\nSCORE fit: 19\nJUSTIFICATION fit: s21-placed-worker-probe.md follows the artifact idiom (titled report, values table, explicit scope section, instrument checks) with no identifier leaking a plan or ticket number.\nFINDING s21-placed-worker-probe.md:47 follow-on: the sentence that more than one task's worker runs as a step rests on step 1277272.210 serve_leak_dashboard.sh, whose name reads as a service rather than a worker; the conclusion is nonetheless correct in substance, since my re-check of squeue -h -s -j 1277272 showed four concurrent 1277272.* bwrap worker steps, so this is an imprecise exemplar rather than a wrong conclusion.\n",
+  "review_run_id": "r-20261001T082338760481-review-of-a-placed-worker-reports-its-step",
+  "reviewed_base_sha": "c091e7c9ccc3a0b4e1c82db4c78dc541a8cfb546",
+  "reviewed_head_sha": "c091e7c9ccc3a0b4e1c82db4c78dc541a8cfb546",
+  "reviewed_run_id": "r-20261001T080230459227-a-placed-worker-reports-its-step",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T08:31:04.513661+00:00",
+  "total": 95
+}

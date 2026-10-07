@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-follower-lives-as-long-as-its-session">
+  <meta name="plan-verifies" content="reckon:a-follower-lives-as-long-as-its-session#s6">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-07">
+  <title>Sync isolation covers every fixture scope | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="sync-isolation-covers-every-fixture-scope">
+  <h2>Sync isolation covers every fixture scope</h2>
+  <p>The skills-directory override is now session-scoped, so a fixture scoped
+  wider than one test — a module- or session-scoped fixture that runs
+  <code>reckon sync</code> — sees it and links into the temporary directory
+  rather than the operator's real <code>~/.claude/skills</code>. The previous
+  fixture was function-scoped, which a module-scoped fixture ran before. The
+  module-name exemption list is deleted; <code>tests/test_doctor.py</code> opts
+  out through its own fixture that removes the variable, and the fixture imports
+  the variable name from <code>reckon.cli</code>. A new module runs sync from a
+  module-scoped fixture and shows the link landing in the override directory.
+  Gate 36 passed, exit 0; negative control 2 failed, exit 1.</p>
+</section>
+</main>
+</body>
+</html>

@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T23:38:47.194Z",
+  "dispatched_at": "2026-10-02T23:23:01Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T224347306695-insert-path-warns-on-first-record/base-arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the run's gate-log header spells the revision `rev=` while reckon/crew/review.py:_LOGGED_REVISION_RE reads the word `revision`, so base_log_revision/head_log_revision annotate null for this run; the added-failure count still derives correctly because it reads the FAILED/ERROR lines rather than the header."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read against base 605a4d9d5; one file, +31/-0, adding test_first_section_record_insert_warns_impl_becomes_computed, a sibling of the existing append case; no product source changed.",
+    "done_when": "the plan's done-when names a test inserting the first record via the insert path on a record-less plan in a temporary docs tree and asserting the warning; tests/test_impl_stays_authorable_while_records_are_partial.py:184 is exactly that, and removing the warning from _apply_insert_section reds it.",
+    "goal": "the node's goal is to add the missing test for the insert path's first-record warning; the landed case drives the insert_section op through reckon/mcp.py._edit_plan_tool at tests/test_impl_stays_authorable_while_records_are_partial.py:184.",
+    "manifest": "read; status complete, commit f75f6884b, baseline_suite and after_suite both completed with empty failure_ids, negative_control_log negative-control-2.log ending EXIT=1.",
+    "write_paths": "the diff touches only tests/test_impl_stays_authorable_while_records_are_partial.py, the node's sole declared path; the worktree is clean at f75f6884b."
+  },
+  "justifications": {
+    "durability": "removing the warning append from _apply_insert_section (reckon/_store.py:3067) reds exactly test_first_section_record_insert_warns_impl_becomes_computed while the other 66 pass, so the assertion is load-bearing rather than green by disabling itself.",
+    "evidence": "independently re-ran base 605a4d9d5 (66 passed, EXIT=0) and head f75f6884b (67 passed, EXIT=0) in scratch trees, reproduced the negative control (1 failed, the new id, 66 passed, EXIT=1), and derived added_failure_count 0 from the run's own baseline_suite/after_suite.",
+    "fit": "the case mirrors the sibling append test's helpers (_write_plan, _edit) and naming at tests/test_impl_stays_authorable_while_records_are_partial.py:184; the commit subject is conventional with a body and carries no plan, sprint or version label and no AI trailer.",
+    "goal_fidelity": "tests/test_impl_stays_authorable_while_records_are_partial.py:184 inserts the first record via insert_section on a plan carrying none in tmp_path and asserts both the warning text and the landed record, exactly the plan section's done-when.",
+    "scope_discipline": "git diff --name-only 605a4d9d5..f75f6884b names only tests/test_impl_stays_authorable_while_records_are_partial.py, the declared path; no reckon/ product file, plan, or index state is touched and the worktree is clean."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 605a4d9d599b6eb87d71ce03c71677e6d1a45e69\nreviewed_head_sha: f75f6884bfeedd90a9ed831676e5f3617a25713e\nVERDICT goal: the node's goal is to add the missing test for the insert path's first-record warning; the landed case drives the insert_section op through reckon/mcp.py._edit_plan_tool at tests/test_impl_stays_authorable_while_records_are_partial.py:184.\nVERDICT done_when: the plan's done-when names a test inserting the first record via the insert path on a record-less plan in a temporary docs tree and asserting the warning; tests/test_impl_stays_authorable_while_records_are_partial.py:184 is exactly that, and removing the warning from _apply_insert_section reds it.\nVERDICT write_paths: the diff touches only tests/test_impl_stays_authorable_while_records_are_partial.py, the node's sole declared path; the worktree is clean at f75f6884b.\nVERDICT manifest: read; status complete, commit f75f6884b, baseline_suite and after_suite both completed with empty failure_ids, negative_control_log negative-control-2.log ending EXIT=1.\nVERDICT diff: read against base 605a4d9d5; one file, +31/-0, adding test_first_section_record_insert_warns_impl_becomes_computed, a sibling of the existing append case; no product source changed.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_impl_stays_authorable_while_records_are_partial.py:184 inserts the first record via insert_section on a plan carrying none in tmp_path and asserts both the warning text and the landed record, exactly the plan section's done-when.\nSCORE evidence: 19\nJUSTIFICATION evidence: independently re-ran base 605a4d9d5 (66 passed, EXIT=0) and head f75f6884b (67 passed, EXIT=0) in scratch trees, reproduced the negative control (1 failed, the new id, 66 passed, EXIT=1), and derived added_failure_count 0 from the run's own baseline_suite/after_suite.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 605a4d9d5..f75f6884b names only tests/test_impl_stays_authorable_while_records_are_partial.py, the declared path; no reckon/ product file, plan, or index state is touched and the worktree is clean.\nSCORE durability: 19\nJUSTIFICATION durability: removing the warning append from _apply_insert_section (reckon/_store.py:3067) reds exactly test_first_section_record_insert_warns_impl_becomes_computed while the other 66 pass, so the assertion is load-bearing rather than green by disabling itself.\nSCORE fit: 20\nJUSTIFICATION fit: the case mirrors the sibling append test's helpers (_write_plan, _edit) and naming at tests/test_impl_stays_authorable_while_records_are_partial.py:184; the commit subject is conventional with a body and carries no plan, sprint or version label and no AI trailer.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T224347306695-insert-path-warns-on-first-record/base-arm.log:1 follow-on: the run's gate-log header spells the revision `rev=` while reckon/crew/review.py:_LOGGED_REVISION_RE reads the word `revision`, so base_log_revision/head_log_revision annotate null for this run; the added-failure count still derives correctly because it reads the FAILED/ERROR lines rather than the header.\n",
+  "review_run_id": "r-20261002T232223087048-review-of-insert-path-warns-on-first-record",
+  "reviewed_base_sha": "605a4d9d599b6eb87d71ce03c71677e6d1a45e69",
+  "reviewed_head_sha": "f75f6884bfeedd90a9ed831676e5f3617a25713e",
+  "reviewed_run_id": "r-20261002T224347306695-insert-path-warns-on-first-record",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.603065+00:00",
+  "total": 98
+}

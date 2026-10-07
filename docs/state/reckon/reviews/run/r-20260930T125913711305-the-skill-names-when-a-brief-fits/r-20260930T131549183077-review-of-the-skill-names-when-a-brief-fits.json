@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_skill_contracts.py::test_the_plan_is_named_as_the_only_passing_surface"
+  ],
+  "added_failures_note": "added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "base_log_revision": "2be39bd4ed86488151147931833843063eb6864c",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:5134 (the crew MCP tool registration)",
+    "reckon/mcp.py:4109 (crew_runs_view reached by view=\"runs\")",
+    "reckon/crew/query.py:472",
+    "reckon/crew/query.py:503 (_compact_row's live and ledger arms)"
+  ],
+  "completed_at": "2026-09-30T13:27:49.364Z",
+  "dispatched_at": "2026-09-30T13:16:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/query.py",
+      "line": "236",
+      "text": "the digest's live branch reads the pointer's node block and no test reaches it: the only new assertion reads source=\"ledger\", so the arm a brief run occupies for its whole life before promotion can regress with the suite green."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1263",
+      "text": "the landed change removes the sentence this assertion requires, so it reds at head; the evidence fence asked for zero added failures by id while forbidding edits to this file, which makes the measure unsatisfiable and leaves armed promotion refusing the run at reckon/crew/promotion.py:4155 until the assertion is updated or a waiver reason is recorded."
+    }
+  ],
+  "head_log_revision": "a8efb2ba215f5d87f0b69d034051a2c98256721e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 2be39bd4; three commits touching four files, 256 insertions and 9 deletions, all inside the granted scope.",
+    "done_when": "the fence states five facts about the skill text, the runs-view test, the untouched contract test, the mutation log, and two gate logs showing zero added failures by id; I read the skill text and the projection at head and re-ran tests/test_runs_view_shows_brief_runs.py in a scratch export of a8efb2ba (2 passed), and the zero-added clause is the one clause it does not reach, because the head arm carries exactly one added id.",
+    "goal": "the goal is that the build skill says when a brief is the right carrier for a node and the runs view shows a brief run's missing plan beside its digest; skills/reckon-build/SKILL.md:439-447 names `reckon crew dispatch --brief <file>` for a probe, a measurement, a review or an investigation while work changing a plan's product keeps its plan, and reckon/crew/query.py:268-270 carries the digest on the row beside a null plan.",
+    "manifest": "read; it declares three commits and no landing of its own, reports a clean worktree at a8efb2ba, states base 3 failed/115 passed against head 4 failed/116 passed, and names the added id under follow_ons rather than claiming a clean arm.",
+    "write_paths": "the fence grants three files plus an evidence fragment path and a figures directory; every path in the diff is one of the three files or the fragment, and the figures directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_runs_view_shows_brief_runs.py:146 reddens under the declared mutation (1 failed, 1 passed, EXIT=1), but it reads source=\"ledger\" only, so the live branch at reckon/crew/query.py:236 has no assertion that fails if it regresses.",
+    "evidence": "the manifest's baseline_suite and after_suite carry full-sha headers and named logs, and re-deriving through reckon/crew/review.py:1201 returns added_failure_count 1 at head_log_revision a8efb2ba, against a fence that asked for zero added failures by id.",
+    "fit": "the new name mirrors the field at reckon/crew/node.py:652, the naming checks over the added lines return no hit, and ruff check is clean and the new file formatted.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:439 drops the retired rule and names the brief carrier, and reckon/crew/query.py:268-270 returns plan null with the digest; the plan's second done-when clause is unmet because tests/test_skill_contracts.py:1263 reds at head.",
+    "scope_discipline": "every path in the diff is one of the four granted write paths, and the only behaviour the goal did not name, plan null on a plan-less row, is stated in the plan's own wording at \u00a75."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the build skill says when a brief is the right carrier for a node and the runs view shows a brief run's missing plan beside its digest; skills/reckon-build/SKILL.md:439-447 names `reckon crew dispatch --brief <file>` for a probe, a measurement, a review or an investigation while work changing a plan's product keeps its plan, and reckon/crew/query.py:268-270 carries the digest on the row beside a null plan.\nVERDICT done_when: the fence states five facts about the skill text, the runs-view test, the untouched contract test, the mutation log, and two gate logs showing zero added failures by id; I read the skill text and the projection at head and re-ran tests/test_runs_view_shows_brief_runs.py in a scratch export of a8efb2ba (2 passed), and the zero-added clause is the one clause it does not reach, because the head arm carries exactly one added id.\nVERDICT write_paths: the fence grants three files plus an evidence fragment path and a figures directory; every path in the diff is one of the three files or the fragment, and the figures directory is unused.\nVERDICT manifest: read; it declares three commits and no landing of its own, reports a clean worktree at a8efb2ba, states base 3 failed/115 passed against head 4 failed/116 passed, and names the added id under follow_ons rather than claiming a clean arm.\nVERDICT diff: read commit by commit against 2be39bd4; three commits touching four files, 256 insertions and 9 deletions, all inside the granted scope.\nCALL_SITES: reckon/mcp.py:5134 (the crew MCP tool registration), reckon/mcp.py:4109 (crew_runs_view reached by view=\"runs\"), reckon/crew/query.py:472, reckon/crew/query.py:503 (_compact_row's live and ledger arms)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:439 drops the retired rule and names the brief carrier, and reckon/crew/query.py:268-270 returns plan null with the digest; the plan's second done-when clause is unmet because tests/test_skill_contracts.py:1263 reds at head.\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite carry full-sha headers and named logs, and re-deriving through reckon/crew/review.py:1201 returns added_failure_count 1 at head_log_revision a8efb2ba, against a fence that asked for zero added failures by id.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is one of the four granted write paths, and the only behaviour the goal did not name, plan null on a plan-less row, is stated in the plan's own wording at \u00a75.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_runs_view_shows_brief_runs.py:146 reddens under the declared mutation (1 failed, 1 passed, EXIT=1), but it reads source=\"ledger\" only, so the live branch at reckon/crew/query.py:236 has no assertion that fails if it regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the new name mirrors the field at reckon/crew/node.py:652, the naming checks over the added lines return no hit, and ruff check is clean and the new file formatted.\nFINDING reckon/crew/query.py:236 the digest's live branch reads the pointer's node block and no test reaches it: the only new assertion reads source=\"ledger\", so the arm a brief run occupies for its whole life before promotion can regress with the suite green.\nFINDING tests/test_skill_contracts.py:1263 the landed change removes the sentence this assertion requires, so it reds at head; the evidence fence asked for zero added failures by id while forbidding edits to this file, which makes the measure unsatisfiable and leaves armed promotion refusing the run at reckon/crew/promotion.py:4155 until the assertion is updated or a waiver reason is recorded.",
+  "review_run_id": "r-20260930T131549183077-review-of-the-skill-names-when-a-brief-fits",
+  "reviewed_base_sha": "2be39bd4ed86488151147931833843063eb6864c",
+  "reviewed_head_sha": "a8efb2ba215f5d87f0b69d034051a2c98256721e",
+  "reviewed_run_id": "r-20260930T125913711305-the-skill-names-when-a-brief-fits",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T13:24:43.484772+00:00",
+  "total": 85
+}

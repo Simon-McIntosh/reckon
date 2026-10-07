@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T22:06:07.702Z",
+  "dispatched_at": "2026-10-05T22:01:41Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:147",
+      "id": "deep_module-1",
+      "reason": "the plan explains each face's distinct caller register (an `HTMLParser` attribute list, a soup tag's attributes, a raw open tag, and a raw slice) and centralises re-spelled semantics rather than adding behaviour-free pass-throughs, so folding them into one record would not hide more than the plan already hides.",
+      "text": "\u00a716+\u00a717 expose five public faces over one private read on `reckon/_plan_html.py` (`plan_headings`, the attribute-mapping machinery predicate, `strip_tags`, plus the re-expressed `structured_section_spans`, across two record shapes), which is the shallow-surface pattern the item warns about",
+      "type": "deep_module",
+      "would_change": false
+    },
+    {
+      "anchor": "reckon/interface_counts.py:97",
+      "id": "reuse_search-1",
+      "reason": "a test-imported private rule satisfies the done-when exactly as `_staged_writes` does, so the plan's model holds; naming the entry point would be a clarification, not a design change.",
+      "text": "the plan cites `interface_counts.py`'s \"module-private rules ... since the staged-write inventory landed\" as the home for the new heading-walk rule, but the sole such rule, `_staged_writes`, is reached only from `tests/test_staged_write_inventory.py` and never from the production counting path (`interfaces`/`counts` do not call it), so the precedent is a test-only rule and \u00a717's done-whens phrase the rule as \"run at the head\" without naming the entry point that runs it",
+      "type": "reuse_search",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "8280054d081acbc40881506c8b4320dd1dccb0a012d9ce8e08d4a6d43cd71ee9",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 140,
+  "project": "reckon",
+  "responses": {
+    "deep_module-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "the reviewer itself judged the plan unchanged: each public face on the parser module serves a distinct caller register, an HTMLParser attribute list, a soup tag, a raw open tag and a raw slice, and folding them into one record would hide nothing more than the private read already hides",
+      "when": "2026-10-05T22:07:00.339996+00:00"
+    },
+    "reuse_search-1": {
+      "action": "declined",
+      "by": "too-coord-1005",
+      "reason": "the reviewer itself judged the plan unchanged: the heading-walk rule follows the staged-write inventory's precedent of a module-private rule reached from its test, which is the entry point that runs it at the head and at the base, and the dispatch's done-when names that test as the gate",
+      "when": "2026-10-05T22:07:01.470923+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T220119972865-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "b1097c1d91d3dac675392709f16dd228dfb1faea",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 hides the whole span walk (extended from h2 to every level, with identity, level, text, span, landed-card flag and enclosing element) behind one public `plan_headings` reader over one private read, and \u00a716 folds tag-stripping, entity decoding and skip-tag removal behind `strip_tags`; the complexity stays in the private parser, not spread over wrappers.",
+    "duplicate_owner": "pass \u2014 \u00a717 hoists `section_record_id`/`section_id_candidates`/`section_anchor` out of `reckon/crew/routing.py` into `reckon/_plan_html.py` (the core owner) and repoints every importer including promotion's module-level import (`reckon/crew/promotion.py:77`), moves `landed_section_ids` from `_store.py` to its one home, and converges the `data-reckon` marker (14 lines/5 files), the `section-landed` class (5 lines) and the section-spelling grammars onto single exported owners rather than forking them.",
+    "interface_budget": "pass \u2014 public_definitions 1478, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 and \u00a717 add only to public_definitions and each states in its own text why nothing can be retired (the two public readers keep cross-module callers; the identity digest and prose walk keep their names), \u00a716 explicitly reuses the existing plan-review-missing refusal family rather than adding one, and neither section adds a CLI option or MCP view.",
+    "reuse_search": "pass \u2014 the plan searched the codebase and every base census it cites checks out against the live tree: `_StructuredSectionSpanParser`/`structured_section_spans` in `reckon/_plan_html.py`, `_TAG_RE`/`count_open_decisions` (same file), `landed_section_ids` (`reckon/_store.py:1075`), `section_record_id`/`section_id_candidates`/`section_anchor` (`reckon/crew/routing.py:224,243,238`), `_PROSE_SKIP_TAGS`/`_AuthoredProseParser` (`reckon/crew/plan_review.py:147,168`), and the `interface_counts.py` AST census are all real and named as the mechanisms to extend.",
+    "thin_wrapper": "pass \u2014 both new public faces state why the existing machinery cannot be extended in place: \u00a716 exposes the existing `_TAG_RE` expression across the package boundary rather than adding a second one beside it (its consumer in `reckon/crew` crosses the boundary), and \u00a717 keeps the parser private and projects its output through two public views rather than adding a scanner."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T22:06:48.941245+00:00"
+}

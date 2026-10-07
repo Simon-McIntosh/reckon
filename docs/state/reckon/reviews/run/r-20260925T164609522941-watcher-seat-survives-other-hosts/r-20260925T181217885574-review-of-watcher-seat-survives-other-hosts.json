@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/cli.py:2267",
+    "reckon/cli.py:2343",
+    "reckon/cli.py:2382",
+    "reckon/cli.py:2933",
+    "reckon/cli.py:3143",
+    "reckon/mcp.py:3680",
+    "reckon/crew/dispatch.py:854",
+    "reckon/crew/paid_lanes.py:885"
+  ],
+  "completed_at": "2026-09-25T18:27:44.084Z",
+  "dispatched_at": "2026-09-25T18:12:33Z",
+  "findings": [
+    {
+      "file": "tests/test_watch_seat_across_hosts.py",
+      "line": "187",
+      "text": "the linger guard rests on a type the test itself constructs: _linger_failure returns getattr(service, \"LingerUnavailable\", service.ServiceError) and the fake manager raises it at tests/test_watch_seat_across_hosts.py:176, so nothing drives the real service.enable_linger (reckon/service.py:201) \u2014 reverting that raise to a bare ServiceError leaves all five tests green (reviewer-mutation-service-raise.log) and production crew watch --ensure goes back to raising on a node whose loginctl refuses."
+    },
+    {
+      "file": "tests/test_watch_seat_across_hosts.py",
+      "line": "138",
+      "text": "the assertion cannot fail, because _read_seat returns {} for an erased record and {}.get(\"host\") is None too, so the hostless erasure the test is named for is not guarded by it \u2014 a mutation that erases the hostless seat and still answers live off its stream leaves all five tests green (reviewer-mutation-hostless-erasure.log)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "no commits exist (the manifest's blocker: the primary .git is read-only from this node), so I read the uncommitted git diff against 9a9cb581 \u2014 runs.py gains the seat-host helpers (runs.py:1372-1400), the three-way split in producer_live and _record_producer_dead (runs.py:1477-1496, 1539-1560) and the linger fallback (runs.py:2571-2590); service.py gains LingerUnavailable raised at service.py:201; the plan and the archive carry the landing prose.",
+    "done_when": "all three clauses measure as stated, and I reproduced the first myself \u2014 the named file is 5 failed at pure base 9a9cb581 (reviewer-base-arm.log, module imported from /tmp/rv-base) and 5 passed at the head (reviewer-gate.log, /tmp/rv-head); the follower-delivery question is answered in the manifest's \"Follower delivery\" section against the call site reckon/cli.py:2267, and gate-head.log:412-422 records the watch, follow and dispatch file set with zero failures added by id.",
+    "goal": "the goal \u2014 a seat names its host and is judged, erased or reconciled by pid only on that host, with watch --ensure falling back to a session-owned producer when lingering cannot be enabled \u2014 is what landed: reckon/crew/runs.py:1619 stamps the seat with socket.gethostname(), runs.py:1477, runs.py:1558 and runs.py:1519 branch the three judgements on it, and runs.py:2571 routes service.LingerUnavailable to the process producer.",
+    "manifest": "read; it records the gate command and result at both revisions, the declared mutation with its red log, the follower-delivery code path, and the retained blocker, and it reports the brief's stale \"8 known base failures\" figure as measured-eleven rather than fitting the number it was given.",
+    "write_paths": "the declared fence is reckon/crew/runs.py, reckon/service.py, tests/test_watch_seat_across_hosts.py, docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html, docs/figures/the-fleet-counters-count-the-fleet and docs/plans/the-fleet-counters-count-the-fleet.html; git status at 9a9cb581 shows exactly four modified files plus the one new test, all inside it, and the declared docs/figures/ path was left untouched."
+  },
+  "justifications": {
+    "durability": "the declared mutation reddens three of the four seat tests (mutation-erase-foreign-seat-by-pid.log:1), but tests/test_watch_seat_across_hosts.py:187 constructs the exception type the linger guard matches, so reverting reckon/service.py:201 leaves all five tests green, and the assertion at tests/test_watch_seat_across_hosts.py:138 cannot fail at all.",
+    "evidence": "gate-head.log:1-5 names the revision, tree, imported module and cwd, and I reproduced both arms first-hand (5 failed at 9a9cb581 from /tmp/rv-base, 5 passed at the head from /tmp/rv-head), though the base arm's own log is /tmp/wsh-base.log on a node-local filesystem, as the manifest itself states.",
+    "fit": "the change follows the module's idiom \u2014 helpers beside the readers they serve, the named constants at runs.py:2623-2631 instead of inline phrases, and an error subclass that keeps the existing catchers at reckon/serve.py:404 and reckon/crew/paid_lanes.py:885 working.",
+    "goal_fidelity": "reckon/crew/runs.py:1619 stamps the seat with its issuing host and runs.py:1477 and runs.py:1558 let only a record naming this host answer to the local process table, which is the goal's three judgements moved onto the host that issued the pid.",
+    "scope_discipline": "every path in the working tree's diff against 9a9cb581 lies inside the six paths the node declared, and the declared-but-unused docs/figures/ path shows no edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal \u2014 a seat names its host and is judged, erased or reconciled by pid only on that host, with watch --ensure falling back to a session-owned producer when lingering cannot be enabled \u2014 is what landed: reckon/crew/runs.py:1619 stamps the seat with socket.gethostname(), runs.py:1477, runs.py:1558 and runs.py:1519 branch the three judgements on it, and runs.py:2571 routes service.LingerUnavailable to the process producer.\nVERDICT done_when: all three clauses measure as stated, and I reproduced the first myself \u2014 the named file is 5 failed at pure base 9a9cb581 (reviewer-base-arm.log, module imported from /tmp/rv-base) and 5 passed at the head (reviewer-gate.log, /tmp/rv-head); the follower-delivery question is answered in the manifest's \"Follower delivery\" section against the call site reckon/cli.py:2267, and gate-head.log:412-422 records the watch, follow and dispatch file set with zero failures added by id.\nVERDICT write_paths: the declared fence is reckon/crew/runs.py, reckon/service.py, tests/test_watch_seat_across_hosts.py, docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html, docs/figures/the-fleet-counters-count-the-fleet and docs/plans/the-fleet-counters-count-the-fleet.html; git status at 9a9cb581 shows exactly four modified files plus the one new test, all inside it, and the declared docs/figures/ path was left untouched.\nVERDICT manifest: read; it records the gate command and result at both revisions, the declared mutation with its red log, the follower-delivery code path, and the retained blocker, and it reports the brief's stale \"8 known base failures\" figure as measured-eleven rather than fitting the number it was given.\nVERDICT diff: no commits exist (the manifest's blocker: the primary .git is read-only from this node), so I read the uncommitted git diff against 9a9cb581 \u2014 runs.py gains the seat-host helpers (runs.py:1372-1400), the three-way split in producer_live and _record_producer_dead (runs.py:1477-1496, 1539-1560) and the linger fallback (runs.py:2571-2590); service.py gains LingerUnavailable raised at service.py:201; the plan and the archive carry the landing prose.\nCALL_SITES: reckon/cli.py:2267, reckon/cli.py:2343, reckon/cli.py:2382, reckon/cli.py:2933, reckon/cli.py:3143, reckon/mcp.py:3680, reckon/crew/dispatch.py:854, reckon/crew/paid_lanes.py:885\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1619 stamps the seat with its issuing host and runs.py:1477 and runs.py:1558 let only a record naming this host answer to the local process table, which is the goal's three judgements moved onto the host that issued the pid.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log:1-5 names the revision, tree, imported module and cwd, and I reproduced both arms first-hand (5 failed at 9a9cb581 from /tmp/rv-base, 5 passed at the head from /tmp/rv-head), though the base arm's own log is /tmp/wsh-base.log on a node-local filesystem, as the manifest itself states.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the working tree's diff against 9a9cb581 lies inside the six paths the node declared, and the declared-but-unused docs/figures/ path shows no edit.\nSCORE durability: 12\nJUSTIFICATION durability: the declared mutation reddens three of the four seat tests (mutation-erase-foreign-seat-by-pid.log:1), but tests/test_watch_seat_across_hosts.py:187 constructs the exception type the linger guard matches, so reverting reckon/service.py:201 leaves all five tests green, and the assertion at tests/test_watch_seat_across_hosts.py:138 cannot fail at all.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's idiom \u2014 helpers beside the readers they serve, the named constants at runs.py:2623-2631 instead of inline phrases, and an error subclass that keeps the existing catchers at reckon/serve.py:404 and reckon/crew/paid_lanes.py:885 working.\nFINDING tests/test_watch_seat_across_hosts.py:187 the linger guard rests on a type the test itself constructs: _linger_failure returns getattr(service, \"LingerUnavailable\", service.ServiceError) and the fake manager raises it at tests/test_watch_seat_across_hosts.py:176, so nothing drives the real service.enable_linger (reckon/service.py:201) \u2014 reverting that raise to a bare ServiceError leaves all five tests green (reviewer-mutation-service-raise.log) and production crew watch --ensure goes back to raising on a node whose loginctl refuses.\nFINDING tests/test_watch_seat_across_hosts.py:138 the assertion cannot fail, because _read_seat returns {} for an erased record and {}.get(\"host\") is None too, so the hostless erasure the test is named for is not guarded by it \u2014 a mutation that erases the hostless seat and still answers live off its stream leaves all five tests green (reviewer-mutation-hostless-erasure.log).\n",
+  "review_run_id": "r-20260925T181217885574-review-of-watcher-seat-survives-other-hosts",
+  "reviewed_base_sha": "9a9cb581b458c498db384b3e8b9dee9520bdf0d1",
+  "reviewed_head_note": "The reviewed content is the UNCOMMITTED working tree of that worktree; no commit contains this change (the source node's manifest blocker: the primary .git is read-only from its node). Both revision halves therefore name 9a9cb581, the revision the diff was taken against, not a commit holding the change. The code was measured in reviewer scratch trees: /tmp/rv-base (pure 9a9cb581) and /tmp/rv-head (9a9cb581 + the working tree diff applied by patch).",
+  "reviewed_head_sha": "9a9cb581b458c498db384b3e8b9dee9520bdf0d1",
+  "reviewed_run_id": "r-20260925T164609522941-watcher-seat-survives-other-hosts",
+  "reviewed_tree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/watcher-seat-survives-other-hosts",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T18:25:52.420753+00:00",
+  "total": 87
+}

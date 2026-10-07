@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate arms: baseline_suite revision a103bfd10 command ends EXIT=0 with 0 failing ids and after_suite revision ab545f938 ends EXIT=0 with 0 failing ids, so no test failed in either arm and no failure id was added. Reproduced independently in the reviewed worktree: head 6 passed EXIT=0, base scratch 4 passed EXIT=0.",
+  "backend": "clive",
+  "base_log_revision": "a103bfd10109213b269823e5ef5c7f9cda7ddf87",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:7814"
+  ],
+  "completed_at": "2026-10-03T14:44:33.207Z",
+  "dispatched_at": "2026-10-03T14:31:04Z",
+  "findings": [
+    {
+      "file": "tests/test_the_host_line_allows_a_separate_partition_job.py",
+      "line": "90",
+      "severity": "follow-on",
+      "text": "follow-on: the declared negative control applies _unconditional_prohibition, a copy of the retired production string held inside the test module, so a later edit of _worker_host_line cannot drift this mutant; it freezes the wording it intends to, which is why the control is sound, but a reader must keep the two in step by hand if the retired form is ever cited again."
+    }
+  ],
+  "head_log_revision": "ab545f93894d6275bf6c7ee5cb2e868f61e3860a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "The single commit ab545f938 changes only the return string of _worker_host_line (dispatch.py) and updates the two host-contract assertions plus a new two-test file; no other production path is touched.",
+    "done_when": "Every done-when clause is met: the line is one line and keeps its node, job, scratch and durable-log clauses (base.log/head.log arms green); the assertions in tests/test_worker_path_carries_shims.py at lines 220-225 and 278-280 assert the new wording; a done-when requiring a separate partition job is never contradicted.",
+    "goal": "reckon/crew/dispatch.py:7827 (_worker_host_line) now emits a line whose prohibition is scoped to this allocation and whose text names the sanctioned route out, exactly the node goal: the work runs in place, no srun or salloc step opened in this job and no sbatch into it, and a separate partition job for example betelgeuse or a *_debug partition is submitted with RECKON_ALLOW_NESTED_LAUNCH=1 when the done-when names one.",
+    "manifest": "Read; status complete, tests names the focused gate (6 passed head vs 4 passed base), test_logs names head/base/negative-control logs, and baseline_suite/after_suite are populated with the base and head arms, both completed with zero failing ids.",
+    "write_paths": "git show ab545f938 --stat touches exactly reckon/crew/dispatch.py, tests/test_worker_path_carries_shims.py and the new tests/test_the_host_line_allows_a_separate_partition_job.py, all three declared in the reviewed run's orientation_write_paths, with no path outside the grant."
+  },
+  "justifications": {
+    "durability": "The negative control demonstrably reddens the new test by restoring the unconditional prohibition, and every asserted clause (in-place rule, both scheduler-step prohibitions, betelgeuse, the override, node/job/scratch/log) is pinned, but the declared mutant is a reimplementation of the old line inside the test module rather than the production string, so it can drift from the wording it claims to freeze.",
+    "evidence": "The reviewed run's own arms are sound and I reproduced all three independently: head 6 passed EXIT=0, base 4 passed EXIT=0, negative control 1 failed EXIT=1 on the new test alone, but the base arm runs only tests/test_worker_path_carries_shims.py while the head arm adds the new file, so the delta is read across a 4-vs-6 test set rather than a fixed set.",
+    "fit": "The change is a one-line string edit in the module's existing idiom, keeps the line to a single line and its original clauses, and the new test follows the sibling file's fixture and monkeypatch style with mechanism-based docstrings and no plan labels or ticket references.",
+    "goal_fidelity": "dispatch.py:7827 scopes the prohibition to in-place steps and names the separate-partition-job route with RECKON_ALLOW_NESTED_LAUNCH=1, which is precisely the goal, and the digests (implement.md:447-448, test.md:374-375) already name the same route so the contradiction is closed.",
+    "scope_discipline": "The diff touches exactly the three declared paths and nothing else, and I confirmed the reviewed worktree HEAD is ab545f938 with an empty git status --porcelain."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: reckon/crew/dispatch.py:7827 (_worker_host_line) now emits a line whose prohibition is scoped to this allocation and whose text names the sanctioned route out, exactly the node goal: the work runs in place, no srun or salloc step opened in this job and no sbatch into it, and a separate partition job for example betelgeuse or a *_debug partition is submitted with RECKON_ALLOW_NESTED_LAUNCH=1 when the done-when names one.\nVERDICT done_when: Every done-when clause is met: the line is one line and keeps its node, job, scratch and durable-log clauses (base.log/head.log arms green); the assertions in tests/test_worker_path_carries_shims.py at lines 220-225 and 278-280 assert the new wording; a done-when requiring a separate partition job is never contradicted.\nVERDICT write_paths: git show ab545f938 --stat touches exactly reckon/crew/dispatch.py, tests/test_worker_path_carries_shims.py and the new tests/test_the_host_line_allows_a_separate_partition_job.py, all three declared in the reviewed run's orientation_write_paths, with no path outside the grant.\nVERDICT manifest: Read; status complete, tests names the focused gate (6 passed head vs 4 passed base), test_logs names head/base/negative-control logs, and baseline_suite/after_suite are populated with the base and head arms, both completed with zero failing ids.\nVERDICT diff: The single commit ab545f938 changes only the return string of _worker_host_line (dispatch.py) and updates the two host-contract assertions plus a new two-test file; no other production path is touched.\nCALL_SITES: reckon/crew/dispatch.py:7814\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: dispatch.py:7827 scopes the prohibition to in-place steps and names the separate-partition-job route with RECKON_ALLOW_NESTED_LAUNCH=1, which is precisely the goal, and the digests (implement.md:447-448, test.md:374-375) already name the same route so the contradiction is closed.\nSCORE evidence: 19\nJUSTIFICATION evidence: The reviewed run's own arms are sound and I reproduced all three independently: head 6 passed EXIT=0, base 4 passed EXIT=0, negative control 1 failed EXIT=1 on the new test alone, but the base arm runs only tests/test_worker_path_carries_shims.py while the head arm adds the new file, so the delta is read across a 4-vs-6 test set rather than a fixed set.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff touches exactly the three declared paths and nothing else, and I confirmed the reviewed worktree HEAD is ab545f938 with an empty git status --porcelain.\nSCORE durability: 19\nJUSTIFICATION durability: The negative control demonstrably reddens the new test by restoring the unconditional prohibition, and every asserted clause (in-place rule, both scheduler-step prohibitions, betelgeuse, the override, node/job/scratch/log) is pinned, but the declared mutant is a reimplementation of the old line inside the test module rather than the production string, so it can drift from the wording it claims to freeze.\nSCORE fit: 20\nJUSTIFICATION fit: The change is a one-line string edit in the module's existing idiom, keeps the line to a single line and its original clauses, and the new test follows the sibling file's fixture and monkeypatch style with mechanism-based docstrings and no plan labels or ticket references.\nreviewed_base_sha: a103bfd10109213b269823e5ef5c7f9cda7ddf87\nreviewed_head_sha: ab545f93894d6275bf6c7ee5cb2e868f61e3860a\nFINDING tests/test_the_host_line_allows_a_separate_partition_job.py:90 follow-on: the declared negative control applies _unconditional_prohibition, a copy of the retired production string held inside the test module, so a later edit of _worker_host_line cannot drift this mutant; it freezes the wording it intends to, which is why the control is sound, but a reader must keep the two in step by hand if the retired form is ever cited again.",
+  "review_run_id": "r-20261003T143050220536-review-of-the-host-line-allows-a-separate-partition-job",
+  "reviewed_base_sha": "a103bfd10109213b269823e5ef5c7f9cda7ddf87",
+  "reviewed_commits": [
+    "ab545f938"
+  ],
+  "reviewed_head_sha": "ab545f93894d6275bf6c7ee5cb2e868f61e3860a",
+  "reviewed_run_id": "r-20261003T142239110731-the-host-line-allows-a-separate-partition-job",
+  "reviewer_run_id": "r-20261003T143050220536-review-of-the-host-line-allows-a-separate-partition-job",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T14:38:45.745216+00:00",
+  "total": 98
+}

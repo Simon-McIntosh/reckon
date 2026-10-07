@@ -1,0 +1,106 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "blocking_findings": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon.crew.dispatch.dispatch"
+  ],
+  "commits_read": [
+    "7a18dd2fade1e21b9235433968211adca0f2a76d",
+    "89ac656b5e8c2b1dde932fddf67695433f56b5d4"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T15:25:42.580633+00:00",
+  "evidence": {
+    "baseline": {
+      "exit_status": 1,
+      "failed": 3,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record/prechange-test.log",
+      "summary": "3 failed, 1 passed"
+    },
+    "focused_gate": {
+      "exit_status": 0,
+      "failure_count": 0,
+      "passed": 4,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record/after-test.log",
+      "summary": "4 passed in 11.39s"
+    },
+    "format_receipt": {
+      "baseline_current_counts_recorded_in_manifest": false,
+      "current_summary": "1 file would be reformatted, 1 file already formatted",
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record/ruff-format.log"
+    },
+    "negative_control": {
+      "exit_status": 1,
+      "failed": 3,
+      "first_line_matches_declaration": true,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record/negative-control.log",
+      "summary": "3 failed, 1 passed"
+    },
+    "scope": {
+      "changed_paths": 4,
+      "declared_paths": 4,
+      "diff_check_exit_status": 0,
+      "out_of_scope_paths": 0
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record/manifest.md",
+      "line": "13",
+      "text": "[P2] The done-when requires baseline and current ruff format counts pasted into the manifest, but line 13 records only ruff check base=9 current=9; line 22 and ruff-format.log report pre-existing formatting without numeric baseline/current counts, so the format delta is not independently evidenced."
+    }
+  ],
+  "follow_ons": [
+    "Record numeric baseline and current ruff format counts for the exact staged paths in the source manifest; the implementation and focused behavioral gate are otherwise accepted."
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read 7a18dd2fade1e21b9235433968211adca0f2a76d and 89ac656b5e8c2b1dde932fddf67695433f56b5d4 separately against ad4f3c2bc22355224ed568ceff2c2cd34a826651; the source keeps directory sharing and filename exclusivity, and the second commit contains only the two declared HTML records.",
+    "done_when": "Read prompt.txt, manifest.md, prechange-test.log, after-test.log and negative-control.log; the four-case gate and 3-failed/1-passed control are recorded, but numeric ruff format baseline/current counts are missing from manifest.md:13.",
+    "goal": "Read prompt.txt and the node record; dispatch.py grants docs/figures/<plan-slug> beside the plan and evidence paths, and tests/test_shared_landing_paths.py exercises the grant.",
+    "manifest": "Read the complete manifest and its named receipts; the head, focused result, negative control, scope and ruff check claims agree with the tree, while the format-count requirement is under-recorded.",
+    "write_paths": "Read the manifest's four declared paths and compared them with the two commits; dispatch.py, the new focused test, and the two cumulative HTML records are the only changed paths."
+  },
+  "justifications": {
+    "durability": "tests/test_shared_landing_paths.py:142-156, :159-181 and :184-195 cover the shared directory, dispatch grant, two-node sharing and same-filename refusal, and the declared removal control makes three of four cases fail.",
+    "evidence": "The source manifest records the 3-failure baseline, 4-pass focused gate and 3-failure negative control at lines 13 and 17-18, but line 13 does not include the required numeric ruff format baseline/current counts.",
+    "fit": "reckon/crew/dispatch.py:1095-1101 documents and implements exact shared-directory filtering while leaving files inside the topic exclusive, matching the surrounding scope machinery and introducing no forbidden source names.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1002-1010 and :1023-1025 add the plan figure topic beside the existing shared paths, while tests/test_shared_landing_paths.py:159-181 verifies dispatch grants it to nodes.",
+    "scope_discipline": "The independent diff from ad4f3c2bc22355224ed568ceff2c2cd34a826651 to 89ac656b5e8c2b1dde932fddf67695433f56b5d4 contains exactly the four paths declared at manifest.md:3."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt and the node record; dispatch.py grants docs/figures/<plan-slug> beside the plan and evidence paths, and tests/test_shared_landing_paths.py exercises the grant.\nVERDICT done_when: Read prompt.txt, manifest.md, prechange-test.log, after-test.log and negative-control.log; the four-case gate and 3-failed/1-passed control are recorded, but numeric ruff format baseline/current counts are missing from manifest.md:13.\nVERDICT write_paths: Read the manifest's four declared paths and compared them with the two commits; dispatch.py, the new focused test, and the two cumulative HTML records are the only changed paths.\nVERDICT manifest: Read the complete manifest and its named receipts; the head, focused result, negative control, scope and ruff check claims agree with the tree, while the format-count requirement is under-recorded.\nVERDICT diff: Read 7a18dd2fade1e21b9235433968211adca0f2a76d and 89ac656b5e8c2b1dde932fddf67695433f56b5d4 separately against ad4f3c2bc22355224ed568ceff2c2cd34a826651; the source keeps directory sharing and filename exclusivity, and the second commit contains only the two declared HTML records.\nCALL_SITES: reckon.crew.dispatch.dispatch\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1002-1010 and :1023-1025 add the plan figure topic beside the existing shared paths, while tests/test_shared_landing_paths.py:159-181 verifies dispatch grants it to nodes.\nSCORE evidence: 18\nJUSTIFICATION evidence: The source manifest records the 3-failure baseline, 4-pass focused gate and 3-failure negative control at lines 13 and 17-18, but line 13 does not include the required numeric ruff format baseline/current counts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The independent diff from ad4f3c2bc22355224ed568ceff2c2cd34a826651 to 89ac656b5e8c2b1dde932fddf67695433f56b5d4 contains exactly the four paths declared at manifest.md:3.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_shared_landing_paths.py:142-156, :159-181 and :184-195 cover the shared directory, dispatch grant, two-node sharing and same-filename refusal, and the declared removal control makes three of four cases fail.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/dispatch.py:1095-1101 documents and implements exact shared-directory filtering while leaving files inside the topic exclusive, matching the surrounding scope machinery and introducing no forbidden source names.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record/manifest.md:13 [P2] The done-when requires baseline and current ruff format counts pasted into the manifest, but line 13 records only ruff check base=9 current=9; line 22 and ruff-format.log report pre-existing formatting without numeric baseline/current counts, so the format delta is not independently evidenced.\n",
+  "recommendation": "request-changes",
+  "review_limitations": [
+    "Read the recorded focused test and mutation receipts; did not rerun the target test or full suite because the review prompt limits reruns and the receipts were internally consistent.",
+    "This review attaches findings and scores only; it does not repair source, merge commits, promote the target run or verify the merged head."
+  ],
+  "review_run_id": "r-20260921T152542580633-review-of-the-figure-directory-is-granted-like-the-evidence-record",
+  "reviewed_base_sha": "ad4f3c2bc22355224ed568ceff2c2cd34a826651",
+  "reviewed_commit": "89ac656b5e8c2b1dde932fddf67695433f56b5d4",
+  "reviewed_commits": [
+    "7a18dd2fade1e21b9235433968211adca0f2a76d",
+    "89ac656b5e8c2b1dde932fddf67695433f56b5d4"
+  ],
+  "reviewed_head": "89ac656b5e8c2b1dde932fddf67695433f56b5d4",
+  "reviewed_run_id": "r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-figure-directory-is-granted-like-the-evidence-record",
+  "reviewer_run_id": "r-20260921T152542580633-review-of-the-figure-directory-is-granted-like-the-evidence-record",
+  "scope_note": "Only the target node was reviewed. No repository files were edited, no target tests were rerun, and the production dispatch entry point was read as the sole call site verified against the changed helpers.",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record/manifest.md",
+  "source_manifest_sha256": "80024a041e562d2b8ea85045b953142650b7816082083dbcc561db40c8690ca9",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/660d357e-1ede-4027-b678-d89d9391ff8f/the-figure-directory-is-granted-like-the-evidence-record",
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T17:45:29+02:00",
+  "total": 98
+}

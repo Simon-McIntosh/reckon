@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "base_log_revision": "c0abbb8eccdfe8d4f8e61d7b62124efda2ed7688",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/recovery.py:688 _stored_review (classifier)",
+    "reckon/crew/recovery.py:1406 review_head_move",
+    "reckon/crew/recovery.py:1989 dispatch_review_for_run",
+    "reckon/crew/recovery.py:3427 review acceptance",
+    "reckon/crew/obligations.py:352 obligation producer",
+    "reckon/crew/obligations.py:698 sub-floor duty producer",
+    "reckon/cli.py:4946 crew dispose",
+    "reckon/crew/promotion.py:6344 promotion gate"
+  ],
+  "completed_at": "2026-10-03T02:49:02.644Z",
+  "dispatched_at": "2026-10-03T02:38:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "698",
+      "severity": "blocking",
+      "text": "blocking: `select_review_for_head` now returns None for an empty head (reckon/crew/recovery.py:329), but `_sub_floor_items_by_session` passes \"\" when `_reviewed_tree` finds no readable tree and relies on the newest-record fallback its own docstring documents at reckon/crew/obligations.py:641, so a live run with no readable worktree or repo and a stored review carrying a sub-floor dimension now produces no disposition duty; the classifier was rehoused to keep that fallback at reckon/crew/recovery.py:683 but this reader was not, so the \"one selection\" the fragment claims is not one."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/reclaimed-run-review-keys-on-its-own-head.html",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment records base arm 168 passed at 18d9e07b0 and head arm 170 passed at 2b8f0e7a4 while the node's own manifest records 54 and 56 at c0abbb8ec and 0fc262e3f; the fragment is byte-identical to the reverted landing's copy (git diff 6ea9a15fa 0fc262e3f -- <fragment> is empty) and names revisions the node's commits do not contain, so the landed evidence artifact disagrees with the arms the run recorded."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T014958539604-reclaimed-run-head-keeps-stored-reviews/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's changed_paths lists only the three code/test paths while the diff also lands docs/evidence/fragments/crew-runtime-positive-controls/reclaimed-run-review-keys-on-its-own-head.html, so a reader counting the node's changed paths from the manifest undercounts one."
+    }
+  ],
+  "head_log_revision": "0fc262e3fe530bec5274d080981d927a98ad2945",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read both commits against base c0abbb8ec; the re-apply (c93c371c7) restores the reverted change and the repair (0fc262e3f) branches `_stored_review` on `_worktree_reclaimed` so a headless non-reclaimed record still selects the newest stored review, +377/-32 over four files with no churn or unrelated edits.",
+    "done_when": "The done-when requires classify_pointer again to read a completed run holding a parsed stored review as promotable when the record names no resolvable head, an abbreviated commits: entry to resolve to its full id and never the shared checkout's HEAD, and no composed review for a reclaimed run with no resolvable head; the manifest records base c0abbb8ec 54 passed EXIT=0 and head 0fc262e3f 56 passed EXIT=0, with the reproduced regression at c93c371c7 (8 failed) in logs/regression-reproduction-before-fix.log, so the asserted measure is met by the recorded arms.",
+    "goal": "The node goal is that a reclaimed run's review keys on its own head while a stored review stays selectable for the classifier; the landed diff adds `_resolve_abbreviated_commit` (reckon/crew/recovery.py:1239) and `_worktree_reclaimed` (reckon/crew/recovery.py:1300), makes `_review_head_and_tree` return an empty head for a reclaimed record naming no resolvable head (reckon/crew/recovery.py:1315-1327), and has the classifier read the store's newest record for a non-reclaimed empty head (reckon/crew/recovery.py:683-686), which is that mechanism.",
+    "manifest": "read at the reviewed run's manifest.md; status complete, commits c93c371c7 and 0fc262e3f, baseline_suite and after_suite are well-formed JSON naming revisions c0abbb8ec and 0fc262e3f with failure_count 0 each and absolute log paths, negative_control_log is a bare path, and measurement_module/measurement_cwd are recorded for the scratch base arm.",
+    "write_paths": "read the fence's six declared paths; the diff touches four - reckon/crew/recovery.py, tests/test_reclaimed_run_review_head.py, tests/test_rereview_keeps_its_lane.py and the evidence fragment - all inside the granted scope, with no edit outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_reclaimed_run_review_head.py:162 asserts the nine-character citation resolves to run_head and not the checkout head, and the negative control reddens tests/test_crew_scoring_state.py:test_parsed_review_makes_completed_manifest_promotable, but the empty-head refusal it centralises is uncovered for the obligation producer at reckon/crew/obligations.py:698 which it also alters.",
+    "evidence": "the arms are recorded at logs/base-arm-3.log and logs/head-arm.log and the negative control at logs/negative-control.log EXIT=1, but the landed fragment at docs/evidence/fragments/crew-runtime-positive-controls/reclaimed-run-review-keys-on-its-own-head.html:20 records different arm figures (168/170 at 18d9e07b0/2b8f0e7a4) than the manifest's (54/56 at c0abbb8ec/0fc262e3f).",
+    "fit": "`_resolve_abbreviated_commit` (reckon/crew/recovery.py:1239) runs git rev-parse --verify with the module's existing subprocess idiom, and no added name carries a plan or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery.py:1315-1327 returns an empty head for a reclaimed record and reckon/crew/recovery.py:683-686 restores newest-record selection for the in-recovery classifier, which is the goal exactly.",
+    "scope_discipline": "every path in the diff (reckon/crew/recovery.py, the two test files, the fragment) is inside the fence's granted write paths, with no edit to a peer's path or to the plan."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a reclaimed run's review keys on its own head while a stored review stays selectable for the classifier; the landed diff adds `_resolve_abbreviated_commit` (reckon/crew/recovery.py:1239) and `_worktree_reclaimed` (reckon/crew/recovery.py:1300), makes `_review_head_and_tree` return an empty head for a reclaimed record naming no resolvable head (reckon/crew/recovery.py:1315-1327), and has the classifier read the store's newest record for a non-reclaimed empty head (reckon/crew/recovery.py:683-686), which is that mechanism.\nVERDICT done_when: The done-when requires classify_pointer again to read a completed run holding a parsed stored review as promotable when the record names no resolvable head, an abbreviated commits: entry to resolve to its full id and never the shared checkout's HEAD, and no composed review for a reclaimed run with no resolvable head; the manifest records base c0abbb8ec 54 passed EXIT=0 and head 0fc262e3f 56 passed EXIT=0, with the reproduced regression at c93c371c7 (8 failed) in logs/regression-reproduction-before-fix.log, so the asserted measure is met by the recorded arms.\nVERDICT write_paths: read the fence's six declared paths; the diff touches four - reckon/crew/recovery.py, tests/test_reclaimed_run_review_head.py, tests/test_rereview_keeps_its_lane.py and the evidence fragment - all inside the granted scope, with no edit outside it.\nVERDICT manifest: read at the reviewed run's manifest.md; status complete, commits c93c371c7 and 0fc262e3f, baseline_suite and after_suite are well-formed JSON naming revisions c0abbb8ec and 0fc262e3f with failure_count 0 each and absolute log paths, negative_control_log is a bare path, and measurement_module/measurement_cwd are recorded for the scratch base arm.\nVERDICT diff: read both commits against base c0abbb8ec; the re-apply (c93c371c7) restores the reverted change and the repair (0fc262e3f) branches `_stored_review` on `_worktree_reclaimed` so a headless non-reclaimed record still selects the newest stored review, +377/-32 over four files with no churn or unrelated edits.\nCALL_SITES: reckon/crew/recovery.py:688 _stored_review (classifier), reckon/crew/recovery.py:1406 review_head_move, reckon/crew/recovery.py:1989 dispatch_review_for_run, reckon/crew/recovery.py:3427 review acceptance, reckon/crew/obligations.py:352 obligation producer, reckon/crew/obligations.py:698 sub-floor duty producer, reckon/cli.py:4946 crew dispose, reckon/crew/promotion.py:6344 promotion gate\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:1315-1327 returns an empty head for a reclaimed record and reckon/crew/recovery.py:683-686 restores newest-record selection for the in-recovery classifier, which is the goal exactly.\nSCORE evidence: 16\nJUSTIFICATION evidence: the arms are recorded at logs/base-arm-3.log and logs/head-arm.log and the negative control at logs/negative-control.log EXIT=1, but the landed fragment at docs/evidence/fragments/crew-runtime-positive-controls/reclaimed-run-review-keys-on-its-own-head.html:20 records different arm figures (168/170 at 18d9e07b0/2b8f0e7a4) than the manifest's (54/56 at c0abbb8ec/0fc262e3f).\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/recovery.py, the two test files, the fragment) is inside the fence's granted write paths, with no edit to a peer's path or to the plan.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_reclaimed_run_review_head.py:162 asserts the nine-character citation resolves to run_head and not the checkout head, and the negative control reddens tests/test_crew_scoring_state.py:test_parsed_review_makes_completed_manifest_promotable, but the empty-head refusal it centralises is uncovered for the obligation producer at reckon/crew/obligations.py:698 which it also alters.\nSCORE fit: 17\nJUSTIFICATION fit: `_resolve_abbreviated_commit` (reckon/crew/recovery.py:1239) runs git rev-parse --verify with the module's existing subprocess idiom, and no added name carries a plan or ticket label.\nFINDING reckon/crew/obligations.py:698 blocking: `select_review_for_head` now returns None for an empty head (reckon/crew/recovery.py:329), but `_sub_floor_items_by_session` passes \"\" when `_reviewed_tree` finds no readable tree and relies on the newest-record fallback its own docstring documents at reckon/crew/obligations.py:641, so a live run with no readable worktree or repo and a stored review carrying a sub-floor dimension now produces no disposition duty; the classifier was rehoused to keep that fallback at reckon/crew/recovery.py:683 but this reader was not, so the \"one selection\" the fragment claims is not one.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/reclaimed-run-review-keys-on-its-own-head.html:20 follow-on: the fragment records base arm 168 passed at 18d9e07b0 and head arm 170 passed at 2b8f0e7a4 while the node's own manifest records 54 and 56 at c0abbb8ec and 0fc262e3f; the fragment is byte-identical to the reverted landing's copy (git diff 6ea9a15fa 0fc262e3f -- <fragment> is empty) and names revisions the node's commits do not contain, so the landed evidence artifact disagrees with the arms the run recorded.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T014958539604-reclaimed-run-head-keeps-stored-reviews/manifest.md:1 follow-on: the manifest's changed_paths lists only the three code/test paths while the diff also lands docs/evidence/fragments/crew-runtime-positive-controls/reclaimed-run-review-keys-on-its-own-head.html, so a reader counting the node's changed paths from the manifest undercounts one.\n",
+  "review_run_id": "r-20261003T023742769164-review-of-reclaimed-run-head-keeps-stored-reviews",
+  "reviewed_base_sha": "c0abbb8eccdfe8d4f8e61d7b62124efda2ed7688",
+  "reviewed_head_sha": "0fc262e3fe530bec5274d080981d927a98ad2945",
+  "reviewed_run_id": "r-20261003T014958539604-reclaimed-run-head-keeps-stored-reviews",
+  "reviewer": "review-of-reclaimed-run-head-keeps-stored-reviews",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.853075+00:00",
+  "total": 82
+}

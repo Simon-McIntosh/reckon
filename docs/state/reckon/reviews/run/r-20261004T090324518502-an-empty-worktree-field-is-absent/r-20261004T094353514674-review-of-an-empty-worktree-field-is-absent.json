@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:5532",
+    "reckon/crew/promotion.py:5537",
+    "reckon/crew/promotion.py:7928"
+  ],
+  "completed_at": "2026-10-04T09:55:24.428Z",
+  "dispatched_at": "2026-10-04T09:44:12Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T090324518502-an-empty-worktree-field-is-absent/manifest.md",
+      "line": "7",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's commits list names 2d7ddd40e, cae89858e and 693339460 but omits b51a693e, the tree head the run landed last, so a promotion resolving the promoted revision from the declared commits asserts 693339460, one commit behind the tree this review read."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T090324518502-an-empty-worktree-field-is-absent/manifest.md",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline and after suite evidence is written as free prose in tests and test_logs rather than the structured baseline_suite/after_suite fields, so annotate_review_of_run reads the added-failure count as unmeasured even though the named population logs support 0; the negative-control admission still matched because an absent baseline_suite is read as failing nothing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 060d94f50; 2d7ddd40e replaces the two Path(\"\") readers with _record_tree, cae89858e de-collides the seeded test repositories, 693339460 and b51a693e add the evidence fragment, four files +230/-7.",
+    "done_when": "the done_when asks the promoted-revision reader be run with an empty field from inside an unrelated repository and not return its head, tests/test_gate_evidence.py pass from a non-git directory, and the promotion-importing population add no failure; tests/test_empty_worktree_field_is_absent.py:58 does the first against a real ambient repo, head-gate-evidence-from-nongit.log records 26 passed EXIT=0, and population-head.log records 498 passed/0 failed against population-base.log 19 failed/479 passed.",
+    "goal": "the node goal is to make promotion's promoted-revision reader and review gate treat an empty worktree field as absent and give the gate-evidence fixture a real worktree path; reckon/crew/promotion.py:6780 adds _record_tree and reckon/crew/promotion.py:6817 returns \"\" from _run_promoted_revision when it resolves no tree, and tests/test_gate_evidence.py:207 writes worktree or the fixture repository.",
+    "manifest": "read; it records the gate at 26 passed EXIT=0 and the two arms at head 498 passed/0 failed and base 19 failed/479 passed, and names the logs on disk; the added-failure count these arms support is 0.",
+    "write_paths": "the reviewed manifest declares reckon/crew/promotion.py, tests/test_gate_evidence.py, tests/test_empty_worktree_field_is_absent.py and the fragment path; every file in the 060d94f50..b51a693e diff lies inside them and the declared figures directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_empty_worktree_field_is_absent.py:58-88 asserts the resolved revision against an ambient and a run head read independently by git rev-parse, so restoring the removed Path(\"\") reader reddens it; the review-gate call site at reckon/crew/promotion.py:5537 has no dedicated case but is exercised by the gate-evidence fixture.",
+    "evidence": "tests/test_empty_worktree_field_is_absent.py:58 reddens at base (negative-control-base.log, 4 failed/1 passed EXIT=1) and the gate and arms are recorded at EXIT=0 in head-gate-evidence-from-nongit.log and population-head.log; the manifest carries the arm figures as prose rather than the structured baseline_suite/after_suite fields, so the store's read-time annotation reads them as unmeasured.",
+    "fit": "reckon/crew/promotion.py:6780 follows the module's Mapping[str, Any] and docstring idiom and introduces no plan or ticket name; the helper sits between _review_for_promotion and _run_promoted_revision.",
+    "goal_fidelity": "reckon/crew/promotion.py:6780-6819 makes an empty worktree field resolve no tree in both readers and tests/test_gate_evidence.py:207 gives the fixture a real worktree path, exactly what the goal states.",
+    "scope_discipline": "every file in the attributable diff lies inside the declared write paths, but the 108-line evidence fragment at docs/evidence/fragments/crew-runtime-positive-controls/an-empty-worktree-field-is-absent.html carries reproduction prose the dispatch's landing contract said this node writes none of."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make promotion's promoted-revision reader and review gate treat an empty worktree field as absent and give the gate-evidence fixture a real worktree path; reckon/crew/promotion.py:6780 adds _record_tree and reckon/crew/promotion.py:6817 returns \"\" from _run_promoted_revision when it resolves no tree, and tests/test_gate_evidence.py:207 writes worktree or the fixture repository.\nVERDICT done_when: the done_when asks the promoted-revision reader be run with an empty field from inside an unrelated repository and not return its head, tests/test_gate_evidence.py pass from a non-git directory, and the promotion-importing population add no failure; tests/test_empty_worktree_field_is_absent.py:58 does the first against a real ambient repo, head-gate-evidence-from-nongit.log records 26 passed EXIT=0, and population-head.log records 498 passed/0 failed against population-base.log 19 failed/479 passed.\nVERDICT write_paths: the reviewed manifest declares reckon/crew/promotion.py, tests/test_gate_evidence.py, tests/test_empty_worktree_field_is_absent.py and the fragment path; every file in the 060d94f50..b51a693e diff lies inside them and the declared figures directory is unused.\nVERDICT manifest: read; it records the gate at 26 passed EXIT=0 and the two arms at head 498 passed/0 failed and base 19 failed/479 passed, and names the logs on disk; the added-failure count these arms support is 0.\nVERDICT diff: read commit by commit against base 060d94f50; 2d7ddd40e replaces the two Path(\"\") readers with _record_tree, cae89858e de-collides the seeded test repositories, 693339460 and b51a693e add the evidence fragment, four files +230/-7.\nCALL_SITES: reckon/crew/promotion.py:5532, reckon/crew/promotion.py:5537, reckon/crew/promotion.py:7928\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:6780-6819 makes an empty worktree field resolve no tree in both readers and tests/test_gate_evidence.py:207 gives the fixture a real worktree path, exactly what the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_empty_worktree_field_is_absent.py:58 reddens at base (negative-control-base.log, 4 failed/1 passed EXIT=1) and the gate and arms are recorded at EXIT=0 in head-gate-evidence-from-nongit.log and population-head.log; the manifest carries the arm figures as prose rather than the structured baseline_suite/after_suite fields, so the store's read-time annotation reads them as unmeasured.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every file in the attributable diff lies inside the declared write paths, but the 108-line evidence fragment at docs/evidence/fragments/crew-runtime-positive-controls/an-empty-worktree-field-is-absent.html carries reproduction prose the dispatch's landing contract said this node writes none of.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_empty_worktree_field_is_absent.py:58-88 asserts the resolved revision against an ambient and a run head read independently by git rev-parse, so restoring the removed Path(\"\") reader reddens it; the review-gate call site at reckon/crew/promotion.py:5537 has no dedicated case but is exercised by the gate-evidence fixture.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion.py:6780 follows the module's Mapping[str, Any] and docstring idiom and introduces no plan or ticket name; the helper sits between _review_for_promotion and _run_promoted_revision.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T090324518502-an-empty-worktree-field-is-absent/manifest.md:7 follow-on: the manifest's commits list names 2d7ddd40e, cae89858e and 693339460 but omits b51a693e, the tree head the run landed last, so a promotion resolving the promoted revision from the declared commits asserts 693339460, one commit behind the tree this review read.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T090324518502-an-empty-worktree-field-is-absent/manifest.md:10 follow-on: the baseline and after suite evidence is written as free prose in tests and test_logs rather than the structured baseline_suite/after_suite fields, so annotate_review_of_run reads the added-failure count as unmeasured even though the named population logs support 0; the negative-control admission still matched because an absent baseline_suite is read as failing nothing.\n",
+  "review_run_id": "r-20261004T094353514674-review-of-an-empty-worktree-field-is-absent",
+  "reviewed_base_sha": "060d94f50eb15f12d1922401450b8685723321e9",
+  "reviewed_head_sha": "b51a693edef8e3f4f2dc318a2cb2863de9ba6c0f",
+  "reviewed_run_id": "r-20261004T090324518502-an-empty-worktree-field-is-absent",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T094353514674-review-of-an-empty-worktree-field-is-absent",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:08.196716+00:00",
+  "total": 95
+}

@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "commits_read": [
+    "d4b5817426392c12ba54aee61d0b76f6c182c927",
+    "03b8f95f068ac6d1695b17670492757c5a31a543",
+    "9a4b7d3f85f6483d37750dd0351c9049cf85adce"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-18T14:18:45.672906+00:00",
+  "findings": [
+    {
+      "file": "reckon/flight.py",
+      "line": "1403",
+      "text": "the first commit d4b58174 removes parse_overrides, the public function reckon/cli.py:563 imports, tests/test_flight.py:39 imports at module scope and two further test modules reach as an attribute, so that commit's tree answers hasattr(reckon.flight, \"parse_overrides\") False and the suite fails from it, and 03b8f95f restores it inside a commit messaged as tests with no mention of the deletion or the restore anywhere in the run's record."
+    },
+    {
+      "file": "tests/test_flight_portfolio.py",
+      "line": "106",
+      "text": "the handed-off fixture inherits the classification \"running\" default set at line 40, so the closure_disposition_valid branch at reckon/flight.py:1265 is never evaluated for a stopped pointer and the comment at line 104 that a handed-off pointer is reconciled has no fixture that would fail on its loss: measured by mutation, removing the term leaves 6 passed."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "2379",
+      "text": "portfolio_view has no caller, and the crew view name it would be reached by is refused invalid_view by the literal view set at reckon/mcp.py:2993, so the plan section's crew(view=\"portfolio\") surface is unreachable at this head; the manifest follow_ons and the plan page disclose the gap, but no test asserts the reachability the gate names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/nova-wss/portfolio/test_flight_portfolio.log",
+      "line": "3",
+      "text": "the recorded gate duration does not reproduce while its pass count does: 86 passed in 147.01s recorded against my 1.01s for the same two files at the same head, so an 18x unaccounted figure is carried into the manifest and the evidence index as the run's receipt."
+    }
+  ],
+  "gate_receipt": {
+    "duration_discrepancy": "recorded 147.01s against re-measured 1.01s, 18x, unexplained by anything in the tree",
+    "focused_file_result": "tests/test_flight_portfolio.py alone: 6 passed in 0.26s",
+    "recheck_command": "PYTHONPATH=<run worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q <run worktree>/tests/test_flight_portfolio.py <run worktree>/tests/test_flight.py",
+    "recheck_result": "84 passed, 2 skipped at 9a4b7d3f in 1.01s, re-confirmed at 0.72s on a second logged run",
+    "recheck_skips": "tests/test_flight.py:124 and :140 skip because the LinkML generators are absent from PATH; with /home/ITER/mcintos/Code/reckon/.venv/bin on PATH both pass in 6.22s, so 84+2 = the recorded 86",
+    "recorded_command": "UV_PROJECT_ENVIRONMENT=/home/ITER/mcintos/Code/reckon/.venv PYTHONPATH=$PWD uv run --no-sync pytest -p no:cacheprovider tests/test_flight_portfolio.py tests/test_flight.py, per the manifest's done_when template",
+    "recorded_result": "test_flight_portfolio.log: 86 passed in 147.01s at the run's head; base-test_flight.log: 80 passed in 7.73s at the base"
+  },
+  "head_recheck": {
+    "commit_trees_extracted": [
+      "d4b5817426392c12ba54aee61d0b76f6c182c927",
+      "9a4b7d3f85f6483d37750dd0351c9049cf85adce"
+    ],
+    "d4_parse_overrides_present": false,
+    "disposition_term_mutation": "predicate reduced to classification != \"running\": tests/test_flight_portfolio.py 6 passed (unchanged) at both baseline and mutated",
+    "head_parse_overrides_present": true,
+    "portfolio_view_callers": 0,
+    "taken_at_utc": "2026-09-18T15:53:06.277004+00:00"
+  },
+  "justifications": {
+    "durability": "six tests pin the ranking, the column set, the refusal row and the three view depths, and tests/test_flight.py:39 imports parse_overrides so a recurrence of the removed symbol fails the existing suite's collection, but the disposition term at reckon/flight.py:1265 is unexercised: I reduced the predicate in a scratch copy of the head tree to classification != \"running\" and all six tests still pass.",
+    "evidence": "I re-ran the named gate at the reviewed head rather than reading it, so tests/test_flight_portfolio.py passes 6 of 6 in 0.26s, the two-file set reproduces the recorded membership (84 passed plus the 2 LinkML tests skipped at tests/test_flight.py:124 and :140, which pass in 6.22s with the generators on PATH, making the recorded 86), while the recorded duration 147.01s does not reproduce against my 1.01s, and the per-commit check the manifest names is python -m py_compile, which cannot see a deleted public symbol.",
+    "fit": "the composition follows the module's injectable-seam idiom (portfolio_report takes four readers, _portfolio_live_rows takes the classifier at reckon/flight.py:1234) and its comments state mechanism (reckon/flight.py:1245 on why live pointers beat transition events), with no plan label, ticket or version in any new name or comment and the view reusing mcp_views' own normalize_view and paginate.",
+    "goal_fidelity": "at 9a4b7d3f flight_report(\"*\") answers one row per mounted project with the pushed sprint and theme, the critical path, that path's coverage, live width by role, the unreconciled count and the newest lane reading sorted by uncovered critical hours, which the smoke log shows over 13 real mounts, and tests/test_flight_portfolio.py:134 pins the ranking against a name-sorted table passing by coincidence, but the crew(view=\"portfolio\") surface the plan section names is not reachable at this head because only the view function lands, and a CLI reader gets the pre-existing JSON envelope rather than a table.",
+    "scope_discipline": "the three commits at acb5d608..9a4b7d3f diff to exactly the declared write paths (reckon/flight.py, reckon/mcp_views.py, tests/test_flight_portfolio.py, the section's plan page and its evidence record, 795 insertions and 1 deletion, with tests/test_flight.py declared and untouched)."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "REVIEW r-20260918T141845672906-review-of-wss-portfolio-flight\nREVIEWED r-20260918T085656170170-wss-portfolio-flight (node wss-portfolio-flight, plan work-scheduling-surface section 6)\nBASE acb5d6081abd596d9eefc936240d65817df47047\nHEAD 9a4b7d3f85f6483d37750dd0351c9049cf85adce (three commits over the base, worktree clean at review time, not merged)\nCOMMITS_READ d4b5817426392c12ba54aee61d0b76f6c182c927, 03b8f95f068ac6d1695b17670492757c5a31a543, 9a4b7d3f85f6483d37750dd0351c9049cf85adce; each diff read commit by commit, the d4 and head trees extracted with git archive for import-level checks, and the run's manifest plus its four logs under reports/reckon/nova-wss/portfolio read against the diffs\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: at 9a4b7d3f flight_report(\"*\") answers one row per mounted project with the pushed sprint and theme, the critical path, that path's coverage, live width by role, the unreconciled count and the newest lane reading sorted by uncovered critical hours, which the smoke log shows over 13 real mounts, and tests/test_flight_portfolio.py:134 pins the ranking against a name-sorted table passing by coincidence, but the crew(view=\"portfolio\") surface the plan section names is not reachable at this head because only the view function lands, and a CLI reader gets the pre-existing JSON envelope rather than a table.\nSCORE evidence: 14\nJUSTIFICATION evidence: I re-ran the named gate at the reviewed head rather than reading it, so tests/test_flight_portfolio.py passes 6 of 6 in 0.26s, the two-file set reproduces the recorded membership (84 passed plus the 2 LinkML tests skipped at tests/test_flight.py:124 and :140, which pass in 6.22s with the generators on PATH, making the recorded 86), while the recorded duration 147.01s does not reproduce against my 1.01s, and the per-commit check the manifest names is python -m py_compile, which cannot see a deleted public symbol.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the three commits at acb5d608..9a4b7d3f diff to exactly the declared write paths (reckon/flight.py, reckon/mcp_views.py, tests/test_flight_portfolio.py, the section's plan page and its evidence record, 795 insertions and 1 deletion, with tests/test_flight.py declared and untouched).\nSCORE durability: 15\nJUSTIFICATION durability: six tests pin the ranking, the column set, the refusal row and the three view depths, and tests/test_flight.py:39 imports parse_overrides so a recurrence of the removed symbol fails the existing suite's collection, but the disposition term at reckon/flight.py:1265 is unexercised: I reduced the predicate in a scratch copy of the head tree to classification != \"running\" and all six tests still pass.\nSCORE fit: 18\nJUSTIFICATION fit: the composition follows the module's injectable-seam idiom (portfolio_report takes four readers, _portfolio_live_rows takes the classifier at reckon/flight.py:1234) and its comments state mechanism (reckon/flight.py:1245 on why live pointers beat transition events), with no plan label, ticket or version in any new name or comment and the view reusing mcp_views' own normalize_view and paginate.\nFINDING reckon/flight.py:1403 the first commit d4b58174 removes parse_overrides, the public function reckon/cli.py:563 imports, tests/test_flight.py:39 imports at module scope and two further test modules reach as an attribute, so that commit's tree answers hasattr(reckon.flight, \"parse_overrides\") False and the suite fails from it, and 03b8f95f restores it inside a commit messaged as tests with no mention of the deletion or the restore anywhere in the run's record.\nFINDING tests/test_flight_portfolio.py:106 the handed-off fixture inherits the classification \"running\" default set at line 40, so the closure_disposition_valid branch at reckon/flight.py:1265 is never evaluated for a stopped pointer and the comment at line 104 that a handed-off pointer is reconciled has no fixture that would fail on its loss: measured by mutation, removing the term leaves 6 passed.\nFINDING reckon/mcp_views.py:2379 portfolio_view has no caller, and the crew view name it would be reached by is refused invalid_view by the literal view set at reckon/mcp.py:2993, so the plan section's crew(view=\"portfolio\") surface is unreachable at this head; the manifest follow_ons and the plan page disclose the gap, but no test asserts the reachability the gate names.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/nova-wss/portfolio/test_flight_portfolio.log:3 the recorded gate duration does not reproduce while its pass count does: 86 passed in 147.01s recorded against my 1.01s for the same two files at the same head, so an 18x unaccounted figure is carried into the manifest and the evidence index as the run's receipt.\n",
+  "review_run_id": "r-20260918T141845672906-review-of-wss-portfolio-flight",
+  "reviewed_base": "acb5d6081abd596d9eefc936240d65817df47047",
+  "reviewed_commit": "9a4b7d3f85f6483d37750dd0351c9049cf85adce",
+  "reviewed_head": "three commits over the base, worktree clean, unmerged at review time",
+  "reviewed_run_id": "r-20260918T085656170170-wss-portfolio-flight",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-18T15:53:06.276984+00:00",
+  "total": 83
+}

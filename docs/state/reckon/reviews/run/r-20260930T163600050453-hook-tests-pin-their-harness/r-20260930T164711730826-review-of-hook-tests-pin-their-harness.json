@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "base-gate.log and head-gate.log, the reviewed run's three-file arms; the reviewed manifest names them under tests/test_logs, not baseline_suite/after_suite, so a read-path annotation reports the count unmeasured",
+  "base_log_revision": "1f88db44c126f4bf96fca139f995ff3678c7bdee",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-30T17:05:40.655Z",
+  "dispatched_at": "2026-09-30T16:47:38Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T163600050453-hook-tests-pin-their-harness/head-gate.log",
+      "line": "1",
+      "text": "the head arm's header names the base revision 1f88db44c because the driver captured HEAD before the change was committed at 18:45:23, so no head log identifies the revision it measured and the review read path will record head_log_revision=1f88db44c beside an identical base_log_revision, a mismatch that ties the zero-added-failure result to no landed commit."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T163600050453-hook-tests-pin-their-harness/manifest.md",
+      "line": "14",
+      "text": "the manifest names its two arms under tests and test_logs instead of the baseline_suite and after_suite fields the review and promotion paths read, so reckon.crew.review will report the added-failure count unmeasured and the suite delta cannot be read from the record, and the tests command it does name carries <worktree> placeholders rather than the command that ran."
+    },
+    {
+      "file": "tests/test_coordinator_obligations_hook.py",
+      "line": "330",
+      "text": "every drive now pins CLAUDE_PID, so the CLAUDE_PID-absent ancestry walk at reckon/hooks/coordinator_obligations.py:215, the production path for harness versions that export no CLAUDE_PID, is reached by no test in this file or anywhere else under tests/."
+    }
+  ],
+  "head_log_revision": "1f88db44c126f4bf96fca139f995ff3678c7bdee",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit a7219b13 against base 1f88db44c \u2014 three hunks in one test file (41 added, 7 removed) plus a new 51-line evidence fragment; the change pins the subprocess environment and makes the pid helper tolerate a missing registration by returning an absent sentinel, and no production file changes.",
+    "done_when": "the measure asks for a base reproduction under an unrelated live CLAUDE_PID, the file passing in three conditions logged separately, one base and one head arm over the three hook files showing zero added failures by id, and a declared negative control; all seven logs are on disk and the ten base failure ids are id-for-id the ten in r-20260930T154556201330's suite-head.log, but the revision header of every head-arm log names the base commit (finding).",
+    "goal": "read the dispatch goal (the coordinator obligations hook tests pass whatever process tree or CLAUDE_PID they run under) against tests/test_coordinator_obligations_hook.py:330, where every drive now sets CLAUDE_PID itself \u2014 the fixture's registered follower-owner pid when one exists, an absent-pid sentinel otherwise \u2014 and the file passes in the three ambient conditions the worker logged plus my own independent run under an unrelated live pid.",
+    "manifest": "read; it states the three drive results, the arms and their log paths, the declared mutation and the landing line, but it names its arms under tests/test_logs rather than baseline_suite/after_suite, its tests command carries <worktree> placeholders, and its artifacts line is truncated mid-sentence (findings).",
+    "write_paths": "declared tests/test_coordinator_obligations_hook.py, reckon/hooks/coordinator_obligations.py, docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/hook-tests-pin-their-harness.html and the node's figure directory; the commit changes the test file and writes that fragment, and git diff 1f88db44c..a7219b13 over the hook module is empty."
+  },
+  "justifications": {
+    "durability": "the negative control reinstates the regression and reddens a prompt-mode case under an unrelated CLAUDE_PID (negative-control.log, 1 failed, EXIT=1), so the guard does fire, but because every drive now pins CLAUDE_PID the CLAUDE_PID-absent branch of _claude_pid() is reached by no test (finding).",
+    "evidence": "the base reproduction's ten failure ids are identical to the ten recorded in the sibling run's suite-head.log and the three head drives, both three-file arms (39 passed each) and the negative control are all on disk, but the head logs name the base revision and the manifest omits the canonical suite fields so the read path cannot see the arms (findings).",
+    "fit": "the helpers follow the file's own fixture idiom of module-private helpers with mechanism docstrings, and the commit body states the mechanism; no plan label, version number or attribution appears in the diff.",
+    "goal_fidelity": "tests/test_coordinator_obligations_hook.py:330 closes the only remaining ambient input, CLAUDE_PID and through it the hook's ancestry walk, so no case can read the runner's tree, and my own run at a7219b13 under an unrelated live pid is 16 passed (independent-gate.log).",
+    "scope_discipline": "the commit touches only tests/test_coordinator_obligations_hook.py and the declared evidence fragment, and leaves reckon/hooks/coordinator_obligations.py unchanged."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the dispatch goal (the coordinator obligations hook tests pass whatever process tree or CLAUDE_PID they run under) against tests/test_coordinator_obligations_hook.py:330, where every drive now sets CLAUDE_PID itself \u2014 the fixture's registered follower-owner pid when one exists, an absent-pid sentinel otherwise \u2014 and the file passes in the three ambient conditions the worker logged plus my own independent run under an unrelated live pid.\nVERDICT done_when: the measure asks for a base reproduction under an unrelated live CLAUDE_PID, the file passing in three conditions logged separately, one base and one head arm over the three hook files showing zero added failures by id, and a declared negative control; all seven logs are on disk and the ten base failure ids are id-for-id the ten in r-20260930T154556201330's suite-head.log, but the revision header of every head-arm log names the base commit (finding).\nVERDICT write_paths: declared tests/test_coordinator_obligations_hook.py, reckon/hooks/coordinator_obligations.py, docs/evidence/fragments/an-orchestrator-cannot-forget-its-obligations/hook-tests-pin-their-harness.html and the node's figure directory; the commit changes the test file and writes that fragment, and git diff 1f88db44c..a7219b13 over the hook module is empty.\nVERDICT manifest: read; it states the three drive results, the arms and their log paths, the declared mutation and the landing line, but it names its arms under tests/test_logs rather than baseline_suite/after_suite, its tests command carries <worktree> placeholders, and its artifacts line is truncated mid-sentence (findings).\nVERDICT diff: read commit a7219b13 against base 1f88db44c \u2014 three hunks in one test file (41 added, 7 removed) plus a new 51-line evidence fragment; the change pins the subprocess environment and makes the pid helper tolerate a missing registration by returning an absent sentinel, and no production file changes.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_coordinator_obligations_hook.py:330 closes the only remaining ambient input, CLAUDE_PID and through it the hook's ancestry walk, so no case can read the runner's tree, and my own run at a7219b13 under an unrelated live pid is 16 passed (independent-gate.log).\nSCORE evidence: 17\nJUSTIFICATION evidence: the base reproduction's ten failure ids are identical to the ten recorded in the sibling run's suite-head.log and the three head drives, both three-file arms (39 passed each) and the negative control are all on disk, but the head logs name the base revision and the manifest omits the canonical suite fields so the read path cannot see the arms (findings).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit touches only tests/test_coordinator_obligations_hook.py and the declared evidence fragment, and leaves reckon/hooks/coordinator_obligations.py unchanged.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control reinstates the regression and reddens a prompt-mode case under an unrelated CLAUDE_PID (negative-control.log, 1 failed, EXIT=1), so the guard does fire, but because every drive now pins CLAUDE_PID the CLAUDE_PID-absent branch of _claude_pid() is reached by no test (finding).\nSCORE fit: 20\nJUSTIFICATION fit: the helpers follow the file's own fixture idiom of module-private helpers with mechanism docstrings, and the commit body states the mechanism; no plan label, version number or attribution appears in the diff.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T163600050453-hook-tests-pin-their-harness/head-gate.log:1 the head arm's header names the base revision 1f88db44c because the driver captured HEAD before the change was committed at 18:45:23, so no head log identifies the revision it measured and the review read path will record head_log_revision=1f88db44c beside an identical base_log_revision, a mismatch that ties the zero-added-failure result to no landed commit.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T163600050453-hook-tests-pin-their-harness/manifest.md:14 the manifest names its two arms under tests and test_logs instead of the baseline_suite and after_suite fields the review and promotion paths read, so reckon.crew.review will report the added-failure count unmeasured and the suite delta cannot be read from the record, and the tests command it does name carries <worktree> placeholders rather than the command that ran.\nFINDING tests/test_coordinator_obligations_hook.py:330 every drive now pins CLAUDE_PID, so the CLAUDE_PID-absent ancestry walk at reckon/hooks/coordinator_obligations.py:215, the production path for harness versions that export no CLAUDE_PID, is reached by no test in this file or anywhere else under tests/.",
+  "review_run_id": "r-20260930T164711730826-review-of-hook-tests-pin-their-harness",
+  "reviewed_base_sha": "1f88db44c126f4bf96fca139f995ff3678c7bdee",
+  "reviewed_head_sha": "a7219b131d650b3982667fae11b90132ba6a26d9",
+  "reviewed_run_id": "r-20260930T163600050453-hook-tests-pin-their-harness",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T17:01:05.376550+00:00",
+  "total": 93
+}

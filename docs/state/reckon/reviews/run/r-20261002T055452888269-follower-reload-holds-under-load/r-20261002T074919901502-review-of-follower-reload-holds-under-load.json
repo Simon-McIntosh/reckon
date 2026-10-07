@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "fd667e1c52e1",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:_FollowerOwnerCache.resolve",
+    "reckon/crew/runs.py:follower_owner",
+    "reckon/cli.py:2280"
+  ],
+  "completed_at": "2026-10-02T08:07:29.066Z",
+  "dispatched_at": "2026-10-02T07:49:43Z",
+  "findings": [],
+  "head_log_revision": "852ca23cb03301db76015b7eb92c9ba22692eaa1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against fd667e1c; f03d27f92 starts a separate owner process and passes its identity to the arming stub through FOLLOWER_TEST_OWNER at tests/test_follower_checks_its_owner.py:893, keeps it alive until _observe_reload returns, then kills it at line 935; 4a924835e records the evidence fragment; 852ca23cb corrects the stale exit-window docstring and the overstated reproduction-run count.",
+    "done_when": "\u00a73 requires the listed id to pass in three consecutive -n 8 full-file runs; the manifest records ten consecutive -n 8 runs (logs/head-1.log..head-10.log, 5 passed each) and five concurrent load runs (head-load-1..5.log, 5 passed each), and an independent -n 8 re-run of tests/test_follower_checks_its_owner.py at head 852ca23cb passed 5 of 5, EXIT=0.",
+    "goal": "the node's goal is the \u00a73 load-sensitive id test_follower_checks_its_owner; the landed change makes the re-parented reload case arm an explicit owner at tests/test_follower_checks_its_owner.py:887 and keep that owner alive until the reload is observed, so the reload stays observable on a loaded node rather than racing a transient replacement image.",
+    "manifest": "read; status complete, carrying baseline_suite (repro-1.log, 0 failed, EXIT=0) and after_suite (head-rerun.log, 0 failed, EXIT=0) arms and a genuine negative control (logs/neg-1.log, 2 failed / 3 passed, EXIT=1).",
+    "write_paths": "the declared paths are tests/test_follower_checks_its_owner.py and docs/evidence/fragments/the-suite-is-green-at-head/follower-reload-holds-under-load.html; the three commits f03d27f92, 4a924835e and 852ca23cb touch exactly those two paths and no product source."
+  },
+  "justifications": {
+    "durability": "_observe_reload (tests/test_follower_checks_its_owner.py:585) and _wait_until_left_after_reload (:611) both pytest.fail when the reload is absent or the replacement does not leave, and the declared negative control reddens them by removing the env carry at reckon/crew/runs.py:2272.",
+    "evidence": "the manifest records base fd667e1c (repro-1.log, 211 passed, 0 failed) and head 852ca23cb (head-rerun.log, 5 passed, 0 failed) plus a reproduced negative control (logs/neg-1.log, 2 failed, EXIT=1); deducted one for the base arm covering two files where the head arm covers one.",
+    "fit": "the helpers _start_owner_process, _owner_identity and _kill_and_reap follow the file's existing subprocess-stub idiom and introduce no name the repository naming rules forbid; the stale docstring the prior review flagged is corrected at tests/test_follower_checks_its_owner.py:612.",
+    "goal_fidelity": "the \u00a73 load-sensitive id test_a_reload_under_a_live_subreaper_keeps_the_dead_owner is repaired in place at tests/test_follower_checks_its_owner.py:887 and passes 5 of 5 under -n 8 on an independent re-run at head 852ca23cb.",
+    "scope_discipline": "the diff touches exactly the two declared paths, tests/test_follower_checks_its_owner.py and the evidence fragment, with no product source changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is the \u00a73 load-sensitive id test_follower_checks_its_owner; the landed change makes the re-parented reload case arm an explicit owner at tests/test_follower_checks_its_owner.py:887 and keep that owner alive until the reload is observed, so the reload stays observable on a loaded node rather than racing a transient replacement image.\nVERDICT done_when: \u00a73 requires the listed id to pass in three consecutive -n 8 full-file runs; the manifest records ten consecutive -n 8 runs (logs/head-1.log..head-10.log, 5 passed each) and five concurrent load runs (head-load-1..5.log, 5 passed each), and an independent -n 8 re-run of tests/test_follower_checks_its_owner.py at head 852ca23cb passed 5 of 5, EXIT=0.\nVERDICT write_paths: the declared paths are tests/test_follower_checks_its_owner.py and docs/evidence/fragments/the-suite-is-green-at-head/follower-reload-holds-under-load.html; the three commits f03d27f92, 4a924835e and 852ca23cb touch exactly those two paths and no product source.\nVERDICT manifest: read; status complete, carrying baseline_suite (repro-1.log, 0 failed, EXIT=0) and after_suite (head-rerun.log, 0 failed, EXIT=0) arms and a genuine negative control (logs/neg-1.log, 2 failed / 3 passed, EXIT=1).\nVERDICT diff: read commit by commit against fd667e1c; f03d27f92 starts a separate owner process and passes its identity to the arming stub through FOLLOWER_TEST_OWNER at tests/test_follower_checks_its_owner.py:893, keeps it alive until _observe_reload returns, then kills it at line 935; 4a924835e records the evidence fragment; 852ca23cb corrects the stale exit-window docstring and the overstated reproduction-run count.\nCALL_SITES: reckon/crew/runs.py:_FollowerOwnerCache.resolve, reckon/crew/runs.py:follower_owner, reckon/cli.py:2280\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the \u00a73 load-sensitive id test_a_reload_under_a_live_subreaper_keeps_the_dead_owner is repaired in place at tests/test_follower_checks_its_owner.py:887 and passes 5 of 5 under -n 8 on an independent re-run at head 852ca23cb.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest records base fd667e1c (repro-1.log, 211 passed, 0 failed) and head 852ca23cb (head-rerun.log, 5 passed, 0 failed) plus a reproduced negative control (logs/neg-1.log, 2 failed, EXIT=1); deducted one for the base arm covering two files where the head arm covers one.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly the two declared paths, tests/test_follower_checks_its_owner.py and the evidence fragment, with no product source changed.\nSCORE durability: 20\nJUSTIFICATION durability: _observe_reload (tests/test_follower_checks_its_owner.py:585) and _wait_until_left_after_reload (:611) both pytest.fail when the reload is absent or the replacement does not leave, and the declared negative control reddens them by removing the env carry at reckon/crew/runs.py:2272.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers _start_owner_process, _owner_identity and _kill_and_reap follow the file's existing subprocess-stub idiom and introduce no name the repository naming rules forbid; the stale docstring the prior review flagged is corrected at tests/test_follower_checks_its_owner.py:612.",
+  "review_run_id": "r-20261002T074919901502-review-of-follower-reload-holds-under-load",
+  "reviewed_base_sha": "fd667e1c52e1026dcdf86f650e2e42bb5e9fb54f",
+  "reviewed_head_sha": "852ca23cb03301db76015b7eb92c9ba22692eaa1",
+  "reviewed_run_id": "r-20261002T055452888269-follower-reload-holds-under-load",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T08:05:32.426334+00:00",
+  "total": 97
+}

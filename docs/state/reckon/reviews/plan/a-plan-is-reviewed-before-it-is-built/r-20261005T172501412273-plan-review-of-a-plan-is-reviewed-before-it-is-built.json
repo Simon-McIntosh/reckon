@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T17:29:31.297Z",
+  "dispatched_at": "2026-10-05T17:25:18Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion.py:7209",
+      "id": "duplicate_owner-1",
+      "reason": "the plan must name which recogniser survives and how the other is expressed over it, or the duplicate the section exists to remove survives its own repair.",
+      "text": "\u00a718 speaks of \"the constant and the landing-comment recogniser\" (one of each) but the package carries two constants (`plan_review.RUN_COMMENT_PREFIX`, public, `reckon/crew/plan_review.py:123`; `promotion._LANDING_COMMENT_PREFIX`, private, `reckon/crew/promotion.py:7209`) and two recognisers of the same `startswith(\"c-run-\")` rule (`plan_review._without_run_comments`, `reckon/crew/plan_review.py:329`; `promotion._landed_sections`, `reckon/crew/promotion.py:7229`), plus an inline mint of the literal at `reckon/crew/promotion.py:3580`; \u00a718's done-when only pins the literal to one module, so a worker satisfies the gate with both recognisers still alive importing one constant",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:212",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a717 should either have the prose parser consume `plan_headings`' identities (the owner the section creates) or restate the exception's real reason, since the plan's current reason is contradicted one section earlier.",
+      "text": "\u00a716 makes the prose parser record the enclosing section element and bucket its chunks by section identity, i.e. it enumerates sections, while \u00a717 justifies keeping the prose parser's own h2 recognition (`reckon/crew/plan_review.py:212`, reported as a permanent exception to the heading-walk rule) on the ground that \"it enumerates no sections\"; after \u00a716 that justification is false, and section enumeration ends with two owners \u2014 `plan_headings` over the span parser and the prose parser's own bucket \u2014 kept in step only by \u00a717's identity-equivalence test",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7d8f1aafe3df68f64dab3f14897929c7ecbfb812b6f2fb476a4e43dd90f812a2",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 99,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T172501412273-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "817f63602ffb1d4b151cf41244f503480072e82e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the public surface added across \u00a716\u2013\u00a718 is a single reader, `plan_headings`, over one private parser, one private `_section_digests` map and the hoisted derivations; the identity derivation, span location, per-section digests and coverage predicate all sit behind it.",
+    "duplicate_owner": "a finding \u2014 \u00a718 consolidates the landing-comment rule onto `reckon/_plan_html.py` but leaves two constants and two recognisers alive, and \u00a716 grows a second section enumerator whose existence contradicts \u00a717's stated reason for keeping a second h2 walk.",
+    "interface_budget": "a pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a717 adds exactly one public definition (`plan_headings`) and names the private walks it retires, \u00a716 adds none and states why the identity digest and prose walk keep their names, \u00a718 adds none, and no CLI option, MCP view or refusal family is proposed by any of the three sections.",
+    "reuse_search": "pass \u2014 the plan cites machinery that exists and is the right one to extend: `_StructuredSectionSpanParser`/`structured_section_spans` (`reckon/_plan_html.py:44,94`), the AST census machinery `read_trees`/`definitions`/`_staged_writes` (`reckon/interface_counts.py:74,97`), `section_record_id` (`reckon/crew/routing.py:215`), and the four readers of the declaration map (`roadmap.implementable_sections`, `_schema.plan_executable_remainder`, `promotion._plan_remaining_sections`, `doccheck._implementable_section_ids`).",
+    "thin_wrapper": "pass \u2014 `plan_headings` is the public face of a private parser consumed across five module boundaries and applies the hoisted identity at each heading; it is not a pass-through, and the plan says why the parser itself stays private."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.834832+00:00"
+}

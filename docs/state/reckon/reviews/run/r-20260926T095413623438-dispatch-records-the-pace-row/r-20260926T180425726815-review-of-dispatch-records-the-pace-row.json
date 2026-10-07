@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4012 the row composed in the dispatch entry point",
+    "reckon/crew/dispatch.py:2915 the pre-grant score read",
+    "reckon/crew/bar.py:149 the score band",
+    "reckon/crew/promotion.py:4459 the committed destination that drops the key"
+  ],
+  "completed_at": "2026-09-26T18:51:04.166Z",
+  "dispatched_at": "2026-09-26T18:04:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "4003",
+      "text": "the landed comment claims promotion \"takes the whole record into the committed ledger, so a week of dispatch decisions replays from those rows alone\", but promotion builds its committed row from ledger.build_record (reckon/crew/promotion.py:4283, no pace field, only an enumerated pointer subset copied) and deletes the live pointer, so the pace row is lost at promotion; the same claim stands at docs/plans/a-window-paces-the-lane.html:883 (whose added sentence also reads \"The full lives with the\", a dropped word) and docs/evidence/archive/a-window-paces-the-lane-landed.html:2148-2149; the reviewed run's own manifest repeats the claim in its artifacts field."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T095413623438-dispatch-records-the-pace-row/ruff-delta-driver.sh",
+      "line": "19",
+      "text": "the counter greps '^[^ ]' over the concise listing, so it counts \"Found 11 errors.\" and the fixable banner as findings and prints \"base findings: 13 / head findings: 13\" where the finding lists - and the manifest - carry 11 in each arm, leaving a reader unable to tell which figure to trust."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read all three commits against base 6b8decd9 - 3e06538b adds budget.pace_row and its dispatch wiring, 49398761 reads the score on the declared scope before the landing grant and adds the gate, 666c64d4 is the plan, evidence and figure record - all additions, nothing removed.",
+    "done_when": "the done_when names tests/test_dispatch_records_the_pace_row.py and its six cases; I re-ran it from a clean git archive of the reviewed head (logs/recheck-head.log) and read 6 passed, exit 0, so the recorded result is reproduced rather than taken on the worker's word.",
+    "goal": "the node's goal is that every dispatch record carries the pace row it was judged against so a week of rows replays without reading a stream; reckon/crew/dispatch.py:4012-4120 composes budget.pace_row from the recorded windows and the grouped pace and writes it as the record's \"pace\" key, which I read in the diff and exercised through the gate.",
+    "manifest": "read at ~/.config/reckon/crew/reports/reckon/s22-coord/dispatch-records-the-pace-row/manifest.md; status complete, the base/head failure ids and the declared negative control reproduce under my own re-runs, but its claim that the row is \"promoted wholesale\" into the committed ledger is one the code cannot honour.",
+    "write_paths": "the manifest declares six paths and git diff --stat 6b8decd9..666c64d4 shows exactly six files, 1125 insertions and 0 deletions - reckon/budget.py, reckon/crew/dispatch.py, the 639-line gate, the section-9 plan block, the evidence anchor and the score-band figure."
+  },
+  "justifications": {
+    "durability": "re-instating the post-grant score read reds tests/test_dispatch_records_the_pace_row.py:464 at 0.325 against the asserted literal 0.0 and dropping one row key reds line 416 with ['hold'], so the added assertions name and fail on the regressions they exist to catch.",
+    "evidence": "I reproduced the gate green (logs/recheck-head.log), the declared control red (logs/recheck-mut-pace.log) and the base/head failing-id difference as seven base-only ids and zero added at head, but the delta log's \"findings: 13\" counts its own banner lines against the manifest's correct 11, and the manifest states the promotion claim as fact without measuring it.",
+    "fit": "the names are mechanism-based (budget.pace_row at reckon/budget.py:2050, open_endedness_score at reckon/crew/dispatch.py:3443), my naming checks over all 860 added lines find no banned label or deliverable id, and the head arm's 11 ruff findings are exactly the base arm's.",
+    "goal_fidelity": "the row lands as promised at reckon/crew/dispatch.py:4120, but the comment at reckon/crew/dispatch.py:4003 claiming promotion carries it \"into the committed ledger\" is false - promotion rebuilds its row from ledger.build_record (reckon/crew/promotion.py:4283) with no pace field - so the week-long replay the goal names is not reachable from docs/state/<project>/crew.json.",
+    "scope_discipline": "git diff --stat 6b8decd9..666c64d4 is six files and 1125 insertions with zero deletions, every one inside the manifest's declared write paths and nothing outside them touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every dispatch record carries the pace row it was judged against so a week of rows replays without reading a stream; reckon/crew/dispatch.py:4012-4120 composes budget.pace_row from the recorded windows and the grouped pace and writes it as the record's \"pace\" key, which I read in the diff and exercised through the gate.\nVERDICT done_when: the done_when names tests/test_dispatch_records_the_pace_row.py and its six cases; I re-ran it from a clean git archive of the reviewed head (logs/recheck-head.log) and read 6 passed, exit 0, so the recorded result is reproduced rather than taken on the worker's word.\nVERDICT write_paths: the manifest declares six paths and git diff --stat 6b8decd9..666c64d4 shows exactly six files, 1125 insertions and 0 deletions - reckon/budget.py, reckon/crew/dispatch.py, the 639-line gate, the section-9 plan block, the evidence anchor and the score-band figure.\nVERDICT manifest: read at ~/.config/reckon/crew/reports/reckon/s22-coord/dispatch-records-the-pace-row/manifest.md; status complete, the base/head failure ids and the declared negative control reproduce under my own re-runs, but its claim that the row is \"promoted wholesale\" into the committed ledger is one the code cannot honour.\nVERDICT diff: read all three commits against base 6b8decd9 - 3e06538b adds budget.pace_row and its dispatch wiring, 49398761 reads the score on the declared scope before the landing grant and adds the gate, 666c64d4 is the plan, evidence and figure record - all additions, nothing removed.\nCALL_SITES: reckon/crew/dispatch.py:4012 the row composed in the dispatch entry point, reckon/crew/dispatch.py:2915 the pre-grant score read, reckon/crew/bar.py:149 the score band, reckon/crew/promotion.py:4459 the committed destination that drops the key\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the row lands as promised at reckon/crew/dispatch.py:4120, but the comment at reckon/crew/dispatch.py:4003 claiming promotion carries it \"into the committed ledger\" is false - promotion rebuilds its row from ledger.build_record (reckon/crew/promotion.py:4283) with no pace field - so the week-long replay the goal names is not reachable from docs/state/<project>/crew.json.\nSCORE evidence: 17\nJUSTIFICATION evidence: I reproduced the gate green (logs/recheck-head.log), the declared control red (logs/recheck-mut-pace.log) and the base/head failing-id difference as seven base-only ids and zero added at head, but the delta log's \"findings: 13\" counts its own banner lines against the manifest's correct 11, and the manifest states the promotion claim as fact without measuring it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 6b8decd9..666c64d4 is six files and 1125 insertions with zero deletions, every one inside the manifest's declared write paths and nothing outside them touched.\nSCORE durability: 20\nJUSTIFICATION durability: re-instating the post-grant score read reds tests/test_dispatch_records_the_pace_row.py:464 at 0.325 against the asserted literal 0.0 and dropping one row key reds line 416 with ['hold'], so the added assertions name and fail on the regressions they exist to catch.\nSCORE fit: 20\nJUSTIFICATION fit: the names are mechanism-based (budget.pace_row at reckon/budget.py:2050, open_endedness_score at reckon/crew/dispatch.py:3443), my naming checks over all 860 added lines find no banned label or deliverable id, and the head arm's 11 ruff findings are exactly the base arm's.\nFINDING reckon/crew/dispatch.py:4003 the landed comment claims promotion \"takes the whole record into the committed ledger, so a week of dispatch decisions replays from those rows alone\", but promotion builds its committed row from ledger.build_record (reckon/crew/promotion.py:4283, no pace field, only an enumerated pointer subset copied) and deletes the live pointer, so the pace row is lost at promotion; the same claim stands at docs/plans/a-window-paces-the-lane.html:883 (whose added sentence also reads \"The full lives with the\", a dropped word) and docs/evidence/archive/a-window-paces-the-lane-landed.html:2148-2149; the reviewed run's own manifest repeats the claim in its artifacts field.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T095413623438-dispatch-records-the-pace-row/ruff-delta-driver.sh:19 the counter greps '^[^ ]' over the concise listing, so it counts \"Found 11 errors.\" and the fixable banner as findings and prints \"base findings: 13 / head findings: 13\" where the finding lists - and the manifest - carry 11 in each arm, leaving a reader unable to tell which figure to trust.\n",
+  "review_run_id": "r-20260926T180425726815-review-of-dispatch-records-the-pace-row",
+  "reviewed_base_sha": "6b8decd9ea4bb9a68eade43bdc15a15de03fdcee",
+  "reviewed_head_sha": "666c64d487237b5cbabf305144c6b34894ff8f36",
+  "reviewed_run_id": "r-20260926T095413623438-dispatch-records-the-pace-row",
+  "role": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T18:47:38.982911+00:00",
+  "total": 93
+}

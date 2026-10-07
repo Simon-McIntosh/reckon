@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_backends.py:808 reached from the account-budget read at _backends.py:2766",
+    "reckon/_store.py:442 under every write_json_atomically caller",
+    "reckon/hooks/install.py:201 under install_hook_settings",
+    "reckon/crew/ticker.py:1152 as replay_row_policy's default clock with no caller of replay_row_policy in reckon/ at this revision"
+  ],
+  "completed_at": "2026-09-29T05:47:55.758Z",
+  "dispatched_at": "2026-09-29T05:14:34Z",
+  "findings": [
+    {
+      "file": "tests/test_zone_guards_read_tzinfo.py",
+      "line": "22",
+      "text": "The docstring dates the settings behaviour to \"before the second writer wave\" \u2014 a plan stage name that means nothing without the plan \u2014 where reckon/_store.py:477 states the same fact by mechanism (\"before it moved onto this writer\"); reword it so the test stands alone."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T044307469729-zone-guards-read-tzinfo/gate_zone_guards.log",
+      "line": "1",
+      "text": "Its header names revision 92274925 as the code behind its \"5 passed\", but at base code at least three of those five tests fail \u2014 my probe and the node's own negative control show the -05 and cache-stamp cases red and the writer case leaving a sibling file \u2014 so the run used the modified working tree that the same worker labelled \"(working tree, uncommitted)\" in gate_four_files.log:1; the manifest does not cite this log so the recorded arms are unaffected, but a reader opening the run directory is told the new tests pass at base, the opposite of this node's central claim."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read commit by commit \u2014 b7cadffb carries the four source repairs plus the 160-line test module and 900af213 adds the evidence fragment and figure and also reorders the offset spellings in the test module, a test change riding a docs(evidence) subject that its body discloses though a bisect reader should not have to find it there.",
+    "done_when": "The done-when names tests/test_zone_guards_read_tzinfo.py recording the three defects at base 92274925 and the three pre-existing modules passing at exit 0; the manifest records both arms as armed JSON whose revisions, exit_status, completed, failure_count and log_paths match gate_baseline_arm.log (196 passed at 92274925, with module.__file__ and cwd on its header lines) and gate_after_suite_head.log (201 passed at 900af213), and the declared negative control is applied and observed to fail in negative_control_named_zone.log, whose first line repeats the declared string verbatim.",
+    "goal": "All three repairs the goal names are in the landed change \u2014 reckon/crew/ticker.py:1138 and reckon/_backends.py:764 read a stamp's zone from parse_iso's tzinfo with both regex guards deleted, reckon/_store.py:405 closes the descriptor and unlinks the sibling on any failure after creation, and reckon/hooks/install.py:390 passes ensure_ascii=False \u2014 and I reproduced each against the surviving scratch base tree /tmp/basepkg-2594104 and the reviewed worktree: ticker.row_moment for 2026-07-01T00:00:00-05 under Europe/Paris returned 1782874800.0 at base against the aware 1782882000.0 at head, the cache reader returned None at base and an aware moment at head, and a patched os.fdopen left .dest.json.<pid>.<hex>.tmp at base and nothing at head.",
+    "manifest": "Read; its tests and test_logs fields name the four-module gate and its logs, baseline_suite and after_suite are armed JSON naming the two gate logs and their revisions, negative_control_log is the bare path of the red log whose first line repeats the declared mutation and ends at the named FAILED id, and its landing line states the change and the measured figures.",
+    "write_paths": "The fence's seven paths are exactly what the two commits change \u2014 git diff --numstat 92274925..900af213 lists reckon/crew/ticker.py, reckon/_backends.py, reckon/_store.py, reckon/hooks/install.py, tests/test_zone_guards_read_tzinfo.py, docs/evidence/fragments/a-worker-reuses-before-it-writes/zone-guards-read-tzinfo.html and docs/figures/a-worker-reuses-before-it-writes/zone-guards-read-tzinfo/zones.svg \u2014 and the worktree is clean at the reviewed head."
+  },
+  "justifications": {
+    "durability": "Each added assertion reddens on the reversion it guards \u2014 restoring ticker's _NAMED_ZONE reddens the assertion at tests/test_zone_guards_read_tzinfo.py:97 (shown in negative_control_named_zone.log), restoring the _backends guard reddens :118, dropping ensure_ascii=False reddens the settings-bytes assertion, and the leftover check at :159 discriminates the base tree from the head in my own probe \u2014 and each expected value comes from an independent source (datetime.fromisoformat or a faithful copy of the base body) rather than from the code under test.",
+    "evidence": "The arms are recorded with revisions, exit statuses and log paths that match the run's own logs and my re-run of tests/test_zone_guards_read_tzinfo.py at 900af213 passed 5 of 5 with module.__file__ resolving inside the reviewed tree, but the base arm's command cannot exercise the new test file so two of the four repaired behaviours rest on a reading rather than a recorded red arm, and one workspace log carries a header that misstates the code behind its pass.",
+    "fit": "The change follows the surrounding idiom \u2014 reckon/_store.py:468 documents the new keyword beside the others and both guards are removed rather than re-wrapped \u2014 but tests/test_zone_guards_read_tzinfo.py:22 names a plan stage, \"the second writer wave\", which the repository naming rules forbid in source.",
+    "goal_fidelity": "Each of the goal's three repairs reproduces as changed behaviour in my own probe of /tmp/basepkg-2594104 against the reviewed tree \u2014 ticker.row_moment (-05: 1782874800.0 base vs 1782882000.0 head), the _backends cache stamp (None base vs an aware moment head) and the writer (sibling left at base vs removed at head) \u2014 and both regex guards are deleted from the source.",
+    "scope_discipline": "git diff --numstat 92274925..900af213 lists exactly the seven declared fence paths and no other file, and the reviewed worktree reports no uncommitted change at its head."
+  },
+  "node": "review-of-zone-guards-read-tzinfo",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: All three repairs the goal names are in the landed change \u2014 reckon/crew/ticker.py:1138 and reckon/_backends.py:764 read a stamp's zone from parse_iso's tzinfo with both regex guards deleted, reckon/_store.py:405 closes the descriptor and unlinks the sibling on any failure after creation, and reckon/hooks/install.py:390 passes ensure_ascii=False \u2014 and I reproduced each against the surviving scratch base tree /tmp/basepkg-2594104 and the reviewed worktree: ticker.row_moment for 2026-07-01T00:00:00-05 under Europe/Paris returned 1782874800.0 at base against the aware 1782882000.0 at head, the cache reader returned None at base and an aware moment at head, and a patched os.fdopen left .dest.json.<pid>.<hex>.tmp at base and nothing at head.\nVERDICT done_when: The done-when names tests/test_zone_guards_read_tzinfo.py recording the three defects at base 92274925 and the three pre-existing modules passing at exit 0; the manifest records both arms as armed JSON whose revisions, exit_status, completed, failure_count and log_paths match gate_baseline_arm.log (196 passed at 92274925, with module.__file__ and cwd on its header lines) and gate_after_suite_head.log (201 passed at 900af213), and the declared negative control is applied and observed to fail in negative_control_named_zone.log, whose first line repeats the declared string verbatim.\nVERDICT write_paths: The fence's seven paths are exactly what the two commits change \u2014 git diff --numstat 92274925..900af213 lists reckon/crew/ticker.py, reckon/_backends.py, reckon/_store.py, reckon/hooks/install.py, tests/test_zone_guards_read_tzinfo.py, docs/evidence/fragments/a-worker-reuses-before-it-writes/zone-guards-read-tzinfo.html and docs/figures/a-worker-reuses-before-it-writes/zone-guards-read-tzinfo/zones.svg \u2014 and the worktree is clean at the reviewed head.\nVERDICT manifest: Read; its tests and test_logs fields name the four-module gate and its logs, baseline_suite and after_suite are armed JSON naming the two gate logs and their revisions, negative_control_log is the bare path of the red log whose first line repeats the declared mutation and ends at the named FAILED id, and its landing line states the change and the measured figures.\nVERDICT diff: Read commit by commit \u2014 b7cadffb carries the four source repairs plus the 160-line test module and 900af213 adds the evidence fragment and figure and also reorders the offset spellings in the test module, a test change riding a docs(evidence) subject that its body discloses though a bisect reader should not have to find it there.\nCALL_SITES: reckon/_backends.py:808 reached from the account-budget read at _backends.py:2766, reckon/_store.py:442 under every write_json_atomically caller, reckon/hooks/install.py:201 under install_hook_settings, reckon/crew/ticker.py:1152 as replay_row_policy's default clock with no caller of replay_row_policy in reckon/ at this revision\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: Each of the goal's three repairs reproduces as changed behaviour in my own probe of /tmp/basepkg-2594104 against the reviewed tree \u2014 ticker.row_moment (-05: 1782874800.0 base vs 1782882000.0 head), the _backends cache stamp (None base vs an aware moment head) and the writer (sibling left at base vs removed at head) \u2014 and both regex guards are deleted from the source.\nSCORE evidence: 18\nJUSTIFICATION evidence: The arms are recorded with revisions, exit statuses and log paths that match the run's own logs and my re-run of tests/test_zone_guards_read_tzinfo.py at 900af213 passed 5 of 5 with module.__file__ resolving inside the reviewed tree, but the base arm's command cannot exercise the new test file so two of the four repaired behaviours rest on a reading rather than a recorded red arm, and one workspace log carries a header that misstates the code behind its pass.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 92274925..900af213 lists exactly the seven declared fence paths and no other file, and the reviewed worktree reports no uncommitted change at its head.\nSCORE durability: 19\nJUSTIFICATION durability: Each added assertion reddens on the reversion it guards \u2014 restoring ticker's _NAMED_ZONE reddens the assertion at tests/test_zone_guards_read_tzinfo.py:97 (shown in negative_control_named_zone.log), restoring the _backends guard reddens :118, dropping ensure_ascii=False reddens the settings-bytes assertion, and the leftover check at :159 discriminates the base tree from the head in my own probe \u2014 and each expected value comes from an independent source (datetime.fromisoformat or a faithful copy of the base body) rather than from the code under test.\nSCORE fit: 17\nJUSTIFICATION fit: The change follows the surrounding idiom \u2014 reckon/_store.py:468 documents the new keyword beside the others and both guards are removed rather than re-wrapped \u2014 but tests/test_zone_guards_read_tzinfo.py:22 names a plan stage, \"the second writer wave\", which the repository naming rules forbid in source.\nFINDING tests/test_zone_guards_read_tzinfo.py:22 The docstring dates the settings behaviour to \"before the second writer wave\" \u2014 a plan stage name that means nothing without the plan \u2014 where reckon/_store.py:477 states the same fact by mechanism (\"before it moved onto this writer\"); reword it so the test stands alone.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T044307469729-zone-guards-read-tzinfo/gate_zone_guards.log:1 Its header names revision 92274925 as the code behind its \"5 passed\", but at base code at least three of those five tests fail \u2014 my probe and the node's own negative control show the -05 and cache-stamp cases red and the writer case leaving a sibling file \u2014 so the run used the modified working tree that the same worker labelled \"(working tree, uncommitted)\" in gate_four_files.log:1; the manifest does not cite this log so the recorded arms are unaffected, but a reader opening the run directory is told the new tests pass at base, the opposite of this node's central claim.",
+  "review_run_id": "r-20260929T051421596387-review-of-zone-guards-read-tzinfo",
+  "reviewed_base_sha": "9227492576138aa609be9ca5e8ef26ffb2a274c1",
+  "reviewed_head_sha": "900af2132d7d7ff40d8babc66f7289b0a34c33d8",
+  "reviewed_run_id": "r-20260929T044307469729-zone-guards-read-tzinfo",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "medium",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T051421596387-review-of-zone-guards-read-tzinfo",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T05:42:09.761722+00:00",
+  "total": 94
+}

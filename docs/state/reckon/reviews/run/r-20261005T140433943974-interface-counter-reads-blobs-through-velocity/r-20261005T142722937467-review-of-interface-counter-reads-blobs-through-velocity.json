@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "added failures 0 by id: the reviewed run's own gate log (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T140433943974-interface-counter-reads-blobs-through-velocity/gate.log, its after/head arm, revision cea8f41b77ab2d770c1def5d003839daaa00607d) ran its 13-file selection to '103 passed' with EXIT=0 and reports no failing node id; added ids are a subset of the head arm's failing ids, so the count is zero by derivation from the reviewed run's own gate log. The reviewed manifest names no baseline_suite arm (its test_logs field lists gate.log and negative_control.log only), so a base-arm comparison was not taken and the read-time annotation reports the count unmeasured.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T140433943974-interface-counter-reads-blobs-through-velocity/gate.log",
+  "base_log_revision": null,
+  "baseline_suite_log": null,
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/velocity.py:408",
+    "reckon/interface_counts.py:450",
+    "reckon/interface_counts.py:466",
+    "reckon/velocity.py:566",
+    "reckon/velocity.py:605",
+    "reckon/velocity.py:2550"
+  ],
+  "completed_at": "2026-10-05T14:37:17.720Z",
+  "dispatched_at": "2026-10-05T14:27:46Z",
+  "findings": [
+    {
+      "file": "reckon/velocity.py",
+      "line": "390",
+      "severity": "follow-on",
+      "text": "follow-on: the new public reader's missing-object branch (blobs[spec] = None) and the counter's None filter at reckon/interface_counts.py:454 are exercised by no test \u2014 the new file builds only paths that exist, and grep over tests/ finds no other reference to read_blobs or _plan_metas \u2014 so a regression in that branch, which _plan_metas does hit when a plan path is absent at an older revision, would redden nothing."
+    }
+  ],
+  "head_log_revision": "cea8f41b77ab2d770c1def5d003839daaa00607d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against base e4afabb7; b6866f54e extracts read_blobs and promotes velocity_cache_root and rewires the counter, cea8f41b7 adds the fragment, 12dc5eb95 reconciles the fragment, and no functional change exists outside the reader plumbing.",
+    "done_when": "the greps, parity-assertion removal, single-reader test and public_definitions delta all hold at head; I re-ran grep -rn '\"--batch\"' reckon/ (one hit, reckon/velocity.py) and grep -rn '^def git(' reckon/ (one hit, reckon/velocity.py) and counted public_definitions 1475 at base e4afabb7 and 1476 at head b6866f54 with the head code, and the manifest records the gate at 103 passed, EXIT=0.",
+    "goal": "the node goal is to promote velocity's batched blob reader and cache root to public names the counter imports; the diff makes read_blobs (reckon/velocity.py:360) and velocity_cache_root (reckon/velocity.py:542) public and imports them at reckon/interface_counts.py:35.",
+    "manifest": "read; it names the three commits, the gate command with 103 passed EXIT=0, the negative control (2 failed), and the public_definitions pair 1475 to 1476.",
+    "write_paths": "the declared scope is seven paths; the diff changes five \u2014 reckon/velocity.py, reckon/interface_counts.py, tests/test_staged_write_inventory.py, tests/test_one_blob_reader_serves_velocity_and_the_counter.py and docs/evidence/fragments/a-worker-reuses-before-it-writes/interface-counter-reads-blobs-through-velocity.html \u2014 every one inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_one_blob_reader_serves_velocity_and_the_counter.py:79 asserts the counter holds velocity's reader and the negative control reddens both new tests (2 failed, EXIT=1), but the reader's missing-object branch at reckon/velocity.py:390 is exercised by no test.",
+    "evidence": "the done-when is asserted by grep, the new tests, the retired parity assertion and the public_definitions pair, all recorded at reckon/interface_counts.py:450 and the manifest's tests line, though the greps and the 1475-to-1476 figure live in manifest prose rather than a replayable gate log.",
+    "fit": "the promoted names and the updated __all__ follow the module's existing public/private idiom at reckon/velocity.py:63-74 and the counter keeps its sha-keyed cache and four predicates.",
+    "goal_fidelity": "reckon/velocity.py:360 and reckon/velocity.py:542 are the public reader and cache root, and reckon/interface_counts.py:35 imports both in place of its own copies, exactly as the goal states.",
+    "reuse": "the change removes the counter's private loop and cache-root reach and consolidates them onto the owner reckon/velocity.py, which already carried the batch loop at reckon/velocity.py:360, so every added definition extends the owner rather than forking it.",
+    "scope_discipline": "every changed path in the base..head diff lies inside the seven declared write paths, with the only in-scope extra a harmless alphabetical reorder of velocity's __all__ at reckon/velocity.py:66-74."
+  },
+  "node": "review-of-interface-counter-reads-blobs-through-velocity",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to promote velocity's batched blob reader and cache root to public names the counter imports; the diff makes read_blobs (reckon/velocity.py:360) and velocity_cache_root (reckon/velocity.py:542) public and imports them at reckon/interface_counts.py:35.\nVERDICT done_when: the greps, parity-assertion removal, single-reader test and public_definitions delta all hold at head; I re-ran grep -rn '\"--batch\"' reckon/ (one hit, reckon/velocity.py) and grep -rn '^def git(' reckon/ (one hit, reckon/velocity.py) and counted public_definitions 1475 at base e4afabb7 and 1476 at head b6866f54 with the head code, and the manifest records the gate at 103 passed, EXIT=0.\nVERDICT write_paths: the declared scope is seven paths; the diff changes five \u2014 reckon/velocity.py, reckon/interface_counts.py, tests/test_staged_write_inventory.py, tests/test_one_blob_reader_serves_velocity_and_the_counter.py and docs/evidence/fragments/a-worker-reuses-before-it-writes/interface-counter-reads-blobs-through-velocity.html \u2014 every one inside the declared set.\nVERDICT manifest: read; it names the three commits, the gate command with 103 passed EXIT=0, the negative control (2 failed), and the public_definitions pair 1475 to 1476.\nVERDICT diff: read commit by commit against base e4afabb7; b6866f54e extracts read_blobs and promotes velocity_cache_root and rewires the counter, cea8f41b7 adds the fragment, 12dc5eb95 reconciles the fragment, and no functional change exists outside the reader plumbing.\nCALL_SITES: reckon/velocity.py:408, reckon/interface_counts.py:450, reckon/interface_counts.py:466, reckon/velocity.py:566, reckon/velocity.py:605, reckon/velocity.py:2550\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/velocity.py:360 and reckon/velocity.py:542 are the public reader and cache root, and reckon/interface_counts.py:35 imports both in place of its own copies, exactly as the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done-when is asserted by grep, the new tests, the retired parity assertion and the public_definitions pair, all recorded at reckon/interface_counts.py:450 and the manifest's tests line, though the greps and the 1475-to-1476 figure live in manifest prose rather than a replayable gate log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path in the base..head diff lies inside the seven declared write paths, with the only in-scope extra a harmless alphabetical reorder of velocity's __all__ at reckon/velocity.py:66-74.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_one_blob_reader_serves_velocity_and_the_counter.py:79 asserts the counter holds velocity's reader and the negative control reddens both new tests (2 failed, EXIT=1), but the reader's missing-object branch at reckon/velocity.py:390 is exercised by no test.\nSCORE fit: 19\nJUSTIFICATION fit: the promoted names and the updated __all__ follow the module's existing public/private idiom at reckon/velocity.py:63-74 and the counter keeps its sha-keyed cache and four predicates.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes the counter's private loop and cache-root reach and consolidates them onto the owner reckon/velocity.py, which already carried the batch loop at reckon/velocity.py:360, so every added definition extends the owner rather than forking it.\nFINDING reckon/velocity.py:390 follow-on: the new public reader's missing-object branch (blobs[spec] = None) and the counter's None filter at reckon/interface_counts.py:454 are exercised by no test \u2014 the new file builds only paths that exist, and grep over tests/ finds no other reference to read_blobs or _plan_metas \u2014 so a regression in that branch, which _plan_metas does hit when a plan path is absent at an older revision, would redden nothing.\n",
+  "review_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T142722937467-review-of-interface-counter-reads-blobs-through-velocity/reviewer-count-revision.log"
+  ],
+  "review_run_id": "r-20261005T142722937467-review-of-interface-counter-reads-blobs-through-velocity",
+  "reviewed_base_sha": "e4afabb7cfd5bcbcf4813257b65a72b08a73fbf2",
+  "reviewed_head_sha": "12dc5eb95177b34646cdc03acb24fa70226d100e",
+  "reviewed_run_id": "r-20261005T140433943974-interface-counter-reads-blobs-through-velocity",
+  "reviewer_run_id": "r-20261005T142722937467-review-of-interface-counter-reads-blobs-through-velocity",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:08.884316+00:00",
+  "total": 115
+}

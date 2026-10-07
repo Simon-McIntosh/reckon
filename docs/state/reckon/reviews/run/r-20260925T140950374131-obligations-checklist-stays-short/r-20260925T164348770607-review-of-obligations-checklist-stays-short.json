@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:355",
+    "reckon/hooks/install.py:103"
+  ],
+  "completed_at": "2026-09-25T17:46:31.261Z",
+  "dispatched_at": "2026-09-25T16:44:05Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "294",
+      "text": "the collapse is taken whenever two obligations share a kind and a next command and nothing requires the command to distinguish one more item from another, so two review-ready items -- complete review-role runs whose one remedy at reckon/crew/recovery.py:3544-3547 names no run -- render as one counted line that carries neither run id, contradicting the done_when's requirement that review-ready items keep one line each with their run id."
+    },
+    {
+      "file": "tests/test_coordinator_obligations_hook.py",
+      "line": "415",
+      "text": "the collapsed line's age is compared only after AGE.sub replaces it on both sides, so the oldest-age figure is asserted for shape and not for value and a renderer taking the newest age instead of the oldest at reckon/hooks/coordinator_obligations.py:295 would pass the case unchanged."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 8f9ef4e3; cadf874b adds _work_key, _work_lines and the 25-item case to the hook module and its test, and 3338d6be is docs-only (plan section, archive record and one figure), all inside the declared scope.",
+    "done_when": "the done_when asks the 25-worktree-held plus 2-distinct case to render collapsed with the count, the oldest age and the single command, to keep one run-naming line per distinct actionable item, to stay at most 8 lines and under 2000 characters, and to go red when the collapsing is removed; tests/test_coordinator_obligations_hook.py:413-440 asserts each of those, and the manifest's logs record 36 passed at the head against 35 at the base and a red mutant.",
+    "goal": "the node's goal is to keep the coordinator obligations checklist short by collapsing obligations that share a kind and next command into one counted line, and reckon/hooks/coordinator_obligations.py:283-300 groups on (kind, next_command) and emits the counted line that format_checklist:322 renders.",
+    "manifest": "read; it names commits cadf874b and 3338d6be, base 8f9ef4e3 and head 3338d6be with the three logs, and it records the time-fence overrun rather than hiding it.",
+    "write_paths": "read the five declared paths against the diff; every changed path is inside them, and the cumulative evidence record is spliced with 20 insertions and no deletions."
+  },
+  "justifications": {
+    "durability": "removing the collapsing reds tests/test_coordinator_obligations_hook.py:415, which guards the main behaviour, but the oldest-age figure the line advertises is normalised away by AGE.sub on both sides at :415-417, so a newest-age renderer at reckon/hooks/coordinator_obligations.py:295 would pass unmodified.",
+    "evidence": "the gate's numbers are on disk (head-hooks.log 36 passed, base-hooks.log 35, mutant-no-collapsing.log 1 failed at tests/test_coordinator_obligations_hook.py:415), but the head arm ran at cadf874b rather than the reviewed head 3338d6be and collapse-case.log's header names an uncommitted working tree with an unsubstituted $PWD.",
+    "fit": "the helpers are named by mechanism (_work_key, _work_lines) beside the module's existing render helpers, and the added case follows the fixture idiom of tests/test_coordinator_obligations_hook.py:385-404 with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:296-299 renders a shared kind and command once with its count and oldest age while :302-306 keeps a run-naming line for an ungrouped item, which is the goal, but the key at :289 cannot separate two review-ready items whose constant remedy at reckon/crew/recovery.py:3544-3547 names no run, so those lose their run ids.",
+    "scope_discipline": "the diff touches only the five declared paths, and docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html gains 20 lines with zero deletions, so the anchor was spliced rather than rewritten."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to keep the coordinator obligations checklist short by collapsing obligations that share a kind and next command into one counted line, and reckon/hooks/coordinator_obligations.py:283-300 groups on (kind, next_command) and emits the counted line that format_checklist:322 renders.\nVERDICT done_when: the done_when asks the 25-worktree-held plus 2-distinct case to render collapsed with the count, the oldest age and the single command, to keep one run-naming line per distinct actionable item, to stay at most 8 lines and under 2000 characters, and to go red when the collapsing is removed; tests/test_coordinator_obligations_hook.py:413-440 asserts each of those, and the manifest's logs record 36 passed at the head against 35 at the base and a red mutant.\nVERDICT write_paths: read the five declared paths against the diff; every changed path is inside them, and the cumulative evidence record is spliced with 20 insertions and no deletions.\nVERDICT manifest: read; it names commits cadf874b and 3338d6be, base 8f9ef4e3 and head 3338d6be with the three logs, and it records the time-fence overrun rather than hiding it.\nVERDICT diff: read commit by commit against base 8f9ef4e3; cadf874b adds _work_key, _work_lines and the 25-item case to the hook module and its test, and 3338d6be is docs-only (plan section, archive record and one figure), all inside the declared scope.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:355, reckon/hooks/install.py:103\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:296-299 renders a shared kind and command once with its count and oldest age while :302-306 keeps a run-naming line for an ungrouped item, which is the goal, but the key at :289 cannot separate two review-ready items whose constant remedy at reckon/crew/recovery.py:3544-3547 names no run, so those lose their run ids.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate's numbers are on disk (head-hooks.log 36 passed, base-hooks.log 35, mutant-no-collapsing.log 1 failed at tests/test_coordinator_obligations_hook.py:415), but the head arm ran at cadf874b rather than the reviewed head 3338d6be and collapse-case.log's header names an uncommitted working tree with an unsubstituted $PWD.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only the five declared paths, and docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html gains 20 lines with zero deletions, so the anchor was spliced rather than rewritten.\nSCORE durability: 13\nJUSTIFICATION durability: removing the collapsing reds tests/test_coordinator_obligations_hook.py:415, which guards the main behaviour, but the oldest-age figure the line advertises is normalised away by AGE.sub on both sides at :415-417, so a newest-age renderer at reckon/hooks/coordinator_obligations.py:295 would pass unmodified.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers are named by mechanism (_work_key, _work_lines) beside the module's existing render helpers, and the added case follows the fixture idiom of tests/test_coordinator_obligations_hook.py:385-404 with no plan or ticket identifier.\nFINDING reckon/hooks/coordinator_obligations.py:294 the collapse is taken whenever two obligations share a kind and a next command and nothing requires the command to distinguish one more item from another, so two review-ready items -- complete review-role runs whose one remedy at reckon/crew/recovery.py:3544-3547 names no run -- render as one counted line that carries neither run id, contradicting the done_when's requirement that review-ready items keep one line each with their run id.\nFINDING tests/test_coordinator_obligations_hook.py:415 the collapsed line's age is compared only after AGE.sub replaces it on both sides, so the oldest-age figure is asserted for shape and not for value and a renderer taking the newest age instead of the oldest at reckon/hooks/coordinator_obligations.py:295 would pass the case unchanged.\n",
+  "review_run_id": "r-20260925T164348770607-review-of-obligations-checklist-stays-short",
+  "reviewed_base_sha": "8f9ef4e3509dec4f96318cc4634addce4ea4ee06",
+  "reviewed_head_sha": "3338d6be2809a1cdd4a93d4e0602d25fe2c180f3",
+  "reviewed_run_id": "r-20260925T140950374131-obligations-checklist-stays-short",
+  "role": "review",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T17:44:09.531632+00:00",
+  "total": 84
+}

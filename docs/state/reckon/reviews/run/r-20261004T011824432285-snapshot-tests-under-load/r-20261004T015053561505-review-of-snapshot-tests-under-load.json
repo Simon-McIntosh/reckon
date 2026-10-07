@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "count and ids derived with added_failures_from_gate_logs over the reviewed run's own baseline_suite and after_suite logs (loops/base/progress.txt and loops/main/progress.txt): both logs report 30 loops, 0 failed, no FAILED/ERROR node ids, so no failing id is present at head that was absent at base, giving 0 added and no ids.",
+  "after_suite": {
+    "command": "RECKON_HOME=/tmp/reckon-crew-scratch/r-20261004T011824432285-snapshot-tests-under-load/home-main-NN PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/snapshot-tests-under-load /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/snapshot-tests-under-load/tests/test_obligations_snapshot_is_published.py --basetemp=/tmp/reckon-crew-scratch/r-20261004T011824432285-snapshot-tests-under-load/basetemp-main-NN",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T011824432285-snapshot-tests-under-load/loops/main/progress.txt",
+    "loops": 30,
+    "revision": "78a3735b711e955c14dedaef46a86a57b913730b"
+  },
+  "baseline_suite": {
+    "command": "RECKON_HOME=/tmp/reckon-crew-scratch/r-20261004T011824432285-snapshot-tests-under-load/home-base-NN PYTHONPATH=/tmp/reckon-crew-scratch/r-20261004T011824432285-snapshot-tests-under-load/tree-base /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 -q /tmp/reckon-crew-scratch/r-20261004T011824432285-snapshot-tests-under-load/tree-base/tests/test_obligations_snapshot_is_published.py --basetemp=/tmp/reckon-crew-scratch/r-20261004T011824432285-snapshot-tests-under-load/basetemp-base-NN",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T011824432285-snapshot-tests-under-load/loops/base/progress.txt",
+    "loops": 30,
+    "revision": "29e9c94caae65bb05171f619c5342faeb8c3d91c"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T02:00:39.061Z",
+  "dispatched_at": "2026-10-04T01:51:21Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/snapshot-tests-under-load.html",
+      "line": "67",
+      "severity": "blocking",
+      "text": "the claim that every instrumented sweep thread exited in <= 1.2 s is contradicted by the run's own traces, which hold 47 of 360 SWEEPTHREAD-EXIT rows above 1.2 s with a maximum of 2.978 s; the same figure recurs at report:119, manifest.md:38 and the plan fragment lines 48,98, so the recorded interval must be corrected to the measured range even though the sweep_lock rejection survives because 2.978 s is far below the 30 s stall the hypothesis sought."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/snapshot-tests-under-load.html",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "the research report presents its evidence as HTML tables with no figure, against the graphics expectation for research documents; a single loop-count or sweep-duration figure would carry the load result more directly than prose."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "no commits landed; the run is read-only and its commits field records the worktree HEAD it read (78a3735b7) rather than authored work; the deliverable is the report and its log tree, both outside git.",
+    "done_when": "the plan s20 done_when requires the cause of each failure established from evidence and then fixed so 30 loops finish with no failure; the run delivered the loop measurement (30/30 both, 45/45 instrumented) and the declared fixture-clearing control, but neither the cause nor a fix, so the fixing clause is unmet and s20 stays implementable.",
+    "goal": "the node goal is to establish why the two ids fail under load and pass alone, to loop both at main and at the pre-join parent, and to test the sweep_lock hypothesis; reports/reckon/snapshot-tests-under-load.html:38-49 records the 30/30 arms at 78a3735b7 and 29e9c94ca (=222b6706f^1) and report:113-131 falsifies the sweep_lock and module-split hypotheses, but report:133-149 states the cause is not established by reproduction.",
+    "manifest": "read; status complete; baseline_suite (30 loops at 29e9c94ca) and after_suite (30 loops at 78a3735b7) carry log paths; the added-failure derivation over those two logs reads 0 added and no ids.",
+    "write_paths": "the manifest declares one write path, reports/reckon/snapshot-tests-under-load.html; the run is read-only and the reviewed worktree at 78a3735b7 is clean, so no repository file changed and report plus logs live under the run's delivery scope."
+  },
+  "justifications": {
+    "durability": "the run adds no assertions (read-only) and its clearing of joined_watch_sweeps rests on zero reproductions in loops/base and loops/main rather than a red arm, though the three probes at loops/instance-probes.log do falsify the module-split mechanism.",
+    "evidence": "the loop counts, traces and probes are all on disk and independently re-read (loops/base/progress.txt 30 loops exit 0; loops/inst-main/trace-*.txt 720 rows), but report:67,119 quote every sweep thread exiting in <= 1.2 s against a trace whose maximum is 2.978 s.",
+    "fit": "reports/reckon/snapshot-tests-under-load.html names mechanisms and cites revisions throughout, but carries tables only and no figure for a research document whose subject is a measured count.",
+    "goal_fidelity": "reports/reckon/snapshot-tests-under-load.html:38-49 records the 30/30 and 45/45 arms at the revisions the dispatch names and report:113-131 falsifies both hypotheses, while the goal's establish-why clause stays unmet at report:133-149.",
+    "scope_discipline": "the manifest declares reports/reckon/snapshot-tests-under-load.html as its only write path and the reviewed worktree snapshot-tests-under-load was clean at 78a3735b7, so nothing outside the declared scope changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to establish why the two ids in tests/test_obligations_snapshot_is_published.py fail under load and pass alone, to loop both at main and at the pre-join parent, and to test the sweep_lock hypothesis; reports/reckon/snapshot-tests-under-load.html:38-49 records the 30/30 arms at 78a3735b7 and 29e9c94ca (=222b6706f^1) and report:113-131 falsifies the sweep_lock and module-split hypotheses, but the report:133-149 states the cause is not established by reproduction.\nVERDICT done_when: the plan s20 done_when requires the cause of each failure established from evidence and then fixed so 30 loops finish with no failure; the run delivered the loop measurement (30/30 at both revisions, 45/45 instrumented) and the declared fixture-clearing control, but neither the cause nor a fix, so the fixing clause is unmet and s20 stays implementable.\nVERDICT write_paths: the manifest declares one write path, reports/reckon/snapshot-tests-under-load.html; the run is read-only and the reviewed worktree at 78a3735b7 is clean, so no repository file changed and report plus logs live under the run's delivery scope.\nVERDICT manifest: read; status complete; baseline_suite (30 loops at 29e9c94ca, loops/base/progress.txt) and after_suite (30 loops at 78a3735b7, loops/main/progress.txt) carry log paths, and the added-failure derivation over those two logs reads 0 added and no ids.\nVERDICT diff: no commits landed, the run is read-only and its commits field records the worktree HEAD it read (78a3735b7) rather than authored work; the deliverable is the report and its log tree, both outside git.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reports/reckon/snapshot-tests-under-load.html:38-49 records the 30/30 and 45/45 arms at the revisions the dispatch names and report:113-131 falsifies both hypotheses, while the goal's establish-why clause stays unmet at report:133-149.\nSCORE evidence: 16\nJUSTIFICATION evidence: the loop counts, traces and probes are all on disk and independently re-read (loops/base/progress.txt 30 loops exit 0; loops/inst-main/trace-*.txt 720 rows), but report:67,119 quote every sweep thread exiting in <= 1.2 s against a trace whose maximum is 2.978 s.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the manifest declares reports/reckon/snapshot-tests-under-load.html as its only write path and review of /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/snapshot-tests-under-load found it clean at 78a3735b7, so nothing outside the declared scope changed.\nSCORE durability: 16\nJUSTIFICATION durability: the run adds no assertions (read-only) and its clearing of joined_watch_sweeps rests on zero reproductions in loops/base and loops/main rather than a red arm, though the three probes at loops/instance-probes.log do falsify the module-split mechanism.\nSCORE fit: 17\nJUSTIFICATION fit: reports/reckon/snapshot-tests-under-load.html names mechanisms and cites revisions throughout, but carries tables only and no figure for a research document whose subject is a measured count.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/snapshot-tests-under-load.html:67 blocking: the claim that every instrumented sweep thread exited in <= 1.2 s is contradicted by the run's own traces, which hold 47 of 360 SWEEPTHREAD-EXIT rows above 1.2 s with a maximum of 2.978 s; the same figure recurs at report:119, manifest.md:38 and docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/snapshot-tests-under-load.html:48,98, so the recorded interval must be corrected to the measured range even though the sweep_lock rejection survives because 2.978 s is far below the 30 s stall the hypothesis sought.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/snapshot-tests-under-load.html:19 follow-on: the research report presents its evidence as HTML tables with no figure, against the graphics expectation for research documents; a single loop-count or sweep-duration figure would carry the load result more directly than prose.",
+  "review_run_id": "r-20261004T015053561505-review-of-snapshot-tests-under-load",
+  "reviewed_base_sha": "78a3735b711e955c14dedaef46a86a57b913730b",
+  "reviewed_head_sha": "78a3735b711e955c14dedaef46a86a57b913730b",
+  "reviewed_run_id": "r-20261004T011824432285-snapshot-tests-under-load",
+  "reviewer_run_id": "r-20261004T015053561505-review-of-snapshot-tests-under-load",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T01:57:48.439520+00:00",
+  "total": 85
+}

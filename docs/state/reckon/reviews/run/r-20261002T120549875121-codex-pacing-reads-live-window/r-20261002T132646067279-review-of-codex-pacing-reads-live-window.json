@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs, which its manifest names under test_logs rather than under baseline_suite/after_suite: base-window-length.log (base arm; 3 failed, 3 passed) and head-gate.log (head arm; 152 passed). The head arm reports no failing id, so the set difference over the base arm's three ids is empty. annotate_review_of_run reads none of these (the two suite fields are empty) and reports the count as unmeasured.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T120549875121-codex-pacing-reads-live-window/head-gate.log",
+  "base_log_revision": null,
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T120549875121-codex-pacing-reads-live-window/base-window-length.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:1176 (crew preflight calls budget.preflight",
+    "which computes the per-group pace_hold at reckon/budget.py:1735)",
+    "reckon/budget.py:2809 (pace_row merges the account surface over the recorded readings)"
+  ],
+  "completed_at": "2026-10-02T14:01:08.195Z",
+  "dispatched_at": "2026-10-02T13:27:13Z",
+  "findings": [
+    {
+      "file": "tests/test_budget_window_length.py",
+      "line": "72",
+      "severity": "follow-on",
+      "text": "follow-on: done-when item (4) requires the changed week test to be shown failing under a derivation fixed at 43,200 minutes \"in a recorded log\", but neither the reviewed run directory nor its manifest's test_logs names such a log; the only recorded red arms are the base window-length arm and the declared negative control, neither of which fixes the derivation at 43,200."
+    },
+    {
+      "file": "manifest.md",
+      "line": "50",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite and after_suite are both empty and the two arms are named only under test_logs, so reckon/crew/review.py:1297 annotate_review_of_run finds no gate logs and records added_failure_count as unmeasured (None) rather than the zero the done-when claims; the head arm (152 passed) and base arm (3 failed) support zero added by inspection, but the reader the promotion path uses cannot derive it."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/codex-pacing-live.html",
+      "line": "83",
+      "severity": "follow-on",
+      "text": "follow-on: the Commits paragraph names only 43ab5d69e and 5b2263c4d while the manifest names four commits (2cf01ed54 created the fragment, a755c364 completed its header), and the run directory retains head-gate-1.log -- a superseded failing head arm (1 failed, 148 passed) the manifest does not name -- so a reader reconciling the fragment against the directory can mistake which arm is the head."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit by commit against the base; 43ab5d69e changes reckon/budget.py and the test file, and 2cf01ed54/5b2263c4d/a755c364b add and extend the fragment, all inside the declared scope.",
+    "done_when": "The done-when's five items run through tests/test_budget_window_length.py and the preflight; items (1)-(3) have a base arm that reddens them at f8cb9464d (base-window-length.log, 3 failed 3 passed) and I independently reproduced the head gate at 152 passed (review-head-gate.log), while item (5) is quoted in the fragment from a coordinator-taken read and item (4)'s required recorded mutation log is absent.",
+    "goal": "The node's goal is to make group pacing hold codex dispatch from the live account window; at the head, budget.pace_row merges the account surface over recorded receipts (reckon/budget.py:2809) and budget.pace_hold withholds a non-bookend role while the window's burn stands above its pace multiple, demonstrated by test (2) holding implement and admitting review.",
+    "manifest": "Read it against the tree; its three changed_paths match the diff, its checkpoint names four commits and its landing quotes the fixture and live figures, but baseline_suite and after_suite are both empty and the two arms are named only under test_logs.",
+    "write_paths": "The declared scope carries seven paths; the diff changes exactly three -- reckon/budget.py, tests/test_budget_window_length.py and docs/evidence/fragments/one-typesafe-model-picker/codex-pacing-live.html -- and nothing else."
+  },
+  "justifications": {
+    "durability": "the three new cases in tests/test_budget_window_length.py are genuine guards -- the declared negative control reddens test (1) at EXIT=1 (negative-control.log) and the base arm reddens all three at f8cb9464d -- but the changed week test's own mutation log (done-when item 4) is not recorded, so its reddening is asserted rather than shown.",
+    "evidence": "I reproduced the head gate at 152 passed (review-head-gate.log, module resolving inside the reviewed worktree), but done-when item (4)'s recorded 43,200-minute mutation log is absent and the manifest leaves baseline_suite/after_suite empty, so reckon/crew/review.py:1297 reads no gate logs and stores the added-failure count as unmeasured.",
+    "fit": "the change reuses window_reading, reserve_module.is_bookend and format_refusal's D02 code (reckon/crew/refusals.py:20) rather than inventing vocabulary, and its new helpers follow the module's existing `_`-prefixed internal style at reckon/budget.py:2649.",
+    "goal_fidelity": "budget.pace_hold (reckon/budget.py:2569) withholds a non-bookend role when the merged window's burn exceeds the plan's pace multiple, so the goal is met where the surface is read; the node's own preflight logs (preflight-implement.log) show the surface unknown on its host, where the group falls back to the stale receipt's derived 1.0 and the hold does not fire.",
+    "scope_discipline": "every path in the diff (reckon/budget.py, tests/test_budget_window_length.py, docs/evidence/fragments/one-typesafe-model-picker/codex-pacing-live.html) is inside the declared scope, with no plan, index or peer path touched."
+  },
+  "node": "codex-pacing-reads-live-window",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to make group pacing hold codex dispatch from the live account window; at the head, budget.pace_row merges the account surface over recorded receipts (reckon/budget.py:2809) and budget.pace_hold withholds a non-bookend role while the window's burn stands above its pace multiple, demonstrated by test (2) holding implement and admitting review.\nVERDICT done_when: The done-when's five items run through tests/test_budget_window_length.py and the preflight; items (1)-(3) have a base arm that reddens them at f8cb9464d (base-window-length.log, 3 failed 3 passed) and I independently reproduced the head gate at 152 passed (review-head-gate.log), while item (5) is quoted in the fragment from a coordinator-taken read and item (4)'s required recorded mutation log is absent.\nVERDICT write_paths: The declared scope carries seven paths; the diff changes exactly three -- reckon/budget.py, tests/test_budget_window_length.py and docs/evidence/fragments/one-typesafe-model-picker/codex-pacing-live.html -- and nothing else.\nVERDICT manifest: Read it against the tree; its three changed_paths match the diff, its checkpoint names four commits and its landing quotes the fixture and live figures, but baseline_suite and after_suite are both empty and the two arms are named only under test_logs.\nVERDICT diff: Read commit by commit against the base; 43ab5d69e changes reckon/budget.py and the test file, and 2cf01ed54/5b2263c4d/a755c364b add and extend the fragment, all inside the declared scope.\nCALL_SITES: reckon/cli.py:1176 (crew preflight calls budget.preflight, which computes the per-group pace_hold at reckon/budget.py:1735), reckon/budget.py:2809 (pace_row merges the account surface over the recorded readings)\nreviewed_base_sha: f8cb9464d3bc448cedf4faaf9417a57f8100ea59\nreviewed_head_sha: a755c364b9052feab5ed4aacf31c38b52498657b\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: budget.pace_hold (reckon/budget.py:2569) withholds a non-bookend role when the merged window's burn exceeds the plan's pace multiple, so the goal is met where the surface is read; the node's own preflight logs (preflight-implement.log) show the surface unknown on its host, where the group falls back to the stale receipt's derived 1.0 and the hold does not fire.\nSCORE evidence: 14\nJUSTIFICATION evidence: I reproduced the head gate at 152 passed (review-head-gate.log, module resolving inside the reviewed worktree), but done-when item (4)'s recorded 43,200-minute mutation log is absent and the manifest leaves baseline_suite/after_suite empty, so reckon/crew/review.py:1297 reads no gate logs and stores the added-failure count as unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/budget.py, tests/test_budget_window_length.py, docs/evidence/fragments/one-typesafe-model-picker/codex-pacing-live.html) is inside the declared scope, with no plan, index or peer path touched.\nSCORE durability: 16\nJUSTIFICATION durability: the three new cases in tests/test_budget_window_length.py are genuine guards -- the declared negative control reddens test (1) at EXIT=1 (negative-control.log) and the base arm reddens all three at f8cb9464d -- but the changed week test's own mutation log (done-when item 4) is not recorded, so its reddening is asserted rather than shown.\nSCORE fit: 18\nJUSTIFICATION fit: the change reuses window_reading, reserve_module.is_bookend and format_refusal's D02 code (reckon/crew/refusals.py:20) rather than inventing vocabulary, and its new helpers follow the module's existing `_`-prefixed internal style at reckon/budget.py:2649.\nFINDING tests/test_budget_window_length.py:72 follow-on: done-when item (4) requires the changed week test to be shown failing under a derivation fixed at 43,200 minutes \"in a recorded log\", but neither the reviewed run directory nor its manifest's test_logs names such a log; the only recorded red arms are the base window-length arm and the declared negative control, neither of which fixes the derivation at 43,200.\nFINDING manifest.md:50 follow-on: baseline_suite and after_suite are both empty and the two arms are named only under test_logs, so reckon/crew/review.py:1297 annotate_review_of_run finds no gate logs and records added_failure_count as unmeasured (None) rather than the zero the done-when claims; the head arm (152 passed) and base arm (3 failed) support zero added by inspection, but the reader the promotion path uses cannot derive it.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/codex-pacing-live.html:83 follow-on: the Commits paragraph names only 43ab5d69e and 5b2263c4d while the manifest names four commits (2cf01ed54 created the fragment, a755c364 completed its header), and the run directory retains head-gate-1.log -- a superseded failing head arm (1 failed, 148 passed) the manifest does not name -- so a reader reconciling the fragment against the directory can mistake which arm is the head.",
+  "review_run_id": "r-20261002T132646067279-review-of-codex-pacing-reads-live-window",
+  "reviewed_base_sha": "f8cb9464d3bc448cedf4faaf9417a57f8100ea59",
+  "reviewed_head_sha": "a755c364b9052feab5ed4aacf31c38b52498657b",
+  "reviewed_run_id": "r-20261002T120549875121-codex-pacing-reads-live-window",
+  "reviewer_run_id": "r-20261002T132646067279-review-of-codex-pacing-reads-live-window",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T13:55:16.809206+00:00",
+  "total": 84
+}

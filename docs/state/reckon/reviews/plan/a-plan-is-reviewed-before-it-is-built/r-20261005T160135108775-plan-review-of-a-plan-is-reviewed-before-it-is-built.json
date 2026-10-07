@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:05:58.562Z",
+  "dispatched_at": "2026-10-05T16:01:51Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:1034",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a717 must either move `landed_section_ids` into `_plan_html.py` as the one predicate (retiring the `_store` name) or justify why a parallel public predicate cannot replace it, which it does not.",
+      "text": "\u00a717 (\u00a716 depends on it) introduces a second public recogniser of a landed card, the predicate \"the parser module exposes beside the identity function\", while `reckon/_store.py:1034 landed_section_ids` is already the exported recogniser of exactly that (a heading whose nearest enclosing `<section>` is a `section-landed` card), deliberately established as \"the one definition\" by \u00a714; \u00a717 demotes it to a reader of the new predicate, so the package carries two public definitions answering one question and the writer/reader pair \u00a717 says must \"share one definition of a card\" has two",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:1034",
+      "id": "thin_wrapper-1",
+      "reason": "a forwarded alias with two years of would-be callers is the surface \u00a717 exists to remove, so the plan should delete the alias rather than keep a wrapper it never justifies.",
+      "text": "after \u00a717, `landed_section_ids` adds no behaviour the new predicate on `reckon/_plan_html.py` lacks; it forwards to it, and the section gives no reason the two callers that cross the boundary (`plan_review.py` and `doccheck.py`) cannot import the predicate from its one home",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s17",
+      "id": "interface_budget-1",
+      "reason": "the interface-budget rule requires the section to name what it retires or merges, and the obvious merge \u2014 `landed_section_ids` onto the new predicate \u2014 is neither named nor declined, so the section's own accounting is incomplete.",
+      "text": "\u00a717's interface accounting (\"two public definitions are added on `reckon/_plan_html.py` \u2026 the retired walks were private, so the net is two\") counts the card predicate as pure addition and names no retirement or merge, yet `landed_section_ids` (reckon/_store.py:1034) is a public definition in the same family answering the same question; taken with \u00a716's one and \u00a718's one the family grows by four, where consolidating the recogniser would grow it by three, and the section states no reason nothing can be retired",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3f9651411ac0734b2834a54378f18417e5a19f3521fd4b2915eee4a8285473e8",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 85,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T160135108775-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "cbcced54244462e0d66457af406b9d3afddf31eb",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the per-section fingerprint machinery is hidden behind one small interface: `plan_fingerprint` (reckon/crew/plan_review.py:368) keeps returning a single digest, with `_section_digests`, the coverage predicate and the third recognised form all module-private on plan_review.py, and \u00a717 exposes one public reader `plan_headings` over a private parser.",
+    "duplicate_owner": "a finding \u2014 \u00a717's new public card predicate duplicates `landed_section_ids` (reckon/_store.py:1034), the exported card recogniser \u00a714 established as \"the one definition\", and neither \u00a717 nor \u00a716's interface accounting names that owner to move or extend.",
+    "interface_budget": "a finding \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a717 adds two public definitions on `reckon/_plan_html.py` (`plan_headings` and the card predicate) and retires only private walks, so it neither names `landed_section_ids` as retired or merged into the new predicate nor states why it cannot be, while \u00a716 and \u00a718 add one each.",
+    "reuse_search": "pass \u2014 the unlanded design (\u00a716\u2013\u00a718) names and reuses the mechanisms it would otherwise rebuild: \u00a717 extends `_StructuredSectionSpanParser` / `structured_section_spans` (reckon/_plan_html.py:44,94) and the `reckon/interface_counts.py` AST census rather than adding a scanner, and \u00a718 hoists the existing `promotion._plan_remaining_sections` (reckon/crew/promotion.py:7236) rather than forking it.",
+    "thin_wrapper": "a finding \u2014 \u00a717 keeps `reckon/_store.py:1034 landed_section_ids` as \"a reader of the public reader's output\" while adding the new card predicate on `_plan_html.py`, a thin forwarding layer over the predicate with no stated reason a caller cannot use the predicate directly."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.863133+00:00"
+}

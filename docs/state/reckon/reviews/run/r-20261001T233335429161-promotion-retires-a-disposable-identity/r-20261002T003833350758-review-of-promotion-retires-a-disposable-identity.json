@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/promotion.py:_release_after_promotion",
+    "reckon/crew/promotion.py:_release_run_workspace"
+  ],
+  "completed_at": "2026-10-02T00:48:40.826Z",
+  "dispatched_at": "2026-10-02T00:38:54Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "6852",
+      "severity": "follow-on",
+      "text": "follow-on: _record_release_on_ledger persists the release block at promotion.py:6845 and :5569 and _retire_disposable_identity runs only after it, so identity_retired/identity_member reach the returned payload but never the committed run row, unlike process_stopped_pid which is set inside _release_run_workspace before the persist."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit 790f296ca against base c8087d0bc commit by commit; three files changed (promotion.py +112, the new test +288, the fragment +75), all inside the declared scope.",
+    "done_when": "the done_when names tests/test_promotion_retires_a_disposable_identity.py; the manifest records it as 3 passed and the head arm of the two promotion suites as 9 passed, EXIT=0.",
+    "goal": "the node's goal is to retire a run's disposable identity and reap its live process group at promotion's release step; reckon/crew/promotion.py:6849 adds _retire_disposable_identity into _complete_locked's release and promotion.py:5437 records process_stopped_pid.",
+    "manifest": "read; status complete, naming the gate, both arms, the negative control and their logs at the run directory.",
+    "write_paths": "the declared paths are reckon/crew/promotion.py, tests/test_promotion_retires_a_disposable_identity.py and the evidence fragment; the diff c8087d0bc..790f296ca touches only those."
+  },
+  "justifications": {
+    "durability": "the logged negative control reddens test_promotion_retires_a_disposable_identity_and_keeps_a_named_one when the deletion is skipped and promotion.py:5437's process_stopped_pid is asserted against a real subprocess pid, but no assertion covers the persisted identity keys.",
+    "evidence": "tests/test_promotion_retires_a_disposable_identity.py asserts each done_when clause and its 3-passed result is recorded in the manifest together with the 9-passed arms and the logged negative control.",
+    "fit": "_retire_disposable_identity and _manifest_reads_blocked at promotion.py:5243/5259 follow the surrounding release helpers and reuse ledger.load/ledger.write with allow_member_removal, adding no plan or ticket identifier.",
+    "goal_fidelity": "promotion.py:6849-6852 retires the run's disposable-<run-id> roster row at acceptance and promotion.py:5437 records process_stopped_pid when the process group is signalled, matching the goal's acceptance half.",
+    "scope_discipline": "the diff c8087d0bc..790f296ca changes only reckon/crew/promotion.py, tests/test_promotion_retires_a_disposable_identity.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/promotion-retires-a-disposable-identity.html, all declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: node goal is to retire a run's disposable identity and reap its live process group at promotion's release step; reckon/crew/promotion.py:6849 adds _retire_disposable_identity into _complete_locked's release and promotion.py:5437 records process_stopped_pid.\nVERDICT done_when: the done_when names tests/test_promotion_retires_a_disposable_identity.py; the manifest records it as 3 passed and the head arm of the two promotion suites as 9 passed, EXIT=0.\nVERDICT write_paths: the declared paths are reckon/crew/promotion.py, tests/test_promotion_retires_a_disposable_identity.py and the evidence fragment; the diff c8087d0bc..790f296ca touches only those.\nVERDICT manifest: read; status complete, naming the gate, both arms, the negative control and their logs at the run directory.\nVERDICT diff: read commit 790f296ca against base c8087d0bc commit by commit; three files changed (promotion.py +112, the new test +288, the fragment +75), all inside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/crew/promotion.py:_release_after_promotion, reckon/crew/promotion.py:_release_run_workspace\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: promotion.py:6849-6852 retires the run's disposable-<run-id> roster row at acceptance and promotion.py:5437 records process_stopped_pid when the process group is signalled, matching the goal's acceptance half.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_promotion_retires_a_disposable_identity.py asserts each done_when clause and its 3-passed result is recorded in the manifest together with the 9-passed arms and the logged negative control.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff c8087d0bc..790f296ca changes only reckon/crew/promotion.py, tests/test_promotion_retires_a_disposable_identity.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/promotion-retires-a-disposable-identity.html, all declared.\nSCORE durability: 17\nJUSTIFICATION durability: the logged negative control reddens test_promotion_retires_a_disposable_identity_and_keeps_a_named_one when the deletion is skipped and promotion.py:5437's process_stopped_pid is asserted against a real subprocess pid, but no assertion covers the persisted identity keys.\nSCORE fit: 19\nJUSTIFICATION fit: _retire_disposable_identity and _manifest_reads_blocked at promotion.py:5243/5259 follow the surrounding release helpers and reuse ledger.load/ledger.write with allow_member_removal, adding no plan or ticket identifier.\nFINDING reckon/crew/promotion.py:6852 follow-on: _record_release_on_ledger persists the release block at promotion.py:6845 and :5569 and _retire_disposable_identity runs only after it, so identity_retired/identity_member reach the returned payload but never the committed run row, unlike process_stopped_pid which is set before the persist.",
+  "review_run_id": "r-20261002T003833350758-review-of-promotion-retires-a-disposable-identity",
+  "reviewed_base_sha": "c8087d0bc5cf9f821cee71bed4ea006e7ffa9261",
+  "reviewed_head_sha": "790f296cac5f7cf11abd62dde9dd3b746f30158e",
+  "reviewed_run_id": "r-20261001T233335429161-promotion-retires-a-disposable-identity",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T00:47:08+00:00",
+  "total": 91
+}

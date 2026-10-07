@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived by the review from the reviewed run's two retained gate logs (repro-new-test.log base arm, gate-worktree.log head arm); the reviewed manifest names no baseline_suite/after_suite field, so read_review will re-derive the count as unmeasured unless the reviewed manifest is repaired",
+  "added_failures_source": {
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T193022707126-repair-of-a-rollback-keeps-its-cause-153767e488bd/logs/repro-new-test.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T193022707126-repair-of-a-rollback-keeps-its-cause-153767e488bd/logs/gate-worktree.log"
+  },
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4177"
+  ],
+  "completed_at": "2026-09-30T20:02:51.079Z",
+  "dispatched_at": "2026-09-30T19:44:25Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-rollback-keeps-its-cause.html",
+      "line": "53",
+      "text": "the committed \u00a75 landing record states the unwind failure is \"re-raised as the cause of the original \u2014 raise exc from rollback_failure\", which this repair makes conditional, so the only detailed landing record for the section still describes the superseded mechanism and was not updated although the repair declared an evidence-fragment path."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T193022707126-repair-of-a-rollback-keeps-its-cause-153767e488bd/manifest.md",
+      "line": "14",
+      "text": "the reviewed manifest names no baseline_suite or after_suite field although its dispatch template carried them and the node holds a test file, so reckon.crew.review.read_review's added-failure derivation (keyed on those fields) reports the count unmeasured and a review of this run cannot carry a derived count; the two gate logs appear only under test_logs."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read the single commit against base 153767e48 \u2014 dispatch.py adds the cause-preserving branch at 5410-5414 and rewrote the guard comment, the test file adds the absent-executable launcher and one new case; no unrelated edits.",
+    "done_when": "the declared measure is that the new case reddens at base and the focused file is green at head; repro-new-test.log reads \"1 failed in 13.66s\" at 153767e48 and gate-worktree.log reads \"6 passed in 18.59s\" at 0bdd53a17, and this review re-ran both arms in a scratch tree (base arm 1 failed on `assert isinstance(surfaced.__cause__, FileNotFoundError)`; head arm 6 passed), with negative-control.log reddening the new case on the same assertion once the pre-fix dispatch.py is restored.",
+    "goal": "the node's goal is for a dispatch rollback to keep the cause its original already carries when the unwind also fails; reckon/crew/dispatch.py:5410-5414 captures `cause = exc.__cause__`, chains the unwind with `raise exc from rollback_failure` only when no cause exists, and otherwise adds the unwind as a note and re-raises from the preserved cause, so the absent-executable FileNotFoundError survives as the surfaced CrewError's cause; the goal is met.",
+    "manifest": "read; it names the commit, the mechanism, the two arms, the negative control and its moving parts, but it names no baseline_suite or after_suite field, so the review read path (which derives added failures from those fields) reports the count unmeasured \u2014 recorded below as a finding.",
+    "write_paths": "the manifest declares four write paths; the change touches two \u2014 reckon/crew/dispatch.py and tests/test_a_rollback_keeps_its_cause.py \u2014 both inside the grant, and the declared evidence-fragment and figures paths are unused, which is not a violation."
+  },
+  "justifications": {
+    "durability": "the change is localized to the guard, adds no state, and its test isolates the dispatch through a temporary repository under tmp_path with an injected launcher and removal; minus two because a caller that reads only the surfaced error's cause loses the unwind, which survives only on stderr and as a note.",
+    "evidence": "both arms and the declared mutation are retained and independently reproduced, but the manifest names no baseline_suite/after_suite so the read-time added-failure derivation reads unmeasured, and the committed \u00a75 landing fragment states the superseded mechanism.",
+    "fit": "the branch and the comment are named by mechanism with no plan or version token, and _absent_executable_launcher follows the existing _failing_launcher seam; `raise exc from cause` re-states the cause it already holds when it could simply re-raise, a harmless redundancy.",
+    "goal_fidelity": "the repair does exactly what the review finding asked \u2014 dispatch.py:5410-5414 preserves an existing __cause__ and carries the unwind as a note, chaining the unwind as cause only when none exists, verified red at base and green at head in a scratch tree.",
+    "scope_discipline": "git show --stat 0bdd53a17 is two files, 51 insertions and 5 deletions, both inside the declared grants, with no plan, index or sprint edit."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 153767e488bd38ab0d3764ca7435d02f00e02b37\nreviewed_head_sha: 0bdd53a17d802445a0de6dc552bcd19f3578b546\nVERDICT goal: the node's goal is for a dispatch rollback to keep the cause its original already carries when the unwind also fails; reckon/crew/dispatch.py:5410-5414 captures `cause = exc.__cause__`, chains the unwind with `raise exc from rollback_failure` only when no cause exists, and otherwise adds the unwind as a note and re-raises from the preserved cause, so the absent-executable FileNotFoundError survives as the surfaced CrewError's cause; the goal is met.\nVERDICT done_when: the declared measure is that the new case reddens at base and the focused file is green at head; repro-new-test.log reads \"1 failed in 13.66s\" at 153767e48 and gate-worktree.log reads \"6 passed in 18.59s\" at 0bdd53a17, and this review re-ran both arms in a scratch tree (base arm 1 failed on `assert isinstance(surfaced.__cause__, FileNotFoundError)`; head arm 6 passed), with negative-control.log reddening the new case on the same assertion once the pre-fix dispatch.py is restored.\nVERDICT write_paths: the manifest declares four write paths; the change touches two \u2014 reckon/crew/dispatch.py and tests/test_a_rollback_keeps_its_cause.py \u2014 both inside the grant, and the declared evidence-fragment and figures paths are unused, which is not a violation.\nVERDICT manifest: read; it names the commit, the mechanism, the two arms, the negative control and its moving parts, but it names no baseline_suite or after_suite field, so the review read path (which derives added failures from those fields) reports the count unmeasured \u2014 recorded below as a finding.\nVERDICT diff: read the single commit against base 153767e48 \u2014 dispatch.py adds the cause-preserving branch at 5410-5414 and rewrote the guard comment, the test file adds the absent-executable launcher and one new case; no unrelated edits.\nCALL_SITES: reckon/crew/dispatch.py:4177\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the repair does exactly what the review finding asked \u2014 dispatch.py:5410-5414 preserves an existing __cause__ and carries the unwind as a note, chaining the unwind as cause only when none exists, verified red at base and green at head in a scratch tree.\nSCORE evidence: 16\nJUSTIFICATION evidence: both arms and the declared mutation are retained and independently reproduced, but the manifest names no baseline_suite/after_suite so the read-time added-failure derivation reads unmeasured, and the committed \u00a75 landing fragment states the superseded mechanism.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 0bdd53a17 is two files, 51 insertions and 5 deletions, both inside the declared grants, with no plan, index or sprint edit.\nSCORE durability: 18\nJUSTIFICATION durability: the change is localized to the guard, adds no state, and its test isolates the dispatch through a temporary repository under tmp_path with an injected launcher and removal; minus two because a caller that reads only the surfaced error's cause loses the unwind, which survives only on stderr and as a note.\nSCORE fit: 19\nJUSTIFICATION fit: the branch and the comment are named by mechanism with no plan or version token, and _absent_executable_launcher follows the existing _failing_launcher seam; `raise exc from cause` re-states the cause it already holds when it could simply re-raise, a harmless redundancy.\nFINDING docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-rollback-keeps-its-cause.html:53 the committed \u00a75 landing record states the unwind failure is \"re-raised as the cause of the original \u2014 raise exc from rollback_failure\", which this repair makes conditional, so the only detailed landing record for the section still describes the superseded mechanism and was not updated although the repair declared an evidence-fragment path.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T193022707126-repair-of-a-rollback-keeps-its-cause-153767e488bd/manifest.md:14 the reviewed manifest names no baseline_suite or after_suite field although its dispatch template carried them and the node holds a test file, so reckon.crew.review.read_review's added-failure derivation (keyed on those fields) reports the count unmeasured and a review of this run cannot carry a derived count; the two gate logs appear only under test_logs.\n",
+  "review_run_id": "r-20260930T194410210092-review-of-repair-of-a-rollback-keeps-its-cause-153767e488bd",
+  "reviewed_base_sha": "153767e488bd38ab0d3764ca7435d02f00e02b37",
+  "reviewed_head_sha": "0bdd53a17d802445a0de6dc552bcd19f3578b546",
+  "reviewed_run_id": "r-20260930T193022707126-repair-of-a-rollback-keeps-its-cause-153767e488bd",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260930T194410210092-review-of-repair-of-a-rollback-keeps-its-cause-153767e488bd",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T19:59:40.326053+00:00",
+  "total": 93
+}

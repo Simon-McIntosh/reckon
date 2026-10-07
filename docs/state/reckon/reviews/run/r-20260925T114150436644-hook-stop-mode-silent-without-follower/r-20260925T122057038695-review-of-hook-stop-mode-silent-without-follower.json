@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:resolve",
+    "reckon/hooks/coordinator_obligations.py:main",
+    "reckon/hooks/install.py:build_hook_snippet"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T12:20:57.038695+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 0c84ab3e, 2848d5b9 adds the stop arm and the checklist-non-empty guard to the test and 76206323 adds the evidence revision section, the figure and the plan subsection, and cmp confirms reckon/hooks/coordinator_obligations.py is byte-identical base..head.",
+    "done_when": "the done_when names tests/test_coordinator_obligations_hook.py near line 303 driving both modes, the non-empty checklist assertion, the green base arm and the declared mutation reddening the new case, and gate-base.log, gate-head.log and gate-final.log record 7 passed at each arm.",
+    "goal": "the node was dispatched to assert that the obligations hook's stop mode is also silent with no follower registered, and tests/test_coordinator_obligations_hook.py:313-320 now drives stop mode over a live blocked run with no follower armed, requiring exit 0 with empty stdout and stderr.",
+    "manifest": "read in full; it records commits 2848d5b9 and 76206323, the gate command with its base/head/final arms, five log paths, the finding that the hook script needed no edit, and no follow-ons, and every path it names resolves on disk.",
+    "write_paths": "the declared scope is tests/test_coordinator_obligations_hook.py, reckon/hooks/coordinator_obligations.py, docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html, docs/figures/an-orchestrator-cannot-forget-its-obligations and docs/plans/an-orchestrator-cannot-forget-its-obligations.html, and git diff --stat 0c84ab3e..HEAD touches four files, each inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_coordinator_obligations_hook.py:319 fails under the declared mutation, reproduced as assert stopping.stdout == \"\" with the mutant's own reason marker on stdout, and the added guard at line 187 fails only on a blank injected checklist.",
+    "evidence": "the manifest records the gate command with its three arms (gate-base.log, gate-head.log, gate-final.log, each 7 passed) and the declared red (negative-control.log), and my re-runs reproduced both as 7 passed and 1 failed, 6 deselected.",
+    "fit": "the added case reuses the file's _hook, _stop_payload and _blocked_run helpers and the file's docstring idiom, ruff check on tests/test_coordinator_obligations_hook.py is clean, and the diff adds no plan or stage label.",
+    "goal_fidelity": "tests/test_coordinator_obligations_hook.py:313-319 drives stop mode with no follower registration and asserts empty stdout, which is the goal sentence, and the same payload blocks at line 214 once a follower is armed.",
+    "scope_discipline": "git diff --stat 0c84ab3e..HEAD lists four files, each inside the five declared write paths, and the hook script compares identical between base and head."
+  },
+  "node": "review-of-hook-stop-mode-silent-without-follower",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node was dispatched to assert that the obligations hook's stop mode is also silent with no follower registered, and tests/test_coordinator_obligations_hook.py:313-320 now drives stop mode over a live blocked run with no follower armed, requiring exit 0 with empty stdout and stderr.\nVERDICT done_when: the done_when names tests/test_coordinator_obligations_hook.py near line 303 driving both modes, the non-empty checklist assertion, the green base arm and the declared mutation reddening the new case, and gate-base.log, gate-head.log and gate-final.log record 7 passed at each arm.\nVERDICT write_paths: the declared scope is tests/test_coordinator_obligations_hook.py, reckon/hooks/coordinator_obligations.py, docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html, docs/figures/an-orchestrator-cannot-forget-its-obligations and docs/plans/an-orchestrator-cannot-forget-its-obligations.html, and git diff --stat 0c84ab3e..HEAD touches four files, each inside them.\nVERDICT manifest: read in full; it records commits 2848d5b9 and 76206323, the gate command with its base/head/final arms, five log paths, the finding that the hook script needed no edit, and no follow-ons, and every path it names resolves on disk.\nVERDICT diff: read commit by commit against base 0c84ab3e, 2848d5b9 adds the stop arm and the checklist-non-empty guard to the test and 76206323 adds the evidence revision section, the figure and the plan subsection, and cmp confirms reckon/hooks/coordinator_obligations.py is byte-identical base..head.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:resolve, reckon/hooks/coordinator_obligations.py:main, reckon/hooks/install.py:build_hook_snippet\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_coordinator_obligations_hook.py:313-319 drives stop mode with no follower registration and asserts empty stdout, which is the goal sentence, and the same payload blocks at line 214 once a follower is armed.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest records the gate command with its three arms (gate-base.log, gate-head.log, gate-final.log, each 7 passed) and the declared red (negative-control.log), and my re-runs reproduced both as 7 passed and 1 failed, 6 deselected.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 0c84ab3e..HEAD lists four files, each inside the five declared write paths, and the hook script compares identical between base and head.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_coordinator_obligations_hook.py:319 fails under the declared mutation, reproduced as assert stopping.stdout == \"\" with the mutant's own reason marker on stdout, and the added guard at line 187 fails only on a blank injected checklist.\nSCORE fit: 19\nJUSTIFICATION fit: the added case reuses the file's _hook, _stop_payload and _blocked_run helpers and the file's docstring idiom, ruff check on tests/test_coordinator_obligations_hook.py is clean, and the diff adds no plan or stage label.\n",
+  "review_run_id": "r-20260925T122057038695-review-of-hook-stop-mode-silent-without-follower",
+  "reviewed_base_sha": "0c84ab3e150889d9996d12e7347961cc335b03e9",
+  "reviewed_head_sha": "76206323a889aaa1b17385c9520be4cea92fdb8f",
+  "reviewed_run_id": "r-20260925T114150436644-hook-stop-mode-silent-without-follower",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T13:02:36.417867+00:00",
+  "total": 97
+}

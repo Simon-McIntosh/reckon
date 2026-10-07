@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:18:05.062Z",
+  "dispatched_at": "2026-10-05T16:13:59Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/plan_review.py:162",
+      "id": "deep_module-1",
+      "reason": "a plan whose stated preference is a deep module behind a small interface should either fold the prose buckets into the one raw-text pass or state why two identity-resolution sites cannot be avoided.",
+      "text": "\u00a716's `_AuthoredProseParser` and \u00a717's `_StructuredSectionSpanParser` are each extended to track the attributes of the enclosing section element and derive the wrapper-id-case identity, so the same rule is implemented twice, in reckon/ (core) and reckon/crew/ (crew); because it is package-private it cannot be shared across that boundary without a new public definition, which \u00a716's interface accounting does not count.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_plan_html.py",
+      "id": "duplicate_owner-1",
+      "reason": "the first implementation node cannot be ordered while the owner of the derivation is unsettled, so the plan must name which section lands it and reverse or drop the declared dependency.",
+      "text": "\u00a716 says the hoist and extension of `section_record_id`/`section_id_candidates` into `reckon/_plan_html.py` is its own change, while \u00a716's closing sentence declares \"This section depends on \u00a717 for section identity\" and \u00a717 is the consumer that applies \"the extended `section_record_id`\"; the two sections each name the other as their prerequisite.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:1034",
+      "id": "duplicate_owner-2",
+      "reason": "this is a stale cross-reference rather than a design defect, corrected by naming the recogniser's post-\u00a717 home once.",
+      "text": "\u00a718 describes the store as answering its neighbouring question \"through `landed_section_ids`\", but \u00a717 moves that recogniser out of `reckon/_store.py` into `reckon/_plan_html.py` (and \u00a716 currently imports it `from reckon._store` at reckon/crew/plan_review.py:60), so the sections disagree about where the one card recogniser lives.",
+      "type": "duplicate_owner",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "506315854bbd98a9d0e1b0f45a09a32e1064c58abeec235ec31a6a2c98607d6d",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 87,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T161341612666-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "36d7cadc93f2be9ea76edbc93bbb0202d5cecc8c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a716 extends `_AuthoredProseParser` (reckon/crew/plan_review.py:162) and \u00a717 extends `_StructuredSectionSpanParser` (reckon/_plan_html.py:44) so each independently records the enclosing `<section>` element's attributes to resolve wrapper-id identity, spreading one derivation over two raw-text walks in two different packages.",
+    "duplicate_owner": "a finding \u2014 \u00a716 locates the home and extension of `section_record_id` in reckon/_plan_html.py, yet its closing sentence declares \u00a716 depends on \u00a717 for the identity \u00a717 itself consumes from that hoisted copy, leaving the derivation's owner unresolved between the two sections.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 states it adds no public definition and retires none (the digest and the prose walk keep their names, and the coverage predicate stays private because its consumers share the package), \u00a717 names one addition (`plan_headings`) and one move (`landed_section_ids`, family unchanged), \u00a718 names one addition and one private retirement, and no CLI option, MCP view or refusal family is added (\u00a716 reuses the existing `plan-review-missing` family and names the uncovered sections in its detail).",
+    "reuse_search": "pass \u2014 the design extends the mechanisms it names rather than proposing new machinery: `section_record_id`/`section_id_candidates` (reckon/crew/routing.py:215,234), `_StructuredSectionSpanParser`/`structured_section_spans`/`landed_section_ids` (reckon/_plan_html.py:44,94; reckon/_store.py:1034), `plan_fingerprint`/`_fingerprint_forms`/`read_plan_review`/`list_plan_reviews` (reckon/crew/plan_review.py:368,598,618,668), `_plan_remaining_sections` (reckon/crew/promotion.py:7236), `_implementable_section_ids` (reckon/doccheck.py:1014), the two `c-run-` owners (reckon/crew/promotion.py:7209, reckon/crew/plan_review.py:123) and the AST census in reckon/interface_counts.py; I opened each and confirmed it exists where cited.",
+    "thin_wrapper": "pass \u2014 the one new public layer, `plan_headings`, is justified in \u00a717's own text by five cross-package consumers over a parser that stays private, and the retained `structured_section_spans` carries a distinct spans-only contract rather than duplicating it."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.858417+00:00"
+}

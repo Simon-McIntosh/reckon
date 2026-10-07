@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "codex",
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T11:43:13.367283+00:00",
+  "findings": [
+    {
+      "file": "docs/figures/window-reading/window-reading-selection.png",
+      "line": "1",
+      "text": "the binary figure was added outside the four declared exclusive write paths; the landing-record guidance to use a useful figure did not transfer write scope, so the diff exceeded its fence even though the manifest disclosed it"
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commits e302ad39 and 04a479ef against base 1d2e70ccbaa9252cfcaf6cbf2020df78f3ffc11b; the reader and nine focused tests assert the goal, while docs/figures/window-reading/window-reading-selection.png is an undeclared fifth path.",
+    "done_when": "the five declared clauses are directly asserted by tests/test_window_reading.py:54-205 and the recorded negative control fails the named newest-carrying-event test rather than merely describing a mutation.",
+    "goal": "the goal requires the newest usable unified-window reading with observation age or explicit unknown, which reckon/crew/window_reading.py:89-145 implements without consulting the account-level utilization.",
+    "manifest": "the manifest names both commits, all five changed paths, a 9-passing-test receipt, and a red negative-control log; those claims agree with the worktree and logs.",
+    "write_paths": "four paths were declared, but the diff also adds docs/figures/window-reading/window-reading-selection.png, which the manifest correctly reports as outside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_window_reading.py:54-205 covers every declared behaviour, while the recorded mutation makes five tests red including the named selection test.",
+    "evidence": "tests/test_window_reading.py:54-205 directly asserts all five clauses, review-gate.log records 9 passed, and the mutation receipt records 5 failed with the named test among them.",
+    "fit": "reckon/crew/window_reading.py:214-238 follows the surrounding closest-stamped-event idiom in reckon/budget.py and introduces no forbidden path, symbol, or comment name.",
+    "goal_fidelity": "reckon/crew/window_reading.py:89-145 selects the newest event with usable unifiedWindows, attaches age to every figure, and returns an empty explicit reading on every unknown branch.",
+    "scope_discipline": "the source, test, plan, and evidence files are declared, but docs/figures/window-reading/window-reading-selection.png is a fifth changed path outside the exclusive fence."
+  },
+  "measure_verdicts": {
+    "declared_mutation_reddens_named_test": {
+      "evidence": "negative-control.log begins with the declared mutation, records the scratch module path, exit_status=1, and five failures including test_newest_carrying_event_wins_over_a_newest_that_carries_none",
+      "status": "asserted"
+    },
+    "every_figure_carries_observation_age_seconds": {
+      "evidence": "reckon/crew/window_reading.py:124-145 stores observed_at and age_seconds on every WindowFigure and the enclosing WindowReading; tests/test_window_reading.py:104-132 asserts both figures and the tie rule",
+      "status": "asserted"
+    },
+    "newest_carrying_event_skips_newer_windowless_event": {
+      "evidence": "reckon/crew/window_reading.py:111-116 selects the last event for which _carries_window is true; tests/test_window_reading.py:54-70 places a newer windowless overage event after a carrying event and requires both earlier windows",
+      "status": "asserted"
+    },
+    "no_window_is_unknown_and_never_zero_or_one": {
+      "evidence": "reckon/crew/window_reading.py:98-100,115-122,137-140 returns WindowReading with no figures on every reader-side unknown path, and utilisation at lines 83-86 therefore returns None; tests/test_window_reading.py:73-90 asserts both periods are None and neither 0.0 nor 1.0, while lines 93-101 positively prove a provider-reported 0.0 is still returned",
+      "status": "asserted"
+    },
+    "top_level_overage_utilization_is_not_a_window": {
+      "evidence": "reckon/crew/window_reading.py:177-197 reads only rate_limit_info.unifiedWindows; tests/test_window_reading.py:171-185 supplies top-level utilization 1.21 and asserts only 0.7 and 0.2 from unifiedWindows are returned",
+      "status": "asserted"
+    }
+  },
+  "model": "gpt-5.6-sol",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal requires the newest usable unified-window reading with observation age or explicit unknown, which reckon/crew/window_reading.py:89-145 implements without consulting the account-level utilization.\nVERDICT done_when: the five declared clauses are directly asserted by tests/test_window_reading.py:54-205 and the recorded negative control fails the named newest-carrying-event test rather than merely describing a mutation.\nVERDICT write_paths: four paths were declared, but the diff also adds docs/figures/window-reading/window-reading-selection.png, which the manifest correctly reports as outside the fence.\nVERDICT manifest: the manifest names both commits, all five changed paths, a 9-passing-test receipt, and a red negative-control log; those claims agree with the worktree and logs.\nVERDICT diff: read commits e302ad39 and 04a479ef against base 1d2e70ccbaa9252cfcaf6cbf2020df78f3ffc11b; the reader and nine focused tests assert the goal, while docs/figures/window-reading/window-reading-selection.png is an undeclared fifth path.\nMEASURE newest_carrying_event_skips_newer_windowless_event: asserted by reckon/crew/window_reading.py:111-116 and tests/test_window_reading.py:54-70.\nMEASURE no_window_is_unknown_and_never_zero_or_one: asserted by every unknown return at reckon/crew/window_reading.py:98-100,115-122,137-140, the None-only accessor at lines 83-86, the negative case at tests/test_window_reading.py:73-90, and the real-zero positive control at lines 93-101.\nMEASURE top_level_overage_utilization_is_not_a_window: asserted by reckon/crew/window_reading.py:177-197 and tests/test_window_reading.py:171-185.\nMEASURE every_figure_carries_observation_age_seconds: asserted by reckon/crew/window_reading.py:124-145 and tests/test_window_reading.py:104-132.\nMEASURE declared_mutation_reddens_named_test: asserted by negative-control.log, whose first line names the mutation and whose exit_status=1 includes the named selection test among five failures.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/window_reading.py:89-145 selects the newest event with usable unifiedWindows, attaches age to every figure, and returns an empty explicit reading on every unknown branch.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_window_reading.py:54-205 directly asserts all five clauses, review-gate.log records 9 passed, and the mutation receipt records 5 failed with the named test among them.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: the source, test, plan, and evidence files are declared, but docs/figures/window-reading/window-reading-selection.png is a fifth changed path outside the exclusive fence.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_window_reading.py:54-205 covers every declared behaviour, while the recorded mutation makes five tests red including the named selection test.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/window_reading.py:214-238 follows the surrounding closest-stamped-event idiom in reckon/budget.py and introduces no forbidden path, symbol, or comment name.\nFINDING docs/figures/window-reading/window-reading-selection.png:1 the binary figure was added outside the four declared exclusive write paths; the landing-record guidance to use a useful figure did not transfer write scope, so the diff exceeded its fence even though the manifest disclosed it",
+  "review_run_id": "r-20260921T114313367283-independent-review-of-window-reading-carries-its-age",
+  "reviewed_agent": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewed_base_sha": "1d2e70ccbaa9252cfcaf6cbf2020df78f3ffc11b",
+  "reviewed_commits": [
+    "e302ad393dc262d1a837deafc24dd228a8b8cdae",
+    "04a479ef582f0c8c0ccc95d275eab67a17f089c1"
+  ],
+  "reviewed_head_sha": "04a479ef582f0c8c0ccc95d275eab67a17f089c1",
+  "reviewed_run_id": "r-20260921T101754262859-window-reading-carries-its-age",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T11:48:56Z",
+  "total": 96
+}

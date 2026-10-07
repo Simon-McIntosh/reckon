@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:806"
+  ],
+  "completed_at": "2026-10-04T10:00:06.983Z",
+  "dispatched_at": "2026-10-04T09:56:23Z",
+  "findings": [
+    {
+      "file": "tests/test_held_blocker_probe.py",
+      "line": "208",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion that the refused blocker's stored status != \"cleared\" passes for any status the code might write other than cleared; comparing against \"held\" would name the state the refusal must preserve."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both commits against base 39ed4f2d8; the fix moves the cleared-status return above the probe lookup in reckon/project_state.py and tests/test_held_blocker_probe.py adds the withdrawn-probe and unknown-probe cases (3 files, +91/-4).",
+    "done_when": "the done_when asks for a cleared blocker reporting its clear and an unknown-probe refusal, both covered by a test; tests/test_held_blocker_probe.py:148 exercises the first after monkeypatch.delitem at :181 and the second at :202 against a tmp_path docs tree.",
+    "goal": "the node goal is that a cleared blocker reports its recorded clear whatever the registry now holds; reckon/project_state.py:1347 returns the recorded reason before the probe-id lookup at :1352, so a withdrawn probe no longer raises.",
+    "manifest": "read; it records the new test red at base and green at head, the 20-file population at 308 base versus 309 head both EXIT=0 with zero added failures, and a negative control reddening the new test.",
+    "write_paths": "the reviewed manifest declares reckon/project_state.py, tests/test_held_blocker_probe.py and docs/evidence/fragments/a-held-blocker-clears-on-its-probe/a-cleared-blocker-reports-its-clear.html; every path in the 39ed4f2d8..b2887726b diff lies inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_held_blocker_probe.py:182 reddens on the reverted order, because monkeypatch.delitem removes path-exists and the base lookup then raises unknown held blocker probe id.",
+    "evidence": "the gate names tests/test_held_blocker_probe.py and its result is recorded at EXIT=0 in gate-head-new-test.log, with the red-at-base shown in negative-control-base.log and both populations in gate-base-population.log and gate-head-population.log.",
+    "fit": "the moved lines keep the surrounding early-return idiom of reckon/project_state.py:1345 and introduce no new name.",
+    "goal_fidelity": "reckon/project_state.py:1347-1351 returns the stored cleared reason before the probe-id membership check at :1352, which is what the section goal names.",
+    "scope_discipline": "every path in the b2887726b diff is a declared write path and the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a cleared blocker reports its recorded clear whatever the registry now holds; reckon/project_state.py:1347 returns the recorded reason before the probe-id lookup at :1352, so a withdrawn probe no longer raises.\nVERDICT done_when: the done_when asks for a cleared blocker reporting its clear and an unknown-probe refusal, both covered by a test; tests/test_held_blocker_probe.py:148 exercises the first after monkeypatch.delitem at :181 and the second at :202 against a tmp_path docs tree.\nVERDICT write_paths: the reviewed manifest declares reckon/project_state.py, tests/test_held_blocker_probe.py and docs/evidence/fragments/a-held-blocker-clears-on-its-probe/a-cleared-blocker-reports-its-clear.html; every path in the 39ed4f2d8..b2887726b diff lies inside them.\nVERDICT manifest: read; it records the new test red at base and green at head, the 20-file population at 308 base versus 309 head both EXIT=0 with zero added failures, and a negative control reddening the new test.\nVERDICT diff: read both commits against base 39ed4f2d8; the fix moves the cleared-status return above the probe lookup in reckon/project_state.py and tests/test_held_blocker_probe.py adds the withdrawn-probe and unknown-probe cases (3 files, +91/-4).\nCALL_SITES: reckon/cli.py:806\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/project_state.py:1347-1351 returns the stored cleared reason before the probe-id membership check at :1352, which is what the section goal names.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate names tests/test_held_blocker_probe.py and its result is recorded at EXIT=0 in gate-head-new-test.log, with the red-at-base shown in negative-control-base.log and both populations in gate-base-population.log and gate-head-population.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the b2887726b diff is a declared write path and the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_held_blocker_probe.py:182 reddens on the reverted order, because monkeypatch.delitem removes path-exists and the base lookup then raises unknown held blocker probe id.\nSCORE fit: 20\nJUSTIFICATION fit: the moved lines keep the surrounding early-return idiom of reckon/project_state.py:1345 and introduce no new name.\nFINDING tests/test_held_blocker_probe.py:208 follow-on: the assertion that the refused blocker's stored status != \"cleared\" passes for any status the code might write other than cleared; comparing against \"held\" would name the state the refusal must preserve.\n",
+  "review_run_id": "r-20261004T095607714902-review-of-a-cleared-blocker-reports-its-clear",
+  "reviewed_base_sha": "39ed4f2d8c3f4a1414f05e00ee143ea81b7d7271",
+  "reviewed_head_sha": "b2887726b61c44eac800204f3627d791947b9ba6",
+  "reviewed_run_id": "r-20261004T094224172449-a-cleared-blocker-reports-its-clear",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T095607714902-review-of-a-cleared-blocker-reports-its-clear",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T09:59:07.007666+00:00",
+  "total": 97
+}

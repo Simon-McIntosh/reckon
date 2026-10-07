@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/flight.py:877 probe_availability",
+    "reckon/flight.py:1362 _project_lane_reading",
+    "reckon/crew/dispatch.py:2414 _dispatch_lane_reading",
+    "reckon/mcp_views.py:554 _lane_document_fields"
+  ],
+  "completed_at": "2026-09-25T15:19:44.979Z",
+  "dispatched_at": "2026-09-25T14:42:16Z",
+  "findings": [
+    {
+      "file": "reckon/crew/lane_document.py",
+      "line": "197",
+      "text": "the else branch labels every verdict but congested as an open gate, so a published admission block carrying verdict full or paused, both of which this node's own goal names in the vocabulary, gets a reason contradicting its verdict: reproduced as admission block with verdict paused and headroom -1 returning the reason admission headroom is -1 (published admission headroom); the gate is open, and verdict full with headroom 0 returning the same open claim."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read commit by commit against the base: afa8389 routes both readers through reckon.crew.lane_document and splits the reason strings, and 4407da02 adds the evidence section, the convergence figure and a plan comment, with nothing outside the declared write paths.",
+    "done_when": "tests/test_lane_readers_share_the_gate_aware_headroom.py asserts each clause of the done_when, and I re-ran it at the reviewed head (4 passed) and under its declared mutation (1 failed at tests/test_lane_readers_share_the_gate_aware_headroom.py:107 with assert 6 == -3), with gate-base.log and gate-head.log recording 120 passed/2 skipped and 124 passed/2 skipped.",
+    "goal": "The goal is for every production reader of a declared lane document to report the same admission-limited headroom as the shared gate-aware reader; reckon/flight.py:1119 now resolves the flight probe's figure through that reader and reckon/crew/dispatch.py:2370 does the same for the dispatch carry, so the three readers converge, though the reason repair is incomplete for two of the published verdicts.",
+    "manifest": "Read; it records status complete, both commits, the focused gate result, the base and head suite pair, the negative-control log path and its declared mutation, and each log it names exists and says what it claims.",
+    "write_paths": "The manifest's seven declared paths match the dispatch fence exactly, and git diff --stat 8f9ef4e3..4407da02 names only those seven files, so the diff stays inside the scope it was granted."
+  },
+  "justifications": {
+    "durability": "the shared-headroom assertion is a guard that fires when the resolver is reverted (verified by reinstating the regression at reckon/flight.py:1119), but the reason case at tests/test_lane_readers_share_the_gate_aware_headroom.py:157 exercises only computed verdicts, so a mislabelled published verdict is unguarded.",
+    "evidence": "tests/test_lane_readers_share_the_gate_aware_headroom.py:107 reddens under the declared mutation, both gate logs carry the revision, tree and module they ran against, and docs/evidence/archive/the-local-lane-is-the-default-landed.html carries the anchor lane-readers-share-the-gate-aware-headroom.",
+    "fit": "the resolver follows the probe idiom of reckon/flight.py:1066, the reason split stays inside reckon/crew/lane_document.py:188-200, no name carries a plan label, and ruff reports an identical finding set for the three changed modules at base and head.",
+    "goal_fidelity": "reckon/flight.py:1119 and reckon/crew/dispatch.py:2370 both resolve headroom through reckon.crew.lane_document, so the three readers agree, but reckon/crew/lane_document.py:197 labels a published full or paused verdict as an open gate.",
+    "scope_discipline": "git diff --stat 8f9ef4e3..4407da02 names exactly the seven declared paths, and the plan append announces its own bypass of reckon-edit in the comment it adds."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is for every production reader of a declared lane document to report the same admission-limited headroom as the shared gate-aware reader; reckon/flight.py:1119 now resolves the flight probe's figure through that reader and reckon/crew/dispatch.py:2370 does the same for the dispatch carry, so the three readers converge, though the reason repair is incomplete for two of the published verdicts.\nVERDICT done_when: tests/test_lane_readers_share_the_gate_aware_headroom.py asserts each clause of the done_when, and I re-ran it at the reviewed head (4 passed) and under its declared mutation (1 failed at tests/test_lane_readers_share_the_gate_aware_headroom.py:107 with assert 6 == -3), with gate-base.log and gate-head.log recording 120 passed/2 skipped and 124 passed/2 skipped.\nVERDICT write_paths: The manifest's seven declared paths match the dispatch fence exactly, and git diff --stat 8f9ef4e3..4407da02 names only those seven files, so the diff stays inside the scope it was granted.\nVERDICT manifest: Read; it records status complete, both commits, the focused gate result, the base and head suite pair, the negative-control log path and its declared mutation, and each log it names exists and says what it claims.\nVERDICT diff: Read commit by commit against the base: afa8389 routes both readers through reckon.crew.lane_document and splits the reason strings, and 4407da02 adds the evidence section, the convergence figure and a plan comment, with nothing outside the declared write paths.\nCALL_SITES: reckon/flight.py:877 probe_availability, reckon/flight.py:1362 _project_lane_reading, reckon/crew/dispatch.py:2414 _dispatch_lane_reading, reckon/mcp_views.py:554 _lane_document_fields\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/flight.py:1119 and reckon/crew/dispatch.py:2370 both resolve headroom through reckon.crew.lane_document, so the three readers agree, but reckon/crew/lane_document.py:197 labels a published full or paused verdict as an open gate.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_lane_readers_share_the_gate_aware_headroom.py:107 reddens under the declared mutation, both gate logs carry the revision, tree and module they ran against, and docs/evidence/archive/the-local-lane-is-the-default-landed.html carries the anchor lane-readers-share-the-gate-aware-headroom.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 8f9ef4e3..4407da02 names exactly the seven declared paths, and the plan append announces its own bypass of reckon-edit in the comment it adds.\nSCORE durability: 16\nJUSTIFICATION durability: the shared-headroom assertion is a guard that fires when the resolver is reverted (verified by reinstating the regression at reckon/flight.py:1119), but the reason case at tests/test_lane_readers_share_the_gate_aware_headroom.py:157 exercises only computed verdicts, so a mislabelled published verdict is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: the resolver follows the probe idiom of reckon/flight.py:1066, the reason split stays inside reckon/crew/lane_document.py:188-200, no name carries a plan label, and ruff reports an identical finding set for the three changed modules at base and head.\nFINDING reckon/crew/lane_document.py:197 the else branch labels every verdict but congested as an open gate, so a published admission block carrying verdict full or paused, both of which this node's own goal names in the vocabulary, gets a reason contradicting its verdict: reproduced as admission block with verdict paused and headroom -1 returning the reason admission headroom is -1 (published admission headroom); the gate is open, and verdict full with headroom 0 returning the same open claim.\n",
+  "review_run_id": "r-20260925T144205927839-review-of-lane-readers-share-the-gate-aware-headroom",
+  "reviewed_base_sha": "8f9ef4e3509dec4f96318cc4634addce4ea4ee06",
+  "reviewed_head_sha": "4407da02bde039f37a902d7abe7f70877e52e78c",
+  "reviewed_run_id": "r-20260925T140712076451-lane-readers-share-the-gate-aware-headroom",
+  "role": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T15:12:32.744679+00:00",
+  "total": 89
+}

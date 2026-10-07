@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "a31484ff0d40c73f901743ee748d82f82bd01198",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:9426 (_supervisor_spawn_worker calls _spawn_worker_retrying_a_vanished_bind)",
+    "reckon/crew/dispatch.py:9432 (_supervisor_spawn_worker returns process.pid, dropping the collected returncode -- the defect)",
+    "reckon/crew/dispatch.py:8674 (_spawn_detached_worker transfers the same collected exit -- the model the fix should follow)",
+    "reckon/crew/dispatch.py:9968 (_reap_worker_on_its_terminal_manifest waitpid gets ChildProcessError -> returns None)"
+  ],
+  "completed_at": "2026-10-03T13:22:09.524Z",
+  "dispatched_at": "2026-10-03T13:13:49Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/a-killed-worker-resumes-to-completion-again.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run records baseline_suite and after_suite as null in its manifest (gates kept as free text under tests/test_logs), so no base/after arm pair is derivable and added_failure_count is taken as 0 because the only changed path is a docs evidence fragment that cannot affect the pytest suite; for a diagnosis node that changed no source this is defensible, but the armed-JSON fields are absent."
+    },
+    {
+      "file": "tests/test_a_killed_worker_resumes_to_completion.py",
+      "line": "328",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's declared negative control is not a mutation -- it changed no test source, so its negative_control_log is a rerun of the same failing id and cannot show a guard firing; the log's own note says as much. The reproduction is real and I independently confirm it, but the control demonstrates nothing the diagnosis log did not already show."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "9426",
+      "severity": "follow-on",
+      "text": "follow-on: the product defect is real and out of the reviewed node's write scope -- _supervisor_spawn_worker (dispatch.py:9432) returns process.pid without transferring the process.returncode the spawn-retry startup poll may already have collected, unlike the detached lane at dispatch.py:8674; a repair node holding reckon/crew/dispatch.py must mirror that transfer so the resumed attempt's exit record carries the worker's own exit code."
+    }
+  ],
+  "head_log_revision": "15b6080ef7dd27c5c575d192d6bba6c67cca475f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the defect has one production site: _supervisor_spawn_worker (reckon/crew/dispatch.py:9426 calls the retry helper, :9432 returns process.pid) drops the collected returncode; the sibling lane _spawn_detached_worker already transfers it at :8674, and _reap_worker_on_its_terminal_manifest (:9968) is where the resulting ECHILD becomes a null exit record.",
+    "diff": "read the reviewed pair 03aeaae6..14d3d8243: the single commit 14d3d8243 adds one 59-line evidence fragment under docs/evidence/fragments/the-suite-is-green-at-head/ and touches no source, test or plan file, exactly matching the manifest's changed_paths.",
+    "done_when": "the node's task was reproduce, name line 328, attribute the change; all three are met and I verified each -- the id fails alone at 15b6080ef with assert None == 0 at line 328, and a base-arm at 04538bea5^ (a31484ff0) passes the same id (1 passed, EXIT=0), so the attribution to 04538bea5 is confirmed by a two-sided measurement rather than by inspection alone.",
+    "goal": "the section's goal for this node is to attribute, not repair: the fragment records the reproduction, the file:line of the cause (dispatch.py:9426-9431), the unfenced-vs-fenced asymmetry between attempt 1 and attempt 2, and the introducing commit 04538bea5; the diagnosis is correct and is filed under follow_ons because reckon/crew/dispatch.py is outside the node's write scope.",
+    "manifest": "read; status complete, one commit (14d3d8243), changed_paths is the single evidence fragment, tests names the literal command and its 1-failed result, test_logs names the diagnosis and negative-control logs; docked because baseline_suite and after_suite are null and the negative_control_log is a rerun rather than a mutation.",
+    "write_paths": "the three granted paths are tests/test_a_killed_worker_resumes_to_completion.py, the evidence fragment and a figures directory; the diff touches only the evidence fragment (docs), so the test file was correctly left untouched and the figures directory is declared and unused -- no excursion."
+  },
+  "justifications": {
+    "durability": "the deliverable is a committed, accurate evidence fragment (14d3d8243) that declares plan-verifies reckon:the-suite-is-green-at-head#s2 and plan-verdict passed-with-follow-on, and it names the exact repair a follow-on node should make (mirror _spawn_detached_worker's returncode transfer in _supervisor_spawn_worker); nothing landed to guard the behaviour, which is correct for a diagnosis node but is why this is not 20.",
+    "evidence": "the reproduction and the attribution are both independently confirmed -- I ran the id at 15b6080ef (1 failed, assert None == 0 at line 328, EXIT=1) and at 04538bea5^ (a31484ff0, 1 passed, EXIT=0), a two-sided measurement proving 04538bea5 introduced the regression; docked because the manifest's baseline_suite/after_suite are null and the declared negative control is a rerun of the failing id, not a mutation showing a guard fire.",
+    "fit": "the change is an evidence fragment named by mechanism and following the repo's fragment idiom (meta plan-verifies, plan-verdict, plan-recorded-at, data-node/data-reckon='landed'), with no plan, sprint or ticket label in any symbol or filename, and the cited dispatch.py line ranges (9426-9431, 8579-8586, 8667-8678) resolve in the reviewed head; not 20 because the fragment folds several of its own section headings into one note-like article where the repo idiom separates them.",
+    "goal_fidelity": "all three goal clauses are present and reachable -- the failure reproduces alone at head, line 328 is named correctly (assert second[\"exit_code\"] == 0), and the introducing commit is attributed with a ledger row and session; I confirmed the code path end to end (poll reaps the child at 8583, waitpid sees ChildProcessError at 9968, the exit record is written all-null, the detached lane shows the missing guard at 8674).",
+    "scope_discipline": "the diff spans exactly the one docs path the manifest lists as changed and mutates no product source, test, shared index or plan state; the product defect is correctly left un-repaired and filed as a follow-on rather than touched out of scope, and the commit is local with a conventional two-part message."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the section's goal for this node is to attribute, not repair: the fragment records the reproduction, the file:line of the cause (dispatch.py:9426-9431), the unfenced-vs-fenced asymmetry between attempt 1 and attempt 2, and the introducing commit 04538bea5; the diagnosis is correct and is filed under follow_ons because reckon/crew/dispatch.py is outside the node's write scope.\nVERDICT done_when: the node's task was reproduce, name line 328, attribute the change; all three are met and I verified each -- the id fails alone at 15b6080ef with assert None == 0 at line 328, and a base-arm at 04538bea5^ (a31484ff0) passes the same id (1 passed, EXIT=0), so the attribution to 04538bea5 is confirmed by a two-sided measurement rather than by inspection alone.\nVERDICT write_paths: the three granted paths are tests/test_a_killed_worker_resumes_to_completion.py, the evidence fragment and a figures directory; the diff touches only the evidence fragment (docs), so the test file was correctly left untouched and the figures directory is declared and unused -- no excursion.\nVERDICT manifest: read; status complete, one commit (14d3d8243), changed_paths is the single evidence fragment, tests names the literal command and its 1-failed result, test_logs names the diagnosis and negative-control logs; docked because baseline_suite and after_suite are null and the negative_control_log is a rerun rather than a mutation.\nVERDICT diff: read the reviewed pair 03aeaae6..14d3d8243 the single commit 14d3d8243 adds one 59-line evidence fragment under docs/evidence/fragments/the-suite-is-green-at-head/ and touches no source, test or plan file, exactly matching the manifest's changed_paths.\nCALL_SITES: reckon/crew/dispatch.py:9426 (_supervisor_spawn_worker calls _spawn_worker_retrying_a_vanished_bind), reckon/crew/dispatch.py:9432 (_supervisor_spawn_worker returns process.pid, dropping the collected returncode -- the defect), reckon/crew/dispatch.py:8674 (_spawn_detached_worker transfers the same collected exit -- the model the fix should follow), reckon/crew/dispatch.py:9968 (_reap_worker_on_its_terminal_manifest waitpid gets ChildProcessError -> returns None)\nSCORE goal_fidelity: 20\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 18\nSCORE fit: 19\nJUSTIFICATION goal_fidelity: all three goal clauses are present and reachable -- the failure reproduces alone at head, line 328 is named correctly (assert second[\"exit_code\"] == 0), and the introducing commit is attributed with a ledger row and session; I confirmed the code path end to end (poll reaps the child at 8583, waitpid sees ChildProcessError at 9968, the exit record is written all-null, the detached lane shows the missing guard at 8674).\nJUSTIFICATION evidence: the reproduction and the attribution are both independently confirmed -- I ran the id at 15b6080ef (1 failed, assert None == 0 at line 328, EXIT=1) and at 04538bea5^ (a31484ff0, 1 passed, EXIT=0), a two-sided measurement proving 04538bea5 introduced the regression; docked because the manifest's baseline_suite/after_suite are null and the declared negative control is a rerun of the failing id, not a mutation showing a guard fire.\nJUSTIFICATION scope_discipline: the diff spans exactly the one docs path the manifest lists as changed and mutates no product source, test, shared index or plan state; the product defect is correctly left un-repaired and filed as a follow-on rather than touched out of scope, and the commit is local with a conventional two-part message.\nJUSTIFICATION durability: the deliverable is a committed, accurate evidence fragment (14d3d8243) that declares plan-verifies reckon:the-suite-is-green-at-head#s2 and plan-verdict passed-with-follow-on, and it names the exact repair a follow-on node should make (mirror _spawn_detached_worker's returncode transfer in _supervisor_spawn_worker); nothing landed to guard the behaviour, which is correct for a diagnosis node but is why this is not 20.\nJUSTIFICATION fit: the change is an evidence fragment named by mechanism and following the repo's fragment idiom (meta plan-verifies, plan-verdict, plan-recorded-at, data-node/data-reckon='landed'), with no plan, sprint or ticket label in any symbol or filename, and the cited dispatch.py line ranges (9426-9431, 8579-8586, 8667-8678) resolve in the reviewed head; not 20 because the fragment folds several of its own section headings into one note-like article where the repo idiom separates them.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/a-killed-worker-resumes-to-completion-again.html:1 follow-on: the reviewed run records baseline_suite and after_suite as null in its manifest (gates kept as free text under tests/test_logs), so no base/after arm pair is derivable and added_failure_count is taken as 0 because the only changed path is a docs evidence fragment that cannot affect the pytest suite; for a diagnosis node that changed no source this is defensible, but the armed-JSON fields are absent.\nFINDING tests/test_a_killed_worker_resumes_to_completion.py:328 follow-on: the reviewed run's declared negative control is not a mutation -- it changed no test source, so its negative_control_log is a rerun of the same failing id and cannot show a guard firing; the log's own note says as much. The reproduction is real and I independently confirm it, but the control demonstrates nothing the diagnosis log did not already show.\nFINDING reckon/crew/dispatch.py:9426 follow-on: the product defect is real and out of the reviewed node's write scope -- _supervisor_spawn_worker (dispatch.py:9432) returns process.pid without transferring the process.returncode the spawn-retry startup poll may already have collected, unlike the detached lane at dispatch.py:8674; a repair node holding reckon/crew/dispatch.py must mirror that transfer so the resumed attempt's exit record carries the worker's own exit code.\nreviewed_base_sha: 03aeaae69153a3177fea18dbc88821973b95842d\nreviewed_head_sha: 14d3d824377e9866173177eb34cf2c7e6653564e",
+  "review_run_id": "r-20261003T131316621933-review-of-a-killed-worker-resumes-to-completion-again",
+  "reviewed_base_sha": "03aeaae69153a3177fea18dbc88821973b95842d",
+  "reviewed_head_sha": "14d3d824377e9866173177eb34cf2c7e6653564e",
+  "reviewed_run_id": "r-20261003T125742888765-a-killed-worker-resumes-to-completion-again",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T13:20:00.000000+00:00",
+  "total": 94
+}

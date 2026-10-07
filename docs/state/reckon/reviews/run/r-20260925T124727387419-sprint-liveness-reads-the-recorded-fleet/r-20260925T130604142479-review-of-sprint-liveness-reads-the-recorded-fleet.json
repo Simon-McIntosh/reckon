@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-25T13:53:35.349Z",
+  "dispatched_at": "2026-09-25T13:06:17Z",
+  "findings": [
+    {
+      "file": "reckon/sprint_liveness.py",
+      "line": "195",
+      "text": "the recorded state is trusted with no age bound while the stream supplying it advances only while a watcher seat is armed (reckon/crew/runs.py:1094-1098 returns before appending when none is registered), so a run whose process died after its last recorded working event keeps reading live indefinitely even though the read-time classifier the live view uses (reckon/crew/query.py:166) calls it gone; the probe logged in this run's divergence-probe.log reproduces it: with no recorded entry the same dead, hour-stale pointer is refused liveness (live=False), and with one recorded to_state=working observed an hour earlier sprint_liveness returns live=True while recovery._watch_snapshot on that pointer at that moment returns state=blocked with detail \"the worker process is gone with no recorded exit before the run completed\"."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against base a45e7f1d, commit by commit - 17983be1 replaces the per-pointer classification with the single recorded-stream read plus a bounded fallback and adds the two tests, and 5f2baafb appends the landing record inside the plan's own section and appends to the cumulative evidence record without deleting peer content, adding a figure whose src is project-absolute and which parses as XML.",
+    "done_when": "every clause reads true at the reviewed head - the committed blob contains no call to recovery.classify_pointer or recovery._watch_snapshot, the stream is read once through runs.watch_stream_path and runs.parse_stream_line, the fallback's stall comparison is reckon/sprint_liveness.py:104, and my re-run of tests/test_sprint_liveness.py at 5f2baafb is 5 passed in 0.54 s (recheck-gate.log), matching the manifest's recorded 5 passed.",
+    "goal": "the goal asks for a warm sprint-liveness answer well under a second by reading the fleet's recorded classification instead of re-classifying every pointer; reckon/sprint_liveness.py:195 takes the recorded state first, and my read-only recheck on the real project returned 4 rows with 4 live over 43 pointers in 0.185 / 0.154 / 0.159 s, so the method and the budget both hold.",
+    "manifest": "read and complete - it names its two commits, all five changed paths, the exact pytest argv, its gate and negative-control logs, and three real-project timings at 39 pointers, and its after_suite records revision 5f2baafb with zero failures.",
+    "write_paths": "the range a45e7f1d..5f2baafb changes exactly the five declared paths - reckon/sprint_liveness.py, tests/test_sprint_liveness.py, the cumulative evidence HTML, one SVG under the declared figure directory, and the plan HTML - and leaves the plan-version and plan-modified meta lines untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_sprint_liveness.py:236-241 and :266-271 redden when the named mutation is reinstated (2 failed, 3 passed in the run's negative-control.log), but no test bounds the age of a recorded state, which is the divergence this run's divergence-probe.log reproduces.",
+    "evidence": "the named gate tests/test_sprint_liveness.py is re-run at 5f2baafb with its log kept (recheck-gate.log, 5 passed in 0.54 s), the timing claim is independently reproduced read-only at 0.185 / 0.154 / 0.159 s over 43 pointers, and the 11.6 s baseline is cited from another run's log rather than re-measured here.",
+    "fit": "reckon/sprint_liveness.py:73 reads the manifest status the same bounded way the surrounding fleet readers do, but the module nowhere states that its recorded input advances only while reckon/crew/runs.py:1432-1437 holds a seat.",
+    "goal_fidelity": "reckon/sprint_liveness.py:195 reads the recorded state first and the warm call measured 0.154-0.185 s over 43 real pointers, but that record is written only while a watcher seat is armed (reckon/crew/runs.py:1094-1098), so the answer is fast and not always current.",
+    "scope_discipline": "the range a45e7f1d..5f2baafb changes exactly the five fenced paths and nothing outside them."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: a45e7f1d124ad45985c5154bf8732dba8c656895\nreviewed_head_sha: 5f2baafb0906fa395d6af809484fa6b93ab952b5\nVERDICT goal: the goal asks for a warm sprint-liveness answer well under a second by reading the fleet's recorded classification instead of re-classifying every pointer; reckon/sprint_liveness.py:195 takes the recorded state first, and my read-only recheck on the real project returned 4 rows with 4 live over 43 pointers in 0.185 / 0.154 / 0.159 s, so the method and the budget both hold.\nVERDICT done_when: every clause reads true at the reviewed head - the committed blob contains no call to recovery.classify_pointer or recovery._watch_snapshot, the stream is read once through runs.watch_stream_path and runs.parse_stream_line, the fallback's stall comparison is reckon/sprint_liveness.py:104, and my re-run of tests/test_sprint_liveness.py at 5f2baafb is 5 passed in 0.54 s (recheck-gate.log), matching the manifest's recorded 5 passed.\nVERDICT write_paths: the range a45e7f1d..5f2baafb changes exactly the five declared paths - reckon/sprint_liveness.py, tests/test_sprint_liveness.py, the cumulative evidence HTML, one SVG under the declared figure directory, and the plan HTML - and leaves the plan-version and plan-modified meta lines untouched.\nVERDICT manifest: read and complete - it names its two commits, all five changed paths, the exact pytest argv, its gate and negative-control logs, and three real-project timings at 39 pointers, and its after_suite records revision 5f2baafb with zero failures.\nVERDICT diff: read both commits against base a45e7f1d, commit by commit - 17983be1 replaces the per-pointer classification with the single recorded-stream read plus a bounded fallback and adds the two tests, and 5f2baafb appends the landing record inside the plan's own section and appends to the cumulative evidence record without deleting peer content, adding a figure whose src is project-absolute and which parses as XML.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 17\nSCORE fit: 17\nJUSTIFICATION goal_fidelity: reckon/sprint_liveness.py:195 reads the recorded state first and the warm call measured 0.154-0.185 s over 43 real pointers, but that record is written only while a watcher seat is armed (reckon/crew/runs.py:1094-1098), so the answer is fast and not always current.\nJUSTIFICATION evidence: the named gate tests/test_sprint_liveness.py is re-run at 5f2baafb with its log kept (recheck-gate.log, 5 passed in 0.54 s), the timing claim is independently reproduced read-only at 0.185 / 0.154 / 0.159 s over 43 pointers, and the 11.6 s baseline is cited from another run's log rather than re-measured here.\nJUSTIFICATION scope_discipline: the range a45e7f1d..5f2baafb changes exactly the five fenced paths and nothing outside them.\nJUSTIFICATION durability: tests/test_sprint_liveness.py:236-241 and :266-271 redden when the named mutation is reinstated (2 failed, 3 passed in the run's negative-control.log), but no test bounds the age of a recorded state, which is the divergence this run's divergence-probe.log reproduces.\nJUSTIFICATION fit: reckon/sprint_liveness.py:73 reads the manifest status the same bounded way the surrounding fleet readers do, but the module nowhere states that its recorded input advances only while reckon/crew/runs.py:1432-1437 holds a seat.\nFINDING reckon/sprint_liveness.py:195 the recorded state is trusted with no age bound while the stream supplying it advances only while a watcher seat is armed (reckon/crew/runs.py:1094-1098 returns before appending when none is registered), so a run whose process died after its last recorded working event keeps reading live indefinitely even though the read-time classifier the live view uses (reckon/crew/query.py:166) calls it gone; the probe logged in this run's divergence-probe.log reproduces it: with no recorded entry the same dead, hour-stale pointer is refused liveness (live=False), and with one recorded to_state=working observed an hour earlier sprint_liveness returns live=True while recovery._watch_snapshot on that pointer at that moment returns state=blocked with detail \"the worker process is gone with no recorded exit before the run completed\".\n",
+  "review_run_id": "r-20260925T130604142479-review-of-sprint-liveness-reads-the-recorded-fleet",
+  "reviewed_base_sha": "a45e7f1d124ad45985c5154bf8732dba8c656895",
+  "reviewed_head_sha": "5f2baafb0906fa395d6af809484fa6b93ab952b5",
+  "reviewed_run_id": "r-20260925T124727387419-sprint-liveness-reads-the-recorded-fleet",
+  "reviewer": "review-of-sprint-liveness-reads-the-recorded-fleet",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T13:51:29.497634+00:00",
+  "total": 91
+}

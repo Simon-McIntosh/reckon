@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T07:59:10.162571+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/session-carry-sites.md",
+      "line": "46",
+      "text": "rows A5-A7, B5 and E5 carry 'mechanism', 'store' and 'read surface' instead of the same-run/same-task/cross-task class the done_when requires for every row."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/session-carry-sites.md",
+      "line": "71",
+      "text": "the C6 row's test list ends in the string tests/test_review_role_is_not_reviewed`\u2192`tests/test_review_role_is_not_reviewed.py, an edit residue whose arrow makes the reference unusable as a path."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no repository diff \u2014 the source worktree sits at its base sha with a clean tree, so the landed artefact is the report itself, which I read in full.",
+    "done_when": "the measure is the report containing all five falsifier sites; I reproduced all five at base 1746242009 (dispatch.py:3622-3634, dispatch.py:5537-5545, dispatch.py:5234, recovery.py:410, SKILL.md:82-89).",
+    "goal": "\u00a71 wants a reuse map of every code and guidance site that carries a session between runs; the report at session-carry-sites.md:36-95 delivers 34 rows over all four named behaviours.",
+    "manifest": "read; it names the deliverable, the gate command with its log and exit 0, the negative control, the reason changed_paths is empty, and four follow_ons for the coordinator.",
+    "write_paths": "the single dispatched write path, the report, exists there (12,206 bytes, 116 lines), and the source worktree is clean with HEAD at its declared base 1746242009."
+  },
+  "justifications": {
+    "durability": "nothing reddens if this map rots \u2014 it is out-of-repo with no committed test, and its file:line references split silently from code that moves.",
+    "evidence": "the gate (gate-session-carry-sites.log, EXIT=0) asserts the five falsifier sites with a live negative control, and I independently reproduced the five hits at base 1746242009.",
+    "fit": "the report follows the crew reports-tree idiom and all 41 test files it cites resolve at base, less the edit residue at session-carry-sites.md:71.",
+    "goal_fidelity": "all four behaviours carry rows and every cited line I checked resolves as described, but rows A5-A7, B5 and E5 carry a class outside the same-run/same-task/cross-task triple (session-carry-sites.md:46-48,59,95).",
+    "scope_discipline": "exactly one file was written, at the dispatched path, and no repository path changed (git status --porcelain clean at 1746242009)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a71 wants a reuse map of every code and guidance site that carries a session between runs; the report at session-carry-sites.md:36-95 delivers 34 rows over all four named behaviours.\nVERDICT done_when: the measure is the report containing all five falsifier sites; I reproduced all five at base 1746242009 (dispatch.py:3622-3634, dispatch.py:5537-5545, dispatch.py:5234, recovery.py:410, SKILL.md:82-89).\nVERDICT write_paths: the single dispatched write path, the report, exists there (12,206 bytes, 116 lines), and the source worktree is clean with HEAD at its declared base 1746242009.\nVERDICT manifest: read; it names the deliverable, the gate command with its log and exit 0, the negative control, the reason changed_paths is empty, and four follow_ons for the coordinator.\nVERDICT diff: there is no repository diff \u2014 the source worktree sits at its base sha with a clean tree, so the landed artefact is the report itself, which I read in full.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: all four behaviours carry rows and every cited line I checked resolves as described, but rows A5-A7, B5 and E5 carry a class outside the same-run/same-task/cross-task triple (session-carry-sites.md:46-48,59,95).\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate (gate-session-carry-sites.log, EXIT=0) asserts the five falsifier sites with a live negative control, and I independently reproduced the five hits at base 1746242009.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: exactly one file was written, at the dispatched path, and no repository path changed (git status --porcelain clean at 1746242009).\nSCORE durability: 12\nJUSTIFICATION durability: nothing reddens if this map rots \u2014 it is out-of-repo with no committed test, and its file:line references split silently from code that moves.\nSCORE fit: 17\nJUSTIFICATION fit: the report follows the crew reports-tree idiom and all 41 test files it cites resolve at base, less the edit residue at session-carry-sites.md:71.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/session-carry-sites.md:46 rows A5-A7, B5 and E5 carry 'mechanism', 'store' and 'read surface' instead of the same-run/same-task/cross-task class the done_when requires for every row.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/ship-s19-20260922/session-carry-sites.md:71 the C6 row's test list ends in the string tests/test_review_role_is_not_reviewed`\u2192`tests/test_review_role_is_not_reviewed.py, an edit residue whose arrow makes the reference unusable as a path.",
+  "review_run_id": "r-20260923T075910162571-review-of-session-carry-sites-mapped",
+  "reviewed_base_sha": "17462420091dc96f1b4273d2f9ce040ce90f1b07",
+  "reviewed_head_sha": "17462420091dc96f1b4273d2f9ce040ce90f1b07",
+  "reviewed_run_id": "r-20260923T070739865198-session-carry-sites-mapped",
+  "reviewer": {
+    "effort": "exact",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260923T075910162571-review-of-session-carry-sites-mapped",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T08:54:10.191324+00:00",
+  "total": 85
+}

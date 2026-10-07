@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144802071342-rearm-test-comment-matches-the-code/logs/after.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T144802071342-rearm-test-comment-matches-the-code/logs/baseline.log",
+    "note": "the reviewed manifest records baseline_suite and after_suite as the JSON objects this read path scans; the count and ids are the set difference over the two gate logs it names, computed with the module's own added_failures_from_gate_logs and controlled in logs/added-failures.log"
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:3272 crew_follow's resume branch gates the burst on session and _follow_replay_visible",
+    "reckon/cli.py:2913 _follow_replay_visible answers sys.stdout.isatty()",
+    "reckon/cli.py:2932 _follow_history_burst composes the frame and the dim rows",
+    "reckon/cli.py:3279 the burst is written with dim=replay_dim"
+  ],
+  "completed_at": "2026-09-28T16:08:15.736Z",
+  "dispatched_at": "2026-09-28T15:27:42Z",
+  "findings": [
+    {
+      "file": "tests/test_follow_rearm_continues.py",
+      "line": "452",
+      "text": "the closing clause \"every row after it is live\" takes its nearest antecedent from \"the frame line\", while the sentence before it says the history rows are the ones rendered dim beneath that line, so the plain reading contradicts both the code and its neighbour; the intended antecedent is the burst, and naming it removes the ambiguity in a comment whose whole purpose is to be unambiguous about which rows are live."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the single commit 55c1cc0d: nine added and three removed lines, every payload line a comment line, beside unchanged HISTORY_HEADER and HISTORY_SEPARATOR constants at tests/test_follow_rearm_continues.py:454, plus the new in-scope evidence fragment; nothing executable moves.",
+    "done_when": "each of its five parts checks out at the reviewed head: the cited pair is terminal-only and one-frame (reckon/cli.py:3272, :2947), the only executable difference is none at all (ast.dump of tests/test_follow_rearm_continues.py identical at 40d23d9b and 55c1cc0d, and every changed payload line is a comment line), tests pass at head (19 passed, exit 0, my own run in logs/reviewer-head.log), the added-failure count derived from the two recorded gate logs with the module's own added_failures_from_gate_logs is 0 with no ids (logs/added-failures.log, whose controls detect an injected FAILED line and leave present-in-both-arms failures out of the set), and both gate logs sit under the run directory headed by revision, tree, cwd, command and module_under_test.",
+    "goal": "the node's goal is that the section comment near tests/test_follow_rearm_continues.py:441 describe the burst as the code instead of calling it unframed, and at head the comment at :446-452 states the terminal-only gate and the one dim frame line over dim rows, which is what reckon/cli.py:2913 (_follow_replay_visible) and :2932 (_follow_history_burst) do.",
+    "manifest": "read; it states complete with its one commit, both gate logs, the two follow-ons and the artifact paths, and its baseline_suite and after_suite JSON objects resolve to the logs the added-failure derivation reads; its numeric claims hold except artifacts calling the fragment 73 lines where wc -l says 63 and the diffstat 64 inserted, and test_logs' scratch-tree arm (logs/base-role-write-scope.log) carries an empty module_under_test line, so that arm's header names its cwd, revision and command but not the module it imported.",
+    "write_paths": "the fence is tests/test_follow_rearm_continues.py, docs/evidence/fragments/the-fleet-counters-count-the-fleet/rearm-test-comment-matches-the-code.html and the figures directory; git diff --stat 40d23d9b..55c1cc0d names the first two and nothing else, the fragment is the landing record the contract requires, the figures path is unused, and git status in the reviewed worktree is empty."
+  },
+  "justifications": {
+    "durability": "nothing reddens on the comment text alone \u2014 the AST is identical across the pair, so reverting this fix fails no test \u2014 while the behaviour the comment describes is pinned in the same file (tests/test_follow_rearm_continues.py:543, :576, :592, :595), so a code regression would redden those rather than the prose.",
+    "evidence": "both gate logs carry revision, tree, cwd, command and module headers and re-derive to zero added failures with the module's own derivation (logs/added-failures.log), and my own head-arm run of the file passed 19 (logs/reviewer-head.log); the gate cannot measure the comment's own accuracy, and the manifest's artifacts line miscounts the fragment at 73 lines against 64.",
+    "fit": "the new paragraph keeps the file's section-comment idiom and names both functions correctly (tests/test_follow_rearm_continues.py:446-452), but its closing clause at :452 reads \"every row after it is live\" with \"it\" nearest to the frame line that the sentence before has just said the dim rows sit under.",
+    "goal_fidelity": "the comment at tests/test_follow_rearm_continues.py:446-452 states the terminal-only gate and the one dim frame line over dim rows, which is what reckon/cli.py:3272 and :2947 do.",
+    "scope_discipline": "git diff --stat 40d23d9b..55c1cc0d names only tests/test_follow_rearm_continues.py (comment lines) and the fence's own fragment path, and git status is empty in the reviewed worktree."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the section comment near tests/test_follow_rearm_continues.py:441 describe the burst as the code instead of calling it unframed, and at head the comment at :446-452 states the terminal-only gate and the one dim frame line over dim rows, which is what reckon/cli.py:2913 (_follow_replay_visible) and :2932 (_follow_history_burst) do.\nVERDICT done_when: each of its five parts checks out at the reviewed head: the cited pair is terminal-only and one-frame (reckon/cli.py:3272, :2947), the only executable difference is none at all (ast.dump of tests/test_follow_rearm_continues.py identical at 40d23d9b and 55c1cc0d, and every changed payload line is a comment line), tests pass at head (19 passed, exit 0, my own run in logs/reviewer-head.log), the added-failure count derived from the two recorded gate logs with the module's own added_failures_from_gate_logs is 0 with no ids (logs/added-failures.log, whose controls detect an injected FAILED line and leave present-in-both-arms failures out of the set), and both gate logs sit under the run directory headed by revision, tree, cwd, command and module_under_test.\nVERDICT write_paths: the fence is tests/test_follow_rearm_continues.py, docs/evidence/fragments/the-fleet-counters-count-the-fleet/rearm-test-comment-matches-the-code.html and the figures directory; git diff --stat 40d23d9b..55c1cc0d names the first two and nothing else, the fragment is the landing record the contract requires, the figures path is unused, and git status in the reviewed worktree is empty.\nVERDICT manifest: read; it states complete with its one commit, both gate logs, the two follow-ons and the artifact paths, and its baseline_suite and after_suite JSON objects resolve to the logs the added-failure derivation reads; its numeric claims hold except artifacts calling the fragment 73 lines where wc -l says 63 and the diffstat 64 inserted, and test_logs' scratch-tree arm (logs/base-role-write-scope.log) carries an empty module_under_test line, so that arm's header names its cwd, revision and command but not the module it imported.\nVERDICT diff: read the single commit 55c1cc0d: nine added and three removed lines, every payload line a comment line, beside unchanged HISTORY_HEADER and HISTORY_SEPARATOR constants at tests/test_follow_rearm_continues.py:454, plus the new in-scope evidence fragment; nothing executable moves.\nCALL_SITES: reckon/cli.py:3272 crew_follow's resume branch gates the burst on session and _follow_replay_visible, reckon/cli.py:2913 _follow_replay_visible answers sys.stdout.isatty(), reckon/cli.py:2932 _follow_history_burst composes the frame and the dim rows, reckon/cli.py:3279 the burst is written with dim=replay_dim\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the comment at tests/test_follow_rearm_continues.py:446-452 states the terminal-only gate and the one dim frame line over dim rows, which is what reckon/cli.py:3272 and :2947 do.\nSCORE evidence: 18\nJUSTIFICATION evidence: both gate logs carry revision, tree, cwd, command and module headers and re-derive to zero added failures with the module's own derivation (logs/added-failures.log), and my own head-arm run of the file passed 19 (logs/reviewer-head.log); the gate cannot measure the comment's own accuracy, and the manifest's artifacts line miscounts the fragment at 73 lines against 64.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 40d23d9b..55c1cc0d names only tests/test_follow_rearm_continues.py (comment lines) and the fence's own fragment path, and git status is empty in the reviewed worktree.\nSCORE durability: 12\nJUSTIFICATION durability: nothing reddens on the comment text alone \u2014 the AST is identical across the pair, so reverting this fix fails no test \u2014 while the behaviour the comment describes is pinned in the same file (tests/test_follow_rearm_continues.py:543, :576, :592, :595), so a code regression would redden those rather than the prose.\nSCORE fit: 16\nJUSTIFICATION fit: the new paragraph keeps the file's section-comment idiom and names both functions correctly (tests/test_follow_rearm_continues.py:446-452), but its closing clause at :452 reads \"every row after it is live\" with \"it\" nearest to the frame line that the sentence before has just said the dim rows sit under.\nFINDING tests/test_follow_rearm_continues.py:452 the closing clause \"every row after it is live\" takes its nearest antecedent from \"the frame line\", while the sentence before it says the history rows are the ones rendered dim beneath that line, so the plain reading contradicts both the code and its neighbour; the intended antecedent is the burst, and naming it removes the ambiguity in a comment whose whole purpose is to be unambiguous about which rows are live.",
+  "review_run_id": "r-20260928T152724236012-review-of-rearm-test-comment-matches-the-code",
+  "reviewed_base_sha": "40d23d9bbefd0199d68c74caec573769bed888ff",
+  "reviewed_head_sha": "55c1cc0d2096511c795aac089b282b105aa12340",
+  "reviewed_run_id": "r-20260928T144802071342-rearm-test-comment-matches-the-code",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T15:58:52.453630+00:00",
+  "total": 84
+}

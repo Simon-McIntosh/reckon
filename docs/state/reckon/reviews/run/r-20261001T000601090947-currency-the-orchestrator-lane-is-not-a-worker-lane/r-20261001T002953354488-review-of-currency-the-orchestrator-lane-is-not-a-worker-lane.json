@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "added failures 0: the reviewed manifest carries no baseline_suite and no after_suite (both absent, verified by grep), because the node changed nothing (commits [ b7134f5fdfeba023bbd6cc74ad5c8350802e5920 ], changed_paths [], worktree on its base). Its own green gate log s4-before-rate-gate.log ends EXIT=0 with 7 passed and zero FAILED/ERROR ids, so the delta over its own arms is zero. Measured with reckon.crew.review.added_failures_from_gate_logs(base='', head=<that log text>) -> (0, []); positive control: the same extractor over the same green text plus one FAILED line returns (1, ['tests/test_known_present.py::test_red']), so the reader is shown to see a failure known present. Log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T002953354488-review-of-currency-the-orchestrator-lane-is-not-a-worker-lane/added-failure-derivation.log.",
+  "backend": "clive",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T00:37:20.049Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "exempted",
+      "reason": "a currency report is a point-in-time reading that feeds dispatch, not a lasting artifact; each unmet item it names (the f-tolinawl-001 orchestrator-lane declaration/refusal and its s1-s3 surfaces) becomes its own node whose test reproduces the item at base before repairing it, so the durable guard lives in those nodes' tests rather than in a report.",
+      "recorded_at": "2026-10-01T00:35:12.490413+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-01T00:30:09Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-the-orchestrator-lane-is-not-a-worker-lane/logs/s4-before-rate-gate.log",
+      "line": "6",
+      "severity": "follow-on",
+      "text": "the gate log's own header names the pytest target as `/tests/test_the_local_lane_death_rate_is_stated.py` \u2014 a leading-slash path carrying no worktree prefix \u2014 so the command as recorded is not the command that ran and the s4 check cannot be replayed from the log header alone; the manifest's `tests:` field carries the correct absolute target, but a repair node reading only this log would find a path that does not exist."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites \u2014 the reviewed node changes no runtime code, so nothing can reach it.",
+    "diff": "there is no repository diff: the reviewed node is a read-only currency audit at b7134f5f with an empty worktree status, and its deliverable is report.md plus the logs under the report directory, outside any checkout.",
+    "done_when": "the audit's measure is a verdict per item anchored to the committed blob at the named revision plus an executed check per met item; report.md:1 names b7134f5fdfeba023bbd6cc74ad5c8350802e5920, \u00a74 carries an executed gate (report.md:140-143, 7 passed EXIT=0) and \u00a71 a reproduction (report.md:37-77), while the unmet \u00a72 and \u00a73 rest on the dispatch help surface and schema reads.",
+    "goal": "the reviewed node's goal is a currency audit at main of the plan's open followup f-tolinawl-001 and its implementable sections s1-s4; report.md:1 names b7134f5fdfeba023bbd6cc74ad5c8350802e5920, report.md:16-23 judges f-tolinawl-001 UNMET, :24-79 \u00a71 UNMET, :80-101 \u00a72 UNMET, :102-126 \u00a73 UNMET, :127-167 \u00a74 PARTLY MET, and :168-196 orders the repairs.",
+    "manifest": "read; it records status complete, commits [ b7134f5fdfeba023bbd6cc74ad5c8350802e5920 ], changed_paths [], the s4 gate as 7 passed EXIT=0, the census and reproduction logs, and evidence_inputs naming the unchanged-run suite exemption (reckon/crew/promotion.py:4153-4206, verified present in the reviewed tree).",
+    "write_paths": "the reviewed node is fenced to the report directory; git -C <reviewed worktree> status --short is empty at b7134f5fdfeba023bbd6cc74ad5c8350802e5920, so report.md and its logs sit under the declared report path and no repository path changed."
+  },
+  "justifications": {
+    "durability": "nothing guards the report: crew/reports is not a git repository and no test or source reads /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-the-orchestrator-lane-is-not-a-worker-lane/report.md, so a later edit to a verdict or an anchor fails nothing.",
+    "evidence": "the s4 gate log names revision b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and records 7 passed EXIT=0 (s4-before-rate-gate.log:1-8), and the s1 reproduction resolves backend claude ok:true EXIT=0 (s1-repro-dispatch-resolved.log:227); the earlier arms are disclosed (fence OSError s1-repro-dispatch-to-orchestrator-lane.log:40, config refusal s1-repro-dispatch-scratch-home.log:12), but the gate log's own header command names a non-runnable target path.",
+    "fit": "the report follows the repo's triage idiom (a verdict then a per-item anchor and reproduction), cites plan section ids as content, and introduces no banned plan, stage or version name.",
+    "goal_fidelity": "report.md:16-167 gives one verdict per open followup and per implementable section, each with its settling anchor and its unmet / partly-met status, which is exactly the currency question the goal names.",
+    "scope_discipline": "the reviewed worktree sits clean on b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and the manifest records commits [ b7134f5fdfeba023bbd6cc74ad5c8350802e5920 ] and changed_paths [], so every artifact is at the declared report path or the run directory and no repository path changed."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is a currency audit at main of the plan's open followup f-tolinawl-001 and its implementable sections s1-s4; report.md:1 names b7134f5fdfeba023bbd6cc74ad5c8350802e5920, report.md:16-23 judges f-tolinawl-001 UNMET, :24-79 \u00a71 UNMET, :80-101 \u00a72 UNMET, :102-126 \u00a73 UNMET, :127-167 \u00a74 PARTLY MET, and :168-196 orders the repairs.\nVERDICT done_when: the audit's measure is a verdict per item anchored to the committed blob at the named revision plus an executed check per met item; report.md:1 names b7134f5fdfeba023bbd6cc74ad5c8350802e5920, \u00a74 carries an executed gate (report.md:140-143, 7 passed EXIT=0) and \u00a71 a reproduction (report.md:37-77), while the unmet \u00a72 and \u00a73 rest on the dispatch help surface and schema reads.\nVERDICT write_paths: the reviewed node is fenced to the report directory; git -C <reviewed worktree> status --short is empty at b7134f5fdfeba023bbd6cc74ad5c8350802e5920, so report.md and its logs sit under the declared report path and no repository path changed.\nVERDICT manifest: read; it records status complete, commits [ b7134f5fdfeba023bbd6cc74ad5c8350802e5920 ], changed_paths [], the s4 gate as 7 passed EXIT=0, the census and reproduction logs, and evidence_inputs naming the unchanged-run suite exemption (reckon/crew/promotion.py:4153-4206, verified present in the reviewed tree).\nVERDICT diff: there is no repository diff: the reviewed node is a read-only currency audit at b7134f5f with an empty worktree status, and its deliverable is report.md plus the logs under the report directory, outside any checkout.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md:16-167 gives one verdict per open followup and per implementable section, each with its settling anchor and its unmet / partly-met status, which is exactly the currency question the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: the s4 gate log names revision b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and records 7 passed EXIT=0 (s4-before-rate-gate.log:1-8), and the s1 reproduction resolves backend claude ok:true EXIT=0 (s1-repro-dispatch-resolved.log:227); the earlier arms are disclosed (fence OSError s1-repro-dispatch-to-orchestrator-lane.log:40, config refusal s1-repro-dispatch-scratch-home.log:12), but the gate log's own header command names a non-runnable target path.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the reviewed worktree sits clean on b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and the manifest records commits [ b7134f5fdfeba023bbd6cc74ad5c8350802e5920 ] and changed_paths [], so every artifact is at the declared report path or the run directory and no repository path changed.\nSCORE durability: 5\nJUSTIFICATION durability: nothing guards the report: crew/reports is not a git repository and no test or source reads /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-the-orchestrator-lane-is-not-a-worker-lane/report.md, so a later edit to a verdict or an anchor fails nothing.\nSCORE fit: 17\nJUSTIFICATION fit: the report follows the repo's triage idiom (a verdict then a per-item anchor and reproduction), cites plan section ids as content, and introduces no banned plan, stage or version name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-the-orchestrator-lane-is-not-a-worker-lane/logs/s4-before-rate-gate.log:6 follow-on: the gate log's own header names the pytest target as `/tests/test_the_local_lane_death_rate_is_stated.py` \u2014 a leading-slash path carrying no worktree prefix \u2014 so the command as recorded is not the command that ran and the s4 check cannot be replayed from the log header alone; the manifest's `tests:` field carries the correct absolute target, but a repair node reading only this log would find a path that does not exist.\n",
+  "review_run_id": "r-20261001T002953354488-review-of-currency-the-orchestrator-lane-is-not-a-worker-lane",
+  "reviewed_base_sha": "b7134f5fdfeba023bbd6cc74ad5c8350802e5920",
+  "reviewed_head_sha": "b7134f5fdfeba023bbd6cc74ad5c8350802e5920",
+  "reviewed_run_id": "r-20261001T000601090947-currency-the-orchestrator-lane-is-not-a-worker-lane",
+  "scores": {
+    "durability": 5,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T00:35:12.490413+00:00",
+  "total": 75
+}

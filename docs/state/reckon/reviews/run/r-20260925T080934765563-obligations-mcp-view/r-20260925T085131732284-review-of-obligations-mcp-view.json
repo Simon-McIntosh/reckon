@@ -1,0 +1,46 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:3383",
+    "reckon/crew/obligations.py:166"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T08:51:31.732284+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read commit by commit at d1b632ce \u2014 da226e1e carries the branch, the tuple entry, the docstring clause and both tests, d1b632ce the evidence anchor, figure and plan comment; the branch adds no side effect of its own, since it only checks session and returns the callee's payload, while the read-time dispatch side effect of recovery.recover at reckon/crew/obligations.py:181 belongs to obligations(), not to this view.",
+    "done_when": "Read check by check against d1b632ce: the branch at reckon/mcp.py:3529-3544, the missing-session refusal naming error \"missing_session\" at reckon/mcp.py:3531-3539, the accepted-views entry at reckon/mcp.py:3516, the docstring clause at reckon/mcp.py:3435-3437 and both tests at tests/test_mcp_crew_obligations.py:102-120 and tests/test_mcp_crew_obligations.py:122-127 are present, and the recorded arms bear out the rest \u2014 logs/gate-mcp-obligations.log reads 1 failed, 50 passed where the single failure is tests/test_mcp_views.py:735's schema-budget assertion at 24,938 chars against the 24 KiB budget, logs/base-mcp-tests.log reads the same failure with 48 passed so the delta is zero, logs/negative-control.log opens with the declared mutation and closes with both focused tests failing, and my own recheck at the reviewed head of tests/test_mcp_crew_obligations.py plus tests/test_mcp_vocabulary_is_complete.py passed 5 tests.",
+    "goal": "The node's goal is to expose the derived obligations as a crew MCP view, and reckon/mcp.py:3529-3544 satisfies it \u2014 view=\"obligations\" with project and session returns reckon.crew.obligations.obligations(project, session) spread under \"ok\" and \"view\", with the name added to the accepted-views tuple at reckon/mcp.py:3516 and the crew docstring clause at reckon/mcp.py:3435-3437.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T080934765563-obligations-mcp-view/manifest.md; status complete, it names its gate command and four log paths, discloses the pre-existing schema-budget failure beside its base arm as a delta-zero finding, declares the mutation and its scratch tree, and its evidence_inputs match what the logs and diff show.",
+    "write_paths": "Declared as reckon/mcp.py, tests/test_mcp_crew_obligations.py, the landed-evidence page, the figures directory and the plan page; git diff d8f13a61..d1b632ce touches exactly those five paths with the test file new, matching the manifest's changed_paths, and the reviewed worktree is clean at its head."
+  },
+  "justifications": {
+    "durability": "the declared mutation was observed to fail both tests in logs/negative-control.log, tests/test_mcp_crew_obligations.py:125 pins the refusal and tests/test_mcp_crew_obligations.py:116-119 pins the kinds against a hand-written literal, while tests/test_mcp_crew_obligations.py:114 compares the view against a second call of the same derivation under the same stubs and so guards dispatch reshaping rather than the derivation itself.",
+    "evidence": "logs/gate-mcp-obligations.log and its base arm logs/base-mcp-tests.log record the same single pre-existing failure at tests/test_mcp_views.py:735, which is the delta the done_when needs even though its literal \"pass unchanged\" holds only under that delta reading.",
+    "fit": "the branch matches the file's own idiom \u2014 inline \"view\": view envelopes at reckon/mcp.py:3540-3544 beside reckon/mcp.py:3635, the aliased crew import at reckon/mcp.py:106 \u2014 and the test fixture's synthetic config home is honoured by reckon/_store.py:133.",
+    "goal_fidelity": "reckon/mcp.py:3529-3544 implements the goal exactly, spreading the derived payload under the ok envelope with the view named at reckon/mcp.py:3516 and the docstring clause at reckon/mcp.py:3435.",
+    "scope_discipline": "git diff d8f13a61..d1b632ce names only reckon/mcp.py, tests/test_mcp_crew_obligations.py and the three declared docs paths, with nothing outside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to expose the derived obligations as a crew MCP view, and reckon/mcp.py:3529-3544 satisfies it \u2014 view=\"obligations\" with project and session returns reckon.crew.obligations.obligations(project, session) spread under \"ok\" and \"view\", with the name added to the accepted-views tuple at reckon/mcp.py:3516 and the crew docstring clause at reckon/mcp.py:3435-3437.\nVERDICT done_when: Read check by check against d1b632ce: the branch at reckon/mcp.py:3529-3544, the missing-session refusal naming error \"missing_session\" at reckon/mcp.py:3531-3539, the accepted-views entry at reckon/mcp.py:3516, the docstring clause at reckon/mcp.py:3435-3437 and both tests at tests/test_mcp_crew_obligations.py:102-120 and tests/test_mcp_crew_obligations.py:122-127 are present, and the recorded arms bear out the rest \u2014 logs/gate-mcp-obligations.log reads 1 failed, 50 passed where the single failure is tests/test_mcp_views.py:735's schema-budget assertion at 24,938 chars against the 24 KiB budget, logs/base-mcp-tests.log reads the same failure with 48 passed so the delta is zero, logs/negative-control.log opens with the declared mutation and closes with both focused tests failing, and my own recheck at the reviewed head of tests/test_mcp_crew_obligations.py plus tests/test_mcp_vocabulary_is_complete.py passed 5 tests.\nVERDICT write_paths: Declared as reckon/mcp.py, tests/test_mcp_crew_obligations.py, the landed-evidence page, the figures directory and the plan page; git diff d8f13a61..d1b632ce touches exactly those five paths with the test file new, matching the manifest's changed_paths, and the reviewed worktree is clean at its head.\nVERDICT manifest: Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T080934765563-obligations-mcp-view/manifest.md; status complete, it names its gate command and four log paths, discloses the pre-existing schema-budget failure beside its base arm as a delta-zero finding, declares the mutation and its scratch tree, and its evidence_inputs match what the logs and diff show.\nVERDICT diff: Read commit by commit at d1b632ce \u2014 da226e1e carries the branch, the tuple entry, the docstring clause and both tests, d1b632ce the evidence anchor, figure and plan comment; the branch adds no side effect of its own, since it only checks session and returns the callee's payload, while the read-time dispatch side effect of recovery.recover at reckon/crew/obligations.py:181 belongs to obligations(), not to this view.\nCALL_SITES: reckon/mcp.py:3383, reckon/crew/obligations.py:166\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/mcp.py:3529-3544 implements the goal exactly, spreading the derived payload under the ok envelope with the view named at reckon/mcp.py:3516 and the docstring clause at reckon/mcp.py:3435.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-mcp-obligations.log and its base arm logs/base-mcp-tests.log record the same single pre-existing failure at tests/test_mcp_views.py:735, which is the delta the done_when needs even though its literal \"pass unchanged\" holds only under that delta reading.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff d8f13a61..d1b632ce names only reckon/mcp.py, tests/test_mcp_crew_obligations.py and the three declared docs paths, with nothing outside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the declared mutation was observed to fail both tests in logs/negative-control.log, tests/test_mcp_crew_obligations.py:125 pins the refusal and tests/test_mcp_crew_obligations.py:116-119 pins the kinds against a hand-written literal, while tests/test_mcp_crew_obligations.py:114 compares the view against a second call of the same derivation under the same stubs and so guards dispatch reshaping rather than the derivation itself.\nSCORE fit: 20\nJUSTIFICATION fit: the branch matches the file's own idiom \u2014 inline \"view\": view envelopes at reckon/mcp.py:3540-3544 beside reckon/mcp.py:3635, the aliased crew import at reckon/mcp.py:106 \u2014 and the test fixture's synthetic config home is honoured by reckon/_store.py:133.",
+  "review_run_id": "r-20260925T085131732284-review-of-obligations-mcp-view",
+  "reviewed_base_sha": "d8f13a61645724d29abdbaa12ae2327d1d60de1e",
+  "reviewed_head_sha": "d1b632ce65f92c87127bcc2e453079c9c86d1922",
+  "reviewed_run_id": "r-20260925T080934765563-obligations-mcp-view",
+  "reviewer": "review-of-obligations-mcp-view",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T09:50:51.295216+00:00",
+  "total": 98
+}

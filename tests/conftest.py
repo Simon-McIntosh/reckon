@@ -16,6 +16,7 @@ default is suppression, so arming is opted into rather than out of.
 from __future__ import annotations
 
 import contextlib
+import importlib
 import json
 import os
 import shlex
@@ -29,6 +30,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon.cli import CLAUDE_SKILLS_DIR_ENV
 from reckon.crew.dispatch import (
     WATCH_ARMING_ENV,
     WORKER_SCRATCH_ROOT_ENV,
@@ -723,6 +725,29 @@ def _publish_worker_scratch_root(tmp_path_factory):
         os.environ[WORKER_SCRATCH_ROOT_ENV] = previous
 
 
+# Dispatch refuses when the scratch root's filesystem is short of space, and
+# the session places that root under pytest's base temp, so every test that
+# dispatches would read the free space of whatever disk holds the base temp:
+# on a shared node whose /tmp other processes have filled, the whole dispatch
+# population fails on the host rather than the code. The check is answered for
+# every test except the module that drives it with a fabricated filesystem.
+# A dispatch a test drives through a subprocess still reads the real disk.
+_HEADROOM_SUBJECT_MODULES = frozenset({"test_dispatch_refuses_without_tmp_headroom"})
+
+
+@pytest.fixture(autouse=True)
+def _answered_scratch_headroom(request, monkeypatch):
+    """Answer the scratch headroom check unless it is the test's own subject."""
+    if request.module.__name__.rsplit(".", 1)[-1] in _HEADROOM_SUBJECT_MODULES:
+        return
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    monkeypatch.setattr(
+        dispatch_module,
+        "require_worker_scratch_headroom",
+        lambda config: {"free_bytes": 1, "floor_bytes": 0},
+    )
+
+
 def test_temp_config_home(
     prefix: str,
     *,
@@ -1054,39 +1079,33 @@ def isolated_reckon_home(request, tmp_path_factory, monkeypatch):
     return home
 
 
-# The personal skills directory ``reckon sync`` links into and ``reckon doctor``
-# reads. Without an override both resolve the operator's real
-# ``~/.claude/skills``: a test that exercises either moves, repoints or reports
-# on the operator's own skill links, and a test's outcome then depends on
-# ambient state. The fixture points the override at a per-test temporary
-# directory, so a run under test never leaves its own tree.
-CLAUDE_SKILLS_DIR_ENV = "RECKON_CLAUDE_SKILLS_DIR"
-
-# Modules that resolve the personal skills directory for themselves by patching
-# ``Path.home``: their doctor runs already read a fixture home, so pointing the
-# override at a shared per-test directory would send the skills-presence check
-# somewhere other than the tree the module built. They keep the resolver's
-# ``Path.home`` fallback, which for them is the fixture home — still away from
-# the operator's real directory.
-_SKILLS_DIR_SELF_ISOLATED_MODULES = frozenset({"test_doctor"})
-
-
-@pytest.fixture(autouse=True)
-def isolated_claude_skills_dir(request, tmp_path_factory, monkeypatch):
+@pytest.fixture(scope="session", autouse=True)
+def isolated_claude_skills_dir(tmp_path_factory):
     """No test's sync or doctor reads or writes the real ~/.claude/skills.
 
-    The directory is made under the session's base temp tree rather than the
+    ``reckon sync`` links the session-host plugin into the personal skills
+    directory and ``reckon doctor`` reads it back. Without an override both
+    resolve the operator's real ``~/.claude/skills``, so a test that exercises
+    either moves, repoints or reports on the operator's own skill links and its
+    outcome then depends on ambient state. The override is set for the whole
+    session rather than for one test: a fixture scoped wider than a test — a
+    module- or session-scoped fixture that runs sync — would not see a
+    function-scoped override and would reach the real directory.
+
+    The directory is made under the session's base temp tree rather than a
     test's own ``tmp_path``: a fixture that added an entry to ``tmp_path`` would
-    change what a test listing or comparing that directory sees. A module in
-    ``_SKILLS_DIR_SELF_ISOLATED_MODULES`` supplies its own isolation and keeps
-    the fallback.
+    change what a test listing or comparing that directory sees.
     """
-    module = getattr(getattr(request.node, "module", None), "__name__", "")
-    if module.rsplit(".", 1)[-1] in _SKILLS_DIR_SELF_ISOLATED_MODULES:
-        return None
     skills = tmp_path_factory.mktemp("claude-skills")
-    monkeypatch.setenv(CLAUDE_SKILLS_DIR_ENV, str(skills))
-    return skills
+    previous = os.environ.get(CLAUDE_SKILLS_DIR_ENV)
+    os.environ[CLAUDE_SKILLS_DIR_ENV] = str(skills)
+    try:
+        yield skills
+    finally:
+        if previous is None:
+            os.environ.pop(CLAUDE_SKILLS_DIR_ENV, None)
+        else:
+            os.environ[CLAUDE_SKILLS_DIR_ENV] = previous
 
 
 @pytest.fixture(scope="session", autouse=True)

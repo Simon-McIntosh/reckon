@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T16:36:45.890Z",
+  "dispatched_at": "2026-10-05T16:33:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s18",
+      "id": "reuse_search-1",
+      "reason": "the owner must absorb the anchors fallback or \u00a718 must name the branch it drops, and the section currently claims the two readers differ by one thing when they differ by two.",
+      "text": "the plan states promotion's reader \"differs from it only by subtracting recorded landings\" and so folds `promotion._plan_remaining_sections` onto `roadmap.implementable_sections`, but the code contradicts the \"only\": `reckon/crew/promotion.py:7236` has a second branch \u2014 when no declarations are persisted it returns `plan_section_anchors(state) - landed`, whereas `reckon/roadmap.py:106` returns `[]` for a non-mapping declaration set. Folding as \"an optional landing subtraction\" therefore silently changes the no-declaration answer, the same class of silent change \u00a718 refuses for `doccheck._implementable_section_ids`",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "duplicate_owner-1",
+      "reason": "either the prose walk is folded onto `plan_headings`' output, or the justification must be replaced with the real one (text extraction), because the claim as written is falsified by \u00a717's own extension.",
+      "text": "\u00a716 keeps `reckon/crew/plan_review.py:162` `_AuthoredProseParser` as a second full `HTMLParser` traversal of the plan document beside `_plan_html._StructuredSectionSpanParser` (`reckon/_plan_html.py:44`), which \u00a717 is otherwise consolidating every heading walk onto; the stated reason is that its streaming pass \"does what a span join cannot: keep a landed card's heading in the prose while dropping the card's interior\", but \u00a717 extends that same span parser to yield each heading's identity, level, replaced span and whether the span is a landed card \u2014 i.e. exactly the heading-versus-body distinction the justification says a span join cannot express. The plan does not name the reason that does hold (prose needs text extraction, which the offset parser does not perform), so a reader cannot tell whether the second traversal is necessary or is a duplicate",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e222876505458183bdf1392560eff1372c28229832b3c457422d8e5764211aed",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 90,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T163250315949-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "c0fd2d5a1d4c0ba84cc91b2e5cb422659113aa30",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 consolidates the heading walks onto one private parser behind one public reader (`plan_headings`), and every consumer takes that yield rather than growing a wrapper; \u00a716 and \u00a718 each extend an existing owner with a private helper rather than adding surface.",
+    "duplicate_owner": "a finding \u2014 \u00a716 keeps `_AuthoredProseParser` as a second full document traversal beside the span parser \u00a717 is consolidating onto, with a justification the span parser's own heading yield contradicts.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; \u00a717 adds one public definition (`plan_headings`) and names the move of `landed_section_ids` and the retirement of the heading walks as offsetting surface, \u00a716 retires the public `legacy` flag from `plan_fingerprint`, \u00a718 nets zero, and no section adds a CLI option, MCP view or refusal family.",
+    "reuse_search": "a finding \u2014 the plan's prior-art account of `promotion._plan_remaining_sections` is checked against the file and is wrong: promotion's reader carries a branch the proposed owner does not.",
+    "thin_wrapper": "pass \u2014 \u00a718 extends `roadmap.implementable_sections` in place and deletes `promotion._plan_remaining_sections` rather than wrapping it; \u00a716 states in its own text why the coverage predicate is one function over two existing readers and not a wrapper, and the hoist is a move, not a parallel copy."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.852271+00:00"
+}

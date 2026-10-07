@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/cli.py:6565",
+    "reckon/cli.py:7701",
+    "reckon/cli.py:8229",
+    "reckon/serve.py:2542",
+    "reckon/serve.py:2875",
+    "reckon/crew/obligation_snapshot.py:905",
+    "reckon/archive.py:161",
+    "reckon/ledger.py:1209"
+  ],
+  "completed_at": "2026-10-05T13:19:54.422Z",
+  "dispatched_at": "2026-10-05T13:09:41Z",
+  "findings": [
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "line": "76",
+      "severity": "follow-on",
+      "text": "follow-on: the parity assertion historical <= _inventory(trees) is inert at the reviewed head because the census labels zero functions \"Atomic JSON file replacement\" at head, so the left set is empty and the assertion holds whatever the runtime inventory contains; assert historical is non-empty or pin the base-revision labelled set so the cross-check can fail."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "Read all six commits against the base commit by commit; each migration deletes its private temporary-and-rename helper and renders through reckon/_store.py:426 write_atomically, the owner annotation widens to Callable[[IO[Any]], Any], and the tests add the exact-set inventory with its negative control.",
+    "done_when": "Read the done_when and the gate it names; the manifest's tests line (465 passed, 1 skipped, EXIT=0) and gate-complete.log match, but the parity assertion the done_when names is inert at the head (see FINDING tests/test_staged_write_inventory.py:76).",
+    "goal": "Read the node goal (route every sibling-temporary write-then-replace site outside reckon/_store.py through write_atomically); the landed change migrates 14 sites across 11 modules and reckon/interface_counts.py _staged_writes confirms the inventory falls from 17 to exactly 3 retained owners.",
+    "manifest": "Read the reviewed run's manifest; it states 465 passed/1 skipped EXIT=0, records the interface-head.json 1475/1475 figure, and names its gate logs (baseline.log, gate-complete.log).",
+    "write_paths": "Read the declared write paths; every path in the base..head diff (18 files) is inside them, and reckon/resources.py and tests/test_velocity_interface_counts.py were declared but untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_staged_write_inventory.py:44 fails if any migrated module reintroduces a private write-then-replace, and the reviewed run's negative-control.log shows that assertion reddening (1 failed, EXIT=1).",
+    "evidence": "gate-complete.log ends EXIT=0 with 465 passed and interface-head.json records public_definitions 1475 at base and head, but the done_when parity assertion (tests/test_staged_write_inventory.py:76) cannot fail at the head.",
+    "fit": "each migrated site keeps its own error handling and passes fsync/mode/binary to reckon/_store.py:426, matching the idiom of the retained sites.",
+    "goal_fidelity": "the inventory reckon/interface_counts.py _staged_writes reports exactly the three retained owners at the head, so every non-owner sibling-temporary site is routed through reckon/_store.py:426.",
+    "reuse": "the migrations extend the single owner reckon/_store.py:426 rather than forking it; the added reckon/interface_counts.py _staged_writes re-expresses the frozen census predicate (docs/research/data/crew-pattern-review/code-depth/census.py) but is bound to it by tests/test_staged_write_inventory.py:76 and is the runtime owner, not a runtime duplicate.",
+    "scope_discipline": "every path in the base..head diff is inside the declared write_paths; reckon/resources.py and tests/test_velocity_interface_counts.py are declared but unchanged."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261005T130903496556-review-of-every-write-then-replace-reaches-the-owner",
+  "reviewed_base_sha": "ab294aed019a912e9767e24e39644056e49d3839",
+  "reviewed_head_sha": "1a42df8eeb26887921dc191ff578ef05e8aaeddf",
+  "reviewed_run_id": "r-20261005T120942518103-every-write-then-replace-reaches-the-owner",
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T13:19:04.494131+00:00",
+  "total": 111
+}

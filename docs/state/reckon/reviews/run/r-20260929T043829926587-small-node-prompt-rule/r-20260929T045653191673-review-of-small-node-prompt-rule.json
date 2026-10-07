@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4694",
+    "reckon/crew.py:150"
+  ],
+  "completed_at": "2026-09-29T05:20:55.184Z",
+  "dispatched_at": "2026-09-29T04:57:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": "123",
+      "text": "the rule is interpolated only into PLAN_LANDING_CONTRACT at :99, so a brief landing-capable worker \u2014 whose BRIEF_LANDING_CONTRACT carries the figure guidance and the meta-line ban but no landing sentence \u2014 is never told the size test, the one-line landing or the run-directory rule, leaving the plan's brief case without the rule this section delivers."
+    },
+    {
+      "file": "tests/test_small_node_prompt.py",
+      "line": "119",
+      "text": "the test named for a done-when that names a figure asserts only the static clause, which holds for every done-when, so it passes identically when no artifact is named and duplicates the assertion at :94 while reading as conditional coverage."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "37d4df23 adds the SMALL_NODE_RULE constant with its rationale comment and the one-line interpolation at reckon/crew/prompts.py:99 plus the 156-line test module; d4d3f643 adds the 27-line evidence fragment; 566f2717 is a trailing-newline style fix to the test file; no hunk leaves the fence and no plan meta line is touched.",
+    "done_when": "the measure names tests/test_small_node_prompt.py beside the three existing prompt modules keeping their base failing ids; after-prompt-tests.log line 1 names revision 566f271755ad3ca716ca4454cd89550a1ff633d5, the tree and the command, and its tail records 6 failed, 54 passed against the base arm's 6 failed, 46 passed, and a re-run of the module alone at the reviewed head passed 8 of 8.",
+    "goal": "the goal is that the composed worker prompt states the small-node rule; reckon/crew/prompts.py:69 defines SMALL_NODE_RULE and :99 interpolates it into PLAN_LANDING_CONTRACT beside the landing sentence, so a landing-capable plan node's prompt carries the 50/300 size test, the one-line landing requirement with its prose and figure limit, and the 300,000-byte data-file rule.",
+    "manifest": "the manifest names the three gate logs, its baseline_suite and after_suite are armed JSON whose revisions (0f5ff9ed, 566f2717) and six failure ids match the two logs' own FAILED lines, negative_control_log is the bare path whose first line repeats the dispatched mutation verbatim and ends at the named FAILED id, and its landing: line states the change and the measure's figure.",
+    "write_paths": "the fence is reckon/crew/prompts.py, tests/test_small_node_prompt.py, docs/evidence/fragments/a-small-change-is-a-small-node/small-node-prompt-rule.html and the docs/figures/a-small-change-is-a-small-node/small-node-prompt-rule directory; git diff --numstat 0f5ff9ed6d006d4e36f73b3b03aae73f840a4c4b..566f2717 lists exactly three changed paths, all inside it, and the figures directory is legitimately unwritten for a node whose own done-when forbids a figure."
+  },
+  "justifications": {
+    "durability": "removing any clause reddens tests/test_small_node_prompt.py:84, :88 or :101 by its own wording (the last shown red in negative-control.log), but the assertion at :119 is insensitive to the done-when it supplies and so covers no conditional behaviour.",
+    "evidence": "both arms are on disk with revision, tree and command on line 1 of each log, their six ids are identical, my derivation of added failures from those logs is 0 with the instrument shown to detect an injected id, and my re-run of tests/test_small_node_prompt.py at the reviewed head passed 8 of 8.",
+    "fit": "SMALL_NODE_RULE at reckon/crew/prompts.py:69 follows the file's module-constant idiom with its rationale in the comment above, and the naming checks over the three changed paths return no hit.",
+    "goal_fidelity": "reckon/crew/prompts.py:99 interpolates SMALL_NODE_RULE into the plan-landing contract alone, so the brief contract at :123 \u2014 which plan \u00a73 also gives a landing line on the run record \u2014 never reaches a small brief node.",
+    "scope_discipline": "git diff --numstat 0f5ff9ed6d006d4e36f73b3b03aae73f840a4c4b..566f2717 contains only reckon/crew/prompts.py, tests/test_small_node_prompt.py and the declared evidence fragment."
+  },
+  "node": "review-of-small-node-prompt-rule",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T043829926587-small-node-prompt-rule\n(plan a-small-change-is-a-small-node; node small-node-prompt-rule; role implement; spec exact)\nreviewed_base_sha: 0f5ff9ed6d006d4e36f73b3b03aae73f840a4c4b\nreviewed_head_sha: 566f271755ad3ca716ca4454cd89550a1ff633d5\n\nVERDICT goal: the goal is that the composed worker prompt states the small-node rule; reckon/crew/prompts.py:69 defines SMALL_NODE_RULE and :99 interpolates it into PLAN_LANDING_CONTRACT beside the landing sentence, so a landing-capable plan node's prompt carries the 50/300 size test, the one-line landing requirement with its prose and figure limit, and the 300,000-byte data-file rule.\nVERDICT done_when: the measure names tests/test_small_node_prompt.py beside the three existing prompt modules keeping their base failing ids; after-prompt-tests.log line 1 names revision 566f271755ad3ca716ca4454cd89550a1ff633d5, the tree and the command, and its tail records 6 failed, 54 passed against the base arm's 6 failed, 46 passed, and a re-run of the module alone at the reviewed head passed 8 of 8.\nVERDICT write_paths: the fence is reckon/crew/prompts.py, tests/test_small_node_prompt.py, docs/evidence/fragments/a-small-change-is-a-small-node/small-node-prompt-rule.html and the docs/figures/a-small-change-is-a-small-node/small-node-prompt-rule directory; git diff --numstat 0f5ff9ed6d006d4e36f73b3b03aae73f840a4c4b..566f2717 lists exactly three changed paths, all inside it, and the figures directory is legitimately unwritten for a node whose own done-when forbids a figure.\nVERDICT manifest: the manifest names the three gate logs, its baseline_suite and after_suite are armed JSON whose revisions (0f5ff9ed, 566f2717) and six failure ids match the two logs' own FAILED lines, negative_control_log is the bare path whose first line repeats the dispatched mutation verbatim and ends at the named FAILED id, and its landing: line states the change and the measure's figure.\nVERDICT diff: 37d4df23 adds the SMALL_NODE_RULE constant with its rationale comment and the one-line interpolation at reckon/crew/prompts.py:99 plus the 156-line test module; d4d3f643 adds the 27-line evidence fragment; 566f2717 is a trailing-newline style fix to the test file; no hunk leaves the fence and no plan meta line is touched.\nCALL_SITES: reckon/crew/dispatch.py:4694, reckon/crew.py:150\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:99 interpolates SMALL_NODE_RULE into the plan-landing contract alone, so the brief contract at :123 \u2014 which plan \u00a73 also gives a landing line on the run record \u2014 never reaches a small brief node.\nSCORE evidence: 20\nJUSTIFICATION evidence: both arms are on disk with revision, tree and command on line 1 of each log, their six ids are identical, my derivation of added failures from those logs is 0 with the instrument shown to detect an injected id, and my re-run of tests/test_small_node_prompt.py at the reviewed head passed 8 of 8.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 0f5ff9ed6d006d4e36f73b3b03aae73f840a4c4b..566f2717 contains only reckon/crew/prompts.py, tests/test_small_node_prompt.py and the declared evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: removing any clause reddens tests/test_small_node_prompt.py:84, :88 or :101 by its own wording (the last shown red in negative-control.log), but the assertion at :119 is insensitive to the done-when it supplies and so covers no conditional behaviour.\nSCORE fit: 19\nJUSTIFICATION fit: SMALL_NODE_RULE at reckon/crew/prompts.py:69 follows the file's module-constant idiom with its rationale in the comment above, and the naming checks over the three changed paths return no hit.\nFINDING reckon/crew/prompts.py:123 the rule is interpolated only into PLAN_LANDING_CONTRACT at :99, so a brief landing-capable worker \u2014 whose BRIEF_LANDING_CONTRACT carries the figure guidance and the meta-line ban but no landing sentence \u2014 is never told the size test, the one-line landing or the run-directory rule, leaving the plan's brief case without the rule this section delivers.\nFINDING tests/test_small_node_prompt.py:119 the test named for a done-when that names a figure asserts only the static clause, which holds for every done-when, so it passes identically when no artifact is named and duplicates the assertion at :94 while reading as conditional coverage.",
+  "review_run_id": "r-20260929T045653191673-review-of-small-node-prompt-rule",
+  "reviewed_base_sha": "0f5ff9ed6d006d4e36f73b3b03aae73f840a4c4b",
+  "reviewed_head_sha": "566f271755ad3ca716ca4454cd89550a1ff633d5",
+  "reviewed_run_id": "r-20260929T043829926587-small-node-prompt-rule",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "medium",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T045653191673-review-of-small-node-prompt-rule",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T05:12:29.715458+00:00",
+  "total": 94
+}

@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery.py:_watch_snapshot",
+    "reckon/crew/recovery.py:watch_follow",
+    "reckon/crew/recovery.py:classify_pointer",
+    "reckon/crew/resumption.py:resolve_session"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T11:11:06.156716+00:00",
+  "findings": [
+    {
+      "file": "docs/figures/worker-death-is-recorded/newest-stream-gate-after.log",
+      "line": "1",
+      "text": "the gate log's revision line names 2721bdba (the base), while the run it records executed the changed tree -- it shows 107 passed including tests/test_newest_stream_is_read_everywhere.py, a file that does not exist at 2721bdba, and the sibling grep log at docs/figures/worker-death-is-recorded/newest-stream-grep.log:1 is stamped the same while printing RUN_STREAM_GLOBS, which that revision lacks; the manifest's after_suite.revision says c23c83ab, so the two disagree and a promotion reading the log cannot get the after-revision revision it stamps."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2073",
+      "text": "the new stream_paths_newest_first appends inside a loop over the include argument (PERF401), a finding the base revision did not carry; the repo's rule is that a commit adds no findings, and the same file is also among the files ruff format --check would reformat."
+    },
+    {
+      "file": "tests/test_newest_stream_is_read_everywhere.py",
+      "line": "193",
+      "text": "the new test file ends without a trailing newline (W292) and ruff format --check reports it would be reformatted, so the added test file carries a finding the base did not have."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2112",
+      "text": "_run_directory falls back to Path(str(record.get(\"log_path\") or \".\")).parent, which is the process working directory when a record carries neither run_id nor log_path; newest_stream then globs *.jsonl from the CWD, a behaviour the pre-change _run_stream_mtime did not have (an empty log_path read as no measurement) -- not observed reachable because live pointers carry both fields, but it is a new way for unrelated files to be read as a run's activity."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit-by-commit against 2721bdba; one new reader in recovery.py, two routing edits (the stall quiet-seconds and the classified row's stream age), the session lookup moved to the ordered reader, plus docs and a figure -- all inside scope.",
+    "done_when": "the done_when names tests/test_newest_stream_is_read_everywhere.py and a grep inventory; I re-ran that file at c23c83ab (8 passed) and re-ran the grep, which reproduces the claim exactly.",
+    "goal": "read the node goal (\"one newest-stream reader the stall classifier and the session lookup both use\") against the diff; reckon/crew/recovery.py:2082 defines the public newest_stream(run_dir) plus stream_paths_newest_first, and both consumers are routed through it.",
+    "manifest": "read; it records commit c23c83ab, the changed paths, the exact gate command, base/after logs, the negative-control log and the six pre-existing failure ids, and leaves the driving followup open for the coordinator.",
+    "write_paths": "the manifest's six declared paths are reached by the commit's ten changed files with nothing outside them; git show --stat c23c83ab lists only recovery.py, resumption.py, the new test, the plan, the evidence anchor and the docs/figures/worker-death-is-recorded tree."
+  },
+  "justifications": {
+    "durability": "the declared mutation (RUN_STREAM_GLOBS restricted to stream.jsonl) reddens 6 of the 8 added tests including test_a_stale_first_stream_with_a_fresh_resume_is_not_stalled, and the session assertion at tests/test_newest_stream_is_read_everywhere.py:188 compares resolve_session's answer against an independently derived observe_log result rather than a value the test passed in.",
+    "evidence": "I independently re-ran the named test at c23c83ab (8 passed, review-gate.log) and confirmed the base/after failure ids are identical (6 failed/99 vs 6 failed/107), but the after gate log at docs/figures/worker-death-is-recorded/newest-stream-gate-after.log:1 stamps revision 2721bdba while it ran the changed tree.",
+    "fit": "the reader follows the module's Mapping/Path idiom and introduces no banned plan or version label, but the commit adds two lint findings the base did not carry -- PERF401 at reckon/crew/recovery.py:2073 and W292 at tests/test_newest_stream_is_read_everywhere.py:193 -- against a repo whose binding rule is that a commit adds no findings.",
+    "goal_fidelity": "reckon/crew/recovery.py:2082's newest_stream is the single reader, and the diff routes the stall quiet-seconds at recovery.py:3842 and the session lookup at resumption.py:424 through it, so the goal is met -- the only deduction is the CWD fallback at recovery.py:2112 noted below.",
+    "scope_discipline": "git show --stat c23c83ab changes exactly the five files and the figures tree the manifest declares, with no path outside the fence and no plan-version or plan-modified meta line touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (\"one newest-stream reader the stall classifier and the session lookup both use\") against the diff; reckon/crew/recovery.py:2082 defines the public newest_stream(run_dir) plus stream_paths_newest_first, and both consumers are routed through it.\nVERDICT done_when: the done_when names tests/test_newest_stream_is_read_everywhere.py and a grep inventory; I re-ran that file at c23c83ab (8 passed) and re-ran the grep, which reproduces the claim exactly.\nVERDICT write_paths: the manifest's six declared paths are reached by the commit's ten changed files with nothing outside them; git show --stat c23c83ab lists only recovery.py, resumption.py, the new test, the plan, the evidence anchor and the docs/figures/worker-death-is-recorded tree.\nVERDICT manifest: read; it records commit c23c83ab, the changed paths, the exact gate command, base/after logs, the negative-control log and the six pre-existing failure ids, and leaves the driving followup open for the coordinator.\nVERDICT diff: read commit-by-commit against 2721bdba; one new reader in recovery.py, two routing edits (the stall quiet-seconds and the classified row's stream age), the session lookup moved to the ordered reader, plus docs and a figure -- all inside scope.\nCALL_SITES: reckon/crew/recovery.py:_watch_snapshot, reckon/crew/recovery.py:watch_follow, reckon/crew/recovery.py:classify_pointer, reckon/crew/resumption.py:resolve_session\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:2082's newest_stream is the single reader, and the diff routes the stall quiet-seconds at recovery.py:3842 and the session lookup at resumption.py:424 through it, so the goal is met -- the only deduction is the CWD fallback at recovery.py:2112 noted below.\nSCORE evidence: 17\nJUSTIFICATION evidence: I independently re-ran the named test at c23c83ab (8 passed, review-gate.log) and confirmed the base/after failure ids are identical (6 failed/99 vs 6 failed/107), but the after gate log at docs/figures/worker-death-is-recorded/newest-stream-gate-after.log:1 stamps revision 2721bdba while it ran the changed tree.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat c23c83ab changes exactly the five files and the figures tree the manifest declares, with no path outside the fence and no plan-version or plan-modified meta line touched.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation (RUN_STREAM_GLOBS restricted to stream.jsonl) reddens 6 of the 8 added tests including test_a_stale_first_stream_with_a_fresh_resume_is_not_stalled, and the session assertion at tests/test_newest_stream_is_read_everywhere.py:188 compares resolve_session's answer against an independently derived observe_log result rather than a value the test passed in.\nSCORE fit: 15\nJUSTIFICATION fit: the reader follows the module's Mapping/Path idiom and introduces no banned plan or version label, but the commit adds two lint findings the base did not carry -- PERF401 at reckon/crew/recovery.py:2073 and W292 at tests/test_newest_stream_is_read_everywhere.py:193 -- against a repo whose binding rule is that a commit adds no findings.\nFINDING docs/figures/worker-death-is-recorded/newest-stream-gate-after.log:1 the gate log's revision line names 2721bdba (the base), while the run it records executed the changed tree -- it shows 107 passed including tests/test_newest_stream_is_read_everywhere.py, a file that does not exist at 2721bdba, and the sibling grep log at docs/figures/worker-death-is-recorded/newest-stream-grep.log:1 is stamped the same while printing RUN_STREAM_GLOBS, which that revision lacks; the manifest's after_suite.revision says c23c83ab, so the two disagree and a promotion reading the log cannot get the after-revision revision it stamps.\nFINDING reckon/crew/recovery.py:2073 the new stream_paths_newest_first appends inside a loop over the include argument (PERF401), a finding the base revision did not carry; the repo's rule is that a commit adds no findings, and the same file is also among the files ruff format --check would reformat.\nFINDING tests/test_newest_stream_is_read_everywhere.py:193 the new test file ends without a trailing newline (W292) and ruff format --check reports it would be reformatted, so the added test file carries a finding the base did not have.\nFINDING reckon/crew/recovery.py:2112 _run_directory falls back to Path(str(record.get(\"log_path\") or \".\")).parent, which is the process working directory when a record carries neither run_id nor log_path; newest_stream then globs *.jsonl from the CWD, a behaviour the pre-change _run_stream_mtime did not have (an empty log_path read as no measurement) -- not observed reachable because live pointers carry both fields, but it is a new way for unrelated files to be read as a run's activity.\n",
+  "review_run_id": "r-20260923T111106156716-review-of-newest-stream-is-read-everywhere",
+  "reviewed_base_sha": "2721bdba40e73fbc66760bf857527962dcbcb1a7",
+  "reviewed_head_sha": "c23c83ab7475aeaee02837b2068806138c93d46c",
+  "reviewed_run_id": "r-20260923T084257968937-newest-stream-is-read-everywhere",
+  "reviewer": {
+    "effort": "explicit",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260923T111106156716-review-of-newest-stream-is-read-everywhere",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T11:30:05.266825+00:00",
+  "total": 87
+}

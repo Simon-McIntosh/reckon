@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T20:56:23.762149+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "601",
+      "text": "the docstring says \"the run directory is released at promotion, so the ledger row is the only record that outlives the run\", but promotion releases only the pointer and the worktree, and promotion.py:636 in the same module says the run directory \"outlives the worktree and is pruned only by crew gc. A reader is therefore told the row is the only surviving record when the exit.json file survives beside it until crew gc prunes the directory."
+    },
+    {
+      "file": "docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html",
+      "line": "443",
+      "text": "the same false claim is written into the durable evidence record, which says the run directory \"is released at promotion\" and the exit record \"has exactly one place left to live: the committed ledger row\", and the plan landing comment at docs/plans/a-dispatch-returns-without-its-worker.html:776 repeats it, so the record a later reader trusts overstates what the row is the only copy of."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against 02e2757d; 2a33d2db adds the helper, its single call and the two-case test (+230 lines, 0 deletions) and be77daad appends the plan comment, evidence section 7 and a valid 1800x840 PNG (+65 lines, 0 deletions), so the cumulative records were appended rather than rewritten.",
+    "done_when": "the done-when at docs/plans/a-dispatch-returns-without-its-worker.html:531-541 names tests/test_promotion_keeps_the_worker_exit.py, whose two cases assert the SIGKILL/working object on the committed row and the absent key, and I re-ran that file at be77daad from a separate shell: 2 passed, EXIT=0, log at runs/r-20260924T205623762149-review-of-promotion-keeps-the-worker-exit/review-gate-rerun.log.",
+    "goal": "read section 7 of docs/plans/a-dispatch-returns-without-its-worker.html and the landed helper at reckon/crew/promotion.py:597-620; a promoted row carries the run directory's exit.json verbatim under worker_exit and carries no key when no record exists, which is what the section states.",
+    "manifest": "read; it records both cases passing, the two declared controls each failing only its named case, and the identical 30-failure promotion-import set at base 02e2757d and at 2a33d2db, and I confirmed the two suite logs' FAILED lines diff empty with both reading \"30 failed, 246 passed\".",
+    "write_paths": "the manifest declares five paths and git diff --name-only 02e2757d be77daad returns exactly those five: reckon/crew/promotion.py, tests/test_promotion_keeps_the_worker_exit.py, the plan page, the landed evidence record and the figure."
+  },
+  "justifications": {
+    "durability": "removing the copy reddens tests/test_promotion_keeps_the_worker_exit.py:169 and writing an empty key reddens line 195, both executed and logged, though the exit_status assertion at line 170 reads back the same 0 it was handed so it cannot separate a carried status from a hardcoded one.",
+    "evidence": "the gate's two cases and both controls reproduce and my re-run independently passed, but the durable record's opening at docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:443 asserts the run directory is released at promotion and the row is its only surviving record, which promotion.py:636 and 1,546 promoted run directories on disk disprove.",
+    "fit": "the helper sits in reckon/crew/promotion.py beside the gate-log preservation it parallels, its docstring matches the file's idiom, and worker_exit is the name the plan's own record fixes, with no plan, ticket or version identifier in the diff.",
+    "goal_fidelity": "reckon/crew/promotion.py:3942 reads the record before the append and promotion.py:3998-3999 writes the key only when one was read, so a run with no exit.json carries no worker_exit key, exactly section 7's contract.",
+    "scope_discipline": "every path in 02e2757d..be77daad is one of the five the manifest declares, and the two non-source files are the plan landing record and the figure the plan's own landing workflow owns."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read section 7 of docs/plans/a-dispatch-returns-without-its-worker.html and the landed helper at reckon/crew/promotion.py:597-620; a promoted row carries the run directory's exit.json verbatim under worker_exit and carries no key when no record exists, which is what the section states.\nVERDICT done_when: the done-when at docs/plans/a-dispatch-returns-without-its-worker.html:531-541 names tests/test_promotion_keeps_the_worker_exit.py, whose two cases assert the SIGKILL/working object on the committed row and the absent key, and I re-ran that file at be77daad from a separate shell: 2 passed, EXIT=0, log at runs/r-20260924T205623762149-review-of-promotion-keeps-the-worker-exit/review-gate-rerun.log.\nVERDICT write_paths: the manifest declares five paths and git diff --name-only 02e2757d be77daad returns exactly those five: reckon/crew/promotion.py, tests/test_promotion_keeps_the_worker_exit.py, the plan page, the landed evidence record and the figure.\nVERDICT manifest: read; it records both cases passing, the two declared controls each failing only its named case, and the identical 30-failure promotion-import set at base 02e2757d and at 2a33d2db, and I confirmed the two suite logs' FAILED lines diff empty with both reading \"30 failed, 246 passed\".\nVERDICT diff: read commit by commit against 02e2757d; 2a33d2db adds the helper, its single call and the two-case test (+230 lines, 0 deletions) and be77daad appends the plan comment, evidence section 7 and a valid 1800x840 PNG (+65 lines, 0 deletions), so the cumulative records were appended rather than rewritten.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:3942 reads the record before the append and promotion.py:3998-3999 writes the key only when one was read, so a run with no exit.json carries no worker_exit key, exactly section 7's contract.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate's two cases and both controls reproduce and my re-run independently passed, but the durable record's opening at docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:443 asserts the run directory is released at promotion and the row is its only surviving record, which promotion.py:636 and 1,546 promoted run directories on disk disprove.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 02e2757d..be77daad is one of the five the manifest declares, and the two non-source files are the plan landing record and the figure the plan's own landing workflow owns.\nSCORE durability: 19\nJUSTIFICATION durability: removing the copy reddens tests/test_promotion_keeps_the_worker_exit.py:169 and writing an empty key reddens line 195, both executed and logged, though the exit_status assertion at line 170 reads back the same 0 it was handed so it cannot separate a carried status from a hardcoded one.\nSCORE fit: 20\nJUSTIFICATION fit: the helper sits in reckon/crew/promotion.py beside the gate-log preservation it parallels, its docstring matches the file's idiom, and worker_exit is the name the plan's own record fixes, with no plan, ticket or version identifier in the diff.\nFINDING reckon/crew/promotion.py:601 the docstring says \"the run directory is released at promotion, so the ledger row is the only record that outlives the run\", but promotion releases only the pointer and the worktree, and promotion.py:636 in the same module says the run directory \"outlives the worktree and is pruned only by crew gc. A reader is therefore told the row is the only surviving record when the exit.json file survives beside it until crew gc prunes the directory.\nFINDING docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html:443 the same false claim is written into the durable evidence record, which says the run directory \"is released at promotion\" and the exit record \"has exactly one place left to live: the committed ledger row\", and the plan landing comment at docs/plans/a-dispatch-returns-without-its-worker.html:776 repeats it, so the record a later reader trusts overstates what the row is the only copy of.\nreviewed_base_sha: 02e2757d4795338d9c3af4209aef400cfbd4f7f4\nreviewed_head_sha: be77daad2fc80c7fbd7acc7c609c0e2edcb75a77",
+  "review_run_id": "r-20260924T205623762149-review-of-promotion-keeps-the-worker-exit",
+  "reviewed_base_sha": "02e2757d4795338d9c3af4209aef400cfbd4f7f4",
+  "reviewed_head_sha": "be77daad2fc80c7fbd7acc7c609c0e2edcb75a77",
+  "reviewed_run_id": "r-20260924T200504498202-promotion-keeps-the-worker-exit",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T21:48:19.231109+00:00",
+  "total": 95
+}

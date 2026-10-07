@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "89eb214e4506484260151117df551f1e4a7a6199",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/promotion.py:_commit_resolves_in",
+    "reckon/crew/promotion.py:_commit_canonical_id",
+    "reckon/crew/reports.py:_commit_resolves_in",
+    "reckon/crew/recovery.py:_resolve_abbreviated_commit",
+    "reckon/crew/routing.py:_base_commit",
+    "reckon/interface_counts.py:count_revision_cached",
+    "reckon/crew/dispatch.py:_inherited_worktree_reading"
+  ],
+  "completed_at": "2026-10-05T02:28:21.593Z",
+  "dispatched_at": "2026-10-05T02:20:06Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/one-function-resolves-a-citation.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the declared write paths name an evidence fragment and a figure directory that the diff does not produce, so the node lands no durable landing artifact of its own."
+    }
+  ],
+  "head_log_revision": "513d1cc36cd69daa15385c8654e25ce1690de177",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against base 89eb214e4506484260151117df551f1e4a7a6199; seven files, each replacing a local revision-to-commit peel with a call to recovery._resolve_commit.",
+    "done_when": "The done-when names a walk test, an agreement test and a zero-added-failure population; the manifest records all three, and the two population logs and negative_control.log are on disk under the run directory.",
+    "goal": "The node goal is to route every commit-citation resolution through one hardened function; the diff removes the local revision peel in reckon/crew/reports.py:1525, reckon/crew/promotion.py:441, reckon/crew/recovery.py:1499 and reckon/crew/routing.py:2435 and calls reckon/crew/recovery.py:380 _resolve_commit, which carries --verify, --end-of-options and timeout=10.",
+    "manifest": "read; it records status complete, commit 513d1cc, the baseline_population.log and head_population.log, the head_ledger.log run and the negative control.",
+    "write_paths": "The prompt fenced reports.py, promotion.py, recovery.py, routing.py and the test file; the resume advice granted reckon/crew/dispatch.py and reckon/interface_counts.py; every path in the diff is inside that extended set."
+  },
+  "justifications": {
+    "durability": "negative_control.log shows tests/test_one_function_resolves_a_citation.py::test_only_the_shared_resolver_peels_a_revision_to_a_commit failing with EXIT=1 when promotion's local peel is restored.",
+    "evidence": "tests/test_one_function_resolves_a_citation.py carries both the walk and the agreement tests, and the manifest records their runs plus a population delta of zero added failures across the same four ids.",
+    "fit": "the change extends the existing owner reckon/crew/recovery.py:380 rather than adding a second one, though the import is module-level in promotion.py:51 and function-local in reports.py, routing.py and interface_counts.py.",
+    "goal_fidelity": "reckon/crew/recovery.py:380 _resolve_commit is the only ^{commit} peel left in reckon/ and every former site imports it.",
+    "scope_discipline": "every changed path (reckon/crew/reports.py, promotion.py, recovery.py, routing.py, dispatch.py, interface_counts.py, tests/test_one_function_resolves_a_citation.py) is inside the granted scope, with nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 89eb214e4506484260151117df551f1e4a7a6199\nreviewed_head_sha: 513d1cc36cd69daa15385c8654e25ce1690de177\nVERDICT goal: The node goal is to route every commit-citation resolution through one hardened function; the diff removes the local revision peel in reckon/crew/reports.py:1525, reckon/crew/promotion.py:441, reckon/crew/recovery.py:1499 and reckon/crew/routing.py:2435 and calls reckon/crew/recovery.py:380 _resolve_commit, which carries --verify, --end-of-options and timeout=10.\nVERDICT done_when: The done-when names a walk test, an agreement test and a zero-added-failure population; the manifest records all three, and the two population logs and negative_control.log are on disk under the run directory.\nVERDICT write_paths: The prompt fenced reports.py, promotion.py, recovery.py, routing.py and the test file; the resume advice granted reckon/crew/dispatch.py and reckon/interface_counts.py; every path in the diff is inside that extended set.\nVERDICT manifest: read; it records status complete, commit 513d1cc, the baseline_population.log and head_population.log, the head_ledger.log run and the negative control.\nVERDICT diff: read commit by commit against base 89eb214e4506484260151117df551f1e4a7a6199; seven files, each replacing a local revision-to-commit peel with a call to recovery._resolve_commit.\nCALL_SITES: reckon/crew/promotion.py:_commit_resolves_in, reckon/crew/promotion.py:_commit_canonical_id, reckon/crew/reports.py:_commit_resolves_in, reckon/crew/recovery.py:_resolve_abbreviated_commit, reckon/crew/routing.py:_base_commit, reckon/interface_counts.py:count_revision_cached, reckon/crew/dispatch.py:_inherited_worktree_reading\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:380 _resolve_commit is the only ^{commit} peel left in reckon/ and every former site imports it.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_one_function_resolves_a_citation.py carries both the walk and the agreement tests, and the manifest records their runs plus a population delta of zero added failures across the same four ids.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path (reckon/crew/reports.py, promotion.py, recovery.py, routing.py, dispatch.py, interface_counts.py, tests/test_one_function_resolves_a_citation.py) is inside the granted scope, with nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: negative_control.log shows tests/test_one_function_resolves_a_citation.py::test_only_the_shared_resolver_peels_a_revision_to_a_commit failing with EXIT=1 when promotion's local peel is restored.\nSCORE fit: 17\nJUSTIFICATION fit: the change extends the existing owner reckon/crew/recovery.py:380 rather than adding a second one, though the import is module-level in promotion.py:51 and function-local in reports.py, routing.py and interface_counts.py.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/one-function-resolves-a-citation.html:1 follow-on: the declared write paths name an evidence fragment and a figure directory that the diff does not produce, so the node lands no durable landing artifact of its own.",
+  "review_run_id": "r-20261005T021926107723-review-of-one-function-resolves-a-citation",
+  "reviewed_base_sha": "89eb214e4506484260151117df551f1e4a7a6199",
+  "reviewed_head_sha": "513d1cc36cd69daa15385c8654e25ce1690de177",
+  "reviewed_run_id": "r-20261005T011335798014-one-function-resolves-a-citation",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T02:27:14.124703+00:00",
+  "total": 92
+}

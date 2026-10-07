@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "a326205d5b8173815b4b839fc651b4f49ce6156e",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:crew_dispatch",
+    "reckon/cli.py:_require_configured_override_paths"
+  ],
+  "completed_at": "2026-10-02T23:03:32.090Z",
+  "dispatched_at": "2026-10-02T22:43:47Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "1700",
+      "severity": "follow-on",
+      "text": "follow-on: the availability competence-refusal (_model_availability_refusal, exit 5) is emitted on the dry-run path before override_resolution is computed, so it is a dry-run refusal document that carries no overrides echo - inconsistent with the claim that every dry-run refusal carries it, and a caller cannot tell a resolved override from one that never applied on that refusal."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "1672",
+      "severity": "follow-on",
+      "text": "follow-on: the --local select_local_backend failure emits {\"ok\": false, \"error\": \"request-error\"} with neither dry_run true nor the overrides echo, so its shape differs from the request-error documents _emit_dry_run_request_error unifies at reckon/cli.py:922."
+    }
+  ],
+  "head_log_revision": "fc52b0e63",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit; b18f8a841 routes a schema-refused --set key to _emit_dry_run_request_error and wraps the pre-check, 95b5bb7dc adds _require_configured_override_paths and applies it before _dispatch_resolved_flight on both paths, fc52b0e63 threads override_resolution through every dry-run refusal via _with_resolved_overrides, dbaa5baee records the evidence fragment.",
+    "done_when": "the source node's done-when names tests/test_dry_run_shows_each_set_override.py; the manifest records its 8 cases passing, which I re-ran independently at head dbaa5bae with RECKON_FOLLOWER_OWNER unset, 8 passed EXIT=0.",
+    "goal": "the gained commits repair three follow-ons the earlier review raised on the dispatch dry run in reckon/cli.py - the launch now refuses an undeclared keyed-map name as the preview does (95b5bb7dc), every dry-run refusal document carries the override echo (fc52b0e63), and a schema-refused --set key answers on the dry-run JSON channel (b18f8a841) - all read in the diff baf499dfd..dbaa5bae.",
+    "manifest": "read; it records the repair round, the focused run (8 passed), suite arms base a326205d5 521 passed/1 skipped vs head fc52b0e63 529 passed/1 skipped both EXIT=0, and the stale RECKON_FOLLOWER_OWNER caveat that removes eight follower-admission failures from the measurement.",
+    "write_paths": "the manifest declares reckon/cli.py, tests/test_dry_run_shows_each_set_override.py and docs/evidence/fragments/a-dry-run-must-resolve-what-the-real-call-resolves/dry-run-shows-each-set-override.html; git diff --name-only baf499dfd..dbaa5bae lists exactly those three."
+  },
+  "justifications": {
+    "durability": "each repair has a red control - reverting the echo reddens 2 cases, the launch refusal 1, the request-error channel 3, every log EXIT=1 - and the launch-parity case at tests/test_dry_run_shows_each_set_override.py:214 monkeypatches reckon.crew.dispatch to raise, so a launch that reached dispatch would fail its own assertion.",
+    "evidence": "the reviewed run's own baseline_suite (logs/gate-base-a326205d5-owner-unset.log, 521 passed) and after_suite (logs/gate-head-repair-owner-unset.log, 529 passed) both end EXIT=0, and I re-derived added_failure_count 0 with a positive control that finds the FAILED id in logs/negative-control-base-arm.log.",
+    "fit": "the new helpers are named by mechanism at reckon/cli.py:922, 999, 1021 and 1031 (_emit_dry_run_request_error, _with_resolved_overrides, _layer_flight_config, _require_configured_override_paths), each with a docstring stating why it exists; no plan, version or ticket identifier appears.",
+    "goal_fidelity": "reckon/cli.py:1649-1662 runs _layer_flight_config then _require_configured_override_paths before dispatch, so a name no layer defines is refused on both the preview and the launch, closing the dry-run versus real divergence the earlier review named.",
+    "scope_discipline": "reckon/cli.py and the two other paths in the diff are exactly the manifest's declared write paths; no plan, index or sprint state is mutated."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commits repair three follow-ons the earlier review raised on the dispatch dry run in reckon/cli.py - the launch now refuses an undeclared keyed-map name as the preview does (95b5bb7dc), every dry-run refusal document carries the override echo (fc52b0e63), and a schema-refused --set key answers on the dry-run JSON channel (b18f8a841) - all read in the diff baf499dfd..dbaa5bae.\nVERDICT done_when: the source node's done-when names tests/test_dry_run_shows_each_set_override.py; the manifest records its 8 cases passing, which I re-ran independently at head dbaa5bae with RECKON_FOLLOWER_OWNER unset, 8 passed EXIT=0.\nVERDICT write_paths: the manifest declares reckon/cli.py, tests/test_dry_run_shows_each_set_override.py and docs/evidence/fragments/a-dry-run-must-resolve-what-the-real-call-resolves/dry-run-shows-each-set-override.html; git diff --name-only baf499dfd..dbaa5bae lists exactly those three.\nVERDICT manifest: read; it records the repair round, the focused run (8 passed), suite arms base a326205d5 521 passed/1 skipped vs head fc52b0e63 529 passed/1 skipped both EXIT=0, and the stale RECKON_FOLLOWER_OWNER caveat that removes eight follower-admission failures from the measurement.\nVERDICT diff: read commit by commit; b18f8a841 routes a schema-refused --set key to _emit_dry_run_request_error and wraps the pre-check, 95b5bb7dc adds _require_configured_override_paths and applies it before _dispatch_resolved_flight on both paths, fc52b0e63 threads override_resolution through every dry-run refusal via _with_resolved_overrides, dbaa5baee records the evidence fragment.\nCALL_SITES: reckon/cli.py:crew_dispatch, reckon/cli.py:_require_configured_override_paths\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/cli.py:1649-1662 runs _layer_flight_config then _require_configured_override_paths before dispatch, so a name no layer defines is refused on both the preview and the launch, closing the dry-run versus real divergence the earlier review named.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed run's own baseline_suite (logs/gate-base-a326205d5-owner-unset.log, 521 passed) and after_suite (logs/gate-head-repair-owner-unset.log, 529 passed) both end EXIT=0, and I re-derived added_failure_count 0 with a positive control that finds the FAILED id in logs/negative-control-base-arm.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: reckon/cli.py and the two other paths in the diff are exactly the manifest's declared write paths; no plan, index or sprint state is mutated.\nSCORE durability: 18\nJUSTIFICATION durability: each repair has a red control - reverting the echo reddens 2 cases, the launch refusal 1, the request-error channel 3, every log EXIT=1 - and the launch-parity case at tests/test_dry_run_shows_each_set_override.py:214 monkeypatches reckon.crew.dispatch to raise, so a launch that reached dispatch would fail its own assertion.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers are named by mechanism at reckon/cli.py:922, 999, 1021 and 1031 (_emit_dry_run_request_error, _with_resolved_overrides, _layer_flight_config, _require_configured_override_paths), each with a docstring stating why it exists; no plan, version or ticket identifier appears.\nFINDING reckon/cli.py:1700 follow-on: the availability competence-refusal (_model_availability_refusal, exit 5) is emitted on the dry-run path before override_resolution is computed, so it is a dry-run refusal document that carries no overrides echo - inconsistent with the claim that every dry-run refusal carries it, and a caller cannot tell a resolved override from one that never applied on that refusal.\nFINDING reckon/cli.py:1672 follow-on: the --local select_local_backend failure emits {\"ok\": false, \"error\": \"request-error\"} with neither dry_run true nor the overrides echo, so its shape differs from the request-error documents _emit_dry_run_request_error unifies at reckon/cli.py:922.\n",
+  "review_run_id": "r-20261002T224320974295-review-of-dry-run-shows-each-set-override",
+  "reviewed_base_sha": "baf499dfd0163f686aa32175a301c80d6c278201",
+  "reviewed_head_sha": "dbaa5baeecac713a85a76232efc7e167704997f5",
+  "reviewed_run_id": "r-20261002T181759902620-dry-run-shows-each-set-override",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T224320974295-review-of-dry-run-shows-each-set-override",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T22:55:58.782247+00:00",
+  "total": 94
+}

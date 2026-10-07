@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "84fd7ff4f",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/serve.py:3264",
+    "reckon/serve.py:3333",
+    "reckon/mcp.py:1058",
+    "reckon/crew/plan_review.py:215",
+    "reckon/ledger.py:567",
+    "reckon/archive.py:130",
+    "reckon/crew/runs.py:1059"
+  ],
+  "completed_at": "2026-10-01T07:08:51.752Z",
+  "dispatched_at": "2026-10-01T06:57:55Z",
+  "findings": [
+    {
+      "file": "logs/base_gate.log",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's log names the head worktree's reckon/_plan_html.py as its module under test, so the base arm ran the base tree (its new corpus-sweep tests fail and its round trip matches mine) but its own header cannot show which module it imported."
+    },
+    {
+      "file": "manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: test_logs names logs/base_read_counts.log, which is absent from the run directory, so the base read count (92 of 111) the done_when asks to record is in no log the manifest names."
+    },
+    {
+      "file": "logs/head_read_counts.log",
+      "line": "4",
+      "severity": "follow-on",
+      "text": "follow-on: the cited log ships a second round-trip figure, 37 plans byte-nonidentical, against the manifest's 141 of 143; it measures a raw write_state rather than the store's write and is identical at base and head, but the manifest never reconciles the two figures."
+    }
+  ],
+  "head_log_revision": "20ce5e12757e131db1cd933733f8676854b50456",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read commit by commit against 84fd7ff4f; 5656e5326 widens the reader and filters the writer at reckon/_plan_html.py:1049, 20ce5e127 adds the evidence fragment; no behaviour outside the comments collection changes.",
+    "done_when": "The done_when names tests/test_section_body_records_are_read.py, the base/head read counts, the declared negative control and a corpus round trip; each is recorded, and I independently reproduced the read counts, the negative-control failure set and the round trip (141 of 143 byte-identical, the same two plans either side).",
+    "goal": "The node's goal is to make read_state return a section-body r-comment record under the section its own data-section names; reckon/_plan_html.py:723 now selects every .r-comment outside pre/code and keys it by data-section, and my own base-vs-head run reads 92 then 111 of 111 records on docs/plans/scoring-should-stop-a-promotion.html, both \u00a72d landing records now present.",
+    "manifest": "Read; it states the gate result, the negative control and the round trip, but its test_logs names logs/base_read_counts.log, which is absent from the run directory, so the base-arm read count lives only in the manifest prose.",
+    "write_paths": "The manifest fences reckon/_plan_html.py, tests/test_section_body_records_are_read.py and the evidence fragment; the diff touches exactly those three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "re-restricting read_state to the comments section in a scratch copy reddens test_both_records_are_read_under_the_section_that_holds_them and two others that pass at head (logs/negative_control.log), and test_a_write_leaves_a_section_body_record_where_it_is asserts file bytes outside the edited region.",
+    "evidence": "tests/test_section_body_records_are_read.py passes 6 of 6 at head and its declared mutation reddens three cases, but the manifest cites logs/base_gate.log whose header names the head module and a logs/base_read_counts.log that does not exist.",
+    "fit": "the helpers at reckon/_plan_html.py:415 carry the module's existing BeautifulSoup idiom and no plan label, and ruff reports the same 13 findings with identical rule codes at base and head.",
+    "goal_fidelity": "reckon/_plan_html.py:723 returns every .r-comment outside pre/code under its own data-section, and my base-vs-head run reads 92 then 111 on docs/plans/scoring-should-stop-a-promotion.html with both \u00a72d records present.",
+    "scope_discipline": "git diff 84fd7ff4f..20ce5e127 touches only reckon/_plan_html.py, tests/test_section_body_records_are_read.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to make read_state return a section-body r-comment record under the section its own data-section names; reckon/_plan_html.py:723 now selects every .r-comment outside pre/code and keys it by data-section, and my own base-vs-head run reads 92 then 111 of 111 records on docs/plans/scoring-should-stop-a-promotion.html, both \u00a72d landing records now present.\nVERDICT done_when: The done_when names tests/test_section_body_records_are_read.py, the base/head read counts, the declared negative control and a corpus round trip; each is recorded, and I independently reproduced the read counts, the negative-control failure set and the round trip (141 of 143 byte-identical, the same two plans either side).\nVERDICT write_paths: The manifest fences reckon/_plan_html.py, tests/test_section_body_records_are_read.py and the evidence fragment; the diff touches exactly those three paths and nothing else.\nVERDICT manifest: Read; it states the gate result, the negative control and the round trip, but its test_logs names logs/base_read_counts.log, which is absent from the run directory, so the base-arm read count lives only in the manifest prose.\nVERDICT diff: Read commit by commit against 84fd7ff4f; 5656e5326 widens the reader and filters the writer at reckon/_plan_html.py:1049, 20ce5e127 adds the evidence fragment; no behaviour outside the comments collection changes.\nCALL_SITES: reckon/serve.py:3264, reckon/serve.py:3333, reckon/mcp.py:1058, reckon/crew/plan_review.py:215, reckon/ledger.py:567, reckon/archive.py:130, reckon/crew/runs.py:1059\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:723 returns every .r-comment outside pre/code under its own data-section, and my base-vs-head run reads 92 then 111 on docs/plans/scoring-should-stop-a-promotion.html with both \u00a72d records present.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_section_body_records_are_read.py passes 6 of 6 at head and its declared mutation reddens three cases, but the manifest cites logs/base_gate.log whose header names the head module and a logs/base_read_counts.log that does not exist.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 84fd7ff4f..20ce5e127 touches only reckon/_plan_html.py, tests/test_section_body_records_are_read.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: re-restricting read_state to the comments section in a scratch copy reddens test_both_records_are_read_under_the_section_that_holds_them and two others that pass at head (logs/negative_control.log), and test_a_write_leaves_a_section_body_record_where_it_is asserts file bytes outside the edited region.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers at reckon/_plan_html.py:415 carry the module's existing BeautifulSoup idiom and no plan label, and ruff reports the same 13 findings with identical rule codes at base and head.\nFINDING logs/base_gate.log:3 follow-on: the base arm's log names the head worktree's reckon/_plan_html.py as its module under test, so the base arm ran the base tree (its new corpus-sweep tests fail and its round trip matches mine) but its own header cannot show which module it imported.\nFINDING manifest.md:11 follow-on: test_logs names logs/base_read_counts.log, which is absent from the run directory, so the base read count (92 of 111) the done_when asks to record is in no log the manifest names.\nFINDING logs/head_read_counts.log:4 follow-on: the cited log ships a second round-trip figure, 37 plans byte-nonidentical, against the manifest's 141 of 143; it measures a raw write_state rather than the store's write and is identical at base and head, but the manifest never reconciles the two figures.\n",
+  "review_run_id": "r-20261001T065734857379-review-of-section-body-records-are-read",
+  "reviewed_base_sha": "84fd7ff4f",
+  "reviewed_head_sha": "20ce5e12757e131db1cd933733f8676854b50456",
+  "reviewed_run_id": "r-20261001T060045230313-section-body-records-are-read",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T065734857379-review-of-section-body-records-are-read",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T07:07:30.904976+00:00",
+  "total": 93
+}

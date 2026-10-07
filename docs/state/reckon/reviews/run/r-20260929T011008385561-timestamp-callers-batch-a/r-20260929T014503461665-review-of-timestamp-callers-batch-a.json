@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 13,
+  "call_sites": [
+    "reckon/crew/hold.py:_as_reading",
+    "reckon/crew/lane_document.py:read_lane_document",
+    "reckon/crew/lane_evidence.py:infer_binding_window",
+    "reckon/crew/obligations.py:_row_age",
+    "reckon/crew/pace_replay.py:_read_clock",
+    "reckon/crew/paid_lanes.py:read_local_lane",
+    "reckon/crew/query.py:parse_watch_row",
+    "reckon/crew/resumption.py:probe_lane_availability",
+    "reckon/crew/rollout.py:read_rollout_receipt",
+    "reckon/crew/routing.py:reap_idle_session_members",
+    "reckon/crew/runs.py:_watch_event",
+    "reckon/crew/summary.py:run_rows",
+    "reckon/crew/window_reading.py:_observation_time"
+  ],
+  "completed_at": "2026-09-29T02:17:52.995Z",
+  "dispatched_at": "2026-09-29T01:45:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/rollout.py",
+      "line": "244",
+      "text": "a zone-naming stamp that is not \"T\"-separated comes back with its zone stripped: at base \"2026-09-29 01:02:03+00:00\" returned aware 2026-09-29T01:02:03+00:00 and at head it returns naive 2026-09-29T01:02:03, losing the instant rather than preserving it; the condition is not produced by the records this caller reads (0 of 4,179 sampled ~/.codex/sessions records use a space separator) but the code contradicts the rule stated at rollout.py:237-239."
+    },
+    {
+      "file": "reckon/crew/query.py",
+      "line": "605",
+      "text": "the new _states_zone gate narrows what the reader accepts: the same space-separated zone-naming stamp returned (\"2026-09-29T01:02:03+00:00\", \"utc\") at base and (None, \"unknown\") at head, so a stored stamp that states its zone is now reported as naming none."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011008385561-timestamp-callers-batch-a/manifest.md",
+      "line": "47",
+      "text": "the two suite observations are written as block YAML rather than the armed JSON the manifest template names, so reckon/crew/review.py takes the first indented key as the gate path, both logs read absent, and the read path stores added_failure_count as unmeasured for this run instead of the 0 the two logs support."
+    },
+    {
+      "file": "docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-batch-a.html",
+      "line": "35",
+      "text": "states \"A private helper left with no caller is deleted\" while no def line is deleted anywhere in the diff - the only removals outside function bodies are three datetime imports - so a reader cannot identify which helper was meant or whether one was removed at all."
+    },
+    {
+      "file": "docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-batch-a.html",
+      "line": "42",
+      "text": "labels the base arm 142cdf05 where base_arm.txt:1 and manifest.md:48 both record it at a15e11cb; 142cdf05 is the revision the recorded outputs were taken at, so the row names the wrong evidence for its own 4 failed / 346 passed figures."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011008385561-timestamp-callers-batch-a/head_test.txt",
+      "line": "1",
+      "text": "the log the manifest lists among test_logs opens on the pytest progress line and names neither the revision it ran at, nor its tree, nor its command, where base_arm.txt and head_arm.txt carry all three."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 13 production call site(s)",
+    "diff": "read commit by commit against a15e11cb - one commit, sixteen files, 518 insertions; each of the thirteen migrations delegates to parse_utc in one line and three now-unused datetime imports are dropped, with the test, fragment and figure the remaining additions.",
+    "done_when": "the fence at prompt.txt:92 names the thirteen readers; tests/test_timestamp_callers_batch_a.py asserts each reader's recorded output over nine shared inputs plus an AST walk, and I reproduced it in a scratch tree at the reviewed head (119 passed, exit 0) and re-derived the run's added-failure count as 0 from base_arm.txt and head_arm.txt.",
+    "goal": "read the node goal at prompt.txt:25 against the landed diff a15e11cb..b786f51e - all thirteen named readers call reckon._timestamps.parse_utc and no fromisoformat call remains in the thirteen modules (AST walk reproduced here), but two keep a policy that changes an input the base accepted: reckon/crew/rollout.py:244 returns a zone-naming stamp as naive when it is not \"T\"-separated, and reckon/crew/query.py:605 turns the same shape into (None, \"unknown\").",
+    "manifest": "read; it records both arms, their logs and their failure ids (manifest.md:47, manifest.md:59), but writes the pair as block YAML rather than the armed JSON the template names, so the read path resolves no gate log and added_failure_count comes back unmeasured for this run.",
+    "write_paths": "read the manifest's sixteen declared paths (manifest.md:3, prompt.txt:52-67) against git diff --name-status a15e11cb..b786f51e - the sixteen changed paths are exactly the declared set with nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_timestamp_callers_batch_a.py compares the callers against literals rather than against its own inputs, and I made both guards fire - the declared hold._as_moment mutation reddens tests/test_timestamp_callers_batch_a.py:321 and a reintroduced fromisoformat reddens test_no_caller_parses_iso_strings_itself - though canon() reduces a datetime to its instant, so the rollout zone-drop is invisible to it.",
+    "evidence": "both arms are recorded with revision, tree, command and module paths (base_arm.txt:1, head_arm.txt:1) and reproduce here, but the fragment misnames the base arm's revision and claims a deletion the diff lacks, and the manifest's block-YAML suite fields leave the added-failure count unmeasured on the read path.",
+    "fit": "the one-line delegations match the idiom of reckon/crew/summary.py:524 and the new names state mechanism, but \"does this stamp name a zone\" is written twice (reckon/crew/query.py:587, reckon/crew/rollout.py:240) where reckon/_timestamps.py could hold it once, and the batch label is carried into the test and fragment names.",
+    "goal_fidelity": "thirteen of thirteen readers call parse_utc and none keeps fromisoformat, but reckon/crew/rollout.py:244 drops a stated zone for a stamp written with a separator other than \"T\", which the base returned aware, so observable behaviour is not preserved for every input.",
+    "scope_discipline": "git diff --name-status a15e11cb..b786f51e lists exactly the sixteen paths declared at manifest.md:3, and the single commit carries no hunk the goal does not imply."
+  },
+  "kind": "code",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal at prompt.txt:25 against the landed diff a15e11cb..b786f51e - all thirteen named readers call reckon._timestamps.parse_utc and no fromisoformat call remains in the thirteen modules (AST walk reproduced here), but two keep a policy that changes an input the base accepted: reckon/crew/rollout.py:244 returns a zone-naming stamp as naive when it is not \"T\"-separated, and reckon/crew/query.py:605 turns the same shape into (None, \"unknown\").\nVERDICT done_when: the fence at prompt.txt:92 names the thirteen readers; tests/test_timestamp_callers_batch_a.py asserts each reader's recorded output over nine shared inputs plus an AST walk, and I reproduced it in a scratch tree at the reviewed head (119 passed, exit 0) and re-derived the run's added-failure count as 0 from base_arm.txt and head_arm.txt.\nVERDICT write_paths: read the manifest's sixteen declared paths (manifest.md:3, prompt.txt:52-67) against git diff --name-status a15e11cb..b786f51e - the sixteen changed paths are exactly the declared set with nothing outside them.\nVERDICT manifest: read; it records both arms, their logs and their failure ids (manifest.md:47, manifest.md:59), but writes the pair as block YAML rather than the armed JSON the template names, so the read path resolves no gate log and added_failure_count comes back unmeasured for this run.\nVERDICT diff: read commit by commit against a15e11cb - one commit, sixteen files, 518 insertions; each of the thirteen migrations delegates to parse_utc in one line and three now-unused datetime imports are dropped, with the test, fragment and figure the remaining additions.\nCALL_SITES: reckon/crew/hold.py:_as_reading, reckon/crew/lane_document.py:read_lane_document, reckon/crew/lane_evidence.py:infer_binding_window, reckon/crew/obligations.py:_row_age, reckon/crew/pace_replay.py:_read_clock, reckon/crew/paid_lanes.py:read_local_lane, reckon/crew/query.py:parse_watch_row, reckon/crew/resumption.py:probe_lane_availability, reckon/crew/rollout.py:read_rollout_receipt, reckon/crew/routing.py:reap_idle_session_members, reckon/crew/runs.py:_watch_event, reckon/crew/summary.py:run_rows, reckon/crew/window_reading.py:_observation_time\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: thirteen of thirteen readers call parse_utc and none keeps fromisoformat, but reckon/crew/rollout.py:244 drops a stated zone for a stamp written with a separator other than \"T\", which the base returned aware, so observable behaviour is not preserved for every input.\nSCORE evidence: 15\nJUSTIFICATION evidence: both arms are recorded with revision, tree, command and module paths (base_arm.txt:1, head_arm.txt:1) and reproduce here, but the fragment misnames the base arm's revision and claims a deletion the diff lacks, and the manifest's block-YAML suite fields leave the added-failure count unmeasured on the read path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status a15e11cb..b786f51e lists exactly the sixteen paths declared at manifest.md:3, and the single commit carries no hunk the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_timestamp_callers_batch_a.py compares the callers against literals rather than against its own inputs, and I made both guards fire - the declared hold._as_moment mutation reddens tests/test_timestamp_callers_batch_a.py:321 and a reintroduced fromisoformat reddens test_no_caller_parses_iso_strings_itself - though canon() reduces a datetime to its instant, so the rollout zone-drop is invisible to it.\nSCORE fit: 17\nJUSTIFICATION fit: the one-line delegations match the idiom of reckon/crew/summary.py:524 and the new names state mechanism, but \"does this stamp name a zone\" is written twice (reckon/crew/query.py:587, reckon/crew/rollout.py:240) where reckon/_timestamps.py could hold it once, and the batch label is carried into the test and fragment names.\nFINDING reckon/crew/rollout.py:244 a zone-naming stamp that is not \"T\"-separated comes back with its zone stripped: at base \"2026-09-29 01:02:03+00:00\" returned aware 2026-09-29T01:02:03+00:00 and at head it returns naive 2026-09-29T01:02:03, losing the instant rather than preserving it; the condition is not produced by the records this caller reads (0 of 4,179 sampled ~/.codex/sessions records use a space separator) but the code contradicts the rule stated at rollout.py:237-239.\nFINDING reckon/crew/query.py:605 the new _states_zone gate narrows what the reader accepts: the same space-separated zone-naming stamp returned (\"2026-09-29T01:02:03+00:00\", \"utc\") at base and (None, \"unknown\") at head, so a stored stamp that states its zone is now reported as naming none.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011008385561-timestamp-callers-batch-a/manifest.md:47 the two suite observations are written as block YAML rather than the armed JSON the manifest template names, so reckon/crew/review.py takes the first indented key as the gate path, both logs read absent, and the read path stores added_failure_count as unmeasured for this run instead of the 0 the two logs support.\nFINDING docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-batch-a.html:35 states \"A private helper left with no caller is deleted\" while no def line is deleted anywhere in the diff - the only removals outside function bodies are three datetime imports - so a reader cannot identify which helper was meant or whether one was removed at all.\nFINDING docs/evidence/fragments/a-worker-reuses-before-it-writes/timestamp-callers-batch-a.html:42 labels the base arm 142cdf05 where base_arm.txt:1 and manifest.md:48 both record it at a15e11cb; 142cdf05 is the revision the recorded outputs were taken at, so the row names the wrong evidence for its own 4 failed / 346 passed figures.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011008385561-timestamp-callers-batch-a/head_test.txt:1 the log the manifest lists among test_logs opens on the pytest progress line and names neither the revision it ran at, nor its tree, nor its command, where base_arm.txt and head_arm.txt carry all three.",
+  "review_run_id": "r-20260929T014503461665-review-of-timestamp-callers-batch-a",
+  "reviewed_base_sha": "a15e11cbf453c71af872bc9e402ac9c1224bd929",
+  "reviewed_head_sha": "b786f51e7e54d9c3828b7ed6fc9853fb67505adb",
+  "reviewed_run_id": "r-20260929T011008385561-timestamp-callers-batch-a",
+  "reviewer_run_id": "r-20260929T014503461665-review-of-timestamp-callers-batch-a",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T02:05:00+00:00",
+  "total": 85
+}

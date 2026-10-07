@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:06:54.953Z",
+  "dispatched_at": "2026-10-05T14:03:20Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion.py:7240",
+      "id": "duplicate_owner-1",
+      "reason": "the section should name `promotion._plan_remaining_sections` as the existing declaration reader (extend it, or state in one line why the coverage question is a different question that cannot share it), so the state-reader duplicate the \u00a711 census tracks is not re-created.",
+      "text": "\u00a716 makes the unit of review the authored section and keys the gate's coverage question on `section_declarations` (`done` means covered), but `promotion._plan_remaining_sections` already reads the same `section_declarations` map to answer which sections are still outstanding, and the plan names neither it nor its caller as the reader to extend; two readers of one declaration map drift on what \"not outstanding\" means, which is exactly the class of defect \u00a716 exists to close for section identity.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6d0e8d3525b32f6a47bd353d00350460a99cdd3ea69344cf2227fafdd65feab3",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 71,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T140302494308-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "a4c11ffd45df01e112dd37b7e216937266ff4408",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design puts one raw-text enumerator behind a three-field interface (identity, heading text, replaced span) and rewires thirteen heading walks onto it, so substantial parsing behaviour hides behind a smaller interface than it replaces.",
+    "duplicate_owner": "a finding \u2014 the coverage predicate \u00a716 adds reads `section_declarations` to decide which sections are outstanding without naming the package's existing `section_declarations` reader, `promotion._plan_remaining_sections`, which already answers a near-identical outstanding-sections question from the same map.",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds one public definition (the coverage predicate) and names it, states in its own text that nothing is retired because the identity digest and the prose walk keep their names, reuses the existing plan-review-missing refusal family rather than adding a family, and adds no CLI option or MCP view.",
+    "reuse_search": "pass \u2014 \u00a716 names the mechanisms it extends by file and symbol (`_StructuredSectionSpanParser` in `reckon/_plan_html.py`, `_authored_prose`/`_AuthoredProseParser`/`_fingerprint_forms` in `reckon/crew/plan_review.py`, `_section_heading`/`_wrapper_section_heading`/`_section_body_end`/`landed_section_ids` in `reckon/_store.py`, `_authored_section_headings` in `reckon/mcp_views.py`, `promotion._landed_sections`) and opens each rather than restating it.",
+    "thin_wrapper": "pass \u2014 no parallel layer is proposed: \u00a716 explicitly consolidates onto `_StructuredSectionSpanParser` (\"consolidates onto the parser rather than adding a scanner\"), merges wrapper-id resolution into it from the store, and extends `_fingerprint_forms` with a third recognised form rather than writing a second form reader."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.900543+00:00"
+}

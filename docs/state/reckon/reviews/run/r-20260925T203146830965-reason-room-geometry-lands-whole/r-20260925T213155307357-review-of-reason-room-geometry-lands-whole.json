@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-25T22:17:12.202Z",
+  "dispatched_at": "2026-09-25T21:32:12Z",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html",
+      "line": "316",
+      "text": "the landing record (and the same sentence at docs/plans/the-fleet-counters-count-the-fleet.html:175) says the arrow sat on column 85 at 971d4889 with _display_state eliding every state word, but at that revision the arrow sits on column 107 and no classifier word is elided to the cell (STATE_WORD=22, the widest word), so the record's reproduction reasoning is false for its base revision; the actionable conclusion survives, but a coordinator correcting the followup from this record would be working from a false history."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit; c9a2ff4b moves the seven test files onto the compressed row (counter block, role elision, clause cuts, the long-state guard at tests/test_ticker_reads_cleanly.py:181) and 39f4c96f appends the plan paragraph and the evidence anchor, with no product code changed.",
+    "done_when": "the done_when asks that the nine assigned files add no failures at 971d4889 and at head, that the long-state test hold the arrow and be red at 5ef9ee49, and that the manifest name each file changed; the recorded arms (259 passed at head, 26 failed / 233 passed for the same files on 971d4889) assert the first and third, the red-at-5ef9ee49 clause is unmeetable because reckon/crew/ticker.py is blob 7ea78c4b at both 5ef9ee49 and head, and the node recorded that falsification plus a mutation control that reddens the guard.",
+    "goal": "the node's goal is to bring the seven test files pinning the retired row geometry onto the compressed row and to keep a long state word's arrow on one column; tests/test_ticker_reads_cleanly.py:181 carries the long-state guard, and I measured all 56 classifier-word rows on one arrow column at the reviewed head.",
+    "manifest": "read; it records status complete, 259 passed at head, 26 failed / 233 passed at 971d4889 and the negative control, but its follow_parallels repeats the landing record's column-85-at-971d4889 claim that my own measurement contradicts.",
+    "write_paths": "the manifest declares thirteen paths; the two commits touch nine files (seven tests, two docs; git diff --stat 5ef9ee49..39f4c96f) and none outside the declared set, with reckon/crew/ticker.py declared but untouched."
+  },
+  "justifications": {
+    "durability": "the guard at tests/test_ticker_reads_cleanly.py:181 reddens when the elision is removed (my in-process control moves 5 of 56 rows at the reviewed head) and its cell-content and non-empty-head assertions are what catch a to_state widening the left-aligned destination cell cannot move the arrow for.",
+    "evidence": "the head arm, the base arm and the mutation control are logged and reproducible (test_logs under this run's directory) while the landing record's own reproduction table at docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html:316 asserts an arrow column at 971d4889 that no render at that revision produces.",
+    "fit": "the added pins read the renderer's own constants and display helpers rather than literals, the test names state the mechanism, and ruff check and ruff format --check pass clean on all seven changed files.",
+    "goal_fidelity": "both halves of the goal hold at the reviewed head (every classifier word elided to STATE_WORD=10 at reckon/crew/ticker.py:208, the arrow on one column), the second by the base's own geometry and now guarded rather than reimplemented.",
+    "scope_discipline": "every path in the diff (git diff --stat 5ef9ee49..39f4c96f) is inside the manifest's thirteen declared write paths, and the two non-geometric pin repairs are named in the manifest's failure_attribution."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to bring the seven test files pinning the retired row geometry onto the compressed row and to keep a long state word's arrow on one column; tests/test_ticker_reads_cleanly.py:181 carries the long-state guard, and I measured all 56 classifier-word rows on one arrow column at the reviewed head.\nVERDICT done_when: the done_when asks that the nine assigned files add no failures at 971d4889 and at head, that the long-state test hold the arrow and be red at 5ef9ee49, and that the manifest name each file changed; the recorded arms (259 passed at head, 26 failed / 233 passed for the same files on 971d4889) assert the first and third, the red-at-5ef9ee49 clause is unmeetable because reckon/crew/ticker.py is blob 7ea78c4b at both 5ef9ee49 and head, and the node recorded that falsification plus a mutation control that reddens the guard.\nVERDICT write_paths: the manifest declares thirteen paths; the two commits touch nine files (seven tests, two docs; git diff --stat 5ef9ee49..39f4c96f) and none outside the declared set, with reckon/crew/ticker.py declared but untouched.\nVERDICT manifest: read; it records status complete, 259 passed at head, 26 failed / 233 passed at 971d4889 and the negative control, but its follow_parallels repeats the landing record's column-85-at-971d4889 claim that my own measurement contradicts.\nVERDICT diff: read commit by commit; c9a2ff4b moves the seven test files onto the compressed row (counter block, role elision, clause cuts, the long-state guard at tests/test_ticker_reads_cleanly.py:181) and 39f4c96f appends the plan paragraph and the evidence anchor, with no product code changed.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: both halves of the goal hold at the reviewed head (every classifier word elided to STATE_WORD=10 at reckon/crew/ticker.py:208, the arrow on one column), the second by the base's own geometry and now guarded rather than reimplemented.\nSCORE evidence: 14\nJUSTIFICATION evidence: the head arm, the base arm and the mutation control are logged and reproducible (test_logs under this run's directory) while the landing record's own reproduction table at docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html:316 asserts an arrow column at 971d4889 that no render at that revision produces.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (git diff --stat 5ef9ee49..39f4c96f) is inside the manifest's thirteen declared write paths, and the two non-geometric pin repairs are named in the manifest's failure_attribution.\nSCORE durability: 18\nJUSTIFICATION durability: the guard at tests/test_ticker_reads_cleanly.py:181 reddens when the elision is removed (my in-process control moves 5 of 56 rows at the reviewed head) and its cell-content and non-empty-head assertions are what catch a to_state widening the left-aligned destination cell cannot move the arrow for.\nSCORE fit: 19\nJUSTIFICATION fit: the added pins read the renderer's own constants and display helpers rather than literals, the test names state the mechanism, and ruff check and ruff format --check pass clean on all seven changed files.\nFINDING docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html:316 the landing record (and the same sentence at docs/plans/the-fleet-counters-count-the-fleet.html:175) says the arrow sat on column 85 at 971d4889 with _display_state eliding every state word, but at that revision the arrow sits on column 107 and no classifier word is elided to the cell (STATE_WORD=22, the widest word), so the record's reproduction reasoning is false for its base revision; the actionable conclusion survives, but a coordinator correcting the followup from this record would be working from a false history.\n",
+  "review_run_id": "r-20260925T213155307357-review-of-reason-room-geometry-lands-whole",
+  "reviewed_base_sha": "5ef9ee495f297954cbaee7765d295ba27482be11",
+  "reviewed_head_sha": "39f4c96f1443479b6ad81d0c6d833fa1ca861562",
+  "reviewed_run_id": "r-20260925T203146830965-reason-room-geometry-lands-whole",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T22:09:12.274356+00:00",
+  "total": 88
+}

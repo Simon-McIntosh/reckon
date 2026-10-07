@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3815"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T09:38:23.071746+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": "90",
+      "text": "the brief landing contract sends the landing record and the evidence anchor into \"this run's own directory\" and then asserts \"both go into your final commit\"; that directory is crew_home()/runs/<run_id>/ (reckon/crew/runs.py:38-50, documented \"never committed\") and lies outside the worktree, so the paths the sentence names cannot be staged - the reproduction prints \"fatal: ... is outside repository at '<worktree>'\" with exit 128 and the index stays clean - and the plan-carrier sentence survives only because it also states both live in this worktree, the premise this variant drops while keeping the conclusion. The same claim that the contracts differ only in destination is written at reckon/crew/prompts.py:84 and tests/test_brief_prompt.py:129, which is why the dropped premise is not visible in the diff. It is reached by every brief dispatch that can write its worktree, the implement-role brief run the plan section 4 supports; the only production caller of compose_prompt (reckon/crew/dispatch.py:3815) passes no brief yet, so the clause is latent until the carrier is wired."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against e731091f; 488d3e92 adds BRIEF_LANDING_CONTRACT, the brief keyword and the task-authority slot to reckon/crew/prompts.py and adds tests/test_brief_prompt.py, and ba1fe43c appends the landing record, the evidence anchor and one figure.",
+    "done_when": "the done_when names tests/test_brief_prompt.py for verbatim carry, fence and manifest retention, the absence of a plan-section read instruction and byte-identity with an empty brief; the manifest records 11 passed exit 0 and the run's gate-brief-prompt.log carries rev=488d3e92 for the tree under test.",
+    "goal": "the node goal is a composer that builds a worker prompt from a brief in place of a plan section; reckon/crew/prompts.py:306-308 swaps the task-authority slot and :343 selects BRIEF_LANDING_CONTRACT, both read in the diff.",
+    "manifest": "read in the run directory; it records the 11-test gate, a 129-test regression over 16 prompt and manifest modules, a 73-test doccheck, the declared negative control and a log for each.",
+    "write_paths": "the declared scope is reckon/crew/prompts.py, tests/test_brief_prompt.py, docs/evidence/archive/a-worker-can-take-a-brief-landed.html, docs/figures/a-worker-can-take-a-brief and docs/plans/a-worker-can-take-a-brief.html; every path in both commits lies inside it."
+  },
+  "justifications": {
+    "durability": "the declared mutation reddens tests/test_brief_prompt.py::test_a_brief_prompt_carries_no_plan_section_read_instruction with its log, but no assertion pins the brief prompt's own wording, leaving the false clause at reckon/crew/prompts.py:90 unguarded.",
+    "evidence": "the manifest's 488d3e92 gate result is confirmed by the rev header of the run's gate-brief-prompt.log, and the reviewed head ba1fe43c reads clean in its own worktree.",
+    "fit": "BRIEF_LANDING_CONTRACT at reckon/crew/prompts.py:87 follows the standalone-constant pattern of its neighbour at :67, but the comment at :84 and the test comment at tests/test_brief_prompt.py:129 both claim the two contracts differ only in destination, which the false clause shows they do not.",
+    "goal_fidelity": "the brief carrier is composed as the node goal and the plan's section 3 state, but the landing contract it selects carries a sentence its reader cannot execute (FINDING at reckon/crew/prompts.py:90).",
+    "scope_discipline": "git show --stat on both commits lists only the five declared paths, and the evidence anchor appends 90 lines without deleting a predecessor's record."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a composer that builds a worker prompt from a brief in place of a plan section; reckon/crew/prompts.py:306-308 swaps the task-authority slot and :343 selects BRIEF_LANDING_CONTRACT, both read in the diff.\nVERDICT done_when: the done_when names tests/test_brief_prompt.py for verbatim carry, fence and manifest retention, the absence of a plan-section read instruction and byte-identity with an empty brief; the manifest records 11 passed exit 0 and the run's gate-brief-prompt.log carries rev=488d3e92 for the tree under test.\nVERDICT write_paths: the declared scope is reckon/crew/prompts.py, tests/test_brief_prompt.py, docs/evidence/archive/a-worker-can-take-a-brief-landed.html, docs/figures/a-worker-can-take-a-brief and docs/plans/a-worker-can-take-a-brief.html; every path in both commits lies inside it.\nVERDICT manifest: read in the run directory; it records the 11-test gate, a 129-test regression over 16 prompt and manifest modules, a 73-test doccheck, the declared negative control and a log for each.\nVERDICT diff: read commit by commit against e731091f; 488d3e92 adds BRIEF_LANDING_CONTRACT, the brief keyword and the task-authority slot to reckon/crew/prompts.py and adds tests/test_brief_prompt.py, and ba1fe43c appends the landing record, the evidence anchor and one figure.\nCALL_SITES: reckon/crew/dispatch.py:3815\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the brief carrier is composed as the node goal and the plan's section 3 state, but the landing contract it selects carries a sentence its reader cannot execute (FINDING at reckon/crew/prompts.py:90).\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's 488d3e92 gate result is confirmed by the rev header of the run's gate-brief-prompt.log, and the reviewed head ba1fe43c reads clean in its own worktree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat on both commits lists only the five declared paths, and the evidence anchor appends 90 lines without deleting a predecessor's record.\nSCORE durability: 17\nJUSTIFICATION durability: the declared mutation reddens tests/test_brief_prompt.py::test_a_brief_prompt_carries_no_plan_section_read_instruction with its log, but no assertion pins the brief prompt's own wording, leaving the false clause at reckon/crew/prompts.py:90 unguarded.\nSCORE fit: 17\nJUSTIFICATION fit: BRIEF_LANDING_CONTRACT at reckon/crew/prompts.py:87 follows the standalone-constant pattern of its neighbour at :67, but the comment at :84 and the test comment at tests/test_brief_prompt.py:129 both claim the two contracts differ only in destination, which the false clause shows they do not.\nFINDING reckon/crew/prompts.py:90 the brief landing contract sends the landing record and the evidence anchor into \"this run's own directory\" and then asserts \"both go into your final commit\"; that directory is crew_home()/runs/<run_id>/ (reckon/crew/runs.py:38-50, documented \"never committed\") and lies outside the worktree, so the paths the sentence names cannot be staged - the reproduction prints \"fatal: ... is outside repository at '<worktree>'\" with exit 128 and the index stays clean - and the plan-carrier sentence survives only because it also states both live in this worktree, the premise this variant drops while keeping the conclusion. The same claim that the contracts differ only in destination is written at reckon/crew/prompts.py:84 and tests/test_brief_prompt.py:129, which is why the dropped premise is not visible in the diff. It is reached by every brief dispatch that can write its worktree, the implement-role brief run the plan section 4 supports; the only production caller of compose_prompt (reckon/crew/dispatch.py:3815) passes no brief yet, so the clause is latent until the carrier is wired.\n",
+  "review_run_id": "r-20260925T093823071746-review-of-brief-prompt-composition",
+  "reviewed_base_sha": "e731091f0d04055bb3246fb1a9fdcb9b988f23ef",
+  "reviewed_head_sha": "ba1fe43c26dcde725af081e8768c23fd9e87b8a8",
+  "reviewed_run_id": "r-20260925T075538405396-brief-prompt-composition",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T10:26:46.881283+00:00",
+  "total": 89
+}

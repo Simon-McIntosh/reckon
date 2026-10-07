@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T06:11:35.687Z",
+  "dispatched_at": "2026-10-02T05:59:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "3259",
+      "severity": "follow-on",
+      "text": "follow-on: the guard's own docstring at reckon/crew/promotion.py lines 3257-3260 still enumerates 'the gates, decisions, followups, questions, research and comment sections' as if that list were the whole admitted class, the same as-if-exhaustive wording this node corrected in the test module docstring; it is product source outside this node's write scope, so it is named for a follow-up node."
+    },
+    {
+      "file": "tests/test_landing_commit_carries_only_its_own_comment.py",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "follow-on: the examples list names 'landed notes' and 'evidence' as data-reckon sections, but the guard decomposes only section[data-reckon] (reckon/crew/promotion.py:3331) while landed notes are div/article[data-reckon] elements that only lose their attribute; the heading 'every data-reckon section' is accurate for sections and slightly loose for a non-section example, which a reader could follow to a wrong assumption about what is decomposed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read 87ba073b7d263b5d7ead9f02822b4fb1e4d51495 against fd667e1c52e1026dcdf86f650e2e42bb5e9fb54f; 9 insertions and 8 deletions in one file, the module docstring only, with no test logic or assertion changed.",
+    "done_when": "the done_when requires the module docstring of tests/test_landing_commit_carries_only_its_own_comment.py to say every data-reckon section the store writes and to name those sections as examples, with base and head arms showing zero added failures; the head docstring says 'every ``data-reckon`` section the store writes, such as ...' and the manifest's baseline_suite and after_suite carry the reviewed run's own base and head arms both at 6 passed, exit 0, failure_count 0, so the added failure count is zero.",
+    "goal": "the node's goal is to present the landing-guard test docstring's list of reckon-owned sections as examples rather than an exhaustive list; tests/test_landing_commit_carries_only_its_own_comment.py lines 13-16 now name the class (every data-reckon section the store writes) and introduce the list with 'such as'.",
+    "manifest": "read; it records status complete, the landed docstring rewrite at commit 87ba073b, both arm logs with their commands and revisions, added_failure_count 0 via baseline_suite and after_suite, no negative control because a docstring-only change adds no control mutation, and an empty follow_ons.",
+    "write_paths": "the declared write paths are the test file, a fragment under docs/evidence/fragments/the-suite-is-green-at-head/ and a figure directory; the landed diff touches only tests/test_landing_commit_carries_only_its_own_comment.py."
+  },
+  "justifications": {
+    "durability": "the change is documentation, so no test reddens if the file text regresses; the six tests in tests/test_landing_commit_carries_only_its_own_comment.py still cover the guard behaviour it documents and passed in both arms.",
+    "evidence": "base-arm.log (rev fd667e1c, 6 passed, EXIT=0) and head-arm.log (rev 87ba073b, 6 passed, EXIT=0) record the measured gate and its revisions, and the manifest's baseline_suite and after_suite carry failure_count 0 and empty failure_ids for each arm.",
+    "fit": "the docstring's prose and its double-backtick 'data-reckon' literal match the store-owned-region idiom of the guard at reckon/crew/promotion.py lines 3251-3343, and the change introduces no name the naming rules forbid; the list is now signalled as examples ('such as'), which is the goal.",
+    "goal_fidelity": "tests/test_landing_commit_carries_only_its_own_comment.py lines 13-16 now present the list as examples of 'every ``data-reckon`` section the store writes', replacing the previous as-if-exhaustive enumeration, matching the guard's own selector at reckon/crew/promotion.py line 3331 (section[data-reckon]).",
+    "scope_discipline": "the landed diff touches only tests/test_landing_commit_carries_only_its_own_comment.py, a declared write path, and alters no line outside the module docstring."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to present the landing-guard test docstring's list of reckon-owned sections as examples rather than an exhaustive list; tests/test_landing_commit_carries_only_its_own_comment.py lines 13-16 now name the class (every data-reckon section the store writes) and introduce the list with 'such as'.\nVERDICT done_when: the done_when requires the module docstring of tests/test_landing_commit_carries_only_its_own_comment.py to say every data-reckon section the store writes and to name those sections as examples, with base and head arms showing zero added failures; the head docstring says 'every ``data-reckon`` section the store writes, such as ...' and the manifest's baseline_suite and after_suite carry the reviewed run's own base and head arms both at 6 passed, exit 0, failure_count 0, so the added failure count is zero.\nVERDICT write_paths: the declared write paths are the test file, a fragment under docs/evidence/fragments/the-suite-is-green-at-head/ and a figure directory; the landed diff touches only tests/test_landing_commit_carries_only_its_own_comment.py.\nVERDICT manifest: read; it records status complete, the landed docstring rewrite at commit 87ba073b, both arm logs with their commands and revisions, added_failure_count 0 via baseline_suite and after_suite, no negative control because a docstring-only change adds no control mutation, and an empty follow_ons.\nVERDICT diff: read 87ba073b7d263b5d7ead9f02822b4fb1e4d51495 against fd667e1c52e1026dcdf86f650e2e42bb5e9fb54f; 9 insertions and 8 deletions in one file, the module docstring only, with no test logic or assertion changed.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_landing_commit_carries_only_its_own_comment.py lines 13-16 now present the list as examples of 'every ``data-reckon`` section the store writes', replacing the previous as-if-exhaustive enumeration, matching the guard's own selector at reckon/crew/promotion.py line 3331 (section[data-reckon]).\nSCORE evidence: 18\nJUSTIFICATION evidence: base-arm.log (rev fd667e1c, 6 passed, EXIT=0) and head-arm.log (rev 87ba073b, 6 passed, EXIT=0) record the measured gate and its revisions, and the manifest's baseline_suite and after_suite carry failure_count 0 and empty failure_ids for each arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the landed diff touches only tests/test_landing_commit_carries_only_its_own_comment.py, a declared write path, and alters no line outside the module docstring.\nSCORE durability: 15\nJUSTIFICATION durability: the change is documentation, so no test reddens if the file text regresses; the six tests in tests/test_landing_commit_carries_only_its_own_comment.py still cover the guard behaviour it documents and passed in both arms.\nSCORE fit: 18\nJUSTIFICATION fit: the docstring's prose and its double-backtick 'data-reckon' literal match the store-owned-region idiom of the guard at reckon/crew/promotion.py lines 3251-3343, and the change introduces no name the naming rules forbid; the list is now signalled as examples ('such as'), which is the goal.\nFINDING reckon/crew/promotion.py:3259 follow-on: follow-on: the guard's own docstring at reckon/crew/promotion.py lines 3257-3260 still enumerates 'the gates, decisions, followups, questions, research and comment sections' as if that list were the whole admitted class, the same as-if-exhaustive wording this node corrected in the test module docstring; it is product source outside this node's write scope, so it is named for a follow-up node.\nFINDING tests/test_landing_commit_carries_only_its_own_comment.py:14 follow-on: follow-on: the examples list names 'landed notes' and 'evidence' as data-reckon sections, but the guard decomposes only section[data-reckon] (reckon/crew/promotion.py:3331) while landed notes are div/article[data-reckon] elements that only lose their attribute; the heading 'every data-reckon section' is accurate for sections and slightly loose for a non-section example, which a reader could follow to a wrong assumption about what is decomposed.",
+  "review_run_id": "r-20261002T055856851125-review-of-guard-test-docstring-names-sections-as-examples",
+  "reviewed_base_sha": "fd667e1c52e1026dcdf86f650e2e42bb5e9fb54f",
+  "reviewed_head_sha": "87ba073b7d263b5d7ead9f02822b4fb1e4d51495",
+  "reviewed_run_id": "r-20261002T054126492519-guard-test-docstring-names-sections-as-examples",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T06:02:00.000000+00:00",
+  "total": 89
+}

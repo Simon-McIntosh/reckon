@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4e05e287aa429d7c9a9aa2d290ffb1103316e4e7",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/velocity.py:2652 view",
+    "reckon/mcp.py:4007 crew view \"velocity\"",
+    "reckon/cli.py:5466 crew velocity",
+    "reckon/serve.py:2375 the velocity HTTP route"
+  ],
+  "completed_at": "2026-09-30T08:52:46.269Z",
+  "dispatched_at": "2026-09-30T08:17:54Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074902219028-velocity-counts-the-interface/manifest.md",
+      "line": "8",
+      "text": "the commits list cites 03a1adead51ac0c4c11de2d5dc0d6b5f6b4fd0f5, which resolves to no object in this repository while the delivered second commit is 03a1adeada2bb0a6a873f1e2e471b35014121d05, so a reader following the manifest's commit list cannot reach the docs commit."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074902219028-velocity-counts-the-interface/manifest.md",
+      "line": "10",
+      "text": "the landing line states parity \"at this repository's HEAD (public_definitions=1213, ...)\", a figure that does not hold at the delivered head 03a1adead, where the reading is 1222 (1213 is the base reading at 4e05e287a); promotion lands this line on the plan section, and line 20 repeats the same figure."
+    },
+    {
+      "file": "docs/evidence/fragments/a-worker-reuses-before-it-writes/velocity-counts-the-interface.html",
+      "line": "67",
+      "text": "the committed evidence table says \"At this node's revision both readings are: public definitions 1213\" while both readings at 03a1adead are 1222 public definitions, so the node's own evidence document records a count that does not hold at the revision it names."
+    }
+  ],
+  "head_log_revision": "4544e7ea2c14734b9014792a7822d139169b29ea",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against base 4e05e287a \u2014 4544e7ea adds the counter module, the report block and four tests, and 03a1adead adds only the evidence fragment; both messages are conventional with bodies.",
+    "done_when": "every clause holds against the artefacts \u2014 git grep over reckon/ at 03a1adead finds no import from docs/, reckon/interface_counts.py:326 read_trees lists a revision with ls-tree and reads bytes with one cat-file --batch pass (no checkout), tests/test_velocity_interface_counts.py builds the synthetic two-commit repo, and I re-derived the AST-selected gate file list independently: 9 files at 4e05e287a and 10 at 03a1adead, identical to both gate logs' own files: lines.",
+    "goal": "the goal asks the velocity view to report the reckon package's interface level at each week's end and its weekly change for four families; reckon/velocity.py:2503 _interface_week_rows and the report interfaces block at reckon/velocity.py:2611 deliver exactly that, and I re-read the four counts off the delivered tree (public_definitions=1222, cli_options=271, mcp_views=32, refusal_families=23 at 03a1adead, agreeing with the census at both the base and the head revision).",
+    "manifest": "read; status complete, its baseline_suite and after_suite commands are byte-identical to their own logs' command headers with matching revisions, exit statuses, failure counts and ids, and negative_control.log's first line repeats the declared mutation verbatim and ends EXIT=1; two recorded figures do not hold \u2014 the commits list cites a sha that resolves to no object and the parity figure is the base revision's reading, not the delivered head's.",
+    "write_paths": "both commits change only reckon/interface_counts.py, reckon/velocity.py, tests/test_velocity_interface_counts.py and the node's evidence fragment, all inside the five declared paths; the declared figures directory is unused, which the landing contract instructs for a node whose done-when names no figure."
+  },
+  "justifications": {
+    "durability": "the declared control shows tests/test_velocity_interface_counts.py:204 reddens when the MCP counter is forced to zero ({'mcp_views': 0} != {'mcp_views': 1}, EXIT=1), the parity assertion at :217 fails if the ported rules drift from the census, and :238 asserts a warm report adds no parse; the first week's change == counts comparison at :188 has both sides produced by the code under test, though it is derivable from the fixture and the sibling delta test pins the non-trivial case.",
+    "evidence": "the gate's arms, file lists, EXIT lines and added-failure delta of 0 all reconcile with the logs, but the parity figure the fragment and the landing line record is the base revision's reading (1213 at 4e05e287a against 1222 at the delivered 03a1adead, the new module contributing exactly 9 public definitions), and the head arm ran at 4544e7ea, the parent of the delivered head whose only delta is the docs fragment.",
+    "fit": "the module follows the surrounding idiom (velocity.py:144's git() helper, a week helper beside the other week helpers) with no plan labels or version suffixes in the new files; report() keys the new block on a project literally named reckon (reckon/velocity.py:2611), which sits close to the repo-agnostic rule but is what the plan's reckon/ package wording scopes, and it degrades to an empty block elsewhere.",
+    "goal_fidelity": "the four counts at 03a1adead reproduce the census exactly through the delivered module (census and interface_counts both read 1222/271/32/23) and the weekly block is served by reckon/velocity.py:2503 for the project named reckon.",
+    "scope_discipline": "the diff touches only the four declared paths (reckon/interface_counts.py, reckon/velocity.py, tests/test_velocity_interface_counts.py, docs/evidence/fragments/a-worker-reuses-before-it-writes/velocity-counts-the-interface.html) and adds nothing the goal does not imply."
+  },
+  "node": "review-of-velocity-counts-the-interface",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks the velocity view to report the reckon package's interface level at each week's end and its weekly change for four families; reckon/velocity.py:2503 _interface_week_rows and the report interfaces block at reckon/velocity.py:2611 deliver exactly that, and I re-read the four counts off the delivered tree (public_definitions=1222, cli_options=271, mcp_views=32, refusal_families=23 at 03a1adead, agreeing with the census at both the base and the head revision).\nVERDICT done_when: every clause holds against the artefacts \u2014 git grep over reckon/ at 03a1adead finds no import from docs/, reckon/interface_counts.py:326 read_trees lists a revision with ls-tree and reads bytes with one cat-file --batch pass (no checkout), tests/test_velocity_interface_counts.py builds the synthetic two-commit repo, and I re-derived the AST-selected gate file list independently: 9 files at 4e05e287a and 10 at 03a1adead, identical to both gate logs' own files: lines.\nVERDICT write_paths: both commits change only reckon/interface_counts.py, reckon/velocity.py, tests/test_velocity_interface_counts.py and the node's evidence fragment, all inside the five declared paths; the declared figures directory is unused, which the landing contract instructs for a node whose done-when names no figure.\nVERDICT manifest: read; status complete, its baseline_suite and after_suite commands are byte-identical to their own logs' command headers with matching revisions, exit statuses, failure counts and ids, and negative_control.log's first line repeats the declared mutation verbatim and ends EXIT=1; two recorded figures do not hold \u2014 the commits list cites a sha that resolves to no object and the parity figure is the base revision's reading, not the delivered head's.\nVERDICT diff: read both commits against base 4e05e287a \u2014 4544e7ea adds the counter module, the report block and four tests, and 03a1adead adds only the evidence fragment; both messages are conventional with bodies.\nCALL_SITES: reckon/velocity.py:2652 view, reckon/mcp.py:4007 crew view \"velocity\", reckon/cli.py:5466 crew velocity, reckon/serve.py:2375 the velocity HTTP route\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the four counts at 03a1adead reproduce the census exactly through the delivered module (census and interface_counts both read 1222/271/32/23) and the weekly block is served by reckon/velocity.py:2503 for the project named reckon.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate's arms, file lists, EXIT lines and added-failure delta of 0 all reconcile with the logs, but the parity figure the fragment and the landing line record is the base revision's reading (1213 at 4e05e287a against 1222 at the delivered 03a1adead, the new module contributing exactly 9 public definitions), and the head arm ran at 4544e7ea, the parent of the delivered head whose only delta is the docs fragment.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only the four declared paths (reckon/interface_counts.py, reckon/velocity.py, tests/test_velocity_interface_counts.py, docs/evidence/fragments/a-worker-reuses-before-it-writes/velocity-counts-the-interface.html) and adds nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: the declared control shows tests/test_velocity_interface_counts.py:204 reddens when the MCP counter is forced to zero ({'mcp_views': 0} != {'mcp_views': 1}, EXIT=1), the parity assertion at :217 fails if the ported rules drift from the census, and :238 asserts a warm report adds no parse; the first week's change == counts comparison at :188 has both sides produced by the code under test, though it is derivable from the fixture and the sibling delta test pins the non-trivial case.\nSCORE fit: 18\nJUSTIFICATION fit: the module follows the surrounding idiom (velocity.py:144's git() helper, a week helper beside the other week helpers) with no plan labels or version suffixes in the new files; report() keys the new block on a project literally named reckon (reckon/velocity.py:2611), which sits close to the repo-agnostic rule but is what the plan's reckon/ package wording scopes, and it degrades to an empty block elsewhere.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074902219028-velocity-counts-the-interface/manifest.md:8 the commits list cites 03a1adead51ac0c4c11de2d5dc0d6b5f6b4fd0f5, which resolves to no object in this repository while the delivered second commit is 03a1adeada2bb0a6a873f1e2e471b35014121d05, so a reader following the manifest's commit list cannot reach the docs commit.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074902219028-velocity-counts-the-interface/manifest.md:10 the landing line states parity \"at this repository's HEAD (public_definitions=1213, ...)\", a figure that does not hold at the delivered head 03a1adead, where the reading is 1222 (1213 is the base reading at 4e05e287a); promotion lands this line on the plan section, and line 20 repeats the same figure.\nFINDING docs/evidence/fragments/a-worker-reuses-before-it-writes/velocity-counts-the-interface.html:67 the committed evidence table says \"At this node's revision both readings are: public definitions 1213\" while both readings at 03a1adead are 1222 public definitions, so the node's own evidence document records a count that does not hold at the revision it names.\n",
+  "review_run_id": "r-20260930T081733815636-review-of-velocity-counts-the-interface",
+  "reviewed_base_sha": "4e05e287aa429d7c9a9aa2d290ffb1103316e4e7",
+  "reviewed_head_sha": "03a1adeada2bb0a6a873f1e2e471b35014121d05",
+  "reviewed_run_id": "r-20260930T074902219028-velocity-counts-the-interface",
+  "reviewer_run_id": "r-20260930T081733815636-review-of-velocity-counts-the-interface",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:03.085743+00:00",
+  "total": 91
+}

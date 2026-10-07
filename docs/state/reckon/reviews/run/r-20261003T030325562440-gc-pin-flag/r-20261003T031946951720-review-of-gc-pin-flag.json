@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own baseline_suite and after_suite gate logs named in its manifest, using reckon/crew/review.py:added_failures_from_gate_logs with each arm read against its own recorded working directory. baseline_suite (revision 2cd8e47a1eb9108aac40dd65fb2cf7e37225b4a0) reads logs/base-arm.log: '2 failed, 97 passed in 28.97s' EXIT=1, failure_count 2, failure_ids [tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt, tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition]. after_suite (revision 14c4c553f678717e421195bbf86102227c558e3c) reads logs/head-arm.log: '2 failed, 99 passed in 34.74s' EXIT=1, failure_count 2, the same two ids. Added = head minus base = none, so added_failure_count is 0 and added_failure_ids is empty. The head passes two more tests than the base, which are the node's two new CLI cases in tests/test_gc_pin_flag.py. The reviewer independently re-ran tests/test_gc_pin_flag.py at the reviewed head worktree: '2 passed in 9.79s' EXIT=0.",
+  "backend": "local",
+  "base_log_revision": "2cd8e47a1eb9108aac40dd65fb2cf7e37225b4a0",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:5564 \u2014 crew_gc, the CLI command the option was added to; it forwards pin_unique_commits to garbage_collect (reckon/cli.py:5570)",
+    "reckon/crew/routing.py:1410 \u2014 garbage_collect consumes the flag through _pinnable_unique_commits (reckon/crew/routing.py:1301,1620), the sweep \u00a79 taught to pin"
+  ],
+  "completed_at": "2026-10-03T03:31:23.166Z",
+  "dispatched_at": "2026-10-03T03:20:22Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030325562440-gc-pin-flag/logs/head-arm.log",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "The command header line names a test path with a doubled slash, 'tests/test_crew_help_names_//its_state.py', which does not match the argv the manifest's after_suite.command records ('test_crew_help_names_its_state.py'). The substance is intact \u2014 the head arm collected 101 items, which is the base 99 plus the new file's two, so the help-names-state test did run and its two pre-existing ids still appear \u2014 but a reader tying the head arm to its argv from the log alone sees a path that is not the one run. Cosmetic; the manifest already discloses it."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "5558",
+      "severity": "follow-on",
+      "text": "The new --pin-unique-commits is silently ignored under --scratch: the scratch branch calls garbage_collect_scratch (reckon/cli.py:5558-5562) which takes no pin argument, so 'crew gc --scratch --pin-unique-commits' reports the scratch sweep with the flag having no effect. This extends an existing pattern \u2014 the scratch branch already ignores --integrated-into and --retention-days \u2014 and pinning a scratch directory is meaningless, so it does not hold the node; the flag's help ('releases a dirty worktree') is the place a one-clause caveat would remove the surprise."
+    }
+  ],
+  "head_log_revision": "14c4c553f678717e421195bbf86102227c558e3c",
+  "item_verdicts": {
+    "call_sites": "Verified 2 production sites on the runtime path: reckon/cli.py:5564 (crew_gc forwards the flag) and reckon/crew/routing.py:1410 (garbage_collect consumes it via _pinnable_unique_commits); the node's own test file is not counted.",
+    "diff": "Read both commits end to end against 2cd8e47a1eb9108aac40dd65fb2cf7e37225b4a0. 14c4c553f adds +11 in reckon/cli.py (one option, one parameter, one forwarded keyword) and a new 114-line tests/test_gc_pin_flag.py; 0358a3886 adds the 91-line evidence fragment. No other branch or file is touched, and the --scratch branch (reckon/cli.py:5558) is unchanged.",
+    "done_when": "Every clause holds. The option exists and passes through (reckon/cli.py:5570); tests/test_gc_pin_flag.py:75 drives it through cli.main (CliRunner) over one dirty, unintegrated worktree in a temporary repository, and asserts at tests/test_gc_pin_flag.py:94-99 that the archive ref resolves to the worktree head ('resolves(root, f\"{ref}^{{commit}}\") == head'), that its file is readable through the ref, and that the tree is gone ('not tree.exists()'). The reviewer re-ran that file at the reviewed head: 2 passed, EXIT=0.",
+    "goal": "The node goal is \u00a710's done-when: crew gc --pin-unique-commits passes the option through. It does \u2014 reckon/cli.py:5564 adds the is_flag option and reckon/cli.py:5570 forwards it by keyword to garbage_collect, whose signature (reckon/crew/routing.py:1349) accepts pin_unique_commits and whose body reaches _pinnable_unique_commits at reckon/crew/routing.py:1410.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030325562440-gc-pin-flag/manifest.md; status complete, commits name 14c4c553f and 0358a3886, changed_paths names the three changed files, negative_control_log is a bare path, and the tests line reports base 2 failed/97 passed EXIT=1 and head 2 failed/99 passed EXIT=1 with added failure ids none, matching the two gate logs. The manifest itself discloses the head-arm log header's path typo (see findings).",
+    "write_paths": "Four paths were declared (reckon/cli.py, tests/test_gc_pin_flag.py, docs/evidence/fragments/a-finished-worktree-releases-without-a-force/gc-pin-flag.html, docs/figures/a-finished-worktree-releases-without-a-force/gc-pin-flag). Three changed against 2cd8e47a1 \u2014 reckon/cli.py (+11), tests/test_gc_pin_flag.py (+114) and the evidence fragment (+91); the declared figures directory was not created, correctly, since the landing draws no figure. No plan or shared index was edited."
+  },
+  "justifications": {
+    "durability": "The new case is red under the declared mutation that removes the pass-through (logs/negative-control.log, EXIT=1, id test_the_flag_pins_the_commits_then_the_worktree_is_gone), so the guard is shown firing rather than merely passing. Its assertions compare against independent sources \u2014 the ref content against a literal written into the temporary repository, and the archived head against 'git rev-parse HEAD' \u2014 not against a value the test handed the code under test, and tests/test_gc_pin_flag.py:103 pins the default-off behaviour so a flag that always pinned would also redden.",
+    "evidence": "Both gate arms are recorded with EXIT and their summary lines, the added-failure count was derived from those logs with the repository's own added_failures_from_gate_logs, the declared negative control is kept (logs/negative-control.log, 1 failed, EXIT=1, id tests/test_gc_pin_flag.py::test_the_flag_pins_the_commits_then_the_worktree_is_gone), and the reviewer reproduced the head file green. Deducted one because logs/head-arm.log's second header line names a test path with a doubled slash ('test_crew_help_names_//its_state.py') that does not match the command the manifest records, so the log header alone does not name the arm's exact argv.",
+    "fit": "The option follows the surrounding crew_gc options exactly (an @click.option with a mechanism-naming help string, forwarded by keyword at reckon/cli.py:5570), the test docstring and comments state the mechanism rather than the task, and no plan, sprint, ticket or version identifier appears in a filename, symbol or comment.",
+    "goal_fidelity": "The observable goal is met at reckon/cli.py:5570, where crew_gc forwards pin_unique_commits to garbage_collect, and reckon/crew/routing.py:1410 releases a dirty worktree only when that flag is set and its commits are pinnable (_pinnable_unique_commits, reckon/crew/routing.py:1301).",
+    "scope_discipline": "Only the three declared paths changed against 2cd8e47a1; reckon/crew/routing.py, the plan and every shared index are untouched, and the declared figures path was correctly left uncreated because the landing needs no figure."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \u00a710's done-when \u2014 crew gc --pin-unique-commits passes the option through \u2014 and it does, at reckon/cli.py:5564 (the is_flag option) and reckon/cli.py:5570 (forwarded by keyword to garbage_collect, whose signature at reckon/crew/routing.py:1349 accepts pin_unique_commits and whose body reaches _pinnable_unique_commits at reckon/crew/routing.py:1410).\nVERDICT done_when: every clause holds \u2014 the option passes through, tests/test_gc_pin_flag.py:75 drives it through cli.main over one dirty, unintegrated worktree in a temporary repository, and tests/test_gc_pin_flag.py:94-99 asserts the archive ref resolves to the worktree head, its file is readable through the ref, and the tree is gone; the reviewer re-ran that file at the reviewed head, 2 passed, EXIT=0.\nVERDICT write_paths: four declared, three changed against 2cd8e47a1 \u2014 reckon/cli.py (+11), tests/test_gc_pin_flag.py (+114) and the evidence fragment (+91); the declared figures directory was correctly left uncreated and no plan or shared index was touched.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030325562440-gc-pin-flag/manifest.md; status complete, commits 14c4c553f and 0358a3886, negative_control_log a bare path, and the tests line matches the two gate logs; it discloses the head-arm log header's path typo.\nVERDICT diff: read both commits end to end against 14c4c553f's parent 2cd8e47a1 \u2014 one option, one parameter and one forwarded keyword in reckon/cli.py, a new 114-line CLI test, and a 91-line evidence fragment; no other branch or file is touched.\nCALL_SITES: reckon/cli.py:5564, reckon/crew/routing.py:1410\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/cli.py:5570 forwards pin_unique_commits and reckon/crew/routing.py:1410 releases the dirty tree only when the flag is set and its commits are pinnable (_pinnable_unique_commits, reckon/crew/routing.py:1301).\nSCORE evidence: 19\nJUSTIFICATION evidence: both gate arms carry EXIT and summary lines, the added-failure count was derived from them with the repository's own added_failures_from_gate_logs, and the negative control is kept; deducted one because logs/head-arm.log line 8 names a doubled-slash test path that does not match the recorded argv.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only the three declared paths changed against 2cd8e47a1 and the declared figures path was correctly left uncreated.\nSCORE durability: 20\nJUSTIFICATION durability: the new case is red under the declared pass-through-removed mutation (logs/negative-control.log, EXIT=1), its assertions compare against independent git and literal sources, and tests/test_gc_pin_flag.py:103 pins the default-off behaviour.\nSCORE fit: 20\nJUSTIFICATION fit: the option matches the surrounding crew_gc options and help idiom at reckon/cli.py:5545-5570 and no plan, sprint, ticket or version identifier appears in any name, comment or filename.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T030325562440-gc-pin-flag/logs/head-arm.log:8 follow-on: the header names tests/test_crew_help_names_//its_state.py while the manifest's after_suite.command records tests/test_crew_help_names_its_state.py, so the log header alone does not name the arm's exact argv; the substance is intact and the manifest discloses it.\nFINDING reckon/cli.py:5558 follow-on: --pin-unique-commits is silently ignored under --scratch because the scratch branch calls garbage_collect_scratch, which takes no pin argument; this extends an existing pattern and pinning is meaningless there, so it does not hold the node, but the flag's help could name the caveat.",
+  "review_run_id": "r-20261003T031946951720-review-of-gc-pin-flag",
+  "reviewed_base_sha": "2cd8e47a1eb9108aac40dd65fb2cf7e37225b4a0",
+  "reviewed_head_sha": "0358a3886a2e1bdd9405369f46ffcf3ada2b0dbe",
+  "reviewed_run_id": "r-20261003T030325562440-gc-pin-flag",
+  "reviewer": "review-of-gc-pin-flag",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.879746+00:00",
+  "total": 99
+}

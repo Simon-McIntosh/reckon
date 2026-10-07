@@ -1,0 +1,47 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "",
+  "findings": [
+    {
+      "file": "tests/test_serving_origin.py",
+      "line": "1",
+      "text": "the eleven-file selection does not cover every module this wave landed: reckon/crew/serving_origin.py and its only test landed together at commit 9ea06319 (2026-09-21 14:50), inside the measured interval 1d2e70cc..825774198f7a637aa7aa6afc2d428390879fa45b, so a regression in that module leaves the report's \"112 passed, 2 failed\" unchanged and the gate cannot detect the omission from inside itself; re-run at the pinned revision, where both files are byte-identical to it by md5 (3b0f5ed5fc and 5d893d73bd), the omitted file is 23 passed exit 0, so the blind spot has not yet masked a wave regression. Four further test files added in the interval are also absent from the selection while exercising interval-changed modules: tests/test_evidence_from_report.py on reckon/evidence.py, tests/test_review_call_sites.py on reckon/crew/review.py, tests/test_shared_landing_paths.py on reckon/crew/runs.py, tests/test_watcher_unit_restart.py on reckon/service.py. Twenty-one test files were added in the interval and the selection names nine of them."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit; 2e4c8c8e adds the evidence anchor and the figure, b2148230 appends the plan landing record, and neither commit is reachable from a branch because promotion is the coordinator's step, which is the contract a worker is held to.",
+    "done_when": "the done-when names eleven files, one run at the head resolved when the node ran, base counts over the intersection with the exclusions listed by name, a pre-existing-or-added classification with added ids given explicitly, and an import-resolution check; report.md carries each clause and its cited logs corroborate the counts at both revisions.",
+    "goal": "the goal asks that the tests covering everything this wave merged pass at the current head rather than at a revision seventeen merges old; report.md:7 pins head 825774198f7a637aa7aa6afc2d428390879fa45b and report.md:16-20 re-measures the predecessor's staleness defect, but the selection certified is not co-extensive with the wave, because reckon/crew/serving_origin.py landed at 9ea06319 inside the measured interval and its only test, tests/test_serving_origin.py, is not among the eleven.",
+    "manifest": "read; manifest.md:9-14 states 112 passed and 2 failed at head 825774198f7a637aa7aa6afc2d428390879fa45b against 25 passed and 2 failed at base 1d2e70cc over the same two files, and its tests field names four logs, all under the reports directory.",
+    "write_paths": "read the manifest's four declared paths and the two commits; git show --stat 2e4c8c8e b2148230 lists docs/evidence/archive/a-window-paces-the-lane-landed.html, docs/figures/a-window-paces-the-lane/head-vs-base-gate.svg and docs/plans/a-window-paces-the-lane.html, and the report sits at the fourth declared path."
+  },
+  "justifications": {
+    "durability": "report.md:5-9 binds the report to one revision so a later reader must re-run rather than re-quant, but nothing reddens if reckon/crew/serving_origin.py regresses, because its coverage sits in tests/test_serving_origin.py, outside the certified selection.",
+    "evidence": "head-825774198f7a637aa7aa6afc2d428390879fa45b.log ends \"2 failed, 112 passed\" with the FAILED ids report.md:91-95 states, base-1d2e70cc.log ends \"2 failed, 25 passed\" on the same two ids, and superseded/ retains the refused pair with each run's own revision in its filename.",
+    "fit": "report.md keeps the predecessor's section order and states the counts as a table at report.md:56-60, matching the idiom of reports/reckon/wave-integration/merged-head-report.md.",
+    "goal_fidelity": "report.md:11 records one run at the pinned head and report.md:16-20 corrects the predecessor's stale revision, but report.md:70-85 shows the base comparison covers two files and the eleven-file selection omits tests/test_serving_origin.py, which landed with reckon/crew/serving_origin.py at commit 9ea06319.",
+    "scope_discipline": "the two commits' diffstat carries exactly three repository paths, every one inside the four paths manifest.md declares, and no repository file outside them was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks that the tests covering everything this wave merged pass at the current head rather than at a revision seventeen merges old; report.md:7 pins head 825774198f7a637aa7aa6afc2d428390879fa45b and report.md:16-20 re-measures the predecessor's staleness defect, but the selection certified is not co-extensive with the wave, because reckon/crew/serving_origin.py landed at 9ea06319 inside the measured interval and its only test, tests/test_serving_origin.py, is not among the eleven.\nVERDICT done_when: the done-when names eleven files, one run at the head resolved when the node ran, base counts over the intersection with the exclusions listed by name, a pre-existing-or-added classification with added ids given explicitly, and an import-resolution check; report.md carries each clause and its cited logs corroborate the counts at both revisions.\nVERDICT write_paths: read the manifest's four declared paths and the two commits; git show --stat 2e4c8c8e b2148230 lists docs/evidence/archive/a-window-paces-the-lane-landed.html, docs/figures/a-window-paces-the-lane/head-vs-base-gate.svg and docs/plans/a-window-paces-the-lane.html, and the report sits at the fourth declared path.\nVERDICT manifest: read; manifest.md:9-14 states 112 passed and 2 failed at head 825774198f7a637aa7aa6afc2d428390879fa45b against 25 passed and 2 failed at base 1d2e70cc over the same two files, and its tests field names four logs, all under the reports directory.\nVERDICT diff: read commit by commit; 2e4c8c8e adds the evidence anchor and the figure, b2148230 appends the plan landing record, and neither commit is reachable from a branch because promotion is the coordinator's step, which is the contract a worker is held to.\nVERDICT call_sites: the deliverable is the report and its two commits touch documentation only, so no production call site can reach the change.\nCALL_SITES: none\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: report.md:11 records one run at the pinned head and report.md:16-20 corrects the predecessor's stale revision, but report.md:70-85 shows the base comparison covers two files and the eleven-file selection omits tests/test_serving_origin.py, which landed with reckon/crew/serving_origin.py at commit 9ea06319.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-825774198f7a637aa7aa6afc2d428390879fa45b.log ends \"2 failed, 112 passed\" with the FAILED ids report.md:91-95 states, base-1d2e70cc.log ends \"2 failed, 25 passed\" on the same two ids, and superseded/ retains the refused pair with each run's own revision in its filename.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two commits' diffstat carries exactly three repository paths, every one inside the four paths manifest.md declares, and no repository file outside them was written.\nSCORE durability: 15\nJUSTIFICATION durability: report.md:5-9 binds the report to one revision so a later reader must re-run rather than re-quant, but nothing reddens if reckon/crew/serving_origin.py regresses, because its coverage sits in tests/test_serving_origin.py, outside the certified selection.\nSCORE fit: 18\nJUSTIFICATION fit: report.md keeps the predecessor's section order and states the counts as a table at report.md:56-60, matching the idiom of reports/reckon/wave-integration/merged-head-report.md.\nFINDING tests/test_serving_origin.py:1 the eleven-file selection does not cover every module this wave landed: reckon/crew/serving_origin.py and its only test landed together at commit 9ea06319 (2026-09-21 14:50), inside the measured interval 1d2e70cc..825774198f7a637aa7aa6afc2d428390879fa45b, so a regression in that module leaves the report's \"112 passed, 2 failed\" unchanged and the gate cannot detect the omission from inside itself; re-run at the pinned revision, where both files are byte-identical to it by md5 (3b0f5ed5fc and 5d893d73bd), the omitted file is 23 passed exit 0, so the blind spot has not yet masked a wave regression. Four further test files added in the interval are also absent from the selection while exercising interval-changed modules: tests/test_evidence_from_report.py on reckon/evidence.py, tests/test_review_call_sites.py on reckon/crew/review.py, tests/test_shared_landing_paths.py on reckon/crew/runs.py, tests/test_watcher_unit_restart.py on reckon/service.py. Twenty-one test files were added in the interval and the selection names nine of them.",
+  "review_run_id": "legacy-0c52f9e19d20",
+  "review_run_id_source": "derived",
+  "reviewed_run_id": "r-20260921T153834454658-the-current-head-carries-every-landing",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "unknown",
+  "timestamp": "2026-09-21T17:36:12.102193+00:00",
+  "total": 84
+}

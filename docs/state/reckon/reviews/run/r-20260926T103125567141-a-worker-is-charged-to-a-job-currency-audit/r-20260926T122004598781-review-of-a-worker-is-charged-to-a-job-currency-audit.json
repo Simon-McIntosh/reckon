@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-26T14:38:51.850Z",
+  "dispatched_at": "2026-09-26T12:20:24Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/a-worker-is-charged-to-a-job-currency-audit/currency.md",
+      "line": "29",
+      "text": "the report lists \"promoted\" among the facts it attributes to plan comment c-awcj-proving-run at plan:859-860, but that comment records only the run's execution (compute node 98dci4-clu-3036, job 1274056, partition all, 4 cores / 16 GiB granted, 129 s, zero queue wait) and says nothing about a promotion; the plan's only promotion record for that run is the failure its followup captures (plan:805, \"reckon crew complete on the placed run raises no launch translation for command 'srun'\"), nothing else in the plan records a retry, the ledger carries no row for the run (docs/state/reckon/crew.json at base: 0 of 1912 rows match placed-proof or 1274056, against 8 rows for the plan's other awcj nodes), and no commit names it \u2014 so section 1's done-when clause \"is promoted without any special handling\" (plan:119) is recorded landed on a source that does not carry it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/a-worker-is-charged-to-a-job-currency-audit/currency.md",
+      "line": "133",
+      "text": "the report says the follower's stall event carries \"stalled_for_seconds and no liveness field in the event\"; the event at reckon/crew/recovery.py:5666-5671 is a spread of the classified row with stalled_for_seconds added, and that row comes from classify_pointer (recovery.py:5634-5636), which carries process_alive (recovery.py:4254) and liveness_proven (recovery.py:4259), so a liveness field is present in the event and the reproduction claim is overstated \u2014 the ticker half of the same paragraph is sound, since the report itself notes the row already carries process_alive at recovery.py:4705 and only the word drops it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "there is no diff to read \u2014 the reviewed run authored no commit, its head equalling its base 9fafad1fde793b9a0d5bc7ac60114f445359d202 \u2014 so the reviewable artefact is the report itself, and every citation it makes was checked against the base blob rather than against a change.",
+    "done_when": "the plan's measures are quoted verbatim at their own plan line ranges (plan:118-121, :176-181, :625-628, :708-711, :720-722, :732-738) and every quoted line matches the plan blob at base; the one clause recorded landed on a source that does not carry it is named in a finding below.",
+    "goal": "the report audits the plan's own six section measures against the pinned base and re-reads its followups, and ~120 of its ~150 file:line citations resolve verbatim at that base blob, so it answers the question the plan asks.",
+    "manifest": "the reviewed manifest reads status complete, records no repository commit in a prose commits line carrying the base sha, and records no test run with the read-only fence as the reason, which matches the fence the report itself names in its method line.",
+    "write_paths": "the reviewed node holds no repository write path and wrote none \u2014 the reviewed worktree sits clean at base (HEAD == 9fafad1fde793b9a0d5bc7ac60114f445359d202, git status --porcelain empty) \u2014 and the report and the manifest under the reports root are its only artefacts."
+  },
+  "justifications": {
+    "durability": "a read-only audit's durability is whether its citations still resolve, and they do from the base blob; but the record is prose nothing executes, so a claim that drifts is caught by a later reader rather than by a failing case.",
+    "evidence": "the citation discipline holds nearly everywhere \u2014 every cited test line carries the case name the report claims and the plan quotes start exactly at their cited lines \u2014 but a section verdict and a reproduction claim each rest on a source that does not carry them.",
+    "fit": "the report pins its base, names the fence it worked under, quotes each measure at its own plan lines, and ends with node proposals naming goal, write paths and lanes, which is the shape this repository's reviews take.",
+    "goal_fidelity": "the report answers the plan's six measures in the plan's own order and all six measure quotes match the plan at base, so the deduction is for the two claims that exceed their own sources (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/a-worker-is-charged-to-a-job-currency-audit/currency.md:29 and /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/a-worker-is-charged-to-a-job-currency-audit/currency.md:133).",
+    "scope_discipline": "the node kept its read-only fence: the reviewed worktree is clean at base, and the report proposes its repair nodes with exclusive write paths rather than touching any file itself."
+  },
+  "project": "reckon",
+  "raw_text": "Review of r-20260926T103125567141-a-worker-is-charged-to-a-job-currency-audit, read against base 9fafad1fde793b9a0d5bc7ac60114f445359d202.\n\nVERDICT goal: the report audits the plan's own six section measures against the pinned base and re-reads its followups, and ~120 of its ~150 file:line citations resolve verbatim at that base blob, so it answers the question the plan asks.\nVERDICT done_when: the plan's measures are quoted verbatim at their own plan line ranges (plan:118-121, :176-181, :625-628, :708-711, :720-722, :732-738) and every quoted line matches the plan blob at base; the one clause recorded landed on a source that does not carry it is named in a finding below.\nVERDICT write_paths: the reviewed node holds no repository write path and wrote none \u2014 the reviewed worktree sits clean at base (HEAD == 9fafad1fde793b9a0d5bc7ac60114f445359d202, git status --porcelain empty) \u2014 and the report and the manifest under the reports root are its only artefacts.\nVERDICT manifest: the reviewed manifest reads status complete, records no repository commit in a prose commits line carrying the base sha, and records no test run with the read-only fence as the reason, which matches the fence the report itself names in its method line.\nVERDICT diff: there is no diff to read \u2014 the reviewed run authored no commit, its head equalling its base 9fafad1fde793b9a0d5bc7ac60114f445359d202 \u2014 so the reviewable artefact is the report itself, and every citation it makes was checked against the base blob rather than against a change.\nCALL_SITES: none\n\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the report answers the plan's six measures in the plan's own order and all six measure quotes match the plan at base, so the deduction is for the two claims that exceed their own sources (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/a-worker-is-charged-to-a-job-currency-audit/currency.md:29 and /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/a-worker-is-charged-to-a-job-currency-audit/currency.md:133).\nSCORE evidence: 14\nJUSTIFICATION evidence: the citation discipline holds nearly everywhere \u2014 every cited test line carries the case name the report claims and the plan quotes start exactly at their cited lines \u2014 but a section verdict and a reproduction claim each rest on a source that does not carry them.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the node kept its read-only fence: the reviewed worktree is clean at base, and the report proposes its repair nodes with exclusive write paths rather than touching any file itself.\nSCORE durability: 13\nJUSTIFICATION durability: a read-only audit's durability is whether its citations still resolve, and they do from the base blob; but the record is prose nothing executes, so a claim that drifts is caught by a later reader rather than by a failing case.\nSCORE fit: 17\nJUSTIFICATION fit: the report pins its base, names the fence it worked under, quotes each measure at its own plan lines, and ends with node proposals naming goal, write paths and lanes, which is the shape this repository's reviews take.\n\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/a-worker-is-charged-to-a-job-currency-audit/currency.md:29 the report lists \"promoted\" among the facts it attributes to plan comment c-awcj-proving-run at plan:859-860, but that comment records only the run's execution (compute node 98dci4-clu-3036, job 1274056, partition all, 4 cores / 16 GiB granted, 129 s, zero queue wait) and says nothing about a promotion; the plan's only promotion record for that run is the failure its followup captures (plan:805, \"reckon crew complete on the placed run raises no launch translation for command 'srun'\"), nothing else in the plan records a retry, the ledger carries no row for the run (docs/state/reckon/crew.json at base: 0 of 1912 rows match placed-proof or 1274056, against 8 rows for the plan's other awcj nodes), and no commit names it \u2014 so section 1's done-when clause \"is promoted without any special handling\" (plan:119) is recorded landed on a source that does not carry it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/a-worker-is-charged-to-a-job-currency-audit/currency.md:133 the report says the follower's stall event carries \"stalled_for_seconds and no liveness field in the event\"; the event at reckon/crew/recovery.py:5666-5671 is a spread of the classified row with stalled_for_seconds added, and that row comes from classify_pointer (recovery.py:5634-5636), which carries process_alive (recovery.py:4254) and liveness_proven (recovery.py:4259), so a liveness field is present in the event and the reproduction claim is overstated \u2014 the ticker half of the same paragraph is sound, since the report itself notes the row already carries process_alive at recovery.py:4705 and only the word drops it.\n",
+  "review_run_id": "r-20260926T122004598781-review-of-a-worker-is-charged-to-a-job-currency-audit",
+  "reviewed_base_sha": "9fafad1fde793b9a0d5bc7ac60114f445359d202",
+  "reviewed_head_sha": "9fafad1fde793b9a0d5bc7ac60114f445359d202",
+  "reviewed_run_id": "r-20260926T103125567141-a-worker-is-charged-to-a-job-currency-audit",
+  "role": "review",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T14:18:49.835395+00:00",
+  "total": 79
+}

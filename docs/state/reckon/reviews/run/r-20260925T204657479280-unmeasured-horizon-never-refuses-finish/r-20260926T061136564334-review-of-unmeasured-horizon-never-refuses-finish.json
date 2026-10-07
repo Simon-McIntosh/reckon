@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/routing.py:1731 _competence_verdict",
+    "reckon/crew/routing.py:1760 _measured_horizon_hours",
+    "reckon/crew/dispatch.py:3027",
+    "reckon/crew/dispatch.py:3529",
+    "reckon/crew/dispatch.py:6813",
+    "reckon/crew/dispatch.py:6757 change_lane",
+    "reckon/cli.py:3760 crew_redispatch"
+  ],
+  "completed_at": "2026-09-26T07:58:24.783Z",
+  "dispatched_at": "2026-09-26T06:11:49Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T204657479280-unmeasured-horizon-never-refuses-finish/manifest.md",
+      "line": "9",
+      "text": "the tests field records the gate command with an unsubstituted PYTHONPATH=<worktree> placeholder, so the command cannot be run as written and the field names neither the tree nor the revision behind its 29-passed result, which logs/gate-final.log:1 carries at rev 9071d978."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T204657479280-unmeasured-horizon-never-refuses-finish/logs/mutation-whole-file.log",
+      "line": "1",
+      "text": "the whole-file mutation log opens with test output and carries no rev, tree or command header, so its 5-failed result cannot be tied from the log itself to a revision or a tree, unlike its sibling logs."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read all three commits against base 48916914 \u2014 the test file with the plan-fallback and estimate-carrying cases plus two lint repairs, then the landing record, evidence anchor and figure, then the removal of the section heading the second commit had duplicated; the production change is inherited at the base, not re-landed here.",
+    "done_when": "read against the manifest and the logs; the four-file gate at tests/test_unmeasured_horizon_never_refuses.py plus the three named files covers the named behaviours, logs/gate-final.log:1 carries rev, tree and command, and logs/gate-base.log:1 records the 21-test base arm with no added failures.",
+    "goal": "the goal is that a redispatch is never refused by a competence horizon its target configuration never measured and that an explicit estimate travels with it; reckon/crew/routing.py:1803 returns the context-fit verdict when the horizon is None and tests/test_unmeasured_horizon_never_refuses.py:190 pins that case at the reviewed head.",
+    "manifest": "read; it records the 29-passed gate and the 21-test base arm, and its honest-scope paragraph states the coordinator's recorded refusal is unreachable at the checkpoint parent, which logs/probe-parent.log:21 confirms with DID NOT RAISE on the measured-zero case.",
+    "write_paths": "read the seven declared write paths; every path in base 48916914..head f98a9b5b lies inside them \u2014 the test file, the plan HTML, the archive evidence HTML and one figure under the declared figures directory."
+  },
+  "justifications": {
+    "durability": "restoring the declared mutation at reckon/crew/routing.py:1722 in a scratch copy reddens test_an_unmeasured_horizon_allows_an_oversize_node with the recorded refusal text, and negating the plan fallback reddens exactly tests/test_unmeasured_horizon_never_refuses.py:261.",
+    "evidence": "logs/gate-final.log:1 records the gate with its rev, tree and command and the declared control reproduces, but the manifest's tests field at line 9 carries an unsubstituted PYTHONPATH=<worktree> placeholder, so the recorded command names no tree and cannot be run as written.",
+    "fit": "the landing record reuses the plan's existing landing shape in docs/plans/the-local-lane-is-the-default.html and the figure at docs/figures/the-local-lane-is-the-default/unmeasured-horizon-verdict.svg parses as XML, and no changed line carries a plan label, ticket id or attribution.",
+    "goal_fidelity": "reckon/crew/routing.py:1803 returns the context-fit verdict for an unmeasured horizon and tests/test_unmeasured_horizon_never_refuses.py:298 records the estimate a redispatch was given, but both are inherited from the base commit rather than landed by this run.",
+    "scope_discipline": "every path in the range lies inside the declared write paths, and docs/plans/the-local-lane-is-the-default.html and the archive evidence receive pure insertions apart from the duplicated heading f98a9b5b removes."
+  },
+  "project": "reckon",
+  "raw_text": "\nVERDICT goal: the goal is that a redispatch is never refused by a competence horizon its target configuration never measured and that an explicit estimate travels with it; reckon/crew/routing.py:1803 returns the context-fit verdict when the horizon is None and tests/test_unmeasured_horizon_never_refuses.py:190 pins that case at the reviewed head.\nVERDICT done_when: read against the manifest and the logs; the four-file gate at tests/test_unmeasured_horizon_never_refuses.py plus the three named files covers the named behaviours, logs/gate-final.log:1 carries rev, tree and command, and logs/gate-base.log:1 records the 21-test base arm with no added failures.\nVERDICT write_paths: read the seven declared write paths; every path in base 48916914..head f98a9b5b lies inside them \u2014 the test file, the plan HTML, the archive evidence HTML and one figure under the declared figures directory.\nVERDICT manifest: read; it records the 29-passed gate and the 21-test base arm, and its honest-scope paragraph states the coordinator's recorded refusal is unreachable at the checkpoint parent, which logs/probe-parent.log:21 confirms with DID NOT RAISE on the measured-zero case.\nVERDICT diff: read all three commits against base 48916914 \u2014 the test file with the plan-fallback and estimate-carrying cases plus two lint repairs, then the landing record, evidence anchor and figure, then the removal of the section heading the second commit had duplicated; the production change is inherited at the base, not re-landed here.\nCALL_SITES: reckon/crew/routing.py:1731 _competence_verdict, reckon/crew/routing.py:1760 _measured_horizon_hours, reckon/crew/dispatch.py:3027, reckon/crew/dispatch.py:3529, reckon/crew/dispatch.py:6813, reckon/crew/dispatch.py:6757 change_lane, reckon/cli.py:3760 crew_redispatch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1803 returns the context-fit verdict for an unmeasured horizon and tests/test_unmeasured_horizon_never_refuses.py:298 records the estimate a redispatch was given, but both are inherited from the base commit rather than landed by this run.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-final.log:1 records the gate with its rev, tree and command and the declared control reproduces, but the manifest's tests field at line 9 carries an unsubstituted PYTHONPATH=<worktree> placeholder, so the recorded command names no tree and cannot be run as written.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the range lies inside the declared write paths, and docs/plans/the-local-lane-is-the-default.html and the archive evidence receive pure insertions apart from the duplicated heading f98a9b5b removes.\nSCORE durability: 19\nJUSTIFICATION durability: restoring the declared mutation at reckon/crew/routing.py:1722 in a scratch copy reddens test_an_unmeasured_horizon_allows_an_oversize_node with the recorded refusal text, and negating the plan fallback reddens exactly tests/test_unmeasured_horizon_never_refuses.py:261.\nSCORE fit: 19\nJUSTIFICATION fit: the landing record reuses the plan's existing landing shape in docs/plans/the-local-lane-is-the-default.html and the figure at docs/figures/the-local-lane-is-the-default/unmeasured-horizon-verdict.svg parses as XML, and no changed line carries a plan label, ticket id or attribution.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T204657479280-unmeasured-horizon-never-refuses-finish/manifest.md:9 the tests field records the gate command with an unsubstituted PYTHONPATH=<worktree> placeholder, so the command cannot be run as written and the field names neither the tree nor the revision behind its 29-passed result, which logs/gate-final.log:1 carries at rev 9071d978.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T204657479280-unmeasured-horizon-never-refuses-finish/logs/mutation-whole-file.log:1 the whole-file mutation log opens with test output and carries no rev, tree or command header, so its 5-failed result cannot be tied from the log itself to a revision or a tree, unlike its sibling logs.\n",
+  "review_run_id": "r-20260926T061136564334-review-of-unmeasured-horizon-never-refuses-finish",
+  "reviewed_base_sha": "489169145682a8a61013659d250ae576f0763ffd",
+  "reviewed_head_sha": "f98a9b5bbcfe2721eb5510a2c65fb8193472fbfc",
+  "reviewed_run_id": "r-20260925T204657479280-unmeasured-horizon-never-refuses-finish",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T07:51:30.905314+00:00",
+  "total": 91
+}

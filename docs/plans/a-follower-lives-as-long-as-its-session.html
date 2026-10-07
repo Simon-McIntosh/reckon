@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="18">
+<meta name="plan-impl" content="0.67">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -111,17 +111,11 @@
   <p class="landed-summary">Landed in <code>reckon/crew/dispatch.py</code>: an unattached session's dispatch writes <code>{project, session}</code> to the calling Claude process's host FIFO through <code>_write_fleet_request</code> with no wait, waits up to <code>WATCHER_LOAD_BOUND_SECONDS</code> for attachment, and records <code>delivery</code> as <code>host</code> or <code>monitor</code>; the refusal is unchanged without a host. Review 109/120 at <code>8775e225</code>. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/dispatch-asks-the-session-host.html">full record</a></p>
 </section>
 
-    <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§6 — <code>reckon-sync</code> links the plugin; <code>reckon doctor</code> checks it</h2>
-    <p><strong>Deliverable.</strong> <code>reckon-sync</code> links <code>plugins/crew-host</code> from the main
-      checkout as <code>~/.claude/skills/reckon-crew-host</code>, alongside the skill links it already makes, and
-      refuses to link from a worker worktree, for the same reason the hooks installer refuses: a reclaimed worktree
-      would leave the link resolving to nothing. <code>reckon doctor</code> reports whether the link exists, resolves,
-      points at the main checkout, and passes <code>claude plugin validate</code>. The link is user-level, so one link
-      serves every repository that runs reckon. Each running session picks it up at its next start or after
-      <code>/reload-plugins</code>.</p>
-    <p><strong>Done when</strong> <code>reckon-sync</code> run twice leaves exactly one link, <code>claude plugin
-      list</code> shows <code>reckon-crew-host@skills-dir</code> as loaded, and <code>reckon doctor</code> flags a link
-      that points into a worktree.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="">§6 — <code>reckon-sync</code> links the plugin; <code>reckon doctor</code> checks it</h2></header>
+  <p class="landed-summary">Landed: <code>reckon sync</code> links the main checkout's <code>plugins/crew-host</code> as <code>~/.claude/skills/reckon-crew-host</code> and refuses from a worktree; <code>reckon doctor</code> reports the link as missing, dangling, worktree, elsewhere or valid and loads it with <code>claude plugin validate</code>. Both resolve the skills directory through <code>RECKON_CLAUDE_SKILLS_DIR</code>, which the test session sets for fixtures of every scope. Reviews 112, 118 and 118 of 120. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/sync-links-the-session-host-plugin.html">full record</a></p>
+</section>
 
     <h2 id="s7" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§7 — The skills say what the session host now does</h2>
     <p><strong>Deliverable.</strong> <code>skills/reckon-build/SKILL.md</code> (the producer-and-follower section),
@@ -223,6 +217,12 @@
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261007T050423721258-review-of-sync-tests-keep-the-real-skills-dir" data-who="reckon-build" data-when="2026-10-07T05:31:58.198Z">
     <div class="r-comment-body"><p>Independent review of r-20261007T040504698629-sync-tests-keep-the-real-skills-dir over the commits gained since review, 9bdf6250a..b5d399fd touching cli.py, conftest.py, test_doctor_session_host_link.py and the evidence fragment, stored at both declared review paths as a parsed record scoring goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 19, reuse 20, total 118, reviewed_base_sha 9bdf6250adf0e69d250b09e7e31629625abbef38, reviewed_head_sha b5d399fd70f5033a8ceb0ddbbe4d3ce2aecd3a0d, added_failure_count unmeasured because the reviewed run declares no baseline_suite or after_suite arm, three follow-on findings, no blocking finding.</p></div>
 </div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T053804331668-sync-isolation-covers-every-fixture-scope" data-who="reckon-build" data-when="2026-10-07T05:57:33.692Z">
+    <div class="r-comment-body"><p>test(sync): the RECKON_CLAUDE_SKILLS_DIR override is now session-scoped, so a module- or session-scoped fixture that runs reckon sync links into the temporary directory instead of the operator's real ~/.claude/skills; the module-name exemption list is deleted, tests/test_doctor.py opts out via its own fixture, and a new module proves a module-scoped fixture's sync links into the override (gate 36 passed, exit 0; negative control 2 failed, exit 1).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261007T063738884835-review-of-sync-isolation-covers-every-fixture-scope" data-who="reckon-build" data-when="2026-10-07T07:09:47.932Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261007T053804331668-sync-isolation-covers-every-fixture-scope at head e138728b (base de44bd83): six dimensions scored — goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20 (total 118) — one follow-on finding (the equality assertion at tests/test_sync_isolation_covers_module_fixtures.py:83 compares the link target against the plugin path the test itself supplied), no blocking finding; the reviewed gate reproduces 36 passed EXIT=0 and the declared negative control 2 failed EXIT=1.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261007T034544742984-review-of-session-host-supervises-followers" data-who="reckon-build" data-when="2026-10-07T04:01:49.175Z">
     <div class="r-comment-body"><p>Attached an independent review to run r-20261007T025625735707-session-host-supervises-followers at head 241b80161 against base 0dbf9865: §4's session host (reckon/crew/session_host.py, hidden `crew host` at reckon/cli.py:4743) implements all five done-when clauses, the re-run gate reads 9 passed EXIT=0 and the declared negative control reads 1 failed EXIT=1; stored a parsed record scoring goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 19, reuse 15 (total 106) with four follow-on findings and no blocking finding.</p></div>
 </div>
@@ -237,6 +237,21 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261007T033207052069-dispatch-asks-the-session-host" data-who="reckon-build" data-when="2026-10-07T03:59:35.307Z">
     <div class="r-comment-body"><p>dispatch asks the calling Claude session's host for a follower before refusing -- a JSON request naming project and session is written through _write_fleet_request with no wait to &lt;runtime&gt;/reckon-session-host/&lt;CLAUDE_PID&gt;-&lt;start&gt;.fifo, and the payload's delivery field reads host when the host attached the session (arming line emptied) or monitor otherwise; tests/test_dispatch_session_host.py 2 passed EXIT=0, negative control (skip the host request) makes the admitted-with-host case fail EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261007T054000711922-crew-host-monitors-file-loads" data-who="reckon-build" data-when="2026-10-07T05:49:09.438Z">
+    <div class="r-comment-body"><p>crew-host plugin monitors load — monitors.json is a bare JSON array of entries; claude --plugin-dir plugin list --json now reports no errors, tests/test_session_host_plugin.py 6 passed EXIT=0</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261007T055007516244-review-of-crew-host-monitors-file-loads" data-who="reckon-build" data-when="2026-10-07T06:07:32.315Z">
+    <div class="r-comment-body"><p>An independent review of run r-20261007T054000711922-crew-host-monitors-file-loads is stored as a parsed six-dimension record at both granted staging paths; it scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 19 (total 113), records reviewed_base_sha de44bd836f4fe85ce248e73ebd4e32a770cf6415 and reviewed_head_sha 04667916bc29f38e931eb7d32b582d768cc32fd7, carries added_failure_count null (unmeasured) with added_failure_ids [] because the reviewed manifest names no baseline_suite/after_suite gate logs, and reports three follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261007T055410270060-session-host-meets-the-help-and-cache-contracts" data-who="reckon-build" data-when="2026-10-07T06:09:00.743Z">
+    <div class="r-comment-body"><p>session-host meets the help and cache contracts: crew host gains a STATE_PHRASES row and a first help line naming the condition it runs under, and session_host._log_dir resolves through reckon._store.cache_root with a new session-host cache kind instead of reading XDG_CACHE_HOME itself; gate (tests/test_crew_help_names_its_state.py, tests/test_one_cache_cascade_serves_every_kind.py, tests/test_session_host.py) ends EXIT=0 with 58 passed</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261007T063655560974-review-of-session-host-meets-the-help-and-cache-contracts" data-who="reckon-build" data-when="2026-10-07T06:54:50.807Z">
+    <div class="r-comment-body"><p>independent review of r-20261007T055410270060-session-host-meets-the-help-and-cache-contracts stored: parsed record, six dimensions scored 20/19/20/20/20/20 (total 119), reviewed_base_sha aa728ca09259f543da1a2880737121e5b6c3a343, reviewed_head_sha fd46f4c5e46950076286145d68538a9c7203f08c, no findings; the node's gate re-ran at the reviewed head to 58 passed EXIT=0</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261007T071637647665-session-host-census" data-who="reckon-build" data-when="2026-10-07T07:41:17.211Z">
+    <div class="r-comment-body"><p>Census of node 98dci4-clu-2018 at 2026-10-07T07:36:30Z: two session hosts, both owned by live Claude processes; two FIFOs, neither stale — hosts=2 live_owner=2 dead_owner=0 unresolved_owner=0 fifos=2 stale_fifos=0; the bound dead_owner=0 holds.</p></div>
 </div>
 </section>
 </main>

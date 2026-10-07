@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_follow_rearm_continues.py::test_a_reload_marks_the_format_switch_and_re_emits_nothing",
+    "tests/test_follow_replays_the_gap.py::test_the_record_follows_every_row_the_pane_receives"
+  ],
+  "added_failures_note": "total capped at 5: the reviewed run added 2 failing test(s) not retired by name (tests/test_follow_rearm_continues.py::test_a_reload_marks_the_format_switch_and_re_emits_nothing, tests/test_follow_replays_the_gap.py::test_the_record_follows_every_row_the_pane_receives)",
+  "base_log_revision": "b43e66dcc6feaea162db68c012a2e868e7efd60f",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/cli.py:3995",
+    "reckon/cli.py:4348",
+    "reckon/cli.py:4627",
+    "reckon/cli.py:4637",
+    "reckon/crew/runs.py:222",
+    "reckon/crew/runs.py:252",
+    "reckon/crew/ticker.py:1023"
+  ],
+  "completed_at": "2026-10-04T02:58:25.489Z",
+  "dispatched_at": "2026-10-04T02:45:35Z",
+  "findings": [
+    {
+      "file": "tests/test_follow_replays_the_gap.py",
+      "line": "152",
+      "severity": "follow-on",
+      "text": "follow-on: every case now calls _drop_the_place() before the second arming, so the gate that restricts the record replay to an attach with no place (reckon/cli.py:3993-3996) has no direct guard in the node's own file \u2014 removing the mode in (baseline, restart) clause or the not reloaded_in_place clause would leave all four tests green."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "3994",
+      "severity": "follow-on",
+      "text": "follow-on: the not reloaded_in_place clause is reachable only for a reload whose checkpoint names a replaced stream (reloading is forced False at cli.py:3915 only when mode != continue), and no test drives that combination; the reload gate rests on an indirect experiment (reload-experiment-gated.log passed, reload-experiment-record-branch-off.log failed) rather than a case that reddens when the clause is removed."
+    },
+    {
+      "file": "tests/test_follow_replays_the_gap.py",
+      "line": "181",
+      "severity": "follow-on",
+      "text": "follow-on: the node's named gate file fails in the manifest's own recorded population (-n 8) by xdist worker crashes and the producer-stamp assertion (after-suite-round3.log, parallel-head-30.log, after-suite-round3-rep1.log and -rep2.log); it is green serially only, so the done-when's artifact is not shown passing under the population the node recorded."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T000819280781-a-re-attach-replays-the-gap/after-suite-round3.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's first line names the revision 90239388dcca2e09e1e826fcb935f36a5ffa8f6f3 \u2014 41 hex characters, not the reviewed head 90239388daed6d6d2c1c84ca0ac706b36adf11a4 \u2014 and the manifest's after_suite revision carries the same malformed string, so recorded_log_revision returns None and the added-failure count cannot be tied to the commit by its own header; the after-suite-round3-rep1 and -rep2 arms name only the short 90239388d."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit-by-commit; since the prior independent review at 1d08e629a the run added three commits \u2014 the no-place gate (6952b9955), the boundary open (25e3b96dc) and the json-vs-pane record fix (90239388d) \u2014 each inside the declared scope and each resolving one of that review's two findings.",
+    "done_when": "the done-when names tests/test_follow_replays_the_gap.py and a logged negative control; the manifest records both, the file passes 4/4 serially (json-then-human-fixed.log), and negative-control.log restores the base settled_at_attach filter to read 2 failed / 1 passed, EXIT=1.",
+    "goal": "the node's goal is to make a-follower-outlives-its-monitor \u00a74 hold \u2014 persist each session's last delivered state per run in a follower_dir sidecar and replay the gap from it on re-attach, while narrowing the human path's suppressed set; the landed diff does exactly that (reckon/crew/runs.py delivered_path/read_delivered/write_delivered; reckon/cli.py _follow_gap_rows plus the FOLLOWER_REATTACH_EVENT header).",
+    "manifest": "read; status complete, commits [1d08e629a,6952b9955,25e3b96dc,90239388d]; baseline_suite revision b43e66dcc (0 failed, completed true) and after_suite revision 90239388dcca2e09e1e826fcb935f36a5ffa8f6f3 (2 failed, completed true) with both ids named and attributed to the worktree test environment under follow_ons and blockers \u2014 but that after_suite revision is not the reviewed head.",
+    "write_paths": "the four declared code paths reckon/cli.py, reckon/crew/runs.py, reckon/crew/ticker.py and tests/test_follow_replays_the_gap.py; git diff b43e66dcc..90239388d touches only these, and the fragment and figure paths are left untouched as the done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "the json-vs-pane defect has a red-at-the-previous-head guard (json-then-human-at-head.log fails at 25e3b96dc; json-then-human-fixed.log passes), and removing the no-place gate re-reddens the pre-existing pipe and rearm cases, but every case in tests/test_follow_replays_the_gap.py now depends on _drop_the_place() so the gate itself is unguarded by the node's own file.",
+    "evidence": "the done-when file passes 4/4 serially (json-then-human-fixed.log) and the declared negative control is real (negative-control.log: restoring the base settled_at_attach leaves 2 failed / 1 passed, EXIT=1), but the manifest's own recorded after_suite population (-n 8, after-suite-round3.log and its two repeats) is red with 2 added failures \u2014 the node's own test file among them \u2014 which the worker could not attribute inside the fence, and that head log's first line names the revision /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T000819280781-a-re-attach-replays-the-gap/after-suite-round3.log:1 as 90239388dcca2e09e1e826fcb935f36a5ffa8f6f3, a malformed 41-character token that is not the reviewed head, so head_log_revision reads None and the head arm is not tied to the commit it claims.",
+    "fit": "all four commits are conventional with bodies and carry no plan, sprint or ticket identifier and no AI attribution; ticker.hidden_at_attach sits beside settled_at_attach and the sidecar helpers mirror follower_lock_path's readable-digest naming at reckon/crew/runs.py:215.",
+    "goal_fidelity": "reckon/cli.py:3993-4036 reads the record only on a first attach with no resumable place (mode baseline or restart) and yields the header before drawing the diff, and reckon/cli.py:4348 repoints _row_is_stale_inventory at ticker.hidden_at_attach (SETTLED_STATES minus completed_unpromoted/failed/abandoned) with SETTLED_STATES and settled_at_attach unchanged \u2014 \u00a74 clause for clause; the one point off is that \u00a74 reads \"attaches for a session that has a persisted record\" unconditionally while the landed code carves out an arming that still holds its checkpoint.",
+    "scope_discipline": "git diff --stat b43e66dcc..90239388d touches exactly reckon/cli.py, reckon/crew/runs.py, reckon/crew/ticker.py and tests/test_follow_replays_the_gap.py, and each of the three delta commits stays inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make a-follower-outlives-its-monitor \u00a74 hold \u2014 persist each session's last delivered state per run in a follower_dir sidecar and replay the gap from it on re-attach, while narrowing the human path's suppressed set; the landed diff does exactly that (reckon/crew/runs.py delivered_path/read_delivered/write_delivered; reckon/cli.py _follow_gap_rows plus the FOLLOWER_REATTACH_EVENT header).\nVERDICT done_when: the done-when names tests/test_follow_replays_the_gap.py and a logged negative control; the manifest records both, the file passes 4/4 serially (json-then-human-fixed.log), and negative-control.log restores the base settled_at_attach filter to read 2 failed / 1 passed, EXIT=1.\nVERDICT write_paths: the four declared code paths reckon/cli.py, reckon/crew/runs.py, reckon/crew/ticker.py and tests/test_follow_replays_the_gap.py; git diff b43e66dcc..90239388d touches only these, and the fragment and figure paths are left untouched as the done-when names no artifact.\nVERDICT manifest: read; status complete, commits [1d08e629a,6952b9955,25e3b96dc,90239388d]; baseline_suite revision b43e66dcc (0 failed, completed true) and after_suite revision 90239388dcca2e09e1e826fcb935f36a5ffa8f6f3 (2 failed, completed true) with both ids named and attributed to the worktree test environment under follow_ons and blockers \u2014 but that after_suite revision is not the reviewed head.\nVERDICT diff: read commit-by-commit; since the prior independent review at 1d08e629a the run added three commits \u2014 the no-place gate (6952b9955), the boundary open (25e3b96dc) and the json-vs-pane record fix (90239388d) \u2014 each inside the declared scope and each resolving one of that review's two findings.\nCALL_SITES: reckon/cli.py:3995, reckon/cli.py:4348, reckon/cli.py:4627, reckon/cli.py:4637, reckon/crew/runs.py:222, reckon/crew/runs.py:252, reckon/crew/ticker.py:1023\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:3993-4036 reads the record only on a first attach with no resumable place (mode baseline or restart) and yields the header before drawing the diff, and reckon/cli.py:4348 repoints _row_is_stale_inventory at ticker.hidden_at_attach (SETTLED_STATES minus completed_unpromoted/failed/abandoned) with SETTLED_STATES and settled_at_attach unchanged \u2014 \u00a74 clause for clause; the one point off is that \u00a74 reads \"attaches for a session that has a persisted record\" unconditionally while the landed code carves out an arming that still holds its checkpoint.\nSCORE evidence: 17\nJUSTIFICATION evidence: the done-when file passes 4/4 serially (json-then-human-fixed.log) and the declared negative control is real (negative-control.log: restoring the base settled_at_attach leaves 2 failed / 1 passed, EXIT=1), but the manifest's own recorded after_suite population (-n 8, after-suite-round3.log and its two repeats) is red with 2 added failures \u2014 the node's own test file among them \u2014 which the worker could not attribute inside the fence, and that head log's first line names the revision /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T000819280781-a-re-attach-replays-the-gap/after-suite-round3.log:1 as 90239388dcca2e09e1e826fcb935f36a5ffa8f6f3, a malformed 41-character token that is not the reviewed head, so head_log_revision reads None and the head arm is not tied to the commit it claims.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b43e66dcc..90239388d touches exactly reckon/cli.py, reckon/crew/runs.py, reckon/crew/ticker.py and tests/test_follow_replays_the_gap.py, and each of the three delta commits stays inside them.\nSCORE durability: 18\nJUSTIFICATION durability: the json-vs-pane defect has a red-at-the-previous-head guard (json-then-human-at-head.log fails at 25e3b96dc; json-then-human-fixed.log passes), and removing the no-place gate re-reddens the pre-existing pipe and rearm cases, but every case in tests/test_follow_replays_the_gap.py now depends on _drop_the_place() so the gate itself is unguarded by the node's own file.\nSCORE fit: 19\nJUSTIFICATION fit: all four commits are conventional with bodies and carry no plan, sprint or ticket identifier and no AI attribution; ticker.hidden_at_attach sits beside settled_at_attach and the sidecar helpers mirror follower_lock_path's readable-digest naming at reckon/crew/runs.py:215.\nFINDING tests/test_follow_replays_the_gap.py:152 follow-on: every case now calls _drop_the_place() before the second arming, so the gate that restricts the record replay to an attach with no place (reckon/cli.py:3993-3996) has no direct guard in the node's own file \u2014 removing the mode in (baseline, restart) clause or the not reloaded_in_place clause would leave all four tests green.\nFINDING reckon/cli.py:3994 follow-on: the not reloaded_in_place clause is reachable only for a reload whose checkpoint names a replaced stream (reloading is forced False at cli.py:3915 only when mode != continue), and no test drives that combination; the reload gate rests on an indirect experiment (reload-experiment-gated.log passed, reload-experiment-record-branch-off.log failed) rather than a case that reddens when the clause is removed.\nFINDING tests/test_follow_replays_the_gap.py:181 follow-on: the node's named gate file fails in the manifest's own recorded population (-n 8) by xdist worker crashes and the producer-stamp assertion (after-suite-round3.log, parallel-head-30.log, after-suite-round3-rep1.log and -rep2.log); it is green serially only, so the done-when's artifact is not shown passing under the population the node recorded.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T000819280781-a-re-attach-replays-the-gap/after-suite-round3.log:1 follow-on: the head arm's first line names the revision 90239388dcca2e09e1e826fcb935f36a5ffa8f6f3 \u2014 41 hex characters, not the reviewed head 90239388daed6d6d2c1c84ca0ac706b36adf11a4 \u2014 and the manifest's after_suite revision carries the same malformed string, so recorded_log_revision returns None and the added-failure count cannot be tied to the commit by its own header; the after-suite-round3-rep1 and -rep2 arms name only the short 90239388d.\nreviewed_base_sha: b43e66dcc6feaea162db68c012a2e868e7efd60f\nreviewed_head_sha: 90239388daed6d6d2c1c84ca0ac706b36adf11a4\n",
+  "review_run_id": "r-20261004T024510962378-review-of-a-re-attach-replays-the-gap",
+  "reviewed_base_sha": "b43e66dcc6feaea162db68c012a2e868e7efd60f",
+  "reviewed_head_sha": "90239388daed6d6d2c1c84ca0ac706b36adf11a4",
+  "reviewed_run_id": "r-20261004T000819280781-a-re-attach-replays-the-gap",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T024510962378-review-of-a-re-attach-replays-the-gap",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T02:56:36.295626+00:00",
+  "total": 5
+}

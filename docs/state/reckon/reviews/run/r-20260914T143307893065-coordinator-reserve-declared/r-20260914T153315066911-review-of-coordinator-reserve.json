@@ -1,0 +1,39 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T15:33:15.066911+00:00",
+  "findings": [
+    {
+      "file": "tests/test_coordinator_reserve.py",
+      "line": "54",
+      "text": "the threshold constants 5 and 3 are duplicated in the local CONFIG mirror (tests/test_coordinator_reserve.py:53-54) and in the shipped layer (reckon/schema/flight-defaults.yaml:84: coordinator_reserve_pct: 3), so a future default edit must touch both to keep the behaviour tests honest; the shipped-origin assertion at tests/test_flight.py:534 catches a drift in the value but nothing but convention keeps the arithmetic tests and the shipped defaults from splitting."
+    }
+  ],
+  "justifications": {
+    "durability": "five new tests in tests/test_coordinator_reserve.py plus an extended shipped-origin assertion at tests/test_flight.py:534 fail if the reserve stops resolving from shipped defaults, if a fresh dispatch is not held below a resume, or if the refusal stops naming the subtracted reserve.",
+    "evidence": "all four quantitative done-when claims survive independent re-measurement at commit 5e3e041c: shipped origin/value tested at tests/test_coordinator_reserve.py:138-143, dispatch-held-where-resume-clears at line 147, refusal-naming at line 175, and the regen round-trip reproduced byte-identical by me from reckon/schema/flight.yaml.",
+    "fit": "reckon/budget.py:213 withheld_reserves reuses the f\"{value:g}% {label}\" formatting and the UNSET_RESERVE_PCT convention of the existing resume_reserve_pct path at reckon/budget.py:194 effective_ceiling, so the coordinator reserve reads as a sibling of the resume reserve rather than a new idiom.",
+    "goal_fidelity": "reckon/budget.py:200 effective_ceiling subtracts coordinator_reserve_pct from the fresh-dispatch ceiling (100-5-3 = 92.0) while leaving the resume ceiling full, matching the node goal that a fresh dispatch is withheld by a declared reserve and a resume can spend it.",
+    "scope_discipline": "the diff's seven changed paths (reckon/schema/flight.yaml, reckon/schema/flight-defaults.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, reckon/budget.py, tests/test_coordinator_reserve.py, tests/test_flight.py) are exactly the seven declared write paths, with a clean worktree and no out-of-scope edits."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/budget.py:200 effective_ceiling subtracts coordinator_reserve_pct from the fresh-dispatch ceiling (100-5-3 = 92.0) while leaving the resume ceiling full, matching the node goal that a fresh dispatch is withheld by a declared reserve and a resume can spend it.\nSCORE evidence: 19\nJUSTIFICATION evidence: all four quantitative done-when claims survive independent re-measurement at commit 5e3e041c: shipped origin/value tested at tests/test_coordinator_reserve.py:138-143, dispatch-held-where-resume-clears at line 147, refusal-naming at line 175, and the regen round-trip reproduced byte-identical by me from reckon/schema/flight.yaml.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's seven changed paths (reckon/schema/flight.yaml, reckon/schema/flight-defaults.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, reckon/budget.py, tests/test_coordinator_reserve.py, tests/test_flight.py) are exactly the seven declared write paths, with a clean worktree and no out-of-scope edits.\nSCORE durability: 18\nJUSTIFICATION durability: five new tests in tests/test_coordinator_reserve.py plus an extended shipped-origin assertion at tests/test_flight.py:534 fail if the reserve stops resolving from shipped defaults, if a fresh dispatch is not held below a resume, or if the refusal stops naming the subtracted reserve.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/budget.py:213 withheld_reserves reuses the f\"{value:g}% {label}\" formatting and the UNSET_RESERVE_PCT convention of the existing resume_reserve_pct path at reckon/budget.py:194 effective_ceiling, so the coordinator reserve reads as a sibling of the resume reserve rather than a new idiom.\nFINDING tests/test_coordinator_reserve.py:54 the threshold constants 5 and 3 are duplicated in the local CONFIG mirror (tests/test_coordinator_reserve.py:53-54) and in the shipped layer (reckon/schema/flight-defaults.yaml:84: coordinator_reserve_pct: 3), so a future default edit must touch both to keep the behaviour tests honest; the shipped-origin assertion at tests/test_flight.py:534 catches a drift in the value but nothing but convention keeps the arithmetic tests and the shipped defaults from splitting.\n",
+  "review_run_id": "r-20260914T153315066911-review-of-coordinator-reserve",
+  "reviewed_run_id": "r-20260914T143307893065-coordinator-reserve-declared",
+  "reviewer": {
+    "effort": "high",
+    "model": "deepseek-v4-flash"
+  },
+  "reviewer_run_id": "r-20260914T153315066911-review-of-coordinator-reserve",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T15:37:00+00:00",
+  "total": 94
+}

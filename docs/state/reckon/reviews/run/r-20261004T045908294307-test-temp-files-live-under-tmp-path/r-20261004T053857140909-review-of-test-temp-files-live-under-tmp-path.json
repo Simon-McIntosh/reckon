@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "9a641736ede22800a0da2e21b216810a9da57921",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-04T05:42:36.090Z",
+  "dispatched_at": "2026-10-04T05:39:20Z",
+  "findings": [],
+  "head_log_revision": "ebe96568b3277938b32165ee325b752854c0f1b9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site found: the change is confined to test helpers and the gate, none of which runtime code imports.",
+    "diff": "read commit by commit (ebe96568b helpers and gate, fd3df6b evidence); test_temp_config_home takes a directory, the session publishes TEST_TEMP_ROOT_ENV, and the two _node_manifest_path helpers read it instead of tempfile.gettempdir().",
+    "done_when": "the done_when names a subprocess gate with TMPDIR at an empty dir asserting emptiness, a negative control of the base helpers, and removal of stale entries with the count printed; tests/test_test_temp_files_stay_under_tmp_path.py:81 runs each of the three files and asserts entries == [], the manifest records gate-head 3 passed EXIT=0 and negative-control 2 failed EXIT=1, and 1593 stale entries were removed with 8 left named.",
+    "goal": "the goal is that a test's temporary files live under its own tmp_path or the session basetemp; tests/conftest.py:576 test_temp_config_home places a created home under the requesting test's directory, and tests/conftest.py:564 publishes the session basetemp for a helper called from a spawned process.",
+    "manifest": "read; it states gate 3 passed at head ebe96568b, the base-helper negative control 2 failed EXIT=1, baseline and after suites 296 passed each, and 1593 stale /tmp entries removed with 8 named; every log path it names exists and its header line names the revision quoted.",
+    "write_paths": "the diff 9a641736..fd3df6b touches exactly six files, each a declared write path: tests/conftest.py, tests/test_budget.py, tests/test_crew.py, tests/test_budget_group_declaration.py, tests/test_test_temp_files_stay_under_tmp_path.py, docs/evidence/fragments/crew-runtime-positive-controls/test-temp-files-live-under-tmp-path.html."
+  },
+  "justifications": {
+    "durability": "tests/test_test_temp_files_stay_under_tmp_path.py:81 compares the given directory's actual contents against empty rather than a value the test itself supplied, and negative-control-base-helpers.log:51 and :105 show that assertion reddening on the base helpers, so reinstating either leaked write fails the gate.",
+    "evidence": "tests/test_test_temp_files_stay_under_tmp_path.py:81 asserts the TMPDIR handed to each nested session is empty afterwards, and the manifest's gate-head.log records 3 passed EXIT=0 against negative-control-base-helpers.log recording 2 failed EXIT=1 that name the same assertion and the leaking entries.",
+    "fit": "tests/conftest.py:564-570 mirrors the surrounding config-home fixture idiom and every new name states its mechanism (TEST_TEMP_ROOT_ENV, _publish_session_temp_root, _unbound_manifest_directory), carrying no plan, phase or ticket label.",
+    "goal_fidelity": "tests/conftest.py:576 places a created configuration home under the requesting test's tmp_path and tests/test_crew.py:_unbound_manifest_directory places a process-local manifest directory under the session basetemp published at tests/conftest.py:564, so pytest's retention removes both rather than the shared system temp directory.",
+    "scope_discipline": "the diff 9a641736..fd3df6b touches six files, all among the declared write paths, with 191 insertions and 23 deletions and no change the goal does not imply."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a test's temporary files live under its own tmp_path or the session basetemp; tests/conftest.py:576 test_temp_config_home places a created home under the requesting test's directory, and tests/conftest.py:564 publishes the session basetemp for a helper called from a spawned process.\nVERDICT done_when: the done_when names a subprocess gate with TMPDIR at an empty dir asserting emptiness, a negative control of the base helpers, and removal of stale entries with the count printed; tests/test_test_temp_files_stay_under_tmp_path.py:81 runs each of the three files and asserts entries == [], the manifest records gate-head 3 passed EXIT=0 and negative-control 2 failed EXIT=1, and 1593 stale entries were removed with 8 left named.\nVERDICT write_paths: the diff 9a641736..fd3df6b touches exactly six files, each a declared write path: tests/conftest.py, tests/test_budget.py, tests/test_crew.py, tests/test_budget_group_declaration.py, tests/test_test_temp_files_stay_under_tmp_path.py, docs/evidence/fragments/crew-runtime-positive-controls/test-temp-files-live-under-tmp-path.html.\nVERDICT manifest: read; it states gate 3 passed at head ebe96568b, the base-helper negative control 2 failed EXIT=1, baseline and after suites 296 passed each, and 1593 stale /tmp entries removed with 8 named; every log path it names exists and its header line names the revision quoted.\nVERDICT diff: read commit by commit (ebe96568b helpers and gate, fd3df6b evidence); test_temp_config_home takes a directory, the session publishes TEST_TEMP_ROOT_ENV, and the two _node_manifest_path helpers read it instead of tempfile.gettempdir().\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/conftest.py:576 places a created configuration home under the requesting test's tmp_path and tests/test_crew.py:_unbound_manifest_directory places a process-local manifest directory under the session basetemp published at tests/conftest.py:564, so pytest's retention removes both rather than the shared system temp directory.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_test_temp_files_stay_under_tmp_path.py:81 asserts the TMPDIR handed to each nested session is empty afterwards, and the manifest's gate-head.log records 3 passed EXIT=0 against negative-control-base-helpers.log recording 2 failed EXIT=1 that name the same assertion and the leaking entries.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 9a641736..fd3df6b touches six files, all among the declared write paths, with 191 insertions and 23 deletions and no change the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_test_temp_files_stay_under_tmp_path.py:81 compares the given directory's actual contents against empty rather than a value the test itself supplied, and negative-control-base-helpers.log:51 and :105 show that assertion reddening on the base helpers, so reinstating either leaked write fails the gate.\nSCORE fit: 19\nJUSTIFICATION fit: tests/conftest.py:564-570 mirrors the surrounding config-home fixture idiom and every new name states its mechanism (TEST_TEMP_ROOT_ENV, _publish_session_temp_root, _unbound_manifest_directory), carrying no plan, phase or ticket label.\n",
+  "review_run_id": "r-20261004T053857140909-review-of-test-temp-files-live-under-tmp-path",
+  "reviewed_base_sha": "9a641736ede22800a0da2e21b216810a9da57921",
+  "reviewed_head_sha": "fd3df6b4128cd7e261113555e23bf3041d5754f0",
+  "reviewed_run_id": "r-20261004T045908294307-test-temp-files-live-under-tmp-path",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T05:47:00+00:00",
+  "total": 96
+}

@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T07:52:28.358101+00:00",
+  "findings": [
+    {
+      "file": "docs/evidence/archive/new-work-gets-a-new-worker-landed.html",
+      "line": "16",
+      "text": "plan-commits lists only 3a06801e and omits 394acda7, the commit that created this evidence file and the plan.html landed-summary paragraph it is cited from -- a reader following the plan's evidence-anchor link cannot resolve this record's own commit from its citation list."
+    }
+  ],
+  "item_aggregate": null,
+  "item_verdicts": {
+    "diff": "Read both commits (3a06801e, 394acda7) against base 17462420; guidance prose, a plan section update, a new evidence anchor, and a figure script + PNG -- no code path touched.",
+    "done_when": "\u00a75's falsifier: grep over skills/ for the two old phrases returns nothing at head and at least one line at base, and each rewritten passage names all three valid reuses. Confirmed on both counts by direct re-read of the diffs and a fresh grep.",
+    "goal": "Node goal is \u00a75: rewrite both continuity passages to state the same-task rule and stop routing follow-up work by roster member. Both files are rewritten as claimed.",
+    "manifest": "Read; states commits, changed paths, the exact gate command and result, both log paths, and discloses that the driving followup f-nwgnw-001 is left open for the coordinator.",
+    "write_paths": "Diff across both commits matches the five declared write paths exactly; no other path touched."
+  },
+  "justifications": {
+    "durability": "The gate is a plain repo grep, reproducible by anyone from the committed skills/ tree, not an ephemeral /tmp script -- stronger than a comparable recent review that penalized an unreproducible gate script. It is a shell check rather than a committed pytest assertion, appropriate since this node changes guidance prose with no code path; nothing here would silently regress if the prose drifted back, short of re-running the same grep by hand.",
+    "evidence": "I independently re-ran the gate at HEAD (394acda7): grep -rn -e 'long-lived session' -e 'remembers the node' skills/ returns no lines, exit 1, matching gate-grep.log. The negative control at base 1746242009 returns exactly the two lines the log and the manifest claim (SKILL.md:87, sprint-orchestration.md:737), so the check is shown to see the phrases before the absence is reported. But the evidence anchor's own plan-commits meta at docs/evidence/archive/new-work-gets-a-new-worker-landed.html:16 lists only 3a06801e and omits 394acda7, the commit that created this very evidence file and the plan.html landed-summary -- the same class of citation gap flagged in a recent sibling review of a-review-dies-where-nobody-is-looking-landed.html.",
+    "fit": "The landed-summary paragraph class, the evidence-anchor template (meta fields, project-absolute figure src /reckon/figures/..., scope-note and what-this-does-not-claim sections) match the idiom used across sibling *-landed.html records in docs/evidence/archive/. No banned plan-stage or version labels in any touched path or symbol. The figure script is a plain matplotlib module under docs/figures/, consistent with the project's plotting convention.",
+    "goal_fidelity": "Both passages named in \u00a75's measure (skills/reckon-ship/SKILL.md \u00a7Continuity and references/sprint-orchestration.md \u00a713) are rewritten to state the same-task rule from \u00a72, keyed by (project, plan, node id) or the reviewed run id, and both name all three kept reuses (crew resume, crew redispatch, a new run on the same task). The measured cost (312/2,089 local, median 81,957 tokens; 1,315/3,105 codex) matches the figures already landed for \u00a72 in docs/state/reckon/flight.yaml and docs/plans/new-work-gets-a-new-worker.html:43-46, so the reason is reused rather than invented for this node.",
+    "scope_discipline": "git show --stat on both commits (3a06801e, 394acda7) touches exactly the five declared write paths -- skills/reckon-ship/SKILL.md, skills/reckon-ship/references/sprint-orchestration.md, docs/plans/new-work-gets-a-new-worker.html, docs/evidence/archive/new-work-gets-a-new-worker-landed.html, and the two files under docs/figures/new-work-gets-a-new-worker/ -- nothing outside the fence, no code path touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Node goal is \u00a75: rewrite both continuity passages to state the same-task rule and stop routing follow-up work by roster member. Both files are rewritten as claimed.\nVERDICT done_when: \u00a75's falsifier: grep over skills/ for the two old phrases returns nothing at head and at least one line at base, and each rewritten passage names all three valid reuses. Confirmed on both counts by direct re-read of the diffs and a fresh grep.\nVERDICT write_paths: Diff across both commits matches the five declared write paths exactly; no other path touched.\nVERDICT manifest: Read; states commits, changed paths, the exact gate command and result, both log paths, and discloses that the driving followup f-nwgnw-001 is left open for the coordinator.\nVERDICT diff: Read both commits (3a06801e, 394acda7) against base 17462420; guidance prose, a plan section update, a new evidence anchor, and a figure script + PNG -- no code path touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nSCORE evidence: 15\nSCORE scope_discipline: 19\nSCORE durability: 15\nSCORE fit: 18\nJUSTIFICATION goal_fidelity: Both passages named in \u00a75's measure (skills/reckon-ship/SKILL.md \u00a7Continuity and references/sprint-orchestration.md \u00a713) are rewritten to state the same-task rule from \u00a72, keyed by (project, plan, node id) or the reviewed run id, and both name all three kept reuses (crew resume, crew redispatch, a new run on the same task). The measured cost (312/2,089 local, median 81,957 tokens; 1,315/3,105 codex) matches the figures already landed for \u00a72 in docs/state/reckon/flight.yaml and docs/plans/new-work-gets-a-new-worker.html:43-46, so the reason is reused rather than invented for this node.\nJUSTIFICATION evidence: I independently re-ran the gate at HEAD (394acda7): grep -rn -e 'long-lived session' -e 'remembers the node' skills/ returns no lines, exit 1, matching gate-grep.log. The negative control at base 1746242009 returns exactly the two lines the log and the manifest claim (SKILL.md:87, sprint-orchestration.md:737), so the check is shown to see the phrases before the absence is reported. But the evidence anchor's own plan-commits meta at docs/evidence/archive/new-work-gets-a-new-worker-landed.html:16 lists only 3a06801e and omits 394acda7, the commit that created this very evidence file and the plan.html landed-summary -- the same class of citation gap flagged in a recent sibling review of a-review-dies-where-nobody-is-looking-landed.html.\nJUSTIFICATION scope_discipline: git show --stat on both commits (3a06801e, 394acda7) touches exactly the five declared write paths -- skills/reckon-ship/SKILL.md, skills/reckon-ship/references/sprint-orchestration.md, docs/plans/new-work-gets-a-new-worker.html, docs/evidence/archive/new-work-gets-a-new-worker-landed.html, and the two files under docs/figures/new-work-gets-a-new-worker/ -- nothing outside the fence, no code path touched.\nJUSTIFICATION durability: The gate is a plain repo grep, reproducible by anyone from the committed skills/ tree, not an ephemeral /tmp script -- stronger than a comparable recent review that penalized an unreproducible gate script. It is a shell check rather than a committed pytest assertion, appropriate since this node changes guidance prose with no code path; nothing here would silently regress if the prose drifted back, short of re-running the same grep by hand.\nJUSTIFICATION fit: The landed-summary paragraph class, the evidence-anchor template (meta fields, project-absolute figure src /reckon/figures/..., scope-note and what-this-does-not-claim sections) match the idiom used across sibling *-landed.html records in docs/evidence/archive/. No banned plan-stage or version labels in any touched path or symbol. The figure script is a plain matplotlib module under docs/figures/, consistent with the project's plotting convention.\nFINDING docs/evidence/archive/new-work-gets-a-new-worker-landed.html:16 plan-commits lists only 3a06801e and omits 394acda7, the commit that created this evidence file and the plan.html landed-summary paragraph it is cited from -- a reader following the plan's evidence-anchor link cannot resolve this record's own commit from its citation list.",
+  "review_run_id": "r-20260923T075228358101-review-of-guidance-teaches-same-task-reuse",
+  "reviewed_base_sha": "17462420091dc96f1b4273d2f9ce040ce90f1b07",
+  "reviewed_head_sha": "394acda795fe550d308c6076460eea6d7a014718",
+  "reviewed_run_id": "r-20260923T070739870166-guidance-teaches-same-task-reuse",
+  "reviewer": {
+    "effort": "exact",
+    "model": "claude-sonnet-5"
+  },
+  "reviewer_run_id": "r-20260923T075228358101-review-of-guidance-teaches-same-task-reuse",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T07:55:30.256787+00:00",
+  "total": 86
+}

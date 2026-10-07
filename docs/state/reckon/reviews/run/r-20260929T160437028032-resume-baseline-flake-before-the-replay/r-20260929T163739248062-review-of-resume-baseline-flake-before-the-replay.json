@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_follower_prints_only_policy_rows.py::test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows"
+  ],
+  "added_failures_source": {
+    "after_failure_ids": [
+      "tests/test_follower_prints_only_policy_rows.py::test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows"
+    ],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T160437028032-resume-baseline-flake-before-the-replay/logs/arm-main/",
+    "baseline_failure_ids": [],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T160437028032-resume-baseline-flake-before-the-replay/logs/arm-16423b79/",
+    "derived_by": "reckon/crew/review.py added_failures_from_gate_logs over the text of the 51 + 50 logs the manifest's baseline_suite/after_suite log_path values name",
+    "note": "those log_path values are directories, so annotate_review_of_run records this count as unmeasured at read time; the count and ids above are the derivation from the logs those directories hold"
+  },
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-29T17:08:32.651Z",
+  "dispatched_at": "2026-09-29T16:37:53Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T160437028032-resume-baseline-flake-before-the-replay/manifest.md",
+      "line": "20",
+      "text": "the baseline_suite and after_suite log_path values on this line and line 21 name a directory rather than a log, so reckon/crew/review.py:645 _read_gate_log returns None for both and every review of this run is annotated added_failure_count: null with \"names no base gate log\" (reproduced: logs/added-failure-derivation.log in the reviewing run) although the 201 logs under those directories are readable and yield count 1; the total cap of 5 is therefore skipped now and would bite the moment the path is repaired, because the only prose naming of the id is the failure_attribution mapping at manifest.md:22 and the token _retires_id (reckon/crew/review.py:717) builds from it carries the commit suffix and matches no id."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T160437028032-resume-baseline-flake-before-the-replay/manifest.md",
+      "line": "20",
+      "text": "the two suite observations do not satisfy the repository's own completeness validator: reckon.ledger.suite_observation_missing_fields reports baseline_suite.exit_status and after_suite.exit_status (exit_status is the prose string \"mixed: 44 of 51 exit 0, 7 exit 1\" where an int is required) and after_suite.failure_count_matches_failure_ids (4 failing runs against 1 distinct id); crew check-manifest stays green because it does not apply that validator, and this run was not armed so nothing refused it, but the shape is what an armed run's evidence is validated against."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/resume-baseline-flake-before-the-replay.md",
+      "line": "27",
+      "text": "\"only reckon/cli.py differs\" is not true of the trees the arms ran: 327 tracked paths differ between 16423b79 and 4f37ffe8 (38 under reckon/, 56 under tests/, 229 under docs/); the sentence's load-bearing half (the test file's md5 is identical across all four trees, which I verified) is what makes the arms comparable, so the localisation clause overstates and invites reading any rate difference as cli.py-only."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/resume-baseline-flake-before-the-replay.md",
+      "line": "97",
+      "text": "\"which the time fence did not allow\" is not supported by the run's own record: it exited at 16:37:14Z, 31.9 minutes into its 50-minute fence, having spent 14.5 minutes of pytest across all 201 runs (mean 4.33 s), so the two 50-run arms this follow-on names cost about 7 minutes of the 18 that remained, and the stated reason misdescribes that cost to whoever picks the work up."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "There is no diff to read - the run landed no commits and the worktree HEAD equals its base 4f37ffe8, which is exactly what a read-only measurement node must show.",
+    "done_when": "Every clause of the done_when is met - 20-run counts at both end revisions (resume-baseline-flake-before-the-replay.md:43-44), a separate git-archive tree per revision, a unique --basetemp per run, one log per arm headed by revision/tree/command and closed by an EXIT= line (I checked all 201 under the run directory's logs/), the escalation arms at 22b36271 and its first parent, and one of the three permitted verdicts.",
+    "goal": "The goal asks whether the named resume-baseline test fails under pytest -n 8 at 16423b79 as often as at current main; the report answers it at resume-baseline-flake-before-the-replay.md:3 with the verdict \"not reproduced at 16423b79\" and the counts behind it (named case 0 of 51 at 16423b79, 4 of 50 at 4f37ffe8), and I re-derived every count from the logs myself.",
+    "manifest": "Read; it records the four arms with their counts, the 20-run spec window, the pooled Fisher statistics, the failing id at main with a candidate commit and the 201 log paths, but its two suite-observation log_path values name directories and its observations do not satisfy the repository's own completeness validator (see the findings).",
+    "write_paths": "The declared write path is the report alone; the manifest records changed_paths: none and the reviewed worktree (Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/resume-baseline-flake-before-the-replay) is clean with HEAD equal to its base_sha 4f37ffe8, so nothing outside the declared path was written."
+  },
+  "justifications": {
+    "durability": "each log's header records the exact pytest invocation, the tree it resolved and the imported module, so the measurement is re-runnable, but the git-archive step that materialises those trees appears in no durable artefact and /tmp/rbfb is node-local and cleared with the allocation.",
+    "evidence": "every recorded count is verified against the logs and the trees match the named revisions (test file md5 08b99993 in all four, reckon/cli.py 1fb042e7/889f09d2/b9958b9a/9471771c), but manifest.md:20-21 put directories where the store reads a gate log and resume-baseline-flake-before-the-replay.md:27 claims \"only reckon/cli.py differs\" where 327 tracked paths differ between the end revisions.",
+    "fit": "the measure uses the repository's own idioms (root-venv interpreter by absolute path, -p no:cacheprovider, unique basetemps on node-local /tmp) and no artefact carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "resume-baseline-flake-before-the-replay.md:3 and the table at lines 36-47 state the answer the goal asks for, and my own pass over all 201 logs reproduces every arm count (0/51, 0/50, 0/50, 4/50).",
+    "scope_discipline": "the report sits at its declared path and everything else the run wrote lives in its own run directory or node-local /tmp, with the worktree clean at base and changed_paths: none."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal asks whether the named resume-baseline test fails under pytest -n 8 at 16423b79 as often as at current main; the report answers it at resume-baseline-flake-before-the-replay.md:3 with the verdict \"not reproduced at 16423b79\" and the counts behind it (named case 0 of 51 at 16423b79, 4 of 50 at 4f37ffe8), and I re-derived every count from the logs myself.\nVERDICT done_when: Every clause of the done_when is met - 20-run counts at both end revisions (resume-baseline-flake-before-the-replay.md:43-44), a separate git-archive tree per revision, a unique --basetemp per run, one log per arm headed by revision/tree/command and closed by an EXIT= line (I checked all 201 under the run directory's logs/), the escalation arms at 22b36271 and its first parent, and one of the three permitted verdicts.\nVERDICT write_paths: The declared write path is the report alone; the manifest records changed_paths: none and the reviewed worktree (Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/resume-baseline-flake-before-the-replay) is clean with HEAD equal to its base_sha 4f37ffe8, so nothing outside the declared path was written.\nVERDICT manifest: Read; it records the four arms with their counts, the 20-run spec window, the pooled Fisher statistics, the failing id at main with a candidate commit and the 201 log paths, but its two suite-observation log_path values name directories and its observations do not satisfy the repository's own completeness validator (see the findings).\nVERDICT diff: There is no diff to read - the run landed no commits and the worktree HEAD equals its base 4f37ffe8, which is exactly what a read-only measurement node must show.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: resume-baseline-flake-before-the-replay.md:3 and the table at lines 36-47 state the answer the goal asks for, and my own pass over all 201 logs reproduces every arm count (0/51, 0/50, 0/50, 4/50).\nSCORE evidence: 16\nJUSTIFICATION evidence: every recorded count is verified against the logs and the trees match the named revisions (test file md5 08b99993 in all four, reckon/cli.py 1fb042e7/889f09d2/b9958b9a/9471771c), but manifest.md:20-21 put directories where the store reads a gate log and resume-baseline-flake-before-the-replay.md:27 claims \"only reckon/cli.py differs\" where 327 tracked paths differ between the end revisions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the report sits at its declared path and everything else the run wrote lives in its own run directory or node-local /tmp, with the worktree clean at base and changed_paths: none.\nSCORE durability: 17\nJUSTIFICATION durability: each log's header records the exact pytest invocation, the tree it resolved and the imported module, so the measurement is re-runnable, but the git-archive step that materialises those trees appears in no durable artefact and /tmp/rbfb is node-local and cleared with the allocation.\nSCORE fit: 19\nJUSTIFICATION fit: the measure uses the repository's own idioms (root-venv interpreter by absolute path, -p no:cacheprovider, unique basetemps on node-local /tmp) and no artefact carries a plan, sprint or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T160437028032-resume-baseline-flake-before-the-replay/manifest.md:20 the baseline_suite and after_suite log_path values on this line and line 21 name a directory rather than a log, so reckon/crew/review.py:645 _read_gate_log returns None for both and every review of this run is annotated added_failure_count: null with \"names no base gate log\" (reproduced: logs/added-failure-derivation.log in the reviewing run) although the 201 logs under those directories are readable and yield count 1; the total cap of 5 is therefore skipped now and would bite the moment the path is repaired, because the only prose naming of the id is the failure_attribution mapping at manifest.md:22 and the token _retires_id (reckon/crew/review.py:717) builds from it carries the commit suffix and matches no id.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T160437028032-resume-baseline-flake-before-the-replay/manifest.md:20 the two suite observations do not satisfy the repository's own completeness validator: reckon.ledger.suite_observation_missing_fields reports baseline_suite.exit_status and after_suite.exit_status (exit_status is the prose string \"mixed: 44 of 51 exit 0, 7 exit 1\" where an int is required) and after_suite.failure_count_matches_failure_ids (4 failing runs against 1 distinct id); crew check-manifest stays green because it does not apply that validator, and this run was not armed so nothing refused it, but the shape is what an armed run's evidence is validated against.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/resume-baseline-flake-before-the-replay.md:27 \"only reckon/cli.py differs\" is not true of the trees the arms ran: 327 tracked paths differ between 16423b79 and 4f37ffe8 (38 under reckon/, 56 under tests/, 229 under docs/); the sentence's load-bearing half (the test file's md5 is identical across all four trees, which I verified) is what makes the arms comparable, so the localisation clause overstates and invites reading any rate difference as cli.py-only.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/resume-baseline-flake-before-the-replay.md:97 \"which the time fence did not allow\" is not supported by the run's own record: it exited at 16:37:14Z, 31.9 minutes into its 50-minute fence, having spent 14.5 minutes of pytest across all 201 runs (mean 4.33 s), so the two 50-run arms this follow-on names cost about 7 minutes of the 18 that remained, and the stated reason misdescribes that cost to whoever picks the work up.\n",
+  "review_run_id": "r-20260929T163739248062-review-of-resume-baseline-flake-before-the-replay",
+  "reviewed_base_sha": "16423b795127b784ffefbfd4c3944cd583b477f1",
+  "reviewed_commits": [],
+  "reviewed_head_sha": "4f37ffe8635b9670048201e43737d1ea7f5ad07a",
+  "reviewed_manifest": {
+    "bytes": 5263,
+    "last_modified": "2026-09-29T16:36:34.300239+00:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T160437028032-resume-baseline-flake-before-the-replay/manifest.md",
+    "sha256": "7505c3a853f47afe933b5db4ecff6c1fb782120961bdabbed8af114cf6fe944f"
+  },
+  "reviewed_run_id": "r-20260929T160437028032-resume-baseline-flake-before-the-replay",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/resume-baseline-flake-before-the-replay",
+  "reviewer_node": "review-of-resume-baseline-flake-before-the-replay",
+  "reviewer_run_id": "r-20260929T163739248062-review-of-resume-baseline-flake-before-the-replay",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T17:05:05.626273+00:00",
+  "total": 92
+}

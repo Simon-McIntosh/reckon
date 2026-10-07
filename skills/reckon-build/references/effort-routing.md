@@ -61,8 +61,8 @@ the cost ordering.
 The small-model backend now has a live mapping of its own; the local lane
 routes on a measured record instead of waiting unused. It earned the mapping
 the ordinary way — shadow pairs, a gated pilot, a slice lock — and the mapping
-outlives the pilot. The mapping behind `roles.<role>.by_spec_level` for a `--local` dispatch,
-read as a dated snapshot:
+outlives the pilot. The mapping behind `roles.<role>.by_spec_level` for a
+dispatch the picker sends to the local lane, read as a dated snapshot:
 
 | Declared level | Routing decision | Snapshot (dated 2026-09-05) |
 |---|---|---|

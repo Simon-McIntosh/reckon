@@ -1,0 +1,41 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-17T22:02:21.977587+00:00",
+  "findings": [
+    {
+      "file": "docs/plans/crew-observability-truth.html",
+      "line": "677",
+      "text": "the debt sentence reports 21 documents as 7 with an unclosed section and 19 with a repeated header: my scan of the docs tree at 7f37baec reads 21 flagged documents, 19 carrying a duplicate header but only 3 carrying a section-unclosed (7 findings across those 3 documents), so the sentence names 7 documents where the run's own listing shows 3 and oversizes the repair work it hands downstream."
+    },
+    {
+      "file": "reckon/doccheck.py",
+      "line": "589",
+      "text": "the balance scan swallows every exception and returns an empty finding list, so a scanner crash reports as a balanced document and is indistinguishable from a clean audit - a fail-open guard of the same confident-wrong-answer shape this check was added to remove."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_doccheck_structure.py:41 fails if the unclosed-section report regresses and tests/test_doccheck_structure.py:89 if the duplicate header does; I reproduced all seven must-fail cases against the unrepaired source and the six silent cases passing at both revisions.",
+    "evidence": "the base/head cohort reproduces exactly (7 failed / 41 passed with reckon/doccheck.py at 4a628c8f, same seven ids; 48 passed at head, exit 0) and the specimen, severity and exit-code readings are confirmed independently, but the headline debt figure reads a findings count as a documents count, which misstates the repair scope.",
+    "fit": "the scanner follows the module's Finding/severity idiom and the codes and helper names are mechanism-named with no plan labels, but reckon/doccheck.py:589 swallows every exception into an empty finding list.",
+    "goal_fidelity": "reckon/doccheck.py:569 _structure_findings reports an unclosed section and a stray close as errors and a second header as a warn, and reckon/doccheck.py:633 wires it into audit_html; run live, the specimen at the run's revision reports 1 error (section-unclosed, id=s2-roster-write-commits) plus 1 warn, and my synthetic specimens report exit 1 on the two error cases and exit 0 on the warn.",
+    "scope_discipline": "both commits are pure insertions (94 and 147 lines in 92be14fd, 48 and 18 in 7f37baec by --numstat) and every path is one of the four declared write paths, with nothing unrelated carried."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/doccheck.py:569 _structure_findings reports an unclosed section and a stray close as errors and a second header as a warn, and reckon/doccheck.py:633 wires it into audit_html; run live, the specimen at the run's revision reports 1 error (section-unclosed, id=s2-roster-write-commits) plus 1 warn, and my synthetic specimens report exit 1 on the two error cases and exit 0 on the warn.\nSCORE evidence: 15\nJUSTIFICATION evidence: the base/head cohort reproduces exactly (7 failed / 41 passed with reckon/doccheck.py at 4a628c8f, same seven ids; 48 passed at head, exit 0) and the specimen, severity and exit-code readings are confirmed independently, but the headline debt figure reads a findings count as a documents count, which misstates the repair scope.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits are pure insertions (94 and 147 lines in 92be14fd, 48 and 18 in 7f37baec by --numstat) and every path is one of the four declared write paths, with nothing unrelated carried.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_doccheck_structure.py:41 fails if the unclosed-section report regresses and tests/test_doccheck_structure.py:89 if the duplicate header does; I reproduced all seven must-fail cases against the unrepaired source and the six silent cases passing at both revisions.\nSCORE fit: 17\nJUSTIFICATION fit: the scanner follows the module's Finding/severity idiom and the codes and helper names are mechanism-named with no plan labels, but reckon/doccheck.py:589 swallows every exception into an empty finding list.\nFINDING docs/plans/crew-observability-truth.html:677 the debt sentence reports 21 documents as 7 with an unclosed section and 19 with a repeated header: my scan of the docs tree at 7f37baec reads 21 flagged documents, 19 carrying a duplicate header but only 3 carrying a section-unclosed (7 findings across those 3 documents), so the sentence names 7 documents where the run's own listing shows 3 and oversizes the repair work it hands downstream.\nFINDING reckon/doccheck.py:589 the balance scan swallows every exception and returns an empty finding list, so a scanner crash reports as a balanced document and is indistinguishable from a clean audit - a fail-open guard of the same confident-wrong-answer shape this check was added to remove.",
+  "review_run_id": "r-20260917T220221977587-review-of-the-audit-reads-document-structure",
+  "reviewed_run_id": "r-20260917T205638169979-the-audit-reads-document-structure",
+  "reviewer": "review-of-the-audit-reads-document-structure",
+  "reviewer_run_id": "r-20260917T220221977587-review-of-the-audit-reads-document-structure",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-17T22:36:24.253663+00:00",
+  "total": 90
+}

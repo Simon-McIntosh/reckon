@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T19:04:50.819Z",
+  "dispatched_at": "2026-10-05T18:59:52Z",
+  "findings": [
+    {
+      "anchor": "reckon/_plan_html.py:353",
+      "id": "reuse_search-1",
+      "reason": "the consolidation \u00a718 sells does not retire the spelling it thinks it does, and its stated base/head counts are wrong, so the node's own gate cannot pass as written without editing out-of-scope code.",
+      "text": "\u00a718's done-when claims `grep -rn '== \"implementable\"' reckon/` reports five sites at the base and exactly one at the head, but `_plan_html.py:353` (`elif status == \"implementable\":`) also matches, so the tree reports six at the base and two at the head (the `_schema` predicate plus this progress-figure read), and \u00a718 also declines to change that read",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_plan_html.py:1506",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend or reuse `_plan_html._TAG_RE` (or state why it cannot), rather than add a second raw-text stripper beside it.",
+      "text": "\u00a716 replaces the prose parser with \"a tag-stripper over the slices the reader yields\" but names no owner, while `reckon/_plan_html.py` already carries `_TAG_RE = re.compile(r\"<[^>]+>\")` used to strip tags (`_TAG_RE.sub(\"\", ...)` at line 1525), so the plan re-implements tag stripping in the module that owns it",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "11ba0d603b33546260605bc5f5ad8da8407f0363d1d275585188503ea5e3c3fb",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 114,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T185919701455-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "a9b4aee6bdcd77b791e68e86d173fe9f7ca547a6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a717 puts section enumeration, identity and extent behind one public reader `plan_headings` yielding named records over the private `_StructuredSectionSpanParser`, and \u00a716 puts the outstanding-section join behind one module-private predicate over `_section_digests`; the interfaces are small relative to the walk-and-join they hide.",
+    "duplicate_owner": "a finding \u2014 \u00a716 introduces a raw-text tag-stripper over the reader's slices without citing `reckon/_plan_html.py:1506`'s existing `_TAG_RE`, a tag-stripper in the very module \u00a716 targets.",
+    "interface_budget": "pass \u2014 public_definitions 1477, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds no public definition and says why nothing is retired, \u00a717 adds two and states no public reader can be retired because both keep callers, \u00a718 adds one and states the five readers each keep callers and names; no section adds a CLI option, MCP view or refusal family, and \u00a716 reuses the plan-review-missing family.",
+    "reuse_search": "a finding \u2014 the plan cites the mechanisms it extends (the span parser `reckon/_plan_html.py:44`, `_fingerprint_forms` at `reckon/crew/plan_review.py:598`, the `_schema` declaration enum, and the `interface_counts` module-private rule pattern at `reckon/interface_counts.py:97`), all verified present, but its \u00a718 census of the classification rule is an undercount: it claims five `== \"implementable\"` sites where the tree has six.",
+    "thin_wrapper": "pass \u2014 \u00a718's classification predicate is a shared rule its five readers call, not a new layer over live machinery, and it states why the readers cannot merge (each answers a different question); `structured_section_spans` is pre-existing and re-expressed as a projection, not newly wrapped."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.804573+00:00"
+}

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "43181a642e6667092bd0ff161e53b6e031b5e4c8",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:7321 _ensure_watch_producer",
+    "reckon/crew/runs.py:3492 wrapper over _ensure_watch_producer",
+    "reckon/crew/runs.py:3242 project_watch_visibility -> watch_observer_alive",
+    "reckon/crew/dispatch.py:1266 watch_observer_alive"
+  ],
+  "completed_at": "2026-10-07T06:52:48.490Z",
+  "dispatched_at": "2026-10-07T06:36:59Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1230",
+      "severity": "follow-on",
+      "text": "follow-on: the seat-release refusal reports WATCHER_LOAD_BOUND_SECONDS (the configured full bound) rather than the remaining budget handed to the child, so under contention the message names WATCHER_LOAD_BOUND_SECONDS 30s when the child only had the leftover wait, slightly mangling the diagnostic it exists to give."
+    }
+  ],
+  "head_log_revision": "90cb25078c574dd930d862300369872ab6d70339",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read commit 90cb25078 against base 43181a642, three files (+320/-44): dispatch.py bounds the arm flock and moves delivery resolution outside the mutex, runs.py extracts watch_observer_alive, and the new test file adds five cases.",
+    "done_when": "The done-when's gate names tests/test_*watch*.py, tests/test_follow*.py, tests/test_producer*.py plus the new file; the manifest records base 43181a642 (1 failed, 249 passed, EXIT=1) and head 90cb25078 (255 passed, 1 skipped, EXIT=0) with added failures 0, and my re-run of the new file gave 5 passed EXIT=0.",
+    "goal": "The node goal is \"No long-lived process holds the watch arm lock\"; reckon/crew/dispatch.py:1238 _ensure_watch_producer now takes the .arm.lock with LOCK_NB under a deadline at dispatch.py:1254 and releases it before resolving session delivery, and its new tests show the lock free while a producer and a follower are alive.",
+    "manifest": "Read; it records commit 90cb25078, base/head gate logs with EXIT lines, a declared descriptor-leak negative control that reddened EXIT=1, changed_paths of three files, and blockers none.",
+    "write_paths": "The manifest declares six exclusive paths (reckon/crew/dispatch.py, reckon/crew/watch.py, reckon/crew/runs.py, the new test file, an evidence fragment and a figures dir); the diff touch is confined to the three under reckon/ and tests/, all inside that declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_arm_lock_is_never_held_by_a_follower.py:188 fails on reverting the bound (arming must exit 3 within 8s) and the node's declared descriptor-leak mutation reddened test_live_producer_and_follower_leave_arm_lock_free at EXIT=1.",
+    "evidence": "the manifest's logs (base.log one FAILED at EXIT=1, head.log zero FAILED at EXIT=0) match what I read at test_logs, and my independent re-run of tests/test_arm_lock_is_never_held_by_a_follower.py at head gave 5 passed EXIT=0.",
+    "fit": "reckon/crew/runs.py:3186 extracts the observer-liveness check already inlined at runs.py:3242 into one helper, matching the module's idiom and introducing no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1254 acquires the arm lock non-blocking under the deadline at dispatch.py:1250 and dispatch.py:1268 releases it before session resolution, so the lock is held only for the bounded arming step; the historical 30-minute holder is left unattributed in the manifest.",
+    "reuse": "watch_observer_alive at runs.py:3186 is shared by both its callers rather than duplicated, and no existing owner of a bounded child-unwatch exists, so dispatch.py:1201 introduces that capability rather than forking one.",
+    "scope_discipline": "the 43181a642..90cb25078 delta is confined to reckon/crew/dispatch.py, reckon/crew/runs.py and tests/test_arm_lock_is_never_held_by_a_follower.py, every one an element of the declared write paths, with no unrelated edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is \"No long-lived process holds the watch arm lock\"; reckon/crew/dispatch.py:1238 _ensure_watch_producer now takes the .arm.lock with LOCK_NB under a deadline at dispatch.py:1254 and releases it before resolving session delivery, and its new tests show the lock free while a producer and a follower are alive.\nVERDICT done_when: The done-when's gate names tests/test_*watch*.py, tests/test_follow*.py, tests/test_producer*.py plus the new file; the manifest records base 43181a642 (1 failed, 249 passed, EXIT=1) and head 90cb25078 (255 passed, 1 skipped, EXIT=0) with added failures 0, and my re-run of the new file gave 5 passed EXIT=0.\nVERDICT write_paths: The manifest declares six exclusive paths (reckon/crew/dispatch.py, reckon/crew/watch.py, reckon/crew/runs.py, the new test file, an evidence fragment and a figures dir); the diff touch is confined to the three under reckon/ and tests/, all inside that declared set.\nVERDICT manifest: Read; it records commit 90cb25078, base/head gate logs with EXIT lines, a declared descriptor-leak negative control that reddened EXIT=1, changed_paths of three files, and blockers none.\nVERDICT diff: Read commit 90cb25078 against base 43181a642, three files (+320/-44): dispatch.py bounds the arm flock and moves delivery resolution outside the mutex, runs.py extracts watch_observer_alive, and the new test file adds five cases.\nCALL_SITES: reckon/crew/dispatch.py:7321 _ensure_watch_producer, reckon/crew/runs.py:3492 wrapper over _ensure_watch_producer, reckon/crew/runs.py:3242 project_watch_visibility -> watch_observer_alive, reckon/crew/dispatch.py:1266 watch_observer_alive\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1254 acquires the arm lock non-blocking under the deadline at dispatch.py:1250 and dispatch.py:1268 releases it before session resolution, so the lock is held only for the bounded arming step; the historical 30-minute holder is left unattributed in the manifest.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's logs (base.log one FAILED at EXIT=1, head.log zero FAILED at EXIT=0) match what I read at test_logs, and my independent re-run of tests/test_arm_lock_is_never_held_by_a_follower.py at head gave 5 passed EXIT=0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the 43181a642..90cb25078 delta is confined to reckon/crew/dispatch.py, reckon/crew/runs.py and tests/test_arm_lock_is_never_held_by_a_follower.py, every one an element of the declared write paths, with no unrelated edit.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_arm_lock_is_never_held_by_a_follower.py:188 fails on reverting the bound (arming must exit 3 within 8s) and the node's declared descriptor-leak mutation reddened test_live_producer_and_follower_leave_arm_lock_free at EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/runs.py:3186 extracts the observer-liveness check already inlined at runs.py:3242 into one helper, matching the module's idiom and introducing no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: watch_observer_alive at runs.py:3186 is shared by both its callers rather than duplicated, and no existing owner of a bounded child-unwatch exists, so dispatch.py:1201 introduces that capability rather than forking one.\nFINDING reckon/crew/dispatch.py:1230 follow-on: the seat-release refusal reports WATCHER_LOAD_BOUND_SECONDS (the configured full bound) rather than the remaining budget handed to the child, so under contention the message names WATCHER_LOAD_BOUND_SECONDS 30s when the child only had the leftover wait, slightly mangling the diagnostic it exists to give.\nreviewed_base_sha: 43181a642e6667092bd0ff161e53b6e031b5e4c8\nreviewed_head_sha: 90cb25078c574dd930d862300369872ab6d70339\n",
+  "review_run_id": "r-20261007T063637446343-review-of-arm-lock-never-held-by-a-follower",
+  "reviewed_base_sha": "43181a642e6667092bd0ff161e53b6e031b5e4c8",
+  "reviewed_head_sha": "90cb25078c574dd930d862300369872ab6d70339",
+  "reviewed_run_id": "r-20261007T051352523439-arm-lock-never-held-by-a-follower",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:50:49.364676+00:00",
+  "total": 112
+}

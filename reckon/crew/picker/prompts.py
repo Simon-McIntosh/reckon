@@ -1,6 +1,17 @@
-"""Render concise JSON prompts from package-local strict Jinja templates."""
+"""Render the picker's prompts as one JSON mapping per template.
+
+Every value the picker asks Jev to weigh is assembled into a Python mapping and
+handed to a Jinja template whose body is that mapping passed through one
+``tojson``. A value therefore travels as JSON data: hostile text in a node's
+goal, done-when or orchestrator comment escapes into its own string and cannot
+add a key, close a brace or rewrite an instruction. The templates hold only the
+static prose -- the routing instructions and the hold guidance -- because that
+guidance belongs where a reader can compare it against the questions Jev is
+asked, not inline in code.
+"""
 
 import json
+from collections.abc import Mapping, Sequence
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -16,6 +27,40 @@ from jinja2 import (
 from . import lane_context
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
+
+#: The fields of the routing judgment Jev is not expected to know by name. Each
+#: entry is one line of meaning, so a value the state carries can be weighed
+#: rather than guessed at.
+_GLOSSARY: dict[str, str] = {
+    "spec_level": (
+        "How much design latitude the node leaves. exact: the design is fixed "
+        "and only the implementation remains. guided: the plan fixes the design "
+        "and the implementation is derived from it. open: the node must also "
+        "choose the design."
+    ),
+    "burn_multiple": (
+        "Metered spend so far divided by the lane's allowance for its window; "
+        "above 1 is ahead of the pace that window plans for."
+    ),
+    "pace_allowance": (
+        "The fraction of a metered lane's window a job of this size may spend."
+    ),
+    "budget_source": (
+        "Where a budget reading came from: an account-surface reading describes "
+        "now, a ledger reading carries the age of the run behind it."
+    ),
+    "budget_age_s": "Seconds since the budget reading was observed; null when unknown.",
+    "stale": (
+        "A stale reading is a ledger-only budget reading past its shelf life; "
+        "its budget_age_s says how old it is. An account-surface reading is "
+        "never stale by age."
+    ),
+    "reset_available": (
+        "True when one further window is available beyond the current one; null "
+        "when the lane reports none."
+    ),
+    "days_to_reset": "Days until the lane's window resets; null when unknown.",
+}
 
 
 @lru_cache(maxsize=1)
@@ -37,7 +82,114 @@ def environment() -> Environment:
         return json.dumps(value, separators=(",", ":"))
 
     env.filters["json"] = encode
+    env.filters["tojson"] = encode
     return env
+
+
+def _negative_control_declared(node: Any) -> bool:
+    """Whether the node declares a control its check must fail against.
+
+    ``none: <reason>`` states that no control applies, so an explicit refusal
+    reads the same as an empty field: neither declares one.
+    """
+
+    declared = str(getattr(node, "negative_control", "") or "").strip()
+    return bool(declared) and not declared.lower().startswith("none")
+
+
+def _candidate_state(candidate: Any) -> dict[str, Any]:
+    """One candidate's weighable facts, keyed for the judgment.
+
+    ``lane`` and ``model`` are separate fields beside the candidate's own
+    ``backend`` name, so each entry can be weighed both under the whole
+    candidate table and under the lane and model a choice names. The four budget
+    fields are read only when the candidate carries them -- a candidate without
+    a recorded budget reading renders null, never a measured zero.
+    """
+
+    return {
+        "backend": candidate.backend,
+        "lane": candidate.family,
+        "model": candidate.model,
+        "availability": candidate.availability,
+        "utilisation_pct": candidate.utilisation_pct,
+        "burn_multiple": candidate.burn_multiple,
+        "pace_allowance": candidate.pace_allowance,
+        "days_to_reset": candidate.days_to_reset,
+        "resets_at": candidate.resets_at,
+        "worker_slots": candidate.worker_slots,
+        "congestion": candidate.congestion,
+        "outcomes": candidate.outcomes,
+        "budget_source": getattr(candidate, "budget_source", None),
+        "budget_age_s": getattr(candidate, "budget_age_s", None),
+        "stale": getattr(candidate, "stale", None),
+        "reset_available": getattr(candidate, "reset_available", None),
+    }
+
+
+def build_state(
+    *,
+    node: Any,
+    capability: Any,
+    estimated_context: Any,
+    comment: Any,
+    candidates: Sequence[Any],
+    lane: Mapping[str, Any],
+    attempts: Any = 0,
+) -> dict[str, Any]:
+    """Assemble the whole routing judgment as one mapping.
+
+    The mapping is the only source of the rendered state, so the structure holds
+    whatever the values are: every candidate is keyed by its backend name and
+    every node fact is one field of ``node``.
+    """
+
+    return {
+        "node": {
+            "role": node.role,
+            "spec_level": node.spec_level,
+            "capability": capability,
+            "goal": node.goal,
+            "done_when": node.done_when,
+            "estimated_context": estimated_context,
+            "estimated_hours": node.estimated_hours,
+            "attempts": attempts,
+            "write_path_count": len(node.write_paths or []),
+            "negative_control_declared": _negative_control_declared(node),
+        },
+        "orchestrator_comment": comment,
+        "candidates": {
+            candidate.backend: _candidate_state(candidate) for candidate in candidates
+        },
+        "return_times": lane["return_times"],
+        "local_lane": lane["local_lane"],
+    }
+
+
+def build_questions(candidates: Sequence[Any]) -> dict[str, Any]:
+    """Assemble the questions as one mapping.
+
+    The criteria carry one entry per offered backend plus the ``hold`` guidance
+    the template supplies; the per-candidate entries are values of a mapping, so
+    no candidate name can change the shape of the questions.
+    """
+
+    return {
+        "glossary": _GLOSSARY,
+        "criteria_entries": {
+            candidate.backend: {
+                "family": candidate.family,
+                "model": candidate.model,
+                "effort": candidate.effort,
+                "local": candidate.local,
+                "meaning": (
+                    "Execute the node using this configured backend; consult "
+                    "its matching live candidate state."
+                ),
+            }
+            for candidate in candidates
+        },
+    }
 
 
 def render(name: str, **context: Any) -> str:
@@ -45,7 +197,7 @@ def render(name: str, **context: Any) -> str:
         # The lane context is built here so every caller of the state render
         # carries the return-time and local-lane blocks without duplicating the
         # derivation. A caller that supplies no project gets null figures.
-        context["lane"] = lane_context.build(
+        lane = lane_context.build(
             node=context.get("node"),
             candidates=context.get("candidates") or [],
             project=context.get("project"),
@@ -53,5 +205,26 @@ def render(name: str, **context: Any) -> str:
             budget_snapshot=context.get("budget_snapshot"),
             config=context.get("config"),
             now=context.get("now"),
+        )
+        state = build_state(
+            node=context["node"],
+            capability=context.get("capability"),
+            estimated_context=context.get("estimated_context"),
+            comment=context.get("comment"),
+            candidates=context.get("candidates") or [],
+            lane=lane,
+            attempts=context["attempts"] if context.get("attempts") is not None else 0,
+        )
+        return environment().get_template(name).render(state=state).strip()
+    if name == "questions.jinja":
+        questions = build_questions(context.get("candidates") or [])
+        return (
+            environment()
+            .get_template(name)
+            .render(
+                glossary=questions["glossary"],
+                criteria_entries=questions["criteria_entries"],
+            )
+            .strip()
         )
     return environment().get_template(name).render(**context).strip()

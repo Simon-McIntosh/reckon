@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T00:01:09.938Z",
+  "dispatched_at": "2026-10-04T23:58:24Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/prompts/plan_design_review.md:1",
+      "id": "reuse_search-1",
+      "reason": "the plan must either wire the interface-budget item into the prompt, the item set and the parser, or delete \u00a73's second done-when; as written it promises a check no reviewer is asked to make.",
+      "text": "\u00a73's second \"also done when\" requires the review to name the current week's four interface counts from reckon/interface_counts.py and to raise a finding when a section adds a public definition, CLI option, MCP view or refusal family without retiring or merging something, but the design-review prompt and PLAN_DESIGN_REVIEW_ITEMS (reckon/crew/review.py:157) carry only the four reuse/depth items and no code path injects the counts into the brief \u2014 interface_counts.py's own docstring already claims its four families are \"the ones the plan-review rubric reads\" as a reader that does not exist",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:329",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should name reckon/crew/review.py as the owner of the sibling-path rule and have plan_review extend it, so a future change to the store's keying lands once rather than diverging silently.",
+      "text": "plan_review_path rebuilds the \"plain path plus .at-<sha> sibling when one version is reviewed twice\" scheme that reckon/crew/review.py:1215 review_path already owns, with its own _BLOB_RE and its own suffix spelling, so the store's keying rule lives in two places and would have to be changed in both",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py:163",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a712(a) must direct the census to import the pattern from reckon/crew/plan_review.py (the module that owns the store's filename grammar) instead of hardcoding it, or the two globs drift again the moment one is edited.",
+      "text": "directory_counts globs `plan-*.json` itself while the reader it is meant to be reconciled against, plan_review.list_plan_reviews (reckon/crew/plan_review.py:548), owns the `plan-*.v*.json` spelling, and \u00a712(a) says the fix will \"use the reader's own plan-*.v*.json pattern\" without naming an owner to extend \u2014 so as specified \u00a712(a) re-spells a second literal rather than removing the duplicate",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a8766845d8451a55a9d3a6850c9bb4373d0b3b7f201e1cbe2bb00dc32aa6efaa",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 45,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T00:03:29.609687+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T00:03:30.564029+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T00:03:28.900518+00:00"
+    }
+  },
+  "review_run_id": "r-20261004T235812238134-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "d87f2b9f6b2af4dea24e516552edf810b637917b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 reckon/crew/plan_review.py hides the record shape, the content fingerprint, the store, responses, recurrence and the delivered-report join behind a small public API, and shares the report reader with review.py through parse_plan_review_report rather than duplicating it.",
+    "duplicate_owner": "a finding \u2014 plan_review.plan_review_path re-implements review.py's blob-keyed sibling path, and the census script re-implements the store's plan-file glob rather than reading either from its owner.",
+    "reuse_search": "a finding \u2014 \u00a73 cites reckon/interface_counts.py as the source of the interface budget the review reads, but the shipped design-review prompt (reckon/crew/prompts/plan_design_review.md) and PLAN_DESIGN_REVIEW_ITEMS (reckon/crew/review.py:157) never read those counts or ask for them.",
+    "thin_wrapper": "pass \u2014 the plan extends the existing review store and the review-dispatch reflex (recovery._review_dispatch_fields carries both the run subject and the plan subject) instead of wrapping them, so D6's extend-not-copy is realised in the code."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T00:02:14.927161+00:00"
+}

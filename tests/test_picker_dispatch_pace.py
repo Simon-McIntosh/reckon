@@ -212,9 +212,14 @@ def test_old_recorded_window_is_marked_stale(monkeypatch, tmp_path):
         assert budget_block["stale"] is True
         assert budget_block["budget_age_s"] == pytest.approx(86_400, abs=1)
     for candidate in candidates.values():
-        assert candidate["burn_multiple"] is None
-        assert candidate["pace_allowance"] is None
-        assert "stale" in candidate["budget_reason"]
+        # A stale reading keeps its figures and carries its age; it does not
+        # null the numbers, which would hide the account whenever it is idle.
+        assert candidate["burn_multiple"] is not None
+        assert candidate["pace_allowance"] is not None
+        assert candidate["utilisation_pct"] is not None
+        assert candidate["stale"] is True
+        assert candidate["budget_age_s"] == pytest.approx(86_400, abs=1)
+        assert candidate["budget_reason"] is None
         assert candidate["reasons"] == []
 
 
@@ -297,6 +302,10 @@ def test_dispatch_marks_old_published_window_stale(monkeypatch, tmp_path):
     assert budget_block["budget_age_s"] == pytest.approx(7200, abs=1)
     assert budget_block["stale"] is True
     for candidate in candidates.values():
-        assert candidate["burn_multiple"] is None
-        assert candidate["pace_allowance"] is None
-        assert "stale" in candidate["budget_reason"]
+        # A stale published reading reaches the candidate with its figures and
+        # age, marked stale, rather than nulled with a reason.
+        assert candidate["burn_multiple"] is not None
+        assert candidate["pace_allowance"] is not None
+        assert candidate["stale"] is True
+        assert candidate["budget_age_s"] == pytest.approx(7200, abs=1)
+        assert candidate["budget_reason"] is None

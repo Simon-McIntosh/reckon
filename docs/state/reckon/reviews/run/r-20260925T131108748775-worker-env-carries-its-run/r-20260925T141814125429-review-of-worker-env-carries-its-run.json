@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4080",
+    "reckon/crew/dispatch.py:5393",
+    "reckon/crew/dispatch.py:6315",
+    "reckon/crew/dispatch.py:6663",
+    "reckon/hooks/worker_stop.py:173"
+  ],
+  "completed_at": "2026-09-25T15:49:17.805Z",
+  "dispatched_at": "2026-09-25T14:18:28Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/worker_stop.py",
+      "line": "15",
+      "text": "The module docstring still says the hook blocks only while the manifest is absent or its top-level status is non-terminal, so the file's first statement of its own contract is wrong for the case this change adds: a terminal manifest older than the attempt is refused (reckon/hooks/worker_stop.py:173)."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "6782",
+      "text": "The in-harness lane-change branch rebuilds the run directive without an environment key, so a run re-pointed in-harness carries none of the attempt identity the same change attaches at reckon/crew/dispatch.py:4080; the only in-repo reader of a pointer's directive reads attach_with alone (reckon/hooks/native_agent_guard.py:148), so the gap is latent rather than breaking."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "4770",
+      "text": "The refactor commit replaced a possessive with a bare noun and left the following line intact, so the docstring now reads \"absent, the launch own environment is used\"."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "sound and additive. Reading the commits: the implementation commit is 372 insertions against 6 deletions over four files, the docs commit is 85 insertions with no deletions, and the refactor commit is five comment-line substitutions in one file.",
+    "done_when": "met. Every clause the fence names is observable in the diff. The three variables reach dispatch, resume (reckon/crew/dispatch.py:6315) and the supervisor spawn (reckon/crew/dispatch.py:5393). The headers are appended after any inherited value for claude and clive only (reckon/crew/dispatch.py:4717, asserted at tests/test_worker_env_export.py:89). Codex carries identity with no Anthropic header (tests/test_worker_env_export.py:174). Nothing runtime-shaped is persisted into the supervisor specification (tests/test_worker_env_export.py:148). The hook's freshness rule has both cases: older than the attempt refused and newer allowed (tests/test_worker_stop_hook.py:91, tests/test_worker_stop_hook.py:109). The five-file gate passes at this head (51 passed, EXIT=0) and the ruff delta is unraised (7 findings on a complete base tree, 7 after).",
+    "goal": "carried. _worker_runtime_environment (reckon/crew/dispatch.py:4690) writes RECKON_RUN_ID, RECKON_MANIFEST and RECKON_ATTEMPT_STARTED_AT (reckon/crew/dispatch.py:4701) into the launch environment; _worker_runtime_plan (reckon/crew/dispatch.py:4723) applies it to the cli launch plan with claude_headers taken from the plan dialect alone (reckon/crew/dispatch.py:4740); _worker_process_environment (reckon/crew/dispatch.py:4745) withholds ANTHROPIC_CUSTOM_HEADERS from every non-claude dialect (reckon/crew/dispatch.py:4751); _persisted_worker_environment (reckon/crew/dispatch.py:4660) pops the three runtime keys (reckon/crew/dispatch.py:4672) and strips a trailing run/session header pair (reckon/crew/dispatch.py:4683) before anything is stored; the dispatch-time directive carries identity without headers (reckon/crew/dispatch.py:4080); the supervisor spawn re-derives identity from the live pointer at spawn time (reckon/crew/dispatch.py:5393); and the Stop hook refuses a terminal manifest that predates the attempt (reckon/hooks/worker_stop.py:115, reckon/hooks/worker_stop.py:173).",
+    "manifest": "honest. Its gate command and 51-passed result reproduce at this head, its two mutation logs carry the declared strings as their first lines, and its 7-to-7 ruff delta reproduces on a complete base tree. The scratch-tree measurement fields are blank, which matches a run that measured inside its own worktree.",
+    "write_paths": "respected. All seven changed paths lie inside the declared eight-path fence; no path outside it and no concurrent node's declared path appears in the diff."
+  },
+  "justifications": {
+    "durability": "each added assertion is reddened by the value it checks rather than by a shape and the hook's refusal is a capped state machine, docked for the supervisor spawn's new dependence on a live pointer (reckon/crew/dispatch.py:5392), whose absent-pointer path is handled at reckon/crew/dispatch.py:5551 but exercised by no test.",
+    "evidence": "the gate and both declared mutations reproduce from my own runs at this head (51 passed; the resume-export mutation reddens the clive resume assertion; the attempt-start mutation reddens the stale-manifest refusal) and the 7-to-7 ruff delta reproduces against a complete base tree.",
+    "fit": "the diff names mechanisms rather than plan items and carries no attribution or ticket reference, docked because reckon/hooks/worker_stop.py:15 still states the pre-change block condition and reckon/crew/dispatch.py:4770 now reads \"the launch own environment\".",
+    "goal_fidelity": "every spawn and resume path carries all three variables and the hook applies the freshness rule the fence names, docked because the in-harness lane-change branch rebuilds a run directive with no environment key (reckon/crew/dispatch.py:6782) where the same change attaches one at dispatch (reckon/crew/dispatch.py:4080).",
+    "scope_discipline": "every changed path is inside the declared fence, but one commit rewrites five comment and docstring lines in reckon/crew/dispatch.py (reckon/crew/dispatch.py:3393, reckon/crew/dispatch.py:3917, reckon/crew/dispatch.py:4114, reckon/crew/dispatch.py:4588, reckon/crew/dispatch.py:4770) that carry nothing this change's goal requires."
+  },
+  "project": "reckon",
+  "raw_text": "Review of run r-20260925T131108748775-worker-env-carries-its-run at head 3fa5dcde49b012e5981f3eab8109ae6bff07ec7a over base af234879c6220d566e29a26eee251bf9407548b1.\n\nRead in worktree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/worker-env-carries-its-run (clean tree, three commits, seven changed paths, all inside the declared fence). Method: read the three commits and the touched modules, re-ran the declared gate at this head, re-applied both declared mutations, re-derived the ruff delta against a complete base tree, and read the evidence and plan additions.\n\nVERDICT goal: carried. _worker_runtime_environment (reckon/crew/dispatch.py:4690) writes RECKON_RUN_ID, RECKON_MANIFEST and RECKON_ATTEMPT_STARTED_AT (reckon/crew/dispatch.py:4701) into the launch environment; _worker_runtime_plan (reckon/crew/dispatch.py:4723) applies it to the cli launch plan with claude_headers taken from the plan dialect alone (reckon/crew/dispatch.py:4740); _worker_process_environment (reckon/crew/dispatch.py:4745) withholds ANTHROPIC_CUSTOM_HEADERS from every non-claude dialect (reckon/crew/dispatch.py:4751); _persisted_worker_environment (reckon/crew/dispatch.py:4660) pops the three runtime keys (reckon/crew/dispatch.py:4672) and strips a trailing run/session header pair (reckon/crew/dispatch.py:4683) before anything is stored; the dispatch-time directive carries identity without headers (reckon/crew/dispatch.py:4080); the supervisor spawn re-derives identity from the live pointer at spawn time (reckon/crew/dispatch.py:5393); and the Stop hook refuses a terminal manifest that predates the attempt (reckon/hooks/worker_stop.py:115, reckon/hooks/worker_stop.py:173).\n\nVERDICT done_when: met. Every clause the fence names is observable in the diff. The three variables reach dispatch, resume (reckon/crew/dispatch.py:6315) and the supervisor spawn (reckon/crew/dispatch.py:5393). The headers are appended after any inherited value for claude and clive only (reckon/crew/dispatch.py:4717, asserted at tests/test_worker_env_export.py:89). Codex carries identity with no Anthropic header (tests/test_worker_env_export.py:174). Nothing runtime-shaped is persisted into the supervisor specification (tests/test_worker_env_export.py:148). The hook's freshness rule has both cases: older than the attempt refused and newer allowed (tests/test_worker_stop_hook.py:91, tests/test_worker_stop_hook.py:109). The five-file gate passes at this head (51 passed, EXIT=0) and the ruff delta is unraised (7 findings on a complete base tree, 7 after).\n\nVERDICT write_paths: respected. All seven changed paths lie inside the declared eight-path fence; no path outside it and no concurrent node's declared path appears in the diff.\n\nVERDICT manifest: honest. Its gate command and 51-passed result reproduce at this head, its two mutation logs carry the declared strings as their first lines, and its 7-to-7 ruff delta reproduces on a complete base tree. The scratch-tree measurement fields are blank, which matches a run that measured inside its own worktree.\n\nVERDICT diff: sound and additive. Reading the commits: the implementation commit is 372 insertions against 6 deletions over four files, the docs commit is 85 insertions with no deletions, and the refactor commit is five comment-line substitutions in one file.\n\nCALL_SITES: reckon/crew/dispatch.py:4080, reckon/crew/dispatch.py:5393, reckon/crew/dispatch.py:6315, reckon/crew/dispatch.py:6663, reckon/hooks/worker_stop.py:173\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: every spawn and resume path carries all three variables and the hook applies the freshness rule the fence names, docked because the in-harness lane-change branch rebuilds a run directive with no environment key (reckon/crew/dispatch.py:6782) where the same change attaches one at dispatch (reckon/crew/dispatch.py:4080).\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate and both declared mutations reproduce from my own runs at this head (51 passed; the resume-export mutation reddens the clive resume assertion; the attempt-start mutation reddens the stale-manifest refusal) and the 7-to-7 ruff delta reproduces against a complete base tree.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every changed path is inside the declared fence, but one commit rewrites five comment and docstring lines in reckon/crew/dispatch.py (reckon/crew/dispatch.py:3393, reckon/crew/dispatch.py:3917, reckon/crew/dispatch.py:4114, reckon/crew/dispatch.py:4588, reckon/crew/dispatch.py:4770) that carry nothing this change's goal requires.\nSCORE durability: 18\nJUSTIFICATION durability: each added assertion is reddened by the value it checks rather than by a shape and the hook's refusal is a capped state machine, docked for the supervisor spawn's new dependence on a live pointer (reckon/crew/dispatch.py:5392), whose absent-pointer path is handled at reckon/crew/dispatch.py:5551 but exercised by no test.\nSCORE fit: 16\nJUSTIFICATION fit: the diff names mechanisms rather than plan items and carries no attribution or ticket reference, docked because reckon/hooks/worker_stop.py:15 still states the pre-change block condition and reckon/crew/dispatch.py:4770 now reads \"the launch own environment\".\n\nFINDING reckon/hooks/worker_stop.py:15 The module docstring still says the hook blocks only while the manifest is absent or its top-level status is non-terminal, so the file's first statement of its own contract is wrong for the case this change adds: a terminal manifest older than the attempt is refused (reckon/hooks/worker_stop.py:173).\nFINDING reckon/crew/dispatch.py:6782 The in-harness lane-change branch rebuilds the run directive without an environment key, so a run re-pointed in-harness carries none of the attempt identity the same change attaches at reckon/crew/dispatch.py:4080; the only in-repo reader of a pointer's directive reads attach_with alone (reckon/hooks/native_agent_guard.py:148), so the gap is latent rather than breaking.\nFINDING reckon/crew/dispatch.py:4770 The refactor commit replaced a possessive with a bare noun and left the following line intact, so the docstring now reads \"absent, the launch own environment is used\".\n\nNo further defects found; the unchanged fence path reckon/crew/recovery.py is not touched by this change and the docs half is additions only.",
+  "review_run_id": "r-20260925T141814125429-review-of-worker-env-carries-its-run",
+  "reviewed_base_sha": "af234879c6220d566e29a26eee251bf9407548b1",
+  "reviewed_head_sha": "3fa5dcde49b012e5981f3eab8109ae6bff07ec7a",
+  "reviewed_run_id": "r-20260925T131108748775-worker-env-carries-its-run",
+  "role": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T15:35:10.583536+00:00",
+  "total": 88
+}

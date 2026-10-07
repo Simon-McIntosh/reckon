@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/query.py:169 (project_live_rows \u2014 the live view reached through reckon/mcp.py:4035)",
+    "reckon/crew/recovery.py:6184 (watch_ticker)",
+    "reckon/crew/directory.py:78 (the directory row)",
+    "reckon/cli.py:3642 (the fleet listing)"
+  ],
+  "completed_at": "2026-09-28T20:35:59.306Z",
+  "dispatched_at": "2026-09-28T20:13:35Z",
+  "emission_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T201322442804-review-of-derive-the-row-phase-from-the-stream/logs/review-emission.txt",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T192937445778-derive-the-row-phase-from-the-stream/manifest.md",
+      "line": "21",
+      "text": "the two gate-suite fields carry prose after the log path instead of the dispatched armed-only JSON (revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids), so reckon/crew/review.py:612 _gate_log_path resolves no readable log, the store's own added-failure derivation reports this run as unmeasured with the false reason that the manifest names no base gate log, and the cap that surfaces unretired added failures is skipped for this run; derived from the two logs themselves the true count is 0 with no added ids, so nothing is hidden here, but a run that did add failures would read the same way."
+    },
+    {
+      "file": "reckon/crew/directory.py",
+      "line": "78",
+      "text": "the crew directory row (rendered by the command line and by the MCP directory view) still copies the pointer's stored phase, so after this change row[\"phase\"] means the derived phase on the classifier and live rows and the launcher's label on the directory rows for the same run; the two surfaces agreed before this change, and the reviewed node's follow_ons name only reckon/cli.py:3660, leaving this second divergence unrecorded."
+    },
+    {
+      "file": "tests/test_working_reads_working_at_once.py",
+      "line": "273",
+      "text": "the assertion compares the case's own two files' mtimes, both written by the case, so it holds whatever _newest_stream_shows_work does and cannot name a code change it would fail on; the transition assertion at line 275 beside it is the actual guard for the resume-stream reading, and this one only restates the fixture's premise."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read all three commits against base 5636e30629cb0ad1830bf9a93eb59a20bd22283f; four changed paths, every one inside the declared scope, and the head tree carries the marker this change introduced (_stream_holds_assistant_record, reckon/crew/recovery.py:2844) rather than one it removed.",
+    "done_when": "The done_when names four cases plus an executed refusal, every one present in tests/test_working_reads_working_at_once.py, and I re-ran them at the reviewed head: 4 passed, EXIT=0, with the log's module_file resolving to the reviewed worktree's reckon/crew/recovery.py.",
+    "goal": "The node's goal is that a live run's row phase is derived from the run's own newest stream rather than read off the stored label, and the landed change does that \u2014 reckon/crew/recovery.py:2989 adds the derivation's last arm and reckon/crew/recovery.py:3736 classify_pointer now reports the observed phase under \"phase\", keeping the pointer's label beside it at reckon/crew/recovery.py:4791.",
+    "manifest": "Read; it records both gate arms with counts and logs (14 failed at base 5636e306, 10 at the head change), the negative control's mutation verbatim on its red log's first line, and a failure attribution I reproduced independently from the two logs (head failures are a subset of base failures, added = 0) \u2014 but its two suite fields are prose rather than the contracted armed JSON, which is FINDING 1.",
+    "write_paths": "Read the four declared paths against the diff; both changed source paths sit inside the fence, and the declared-unchanged reckon/mcp_views.py carries no phase literal at all, so leaving it untouched was the correct read of where the live row is built rather than a skipped surface."
+  },
+  "justifications": {
+    "durability": "the guard is real and falsified; the logged control removing the derivation reddens exactly the three cases that need it while the no-assistant-record case stays green, though tests/test_working_reads_working_at_once.py:273 asserts only the case's own two file mtimes and cannot fail on any code change (FINDING 3).",
+    "evidence": "the four cases are recorded red at the base arm and green at head, with an executed negative control whose log's first line is the mutation, but the reviewed manifest's baseline_suite and after_suite are prose (lines 21 and 22), so the store's own read-path derivation reports this run unmeasured (FINDING 1).",
+    "fit": "the new helpers sit beside STREAM_RESULT_RECORD_TYPE at reckon/crew/recovery.py:2841, the added test is lint- and format-clean and the diff adds no ruff findings, but reckon/crew/directory.py:78 still renders the stored label under the same phase key (FINDING 2).",
+    "goal_fidelity": "reckon/crew/recovery.py:2989 makes a run whose newest stream holds an assistant record read working, which is the rule the plan's section states, and the resume-stream case shows the newest stream is the one consulted rather than stream.jsonl by name.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, and the one field beyond the done_when \u2014 stored_phase at reckon/crew/recovery.py:4791 \u2014 keeps the launcher's label visible beside the derived one rather than adding capability."
+  },
+  "kind": "code",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a live run's row phase is derived from the run's own newest stream rather than read off the stored label, and the landed change does that \u2014 reckon/crew/recovery.py:2989 adds the derivation's last arm and reckon/crew/recovery.py:3736 classify_pointer now reports the observed phase under \"phase\", keeping the pointer's label beside it at reckon/crew/recovery.py:4791.\nVERDICT done_when: The done_when names four cases plus an executed refusal, every one present in tests/test_working_reads_working_at_once.py, and I re-ran them at the reviewed head: 4 passed, EXIT=0, with the log's module_file resolving to the reviewed worktree's reckon/crew/recovery.py.\nVERDICT write_paths: Read the four declared paths against the diff; both changed source paths sit inside the fence, and the declared-unchanged reckon/mcp_views.py carries no phase literal at all, so leaving it untouched was the correct read of where the live row is built rather than a skipped surface.\nVERDICT manifest: Read; it records both gate arms with counts and logs (14 failed at base 5636e306, 10 at the head change), the negative control's mutation verbatim on its red log's first line, and a failure attribution I reproduced independently from the two logs (head failures are a subset of base failures, added = 0) \u2014 but its two suite fields are prose rather than the contracted armed JSON, which is FINDING 1.\nVERDICT diff: Read all three commits against base 5636e30629cb0ad1830bf9a93eb59a20bd22283f; four changed paths, every one inside the declared scope, and the head tree carries the marker this change introduced (_stream_holds_assistant_record, reckon/crew/recovery.py:2844) rather than one it removed.\nCALL_SITES: reckon/crew/query.py:169 (project_live_rows \u2014 the live view reached through reckon/mcp.py:4035), reckon/crew/recovery.py:6184 (watch_ticker), reckon/crew/directory.py:78 (the directory row), reckon/cli.py:3642 (the fleet listing)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:2989 makes a run whose newest stream holds an assistant record read working, which is the rule the plan's section states, and the resume-stream case shows the newest stream is the one consulted rather than stream.jsonl by name.\nSCORE evidence: 17\nJUSTIFICATION evidence: the four cases are recorded red at the base arm and green at head, with an executed negative control whose log's first line is the mutation, but the reviewed manifest's baseline_suite and after_suite are prose (lines 21 and 22), so the store's own read-path derivation reports this run unmeasured (FINDING 1).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, and the one field beyond the done_when \u2014 stored_phase at reckon/crew/recovery.py:4791 \u2014 keeps the launcher's label visible beside the derived one rather than adding capability.\nSCORE durability: 18\nJUSTIFICATION durability: the guard is real and falsified; the logged control removing the derivation reddens exactly the three cases that need it while the no-assistant-record case stays green, though tests/test_working_reads_working_at_once.py:273 asserts only the case's own two file mtimes and cannot fail on any code change (FINDING 3).\nSCORE fit: 16\nJUSTIFICATION fit: the new helpers sit beside STREAM_RESULT_RECORD_TYPE at reckon/crew/recovery.py:2841, the added test is lint- and format-clean and the diff adds no ruff findings, but reckon/crew/directory.py:78 still renders the stored label under the same phase key (FINDING 2).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T192937445778-derive-the-row-phase-from-the-stream/manifest.md:21 the two gate-suite fields carry prose after the log path instead of the dispatched armed-only JSON (revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids), so reckon/crew/review.py:612 _gate_log_path resolves no readable log, the store's own added-failure derivation reports this run as unmeasured with the false reason that the manifest names no base gate log, and the cap that surfaces unretired added failures is skipped for this run; derived from the two logs themselves the true count is 0 with no added ids, so nothing is hidden here, but a run that did add failures would read the same way.\nFINDING reckon/crew/directory.py:78 the crew directory row (rendered by the command line and by the MCP directory view) still copies the pointer's stored phase, so after this change row[\"phase\"] means the derived phase on the classifier and live rows and the launcher's label on the directory rows for the same run; the two surfaces agreed before this change, and the reviewed node's follow_ons name only reckon/cli.py:3660, leaving this second divergence unrecorded.\nFINDING tests/test_working_reads_working_at_once.py:273 the assertion compares the case's own two files' mtimes, both written by the case, so it holds whatever _newest_stream_shows_work does and cannot name a code change it would fail on; the transition assertion at line 275 beside it is the actual guard for the resume-stream reading, and this one only restates the fixture's premise.",
+  "review_run_id": "r-20260928T201322442804-review-of-derive-the-row-phase-from-the-stream",
+  "reviewed_base_sha": "5636e30629cb0ad1830bf9a93eb59a20bd22283f",
+  "reviewed_head_sha": "0d24c7b0862d0a399f042d6b5b6697ee88b620c5",
+  "reviewed_run_id": "r-20260928T192937445778-derive-the-row-phase-from-the-stream",
+  "reviewer_run_id": "r-20260928T201322442804-review-of-derive-the-row-phase-from-the-stream",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T20:32:57.913891+00:00",
+  "total": 90
+}

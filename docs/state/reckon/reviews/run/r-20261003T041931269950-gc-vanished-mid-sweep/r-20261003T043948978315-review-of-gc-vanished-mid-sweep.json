@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/routing.py:1495",
+    "reckon/cli.py:crew_gc"
+  ],
+  "completed_at": "2026-10-03T04:51:06.688Z",
+  "dispatched_at": "2026-10-03T04:40:15Z",
+  "findings": [
+    {
+      "file": "tests/test_gc_vanished_mid_sweep.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the new test injects the vanish inside the pin path only; the residue-save and plain-removal actions reach the same handler by construction through the shared except Exception, but no test drives a vanish during those two actions, so a future refactor that splits the single try block could silently drop their coverage."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read c091ae601 against d6017d33e: the action loop's terminal except Exception gains the path.is_dir() discrimination with a gone-before-action branch, plus a 142-line new test and a 99-line evidence fragment.",
+    "done_when": "the done-when is a test that removes the directory after classification and asserts the sweep releases the others and reports the vanished one; tests/test_gc_vanished_mid_sweep.py classifies three dirty unintegrated worktrees, deletes one inside the pin step's first call, and asserts exit 0 / ok, classification unavailable, gone_before_action true, reclaimable false, withheld \"left in place\", absence from removed_worktrees, and that the other two release with their archive refs resolving to their heads.",
+    "goal": "plan section 11's goal is that a worktree vanishing between classification and its action is reported as a row and the sweep carries on; garbage_collect's single action-loop except Exception now checks path.is_dir() and, when the directory is gone, re-reads the row via _inspect_workspace(..., raise_on_unavailable=False), marks it gone_before_action with a detail naming the vanish, and continues instead of propagating, while a failure with the directory present still refuses the row and stops the pass.",
+    "manifest": "read; status complete, baseline_suite 0 failed at d6017d33e, after_suite 0 failed at fe33d6d04, negative-control.log EXIT=1 with the new test as the single failing id, commits 088ab8a4a/fe33d6d04/c091ae601.",
+    "write_paths": "the declared paths are reckon/crew/routing.py, tests/test_gc_vanished_mid_sweep.py, a fragment under docs/evidence/fragments/a-finished-worktree-releases-without-a-force/, and a figures dir; the reviewed diff touches exactly the first three, all inside the grant."
+  },
+  "justifications": {
+    "durability": "the gone-before-action branch is pinned by a new test with a recorded and independently reproduced red control, and the existing present-directory refuse-and-stop contract tests still pass unchanged; the path.is_dir() discriminator is coarse but sound for the vanish case.",
+    "evidence": "I independently reproduced all three arms: the new test fails at base d6017d33e EXIT=1 with [Errno 2] and removed_worktrees [], the head arm passes 61 in 31.00s at c091ae601, and a scratch mutation of the new branch (if path.is_dir() -> if True) fails the new test EXIT=1; both arm logs print their own module.__file__ and cwd, so no arm was served by the other tree, and ruff adds no finding (same 9 codes as base).",
+    "fit": "conventional commit subjects with bodies, no AI attribution, no plan/sprint/ticket identifiers or author attribution in code, and comments state the mechanism; the new test's docstring is long but explains why the earlier coverage missed the race.",
+    "goal_fidelity": "the fix implements plan section 11 exactly - a vanished directory is reported as gone before action and never counted removed, the sweep continues, and a present-directory failure still refuses and stops - and an independent base/head re-run reproduces the defect at base and the fix at head.",
+    "scope_discipline": "exactly reckon/crew/routing.py, tests/test_gc_vanished_mid_sweep.py and the evidence fragment changed, all inside the declared write paths; no plan, sprint or index state was mutated."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 11's goal is that a worktree vanishing between classification and its action is reported as a row and the sweep carries on; garbage_collect's single action-loop except Exception now checks path.is_dir() and, when the directory is gone, re-reads the row via _inspect_workspace(..., raise_on_unavailable=False), marks it gone_before_action with a detail naming the vanish, and continues instead of propagating, while a failure with the directory present still refuses the row and stops the pass.\nVERDICT done_when: the done-when is a test that removes the directory after classification and asserts the sweep releases the others and reports the vanished one; tests/test_gc_vanished_mid_sweep.py classifies three dirty unintegrated worktrees, deletes one inside the pin step's first call, and asserts exit 0 / ok, classification unavailable, gone_before_action true, reclaimable false, withheld \"left in place\", absence from removed_worktrees, and that the other two release with their archive refs resolving to their heads.\nVERDICT write_paths: the declared paths are reckon/crew/routing.py, tests/test_gc_vanished_mid_sweep.py, a fragment under docs/evidence/fragments/a-finished-worktree-releases-without-a-force/, and a figures dir; the reviewed diff touches exactly the first three, all inside the grant.\nVERDICT manifest: read; status complete, baseline_suite 0 failed at d6017d33e, after_suite 0 failed at fe33d6d04, negative-control.log EXIT=1 with the new test as the single failing id, commits 088ab8a4a/fe33d6d04/c091ae601.\nVERDICT diff: read c091ae601 against d6017d33e: the action loop's terminal except Exception gains the path.is_dir() discrimination with a gone-before-action branch, plus a 142-line new test and a 99-line evidence fragment.\nVERDICT call_sites: the changed handler sits in garbage_collect (reckon/crew/routing.py), reached by crew gc via reckon/cli.py's crew_gc command; the gone-before-action branch covers the pin, residue-save and removal actions that share the one try block.\nCALL_SITES: reckon/crew/routing.py:1495, reckon/cli.py:crew_gc\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the fix implements plan section 11 exactly - a vanished directory is reported as gone before action and never counted removed, the sweep continues, and a present-directory failure still refuses and stops - and an independent base/head re-run reproduces the defect at base and the fix at head.\nSCORE evidence: 19\nJUSTIFICATION evidence: I independently reproduced all three arms: the new test fails at base d6017d33e EXIT=1 with [Errno 2] and removed_worktrees [], the head arm passes 61 in 31.00s at c091ae601, and a scratch mutation of the new branch (if path.is_dir() -> if True) fails the new test EXIT=1; both arm logs print their own module.__file__ and cwd, so no arm was served by the other tree, and ruff adds no finding (same 9 codes as base).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: exactly reckon/crew/routing.py, tests/test_gc_vanished_mid_sweep.py and the evidence fragment changed, all inside the declared write paths; no plan, sprint or index state was mutated.\nSCORE durability: 19\nJUSTIFICATION durability: the gone-before-action branch is pinned by a new test with a recorded and independently reproduced red control, and the existing present-directory refuse-and-stop contract tests still pass unchanged; the path.is_dir() discriminator is coarse but sound for the vanish case.\nSCORE fit: 19\nJUSTIFICATION fit: conventional commit subjects with bodies, no AI attribution, no plan/sprint/ticket identifiers or author attribution in code, and comments state the mechanism; the new test's docstring is long but explains why the earlier coverage missed the race.\nFINDING tests/test_gc_vanished_mid_sweep.py:1 follow-on: the new test injects the vanish inside the pin path only; the residue-save and plain-removal actions reach the same handler by construction through the shared except Exception, but no test drives a vanish during those two actions, so a future refactor that splits the single try block could silently drop their coverage.\nREVIEWED_BASE_SHA: d6017d33e2ca3e2489de9d2305667495cb5d6cc6\nREVIEWED_HEAD_SHA: c091ae60158639c5bb7015f38c2c718dd6cd98fc\n",
+  "review_run_id": "r-20261003T043948978315-review-of-gc-vanished-mid-sweep",
+  "reviewed_base_sha": "d6017d33e2ca3e2489de9d2305667495cb5d6cc6",
+  "reviewed_head_sha": "c091ae60158639c5bb7015f38c2c718dd6cd98fc",
+  "reviewed_run_id": "r-20261003T041931269950-gc-vanished-mid-sweep",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T04:47:49.651264+00:00",
+  "total": 97
+}

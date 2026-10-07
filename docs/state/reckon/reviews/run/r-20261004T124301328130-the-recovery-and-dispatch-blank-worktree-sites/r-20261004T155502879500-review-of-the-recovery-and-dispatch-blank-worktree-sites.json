@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no head gate log, so the added-failure count was not taken",
+  "base_log_revision": "6a04552fda5ac51df83f38b37a13ca2658236f79",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery.py:_interruption_evidence",
+    "reckon/crew/recovery.py:_derive_missing_manifest",
+    "reckon/crew/dispatch.py:_lane_prompt",
+    "reckon/crew/promotion.py:complete"
+  ],
+  "completed_at": "2026-10-04T16:01:37.994Z",
+  "dispatched_at": "2026-10-04T15:55:29Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-runtime-positive-controls/the-recovery-and-dispatch-blank-worktree-sites.html",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment and the figures directory the manifest declares as write paths were never produced, so the node ships no evidence fragment for this commit."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "3114",
+      "severity": "follow-on",
+      "text": "follow-on: `Path(str(pointer.get(\"worktree\") or \"\")).resolve()` is the one unguarded blank-worktree idiom left in reckon/crew/; a blank field resolves to the current directory and can match a live held tree, so section 56's no-unguarded-instance clause is not yet met and the remainder is outside this node's grant."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit; cfe8bfce2 touches reckon/crew/recovery.py +14, reckon/crew/dispatch.py +7 and a new 45-line test, all inside the declared source paths.",
+    "done_when": "the done_when names the per-site test run from inside an unrelated repository; negative-control.log records 3 failures at base 6a04552fd (EXIT=1) and the focused head run reports 3 passed (EXIT=0).",
+    "goal": "the node guards the blank-worktree readers in recovery.py:8890, recovery.py:8936 and dispatch.py:11816, so a run whose worktree field is empty is read as absent instead of resolving to the caller's directory.",
+    "manifest": "read; it reports the focused test green, the negative control red at base, an armed base population that did not complete, and names every log on disk.",
+    "write_paths": "the manifest declares recovery.py, dispatch.py, the test file, an evidence fragment and a figures directory; the diff touches the first three and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_recovery_dispatch_blank_worktree_sites.py:39-45 assert 0, [] and the absence of the fixture head, each red when the guard is removed, as negative-control.log shows at base.",
+    "evidence": "negative-control.log records 3 unrelated-repository failures at base (EXIT=1) and the focused head run I re-read reports 3 passed (EXIT=0), but the manifest's armed baseline_suite never reached a summary (EXIT=124 twice) and names no after_suite, so the added-failure count cannot be derived from the run's own arms.",
+    "fit": "the inline guard `str(record.get(\"worktree\") or \"\").strip()` matches the surrounding recovery.py:249 idiom and introduces no name the repository forbids.",
+    "goal_fidelity": "reckon/crew/recovery.py:8907 and reckon/crew/recovery.py:8940 return 0 and [] for a blank worktree and reckon/crew/dispatch.py:11820 leaves the path unset, so no reader borrows the process directory.",
+    "scope_discipline": "the diff touches only reckon/crew/recovery.py, reckon/crew/dispatch.py and the new tests/test_recovery_dispatch_blank_worktree_sites.py, every path inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node guards the blank-worktree readers in recovery.py:8890, recovery.py:8936 and dispatch.py:11816, so a run whose worktree field is empty is read as absent instead of resolving to the caller's directory.\nVERDICT done_when: the done_when names the per-site test run from inside an unrelated repository; negative-control.log records 3 failures at base 6a04552fd (EXIT=1) and the focused head run reports 3 passed (EXIT=0).\nVERDICT write_paths: the manifest declares recovery.py, dispatch.py, the test file, an evidence fragment and a figures directory; the diff touches the first three and nothing outside them.\nVERDICT manifest: read; it reports the focused test green, the negative control red at base, an armed base population that did not complete, and names every log on disk.\nVERDICT diff: read commit by commit; cfe8bfce2 touches reckon/crew/recovery.py +14, reckon/crew/dispatch.py +7 and a new 45-line test, all inside the declared source paths.\nCALL_SITES: reckon/crew/recovery.py:_interruption_evidence, reckon/crew/recovery.py:_derive_missing_manifest, reckon/crew/dispatch.py:_lane_prompt, reckon/crew/promotion.py:complete\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:8907 and reckon/crew/recovery.py:8940 return 0 and [] for a blank worktree and reckon/crew/dispatch.py:11820 leaves the path unset, so no reader borrows the process directory.\nSCORE evidence: 17\nJUSTIFICATION evidence: negative-control.log records 3 unrelated-repository failures at base (EXIT=1) and the focused head run I re-read reports 3 passed (EXIT=0), but the manifest's armed baseline_suite never reached a summary (EXIT=124 twice) and names no after_suite, so the added-failure count cannot be derived from the run's own arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/recovery.py, reckon/crew/dispatch.py and the new tests/test_recovery_dispatch_blank_worktree_sites.py, every path inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_recovery_dispatch_blank_worktree_sites.py:39-45 assert 0, [] and the absence of the fixture head, each red when the guard is removed, as negative-control.log shows at base.\nSCORE fit: 18\nJUSTIFICATION fit: the inline guard `str(record.get(\"worktree\") or \"\").strip()` matches the surrounding recovery.py:249 idiom and introduces no name the repository forbids.\nFINDING docs/evidence/fragments/crew-runtime-positive-controls/the-recovery-and-dispatch-blank-worktree-sites.html:1 follow-on: the fragment and the figures directory the manifest declares as write paths were never produced, so the node ships no evidence fragment for this commit.\nFINDING reckon/crew/promotion.py:3114 follow-on: `Path(str(pointer.get(\"worktree\") or \"\")).resolve()` is the one unguarded blank-worktree idiom left in reckon/crew/; a blank field resolves to the current directory and can match a live held tree, so section 56's no-unguarded-instance clause is not yet met and the remainder is outside this node's grant.\n",
+  "review_run_id": "r-20261004T155502879500-review-of-the-recovery-and-dispatch-blank-worktree-sites",
+  "reviewed_base_sha": "6a04552fda5ac51df83f38b37a13ca2658236f79",
+  "reviewed_head_sha": "cfe8bfce20c4ce370df7ed546f0784abb6cb43c5",
+  "reviewed_run_id": "r-20261004T124301328130-the-recovery-and-dispatch-blank-worktree-sites",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T155502879500-review-of-the-recovery-and-dispatch-blank-worktree-sites",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T16:00:52.335993+00:00",
+  "total": 92
+}

@@ -1,0 +1,180 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after_failure_ids": [
+      "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[2026-09-08T10:00:00Z]",
+      "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[None]",
+      "tests/test_recovery_state_typing.py::test_ticker_carries_the_recovery_verb_in_an_actionable_row",
+      "tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once",
+      "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion"
+    ],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/evidence/after_suite.log",
+    "baseline_failure_ids": [
+      "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[2026-09-08T10:00:00Z]",
+      "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[None]",
+      "tests/test_recovery_state_typing.py::test_ticker_carries_the_recovery_verb_in_an_actionable_row",
+      "tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once",
+      "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion"
+    ],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/evidence/baseline_suite.log",
+    "derived_by": "reckon/crew/review.py added_failures_from_gate_logs against the run's manifest-named logs"
+  },
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/obligations.py:142",
+    "reckon/crew/promotion.py:3855",
+    "reckon/crew/promotion.py:4703",
+    "reckon/crew/resumption.py:1169",
+    "reckon/crew/directory.py:71",
+    "reckon/crew/query.py:167",
+    "reckon/crew/runs.py:1051",
+    "reckon/cli.py:3883",
+    "reckon/mcp_views.py:1378",
+    "reckon/crew/recovery.py:5228"
+  ],
+  "completed_at": "2026-09-29T16:44:10.322Z",
+  "control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/evidence/negative_control.log",
+  "control_log_always_true": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/evidence/negative_control_always_true.log",
+  "control_log_facts": {
+    "declared_string_present_verbatim": true,
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/evidence/negative_control.log",
+    "recorded_exit_status": 1
+  },
+  "dispatched_at": "2026-09-29T16:16:45Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "text": "The delivered manifest records its test results in prose under `gate:` and carries no `tests:` field, so `reckon crew check-manifest` reports ok:false with 'status is complete but no test result is recorded' (reproduced; output at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T161624682607-review-of-a-resumed-run-counts-as-working/logs/check-manifest-reviewed.out). The node's own dispatch contract lists `tests:` among the manifest fields and names this check as the one to run before closing the record, so a record that reads complete to a human still refuses one of its readers."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/evidence/negative_control.log",
+      "line": "2",
+      "text": "The two control logs name their scratch tree and full command but not `module.__file__` or the resolved working directory, and the manifest carries no `measurement_module`/`measurement_cwd`, which the contract asks of a scratch-tree measurement. The arm results are self-evidencing -- each control's failing ids are ones the head arm passes, which only holds if the mutation was in the imported module -- and this review re-ran all three arms with the module path recorded in each log, so the gap is in the record rather than in the measurement."
+    }
+  ],
+  "findings_count": 2,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "9bf9d9eb adds a 30-line private predicate _worker_launched_after_manifest and a 19-line superseded_manifest arm to deferred_outcome; 16923c23 adds 33 lines, one test case. The arm requires the pointer's own liveness to be unproven (alive is not True) and the worker record to say alive, so it can only widen the deferral where the old reading was blind, and the comparison is strict, so a tie falls back to today's verdict.",
+    "done_when": "All five cases exist in tests/test_a_resumed_run_counts_as_working.py and pass at head (5 passed, EXIT=0, module from the head tree). The declared mutation, classifying from the manifest status alone, reddens exactly the three resumed-run cases (3 failed, 2 passed). The always-True mutation reddens exactly the launch-order case (1 failed, 4 passed), which is the direction the goal requires to stand. Both mutations were re-run independently in this review's own scratch trees, with the module path and cwd recorded in each arm's log.",
+    "goal": "The goal's three clauses are implemented and each is now driven: a stale terminal manifest behind a live worker launched after it (reckon/crew/recovery.py:4137-4144 folds it into superseded_manifest and defers the status), the obligation hook offering no completion for such a run (obligations.py:142 consumes classify_pointer), and the launch order that must not defer (recovery.py:3102 compares launched time against the manifest mtime, strict, unreadable evidence answering False). The case the previous review found unguarded, a live worker launched before its manifest, is now tests/test_a_resumed_run_counts_as_working.py:222-252 and passes at head.",
+    "manifest": "The delivered manifest names both control logs with the declared mutation verbatim on each log's first line and an EXIT=1 record on each, carries baseline_suite and after_suite as armed-only JSON whose completed is true and whose failure_ids equal the ids read out of the logs themselves, and gate, lint and scope prose that matches the diff. Two record gaps remain: no tests field, so reckon crew check-manifest reports ok:false, and no measurement_module/measurement_cwd or module path in the two scratch-tree control logs.",
+    "write_paths": "The run's two commits touch exactly the two declared paths, reckon/crew/recovery.py and tests/test_a_resumed_run_counts_as_working.py (git diff --name-only 89af9522 16923c23 names those two and nothing else); the worktree is clean at head; the three declared-but-unused paths are explained in the manifest rather than quietly dropped; no merge, push or plan-state edit is in the run."
+  },
+  "justifications": {
+    "durability": "Both directions are pinned by tests that assert the classification, the fleet buckets and the obligation offer together, and each declared or reconstructed mutation reddens exactly the cases it should and no others; the residue is that the fixture hand-writes the worker record rather than exercising the writer that produces it in production, so a schema drift between them would not redden this file.",
+    "evidence": "The gate is real and independently reproduced (5 passed at head; 3 failed and 1 failed under the two mutations, with matching ids), the suite arms parse as armed-only JSON with completed true and failure_ids equal to the logs' own FAILED lines, and the promotion reader admits both control logs with comparison_arm after_suite; the deduction is two record-shape gaps, a missing `tests:` field that makes check-manifest report ok:false and the scratch-tree arms' missing module path and cwd.",
+    "fit": "The predicate sits beside the module's existing liveness helper, follows its reading discipline of answering False on unreadable evidence, the docstring states the mechanism rather than a ticket, no plan or sprint identifier appears in a name or comment, and both commits carry conventional subjects with bodies and no AI attribution.",
+    "goal_fidelity": "Every clause of the goal and of the evidence fence is implemented at head and driven by a case that fails when its instrument is mutated, including the launch-order direction the previous review found untested.",
+    "scope_discipline": "The diff is exactly the two declared paths and nothing else, the worktree is clean and unmerged, the three declared-but-unused write paths are explained, and no plan, fragment, figure or sprint state was touched."
+  },
+  "project": "reckon",
+  "promotion_checks": {
+    "declared_control": {
+      "added_failure_ids": [
+        "tests/test_a_resumed_run_counts_as_working.py::test_a_resumed_run_owes_no_promotion_obligation",
+        "tests/test_a_resumed_run_counts_as_working.py::test_a_resumed_run_with_a_live_worker_counts_as_working",
+        "tests/test_a_resumed_run_counts_as_working.py::test_a_resumed_run_with_a_stale_blocked_manifest_counts_as_working"
+      ],
+      "baseline_failure_ids": [
+        "tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once",
+        "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+        "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[2026-09-08T10:00:00Z]",
+        "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[None]",
+        "tests/test_recovery_state_typing.py::test_ticker_carries_the_recovery_verb_in_an_actionable_row"
+      ],
+      "comparison_arm": "after_suite",
+      "control_exit_status": 1,
+      "control_failure_ids": [
+        "tests/test_a_resumed_run_counts_as_working.py::test_a_resumed_run_owes_no_promotion_obligation",
+        "tests/test_a_resumed_run_counts_as_working.py::test_a_resumed_run_with_a_live_worker_counts_as_working",
+        "tests/test_a_resumed_run_counts_as_working.py::test_a_resumed_run_with_a_stale_blocked_manifest_counts_as_working"
+      ],
+      "declaration": "classify from the manifest status alone, ignoring the live worker launch time",
+      "head_failure_ids": [
+        "tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once",
+        "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+        "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[2026-09-08T10:00:00Z]",
+        "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[None]",
+        "tests/test_recovery_state_typing.py::test_ticker_carries_the_recovery_verb_in_an_actionable_row"
+      ],
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/evidence/negative_control.log",
+      "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/evidence/negative_control.log",
+      "test_paths": [
+        "tests/test_a_resumed_run_counts_as_working.py"
+      ],
+      "verdict": "matched"
+    },
+    "note": "the head revision is not merged into the reader tree, so the readers that will promote this run are the ones that produced these verdicts",
+    "reader_tree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/review-of-a-resumed-run-counts-as-working",
+    "refusal_probes": [
+      "a control log naming only a failure the head arm already fails was refused (CrewError, 'adds no failure to the head arm's')",
+      "a control log with no EXIT record was refused (CrewError, 'records no EXIT status')"
+    ],
+    "second_control_named": {
+      "added_failure_ids": [
+        "tests/test_a_resumed_run_counts_as_working.py::test_a_live_worker_that_predates_its_manifest_keeps_todays_verdict"
+      ],
+      "baseline_failure_ids": [
+        "tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once",
+        "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+        "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[2026-09-08T10:00:00Z]",
+        "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[None]",
+        "tests/test_recovery_state_typing.py::test_ticker_carries_the_recovery_verb_in_an_actionable_row"
+      ],
+      "comparison_arm": "after_suite",
+      "control_exit_status": 1,
+      "control_failure_ids": [
+        "tests/test_a_resumed_run_counts_as_working.py::test_a_live_worker_that_predates_its_manifest_keeps_todays_verdict"
+      ],
+      "declaration": "classify from the manifest status alone, ignoring the live worker launch time",
+      "head_failure_ids": [
+        "tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once",
+        "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+        "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[2026-09-08T10:00:00Z]",
+        "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[None]",
+        "tests/test_recovery_state_typing.py::test_ticker_carries_the_recovery_verb_in_an_actionable_row"
+      ],
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/evidence/negative_control_always_true.log",
+      "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/evidence/negative_control_always_true.log",
+      "test_paths": [
+        "tests/test_a_resumed_run_counts_as_working.py"
+      ],
+      "verdict": "matched"
+    }
+  },
+  "raw_text": "VERDICT goal: The goal's three clauses are implemented and each is now driven: a stale terminal manifest behind a live worker launched after it (reckon/crew/recovery.py:4137-4144 folds it into superseded_manifest and defers the status), the obligation hook offering no completion for such a run (obligations.py:142 consumes classify_pointer), and the launch order that must not defer (recovery.py:3102 compares launched time against the manifest mtime, strict, unreadable evidence answering False). The case the previous review found unguarded, a live worker launched before its manifest, is now tests/test_a_resumed_run_counts_as_working.py:222-252 and passes at head.\nVERDICT done_when: All five cases exist in tests/test_a_resumed_run_counts_as_working.py and pass at head (5 passed, EXIT=0, module from the head tree). The declared mutation, classifying from the manifest status alone, reddens exactly the three resumed-run cases (3 failed, 2 passed). The always-True mutation reddens exactly the launch-order case (1 failed, 4 passed), which is the direction the goal requires to stand. Both mutations were re-run independently in this review's own scratch trees, with the module path and cwd recorded in each arm's log.\nVERDICT write_paths: The run's two commits touch exactly the two declared paths, reckon/crew/recovery.py and tests/test_a_resumed_run_counts_as_working.py (git diff --name-only 89af9522 16923c23 names those two and nothing else); the worktree is clean at head; the three declared-but-unused paths are explained in the manifest rather than quietly dropped; no merge, push or plan-state edit is in the run.\nVERDICT manifest: The delivered manifest names both control logs with the declared mutation verbatim on each log's first line and an EXIT=1 record on each, carries baseline_suite and after_suite as armed-only JSON whose completed is true and whose failure_ids equal the ids read out of the logs themselves, and gate, lint and scope prose that matches the diff. Two record gaps remain: no tests field, so reckon crew check-manifest reports ok:false, and no measurement_module/measurement_cwd or module path in the two scratch-tree control logs.\nVERDICT diff: 9bf9d9eb adds a 30-line private predicate _worker_launched_after_manifest and a 19-line superseded_manifest arm to deferred_outcome; 16923c23 adds 33 lines, one test case. The arm requires the pointer's own liveness to be unproven (alive is not True) and the worker record to say alive, so it can only widen the deferral where the old reading was blind, and the comparison is strict, so a tie falls back to today's verdict.\nCALL_SITES: reckon/crew/obligations.py:142, reckon/crew/promotion.py:3855, reckon/crew/promotion.py:4703, reckon/crew/resumption.py:1169, reckon/crew/directory.py:71, reckon/crew/query.py:167, reckon/crew/runs.py:1051, reckon/cli.py:3883, reckon/mcp_views.py:1378, reckon/crew/recovery.py:5228\nFINDING manifest.md:20 The delivered manifest records its test results in prose under `gate:` and carries no `tests:` field, so `reckon crew check-manifest` reports ok:false with 'status is complete but no test result is recorded' (reproduced; output at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T161624682607-review-of-a-resumed-run-counts-as-working/logs/check-manifest-reviewed.out). The node's own dispatch contract lists `tests:` among the manifest fields and names this check as the one to run before closing the record, so a record that reads complete to a human still refuses one of its readers.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/evidence/negative_control.log:2 The two control logs name their scratch tree and full command but not `module.__file__` or the resolved working directory, and the manifest carries no `measurement_module`/`measurement_cwd`, which the contract asks of a scratch-tree measurement. The arm results are self-evidencing -- each control's failing ids are ones the head arm passes, which only holds if the mutation was in the imported module -- and this review re-ran all three arms with the module path recorded in each log, so the gap is in the record rather than in the measurement.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: Every clause of the goal and of the evidence fence is implemented at head and driven by a case that fails when its instrument is mutated, including the launch-order direction the previous review found untested.\nSCORE evidence: 18\nJUSTIFICATION evidence: The gate is real and independently reproduced (5 passed at head; 3 failed and 1 failed under the two mutations, with matching ids), the suite arms parse as armed-only JSON with completed true and failure_ids equal to the logs' own FAILED lines, and the promotion reader admits both control logs with comparison_arm after_suite; the deduction is two record-shape gaps, a missing `tests:` field that makes check-manifest report ok:false and the scratch-tree arms' missing module path and cwd.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff is exactly the two declared paths and nothing else, the worktree is clean and unmerged, the three declared-but-unused write paths are explained, and no plan, fragment, figure or sprint state was touched.\nSCORE durability: 19\nJUSTIFICATION durability: Both directions are pinned by tests that assert the classification, the fleet buckets and the obligation offer together, and each declared or reconstructed mutation reddens exactly the cases it should and no others; the residue is that the fixture hand-writes the worker record rather than exercising the writer that produces it in production, so a schema drift between them would not redden this file.\nSCORE fit: 20\nJUSTIFICATION fit: The predicate sits beside the module's existing liveness helper, follows its reading discipline of answering False on unreadable evidence, the docstring states the mechanism rather than a ticket, no plan or sprint identifier appears in a name or comment, and both commits carry conventional subjects with bodies and no AI attribution.\n\nreviewed_base_sha: 89af9522d0d836837abfce62b7e35265c9427393\nreviewed_head_sha: 16923c23ddd3dd5d03736670ca5ce7632a8b8144\n",
+  "review_run_id": "r-20260929T161624682607-review-of-a-resumed-run-counts-as-working",
+  "reviewed_base_sha": "89af9522d0d836837abfce62b7e35265c9427393",
+  "reviewed_commits": [
+    "9bf9d9eb9e8e055d5674b33f3efb42c4188fbffd",
+    "16923c23ddd3dd5d03736670ca5ce7632a8b8144"
+  ],
+  "reviewed_head_sha": "16923c23ddd3dd5d03736670ca5ce7632a8b8144",
+  "reviewed_manifest": {
+    "bytes": 9197,
+    "last_modified": "2026-09-29T16:14:30.459218+00:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T141906421295-a-resumed-run-counts-as-working/manifest.md",
+    "sha256": "7360d11b334327732cbc159175ef3efbcc76b4f47f1c556318dbf56b95643a6d"
+  },
+  "reviewed_run_id": "r-20260929T141906421295-a-resumed-run-counts-as-working",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/a-resumed-run-counts-as-working",
+  "reviewer_node": "review-of-a-resumed-run-counts-as-working",
+  "reviewer_run_id": "r-20260929T161624682607-review-of-a-resumed-run-counts-as-working",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T16:30:32.805519+00:00",
+  "total": 97
+}

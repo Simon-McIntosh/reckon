@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "b5dbaaa2f0acb92f69f9439c5d319ddc9c2fc792",
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/dispatch.py:6217",
+    "reckon/crew/dispatch.py:9890",
+    "reckon/crew/dispatch.py:10020",
+    "reckon/crew/recovery.py:859",
+    "reckon/crew/recovery.py:3037",
+    "reckon/crew/promotion.py:3668",
+    "reckon/crew/promotion.py:5436",
+    "reckon/crew/fleet_supervisor.py:730",
+    "reckon/crew/standing_suite.py:150"
+  ],
+  "completed_at": "2026-10-02T01:22:08.323Z",
+  "dispatched_at": "2026-10-02T01:15:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "7384",
+      "severity": "follow-on",
+      "text": "follow-on: unwatch signals the registered project watcher through _signal_process_group with no sender record, and the followup names recovery.unwatch among the paths that must write one; the manifest discloses it under follow_ons on the grounds that a watcher is not a run, which is a defensible scope call but leaves the enumerated path unwired."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1498",
+      "severity": "follow-on",
+      "text": "follow-on: the sender record is written before the identity and self-signal guards in _signal_process_group (each call site writes it, then calls into the guard), so a signal the guard refuses still leaves a senders.jsonl line naming a SIGTERM that was never delivered; reproduced by writing a record then calling _signal_process_group with a mismatched start time, which raised CrewError and left a run-stop/SIGTERM line on disk, so a prevented kill reads as an attributed one."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T005050382463-every-signal-leaves-a-sender-record/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest records the base and head arm results only in the free-text tests: and test_logs: lines and omits the machine-readable baseline_suite and after_suite fields, so a reader that derives added failures from the manifest (the review annotation and the promotion suite-delta check) reads this run's suite evidence as unmeasured rather than as the measured zero the two arm logs show; both arm files also name the base revision b5dbaaa2 on their header line, the head arm self-labelling as '+ working tree', so the head measurement cannot be tied to the landed revision 346d49cd from either log."
+    }
+  ],
+  "head_log_revision": "b5dbaaa2f0acb92f69f9439c5d319ddc9c2fc792",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read revision 346d49cd against base b5dbaaa2; routing.py +121 (SENDER_RECORD_NAME, run_directory_of, _write_sender_record, and signal_worker/_signal_process_group gaining reason and run_dir), six call sites wired, the gate test +160, the fragment +112.",
+    "done_when": "the done_when names tests/test_every_signal_leaves_a_sender_record.py, a grep receipt and a negative control; the manifest records the gate, both arms and the negative control, and all four reproduce here (gate 4 passed, grep receipt exact, negative control 2 failed EXIT=1, arms 10/10).",
+    "goal": "the node's goal is that every path signalling a run writes a sender record into that run's directory before it signals, through one shared writer; reckon/crew/routing.py:1388 defines _write_sender_record and it is reached from the dispatch, recovery and promotion signalling arms, with recovery.unwatch:7384 still signalling without a record.",
+    "manifest": "read; status complete, naming the shared writer, the reason per path, the gate, both arms, the negative control and their logs; it omits the machine-readable baseline_suite/after_suite fields and discloses unwatch under follow_ons.",
+    "write_paths": "the declared paths are the six reckon/crew modules, the gate test and the evidence fragment; git show --stat 346d49cd touches exactly those eight files and nothing else."
+  },
+  "justifications": {
+    "durability": "the negative control proves the two record assertions in tests/test_every_signal_leaves_a_sender_record.py redden when _write_sender_record is a no-op, but no test drives a production call site (dispatch.terminate, the budget watchdog, promotion release) end to end, so a dropped _write_sender_record call in any of those arms would leave the suite green.",
+    "evidence": "the done_when's three artefacts reproduce against 346d49cd (gate 4 passed in a scratch tree, the grep receipt shows no signal-delivering os.kill or os.killpg outside routing.py, negative control 2 failed EXIT=1), but the manifest states the arm results only in free-text tests: and test_logs: lines and omits baseline_suite/after_suite, so the read-time and promotion suite-delta readers see them as unmeasured.",
+    "fit": "SENDER_RECORD_NAME at routing.py:1364, the append-a-JSON-line writer and run_directory_of follow the module's existing named-constant and dict-returning-helper idiom, and the added names carry no plan, sprint or ticket identifier.",
+    "goal_fidelity": "routing.py:1388 _write_sender_record is called before the signal from the dispatch rollback, lane-change and terminate arms, the recovery delivered-review and budget-watchdog arms, and the promotion settle and release arms, but recovery.py:7384 unwatch signals the registered watcher with no record even though the followup names it.",
+    "scope_discipline": "git show --stat 346d49cd lists exactly the six declared reckon/crew modules, the gate test and the evidence fragment, and the fleet_supervisor and standing_suite edits are the shared-home rerouting the goal implies."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every path signalling a run writes a sender record into that run's directory before it signals, through one shared writer; reckon/crew/routing.py:1388 defines _write_sender_record and it is reached from the dispatch, recovery and promotion signalling arms, with recovery.unwatch:7384 still signalling without a record.\nVERDICT done_when: the done_when names tests/test_every_signal_leaves_a_sender_record.py, a grep receipt and a negative control; the manifest records the gate, both arms and the negative control, and all four reproduce here (gate 4 passed, grep receipt exact, negative control 2 failed EXIT=1, arms 10/10).\nVERDICT write_paths: the declared paths are the six reckon/crew modules, the gate test and the evidence fragment; git show --stat 346d49cd touches exactly those eight files and nothing else.\nVERDICT manifest: read; status complete, naming the shared writer, the reason per path, the gate, both arms, the negative control and their logs; it omits the machine-readable baseline_suite/after_suite fields and discloses unwatch under follow_ons.\nVERDICT diff: read revision 346d49cd against base b5dbaaa2; routing.py +121 (SENDER_RECORD_NAME, run_directory_of, _write_sender_record, and signal_worker/_signal_process_group gaining reason and run_dir), six call sites wired, the gate test +160, the fragment +112.\nCALL_SITES: reckon/crew/dispatch.py:6217, reckon/crew/dispatch.py:9890, reckon/crew/dispatch.py:10020, reckon/crew/recovery.py:859, reckon/crew/recovery.py:3037, reckon/crew/promotion.py:3668, reckon/crew/promotion.py:5436, reckon/crew/fleet_supervisor.py:730, reckon/crew/standing_suite.py:150\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: routing.py:1388 _write_sender_record is called before the signal from the dispatch rollback, lane-change and terminate arms, the recovery delivered-review and budget-watchdog arms, and the promotion settle and release arms, but recovery.py:7384 unwatch signals the registered watcher with no record even though the followup names it.\nSCORE evidence: 17\nJUSTIFICATION evidence: the done_when's three artefacts reproduce against 346d49cd (gate 4 passed in a scratch tree, the grep receipt shows no signal-delivering os.kill or os.killpg outside routing.py, negative control 2 failed EXIT=1), but the manifest states the arm results only in free-text tests: and test_logs: lines and omits baseline_suite/after_suite, so the read-time and promotion suite-delta readers see them as unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat 346d49cd lists exactly the six declared reckon/crew modules, the gate test and the evidence fragment, and the fleet_supervisor and standing_suite edits are the shared-home rerouting the goal implies.\nSCORE durability: 15\nJUSTIFICATION durability: the negative control proves the two record assertions in tests/test_every_signal_leaves_a_sender_record.py redden when _write_sender_record is a no-op, but no test drives a production call site (dispatch.terminate, the budget watchdog, promotion release) end to end, so a dropped _write_sender_record call in any of those arms would leave the suite green.\nSCORE fit: 18\nJUSTIFICATION fit: SENDER_RECORD_NAME at routing.py:1364, the append-a-JSON-line writer and run_directory_of follow the module's existing named-constant and dict-returning-helper idiom, and the added names carry no plan, sprint or ticket identifier.\nFINDING reckon/crew/recovery.py:7384 follow-on: unwatch signals the registered project watcher through _signal_process_group with no sender record, and the followup names recovery.unwatch among the paths that must write one; the manifest discloses it under follow_ons on the grounds that a watcher is not a run, which is a defensible scope call but leaves the enumerated path unwired.\nFINDING reckon/crew/routing.py:1498 follow-on: the sender record is written before the identity and self-signal guards in _signal_process_group (each call site writes it, then calls into the guard), so a signal the guard refuses still leaves a senders.jsonl line naming a SIGTERM that was never delivered; reproduced by writing a record then calling _signal_process_group with a mismatched start time, which raised CrewError and left a run-stop/SIGTERM line on disk, so a prevented kill reads as an attributed one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T005050382463-every-signal-leaves-a-sender-record/manifest.md:15 follow-on: the manifest records the base and head arm results only in the free-text tests: and test_logs: lines and omits the machine-readable baseline_suite and after_suite fields, so a reader that derives added failures from the manifest (the review annotation and the promotion suite-delta check) reads this run's suite evidence as unmeasured rather than as the measured zero the two arm logs show; both arm files also name the base revision b5dbaaa2 on their header line, the head arm self-labelling as '+ working tree', so the head measurement cannot be tied to the landed revision 346d49cd from either log.",
+  "review_run_id": "r-20261002T011537207400-review-of-every-signal-leaves-a-sender-record",
+  "reviewed_base_sha": "b5dbaaa2f0acb92f69f9439c5d319ddc9c2fc792",
+  "reviewed_head_sha": "346d49cd54a3f4bb8c21c88054e7e2bacbe23bfb",
+  "reviewed_run_id": "r-20261002T005050382463-every-signal-leaves-a-sender-record",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T01:20:54+00:00",
+  "total": 86
+}

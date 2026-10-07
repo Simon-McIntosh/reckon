@@ -1,0 +1,48 @@
+{
+  "absent": [
+    "NaN or infinity headroom (float('nan')) would satisfy _metric_number and be carried as fresh rather than unknown; not raised because the carry is advisory-only and a nonsense figure cannot refuse, hold or reroute a dispatch.",
+    "a suggested_shelf_life_seconds of zero or negative means never-stale; a deliberate default (a lane with no shelf life) rather than a defect, and the stale branch is separately exercised.",
+    "a future observed_at collapses to unknown; this defends against clock skew and is covered at dispatch.py by the age<0 guard even though no test drives it."
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T17:56:51.288129+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2151",
+      "text": "the lane_document key is consumed by _dispatch_lane_reading but is declared nowhere in reckon/schema/flight.yaml (verified: grep hits zero in both the schema and the LinkML-generated _flight_schema.py), so every real flight config cannot carry a reading path and every production dispatch carries unknown by design until a schema owner declares the key; consumption is tested only through hand-built configs, which the manifest correctly flags as the coordinator/peer move."
+    },
+    {
+      "file": "tests/test_lane_reading_at_dispatch.py",
+      "line": "59",
+      "text": "the durable delivery of the reading \u2014 node_definition[\"lane_reading\"] at reckon/crew/dispatch.py:2965 and the run record's lane_reading at 2989 \u2014 is not asserted by any test; the suite pins only the CLI dry-run payload, but consumers of the lane reading read the persisted run record, so the emission that matters most is the one surface left unverified."
+    }
+  ],
+  "justifications": {
+    "durability": "the six required properties are each pinned by a fixture-driven case that fails if the carry stops reading the document, resolves an absence to zero, stops naming the reason, carries a stale figure, re-derives binding_observed, or lets any document value refuse a dispatch; the one durable surface not asserted is the run-record/node-definition emission (dispatch.py:2965, 2989), which only the CLI dry-run payload path exercises.",
+    "evidence": "re-ran the fence suite at 50c436f: 9 passed in 0.55s (/tmp/review_lane_reading.log); re-ran the nearest dispatch corpus at head: 1 failed / 28 passed with the pre-existing id tests/test_dispatch_lane_disagreement.py::test_member_harness_without_override_meets_lane_declaration_refusal (/tmp/review_dispatch_corpus_HEAD.log), and the commit diff touches no refusal or routing code, so the failure is credibly carried from base a5dc512 (confirmed an ancestor) rather than introduced.",
+    "fit": "the carry sits beside the existing lane_declaration idiom end to end \u2014 DispatchPlan.lane_reading mirrors lane_declaration, the node_definition and run-record wiring mirror each other, and _lane_reading_unknown parallels _lane_declaration_finding; the feature's one coherence gap is that the lane_document key is absent from flight.yaml (LinkML-generated), so no production config can wire a reading path until a schema owner declares it.",
+    "goal_fidelity": "every done-when property measured independently at commit 50c436f: the payload carries headroom/binding_observed/mean_context/observed_at (tests/test_lane_reading_at_dispatch.py:59-88), absent/unreadable/malformed documents collapse to unknown naming the reason (91-137), a missing or non-numeric field never resolves to zero (139-165), a stale reading says its 200s age rather than carrying the figure (168-183), binding_observed is the document's own field (186-202), and the negative holds \u2014 ample 122, zero 0.0 and an absent document all resolve backend beta with validation ok (205-254).",
+    "scope_discipline": "git show --name-only 50c436f lists exactly the two declared write paths (reckon/crew/dispatch.py, tests/test_lane_reading_at_dispatch.py), the worktree is clean at HEAD, and the commit message carries no plan identifiers and no AI attribution."
+  },
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: every done-when property measured independently at commit 50c436f: the payload carries headroom/binding_observed/mean_context/observed_at (tests/test_lane_reading_at_dispatch.py:59-88), absent/unreadable/malformed documents collapse to unknown naming the reason (91-137), a missing or non-numeric field never resolves to zero (139-165), a stale reading says its 200s age rather than carrying the figure (168-183), binding_observed is the document's own field (186-202), and the negative holds \u2014 ample 122, zero 0.0 and an absent document all resolve backend beta with validation ok (205-254).\nSCORE evidence: 18\nJUSTIFICATION evidence: re-ran the fence suite at 50c436f: 9 passed in 0.55s (/tmp/review_lane_reading.log); re-ran the nearest dispatch corpus at head: 1 failed / 28 passed with the pre-existing id tests/test_dispatch_lane_disagreement.py::test_member_harness_without_override_meets_lane_declaration_refusal (/tmp/review_dispatch_corpus_HEAD.log), and the commit diff touches no refusal or routing code, so the failure is credibly carried from base a5dc512 (confirmed an ancestor) rather than introduced.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --name-only 50c436f lists exactly the two declared write paths (reckon/crew/dispatch.py, tests/test_lane_reading_at_dispatch.py), the worktree is clean at HEAD, and the commit message carries no plan identifiers and no AI attribution.\nSCORE durability: 18\nJUSTIFICATION durability: the six required properties are each pinned by a fixture-driven case that fails if the carry stops reading the document, resolves an absence to zero, stops naming the reason, carries a stale figure, re-derives binding_observed, or lets any document value refuse a dispatch; the one durable surface not asserted is the run-record/node-definition emission (dispatch.py:2965, 2989), which only the CLI dry-run payload path exercises.\nSCORE fit: 18\nJUSTIFICATION fit: the carry sits beside the existing lane_declaration idiom end to end \u2014 DispatchPlan.lane_reading mirrors lane_declaration, the node_definition and run-record wiring mirror each other, and _lane_reading_unknown parallels _lane_declaration_finding; the feature's one coherence gap is that the lane_document key is absent from flight.yaml (LinkML-generated), so no production config can wire a reading path until a schema owner declares it.\nFINDING reckon/crew/dispatch.py:2151 the lane_document key is consumed by _dispatch_lane_reading but is declared nowhere in reckon/schema/flight.yaml (verified: grep hits zero in both the schema and the LinkML-generated _flight_schema.py), so every real flight config cannot carry a reading path and every production dispatch carries unknown by design until a schema owner declares the key; consumption is tested only through hand-built configs, which the manifest correctly flags as the coordinator/peer move.\nFINDING tests/test_lane_reading_at_dispatch.py:59 the durable delivery of the reading \u2014 node_definition[\"lane_reading\"] at reckon/crew/dispatch.py:2965 and the run record's lane_reading at 2989 \u2014 is not asserted by any test; the suite pins only the CLI dry-run payload, but consumers of the lane reading read the persisted run record, so the emission that matters most is the one surface left unverified.\n",
+  "review_run_id": "r-20260914T175651288129-review-of-dispatch-lane-reading",
+  "reviewed_run_id": "r-20260914T162006293651-dispatch-carries-the-lane-reading",
+  "reviewer": {
+    "effort": "high",
+    "model": "deepseek-v4-flash"
+  },
+  "reviewer_run_id": "r-20260914T175651288129-review-of-dispatch-lane-reading",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T18:10:26+00:00",
+  "total": 93
+}

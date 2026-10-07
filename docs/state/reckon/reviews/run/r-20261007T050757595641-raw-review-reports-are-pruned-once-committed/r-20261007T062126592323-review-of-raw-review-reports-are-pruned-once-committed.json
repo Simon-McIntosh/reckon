@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:6641 crew_gc -> garbage_collect",
+    "reckon/crew/routing.py:1785 garbage_collect -> _plan_review_raw_reports"
+  ],
+  "completed_at": "2026-10-07T06:33:17.795Z",
+  "dispatched_at": "2026-10-07T06:21:48Z",
+  "findings": [],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base 5c1d172fe; two commits, changing reckon/crew/routing.py (run_id parameter, the run_dir.name filter and the garbage_collect pass-through), tests/test_raw_report_retention.py and the landing fragment, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_raw_report_retention.py with tests/test_crew_gc.py and tests/test_review_is_earned_by_significant_change.py; the manifest records 50 passed EXIT=0 and both declared negative controls at EXIT=1, and re-running tests/test_raw_report_retention.py against 2a1cec22f gave 9 passed EXIT=0.",
+    "goal": "the node's goal is that crew gc prunes a plan review's raw report.md past review.raw_report_retention_days only when its committed record exists, printing every candidate; the delta at 31ea9c1a9 confines that pass to the run named by --run at reckon/crew/routing.py:1437.",
+    "manifest": "read; it records commits through 2a1cec22f, the gate 50 passed EXIT=0, the two negative controls at EXIT=1, and leaves baseline_suite/after_suite unarmed.",
+    "write_paths": "the manifest declares reckon/flight.py, reckon/crew/routing.py, tests/test_raw_report_retention.py and the evidence fragment; every path in the 5c1d172fe..2a1cec22f delta is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_raw_report_retention.py:159 fails when the run_id filter is removed, as the recorded negative control shows ('other-run' appears in the listed set).",
+    "evidence": "tests/test_raw_report_retention.py:159 asserts set(rows)=={'confined-run'} and that the other run's report survives; the manifest records 50 passed EXIT=0 and my re-run of that file gave 9 passed EXIT=0.",
+    "fit": "routing.py:1437 threads run_id through the existing loop as the rest of garbage_collect does, adds no forbidden name, and the parameter defaults to None so existing callers keep their sweep.",
+    "goal_fidelity": "reckon/crew/routing.py:1437 skips every report directory whose name is not the named run, and routing.py:1785 passes garbage_collect's own run_id, so the pass is confined exactly as the flag asks.",
+    "reuse": "the pass extends _plan_review_raw_reports and garbage_collect rather than forking a sweep; no new capability is duplicated and run_id is the same identity the rest of gc already confines on.",
+    "scope_discipline": "all three paths in the 5c1d172f..2a1cec22f delta (routing.py, tests/test_raw_report_retention.py, the fragment) are inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that crew gc prunes a plan review's raw report.md past review.raw_report_retention_days only when its committed record exists, printing every candidate; the delta at 31ea9c1a9 confines that pass to the run named by --run at reckon/crew/routing.py:1437.\nVERDICT done_when: the done_when names tests/test_raw_report_retention.py with tests/test_crew_gc.py and tests/test_review_is_earned_by_significant_change.py; the manifest records 50 passed EXIT=0 and both declared negative controls at EXIT=1, and re-running tests/test_raw_report_retention.py against 2a1cec22f gave 9 passed EXIT=0.\nVERDICT write_paths: the manifest declares reckon/flight.py, reckon/crew/routing.py, tests/test_raw_report_retention.py and the evidence fragment; every path in the 5c1d172fe..2a1cec22f delta is inside them.\nVERDICT manifest: read; it records commits through 2a1cec22f, the gate 50 passed EXIT=0, the two negative controls at EXIT=1, and leaves baseline_suite/after_suite unarmed.\nVERDICT diff: read commit by commit against base 5c1d172fe; two commits, changing reckon/crew/routing.py (run_id parameter, the run_dir.name filter and the garbage_collect pass-through), tests/test_raw_report_retention.py and the landing fragment, all inside the declared scope.\nCALL_SITES: reckon/cli.py:6641 crew_gc -> garbage_collect, reckon/crew/routing.py:1785 garbage_collect -> _plan_review_raw_reports\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1437 skips every report directory whose name is not the named run, and routing.py:1785 passes garbage_collect's own run_id, so the pass is confined exactly as the flag asks.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_raw_report_retention.py:159 asserts set(rows)=={'confined-run'} and that the other run's report survives; the manifest records 50 passed EXIT=0 and my re-run of that file gave 9 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three paths in the 5c1d172f..2a1cec22f delta (routing.py, tests/test_raw_report_retention.py, the fragment) are inside the declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_raw_report_retention.py:159 fails when the run_id filter is removed, as the recorded negative control shows ('other-run' appears in the listed set).\nSCORE fit: 19\nJUSTIFICATION fit: routing.py:1437 threads run_id through the existing loop as the rest of garbage_collect does, adds no forbidden name, and the parameter defaults to None so existing callers keep their sweep.\nSCORE reuse: 20\nJUSTIFICATION reuse: the pass extends _plan_review_raw_reports and garbage_collect rather than forking a sweep; no new capability is duplicated and run_id is the same identity the rest of gc already confines on.",
+  "review_run_id": "r-20261007T062126592323-review-of-raw-review-reports-are-pruned-once-committed",
+  "reviewed_base_sha": "5c1d172fec00cfa750306e034e5fc82c06b11c91",
+  "reviewed_head_sha": "2a1cec22fc014f9707f54a176e832f48788b63e9",
+  "reviewed_run_id": "r-20261007T050757595641-raw-review-reports-are-pruned-once-committed",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:31:00.796493+00:00",
+  "total": 118
+}

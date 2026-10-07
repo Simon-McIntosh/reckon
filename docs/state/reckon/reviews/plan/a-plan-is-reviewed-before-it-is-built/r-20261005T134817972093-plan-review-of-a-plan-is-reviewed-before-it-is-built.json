@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T13:52:39.846Z",
+  "dispatched_at": "2026-10-05T13:48:43Z",
+  "findings": [
+    {
+      "anchor": "reckon/_plan_html.py:54",
+      "id": "reuse_search-1",
+      "reason": "the plan understates the extension as reuse of an existing capability; it must state that identity resolution (both heading-id and wrapper-id cases) is moved into the enumerator, naming `_store._wrapper_section_heading`/`_matching_section_close` as the logic it carries.",
+      "text": "the plan asserts the parser \"yields per-heading identity and offsets in one raw-text pass, resolves identities there\", but `_StructuredSectionSpanParser.handle_starttag` stores `values.get(\"id\")` from the h2 start tag only; a section whose id sits on its wrapping `<section>` element (the wrapper-id case the plan says `mcp_views._authored_section_headings` handles) yields an empty identity, and the resolution the plan credits the parser with actually lives in `_store._section_heading`/`_wrapper_section_heading` and `mcp_views._authored_section_headings`; an implementer trusting the plan will discover the enumerator cannot produce the section identities the per-section digest requires.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:162",
+      "id": "duplicate_owner-1",
+      "reason": "the section must name one owner for section identity \u2014 the extended `_StructuredSectionSpanParser` in `reckon/_plan_html.py` \u2014 and rewire `_AuthoredProseParser` onto it, rather than adding a coverage predicate whose correctness rests on an equality test between two walkers.",
+      "text": "the section keeps two notion-of-a-section owners and reconciles them with a test (\"a test asserts ... that the identities the parser splits on equal the identities the enumerator yields\") immediately after claiming the digest's section notion does \"not [come] from a second reconciliation\"; two parsers walking the same document for the same section identities is the duplication the section exists to remove.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3786faaec11ccdcae18faec0168b0069044b1151f336481ed586ee0f5b9f8135",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 69,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T134817972093-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "b4abf506694e1f632190560c49285b2840711f67",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the per-section digest and the coverage question are hidden behind the existing `plan_fingerprint` name plus one new predicate, not spread across new modules.",
+    "duplicate_owner": "a finding \u2014 the section designates `_AuthoredProseParser` (`reckon/crew/plan_review.py:162`) as \"the owner of that per-section split\" while also making `_StructuredSectionSpanParser` (`reckon/_plan_html.py:44`) the one raw-text section reader, and reconciles the two by a unit test asserting their identities are equal.",
+    "interface_budget": "pass \u2014 public_definitions 1475, cli_options 317, mcp_views 33, refusal_families 23; \u00a716 adds one public definition (the coverage predicate), adds no CLI option, MCP view or refusal family, and states in its own text that nothing is retired because the existing names gain a mode.",
+    "reuse_search": "a finding \u2014 the plan names `_StructuredSectionSpanParser` in `reckon/_plan_html.py` as the one raw-text reader that \"yields per-heading identity and offsets ... resolves identities there\", but opening the class shows it records the h2 `id` attribute verbatim and resolves no identity for a wrapper-id section.",
+    "thin_wrapper": "pass \u2014 the section extends existing owners in `reckon/_plan_html.py`, `reckon/crew/plan_review.py` and `reckon/_store.py` rather than adding a layer over them, and states why the existing names are kept."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.908298+00:00"
+}

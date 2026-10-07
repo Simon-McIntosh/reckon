@@ -1,7 +1,7 @@
 # Worker role digest: implement
 #
-# Generated from ~/.agents/AGENTS.md (sha256 93dd43f9e6b6120b4008739512002a3f96067740c4175eab5346381ce748127d,
-# 97750 bytes, ~24438 — the same policy holds for every
+# Generated from ~/.agents/AGENTS.md (sha256 bba369edf2eaa51dd5b6933b348b7c09699d7d05a1584b60e5df90a0c4a1eb90,
+# 98986 bytes, ~24747 — the same policy holds for every
 # role; this digest retains the sections below and withholds the
 # coordinator-only delivery text.
 # Regenerate with: python -m reckon.crew.worker_digest
@@ -349,25 +349,28 @@ Model family, concrete model, reasoning effort, and worker concurrency are
 runtime choices for the current task. They are not global repository policy.
 
 - Honour an explicit model or effort choice in the current user prompt.
-- Otherwise, the active coordinator selects an available model and effort for
-  each worker from the task's ambiguity, coupling, risk, and verification
-  needs.
-- State the selected model and effort explicitly in each worker dispatch. Do
-  not infer a relative tier from the coordinator model.
+- Otherwise, the picker selects each worker's lane, model and effort from the
+  node's ambiguity, coupling, risk and verification needs, and records what it
+  chose on the run. Do not infer a relative tier from the coordinator model.
 - Do not ban or prefer a provider family globally. Availability and measured
   task performance change over time.
-- **Local-lane-shaped work runs on the local lane, in every session (binding,
-  lead directive 2026-09-23).** Ordinary crew nodes — investigations, reviews,
-  tests, and implementation the locally served model can carry — dispatch with
-  `--local`. Never move them to codex or another metered backend, and above all
-  not while the local lane has capacity: read `~/public/imas-ambix/lane.json`
-  (`running`, `kv_occupancy`, `router_generation_gate.in_flight` against its
-  `width`) before dispatching, and treat spare room as a reason to dispatch more
-  locally. A stalled local run is resumed or redispatched on the local lane; the
-  router's admission gate, not a lane change, is what protects the lane under
-  load. A metered lane is for genuinely hard work only, and the dispatch says so.
-  This is lane routing, not a provider-family preference: it fixes which lane
-  carries a class of work, and leaves model choice within the lane to runtime.
+- **The picker chooses the lane; name one only when the run must go there
+  (binding, lead directive 2026-10-06).** Dispatch crew nodes without `--local`
+  or `--backend` by default. The picker (Jev) weighs each subscription lane's
+  pace and reading age, the local lane's admission and expected wait, the
+  node's difficulty and recent outcomes, and either routes the node or holds
+  it. Name a lane only when the run must run there, and say why in
+  `--comment`. A named lane is authoritative: `--local` and `--backend` are
+  never overridden by the picker, which then records its choice as a shadow
+  for comparison. The intent of the 2026-09-23 directive still stands, and now
+  lives in the picker's judgment rather than in a flag on every dispatch:
+  ordinary work stays local while the local lane has room, and a metered lane
+  is for work that needs it. Reviews stay off metered lanes through
+  `review_excluded_backends`, so a review with no lane named runs locally or
+  holds. A user asking for local workers is naming a lane, and gets `--local`.
+  A stalled local run is resumed or redispatched on its own lane; the router's
+  admission gate, not a lane change, is what protects the local lane under
+  load.
 - Plans, skills, schemas, and source code may record task requirements and
   validation floors, but must not prescribe concrete models, model families,
   "one-below" routing, or relative model hierarchies.

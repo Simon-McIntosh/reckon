@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:2335 (import used at :2420)",
+    "reckon/cli.py:2535 (import used at :2544)",
+    "reckon/crew/runs.py:1037 (_append_watch_lines)",
+    "reckon/crew/runs.py:1125 (watch_stream_cursor)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T03:18:13.243369+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T010457009510-the-freshness-test-hooks-a-stable-seam/logs/head-freshness-alone.log",
+      "line": "1",
+      "text": "the revision line names 483b2839 while the file's own result of 10 passed exists only at 092e61f9, and no node log names the final head, so the artifact offered as the head gate's record is the one artifact that cannot be checked against the head it claims, and a reader who cross-checks the revision against the file's ids finds a result impossible at the revision named."
+    },
+    {
+      "file": "docs/plans/the-suite-is-green-at-head.html",
+      "line": "576",
+      "text": "the Measure sentence reports 9 passed at the node's head \u2014 the pre-drain figure, where the landed record's own table reports 10 at 092e61f9 and my re-run confirms it \u2014 and its 1 failed, 8 passed at 2848d3c9 is the base test file's raced-read red presented as this id's, so the landing page understates the head result and misassigns the base red, while the evidence page carries the base/head pair correctly."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against the base \u2014 483b2839 replaces the exact-source-line patch with the append seam and probes the attach, 092e61f9 drains queued probe rows, adds the two-probe case and corrects the cause prose \u2014 and every hunk stays inside the declared paths, the evidence file's 26 deleted lines being the node's own earlier sentences with no peer section touched.",
+    "done_when": "read the done_when \u2014 green at the node's head, red at 2848d3c9, the declared control red on the fresh-code assertion, monitor output still green, zero added importer failures \u2014 and reproduced the head half myself at 092e61f9 (10 passed in 6.54s, EXIT=0), with the base reds logged as 1 failed / 8 passed at the raced first read, both controls failing on exactly the assertion they name (logs/negative-control.log:86, logs/negative-control-drain.log:33), and the importer selection's three reds all pre-existing tests/test_crew_recovery.py ids.",
+    "goal": "read the goal \u2014 the follower-freshness test must prove a reload through a seam that survives the per-render ticker fix \u2014 and found it landed as a module-level format_watch_transition override appended to the copied package (tests/test_follower_freshness.py:206-208), so the rewrite names no source line and survives the render change, and the id is green at the final head in my own re-run.",
+    "manifest": "read it; it records the final-head gate (10 passed / 7 passed), the base reds, both controls and the importer selection, each with a named log \u2014 but the log it names for the head gate carries the parent revision (finding below), and its in-flight importer refresh is superseded by the head log it also names.",
+    "write_paths": "read the manifest's five declared paths and found every path in the diff inside them \u2014 git diff --name-only 2848d3c9..092e61f9 lists only tests/test_follower_freshness.py, docs/plans/the-suite-is-green-at-head.html, docs/evidence/archive/the-suite-is-green-at-head-landed.html, docs/figures/the-suite-is-green-at-head/follower-attach-seam.py and its .png \u2014 and reckon/crew/recovery.py is unmodified."
+  },
+  "justifications": {
+    "durability": "tests/test_follower_freshness.py:222 reddens when the copied package is left unmodified and :265 reddens when the probe drain is removed, both logged, leaving only the head file's own fresh-code reddening inferred from identical text rather than rerun.",
+    "evidence": "the gate measures the done_when and its result is recorded, but logs/head-freshness-alone.log:1 names revision 483b2839 while its ten ids exist only at 092e61f9, and the plan's Measure figure at docs/plans/the-suite-is-green-at-head.html:576 is the pre-drain nine.",
+    "fit": "the seam and the probe helpers at tests/test_follower_freshness.py:63-141 follow the file's own idiom, and the naming checks find no forbidden label in the changed paths.",
+    "goal_fidelity": "tests/test_follower_freshness.py:206-208 appends the named-function override to the copied package rather than patching a source line, and my re-run of the id at 092e61f9 is green.",
+    "scope_discipline": "every path in git diff --name-only 2848d3c9..092e61f9 is inside the five declared write paths, and reckon/crew/recovery.py carries no change."
+  },
+  "project": "reckon",
+  "raw_text": "Independent re-review of r-20260925T010457009510-the-freshness-test-hooks-a-stable-seam\n(node the-freshness-test-hooks-a-stable-seam), read from the reviewed worktree at head\n092e61f9ffccc5fbd842090f49c9ae0abd457cef against base 2848d3c916460044ccb3269bc70f318b2d4a21d0. This is the re-review the drain commit asked for:\nthe first review was taken at the intermediate head 483b2839, so every claim here is\nread at the final head.\n\nRead: the goal and done_when, the five declared write paths, the manifest, both commits\nagainst the base, the two production render paths the seam hooks and the stream append and\ncursor functions the probes drive; re-ran the gate id alone at the final head in place\n(reviewer-gate-head-092e61f9.log, 10 passed in 6.54s, EXIT=0).\n\nVERDICT goal: read the goal \u2014 the follower-freshness test must prove a reload through a seam that survives the per-render ticker fix \u2014 and found it landed as a module-level format_watch_transition override appended to the copied package (tests/test_follower_freshness.py:206-208), so the rewrite names no source line and survives the render change, and the id is green at the final head in my own re-run.\nVERDICT done_when: read the done_when \u2014 green at the node's head, red at 2848d3c9, the declared control red on the fresh-code assertion, monitor output still green, zero added importer failures \u2014 and reproduced the head half myself at 092e61f9 (10 passed in 6.54s, EXIT=0), with the base reds logged as 1 failed / 8 passed at the raced first read, both controls failing on exactly the assertion they name (logs/negative-control.log:86, logs/negative-control-drain.log:33), and the importer selection's three reds all pre-existing tests/test_crew_recovery.py ids.\nVERDICT write_paths: read the manifest's five declared paths and found every path in the diff inside them \u2014 git diff --name-only 2848d3c9..092e61f9 lists only tests/test_follower_freshness.py, docs/plans/the-suite-is-green-at-head.html, docs/evidence/archive/the-suite-is-green-at-head-landed.html, docs/figures/the-suite-is-green-at-head/follower-attach-seam.py and its .png \u2014 and reckon/crew/recovery.py is unmodified.\nVERDICT manifest: read it; it records the final-head gate (10 passed / 7 passed), the base reds, both controls and the importer selection, each with a named log \u2014 but the log it names for the head gate carries the parent revision (finding below), and its in-flight importer refresh is superseded by the head log it also names.\nVERDICT diff: read both commits against the base \u2014 483b2839 replaces the exact-source-line patch with the append seam and probes the attach, 092e61f9 drains queued probe rows, adds the two-probe case and corrects the cause prose \u2014 and every hunk stays inside the declared paths, the evidence file's 26 deleted lines being the node's own earlier sentences with no peer section touched.\nCALL_SITES: reckon/cli.py:2335 (import used at :2420), reckon/cli.py:2535 (import used at :2544), reckon/crew/runs.py:1037 (_append_watch_lines), reckon/crew/runs.py:1125 (watch_stream_cursor)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_follower_freshness.py:206-208 appends the named-function override to the copied package rather than patching a source line, and my re-run of the id at 092e61f9 is green.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate measures the done_when and its result is recorded, but logs/head-freshness-alone.log:1 names revision 483b2839 while its ten ids exist only at 092e61f9, and the plan's Measure figure at docs/plans/the-suite-is-green-at-head.html:576 is the pre-drain nine.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --name-only 2848d3c9..092e61f9 is inside the five declared write paths, and reckon/crew/recovery.py carries no change.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_follower_freshness.py:222 reddens when the copied package is left unmodified and :265 reddens when the probe drain is removed, both logged, leaving only the head file's own fresh-code reddening inferred from identical text rather than rerun.\nSCORE fit: 19\nJUSTIFICATION fit: the seam and the probe helpers at tests/test_follower_freshness.py:63-141 follow the file's own idiom, and the naming checks find no forbidden label in the changed paths.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T010457009510-the-freshness-test-hooks-a-stable-seam/logs/head-freshness-alone.log:1 the revision line names 483b2839 while the file's own result of 10 passed exists only at 092e61f9, and no node log names the final head, so the artifact offered as the head gate's record is the one artifact that cannot be checked against the head it claims, and a reader who cross-checks the revision against the file's ids finds a result impossible at the revision named.\nFINDING docs/plans/the-suite-is-green-at-head.html:576 the Measure sentence reports 9 passed at the node's head \u2014 the pre-drain figure, where the landed record's own table reports 10 at 092e61f9 and my re-run confirms it \u2014 and its 1 failed, 8 passed at 2848d3c9 is the base test file's raced-read red presented as this id's, so the landing page understates the head result and misassigns the base red, while the evidence page carries the base/head pair correctly.",
+  "review_run_id": "r-20260925T031813243369-rereview-of-the-freshness-test-hooks-a-stable-seam",
+  "reviewed_base_sha": "2848d3c916460044ccb3269bc70f318b2d4a21d0",
+  "reviewed_head_sha": "092e61f9ffccc5fbd842090f49c9ae0abd457cef",
+  "reviewed_run_id": "r-20260925T010457009510-the-freshness-test-hooks-a-stable-seam",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T03:56:16.163802+00:00",
+  "total": 93
+}

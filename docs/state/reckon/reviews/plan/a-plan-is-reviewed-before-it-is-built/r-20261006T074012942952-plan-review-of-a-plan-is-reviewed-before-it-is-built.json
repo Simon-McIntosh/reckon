@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-06T07:47:17.628Z",
+  "dispatched_at": "2026-10-06T07:40:39Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/routing.py:2667",
+      "id": "duplicate_owner-1",
+      "reason": "the section must name routing's selection as retired (the gate delegating its record choice to `read_plan_review`), or it lands two owners of the same rule.",
+      "text": "`require_plan_reviewed` selects the record the gate checks with `record = max(records, key=lambda item: int(item.get(\"plan_version\") or 0))` over `_review_coverage`'s contributing list, while \u00a723 re-expresses `read_plan_review` as \"the newest stored review among those the predicate counts as covering, the record whose findings the gate checks\"; the plan asserts \"the gate, the answer verb and the view read one record by one rule\" but leaves routing's own `max()` in place as a second owner of that selection, so the two drift the moment one is fixed",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:289",
+      "id": "deep_module-1",
+      "reason": "the sections should either promote these helpers or give them one home rather than repeat the cross-module private read the project has already flagged and had to repair.",
+      "text": "the plan reads `dispatch._normalised_words`, a private module-level function, from `reckon/crew/plan_review.py` (\u00a722) and proposes a private snapshot-name constant in `plan_review.py` read by recovery's writer (\u00a721), justifying both as same-package; but the project treats a private name read across a module boundary as a defect even within `reckon.crew` \u2014 the \u00a76 re-review already recorded `reckon/crew/recovery.py:581` reading `plan_review._REVIEW_SIDECAR_NAME` as a follow-on \u2014 so the modules are shallower than \"hides behaviour behind a smaller interface\" claims; the honest change is one home for the tokeniser and the snapshot name (promote, or relocate beside their consumers)",
+      "type": "deep_module",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3e5badc470331a19eb3f41be236ad03d455b76f9105085d2db6488730f60a4b5",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 185,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261006T074012942952-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "c908e17ead1cabae6a267393d8f1b7d38cc37365",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the plan keeps two helpers private while reading them across module boundaries, so the interface is not the boundary the plan claims (`dispatch._normalised_words`, and the proposed snapshot-name constant), the exact pattern the project already flagged at `reckon/crew/recovery.py:581`.",
+    "duplicate_owner": "a finding \u2014 \u00a723 re-expresses `read_plan_review` to return \"the newest stored review\u2026 the record whose findings the gate checks\", a second owner of the coverage-record selection that `reckon/crew/routing.py:2667` already performs, and the plan does not name the gate's selection as retired.",
+    "interface_budget": "pass \u2014 public_definitions 1481, cli_options 317, mcp_views 33, refusal_families 23; every section that adds surface names its retirement in its own text (\u00a716 second node retires interim `strip_tags` for `section_prose`, net +1 and verified uncounted constants as the family defines them; \u00a722 retires `plan_review_settle_seconds` for `plan_review_settings`; \u00a723 retires `store_delivered_report` to private for `store_delivered_reviews`; \u00a721 adds and retires nothing), and no section adds a CLI option, MCP view or refusal family.",
+    "reuse_search": "pass \u2014 the plan censuses every proposed mechanism's sites before adding one (the 14-line `stripped_strings|get_text(` census it classifies by kind, the `\"plan-review\"` report-root spelled twice at `reckon/crew/plan_review.py:795` and `:866`, `impl_source` in neither scalar set) and names the owner each section extends (`roadmap.implementable_sections`, `is_..._section`, `dispatch._normalised_words`, `review_report_directory`).",
+    "thin_wrapper": "pass \u2014 the one hoist, `store_delivered_reviews`, moves `routing._store_delivered_plan_review` to the module that already owns `store_delivered_report` and `delivered_reports` and states why (two callers, `grep` for the old name returns nothing), and `plan_review_settings` replaces rather than sits beside `plan_review_settle_seconds`."
+  },
+  "section_digests": {
+    "_document": "ef17bf98a5243e5fbc201a4fcd28fee4e85e931d0cc3fe7031cc0ebd940a9aee",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "73c5b6996d69f9aad532414624ddb66aeaa5348344ecce830e835004ebc84584",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "f2849c3493f957459b8b3f4d726d09a8e4f3328eb245a3a643cade4b8f16b4cf",
+    "s22": "58713bea48c7cdb010b8514b9d2ad51cee71c97fc0e8ea0cd651f5e850d92f78",
+    "s23": "542b1b63876b3f5c82bb2b898a71b6c416b7d9912fbad4fa2d565e4dbdcf6b20",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T07:57:41.733073+00:00"
+}

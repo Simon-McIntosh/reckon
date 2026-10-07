@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "70d735acb",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:1491",
+    "reckon/crew/recovery.py:8544",
+    "reckon/crew/quota_weight.py:167"
+  ],
+  "completed_at": "2026-10-01T23:42:59.158Z",
+  "dispatched_at": "2026-10-01T23:12:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "7966",
+      "severity": "follow-on",
+      "text": "follow-on: the strict read is selected by ledger_run_ids being None as a proxy for the producer's own tick; a future caller of fleet_transitions that omits a ledger reader would silently inherit a read that can raise FlightConfigError where the fold never raised before."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1476",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline branch composes without fleet_transitions, so a config that fails before the seat publishes its first tick is priced unpriced rather than deferred; this is narrow and disclosed in the manifest's evidence_inputs."
+    }
+  ],
+  "head_log_revision": "a89d8419e2bece94ae64946b34cdbda312d7c942",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read a89d8419e against base 70d735acb commit by commit; two files, 23 insertions and 0 deletions, the opt-in strict keyword at quota_weight.py:131 and its use at recovery.py:7966.",
+    "done_when": "the done_when names tests/test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers; that id is red at base 70d735acb (logs-base-gate.log, 1 failed) and green at head a89d8419e (logs-head-gate.log, 28 passed), and this review re-ran both arms independently.",
+    "goal": "the goal is to make the _publish_watch_stream FlightConfigError deferral guard reachable; reckon/crew/recovery.py:7966 now lets the config error out of fleet_transitions when no ledger reader is supplied, so reckon/crew/runs.py:1505 catches it and the producer defers its tick instead of dying.",
+    "manifest": "read; it names the base arm 1 failed / 27 passed, the head gate 28 passed, a red negative control, commit a89d8419e, and follow_ons for three pre-existing red files outside this node.",
+    "write_paths": "read the manifest's declared paths; the diff touches exactly reckon/crew/quota_weight.py and reckon/crew/recovery.py, both inside them, and no test file is edited."
+  },
+  "justifications": {
+    "durability": "disabling the strict raise at reckon/crew/quota_weight.py:161 reddens tests/test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers (review-negative-control.log, EXIT=1), so the guard fails if this change regresses.",
+    "evidence": "the base arm at logs-base-gate.log (1 failed, exactly the named id) and the head arm at logs-head-gate.log (28 passed, EXIT=0) are recorded at the reviewed revisions, and this review independently re-ran the base, head and negative control.",
+    "fit": "reckon/crew/quota_weight.py:131 adds an opt-in strict keyword defaulting False and documents it, matching the module's degrade-by-default idiom, while reckon/crew/recovery.py:7966 keys strictness on the absence of a ledger reader rather than an explicit flag.",
+    "goal_fidelity": "reckon/crew/recovery.py:7966 raises before the fold prices any run, so reckon/crew/runs.py:1505 now catches the config error; the named regression prints the deferral marker at head (review-head-gate.log) and not at base (review-base-repro.log).",
+    "scope_discipline": "git diff 70d735acb..a89d8419e touches exactly reckon/crew/quota_weight.py and reckon/crew/recovery.py, 23 insertions and 0 deletions, no test file edited, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the _publish_watch_stream FlightConfigError deferral guard reachable; reckon/crew/recovery.py:7966 now lets the config error out of fleet_transitions when no ledger reader is supplied, so reckon/crew/runs.py:1505 catches it and the producer defers its tick instead of dying.\nVERDICT done_when: the done_when names tests/test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers; that id is red at base 70d735acb (logs-base-gate.log, 1 failed) and green at head a89d8419e (logs-head-gate.log, 28 passed), and this review re-ran both arms independently.\nVERDICT write_paths: read the manifest's declared paths; the diff touches exactly reckon/crew/quota_weight.py and reckon/crew/recovery.py, both inside them, and no test file is edited.\nVERDICT manifest: read; it names the base arm 1 failed / 27 passed, the head gate 28 passed, a red negative control, commit a89d8419e, and follow_ons for three pre-existing red files outside this node.\nVERDICT diff: read a89d8419e against base 70d735acb commit by commit; two files, 23 insertions and 0 deletions, the opt-in strict keyword at quota_weight.py:131 and its use at recovery.py:7966.\nCALL_SITES: reckon/crew/runs.py:1491, reckon/crew/recovery.py:8544, reckon/crew/quota_weight.py:167\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:7966 raises before the fold prices any run, so reckon/crew/runs.py:1505 now catches the config error; the named regression prints the deferral marker at head (review-head-gate.log) and not at base (review-base-repro.log).\nSCORE evidence: 20\nJUSTIFICATION evidence: the base arm at logs-base-gate.log (1 failed, exactly the named id) and the head arm at logs-head-gate.log (28 passed, EXIT=0) are recorded at the reviewed revisions, and this review independently re-ran the base, head and negative control.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 70d735acb..a89d8419e touches exactly reckon/crew/quota_weight.py and reckon/crew/recovery.py, 23 insertions and 0 deletions, no test file edited, both inside the declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: disabling the strict raise at reckon/crew/quota_weight.py:161 reddens tests/test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers (review-negative-control.log, EXIT=1), so the guard fails if this change regresses.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/quota_weight.py:131 adds an opt-in strict keyword defaulting False and documents it, matching the module's degrade-by-default idiom, while reckon/crew/recovery.py:7966 keys strictness on the absence of a ledger reader rather than an explicit flag.\nFINDING reckon/crew/recovery.py:7966 follow-on: the strict read is selected by ledger_run_ids being None as a proxy for the producer's own tick; a future caller of fleet_transitions that omits a ledger reader would silently inherit a read that can raise FlightConfigError where the fold never raised before.\nFINDING reckon/crew/runs.py:1476 follow-on: the baseline branch composes without fleet_transitions, so a config that fails before the seat publishes its first tick is priced unpriced rather than deferred; this is narrow and disclosed in the manifest's evidence_inputs.\n",
+  "review_run_id": "r-20261001T231212670652-review-of-a-broken-config-defers-the-producer-tick",
+  "reviewed_base_sha": "70d735acba3500ae9f5c147bc3bd57ce545b40cd",
+  "reviewed_head_sha": "a89d8419e2bece94ae64946b34cdbda312d7c942",
+  "reviewed_run_id": "r-20261001T220041292342-a-broken-config-defers-the-producer-tick",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T231212670652-review-of-a-broken-config-defers-the-producer-tick",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:05.113416+00:00",
+  "total": 99
+}

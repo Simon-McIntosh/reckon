@@ -1,0 +1,51 @@
+{
+  "absent_items": [
+    "interface_budget"
+  ],
+  "completed_at": "2026-10-04T23:55:18.277Z",
+  "dispatched_at": "2026-10-04T23:51:17Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/prompts/plan_design_review.md:40",
+      "id": "reuse_search-1",
+      "reason": "either a node must wire the four counts into the composed brief/prompt (or the reviewer cannot name them), or \u00a73's second done-when is unmeetable and should be cut.",
+      "text": "\u00a73's \"Also done when\" requires the review of a plan to name the current week's four interface counts from `reckon/interface_counts.py`, but that module is referenced nowhere in the composer (`reckon/crew/recovery.py`) or the design-review prompt, so the clause has no mechanism behind it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:11187",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a710's deliverable and done-when name \"`_is_review_node` and `_is_review_run`\" but there are two `_is_review_run` readers and \u00a710 frames the defect as a duplicated literal, not this behavioural divergence; \u00a710 must name both readers and require both prefixes recognised.",
+      "text": "dispatch's `_is_review_run` recognises only `REVIEW_NODE_PREFIX` (\"review-of-\"), while `reckon/crew/recovery.py:238` `_is_review_node` also accepts the bare \"plan-review-of-\", so a plan-review node is classified as a plain node by `_task_identity` (dispatch.py:11238) and takes a different session identity than recovery expects",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:404",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a79 already established that the shared report grammar belongs in `review.py`; PR-1 could extend that store layer or state in the plan why the plan+version+fingerprint key forces a fork, so the two selection implementations cannot drift.",
+      "text": "the plan adds a second versioned record store (`store_plan_review`/`read_plan_review`/`_candidate_paths`/`_target_path`/`_stored_blob8`) parallel to `reckon/crew/review.py`'s (`store_review`/`read_review`/`_partial_review_path`/`_complete_review_exists`/`_stored_partial_identity`) under the same `review_store_root`, duplicating the path, revision-sibling and newest-by-mtime selection logic that file already owns",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "072d48eda219e9a719cc87565d485205d2082d4a00e88cc7f17ff826f95d84d4",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 42,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T235102925893-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "c81482b22070e647aea2df2f33d507da04ddea52",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/crew/plan_review.py` hides the record shape, the content fingerprint, the store and the report\u2192record join behind a small, coherent interface, and the dispatch composer is shared (`plan_review_subject` feeds the same `_review_dispatch_fields`) rather than forked.",
+    "duplicate_owner": "a finding \u2014 `plan_review.py` re-implements the versioned-record store that `reckon/crew/review.py` owns, and `reckon/crew/dispatch.py`'s `_is_review_run` forks the review-node predicate recovery.py already defines.",
+    "reuse_search": "a finding \u2014 the plan cites `reckon/interface_counts.py` as the interface-budget source in \u00a73, but no mechanism (composer or prompt) reuses it, so the citation is not carried into the design.",
+    "thin_wrapper": "pass \u2014 each layer the plan adds states why it cannot be an extension: the shared composer per D6, the shared report parser per \u00a79, and one constant per \u00a710; no unjustified wrapper was found beyond the store fork reported below."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.952310+00:00"
+}

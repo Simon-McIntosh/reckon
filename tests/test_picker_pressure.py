@@ -323,12 +323,12 @@ def test_public_pick_renders_size_matched_return_time_and_budget_provenance(
         "stale": True,
     }
     assert state["candidates"]["remote"]["pace_allowance"] == 0.11
-    assert state["days_to_reset"]["remote"] == pytest.approx(6, abs=0.001)
+    assert state["candidates"]["remote"]["days_to_reset"] == pytest.approx(6, abs=0.001)
     assert state["node"]["estimated_hours"] == 0.5
     assert state["node"]["attempts"] == 2
     assert state["node"]["spec_level"] == "guided"
     assert state["node"]["capability"] == request_node.capability
-    assert state["candidates"]["remote"]["outcomes_14_days"]["passed"] == 5
+    assert state["candidates"]["remote"]["outcomes"]["passed"] == 5
 
 
 def test_pressure_alignment_has_no_coded_or_numeric_threshold():

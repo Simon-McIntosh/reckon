@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/paid_lanes.py:674",
+    "reckon/budget.py:1403"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T07:53:48.533563+00:00",
+  "findings": [
+    {
+      "file": "docs/figures/the-local-lane-is-the-default/refresh-timer-live.png",
+      "line": "1",
+      "text": "The y-axis labels are applied in LANES order to ticks 0..2 while the lanes are drawn at y=2,1,0 (generator refresh_timer_figure.py:34-38 against the yticklabels list at line 79), so the row carrying the timer's green elapse dots is labelled \"install (run 1)\" and the row carrying the install moment is labelled \"timer\" - the figure shows the opposite lane mapping to its own figcaption."
+    },
+    {
+      "file": "docs/figures/the-local-lane-is-the-default/refresh-timer-live.png",
+      "line": "1",
+      "text": "The three install annotations (07:38:12.6Z, 07:38:14.2Z, 07:38:14.6Z) and the two 07:43 timer annotations overprint into illegible text (\"elspervice run 2\", \"07:4301443:37Z\") because every label is placed at the same 10-point offset with ha=center and no collision handling (refresh_timer_figure.py:39-48), so the two moments the record exists to show cannot be read."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read commit by commit against cdd0a1b0; 078351e6 adds 67 lines across three paths (the evidence section, the plan paragraph and the figure), docs/evidence/archive/the-local-lane-is-the-default-landed.html carries zero deletions (grep -c '^-[^-]' = 0) so the cumulative record survives, and the plan meta lines plan-version and plan-modified are identical on both sides of the commit.",
+    "done_when": "The dispatch measure is enumerated check by check in install.log:39-58 (list-timers with a next elapse, service Result=success), install.log:64-80 (the idempotent second run, identical sha256 and mtimes) and install.log:87-105 (publish 1 newer than the install moment, publish 2 322.431 s later, an entry each for clive, codex and claude), and every item still held on an independent re-read at review time.",
+    "goal": "The node's goal is that the paid-lanes refresh timer is installed on this host and refreshing the published document; /home/ITER/mcintos/.config/systemd/user/reckon-paid-lanes.service and .timer exist with the manifest's own sha256 pair (bd470326..., 1cc28fdb...), and at review time systemctl --user reported the timer active and the service's last run Result=success, so the refresh is running.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T072316842946-paid-lanes-timer-is-live/manifest.md; it reports status complete with the operational PASS, names its four log paths, and discloses both that journalctl was refused and that allocation durability is unmeasured.",
+    "write_paths": "Declared as the report directory plus docs/evidence/archive/the-local-lane-is-the-default-landed.html, docs/figures/the-local-lane-is-the-default and docs/plans/the-local-lane-is-the-default.html; commit 078351e6 touches exactly three repository paths, all inside them, and install.log:4-7 against install.log:59-62 shows the main checkout's porcelain unchanged by the install."
+  },
+  "justifications": {
+    "durability": "No repository test fails if this node's deployment regresses, because nothing asserts that the units remain installed, enabled and current; the install-timer mechanism itself is covered by tests/test_paid_lanes_timer.py landed by the sibling node.",
+    "evidence": "Every item of the dispatch measure is logged in install.log with its own reading, but the record's figure mislabels its lanes (FINDING below) and install.log:13 names a stale \"expect /tmp/reckon-probe.service\" target that no later line in the log checks.",
+    "fit": "The unit names sit in the same user-unit namespace as the existing reckon.service and reckon-watch-* units, and the landed prose follows the plan's existing \"Landed\" paragraph idiom.",
+    "goal_fidelity": "/home/ITER/mcintos/public/reckon/paid-lanes.json was 79 s old when read at review time and the timer's LAST stamp advanced under it, so the host refresh the goal names is live.",
+    "scope_discipline": "The diff is exactly the three declared repository paths with zero deletions in docs/evidence/archive/the-local-lane-is-the-default-landed.html and no unrelated edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that the paid-lanes refresh timer is installed on this host and refreshing the published document; /home/ITER/mcintos/.config/systemd/user/reckon-paid-lanes.service and .timer exist with the manifest's own sha256 pair (bd470326..., 1cc28fdb...), and at review time systemctl --user reported the timer active and the service's last run Result=success, so the refresh is running.\nVERDICT done_when: The dispatch measure is enumerated check by check in install.log:39-58 (list-timers with a next elapse, service Result=success), install.log:64-80 (the idempotent second run, identical sha256 and mtimes) and install.log:87-105 (publish 1 newer than the install moment, publish 2 322.431 s later, an entry each for clive, codex and claude), and every item still held on an independent re-read at review time.\nVERDICT write_paths: Declared as the report directory plus docs/evidence/archive/the-local-lane-is-the-default-landed.html, docs/figures/the-local-lane-is-the-default and docs/plans/the-local-lane-is-the-default.html; commit 078351e6 touches exactly three repository paths, all inside them, and install.log:4-7 against install.log:59-62 shows the main checkout's porcelain unchanged by the install.\nVERDICT manifest: Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T072316842946-paid-lanes-timer-is-live/manifest.md; it reports status complete with the operational PASS, names its four log paths, and discloses both that journalctl was refused and that allocation durability is unmeasured.\nVERDICT diff: Read commit by commit against cdd0a1b0; 078351e6 adds 67 lines across three paths (the evidence section, the plan paragraph and the figure), docs/evidence/archive/the-local-lane-is-the-default-landed.html carries zero deletions (grep -c '^-[^-]' = 0) so the cumulative record survives, and the plan meta lines plan-version and plan-modified are identical on both sides of the commit.\nCALL_SITES: reckon/crew/paid_lanes.py:674, reckon/budget.py:1403\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: /home/ITER/mcintos/public/reckon/paid-lanes.json was 79 s old when read at review time and the timer's LAST stamp advanced under it, so the host refresh the goal names is live.\nSCORE evidence: 16\nJUSTIFICATION evidence: Every item of the dispatch measure is logged in install.log with its own reading, but the record's figure mislabels its lanes (FINDING below) and install.log:13 names a stale \"expect /tmp/reckon-probe.service\" target that no later line in the log checks.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff is exactly the three declared repository paths with zero deletions in docs/evidence/archive/the-local-lane-is-the-default-landed.html and no unrelated edit.\nSCORE durability: 10\nJUSTIFICATION durability: No repository test fails if this node's deployment regresses, because nothing asserts that the units remain installed, enabled and current; the install-timer mechanism itself is covered by tests/test_paid_lanes_timer.py landed by the sibling node.\nSCORE fit: 18\nJUSTIFICATION fit: The unit names sit in the same user-unit namespace as the existing reckon.service and reckon-watch-* units, and the landed prose follows the plan's existing \"Landed\" paragraph idiom.\nFINDING docs/figures/the-local-lane-is-the-default/refresh-timer-live.png:1 The y-axis labels are applied in LANES order to ticks 0..2 while the lanes are drawn at y=2,1,0 (generator refresh_timer_figure.py:34-38 against the yticklabels list at line 79), so the row carrying the timer's green elapse dots is labelled \"install (run 1)\" and the row carrying the install moment is labelled \"timer\" - the figure shows the opposite lane mapping to its own figcaption.\nFINDING docs/figures/the-local-lane-is-the-default/refresh-timer-live.png:1 The three install annotations (07:38:12.6Z, 07:38:14.2Z, 07:38:14.6Z) and the two 07:43 timer annotations overprint into illegible text (\"elspervice run 2\", \"07:4301443:37Z\") because every label is placed at the same 10-point offset with ha=center and no collision handling (refresh_timer_figure.py:39-48), so the two moments the record exists to show cannot be read.",
+  "review_run_id": "r-20260925T075348533563-review-of-paid-lanes-timer-is-live",
+  "reviewed_base_sha": "cdd0a1b069132a33951546213d40cdb34bb6a315",
+  "reviewed_head_sha": "078351e65037e67269ba08ba4563a80497b537fd",
+  "reviewed_run_id": "r-20260925T072316842946-paid-lanes-timer-is-live",
+  "reviewer": "review-of-paid-lanes-timer-is-live",
+  "scores": {
+    "durability": 10,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T08:53:20.484316+00:00",
+  "total": 83
+}

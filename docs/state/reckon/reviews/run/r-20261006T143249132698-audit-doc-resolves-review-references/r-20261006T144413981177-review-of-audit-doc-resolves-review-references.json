@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:audit_doc",
+    "reckon/mcp.py:_audit_document",
+    "reckon/compliance.py:audit_document"
+  ],
+  "completed_at": "2026-10-06T14:52:22.173Z",
+  "dispatched_at": "2026-10-06T14:44:38Z",
+  "findings": [
+    {
+      "file": "reckon/doccheck.py",
+      "line": "1589",
+      "severity": "follow-on",
+      "text": "follow-on: _REVIEW_CITATION_CLASSES re-spells three class names already owned by _BODY_CLASSES at reckon/doccheck.py:73, so a renamed body class drifts between the citation scan and the body registry silently; deriving the citation scopes from the existing constant would remove the second spelling."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit \u2014 the single commit 7d127e9ce adds review_reference_findings, _declared_doc_type, _review_citation_texts, checkout_root_for and _committed_review_present to reckon/doccheck.py:1580-1720, threads a root argument through audit_file and run, adds the 8-case test file and the evidence fragment; no path outside the declaration.",
+    "done_when": "the done-when's gate is tests/test_audit_doc_resolves_review_references.py plus every tests/test_doccheck*.py and tests/test_audit_doc*.py under --basetemp in /tmp; the reviewed manifest records 104 passed EXIT=0 (gate.log) and the negative control 4 failed EXIT=1 (negative_control.log), and I re-ran the named file at head 7d127e9ce: 8 passed EXIT=0.",
+    "goal": "the node's goal \u2014 reckon audit-doc resolves review:PROJECT/REVIEW-ID against the project's committed review tree \u2014 is met at reckon/doccheck.py:1650 review_reference_findings, which parses the citation, resolves the tree through reckon.crew.review.committed_review_root from the audited document's checkout root, stays silent on a committed record and raises review-reference-missing otherwise.",
+    "manifest": "read; status complete, commit 7d127e9ce, changed_paths match the diff, tests line names gate.log with 104 passed EXIT=0 and negative_control_log names 4 failed EXIT=1; baseline_suite and after_suite are empty (the run recorded no base/head arm pair).",
+    "write_paths": "the manifest declares reckon/doccheck.py, tests/test_audit_doc_resolves_review_references.py, the evidence fragment and a figures dir; git diff b51e8a8e..7d127e9ce touches exactly doccheck.py, the new test and the fragment, all inside the declaration, and the figures dir is declared but unwritten because the done-when names no figure."
+  },
+  "justifications": {
+    "durability": "the negative control restores review_reference_findings returning [] and reddens tests/test_audit_doc_resolves_review_references.py:160,175,187,212, so the four guards fail if the check regresses; tests/test_audit_doc_resolves_review_references.py:214 comparing the two arms' non-reference findings is independent of the value under test.",
+    "evidence": "the gate the done-when names is recorded in the manifest with 104 passed EXIT=0 (gate.log) and the negative control 4 failed EXIT=1 (negative_control.log), and my re-run of tests/test_audit_doc_resolves_review_references.py at 7d127e9ce returned 8 passed EXIT=0.",
+    "fit": "the change keeps doccheck's idiom \u2014 module-private _REVIEW_* constants, the Finding severity/code/message shape, _prose_text and _read_plan_text \u2014 and introduces no plan or stage label, though reckon/doccheck.py:1589 re-spells three class names owned by _BODY_CLASSES at reckon/doccheck.py:73.",
+    "goal_fidelity": "reckon/doccheck.py:1650 review_reference_findings resolves review:<project>/<id> against committed_review_root and its citation scopes (reckon/doccheck.py:1589) match the plan \u00a73 references clause naming a plan comment, a followup and an evidence record.",
+    "reuse": "every added definition extends owners the repository already holds \u2014 committed_review_root (reckon/crew/review.py:1250), _prose_text (reckon/doccheck.py:298), _composed_record_text (reckon/doccheck.py:1355) and the Finding shape \u2014 with no second reference resolver.",
+    "scope_discipline": "git diff --stat b51e8a8e..7d127e9ce lists exactly reckon/doccheck.py, tests/test_audit_doc_resolves_review_references.py and the fragment, every one inside the declared paths, with nothing added outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal \u2014 reckon audit-doc resolves review:PROJECT/REVIEW-ID against the project's committed review tree \u2014 is met at reckon/doccheck.py:1650 review_reference_findings, which parses the citation, resolves the tree through reckon.crew.review.committed_review_root from the audited document's checkout root, stays silent on a committed record and raises review-reference-missing otherwise.\nVERDICT done_when: the done-when's gate is tests/test_audit_doc_resolves_review_references.py plus every tests/test_doccheck*.py and tests/test_audit_doc*.py under --basetemp in /tmp; the reviewed manifest records 104 passed EXIT=0 (gate.log) and the negative control 4 failed EXIT=1 (negative_control.log), and I re-ran the named file at head 7d127e9ce: 8 passed EXIT=0.\nVERDICT write_paths: the manifest declares reckon/doccheck.py, tests/test_audit_doc_resolves_review_references.py, the evidence fragment and a figures dir; git diff b51e8a8e..7d127e9ce touches exactly doccheck.py, the new test and the fragment, all inside the declaration, and the figures dir is declared but unwritten because the done-when names no figure.\nVERDICT manifest: read; status complete, commit 7d127e9ce, changed_paths match the diff, tests line names gate.log with 104 passed EXIT=0 and negative_control_log names 4 failed EXIT=1; baseline_suite and after_suite are empty (the run recorded no base/head arm pair).\nVERDICT diff: read commit by commit \u2014 the single commit 7d127e9ce adds review_reference_findings, _declared_doc_type, _review_citation_texts, checkout_root_for and _committed_review_present to reckon/doccheck.py:1580-1720, threads a root argument through audit_file and run, adds the 8-case test file and the evidence fragment; no path outside the declaration.\nCALL_SITES: reckon/cli.py:audit_doc, reckon/mcp.py:_audit_document, reckon/compliance.py:audit_document\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/doccheck.py:1650 review_reference_findings resolves review:<project>/<id> against committed_review_root and its citation scopes (reckon/doccheck.py:1589) match the plan \u00a73 references clause naming a plan comment, a followup and an evidence record.\nSCORE evidence: 20\nJUSTIFICATION evidence: the gate the done-when names is recorded in the manifest with 104 passed EXIT=0 (gate.log) and the negative control 4 failed EXIT=1 (negative_control.log), and my re-run of tests/test_audit_doc_resolves_review_references.py at 7d127e9ce returned 8 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b51e8a8e..7d127e9ce lists exactly reckon/doccheck.py, tests/test_audit_doc_resolves_review_references.py and the fragment, every one inside the declared paths, with nothing added outside them.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control restores review_reference_findings returning [] and reddens tests/test_audit_doc_resolves_review_references.py:160,175,187,212, so the four guards fail if the check regresses; tests/test_audit_doc_resolves_review_references.py:214 comparing the two arms' non-reference findings is independent of the value under test.\nSCORE fit: 18\nJUSTIFICATION fit: the change keeps doccheck's idiom \u2014 module-private _REVIEW_* constants, the Finding severity/code/message shape, _prose_text and _read_plan_text \u2014 and introduces no plan or stage label, though reckon/doccheck.py:1589 re-spells three class names owned by _BODY_CLASSES at reckon/doccheck.py:73.\nSCORE reuse: 20\nJUSTIFICATION reuse: every added definition extends owners the repository already holds \u2014 committed_review_root (reckon/crew/review.py:1250), _prose_text (reckon/doccheck.py:298), _composed_record_text (reckon/doccheck.py:1355) and the Finding shape \u2014 with no second reference resolver.\nFINDING reckon/doccheck.py:1589 follow-on: _REVIEW_CITATION_CLASSES re-spells three class names already owned by _BODY_CLASSES at reckon/doccheck.py:73, so a renamed body class drifts between the citation scan and the body registry silently; deriving the citation scopes from the existing constant would remove the second spelling.",
+  "review_run_id": "r-20261006T144413981177-review-of-audit-doc-resolves-review-references",
+  "reviewed_base_sha": "b51e8a8e83560bcb40bc311834fc5e4a20a0b224",
+  "reviewed_head_sha": "7d127e9ce0d647cb85c529c5193f07781b68f34b",
+  "reviewed_run_id": "r-20261006T143249132698-audit-doc-resolves-review-references",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T14:51:04.331102+00:00",
+  "total": 117
+}

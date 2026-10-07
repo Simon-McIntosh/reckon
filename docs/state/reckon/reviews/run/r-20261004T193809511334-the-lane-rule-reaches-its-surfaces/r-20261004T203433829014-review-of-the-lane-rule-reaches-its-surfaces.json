@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "count and ids derived by annotate_review_of_run over the two logs the reviewed manifest names under baseline_suite and after_suite; both logs print full tests/<file>::<test> ids and the head failure set is a subset of the base, so 0 added and no ids.",
+  "backend": "local",
+  "base_log_revision": "701c50686e1ff0763c2a1681e0de53dfdca91809",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5639",
+    "reckon/cli.py:1831",
+    "reckon/mcp.py:5388"
+  ],
+  "completed_at": "2026-10-04T20:42:29.876Z",
+  "dispatched_at": "2026-10-04T20:34:51Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "1872",
+      "severity": "follow-on",
+      "text": "the run's declared fence named reckon/crew/cli.py, a path that does not exist, while the landed change writes the real reckon/cli.py; the intended surface is unambiguous but the declared scope and the landed path disagree, so the declaration should be corrected and the worker should have flagged the discrepancy rather than silently writing outside the declared fence."
+    },
+    {
+      "file": "tests/test_backend_environment.py",
+      "line": "13",
+      "severity": "follow-on",
+      "text": "the measured 291-file population under-covers the done-when's population: this file (and about 86 others, e.g. tests/test_a_release_removes_all_worker_scratch.py:15 and tests/test_crew_dispatch_guard.py:119) imports reckon.crew.dispatch at module scope via importlib, yet is absent from the target list both suite arms ran, so a regression in any excluded importer would not have been counted."
+    }
+  ],
+  "head_log_revision": "557ce8a5316912ec7abc5e53b8f0d5c5152d21d9",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read 557ce8a53 against base 701c50686 \u2014 seven files, 72 insertions and 6 deletions, all rule/reason text plus one guard test; no runtime logic changed.",
+    "done_when": "the done-when (the dispatch's evidence fence) names a new test reading every surface and failing on any surface carrying the rule without its reason, plus a population of importers adding no failure against base; tests/test_the_lane_rule_reaches_its_surfaces.py:33-47 asserts all four clauses on every surface and the two reference links, head-surface-check.log records 1 passed EXIT=0, and the two arm logs record 8\u21927 failures with 0 added ids.",
+    "goal": "read the node goal and the six surfaces the diff touches \u2014 reckon/cli.py:1872 (crew dispatch help), reckon/crew/dispatch.py:4458 (the orchestrator-lane stop detail), skills/reckon-build/SKILL.md:133, skills/reckon-build/references/lane-routing.md:7, skills/reckon-sprint/SKILL.md:32 and reckon/mcp.py:4201 (_crew tool description) \u2014 and each states the prohibition with its capacity reason in the same terms, so the goal is met.",
+    "manifest": "read; status complete; baseline_suite and after_suite are JSON blocks with completed:true, revisions 701c50686 and 557ce8a53, literal commands and named logs; negative_control_log is a bare path.",
+    "write_paths": "the run's fence declared reckon/crew/cli.py, a path that does not exist; the diff writes the real reckon/cli.py plus the other five declared paths, and the manifest's changed_paths lists exactly the seven diff files."
+  },
+  "justifications": {
+    "durability": "tests/test_the_lane_rule_reaches_its_surfaces.py:44 fails if any surface drops a clause, and the recorded negative control (negative-control.log) reddens it EXIT=1 while the unmutated head arm passes.",
+    "evidence": "the head check and both arm logs are recorded and the added-failure derivation reproduces as 0, but the measured 291-file population omits test files that import the named modules via importlib (tests/test_backend_environment.py:13, tests/test_a_release_removes_all_worker_scratch.py:15), so the done-when's population was not fully measured.",
+    "fit": "the change is text-only additions reusing one sentence across the surfaces plus one guard test, following the surrounding idiom and extending no capability the repository already owns.",
+    "goal_fidelity": "all six surfaces named by the goal carry the rule and its reason \u2014 reckon/cli.py:1872, reckon/crew/dispatch.py:4458, the two skills, lane-routing.md:7 and reckon/mcp.py:4201 \u2014 in identical terms, so the \u00a73 falsifier (rule without reason) does not fire on any.",
+    "scope_discipline": "the diff writes reckon/cli.py, outside the fence's declared reckon/crew/cli.py (which does not exist on disk), though the manifest's changed_paths honestly lists the seven diff files and matches git diff --name-only."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal and the six surfaces the diff touches \u2014 reckon/cli.py:1872 (crew dispatch help), reckon/crew/dispatch.py:4458 (the orchestrator-lane stop detail), skills/reckon-build/SKILL.md:133, skills/reckon-build/references/lane-routing.md:7, skills/reckon-sprint/SKILL.md:32 and reckon/mcp.py:4201 (_crew tool description) \u2014 and each states the prohibition with its capacity reason in the same terms, so the goal is met.\nVERDICT done_when: the done-when (the dispatch's evidence fence) names a new test reading every surface and failing on any surface carrying the rule without its reason, plus a population of importers adding no failure against base; tests/test_the_lane_rule_reaches_its_surfaces.py:33-47 asserts all four clauses on every surface and the two reference links, head-surface-check.log records 1 passed EXIT=0, and the two arm logs record 8\u21927 failures with 0 added ids.\nVERDICT write_paths: the run's fence declared reckon/crew/cli.py, a path that does not exist; the diff writes the real reckon/cli.py plus the other five declared paths, and the manifest's changed_paths lists exactly the seven diff files.\nVERDICT manifest: read; status complete; baseline_suite and after_suite are JSON blocks with completed:true, revisions 701c50686 and 557ce8a53, literal commands and named logs; negative_control_log is a bare path.\nVERDICT diff: read 557ce8a53 against base 701c50686 \u2014 seven files, 72 insertions and 6 deletions, all rule/reason text plus one guard test; no runtime logic changed.\nCALL_SITES: reckon/crew/dispatch.py:5639, reckon/cli.py:1831, reckon/mcp.py:5388\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all six surfaces named by the goal carry the rule and its reason \u2014 reckon/cli.py:1872, reckon/crew/dispatch.py:4458, the two skills, lane-routing.md:7 and reckon/mcp.py:4201 \u2014 in identical terms, so the \u00a73 falsifier (rule without reason) does not fire on any.\nSCORE evidence: 16\nJUSTIFICATION evidence: the head check and both arm logs are recorded and the added-failure derivation reproduces as 0, but the measured 291-file population omits test files that import the named modules via importlib (tests/test_backend_environment.py:13, tests/test_a_release_removes_all_worker_scratch.py:15), so the done-when's population was not fully measured.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: the diff writes reckon/cli.py, outside the fence's declared reckon/crew/cli.py (which does not exist on disk), though the manifest's changed_paths honestly lists the seven diff files and matches git diff --name-only.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_lane_rule_reaches_its_surfaces.py:44 fails if any surface drops a clause, and the recorded negative control (negative-control.log) reddens it EXIT=1 while the unmutated head arm passes.\nSCORE fit: 19\nJUSTIFICATION fit: the change is text-only additions reusing one sentence across the surfaces plus one guard test, following the surrounding idiom and extending no capability the repository already owns.\nFINDING reckon/cli.py:1872 follow-on: the run's declared fence named reckon/crew/cli.py, a path that does not exist, while the landed change writes the real reckon/cli.py; the intended surface is unambiguous but the declared scope and the landed path disagree, so the declaration should be corrected and the worker should have flagged the discrepancy rather than silently writing outside the declared fence.\nFINDING tests/test_backend_environment.py:13 follow-on: the measured 291-file population under-covers the done-when's population: this file (and about 86 others, e.g. tests/test_a_release_removes_all_worker_scratch.py:15 and tests/test_crew_dispatch_guard.py:119) imports reckon.crew.dispatch at module scope via importlib, yet is absent from the target list both suite arms ran, so a regression in any excluded importer would not have been counted.\nreviewed_base_sha: 701c50686e1ff0763c2a1681e0de53dfdca91809\nreviewed_head_sha: 557ce8a5316912ec7abc5e53b8f0d5c5152d21d9",
+  "review_run_id": "r-20261004T203433829014-review-of-the-lane-rule-reaches-its-surfaces",
+  "reviewed_base_sha": "701c50686e1ff0763c2a1681e0de53dfdca91809",
+  "reviewed_commits": [
+    "557ce8a5316912ec7abc5e53b8f0d5c5152d21d9"
+  ],
+  "reviewed_head_sha": "557ce8a5316912ec7abc5e53b8f0d5c5152d21d9",
+  "reviewed_run_id": "r-20261004T193809511334-the-lane-rule-reaches-its-surfaces",
+  "reviewer_run_id": "r-20261004T203433829014-review-of-the-lane-rule-reaches-its-surfaces",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T20:41:18.172269+00:00",
+  "total": 89
+}

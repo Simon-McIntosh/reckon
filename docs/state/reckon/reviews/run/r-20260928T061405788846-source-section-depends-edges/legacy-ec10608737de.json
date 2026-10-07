@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/roadmap.py:build_roadmap",
+    "reckon/mcp.py:_read_plan",
+    "reckon/mcp.py:_read_plan_view",
+    "reckon/mcp_views.py:ready_set_view",
+    "reckon/serve.py:1872"
+  ],
+  "completed_at": "2026-09-28T10:09:51.008Z",
+  "dispatched_at": "2026-09-28T06:14:19Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "951",
+      "text": "section rows appended to deps at reckon/mcp.py:942-952 are folded into the typed summary view's blocking list through reckon/mcp.py:1360 into mcp_views._blocking -> lifecycle.unresolved_dependencies (reckon/mcp_views.py:1916), which reads only found and status, so a plan whose sole wait is one section still reports an unresolved plan-level dependency on the MCP surface while the roadmap keeps it ready (probe at head: blocking [{\"ref\": \"plan-b#s3\", \"found\": true, \"status\": \"\"}]) \u2014 the plan-level veto this feature removes, reasserted on the read surface with no test covering it."
+    },
+    {
+      "file": "reckon/_schema.py",
+      "line": "389",
+      "text": "a whole-blob malformation of plan-section-depends-on (invalid JSON, or valid JSON that is not an object) returns None with no finding, silently erasing every declared wait, where the entry-level malformation beside it is refused by name in the same change and the neighbouring plan-section-declarations meta warns at reckon/_plan_html.py:451 \u2014 so a single typo at the blob level suspends section gating on the scheduling surface with no signal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit; 2f870c2b and 9bccbf58 carry the implementation, d9321a20 and a1627bca the evidence record, the cumulative documents gain 160 lines with zero deletions, and the thirteen code deletions replace the node's own superseded lines.",
+    "done_when": "read the done_when and the recorded gates; tests/test_roadmap.py::test_section_scoped_mapping_waits_without_hiding_its_siblings asserts the waiting section beside a ready sibling, the base-arm logs redden the four added tests, and the head gate records the same three pre-existing failure ids as the base gate.",
+    "goal": "read the goal and the landed change; build_roadmap resolves a section-scoped ref from the waiting section to the target's stage and keeps the containing plan dispatchable (reckon/roadmap.py:2120-2136).",
+    "manifest": "read; its baseline_suite and after_suite fields carry JSON with log_path, revision and failure_ids, and its status is complete.",
+    "write_paths": "read the reviewed prompt and the run's resume-1-advice.txt; the eight paths in base..HEAD are the seven declared paths plus reckon/mcp.py, which the advice explicitly grants."
+  },
+  "justifications": {
+    "durability": "the negative control at logs/negative-control-red.txt reddens the ready-set assertion under a reinstated mutation and tests/test_roadmap.py::test_one_unreadable_section_entry_keeps_the_valid_edge guards the entry-level refusal, but neither finding below has a test that fails if it regresses.",
+    "evidence": "the manifest's baseline_suite and after_suite log_paths resolve through reckon/crew/review.py:612 to logs/gate-base-revision.txt and logs/repair-gate-head.txt, and the node-id difference is a measured 0 against base and head sets that parse 4 and 3 ids.",
+    "fit": "the introduced names and the reused missing-dependency-section code follow reckon/roadmap.py:1770 (the whole-plan external-ref convention) and reckon/_plan_html.py:451 (the sibling meta's warning), but the silent None at reckon/_schema.py:389 departs from that warning idiom.",
+    "goal_fidelity": "the roadmap partitions section-scoped rows out of the plan-level blockers at reckon/roadmap.py:2120-2136 and reports ready and blocked sections beside each other, but the same rows reassert plan-level blocking on the MCP summary surface (FINDING below).",
+    "scope_discipline": "every path in base..HEAD is one of the eight the reviewed prompt and the run's resume-1-advice.txt declare, docs/evidence/archive/dependency-edge-semantics-landed.html gains 83 lines with 0 deletions, and no plan-version or plan-modified meta is written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal and the landed change; build_roadmap resolves a section-scoped ref from the waiting section to the target's stage and keeps the containing plan dispatchable (reckon/roadmap.py:2120-2136).\nVERDICT done_when: read the done_when and the recorded gates; tests/test_roadmap.py::test_section_scoped_mapping_waits_without_hiding_its_siblings asserts the waiting section beside a ready sibling, the base-arm logs redden the four added tests, and the head gate records the same three pre-existing failure ids as the base gate.\nVERDICT write_paths: read the reviewed prompt and the run's resume-1-advice.txt; the eight paths in base..HEAD are the seven declared paths plus reckon/mcp.py, which the advice explicitly grants.\nVERDICT manifest: read; its baseline_suite and after_suite fields carry JSON with log_path, revision and failure_ids, and its status is complete.\nVERDICT diff: read commit by commit; 2f870c2b and 9bccbf58 carry the implementation, d9321a20 and a1627bca the evidence record, the cumulative documents gain 160 lines with zero deletions, and the thirteen code deletions replace the node's own superseded lines.\nCALL_SITES: reckon/roadmap.py:build_roadmap, reckon/mcp.py:_read_plan, reckon/mcp.py:_read_plan_view, reckon/mcp_views.py:ready_set_view, reckon/serve.py:1872\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the roadmap partitions section-scoped rows out of the plan-level blockers at reckon/roadmap.py:2120-2136 and reports ready and blocked sections beside each other, but the same rows reassert plan-level blocking on the MCP summary surface (FINDING below).\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite log_paths resolve through reckon/crew/review.py:612 to logs/gate-base-revision.txt and logs/repair-gate-head.txt, and the node-id difference is a measured 0 against base and head sets that parse 4 and 3 ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in base..HEAD is one of the eight the reviewed prompt and the run's resume-1-advice.txt declare, docs/evidence/archive/dependency-edge-semantics-landed.html gains 83 lines with 0 deletions, and no plan-version or plan-modified meta is written.\nSCORE durability: 15\nJUSTIFICATION durability: the negative control at logs/negative-control-red.txt reddens the ready-set assertion under a reinstated mutation and tests/test_roadmap.py::test_one_unreadable_section_entry_keeps_the_valid_edge guards the entry-level refusal, but neither finding below has a test that fails if it regresses.\nSCORE fit: 16\nJUSTIFICATION fit: the introduced names and the reused missing-dependency-section code follow reckon/roadmap.py:1770 (the whole-plan external-ref convention) and reckon/_plan_html.py:451 (the sibling meta's warning), but the silent None at reckon/_schema.py:389 departs from that warning idiom.\nFINDING reckon/mcp.py:951 section rows appended to deps at reckon/mcp.py:942-952 are folded into the typed summary view's blocking list through reckon/mcp.py:1360 into mcp_views._blocking -> lifecycle.unresolved_dependencies (reckon/mcp_views.py:1916), which reads only found and status, so a plan whose sole wait is one section still reports an unresolved plan-level dependency on the MCP surface while the roadmap keeps it ready (probe at head: blocking [{\"ref\": \"plan-b#s3\", \"found\": true, \"status\": \"\"}]) \u2014 the plan-level veto this feature removes, reasserted on the read surface with no test covering it.\nFINDING reckon/_schema.py:389 a whole-blob malformation of plan-section-depends-on (invalid JSON, or valid JSON that is not an object) returns None with no finding, silently erasing every declared wait, where the entry-level malformation beside it is refused by name in the same change and the neighbouring plan-section-declarations meta warns at reckon/_plan_html.py:451 \u2014 so a single typo at the blob level suspends section gating on the scheduling surface with no signal.\n",
+  "review_run_id": "legacy-ec10608737de",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "056012ae8b3341174b73e71d9bcd2beace37f002",
+  "reviewed_head_sha": "a1627bca0aeed83cdc1483ab0db88911c519da8f",
+  "reviewed_run_id": "r-20260928T061405788846-source-section-depends-edges",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T09:59:13.848617+00:00",
+  "total": 86
+}

@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:1219",
+    "reckon/crew/recovery.py:5558",
+    "reckon/cli.py:1945"
+  ],
+  "completed_at": "2026-09-26T07:46:39.005Z",
+  "dispatched_at": "2026-09-26T06:11:35Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T203344236280-a-discard-never-reads-promoted/logs/head-gate.log",
+      "line": "3",
+      "text": "the gate log's command header leaves the placeholder unsubstituted, so the log does not name the command that produced its 4 passed and a later reader holding only the log cannot reproduce it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit at 132a7d4b..cbd3f702 \u2014 ddf4509f carries the departure rule, the snapshot's project field and the new test, and 5c6c7c83 and cbd3f702 are docs-only refinements of the plan landing record.",
+    "done_when": "read tests/test_a_discard_never_reads_promoted.py:75-131 \u2014 the four named cases (discard, recorded promotion, vanished pointer, unresolvable record) each assert the departure word, and the manifest records the gate with the declared negative control red at logs/negative-control.log.",
+    "goal": "read the goal against reckon/crew/recovery.py:5117-5167 \u2014 a departure now reads promoted only for a run id the resolved ledger records, and the discarded-pointer case lands withdrawn, which is the goal's operative clause; the distinct `discarded` word is deferred to a documented follow-on outside the fence.",
+    "manifest": "read \u2014 its gate, delta and follow-on claims match the logs, except that the gate log's own command header leaves an unsubstituted placeholder where the command belongs.",
+    "write_paths": "read the fence (reckon/crew/recovery.py, tests/test_a_discard_never_reads_promoted.py, docs/evidence/archive/a-crew-process-ends-with-its-owner-landed.html, docs/figures/a-crew-process-ends-with-its-owner, docs/plans/a-crew-process-ends-with-its-owner.html); every path in 132a7d4b..cbd3f702 is inside it and both docs edits are pure insertions."
+  },
+  "justifications": {
+    "durability": "restoring the base rule reddens the discard case at logs/negative-control.log:29, and removing the snapshot's project field at reckon/crew/recovery.py:4915 reddens the recorded-promotion case in the same test file.",
+    "evidence": "tests/test_a_discard_never_reads_promoted.py re-run at the reviewed head reports 4 passed, but logs/head-gate.log:3 records its command as an unsubstituted placeholder, so the log itself does not name the command its result belongs to.",
+    "fit": "the helper `_departure_recorded_run_ids` at reckon/crew/recovery.py:5086 follows the module's private-helper idiom and carries no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/recovery.py:5167 reads promoted only for a run id the resolved ledger records, and the reader-less fold at reckon/crew/runs.py:1219 is the call shape the reported ticker row came through.",
+    "scope_discipline": "all five files in the diff sit inside the declared write paths, and the plan and evidence pages are edited by insertion only, leaving the cumulative records intact."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal against reckon/crew/recovery.py:5117-5167 \u2014 a departure now reads promoted only for a run id the resolved ledger records, and the discarded-pointer case lands withdrawn, which is the goal's operative clause; the distinct `discarded` word is deferred to a documented follow-on outside the fence.\nVERDICT done_when: read tests/test_a_discard_never_reads_promoted.py:75-131 \u2014 the four named cases (discard, recorded promotion, vanished pointer, unresolvable record) each assert the departure word, and the manifest records the gate with the declared negative control red at logs/negative-control.log.\nVERDICT write_paths: read the fence (reckon/crew/recovery.py, tests/test_a_discard_never_reads_promoted.py, docs/evidence/archive/a-crew-process-ends-with-its-owner-landed.html, docs/figures/a-crew-process-ends-with-its-owner, docs/plans/a-crew-process-ends-with-its-owner.html); every path in 132a7d4b..cbd3f702 is inside it and both docs edits are pure insertions.\nVERDICT manifest: read \u2014 its gate, delta and follow-on claims match the logs, except that the gate log's own command header leaves an unsubstituted placeholder where the command belongs.\nVERDICT diff: read commit by commit at 132a7d4b..cbd3f702 \u2014 ddf4509f carries the departure rule, the snapshot's project field and the new test, and 5c6c7c83 and cbd3f702 are docs-only refinements of the plan landing record.\nCALL_SITES: reckon/crew/runs.py:1219, reckon/crew/recovery.py:5558, reckon/cli.py:1945\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:5167 reads promoted only for a run id the resolved ledger records, and the reader-less fold at reckon/crew/runs.py:1219 is the call shape the reported ticker row came through.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_discard_never_reads_promoted.py re-run at the reviewed head reports 4 passed, but logs/head-gate.log:3 records its command as an unsubstituted placeholder, so the log itself does not name the command its result belongs to.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five files in the diff sit inside the declared write paths, and the plan and evidence pages are edited by insertion only, leaving the cumulative records intact.\nSCORE durability: 19\nJUSTIFICATION durability: restoring the base rule reddens the discard case at logs/negative-control.log:29, and removing the snapshot's project field at reckon/crew/recovery.py:4915 reddens the recorded-promotion case in the same test file.\nSCORE fit: 19\nJUSTIFICATION fit: the helper `_departure_recorded_run_ids` at reckon/crew/recovery.py:5086 follows the module's private-helper idiom and carries no plan or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T203344236280-a-discard-never-reads-promoted/logs/head-gate.log:3 the gate log's command header leaves the placeholder unsubstituted, so the log does not name the command that produced its 4 passed and a later reader holding only the log cannot reproduce it.\n",
+  "review_run_id": "r-20260926T061120309605-review-of-a-discard-never-reads-promoted",
+  "reviewed_base_sha": "132a7d4b40f0ff2ff65d86ee7edba2dcafc9e265",
+  "reviewed_head_sha": "cbd3f70207d8fff76340690e24cfbb05569be3ec",
+  "reviewed_run_id": "r-20260925T203344236280-a-discard-never-reads-promoted",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T07:34:05.949446+00:00",
+  "total": 94
+}

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:crew_follow",
+    "reckon/cli.py:_follow_watch_lines"
+  ],
+  "completed_at": "2026-10-04T13:27:36.055Z",
+  "dispatched_at": "2026-10-04T13:12:30Z",
+  "findings": [
+    {
+      "file": "tests/test_producer_says_why_it_stops.py",
+      "line": "169",
+      "severity": "follow-on",
+      "text": "follow-on: the three added cases assert event[pane_line] is True or False, an intermediate mark, not the pane line the rule is about; the pane is drawn by the consumer branch at reckon/cli.py:4818-4822, so a regression that dropped the elif-pane_line guard would leave every added case green while the silent-fleet line printed again."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 314650e0; three files, all inside the declared scope, and the behaviour change is confined to the two pane lines plus the consumer branch that strips the pane_line mark before the JSON emit.",
+    "done_when": "the done_when names tests/test_producer_says_why_it_stops.py with a zero-pointer quiet case, a live-pointer print case, and a reload-failed case on the same predicate; the manifest records 9 passed EXIT=0 at head against 6 passed EXIT=0 at base, and head-gate.log on disk reads 9 passed EXIT=0.",
+    "goal": "the goal is to report a producer stop to the pane only when the follower's own population still holds a pointer that has not ended; reckon/cli.py:3937 computes _population_has_live_work and marks both events with it, so the rule lives at the emission site.",
+    "manifest": "read; it states the gate result, names baseline-gate.log, head-gate.log and negative-control.log, and its baseline_suite and after_suite records reconcile with the two logs on disk.",
+    "write_paths": "read the manifest's declared paths; the diff touches exactly reckon/cli.py, tests/test_producer_says_why_it_stops.py and the evidence fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "the negative control shows the zero-pointer case reddens at reckon/cli.py:3937 when the predicate is dropped, but no test exercises the consumer guard at reckon/cli.py:4822, so removing it would go unnoticed.",
+    "evidence": "tests/test_producer_says_why_it_stops.py:167-198 assert the pane_line flag rather than the pane output, so the gate measures the marker and not the no-pane-line the done_when names.",
+    "fit": "_population_has_live_work at reckon/cli.py:3124 follows the module's surrounding idiom and imports, and no name or comment here carries a plan or ticket label.",
+    "goal_fidelity": "reckon/cli.py:3936-3956 gates both pane lines on _population_has_live_work while the event is still yielded, matching the rule the plan section states.",
+    "scope_discipline": "the diff 314650e0..b6d72e7a touches only reckon/cli.py, tests/test_producer_says_why_it_stops.py and the declared fragment, 149 insertions against 7 deletions."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 314650e09e31959f0ad02d437c2638068e3b3c74\nreviewed_head_sha: b6d72e7a661c0643e7df520738e062d352cd7bb0\nVERDICT goal: the goal is to report a producer stop to the pane only when the follower's own population still holds a pointer that has not ended; reckon/cli.py:3937 computes _population_has_live_work and marks both events with it, so the rule lives at the emission site.\nVERDICT done_when: the done_when names tests/test_producer_says_why_it_stops.py with a zero-pointer quiet case, a live-pointer print case, and a reload-failed case on the same predicate; the manifest records 9 passed EXIT=0 at head against 6 passed EXIT=0 at base, and head-gate.log on disk reads 9 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared paths; the diff touches exactly reckon/cli.py, tests/test_producer_says_why_it_stops.py and the evidence fragment, all inside them.\nVERDICT manifest: read; it states the gate result, names baseline-gate.log, head-gate.log and negative-control.log, and its baseline_suite and after_suite records reconcile with the two logs on disk.\nVERDICT diff: read commit by commit against 314650e0; three files, all inside the declared scope, and the behaviour change is confined to the two pane lines plus the consumer branch that strips the pane_line mark before the JSON emit.\nCALL_SITES: reckon/cli.py:crew_follow, reckon/cli.py:_follow_watch_lines\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/cli.py:3936-3956 gates both pane lines on _population_has_live_work while the event is still yielded, matching the rule the plan section states.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_producer_says_why_it_stops.py:167-198 assert the pane_line flag rather than the pane output, so the gate measures the marker and not the no-pane-line the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 314650e0..b6d72e7a touches only reckon/cli.py, tests/test_producer_says_why_it_stops.py and the declared fragment, 149 insertions against 7 deletions.\nSCORE durability: 16\nJUSTIFICATION durability: the negative control shows the zero-pointer case reddens at reckon/cli.py:3937 when the predicate is dropped, but no test exercises the consumer guard at reckon/cli.py:4822, so removing it would go unnoticed.\nSCORE fit: 18\nJUSTIFICATION fit: _population_has_live_work at reckon/cli.py:3124 follows the module's surrounding idiom and imports, and no name or comment here carries a plan or ticket label.\nFINDING tests/test_producer_says_why_it_stops.py:169 follow-on: the three added cases assert event[pane_line] is True or False, an intermediate mark, not the pane line the rule is about; the pane is drawn by the consumer branch at reckon/cli.py:4818-4822, so a regression that dropped the elif-pane_line guard would leave every added case green while the silent-fleet line printed again.",
+  "review_run_id": "r-20261004T131206569579-review-of-producer-stop-reported-only-when-work-is-unwatched",
+  "reviewed_base_sha": "314650e09e31959f0ad02d437c2638068e3b3c74",
+  "reviewed_head_sha": "b6d72e7a661c0643e7df520738e062d352cd7bb0",
+  "reviewed_run_id": "r-20261004T124026698163-producer-stop-reported-only-when-work-is-unwatched",
+  "reviewer": {
+    "backend": "local",
+    "effort": "default",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T131206569579-review-of-producer-stop-reported-only-when-work-is-unwatched",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T13:25:31.654556+00:00",
+  "total": 88
+}

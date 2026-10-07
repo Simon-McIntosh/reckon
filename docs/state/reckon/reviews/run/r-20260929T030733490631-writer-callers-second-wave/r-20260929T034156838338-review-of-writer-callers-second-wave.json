@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 14,
+  "call_sites": [
+    "reckon/cli.py:2575",
+    "reckon/cli.py:5442",
+    "reckon/cli.py:5718",
+    "reckon/project_state.py:1784",
+    "reckon/project_state.py:2014",
+    "reckon/project_state.py:2093",
+    "reckon/project_state.py:2224",
+    "reckon/crew/review.py:1039",
+    "reckon/crew/review.py:1397",
+    "reckon/crew/paid_lanes.py:901",
+    "reckon/crew/hold.py:119",
+    "reckon/budget.py:1749",
+    "reckon/budget.py:2904",
+    "reckon/crew/budget_group.py:328"
+  ],
+  "completed_at": "2026-09-29T04:00:49.910Z",
+  "dispatched_at": "2026-09-29T03:42:26Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-worker-reuses-before-it-writes/writer-callers-second-wave.html",
+      "line": "3",
+      "text": "the sentence counts \"Nine hand-rolled write paths\" and then names ten callables (and the figure at :6 says \"Nine callers\" while the figure itself draws ten caller boxes), as the census has eleven call sites, so a reader checking the count against the list it introduces gets three different numbers and cannot tell which one the migration is claiming."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T030733490631-writer-callers-second-wave/logs/after-suite.log",
+      "line": "1",
+      "text": "the log opens with the pytest progress line rather than the one line naming its revision, tree and command that the node's own evidence fence requires, so the log cannot be resolved to a revision without the manifest beside it and a reader comparing the two arms must trust the manifest's summary of a measurement the log does not identify."
+    },
+    {
+      "file": "reckon/hooks/install.py",
+      "line": "382",
+      "text": "the settings writer now serialises through the shared writer's default ensure_ascii, so a non-ASCII hook-script path is written as escapes where the pre-migration _render wrote it literally; the recorded ASCII payload is byte-identical and the node records this as a follow-on, but the harness settings file is the one caller whose bytes change with its input rather than with the writer's termination rule."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 14 production call site(s)",
+    "diff": "read both commits against cea6da07; 672c70c4 is the migration across six writer modules and two decoder modules, 05eabaee is the fragment and its figure, every hunk falls inside the declared scope, no hunk touches a locking, retry or concurrency line, and the imports removed in each module track the private writers removed with them (contextlib and tempfile in reckon/crew/paid_lanes.py, os and time in reckon/hooks/install.py).",
+    "done_when": "read the evidence fence's bulleted list against the landed tree; every named call site is routed with per-caller parameters (the eight delegation and output tests assert indent, sort_keys, mode, fsync and create_parents), the directory-fsync callers keep fsync_directory=True (reckon/crew/follow_checkpoint.py:236, reckon/project_state.py:274), the two retained exceptions carry their reasons in the module docstring and the fragment, and the recorded base expectations are committed as 46 cases that pass at the head; the one clause the fence states that the run does not meet is its own gate-log rule, since both logs open with pytest progress rather than a header naming revision, tree and command.",
+    "goal": "the goal asks that the second wave of atomic JSON writers, including the two that fsync their directory, and the two remaining numeric decoders move onto the shared helpers with every caller's bytes, mode and durability kept; at this head the six writer modules carry eleven write_json_atomically call sites (reckon/crew/follow_checkpoint.py:230, reckon/hooks/install.py:382, reckon/project_state.py:268/1078/1737/1772/1856/1871, reckon/crew/paid_lanes.py:498, reckon/crew/resumption.py:177, reckon/crew/review.py:1409), hold._as_number and window_reading._numeric are deleted with both modules importing reckon/_observations.py:optional_number, and the two byte deltas the goal's \"every caller's bytes\" cannot hold are both forced by a shared writer outside this node's fence rather than chosen.",
+    "manifest": "read as it stands; it carries the two commits, the eleven changed paths, both arms as armed JSON with revision, command, exit_status, failure_count, failure_ids and log_path, a failure_attribution naming a mechanism for each of the fourteen base-arm failures, the negative-control path with its note, evidence_inputs and three artifacts; both suite entries are complete and their id sets match the logs, but nothing in the record states that the logs name their own revision, and they do not.",
+    "write_paths": "the declared fence is eleven paths; git diff --stat cea6da07..05eabaee returns exactly those eleven and nothing else, and the reviewed worktree at 05eabaee reads clean with no untracked file."
+  },
+  "justifications": {
+    "durability": "the delegation tests are guards rather than restatements -- they patch the shared writer on the caller's own module, so a caller that regained its own temporary-and-rename would redden them with an AttributeError, which is exactly how they fail at the base arm (logs/baseline-suite.log records test_checkpoint_write_delegates and six siblings red).",
+    "evidence": "the recorded base expectations are committed as tests that pass at the head and the negative control fired (logs/negative-control.log records the declared mutation and a FAILED directory-fsync id), but both gate logs named by the manifest's baseline_suite and after_suite open with pytest progress lines rather than the revision, tree and command header the same fence requires.",
+    "fit": "the migrated callers read as their neighbours do and the deleted private helpers leave no dead code behind (reckon/crew/hold.py:38 and reckon/crew/window_reading.py:42 import the shared decoder), and both retained exceptions state their reason at the call site rather than in a changelog comment.",
+    "goal_fidelity": "every named writer and both decoders are on the shared helpers at the head, but the goal's \"keeping every caller's bytes\" holds only for ASCII payloads at reckon/hooks/install.py:382, where the shared writer's default ensure_ascii escapes what _render's ensure_ascii=False wrote literally.",
+    "scope_discipline": "git diff --stat cea6da07..05eabaee lists the eleven declared paths and nothing else, and the reviewed worktree at that revision reads clean with no untracked file."
+  },
+  "node": "review-of-writer-callers-second-wave",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T030733490631-writer-callers-second-wave\n(plan a-worker-reuses-before-it-writes, section 3; node writer-callers-second-wave; role review; spec guided)\nreviewed_base_sha: cea6da07b60e6bf92e7476e52b4c52d8e114ebb0\nreviewed_head_sha: 05eabaeea7bc411adc0c679e65564128b52c08c8\nRead at the head: the run's prompt.txt (goal, evidence fence, declared scope), its manifest.md, both commits against the base, all eight touched reckon modules, the new test file, both gate logs, the negative-control log, the evidence fragment and the figure, the reviewed worktree's status, and the declared base-arm scratch tree.\nRe-derived in this node's own turn: the added-failure set difference over the two gate logs the manifest names (14 base ids, 0 head ids, 0 added, derived via reckon.crew.review.annotate_review_of_run); the call-site census in the touched modules by grep rather than by the fragment's count; the base tree at /tmp/reckon-base-arm (hold._as_number present, no write_json_atomically in follow_checkpoint.py, consistent with the pre-migration revision the manifest declares); and a single-file re-run of the named gate file at the head, 46 passed.\nVERDICT goal: the goal asks that the second wave of atomic JSON writers, including the two that fsync their directory, and the two remaining numeric decoders move onto the shared helpers with every caller's bytes, mode and durability kept; at this head the six writer modules carry eleven write_json_atomically call sites (reckon/crew/follow_checkpoint.py:230, reckon/hooks/install.py:382, reckon/project_state.py:268/1078/1737/1772/1856/1871, reckon/crew/paid_lanes.py:498, reckon/crew/resumption.py:177, reckon/crew/review.py:1409), hold._as_number and window_reading._numeric are deleted with both modules importing reckon/_observations.py:optional_number, and the two byte deltas the goal's \"every caller's bytes\" cannot hold are both forced by a shared writer outside this node's fence rather than chosen.\nVERDICT done_when: read the evidence fence's bulleted list against the landed tree; every named call site is routed with per-caller parameters (the eight delegation and output tests assert indent, sort_keys, mode, fsync and create_parents), the directory-fsync callers keep fsync_directory=True (reckon/crew/follow_checkpoint.py:236, reckon/project_state.py:274), the two retained exceptions carry their reasons in the module docstring and the fragment, and the recorded base expectations are committed as 46 cases that pass at the head; the one clause the fence states that the run does not meet is its own gate-log rule, since both logs open with pytest progress rather than a header naming revision, tree and command.\nVERDICT write_paths: the declared fence is eleven paths; git diff --stat cea6da07..05eabaee returns exactly those eleven and nothing else, and the reviewed worktree at 05eabaee reads clean with no untracked file.\nVERDICT manifest: read as it stands; it carries the two commits, the eleven changed paths, both arms as armed JSON with revision, command, exit_status, failure_count, failure_ids and log_path, a failure_attribution naming a mechanism for each of the fourteen base-arm failures, the negative-control path with its note, evidence_inputs and three artifacts; both suite entries are complete and their id sets match the logs, but nothing in the record states that the logs name their own revision, and they do not.\nVERDICT diff: read both commits against cea6da07; 672c70c4 is the migration across six writer modules and two decoder modules, 05eabaee is the fragment and its figure, every hunk falls inside the declared scope, no hunk touches a locking, retry or concurrency line, and the imports removed in each module track the private writers removed with them (contextlib and tempfile in reckon/crew/paid_lanes.py, os and time in reckon/hooks/install.py).\nCALL_SITES: reckon/cli.py:2575, reckon/cli.py:5442, reckon/cli.py:5718, reckon/project_state.py:1784, reckon/project_state.py:2014, reckon/project_state.py:2093, reckon/project_state.py:2224, reckon/crew/review.py:1039, reckon/crew/review.py:1397, reckon/crew/paid_lanes.py:901, reckon/crew/hold.py:119, reckon/budget.py:1749, reckon/budget.py:2904, reckon/crew/budget_group.py:328\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: every named writer and both decoders are on the shared helpers at the head, but the goal's \"keeping every caller's bytes\" holds only for ASCII payloads at reckon/hooks/install.py:382, where the shared writer's default ensure_ascii escapes what _render's ensure_ascii=False wrote literally.\nSCORE evidence: 16\nJUSTIFICATION evidence: the recorded base expectations are committed as tests that pass at the head and the negative control fired (logs/negative-control.log records the declared mutation and a FAILED directory-fsync id), but both gate logs named by the manifest's baseline_suite and after_suite open with pytest progress lines rather than the revision, tree and command header the same fence requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat cea6da07..05eabaee lists the eleven declared paths and nothing else, and the reviewed worktree at that revision reads clean with no untracked file.\nSCORE durability: 18\nJUSTIFICATION durability: the delegation tests are guards rather than restatements -- they patch the shared writer on the caller's own module, so a caller that regained its own temporary-and-rename would redden them with an AttributeError, which is exactly how they fail at the base arm (logs/baseline-suite.log records test_checkpoint_write_delegates and six siblings red).\nSCORE fit: 19\nJUSTIFICATION fit: the migrated callers read as their neighbours do and the deleted private helpers leave no dead code behind (reckon/crew/hold.py:38 and reckon/crew/window_reading.py:42 import the shared decoder), and both retained exceptions state their reason at the call site rather than in a changelog comment.\nFINDING docs/evidence/fragments/a-worker-reuses-before-it-writes/writer-callers-second-wave.html:3 the sentence counts \"Nine hand-rolled write paths\" and then names ten callables (and the figure at :6 says \"Nine callers\" while the figure itself draws ten caller boxes), as the census has eleven call sites, so a reader checking the count against the list it introduces gets three different numbers and cannot tell which one the migration is claiming.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T030733490631-writer-callers-second-wave/logs/after-suite.log:1 the log opens with the pytest progress line rather than the one line naming its revision, tree and command that the node's own evidence fence requires, so the log cannot be resolved to a revision without the manifest beside it and a reader comparing the two arms must trust the manifest's summary of a measurement the log does not identify.\nFINDING reckon/hooks/install.py:382 the settings writer now serialises through the shared writer's default ensure_ascii, so a non-ASCII hook-script path is written as escapes where the pre-migration _render wrote it literally; the recorded ASCII payload is byte-identical and the node records this as a follow-on, but the harness settings file is the one caller whose bytes change with its input rather than with the writer's termination rule.\n",
+  "review_run_id": "r-20260929T034156838338-review-of-writer-callers-second-wave",
+  "reviewed_base_sha": "cea6da07b60e6bf92e7476e52b4c52d8e114ebb0",
+  "reviewed_head_sha": "05eabaeea7bc411adc0c679e65564128b52c08c8",
+  "reviewed_run_id": "r-20260929T030733490631-writer-callers-second-wave",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T034156838338-review-of-writer-callers-second-wave",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T03:52:30.690568+00:00",
+  "total": 91
+}

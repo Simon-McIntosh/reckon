@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "977dd7f723bc8aadb227f23408bcd6a0b28d7060",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:_review_dispatch_fields"
+  ],
+  "completed_at": "2026-10-05T01:09:36.073Z",
+  "dispatched_at": "2026-10-05T01:02:49Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T004421640839-design-review-reads-the-interface-budget/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite gate ran in the worktree before the deliverable was committed, so its header names the base revision 977dd7f7 rather than the implementation commit a3a65f21; a reader comparing the stored head_log_revision against the promoted head meets a mismatch, though the tested bytes are proven equal to the head by the seven tested-files.json digests."
+    }
+  ],
+  "head_log_revision": "977dd7f723bc8aadb227f23408bcd6a0b28d7060",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 977dd7f7 -- a3a65f21 (implementation and tests, 7 files) then d5fddfa9 (the evidence fragment, 1 file); every production hunk falls inside reckon/velocity.py, reckon/crew/recovery.py, reckon/crew/review.py and reckon/crew/prompts/plan_design_review.md.",
+    "done_when": "each of the done_when's four parts holds at head; I re-ran the load-bearing tests from the reviewed worktree (tests/test_review_plan_command.py::test_composed_brief_carries_the_weekly_interface_counts, tests/test_velocity_interface_counts.py::test_current_week_counts_equal_the_views_own_figures, tests/test_plan_review_dispatch.py::test_interface_budget_finding_parses_as_a_design_item) -- 5 passed, EXIT=0 -- and tests/test_plan_review_prompt.py is unchanged from base.",
+    "goal": "the node goal is to add the fifth design item interface_budget to the item set and prompt and to supply this week's four interface counts to the composed plan-design-review brief; at head d5fddfa9 reckon/crew/review.py:162 carries the item and reckon/crew/recovery.py:573-580 appends the four measured counts to the brief.",
+    "manifest": "read at the run directory; status complete at head d5fddfa9 with base 977dd7f7, naming base/after/negative-control/restored logs; its base-5-failed / head-0-added claim reproduces in the logs, and all seven tested-file digests in tested-files.json match the head blobs' SHA-256.",
+    "write_paths": "the manifest declares eight changed files; git diff --name-only 977dd7f7..d5fddfa9 lists exactly those eight, set-equal in both directions, and no plan-meta element is touched by the diff."
+  },
+  "justifications": {
+    "durability": "the negative control deletes the count-injection block at reckon/crew/recovery.py:573-580 and both composed-brief cases redden on the measured-count assertion (negative-control.log, 2 failed EXIT=1), and the parity test compares against an independent source rather than the value it passed in.",
+    "evidence": "the composed-brief test asserts the literal counts 2/1/2/1 and the read stamp, and the parity test at reckon/velocity.py:2505 compares against velocity.report's own week row, but both suite logs' headers name base 977dd7f7 rather than head a3a65f21 so the measured object is identified by digest rather than by the recorded revision (see the finding).",
+    "fit": "reckon/velocity.py:2505 reuses the existing _interface_week_rows reader and interface_counts rather than forking a count path, the added names are mechanism vocabulary, and the prompt's RUBRIC_ITEMS line mirrors the item tuple.",
+    "goal_fidelity": "reckon/crew/review.py:162 adds interface_budget to PLAN_DESIGN_REVIEW_ITEMS and reckon/crew/recovery.py:573-580 appends the four counted figures to brief_text, exactly as the section's deliverable states.",
+    "scope_discipline": "git diff --name-only 977dd7f7..d5fddfa9 equals the manifest's eight declared paths in both directions, no plan-meta line is written, and the reviewed worktree is clean at head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to add the fifth design item interface_budget to the item set and prompt and to supply this week's four interface counts to the composed plan-design-review brief; at head d5fddfa9 reckon/crew/review.py:162 carries the item and reckon/crew/recovery.py:573-580 appends the four measured counts to the brief.\nVERDICT done_when: each of the done_when's four parts holds at head; I re-ran the load-bearing tests from the reviewed worktree (tests/test_review_plan_command.py::test_composed_brief_carries_the_weekly_interface_counts, tests/test_velocity_interface_counts.py::test_current_week_counts_equal_the_views_own_figures, tests/test_plan_review_dispatch.py::test_interface_budget_finding_parses_as_a_design_item) -- 5 passed, EXIT=0 -- and tests/test_plan_review_prompt.py is unchanged from base.\nVERDICT write_paths: the manifest declares eight changed files; git diff --name-only 977dd7f7..d5fddfa9 lists exactly those eight, set-equal in both directions, and no plan-meta element is touched by the diff.\nVERDICT manifest: read at the run directory; status complete at head d5fddfa9 with base 977dd7f7, naming base/after/negative-control/restored logs; its base-5-failed / head-0-added claim reproduces in the logs, and all seven tested-file digests in tested-files.json match the head blobs' SHA-256.\nVERDICT diff: read commit by commit against base 977dd7f7 -- a3a65f21 (implementation and tests, 7 files) then d5fddfa9 (the evidence fragment, 1 file); every production hunk falls inside reckon/velocity.py, reckon/crew/recovery.py, reckon/crew/review.py and reckon/crew/prompts/plan_design_review.md.\nCALL_SITES: reckon/crew/recovery.py:_review_dispatch_fields\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:162 adds interface_budget to PLAN_DESIGN_REVIEW_ITEMS and reckon/crew/recovery.py:573-580 appends the four counted figures to brief_text, exactly as the section's deliverable states.\nSCORE evidence: 18\nJUSTIFICATION evidence: the composed-brief test asserts the literal counts 2/1/2/1 and the read stamp, and the parity test at reckon/velocity.py:2505 compares against velocity.report's own week row, but both suite logs' headers name base 977dd7f7 rather than head a3a65f21 so the measured object is identified by digest rather than by the recorded revision (see the finding).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 977dd7f7..d5fddfa9 equals the manifest's eight declared paths in both directions, no plan-meta line is written, and the reviewed worktree is clean at head.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control deletes the count-injection block at reckon/crew/recovery.py:573-580 and both composed-brief cases redden on the measured-count assertion (negative-control.log, 2 failed EXIT=1), and the parity test compares against an independent source rather than the value it passed in.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/velocity.py:2505 reuses the existing _interface_week_rows reader and interface_counts rather than forking a count path, the added names are mechanism vocabulary, and the prompt's RUBRIC_ITEMS line mirrors the item tuple.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261005T004421640839-design-review-reads-the-interface-budget/manifest.md:22 follow-on: the after_suite gate ran in the worktree before the deliverable was committed, so its header names the base revision 977dd7f7 rather than the implementation commit a3a65f21; a reader comparing the stored head_log_revision against the promoted head meets a mismatch, though the tested bytes are proven equal to the head by the seven tested-files.json digests.\n",
+  "review_run_id": "r-20261005T010235079729-review-of-design-review-reads-the-interface-budget",
+  "reviewed_base_sha": "977dd7f723bc8aadb227f23408bcd6a0b28d7060",
+  "reviewed_head_sha": "d5fddfa90efe33a62244f71a7272a7218281cbdb",
+  "reviewed_run_id": "r-20261005T004421640839-design-review-reads-the-interface-budget",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:08.770080+00:00",
+  "total": 97
+}

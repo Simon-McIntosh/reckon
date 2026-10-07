@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140618988787-preflight-reports-runs-remaining/gate-head.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140618988787-preflight-reports-runs-remaining/gate-base.log",
+    "count_derivation": "the reviewed manifest's baseline_suite/after_suite fields carry prose, so annotate_review_of_run reads the count unmeasured; the two arm logs the manifest names under test_logs are read directly through added_failures_from_gate_logs: neither the base log (192 passed, exit 0) nor the head log (202 passed, exit 0) carries a FAILED or ERROR node id, so the added set is a measured zero rather than an untaken measurement"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:1140",
+    "reckon/mcp.py:3965"
+  ],
+  "completed_at": "2026-09-28T16:39:26.315Z",
+  "dispatched_at": "2026-09-28T15:19:14Z",
+  "findings": [
+    {
+      "file": "reckon/budget.py",
+      "line": "1920",
+      "text": "_priced_run_cost prices a run at the seven-day receipt's cumulative used_percent, a window level rather than a per-run flow -- so reckon/budget.py:2096 divides a stock by a stock, and on the committed ledger (2236 records, four wallets) mean levels of 15.8-24.2 percent report 1.6-5.6 runs remaining where the same receipts' rise (8 points over 12 priced runs) supports about 60, capping a wallet's wave at a few nodes and refusing most; rollout.py:11 states per-run attribution from this field is not sound."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140618988787-preflight-reports-runs-remaining/gate-head.log",
+      "line": "1",
+      "text": "the head arm's log header names the base revision and marks the tree as \"working tree with the change applied\", so no recorded artefact names the revision the 202 passed was measured at."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against fb7475289c1d5e0230e6c146dc44891b02a23420; the feature commit adds the pricing, runway, refusal and bar wiring in reckon/budget.py plus the test file and the figure, and the docs commit records the landing in the plan and the cumulative evidence file, with the bar extended rather than a second bar added (reckon/budget.py:2319).",
+    "done_when": "the done-when asserts the same arithmetic and names tests/test_preflight_runs_remaining.py as the gate, and the manifest records the ten cases green; but every priced fixture run carries one constant weekly figure (tests/test_preflight_runs_remaining.py:169 supplies it as used_percent), so the gate passes identically whether the field is read as a per-run cost or as the window level it actually is, and cannot falsify the reading.",
+    "goal": "read the goal (\"Report runs remaining before the weekly reset per budget group and role, and refuse a wave projected past it\") against the diff; the figure lands at reckon/budget.py:2096 and the refusal at reckon/budget.py:2108, wired into preflight through reckon/budget.py:2310-2319, but the figure divides the remaining window by the mean of the receipts' own weekly window level, so what is reported is not the runs-remaining count the goal names.",
+    "manifest": "read; it records both arms (192 and 202 passed, exit 0), the declared negative control applied verbatim with the observed admission, the FAILED id and the byte-for-byte revert, and it cites the reuse map; its baseline_suite/after_suite fields carry prose (manifest.md:57-58) while the logs are named only under test_logs (manifest.md:50-52), so the read path's own gate-log resolver (reckon/crew/review.py:612) finds no path there and annotates the added-failure count unmeasured.",
+    "write_paths": "read the manifest's seven declared paths; git show --stat over c45327c856cfec938e45c3158e5a91644287800a and 405a8a0b00cd713e357bd22fded8d4e6ec993fef lists five files -- reckon/budget.py, tests/test_preflight_runs_remaining.py, docs/figures/the-fleet-reports-its-velocity/quota-runway.png, docs/plans/the-fleet-reports-its-velocity.html, docs/evidence/.../the-fleet-reports-its-velocity-landed.html -- and every one is inside them."
+  },
+  "justifications": {
+    "durability": "the control shows tests/test_preflight_runs_remaining.py:389 reddens when the refusal line is dropped, but the figure's own case (tests/test_preflight_runs_remaining.py:180) cannot discriminate the pricing reading because its fixture hands the code the same constant on both sides.",
+    "evidence": "the arms, exit codes and control are recorded, but gate-head.log:1 names only the base revision with \"working tree with the change applied\", so the recorded evidence does not identify the tree the 202 passed was measured at.",
+    "fit": "the change follows the module's idiom -- unmeasured-not-zero sentinels, format_refusal for the refusal, mechanism names like _priced_run_cost and RUNWAY_TRAILING_DAYS -- with no plan label or version token introduced.",
+    "goal_fidelity": "reckon/budget.py:2096 divides a remaining window by the mean receipt level, so the reported figure is not a run count, though the refusal, the per-role split and the instructed reading of the field were implemented faithfully.",
+    "scope_discipline": "every path in both commits is inside the seven declared write paths (manifest.md:3), and the named owners pace.drain_deadline and budget_group.declared_groups are imported rather than restated (reckon/budget.py:2070, reckon/budget.py:2270)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the goal (\"Report runs remaining before the weekly reset per budget group and role, and refuse a wave projected past it\") against the diff; the figure lands at reckon/budget.py:2096 and the refusal at reckon/budget.py:2108, wired into preflight through reckon/budget.py:2310-2319, but the figure divides the remaining window by the mean of the receipts' own weekly window level, so what is reported is not the runs-remaining count the goal names.\nVERDICT done_when: the done-when asserts the same arithmetic and names tests/test_preflight_runs_remaining.py as the gate, and the manifest records the ten cases green; but every priced fixture run carries one constant weekly figure (tests/test_preflight_runs_remaining.py:169 supplies it as used_percent), so the gate passes identically whether the field is read as a per-run cost or as the window level it actually is, and cannot falsify the reading.\nVERDICT write_paths: read the manifest's seven declared paths; git show --stat over c45327c856cfec938e45c3158e5a91644287800a and 405a8a0b00cd713e357bd22fded8d4e6ec993fef lists five files -- reckon/budget.py, tests/test_preflight_runs_remaining.py, docs/figures/the-fleet-reports-its-velocity/quota-runway.png, docs/plans/the-fleet-reports-its-velocity.html, docs/evidence/.../the-fleet-reports-its-velocity-landed.html -- and every one is inside them.\nVERDICT manifest: read; it records both arms (192 and 202 passed, exit 0), the declared negative control applied verbatim with the observed admission, the FAILED id and the byte-for-byte revert, and it cites the reuse map; its baseline_suite/after_suite fields carry prose (manifest.md:57-58) while the logs are named only under test_logs (manifest.md:50-52), so the read path's own gate-log resolver (reckon/crew/review.py:612) finds no path there and annotates the added-failure count unmeasured.\nVERDICT diff: read commit by commit against fb7475289c1d5e0230e6c146dc44891b02a23420; the feature commit adds the pricing, runway, refusal and bar wiring in reckon/budget.py plus the test file and the figure, and the docs commit records the landing in the plan and the cumulative evidence file, with the bar extended rather than a second bar added (reckon/budget.py:2319).\nCALL_SITES: reckon/cli.py:1140, reckon/mcp.py:3965\nSCORE goal_fidelity: 9\nJUSTIFICATION goal_fidelity: reckon/budget.py:2096 divides a remaining window by the mean receipt level, so the reported figure is not a run count, though the refusal, the per-role split and the instructed reading of the field were implemented faithfully.\nSCORE evidence: 10\nJUSTIFICATION evidence: the arms, exit codes and control are recorded, but gate-head.log:1 names only the base revision with \"working tree with the change applied\", so the recorded evidence does not identify the tree the 202 passed was measured at.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in both commits is inside the seven declared write paths (manifest.md:3), and the named owners pace.drain_deadline and budget_group.declared_groups are imported rather than restated (reckon/budget.py:2070, reckon/budget.py:2270).\nSCORE durability: 13\nJUSTIFICATION durability: the control shows tests/test_preflight_runs_remaining.py:389 reddens when the refusal line is dropped, but the figure's own case (tests/test_preflight_runs_remaining.py:180) cannot discriminate the pricing reading because its fixture hands the code the same constant on both sides.\nSCORE fit: 17\nJUSTIFICATION fit: the change follows the module's idiom -- unmeasured-not-zero sentinels, format_refusal for the refusal, mechanism names like _priced_run_cost and RUNWAY_TRAILING_DAYS -- with no plan label or version token introduced.\nFINDING reckon/budget.py:1920 _priced_run_cost prices a run at the seven-day receipt's cumulative used_percent, a window level rather than a per-run flow -- so reckon/budget.py:2096 divides a stock by a stock, and on the committed ledger (2236 records, four wallets) mean levels of 15.8-24.2 percent report 1.6-5.6 runs remaining where the same receipts' rise (8 points over 12 priced runs) supports about 60, capping a wallet's wave at a few nodes and refusing most; rollout.py:11 states per-run attribution from this field is not sound.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T140618988787-preflight-reports-runs-remaining/gate-head.log:1 the head arm's log header names the base revision and marks the tree as \"working tree with the change applied\", so no recorded artefact names the revision the 202 passed was measured at.\n",
+  "review_run_id": "r-20260928T151856436073-review-of-preflight-reports-runs-remaining",
+  "reviewed_base_sha": "fb7475289c1d5e0230e6c146dc44891b02a23420",
+  "reviewed_head_sha": "405a8a0b00cd713e357bd22fded8d4e6ec993fef",
+  "reviewed_run_id": "r-20260928T140618988787-preflight-reports-runs-remaining",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 13,
+    "evidence": 10,
+    "fit": 17,
+    "goal_fidelity": 9,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T16:21:12.489403+00:00",
+  "total": 67
+}

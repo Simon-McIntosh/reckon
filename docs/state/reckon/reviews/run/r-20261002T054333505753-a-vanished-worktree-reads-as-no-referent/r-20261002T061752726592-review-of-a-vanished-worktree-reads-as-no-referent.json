@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:_worktree_repository_changes",
+    "reckon/crew/promotion.py:_worktree_unchanged_since_base"
+  ],
+  "completed_at": "2026-10-02T06:39:03.389Z",
+  "dispatched_at": "2026-10-02T06:18:24Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T054333505753-a-vanished-worktree-reads-as-no-referent/logs/base-head-arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm's first line names revision fd667e1c (the base) while the arm measured the working tree carrying the fix at 0b2abbfd; the log's correction line and the manifest's artifacts both restate the true revision, but a reader keying on the header alone attributes the passing head arm to the wrong commit."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against fd667e1c; 0b2abbfd guards _worktree_untracked_paths (+9/-1) and adds the 237-line test module, c7cbffd adds the s10 landing fragment, and nothing lands outside the declared scope.",
+    "done_when": "the done_when names the pre-fix reproduction, the guard, and base and head arms with zero added failures; the run records repro-prefix.log (TypeError at promotion.py:640, EXIT=1), gate-head.log (2 passed, EXIT=0), base-base-arm.log and base-head-arm.log (both 59 passed, EXIT=0, no FAILED/ERROR id) and negative-control.log (1 failed, EXIT=1).",
+    "goal": "the node goal is that a commitless run whose registered worktree directory was removed while git still lists it reconciles from what survives instead of crashing; reckon/crew/promotion.py:640 now returns the empty tuple when the untracked listing is unreadable, so the promotion emits a JSON payload rather than raising.",
+    "manifest": "read; it records status complete, commits 0b2abbfd and c7cbffd, the four gate logs, measurement_module and measurement_cwd for the scratch arm, the negative control and its failing id, and states the run is not armed so baseline_suite and after_suite carry no record.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, tests/test_a_vanished_worktree_reads_as_no_referent.py, the s10 evidence fragment and a figures directory; every path in the two commits sits inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_vanished_worktree_reads_as_no_referent.py::test_a_commitless_promotion_reads_a_vanished_worktree_as_no_change fails with TypeError at promotion.py:640 when the guard is removed, as negative-control.log shows, so the assertion names the regression it catches.",
+    "evidence": "the reproduction, gate, both arms and the negative control are recorded in logs the manifest names, but the manifest carries no baseline_suite or after_suite record and the head arm's log header names fd667e1c while it measured the fix tree, so the header alone mis-attributes that arm.",
+    "fit": "the None-to-empty reading at promotion.py:640 matches _worktree_repository_changes' documented contract that an empty result is the only condition permitting a commitless promotion, and introduces no name the naming rules forbid.",
+    "goal_fidelity": "promotion.py:640 returns the empty tuple for both an absent and an unreadable listing, so a vanished worktree no longer raises and the run reconciles, which is the stated goal.",
+    "scope_discipline": "the two commits touch only reckon/crew/promotion.py, tests/test_a_vanished_worktree_reads_as_no_referent.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-vanished-worktree-reads-as-no-referent.html, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a commitless run whose registered worktree directory was removed while git still lists it reconciles from what survives instead of crashing; reckon/crew/promotion.py:640 now returns the empty tuple when the untracked listing is unreadable, so the promotion emits a JSON payload rather than raising.\nVERDICT done_when: the done_when names the pre-fix reproduction, the guard, and base and head arms with zero added failures; the run records repro-prefix.log (TypeError at promotion.py:640, EXIT=1), gate-head.log (2 passed, EXIT=0), base-base-arm.log and base-head-arm.log (both 59 passed, EXIT=0, no FAILED/ERROR id) and negative-control.log (1 failed, EXIT=1).\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, tests/test_a_vanished_worktree_reads_as_no_referent.py, the s10 evidence fragment and a figures directory; every path in the two commits sits inside them.\nVERDICT manifest: read; it records status complete, commits 0b2abbfd and c7cbffd, the four gate logs, measurement_module and measurement_cwd for the scratch arm, the negative control and its failing id, and states the run is not armed so baseline_suite and after_suite carry no record.\nVERDICT diff: read commit by commit against fd667e1c; 0b2abbfd guards _worktree_untracked_paths (+9/-1) and adds the 237-line test module, c7cbffd adds the s10 landing fragment, and nothing lands outside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:_worktree_repository_changes, reckon/crew/promotion.py:_worktree_unchanged_since_base\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: promotion.py:640 returns the empty tuple for both an absent and an unreadable listing, so a vanished worktree no longer raises and the run reconciles, which is the stated goal.\nSCORE evidence: 17\nJUSTIFICATION evidence: the reproduction, gate, both arms and the negative control are recorded in logs the manifest names, but the manifest carries no baseline_suite or after_suite record and the head arm's log header names fd667e1c while it measured the fix tree, so the header alone mis-attributes that arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only reckon/crew/promotion.py, tests/test_a_vanished_worktree_reads_as_no_referent.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-vanished-worktree-reads-as-no-referent.html, all inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_vanished_worktree_reads_as_no_referent.py::test_a_commitless_promotion_reads_a_vanished_worktree_as_no_change fails with TypeError at promotion.py:640 when the guard is removed, as negative-control.log shows, so the assertion names the regression it catches.\nSCORE fit: 19\nJUSTIFICATION fit: the None-to-empty reading at promotion.py:640 matches _worktree_repository_changes' documented contract that an empty result is the only condition permitting a commitless promotion, and introduces no name the naming rules forbid.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T054333505753-a-vanished-worktree-reads-as-no-referent/logs/base-head-arm.log:1 follow-on: the head arm's first line names revision fd667e1c (the base) while the arm measured the working tree carrying the fix at 0b2abbfd; the log's correction line and the manifest's artifacts both restate the true revision, but a reader keying on the header alone attributes the passing head arm to the wrong commit.",
+  "review_run_id": "r-20261002T061752726592-review-of-a-vanished-worktree-reads-as-no-referent",
+  "reviewed_base_sha": "fd667e1c52e1026dcdf86f650e2e42bb5e9fb54f",
+  "reviewed_head_sha": "c7cbffd76672ba8d6bc55ce7ed56f990573e542b",
+  "reviewed_run_id": "r-20261002T054333505753-a-vanished-worktree-reads-as-no-referent",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T06:28:10.115308+00:00",
+  "total": 94
+}

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "ade36b77dab98b531cf9b2d782ff1800b47f8629",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-07T06:56:17.772Z",
+  "dispatched_at": "2026-10-07T06:38:00Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "2574",
+      "severity": "follow-on",
+      "text": "follow-on: the lane-paused payload emits error, detail, reason and lane_gate but no picker_selection, so a picker-routed local refusal reports as though the picker never ran; the reviewed node was fenced from cli.py and recorded this under follow_ons, and the reviewed change itself does not touch it."
+    }
+  ],
+  "head_log_revision": "762d615800ddbb82f0bfff3ced0be0ae999ff33f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base ade36b77d; three commits add one 74-line test file and a one-line landing anchor, changing no production source, which the contract permits where the guarded behaviour is already correct.",
+    "done_when": "the done-when asks to state where the lane gate runs relative to the picker, to keep the gate on a picker-chosen local lane, and to add four cases in tests/test_congested_local_lane_still_reaches_the_picker.py; the manifest records the ordering, the four cases are present, and I reproduced 4 passed EXIT=0 at head.",
+    "goal": "the node goal is that a no-lane dispatch reaches the picker even when the local lane is congested; at head the CLI runs picker.pick before plan_dispatch resolves a backend, so the metered route (beta) launches with picker_selection.backend==beta while the picker's local route (alpha) and an explicit --local both refuse lane-paused with lane_gate.allowance==0, showing Jev's pick is not pre-empted by local admission.",
+    "manifest": "read; it records commits 321f0f83a, a6bfec0d4 and 762d6158, changed_paths as the test file and the fragment, base-gate.log 327 passed EXIT=0, head-gate.log 331 passed EXIT=0, negative-control.log EXIT=1, and a follow_ons line naming the cli.py payload omission.",
+    "write_paths": "the delta ade36b77d..762d6158 changes only tests/test_congested_local_lane_still_reaches_the_picker.py and docs/evidence/fragments/one-typesafe-model-picker/congested-local-lane-reaches-the-picker.html, both inside the declared write paths; reckon/crew/dispatch.py was declared but needed no change because head's copy already asks the picker before plan_dispatch."
+  },
+  "justifications": {
+    "durability": "the negative control inverts the ordering and 3 of 4 cases fail (beta, alpha, hold), so the guard is not vacuous; only the explicit --local case is insensitive.",
+    "evidence": "tests/test_congested_local_lane_still_reaches_the_picker.py:61 asserts the four exit codes and payload fields, I reproduced 4 passed EXIT=0 at head, and the negative control records 3 failed 1 passed EXIT=1 when the local allowance runs before the picker.",
+    "fit": "the file reuses tests/test_dispatch_names_its_backend CONFIG and _arguments through deepcopy and pytest_plugins and stubs picker.pick with a SimpleNamespace, matching the existing dispatch-fixture style; the plugin declaration in a test module is a mild departure from convention.",
+    "goal_fidelity": "reckoning/crew/dispatch.py:6767 asks dispatch_picker_selection before plan_dispatch at :6780, and the new file pins the outcome at the CLI for both a metered and a local pick, so goal_fidelity is met by proof rather than by a production edit.",
+    "reuse": "the case combines an existing congestion lane document with the existing picker-routing stub instead of forking a fixture, and no existing test already covers congestion across the four routing outcomes.",
+    "scope_discipline": "every path in the ade36b77d..762d6158 delta (the test file and the fragment anchor) is inside the declared write paths; the declared reckon/crew/dispatch.py was already correct and was correctly left unedited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a no-lane dispatch reaches the picker even when the local lane is congested; at head the CLI runs picker.pick before plan_dispatch resolves a backend, so the metered route (beta) launches with picker_selection.backend==beta while the picker's local route (alpha) and an explicit --local both refuse lane-paused with lane_gate.allowance==0, showing Jev's pick is not pre-empted by local admission.\nVERDICT done_when: the done-when asks to state where the lane gate runs relative to the picker, to keep the gate on a picker-chosen local lane, and to add four cases in tests/test_congested_local_lane_still_reaches_the_picker.py; the manifest records the ordering, the four cases are present, and I reproduced 4 passed EXIT=0 at head.\nVERDICT write_paths: the delta ade36b77d..762d6158 changes only tests/test_congested_local_lane_still_reaches_the_picker.py and docs/evidence/fragments/one-typesafe-model-picker/congested-local-lane-reaches-the-picker.html, both inside the declared write paths; reckon/crew/dispatch.py was declared but needed no change because head's copy already asks the picker before plan_dispatch.\nVERDICT manifest: read; it records commits 321f0f83a, a6bfec0d4 and 762d6158, changed_paths as the test file and the fragment, base-gate.log 327 passed EXIT=0, head-gate.log 331 passed EXIT=0, negative-control.log EXIT=1, and a follow_ons line naming the cli.py payload omission.\nVERDICT diff: read commit by commit against base ade36b77d; three commits add one 74-line test file and a one-line landing anchor, changing no production source, which the contract permits where the guarded behaviour is already correct.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckoning/crew/dispatch.py:6767 asks dispatch_picker_selection before plan_dispatch at :6780, and the new file pins the outcome at the CLI for both a metered and a local pick, so goal_fidelity is met by proof rather than by a production edit.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_congested_local_lane_still_reaches_the_picker.py:61 asserts the four exit codes and payload fields, I reproduced 4 passed EXIT=0 at head, and the negative control records 3 failed 1 passed EXIT=1 when the local allowance runs before the picker.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the ade36b77d..762d6158 delta (the test file and the fragment anchor) is inside the declared write paths; the declared reckon/crew/dispatch.py was already correct and was correctly left unedited.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control inverts the ordering and 3 of 4 cases fail (beta, alpha, hold), so the guard is not vacuous; only the explicit --local case is insensitive.\nSCORE fit: 18\nJUSTIFICATION fit: the file reuses tests/test_dispatch_names_its_backend CONFIG and _arguments through deepcopy and pytest_plugins and stubs picker.pick with a SimpleNamespace, matching the existing dispatch-fixture style; the plugin declaration in a test module is a mild departure from convention.\nSCORE reuse: 19\nJUSTIFICATION reuse: the case combines an existing congestion lane document with the existing picker-routing stub instead of forking a fixture, and no existing test already covers congestion across the four routing outcomes.\nreviewed_base_sha: ade36b77dab98b531cf9b2d782ff1800b47f8629\nreviewed_head_sha: 762d615800ddbb82f0bfff3ced0be0ae999ff33f\nFINDING reckon/cli.py:2574 follow-on: the lane-paused payload emits error, detail, reason and lane_gate but no picker_selection, so a picker-routed local refusal reports as though the picker never ran; the reviewed node was fenced from cli.py and recorded this under follow_ons, and the reviewed change itself does not touch it.\n",
+  "review_run_id": "r-20261007T063736994443-review-of-congested-local-lane-reaches-the-picker",
+  "reviewed_base_sha": "ade36b77dab98b531cf9b2d782ff1800b47f8629",
+  "reviewed_head_sha": "762d615800ddbb82f0bfff3ced0be0ae999ff33f",
+  "reviewed_run_id": "r-20261007T052724684363-congested-local-lane-reaches-the-picker",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T06:55:00.770502+00:00",
+  "total": 114
+}

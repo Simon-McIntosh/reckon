@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T06:20:33.628406+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T055144797509-section-writes-tests-carry-a-contract/manifest.md",
+      "line": "12",
+      "text": "the repro-base row names /tmp/s22-sw-base as \"git archive of 3d7afe48\" while cohort-base.log:1 attributes that path to adfc6715, whose tree has no record requirement so the six cases pass in it, and repro-base.log itself carries no revision, tree or command header, so the delivered record cannot show which revision the 6-failed/4-passed result measured even though an independent re-run at 3d7afe48 reproduces it exactly."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit; four files, +321/-59, the test commit gives every insert its record and adds the record-less refusal case, the docs commit appends the landing paragraph and the evidence anchor with no plan-version or plan-modified meta edit, and the figure is a valid SVG referenced by project-absolute src.",
+    "done_when": "the done_when names six failing cases, the new refusal case, no source change and a cohort with no added failure id; repro-base.log records 6 failed/4 passed at 3d7afe48 (independently reproduced here with the same six ids), cohort-base.log and cohort-head.log record the two arms, and the diff carries no reckon/ source file.",
+    "goal": "the goal asks that the section-scoped write cases insert sections carrying the typed record; tests/test_edit_plan_section_writes.py:37 routes every insert through _insert_op with effort_hours, capability and links, only the new case at line 204 submits one without, and the file is 11 passed at the reviewed head in a scratch archive of c3e431aa.",
+    "manifest": "read; it names both head commits and its five logs, and its cohort table matches cohort-base.log (5 failed, 2755 passed) and cohort-head.log (4 failed, 2768 passed) line for line, but its repro-base row at line 12 names a tree path that cohort-base.log:1 attributes to a different revision, which is the finding below.",
+    "write_paths": "the manifest declares four paths and the whole diff 3d7afe48..c3e431aa touches exactly those four -- tests/test_edit_plan_section_writes.py, docs/evidence/archive/section-contract-and-computed-impl-landed.html, docs/figures/section-contract-and-computed-impl/insert-op-stage-order.svg and docs/plans/section-contract-and-computed-impl.html."
+  },
+  "justifications": {
+    "durability": "the new case at tests/test_edit_plan_section_writes.py:204 reddens if insert_section stops refusing a record-less insert, and the stale case's pytest.raises(VersionConflict) at line 358 reddens if refusal-whole is dropped, but the duplicate-id parametrisation no longer reaches the fragment scan it was written for and the round-trip assertion at line 189 compares the record the test supplied back to the state the store produced.",
+    "evidence": "the gate asserts the done_when quantitatively -- the pre-repair reproduction at 3d7afe48 (repro-base.log, 6 receipts of 3 validation errors for SectionRecord) and a two-arm 79-file cohort whose logs print module.__file__ and the measurement cwd (cohort-base.log:2-3) with head failure ids a strict subset of base -- but repro-base.log carries no revision, tree or command header, so one measured result is not checkable from its own record.",
+    "fit": "_insert_op, _stale_batch_ops and the renamed refusal parameter are mechanism names carrying no plan or ticket identifier, the comments state mechanism, and the figure sits under docs/figures/section-contract-and-computed-impl with the project-absolute src /reckon/figures/section-contract-and-computed-impl/insert-op-stage-order.svg.",
+    "goal_fidelity": "every insert in tests/test_edit_plan_section_writes.py now carries effort_hours, capability and links through the same op (line 37) and the new case at line 204 pins the record-less refusal, which is what the goal states.",
+    "scope_discipline": "the diff 3d7afe48..c3e431aa touches only the four declared write paths, changes no reckon/ source file, and leaves the plan's version and modified meta lines alone."
+  },
+  "project": "reckon",
+  "raw_text": "reviewed_base_sha: 3d7afe483b5943c616398c390d76b262339119f7\nreviewed_head_sha: c3e431aad10394ffaffad2167c2bfd20fdcf23b8\nVERDICT goal: the goal asks that the section-scoped write cases insert sections carrying the typed record; tests/test_edit_plan_section_writes.py:37 routes every insert through _insert_op with effort_hours, capability and links, only the new case at line 204 submits one without, and the file is 11 passed at the reviewed head in a scratch archive of c3e431aa.\nVERDICT done_when: the done_when names six failing cases, the new refusal case, no source change and a cohort with no added failure id; repro-base.log records 6 failed/4 passed at 3d7afe48 (independently reproduced here with the same six ids), cohort-base.log and cohort-head.log record the two arms, and the diff carries no reckon/ source file.\nVERDICT write_paths: the manifest declares four paths and the whole diff 3d7afe48..c3e431aa touches exactly those four -- tests/test_edit_plan_section_writes.py, docs/evidence/archive/section-contract-and-computed-impl-landed.html, docs/figures/section-contract-and-computed-impl/insert-op-stage-order.svg and docs/plans/section-contract-and-computed-impl.html.\nVERDICT manifest: read; it names both head commits and its five logs, and its cohort table matches cohort-base.log (5 failed, 2755 passed) and cohort-head.log (4 failed, 2768 passed) line for line, but its repro-base row at line 12 names a tree path that cohort-base.log:1 attributes to a different revision, which is the finding below.\nVERDICT diff: read commit by commit; four files, +321/-59, the test commit gives every insert its record and adds the record-less refusal case, the docs commit appends the landing paragraph and the evidence anchor with no plan-version or plan-modified meta edit, and the figure is a valid SVG referenced by project-absolute src.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: every insert in tests/test_edit_plan_section_writes.py now carries effort_hours, capability and links through the same op (line 37) and the new case at line 204 pins the record-less refusal, which is what the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate asserts the done_when quantitatively -- the pre-repair reproduction at 3d7afe48 (repro-base.log, 6 receipts of 3 validation errors for SectionRecord) and a two-arm 79-file cohort whose logs print module.__file__ and the measurement cwd (cohort-base.log:2-3) with head failure ids a strict subset of base -- but repro-base.log carries no revision, tree or command header, so one measured result is not checkable from its own record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 3d7afe48..c3e431aa touches only the four declared write paths, changes no reckon/ source file, and leaves the plan's version and modified meta lines alone.\nSCORE durability: 18\nJUSTIFICATION durability: the new case at tests/test_edit_plan_section_writes.py:204 reddens if insert_section stops refusing a record-less insert, and the stale case's pytest.raises(VersionConflict) at line 358 reddens if refusal-whole is dropped, but the duplicate-id parametrisation no longer reaches the fragment scan it was written for and the round-trip assertion at line 189 compares the record the test supplied back to the state the store produced.\nSCORE fit: 19\nJUSTIFICATION fit: _insert_op, _stale_batch_ops and the renamed refusal parameter are mechanism names carrying no plan or ticket identifier, the comments state mechanism, and the figure sits under docs/figures/section-contract-and-computed-impl with the project-absolute src /reckon/figures/section-contract-and-computed-impl/insert-op-stage-order.svg.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T055144797509-section-writes-tests-carry-a-contract/manifest.md:12 the repro-base row names /tmp/s22-sw-base as \"git archive of 3d7afe48\" while cohort-base.log:1 attributes that path to adfc6715, whose tree has no record requirement so the six cases pass in it, and repro-base.log itself carries no revision, tree or command header, so the delivered record cannot show which revision the 6-failed/4-passed result measured even though an independent re-run at 3d7afe48 reproduces it exactly.\n",
+  "review_run_id": "r-20260925T062033628406-review-of-section-writes-tests-carry-a-contract",
+  "reviewed_base_sha": "3d7afe483b5943c616398c390d76b262339119f7",
+  "reviewed_head_sha": "c3e431aad10394ffaffad2167c2bfd20fdcf23b8",
+  "reviewed_run_id": "r-20260925T055144797509-section-writes-tests-carry-a-contract",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T08:45:00+00:00",
+  "total": 94
+}

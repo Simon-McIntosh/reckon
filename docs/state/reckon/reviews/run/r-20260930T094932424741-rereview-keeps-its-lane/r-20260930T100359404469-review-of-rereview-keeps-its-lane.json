@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/resumption.py:1071 sweep",
+    "which calls dispatch_awaiting_reviews (reckon/crew/recovery.py:1891) and that reaches dispatch_review_for_run (reckon/crew/recovery.py:1148) whose :1251 call to _failed_review_backend is the changed line",
+    "on the follower cadence of reckon/cli.py:3385 crew_follow and :3672 crew_watch through _follow_watch_lines and _sweep_lapsed_holds (reckon/cli.py:1911); reckon/crew/recovery.py:7128 inside recover",
+    "reached from reckon/cli.py:5328 crew_recover"
+  ],
+  "completed_at": "2026-09-30T10:19:01.528Z",
+  "dispatched_at": "2026-09-30T10:04:13Z",
+  "findings": [
+    {
+      "file": "tests/test_review_reflex_selects_a_backend.py",
+      "line": "169",
+      "text": "the pre-existing helper _failed_attempt names no head, so under the head-scoped rule its assertions at :215 and :273 can no longer hold; reproduced against the reviewed tree at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T100359404469-review-of-rereview-keeps-its-lane/fallout-reviewer.log (2 failed, 2 passed), so the merged head is red until that helper names the run's head."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "1067",
+      "text": "the run's current head is read through _reviewed_run_head, whose _review_tree at :216 falls back to the run's `repo` when its worktree directory is gone, so a run whose worktree was reclaimed resolves its head to the main checkout's revision; a mismatch there silently disables the demotion, re-opening the recompose-onto-the-dropped-lane loop this rule exists to bound for that run."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T094932424741-rereview-keeps-its-lane/manifest.md",
+      "line": "11",
+      "text": "the reviewed run's record names no baseline_suite/after_suite gate logs, so the added-failure count its review carries derives as unmeasured (null) rather than zero, and a promotion reading this run cannot see which failures it added."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against d6e2e0390; the change is confined to _failed_review_backend (reckon/crew/recovery.py:1040), adding the recorded-head comparison at :1064-1069 and the rationale that a lane dropped for an earlier head must not withhold the re-review.",
+    "done_when": "the done-when names a test over dispatch_review_for_run asserting both directions; tests/test_rereview_keeps_its_lane.py:233 (earlier head keeps clive, awaiting_lane not set), :254 (current head still recomposes onto delta) and :274 (no recorded head does not demote) cover the two named cases, and both gate logs end EXIT=0, but a third test file the done-when did not list was also run.",
+    "goal": "the node goal is that a recorded review dispatch counts as a dropped lane only for the head it covered, and reckon/crew/recovery.py:1064-1069 returns the recorded backend only when the recorded head matches the run's current head, with tests/test_rereview_keeps_its_lane.py:233 driving that case through dispatch_review_for_run and getting clive back.",
+    "manifest": "read; it records both gate commands with their results and EXIT=0, the negative-control log and its red line, and changed_paths matching the diff, but it names no baseline_suite or after_suite, so the added-failure count cannot be derived from the run's own record.",
+    "write_paths": "the node declares reckon/crew/recovery.py and tests/test_rereview_keeps_its_lane.py; `git show --stat a5d1d554` changes exactly those two paths (29 lines in recovery.py, 276 added in the new test file) and nothing else."
+  },
+  "justifications": {
+    "durability": "the negative control (negctl-red.log) reddens the earlier-head case with `assert 'delta' == 'clive'`, so the new assertion fails on the regression it guards, while the branch at reckon/crew/recovery.py:1068 for an unresolvable run head carries no test.",
+    "evidence": "the gate asserts both cases the done-when names and both logs end EXIT=0, but tests/test_review_reflex_selects_a_backend.py was run beyond the pair the done-when lists and its two assertions at :215 and :273 are red at this head.",
+    "fit": "the change reuses same_revision (reckon/crew/recovery.py:279) and the module's docstring idiom, but the module now holds two comparators for one recorded pair, _review_head_covers at :933 whose blank covers and the inline comparison at :1067 whose blank frees.",
+    "goal_fidelity": "reckon/crew/recovery.py:1067 gates the recorded backend on _reviewed_run_head matching the entry's own head, which is the node goal exactly, and the preserved direction is asserted at tests/test_rereview_keeps_its_lane.py:254.",
+    "scope_discipline": "`git show --stat a5d1d554` lists only reckon/crew/recovery.py and tests/test_rereview_keeps_its_lane.py, both declared, and the out-of-scope fallout it measured was reported at manifest.md:16 rather than edited."
+  },
+  "node": "review-of-rereview-keeps-its-lane",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a recorded review dispatch counts as a dropped lane only for the head it covered, and reckon/crew/recovery.py:1064-1069 returns the recorded backend only when the recorded head matches the run's current head, with tests/test_rereview_keeps_its_lane.py:233 driving that case through dispatch_review_for_run and getting clive back.\nVERDICT done_when: the done-when names a test over dispatch_review_for_run asserting both directions; tests/test_rereview_keeps_its_lane.py:233 (earlier head keeps clive, awaiting_lane not set), :254 (current head still recomposes onto delta) and :274 (no recorded head does not demote) cover the two named cases, and both gate logs end EXIT=0, but a third test file the done-when did not list was also run.\nVERDICT write_paths: the node declares reckon/crew/recovery.py and tests/test_rereview_keeps_its_lane.py; `git show --stat a5d1d554` changes exactly those two paths (29 lines in recovery.py, 276 added in the new test file) and nothing else.\nVERDICT manifest: read; it records both gate commands with their results and EXIT=0, the negative-control log and its red line, and changed_paths matching the diff, but it names no baseline_suite or after_suite, so the added-failure count cannot be derived from the run's own record.\nVERDICT diff: read commit by commit against d6e2e0390; the change is confined to _failed_review_backend (reckon/crew/recovery.py:1040), adding the recorded-head comparison at :1064-1069 and the rationale that a lane dropped for an earlier head must not withhold the re-review.\nCALL_SITES: reckon/crew/resumption.py:1071 sweep, which calls dispatch_awaiting_reviews (reckon/crew/recovery.py:1891) and that reaches dispatch_review_for_run (reckon/crew/recovery.py:1148) whose :1251 call to _failed_review_backend is the changed line, on the follower cadence of reckon/cli.py:3385 crew_follow and :3672 crew_watch through _follow_watch_lines and _sweep_lapsed_holds (reckon/cli.py:1911); reckon/crew/recovery.py:7128 inside recover, reached from reckon/cli.py:5328 crew_recover\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:1067 gates the recorded backend on _reviewed_run_head matching the entry's own head, which is the node goal exactly, and the preserved direction is asserted at tests/test_rereview_keeps_its_lane.py:254.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate asserts both cases the done-when names and both logs end EXIT=0, but tests/test_review_reflex_selects_a_backend.py was run beyond the pair the done-when lists and its two assertions at :215 and :273 are red at this head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git show --stat a5d1d554` lists only reckon/crew/recovery.py and tests/test_rereview_keeps_its_lane.py, both declared, and the out-of-scope fallout it measured was reported at manifest.md:16 rather than edited.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control (negctl-red.log) reddens the earlier-head case with `assert 'delta' == 'clive'`, so the new assertion fails on the regression it guards, while the branch at reckon/crew/recovery.py:1068 for an unresolvable run head carries no test.\nSCORE fit: 18\nJUSTIFICATION fit: the change reuses same_revision (reckon/crew/recovery.py:279) and the module's docstring idiom, but the module now holds two comparators for one recorded pair, _review_head_covers at :933 whose blank covers and the inline comparison at :1067 whose blank frees.\nFINDING tests/test_review_reflex_selects_a_backend.py:169 the pre-existing helper _failed_attempt names no head, so under the head-scoped rule its assertions at :215 and :273 can no longer hold; reproduced against the reviewed tree at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T100359404469-review-of-rereview-keeps-its-lane/fallout-reviewer.log (2 failed, 2 passed), so the merged head is red until that helper names the run's head.\nFINDING reckon/crew/recovery.py:1067 the run's current head is read through _reviewed_run_head, whose _review_tree at :216 falls back to the run's `repo` when its worktree directory is gone, so a run whose worktree was reclaimed resolves its head to the main checkout's revision; a mismatch there silently disables the demotion, re-opening the recompose-onto-the-dropped-lane loop this rule exists to bound for that run.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T094932424741-rereview-keeps-its-lane/manifest.md:11 the reviewed run's record names no baseline_suite/after_suite gate logs, so the added-failure count its review carries derives as unmeasured (null) rather than zero, and a promotion reading this run cannot see which failures it added.\n",
+  "review_run_id": "r-20260930T100359404469-review-of-rereview-keeps-its-lane",
+  "reviewed_base_sha": "d6e2e0390c2980c46061839c03702bcab6751f27",
+  "reviewed_head_sha": "a5d1d554eb1ea0296545a49daf562af9703d46b9",
+  "reviewed_run_id": "r-20260930T094932424741-rereview-keeps-its-lane",
+  "reviewer_run_id": "r-20260930T100359404469-review-of-rereview-keeps-its-lane",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T10:30:00+00:00",
+  "total": 91
+}

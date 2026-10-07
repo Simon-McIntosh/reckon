@@ -1,0 +1,41 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-15T11:53:50.250932+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "250",
+      "text": "\u2014 the decorated matcher now reads an indented bullet whose leading word is a manifest vocabulary key as a new top-level field, where the base reader treated it as a continuation of the preceding field: 'evidence_inputs: prose first\\n  - blockers: sort of a bullet' parses to {'evidence_inputs': ['prose first', 'blockers: sort of a bullet']} at base but to separate fields {'evidence_inputs': ['prose first'], 'blockers': ['sort of a bullet']} at HEAD, and neither behaviour is pinned by a test in test_manifest_parse_format.py \u2014 worth a deliberate blessing one way or the other."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "122",
+      "text": "\u2014 the decorated vocabulary-key matcher is not symmetric with the scalar reader for a JSON-literal value: 'baseline_suite: {...}' parses whole when plain but the mechanism comment claims decorated lines are recognised only within the manifest vocabulary, and that claim is asserted for prose bullets but not for an indented vocabulary-word bullet under a prior field."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_manifest_parse_format.py:406 parameterises the six line forms and asserts each parses to the literal status complete, so a regression that stops reading a decorated status key fails the gate; the pre-existing refusals that guard the strictness side are asserted in the same file and still pass.",
+    "evidence": "Every claim reproduced independently: the focused gate tests/test_manifest_parse_format.py passes 59 at the reviewed HEAD against 53 at base efb4f453 (six new parameterised cases, zero failures), base REFUSES all five decorated forms with ManifestParseError while the plain control parses complete, HEAD parses each of the six forms to complete, and the missing-status, unknown-word (naming the word), two-keys-on-one-line, and literal commit-identifier refusals all still hold at HEAD.",
+    "fit": "The decorated matcher composes two existing idioms in the file \u2014 the manifest-vocabulary alternation at reckon/crew/reports.py:116 and the tolerant key:value reader \u2014 and introduces no plan or sprint identifiers in the symbol _MARKDOWN_MANIFEST_FIELD_RE or the test name, and ruff reports the same two pre-existing findings at base and HEAD (zero added).",
+    "goal_fidelity": "The dispatched goal was to make the manifest reader find a status key through the markdown decorations workers emit \u2014 list prefixes, bold keys, inline-code values, leading indentation, and their composed form \u2014 with the strict status vocabulary unchanged; reckon/crew/reports.py:122 adds a decorated matcher restricted to the manifest vocabulary and reckon/crew/reports.py:278 sheds one inline-code wrapper from the status value, and all six named forms parse to the literal status complete while the accepted words did not widen.",
+    "scope_discipline": "The reviewed range efb4f453..0f556791 contains exactly the two claimed commits touching exactly the four declared write paths (reckon/crew/reports.py, tests/test_manifest_parse_format.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/plans/crew-observability-truth.html) with 79 insertions and 12 deletions and nothing else, and the plan-version 380 and plan-modified meta lines are byte-identical to base."
+  },
+  "project": "reckon",
+  "raw_text": "REVIEW r-20260915T094018545785-the-reader-sees-the-key-through-markdown at 0f556791 (base efb4f453)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The dispatched goal was to make the manifest reader find a status key through the markdown decorations workers emit \u2014 list prefixes, bold keys, inline-code values, leading indentation, and their composed form \u2014 with the strict status vocabulary unchanged; reckon/crew/reports.py:122 adds a decorated matcher restricted to the manifest vocabulary and reckon/crew/reports.py:278 sheds one inline-code wrapper from the status value, and all six named forms parse to the literal status complete while the accepted words did not widen.\nSCORE evidence: 19\nJUSTIFICATION evidence: Every claim reproduced independently: the focused gate tests/test_manifest_parse_format.py passes 59 at the reviewed HEAD against 53 at base efb4f453 (six new parameterised cases, zero failures), base REFUSES all five decorated forms with ManifestParseError while the plain control parses complete, HEAD parses each of the six forms to complete, and the missing-status, unknown-word (naming the word), two-keys-on-one-line, and literal commit-identifier refusals all still hold at HEAD.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The reviewed range efb4f453..0f556791 contains exactly the two claimed commits touching exactly the four declared write paths (reckon/crew/reports.py, tests/test_manifest_parse_format.py, docs/evidence/archive/crew-observability-truth-landed.html, docs/plans/crew-observability-truth.html) with 79 insertions and 12 deletions and nothing else, and the plan-version 380 and plan-modified meta lines are byte-identical to base.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_manifest_parse_format.py:406 parameterises the six line forms and asserts each parses to the literal status complete, so a regression that stops reading a decorated status key fails the gate; the pre-existing refusals that guard the strictness side are asserted in the same file and still pass.\nSCORE fit: 17\nJUSTIFICATION fit: The decorated matcher composes two existing idioms in the file \u2014 the manifest-vocabulary alternation at reckon/crew/reports.py:116 and the tolerant key:value reader \u2014 and introduces no plan or sprint identifiers in the symbol _MARKDOWN_MANIFEST_FIELD_RE or the test name, and ruff reports the same two pre-existing findings at base and HEAD (zero added).\nFINDING reckon/crew/reports.py:250 \u2014 the decorated matcher now reads an indented bullet whose leading word is a manifest vocabulary key as a new top-level field, where the base reader treated it as a continuation of the preceding field: 'evidence_inputs: prose first\\n  - blockers: sort of a bullet' parses to {'evidence_inputs': ['prose first', 'blockers: sort of a bullet']} at base but to separate fields {'evidence_inputs': ['prose first'], 'blockers': ['sort of a bullet']} at HEAD, and neither behaviour is pinned by a test in test_manifest_parse_format.py \u2014 worth a deliberate blessing one way or the other.\nFINDING reckon/crew/reports.py:122 \u2014 the decorated vocabulary-key matcher is not symmetric with the scalar reader for a JSON-literal value: 'baseline_suite: {...}' parses whole when plain but the mechanism comment claims decorated lines are recognised only within the manifest vocabulary, and that claim is asserted for prose bullets but not for an indented vocabulary-word bullet under a prior field.\n",
+  "review_run_id": "r-20260915T115350250932-review-of-the-reader-sees-the-key-through-markdown",
+  "reviewed_base": "efb4f453494c713fb626d45fc28ed1adb8b8e5d9",
+  "reviewed_commit": "0f556791f9457b32d0b5fcb14eff07fa813456e7",
+  "reviewed_run_id": "r-20260915T094018545785-the-reader-sees-the-key-through-markdown",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-15T13:22:57.504088+00:00",
+  "total": 93
+}

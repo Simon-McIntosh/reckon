@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071101125471-follower-prints-only-policy-rows/after_follow_ticker_watch.log",
+    "baseline": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071101125471-follower-prints-only-policy-rows/baseline_five_ids.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071101125471-follower-prints-only-policy-rows/baseline_follow_ticker_watch.log"
+    ],
+    "note": "the set difference over the two arm logs the reviewed manifest names under baseline_suite and after_suite, taken with the production helpers: base ids from baseline_five_ids.log (the three pre-existing ids), after ids from after_follow_ticker_watch.log (the same three), so zero added by id. The wide base arm's log is truncated at 44 percent and carries no FAILED lines, so it cannot support the id-level claim on its own. The fields carry prose rather than a JSON object with log_path, so a read-time annotation reports the count unmeasured even though it was measured here."
+  },
+  "call_site_count": 11,
+  "call_sites": [
+    "reckon/cli.py:2391",
+    "reckon/cli.py:2395",
+    "reckon/cli.py:2568",
+    "reckon/cli.py:2684",
+    "reckon/cli.py:2764",
+    "reckon/cli.py:2779",
+    "reckon/cli.py:2793",
+    "reckon/cli.py:2803",
+    "reckon/crew/ticker.py:971",
+    "reckon/crew/ticker.py:1032",
+    "reckon/crew/follow_checkpoint.py:227"
+  ],
+  "completed_at": "2026-09-28T09:18:00.618Z",
+  "dispatched_at": "2026-09-28T08:49:28Z",
+  "findings": [
+    {
+      "file": "tests/test_follower_prints_only_policy_rows.py",
+      "line": "110",
+      "text": "the kind loop asserts transition_class(kind) == ROW_COORDINATOR for each member of COORDINATOR_KINDS, which the classifier itself reads, so trimming or emptying the set leaves every assertion vacuous and the file green; the set's contents are pinned only by the audit comparison (this review made it by hand, per kind, and the 23 are coordinator under the audit's rule)."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "2395",
+      "text": "the forward, flush and release wiring the follower loop runs on is covered by no test: reverting _policy_forward to yield the row unchanged leaves the new file at 14 passed, so the 49 cli.py lines that turn the policy on can be removed without anything going red."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "2568",
+      "text": "_emit records reported[run_id] before the policy sees the row, so the checkpoint memory holds a destination the pane may never have shown; a re-arm inside the hold window seeds the fresh policy from it and the opener is lost for that arming - measured at 1 row released with no teardown, 0 rows on the re-armed pane, and a same-state rewrite silently ignored; the run's own follow-on says the row is suppressed until the window closes, which understates a loss that lasts the arming."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071101125471-follower-prints-only-policy-rows/manifest.md",
+      "line": "19",
+      "text": "the baseline_suite and after_suite fields carry prose, so the read-path derivation resolves the sentence itself as a log path, reads nothing, and reports the added-failure count unmeasured; a reader gets the measured zero only by opening the logs the prose names, which this review did."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071101125471-follower-prints-only-policy-rows/baseline_follow_ticker_watch.log",
+      "line": "6",
+      "text": "the wide base arm's log ends at 44 percent with no summary and no FAILED lines, so the manifest's claim that the same three ids fail there is not readable from that log; the id-level base evidence is the focused five-id log, and read from the truncated log alone the same derivation would report three false positives."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "1048",
+      "text": "replay_row_policy drives RowPolicy directly, a layer below _emit and the follower's row selection, so the headline 1680 of 3540 counts the policy and not the pane; with the wiring reverted the replay is unchanged, so gate and tests stay green while the feature is off."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 11 production call site(s)",
+    "diff": "a deep policy module plus its wiring - RowPolicy holds, resolves, suppresses and releases as the section specifies, the style commit changes no behaviour, and the wiring is the one layer no assertion reaches.",
+    "done_when": "every quantitative clause holds under independent measurement - 1680 of 3540 rows printed, 23 of 23 coordinator kinds fed and printed, the set's contents coordinator under the audit's own rule (20 census coordinator rows plus the two pair openers the audit admits after the noise qualifier plus stalled-to-blocked, unobserved in the census), 14 red at base, 14 green at head, 10 red under the declared mutation, zero added failures by id, the gate log 966 bytes against its 200 KB bound, and every log carrying tree and command with a revision on the header line in five of the seven (the two control logs carry theirs in prose); the merged-result half is deferred to a separately dispatched test node, as the dispatch states.",
+    "goal": "section 9's rule lands: the three audited noise pairs are held for their windows and print only when unresolved, a same-state rewrite moves only the counter, a re-derived baseline is silent, a declared wait prints, and the 2026-09-25 replay keeps all 23 coordinator kinds; the gap is that a held row is already the checkpoint memory, so a re-arm inside the window loses it.",
+    "manifest": "fields are well formed and the follow-ons honest, but baseline_suite and after_suite carry prose instead of a log_path the read path can resolve, so the added-failure annotation reports unmeasured; and the checkpoint's claim that the wide base arm fails the same three ids is not readable from that arm's log, which ends at 44 percent.",
+    "write_paths": "the six changed paths are exactly the declared scope; the three cumulative docs are additive-only (zero deletion lines each) and the range's four deletions are the replaced lines in cli.py and ticker.py."
+  },
+  "justifications": {
+    "durability": "the wiring that turns the policy on can be removed with every test still green, and a held row is lost across a re-arm - both are silent-failure shapes.",
+    "evidence": "the declared negative control is exemplary - the mutation kills 10 of 14, the base-source control kills all 14 - and the focused base arm carries the id-level claim; the prose suite fields, the truncated wide base log and a measure one layer below the pane are what hold it below a clean score.",
+    "fit": "named and shaped like the code around it, no plan labels in source, and the policy is a deep module with one clear contract.",
+    "goal_fidelity": "the policy does what the section asks and the replay measures it, with the one disclosed loss on re-arm inside a hold window as the residual.",
+    "scope_discipline": "six declared paths, three of them additive-only cumulative records, and four deletions in the entire range."
+  },
+  "project": "reckon",
+  "raw_text": "review of run r-20260928T071101125471-follower-prints-only-policy-rows at 036eaf3d47a4f9bd108b0c4597cc3c6a52f4d603, read against base 1a1c50a5e68ab083063d077767476db56a22864b\n\nreviewed_base_sha: 1a1c50a5e68ab083063d077767476db56a22864b\nreviewed_head_sha: 036eaf3d47a4f9bd108b0c4597cc3c6a52f4d603\n\nThis review's own gates live under /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T084904375867-review-of-follower-prints-only-policy-rows/gates/: review-head-tests.log,\nreview-declared-mutation.log, review-cli-bypass.log, review-replay-head.log,\nreview-rearm-loss.log, review-added-failures.log, review-audit-kinds.log.\n\nVERDICT goal: section 9's rule lands: the three audited noise pairs are held for their windows and print only when unresolved, a same-state rewrite moves only the counter, a re-derived baseline is silent, a declared wait prints, and the 2026-09-25 replay keeps all 23 coordinator kinds; the gap is that a held row is already the checkpoint memory, so a re-arm inside the window loses it.\nVERDICT done_when: every quantitative clause holds under independent measurement - 1680 of 3540 rows printed, 23 of 23 coordinator kinds fed and printed, the set's contents coordinator under the audit's own rule (20 census coordinator rows plus the two pair openers the audit admits after the noise qualifier plus stalled-to-blocked, unobserved in the census), 14 red at base, 14 green at head, 10 red under the declared mutation, zero added failures by id, the gate log 966 bytes against its 200 KB bound, and every log carrying tree and command with a revision on the header line in five of the seven (the two control logs carry theirs in prose); the merged-result half is deferred to a separately dispatched test node, as the dispatch states.\nVERDICT write_paths: the six changed paths are exactly the declared scope; the three cumulative docs are additive-only (zero deletion lines each) and the range's four deletions are the replaced lines in cli.py and ticker.py.\nVERDICT manifest: fields are well formed and the follow-ons honest, but baseline_suite and after_suite carry prose instead of a log_path the read path can resolve, so the added-failure annotation reports unmeasured; and the checkpoint's claim that the wide base arm fails the same three ids is not readable from that arm's log, which ends at 44 percent.\nVERDICT diff: a deep policy module plus its wiring - RowPolicy holds, resolves, suppresses and releases as the section specifies, the style commit changes no behaviour, and the wiring is the one layer no assertion reaches.\nVERDICT call_sites: eleven production call sites verified against the change: the policy's construction, seeding and three forward/flush helpers in the follower loop, _emit's memory write, and the checkpoint persistence that carries that memory.\nCALL_SITES: reckon/cli.py:2391, reckon/cli.py:2395, reckon/cli.py:2568, reckon/cli.py:2684, reckon/cli.py:2764, reckon/cli.py:2779, reckon/cli.py:2793, reckon/cli.py:2803, reckon/crew/ticker.py:971, reckon/crew/ticker.py:1032, reckon/crew/follow_checkpoint.py:227\n\nSCORE goal_fidelity: 18\nSCORE evidence: 15\nSCORE scope_discipline: 19\nSCORE durability: 14\nSCORE fit: 18\n\nJUSTIFICATION goal_fidelity: the policy does what the section asks and the replay measures it, with the one disclosed loss on re-arm inside a hold window as the residual.\nJUSTIFICATION evidence: the declared negative control is exemplary - the mutation kills 10 of 14, the base-source control kills all 14 - and the focused base arm carries the id-level claim; the prose suite fields, the truncated wide base log and a measure one layer below the pane are what hold it below a clean score.\nJUSTIFICATION scope_discipline: six declared paths, three of them additive-only cumulative records, and four deletions in the entire range.\nJUSTIFICATION durability: the wiring that turns the policy on can be removed with every test still green, and a held row is lost across a re-arm - both are silent-failure shapes.\nJUSTIFICATION fit: named and shaped like the code around it, no plan labels in source, and the policy is a deep module with one clear contract.\n\nFINDING tests/test_follower_prints_only_policy_rows.py:110 the kind loop asserts transition_class(kind) == ROW_COORDINATOR for each member of COORDINATOR_KINDS, which the classifier itself reads, so trimming or emptying the set leaves every assertion vacuous and the file green; the set's contents are pinned only by the audit comparison (this review made it by hand, per kind, and the 23 are coordinator under the audit's rule).\nFINDING reckon/cli.py:2395 the forward, flush and release wiring the follower loop runs on is covered by no test: reverting _policy_forward to yield the row unchanged leaves the new file at 14 passed, so the 49 cli.py lines that turn the policy on can be removed without anything going red.\nFINDING reckon/cli.py:2568 _emit records reported[run_id] before the policy sees the row, so the checkpoint memory holds a destination the pane may never have shown; a re-arm inside the hold window seeds the fresh policy from it and the opener is lost for that arming - measured at 1 row released with no teardown, 0 rows on the re-armed pane, and a same-state rewrite silently ignored; the run's own follow-on says the row is suppressed until the window closes, which understates a loss that lasts the arming.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071101125471-follower-prints-only-policy-rows/manifest.md:19 the baseline_suite and after_suite fields carry prose, so the read-path derivation resolves the sentence itself as a log path, reads nothing, and reports the added-failure count unmeasured; a reader gets the measured zero only by opening the logs the prose names, which this review did.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T071101125471-follower-prints-only-policy-rows/baseline_follow_ticker_watch.log:6 the wide base arm's log ends at 44 percent with no summary and no FAILED lines, so the manifest's claim that the same three ids fail there is not readable from that log; the id-level base evidence is the focused five-id log, and read from the truncated log alone the same derivation would report three false positives.\nFINDING reckon/crew/ticker.py:1048 replay_row_policy drives RowPolicy directly, a layer below _emit and the follower's row selection, so the headline 1680 of 3540 counts the policy and not the pane; with the wiring reverted the replay is unchanged, so gate and tests stay green while the feature is off.\n",
+  "review_run_id": "r-20260928T084904375867-review-of-follower-prints-only-policy-rows",
+  "reviewed_base_sha": "1a1c50a5e68ab083063d077767476db56a22864b",
+  "reviewed_head_sha": "036eaf3d47a4f9bd108b0c4597cc3c6a52f4d603",
+  "reviewed_run_id": "r-20260928T071101125471-follower-prints-only-policy-rows",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T09:14:58.351574+00:00",
+  "total": 84
+}

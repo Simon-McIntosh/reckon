@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own baseline_suite/after_suite gate records (logs/base-arm.log revision 67c5188478, 3 failed / 22 passed EXIT=1, ids [test_the_disposition_command_resolves_the_runs_own_head, test_the_sub_floor_duty_resolves_the_runs_own_head, test_crew_help_names_its_state::test_every_crew_verb_help_names_its_state_or_condition]; logs/head-arm.log revision 4d47852e, 1 failed / 24 passed EXIT=1, ids [test_crew_help_names_its_state::test_every_crew_verb_help_names_its_state_or_condition]). Added = after minus base = the empty set: the two new cases are red at base and green at head, so they are not added failures, and the one head failure is present at base and unrelated to the change. The reviewer independently rebuilt a base tree and reproduced 2 failed for the new cases, reproduced the four-file head gate at '1 failed, 24 passed', and confirmed the shared failure at base.",
+  "backend": "local",
+  "base_log_revision": "67c5188478df10091e45916b6607c3e2b1767253",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/cli.py:4943 the crew disposition reader now takes head and tree from recovery._review_head_and_tree(pointer)",
+    "reckon/crew/obligations.py:677 the sub-floor dimension duty reader likewise takes head and tree from the one resolver",
+    "reckon/crew/recovery.py:1290 _review_head_and_tree \u2014 the single resolver both readers now call",
+    "reckon/crew/recovery.py:1311 the resolver's non-reclaimed branch returning _reviewed_run_head(record) and _review_tree(record)",
+    "reckon/crew/recovery.py:1249 _record_carried_head \u2014 resolves a reclaimed run's abbreviated manifest citation to the full id",
+    "tests/test_one_review_head_resolver.py the two cases driving each reader plus the autouse real-config-home guard"
+  ],
+  "completed_at": "2026-10-03T02:31:28.433Z",
+  "dispatched_at": "2026-10-03T02:17:36Z",
+  "findings": [
+    {
+      "file": "tests/test_one_review_head_resolver.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the single-resolver goal is pinned only at the two known call sites (select_review_for_head is monkeypatched and each reader's resolved head asserted). Nothing structurally prevents a future third reader from calling recovery._reviewed_run_head directly, and such a reintroduction would fail no test. Non-blocking to this section, which asks for the two named readers; a small guard asserting _reviewed_run_head has no caller outside _review_head_and_tree would make the goal hold fleet-wide."
+    }
+  ],
+  "head_log_revision": "f85e1480219197779abeb52c0546b16f9fae9643",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read end to end \u2014 four-line behaviour change at two readers, removal of a duplicated helper, and a 301-line test module; no churn, no unrelated coupling.",
+    "done_when": "met \u2014 one resolver for both readers, a test driving each on a short-id reclaimed run asserting the full id, and a negative control whose case fails.",
+    "goal": "met \u2014 both readers route through recovery._review_head_and_tree; no reader reaches the checkout HEAD.",
+    "manifest": "read \u2014 status complete, two commits, well-formed baseline_suite/after_suite with matching logs, measurement_module/cwd recorded, bare-path negative_control_log.",
+    "write_paths": "respected \u2014 cli.py, obligations.py, the new test, and the evidence anchor; worktree clean; no plan or shared state touched."
+  },
+  "justifications": {
+    "durability": "The two readers converge on one resolver, the test pins both the run's own head and the checkout's later head (asserting the latter is absent), and the negative control reddens its case, so the check is not vacuous. Deducted one because the section's goal \u2014 no reader of a reclaimed run's review head reaches the checkout's HEAD \u2014 is enforced only by the two pinned call sites; nothing structurally prevents a future third reader from calling recovery._reviewed_run_head directly, and such a reintroduction would fail no test. The mechanism is right; its guard is pointwise rather than structural.",
+    "evidence": "Strong and independently reproduced. logs/base-arm.log (base source + the new test, 3 failed / 22 passed EXIT=1), logs/head-arm.log (delivered worktree, 1 failed / 24 passed EXIT=1), and logs/negative-control.log (sub-floor reader routed back to _reviewed_run_head, its case 1 failed EXIT=1) are well-formed, and the manifest's baseline_suite/after_suite JSON matches them. The reviewer rebuilt a base tree from revision 67c5188478 with the two source files reverted and reproduced 2 failed for the two new cases; re-ran the delivered four-file head gate and reproduced exactly '1 failed, 24 passed' with the same single pre-existing id; and confirmed test_crew_help_names_its_state fails identically at base, so zero failure ids are added.",
+    "fit": "Reuses the existing recovery._review_head_and_tree resolver rather than adding a second one, keeps the change to two call sites plus one test module, and lands as conventional commits (fix, then a docs(evidence) anchor) each with a body stating what and why. No plan, sprint or ticket identifier appears in code, symbols or comments.",
+    "goal_fidelity": "The done-when is met exactly. Both readers now take head and tree from recovery._review_head_and_tree at reckon/cli.py:4943 (crew disposition) and reckon/crew/obligations.py:677 (the sub-floor dimension duty); a grep of reckon/ finds no remaining caller of recovery._reviewed_run_head outside the resolver itself (recovery.py:1311), so no reader resolves a reclaimed run's review head from the shared checkout. The new test drives each reader on a run whose manifest cites its head by a nine-character id and asserts the full forty-character id reaches select_review_for_head; independently reproduced green at head (2 passed) and red at base (2 failed).",
+    "scope_discipline": "Change is confined to the declared write paths: reckon/cli.py (+2/-2), reckon/crew/obligations.py (-26/+9, the reader plus removal of the duplicated _reviewed_tree helper), the new tests/test_one_review_head_resolver.py, and the evidence anchor docs/evidence/fragments/crew-runtime-positive-controls/one-review-head-resolver.html. No plan, sprint or shared index is edited; the declared figures path is correctly left uncreated (the done-when names none). The reviewed worktree is clean at the delivered head."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: met \u2014 both readers route through recovery._review_head_and_tree; no reader reaches the checkout HEAD.\nVERDICT done_when: met \u2014 one resolver for both readers, a test driving each on a short-id reclaimed run asserting the full id, and a negative control whose case fails.\nVERDICT write_paths: respected \u2014 cli.py, obligations.py, the new test, and the evidence anchor; worktree clean; no plan or shared state touched.\nVERDICT manifest: read \u2014 status complete, two commits, well-formed baseline_suite/after_suite with matching logs, measurement_module/cwd recorded, bare-path negative_control_log.\nVERDICT diff: read end to end \u2014 four-line behaviour change at two readers, removal of a duplicated helper, and a 301-line test module; no churn, no unrelated coupling.\nVERDICT gate: base arm 3 failed / 22 passed EXIT=1; head arm 1 failed / 24 passed EXIT=1; added ids against base: none (the shared failure is pre-existing).\nCALL_SITES: reckon/cli.py:4943 the crew disposition reader now takes head and tree from recovery._review_head_and_tree(pointer), reckon/crew/obligations.py:677 the sub-floor dimension duty reader likewise takes head and tree from the one resolver, reckon/crew/recovery.py:1290 _review_head_and_tree \u2014 the single resolver both readers now call, reckon/crew/recovery.py:1311 the resolver's non-reclaimed branch returning _reviewed_run_head(record) and _review_tree(record), reckon/crew/recovery.py:1249 _record_carried_head \u2014 resolves a reclaimed run's abbreviated manifest citation to the full id, tests/test_one_review_head_resolver.py the two cases driving each reader plus the autouse real-config-home guard\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The done-when is met exactly. Both readers now take head and tree from recovery._review_head_and_tree at reckon/cli.py:4943 (crew disposition) and reckon/crew/obligations.py:677 (the sub-floor dimension duty); a grep of reckon/ finds no remaining caller of recovery._reviewed_run_head outside the resolver itself (recovery.py:1311), so no reader resolves a reclaimed run's review head from the shared checkout. The new test drives each reader on a run whose manifest cites its head by a nine-character id and asserts the full forty-character id reaches select_review_for_head; independently reproduced green at head (2 passed) and red at base (2 failed).\nSCORE evidence: 20\nJUSTIFICATION evidence: Strong and independently reproduced. logs/base-arm.log (base source + the new test, 3 failed / 22 passed EXIT=1), logs/head-arm.log (delivered worktree, 1 failed / 24 passed EXIT=1), and logs/negative-control.log (sub-floor reader routed back to _reviewed_run_head, its case 1 failed EXIT=1) are well-formed, and the manifest's baseline_suite/after_suite JSON matches them. The reviewer rebuilt a base tree from revision 67c5188478 with the two source files reverted and reproduced 2 failed for the two new cases; re-ran the delivered four-file head gate and reproduced exactly '1 failed, 24 passed' with the same single pre-existing id; and confirmed test_crew_help_names_its_state fails identically at base, so zero failure ids are added.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Change is confined to the declared write paths: reckon/cli.py (+2/-2), reckon/crew/obligations.py (-26/+9, the reader plus removal of the duplicated _reviewed_tree helper), the new tests/test_one_review_head_resolver.py, and the evidence anchor docs/evidence/fragments/crew-runtime-positive-controls/one-review-head-resolver.html. No plan, sprint or shared index is edited; the declared figures path is correctly left uncreated (the done-when names none). The reviewed worktree is clean at the delivered head.\nSCORE durability: 19\nJUSTIFICATION durability: The two readers converge on one resolver, the test pins both the run's own head and the checkout's later head (asserting the latter is absent), and the negative control reddens its case, so the check is not vacuous. Deducted one because the section's goal \u2014 no reader of a reclaimed run's review head reaches the checkout's HEAD \u2014 is enforced only by the two pinned call sites; nothing structurally prevents a future third reader from calling recovery._reviewed_run_head directly, and such a reintroduction would fail no test. The mechanism is right; its guard is pointwise rather than structural.\nSCORE fit: 20\nJUSTIFICATION fit: Reuses the existing recovery._review_head_and_tree resolver rather than adding a second one, keeps the change to two call sites plus one test module, and lands as conventional commits (fix, then a docs(evidence) anchor) each with a body stating what and why. No plan, sprint or ticket identifier appears in code, symbols or comments.\nFINDING tests/test_one_review_head_resolver.py:1 follow-on: the single-resolver goal is pinned only at the two known call sites (select_review_for_head is monkeypatched and each reader's resolved head asserted). Nothing structurally prevents a future third reader from calling recovery._reviewed_run_head directly, and such a reintroduction would fail no test. Non-blocking to this section, which asks for the two named readers; a small guard asserting _reviewed_run_head has no caller outside _review_head_and_tree would make the goal hold fleet-wide.\n",
+  "review_run_id": "r-20261003T021640836456-review-of-one-review-head-resolver",
+  "reviewed_base_sha": "67c5188478df10091e45916b6607c3e2b1767253",
+  "reviewed_head_sha": "f85e1480219197779abeb52c0546b16f9fae9643",
+  "reviewed_run_id": "r-20261003T014049918110-one-review-head-resolver",
+  "reviewer": "review-of-one-review-head-resolver",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T02:28:56.179143+00:00",
+  "total": 99
+}

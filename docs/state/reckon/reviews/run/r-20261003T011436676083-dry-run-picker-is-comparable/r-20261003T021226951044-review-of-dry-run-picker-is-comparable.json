@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs, named in its manifest under test_logs. logs/gate-base.log (revision 28c5ae1a3) reports '1 failed, 441 passed, 3 warnings in 1752.91s' EXIT=1 with failure_ids ['tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field']; logs/gate-head.log (revision 1cc3d749e) reports '444 passed in 228.42s' EXIT=0 with no failure ids. Added = head minus base = none, so added_failure_count is 0 and added_failure_ids is empty. The two-arm difference is confirmed in direction: the target test is red at base and green at head, the two extra head tests are the new parametrised case, and the reviewer independently reproduced the head arm green (3 passed, /tmp/rev-check.log). The reviewed manifest carries no baseline_suite/after_suite fields, so this count was taken by hand from the logs the manifest does name rather than by the read-time annotation.",
+  "backend": "local",
+  "base_log_revision": "28c5ae1a36aeca384d0372518c0f79d27e03b1f6",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:1758 \u2014 the dry-run dispatch report; plan_dispatch is called with route and picker_selection and the result is emitted via DispatchPlan.as_dict(), the one production consumer of the changed field",
+    "reckon/crew/dispatch.py:5690 \u2014 the real dispatch path; resolution.picker_selection flows to the live pointer",
+    "reckon/crew/dispatch.py:5847 \u2014 the budget-fallback re-resolution of the same node",
+    "reckon/crew/dispatch.py:5152 \u2014 the shadow-comparison dry run",
+    "reckon/crew/dispatch.py:10757 \u2014 the remaining internal plan_dispatch site"
+  ],
+  "completed_at": "2026-10-03T02:23:40.512Z",
+  "dispatched_at": "2026-10-03T02:13:11Z",
+  "findings": [
+    {
+      "file": "reckon/cli.py",
+      "line": "1750",
+      "severity": "follow-on",
+      "text": "The dry-run path calls dispatch_picker_selection unconditionally, so a shadow-mode preview still asks the picker and spends its latency \u2014 the done-when clause 'a dry run in shadow mode does not call the picker at all' is unmet. The file is owned by the concurrent node gc-reports-what-it-already-did, so it is outside this node's write scope and the node correctly reported it under follow_ons; the landed change keeps the report comparable regardless, so this does not hold the node."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T011436676083-dry-run-picker-is-comparable/manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "The reviewed manifest names its gate logs under test_logs but carries no baseline_suite/after_suite fields, so the read-time annotation (reckon/crew/review.py:1314, annotate_review_of_run) finds neither log and read_review reports added_failure_count as unmeasured even though both gate logs are complete. The count in this review's stored record was therefore derived by hand from logs/gate-base.log and logs/gate-head.log."
+    },
+    {
+      "file": "tests/test_routing_picker_key.py",
+      "line": "102",
+      "severity": "follow-on",
+      "text": "The comparability guard masks every key ending in _at wholesale rather than only the picker's observation stamps, so a per-call picker field whose name ended in _at would be excluded from the comparison instead of caught; the intended latency_ms/jev_latency_ms fields do not end in _at and are covered, so this is a widening of the mask rather than a gap in what it was added to catch."
+    }
+  ],
+  "head_log_revision": "1cc3d749ee842880163760e7a8cb5121cc168ab4",
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read both commits end to end against 28c5ae1a3: 1cc3d749e adds _reportable_picker_selection and the route-gated recording in plan_dispatch plus the two parametrised tests; 00cef9d6c adds the evidence fragment. No churn, no out-of-scope file, and the live pointer at reckon/crew/dispatch.py:6417 keeps the full answer from its own local, so the change reaches only the dry-run report.",
+    "done_when": "Six of the seven clauses hold and one fails: tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field fails at the base revision (logs/gate-base.log, 1 failed/441 passed EXIT=1) and passes at head (logs/gate-head.log, 444 passed EXIT=0); the two-mode comparability, latency-strip and new-test clauses hold; but the clause 'a dry run in shadow mode does not call the picker at all' is unmet because reckon/cli.py:1750 calls dispatch_picker_selection unconditionally, outside this node's scope and reported under follow_ons.",
+    "goal": "The node's goal is to keep dry-run reports comparable when the picker is consulted; reckon/crew/dispatch.py:4810 records the picker answer on the resolved plan only when route == \"picker\" and strips latency_ms/jev_latency_ms, and the new test at tests/test_routing_picker_key.py:111 verifies two previews compare equal under both shadow and route.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T011436676083-dry-run-picker-is-comparable/manifest.md; status complete, commits 1cc3d749e and 00cef9d6c, the tests line reports base 1 failed/441 passed EXIT=1 and head 444 passed EXIT=0 matching the two logs, negative_control_log is a bare path, and the unmet shadow clause is stated in follow_ons.",
+    "write_paths": "Four paths were declared and three changed against base 28c5ae1a3: reckon/crew/dispatch.py (+33), tests/test_routing_picker_key.py (+55) and docs/evidence/fragments/one-typesafe-model-picker/dry-run-picker-is-comparable.html (+54); docs/figures/... was correctly not created and no plan or shared index was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_routing_picker_key.py:111 stubs the picker with differing latencies and fails when the raw answer is recorded for every route (logs/negative-control.log, three failing ids); deducted because the shadow-makes-no-call clause has no guard and the mask at tests/test_routing_picker_key.py:102 excludes every _at-suffixed field wholesale.",
+    "evidence": "The gate's two arms are recorded (logs/gate-base.log 1 failed/441 passed EXIT=1; logs/gate-head.log 444 passed EXIT=0), the negative control reproves the defect, and the reviewer reproduced the head tests green; deducted because the reviewed manifest names its logs under test_logs rather than baseline_suite/after_suite, so read_review cannot derive the count from it.",
+    "fit": "The _reportable_picker_selection helper and _PICKER_PER_CALL_FIELDS constant at reckon/crew/dispatch.py:4158-4185 follow the surrounding module idiom and explain the why, with no plan, sprint or ticket identifier in code, names or comments.",
+    "goal_fidelity": "The observable goal is met at reckon/crew/dispatch.py:4810 (answer recorded only for route == \"picker\", per-call latencies stripped) and pinned by tests/test_routing_picker_key.py:111, but the done-when clause that a shadow preview does not call the picker at all is unmet at reckon/cli.py:1750.",
+    "scope_discipline": "Only the three declared paths changed against 28c5ae1a3, reckon/cli.py is left untouched, no plan or shared index is edited, and the out-of-scope clause is reported under follow_ons rather than fixed."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to keep dry-run reports comparable when the picker is consulted; reckon/crew/dispatch.py:4810 records the picker answer on the resolved plan only when route == \"picker\" and strips latency_ms/jev_latency_ms, and the new test at tests/test_routing_picker_key.py:111 verifies two previews compare equal under both shadow and route.\nVERDICT done_when: six of the seven clauses hold and one fails \u2014 tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field fails at the base revision (logs/gate-base.log, 1 failed/441 passed EXIT=1) and passes at head (logs/gate-head.log, 444 passed EXIT=0), the two-mode comparability, latency-strip and new-test clauses hold, but the clause 'a dry run in shadow mode does not call the picker at all' is unmet because reckon/cli.py:1750 calls dispatch_picker_selection unconditionally, which is outside this node's write scope and which the node reported under follow_ons.\nVERDICT write_paths: four paths were declared and three changed against base 28c5ae1a3 \u2014 reckon/crew/dispatch.py (+33), tests/test_routing_picker_key.py (+55) and docs/evidence/fragments/one-typesafe-model-picker/dry-run-picker-is-comparable.html (+54); docs/figures/... was correctly not created and no plan or shared index was touched.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T011436676083-dry-run-picker-is-comparable/manifest.md; status complete, commits 1cc3d749e and 00cef9d6c, the tests line reports base 1 failed/441 passed EXIT=1 and head 444 passed EXIT=0 matching the two logs, negative_control_log is a bare path, and the unmet shadow clause is stated in follow_ons.\nVERDICT diff: read both commits end to end against 28c5ae1a3 \u2014 1cc3d749e adds _reportable_picker_selection and the route-gated recording in plan_dispatch plus the two parametrised tests, 00cef9d6c adds the evidence fragment; no churn, no out-of-scope file, and the live pointer at reckon/crew/dispatch.py:6417 keeps the full answer from its own local, so the change reaches only the dry-run report.\nCALL_SITES: reckon/cli.py:1758, reckon/crew/dispatch.py:5690, reckon/crew/dispatch.py:5847, reckon/crew/dispatch.py:5152, reckon/crew/dispatch.py:10757\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the observable goal is met at reckon/crew/dispatch.py:4810 (answer recorded only for route == \"picker\", per-call latencies stripped) and pinned by tests/test_routing_picker_key.py:111, but the done-when clause that a shadow preview does not call the picker at all is unmet at reckon/cli.py:1750.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate's two arms are recorded (logs/gate-base.log 1 failed/441 passed EXIT=1; logs/gate-head.log 444 passed EXIT=0), the negative control reproduces the defect, and the reviewer reproduced the head tests green, deducted because the reviewed manifest names its logs under test_logs rather than baseline_suite/after_suite so read_review cannot derive the count.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only the three declared paths changed against 28c5ae1a3, reckon/cli.py is left untouched, no plan or shared index is edited, and the out-of-scope clause is reported under follow_ons rather than fixed.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_routing_picker_key.py:111 stubs the picker with differing latencies and fails when the raw answer is recorded for every route (logs/negative-control.log, three failing ids), deducted because the shadow-makes-no-call clause has no guard and the mask at tests/test_routing_picker_key.py:102 excludes every _at-suffixed field wholesale.\nSCORE fit: 19\nJUSTIFICATION fit: the _reportable_picker_selection helper and _PICKER_PER_CALL_FIELDS constant at reckon/crew/dispatch.py:4158-4185 follow the surrounding module idiom and explain the why, with no plan, sprint or ticket identifier in code, names or comments.\nFINDING reckon/cli.py:1750 follow-on: the dry-run path calls dispatch_picker_selection unconditionally, so a shadow-mode preview still asks the picker and spends its latency \u2014 the done-when clause 'a dry run in shadow mode does not call the picker at all' is unmet; the file is owned by the concurrent node gc-reports-what-it-already-did, so it is out of this node's write scope and correctly reported under follow_ons, and the landed change keeps the report comparable regardless.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T011436676083-dry-run-picker-is-comparable/manifest.md:11 follow-on: the reviewed manifest names its gate logs under test_logs but carries no baseline_suite/after_suite fields, so the read-time annotation in reckon/crew/review.py:1314 finds neither log and read_review reports added_failure_count as unmeasured even though both gate logs are complete; the count in this review's stored record was derived by hand from logs/gate-base.log and logs/gate-head.log.\nFINDING tests/test_routing_picker_key.py:102 follow-on: the comparability guard masks every key ending in _at wholesale rather than only the picker's observation stamps, so a per-call picker field whose name ends in _at would be excluded from the comparison rather than caught; the intended latency_ms/jev_latency_ms fields do not end in _at and are covered.",
+  "review_run_id": "r-20261003T021226951044-review-of-dry-run-picker-is-comparable",
+  "reviewed_base_sha": "28c5ae1a36aeca384d0372518c0f79d27e03b1f6",
+  "reviewed_head_sha": "00cef9d6c105b397e46793fcc6875a440068085f",
+  "reviewed_run_id": "r-20261003T011436676083-dry-run-picker-is-comparable",
+  "reviewer": "review-of-dry-run-picker-is-comparable",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.774253+00:00",
+  "total": 89
+}

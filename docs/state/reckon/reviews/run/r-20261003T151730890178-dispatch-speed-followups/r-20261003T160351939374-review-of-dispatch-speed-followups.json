@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "set difference over the reviewed run's own baseline_suite (base-gate.log, 521 passed, 0 failed) and after_suite (head-gate.log, 536 passed, 0 failed) failure ids; both arms completed, so the count is measured 0 rather than unmeasured.",
+  "after_suite": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 --basetemp /tmp/dispatch-speed-head <28 test files under the reviewed worktree tests/>",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T151730890178-dispatch-speed-followups/head-gate.log",
+    "revision": "1eb68c4341f76785f043a3d25bc3ffba9283175f"
+  },
+  "baseline_suite": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 --basetemp /tmp/dispatch-speed-base <28 test files under /tmp/picker-base-_xobvxqd/tests>",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T151730890178-dispatch-speed-followups/base-gate.log",
+    "revision": "a4e95929a5401d0f49533fed89800ec2e10533c5"
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:build_picker_inputs",
+    "reckon/crew/picker/lane_context.py:_cached_run_time_profile",
+    "reckon/crew/routing.py:shared_verdict_inputs"
+  ],
+  "completed_at": "2026-10-03T16:13:01.066Z",
+  "dispatched_at": "2026-10-03T16:04:06Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/dispatch-speed-followups.html",
+      "line": "36",
+      "severity": "follow-on",
+      "text": "follow-on: the at-or-below-1.0 s latency figure is measured at 88c10ba1d, one revision before the reviewed head d8717d6ce, so the headline measure is not itself taken at the revision under review."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "3235",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when asked to stamp what resolve_resource reads; the run instead demonstrated the typed-root collision never reaches the stamp and added a regression test, leaving any other stamp/resolve divergence unexamined."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read revision by revision against a4e95929; 88c10ba1d adds the projected picker columns and picker_runs, 1eb68c434 preserves caching for absent aggregates, d8717d6ce records the evidence fragment.",
+    "done_when": "the done_when names the latency cut and three follow-ons; reckon/ledger.py:758 catches OSError in _file_identity and reckon/crew/picker/lane_context.py:252 index_stamp close (b) and (c), and tests/test_dispatch_speed.py:498 pins the (a) typed-root refusal as already guarded.",
+    "goal": "the node goal is a fresh-process picker input build at or below 1.0 s with the dispatch-speed review follow-ons closed; the manifest and docs/evidence/fragments/one-typesafe-model-picker/dispatch-speed-followups.html:17 record an after-append median of 0.709 s against a 1.959 s base.",
+    "manifest": "read; it states status complete, names base-gate.log (521 passed) and head-gate.log (536 passed, EXIT=0), and its baseline_suite/after_suite carry zero failure ids on both arms.",
+    "write_paths": "the declared paths are reckon/ledger.py, reckon/crew/routing.py, reckon/crew/picker/lane_context.py, reckon/crew/dispatch.py, tests/test_dispatch_speed.py and the evidence fragment; the diff a4e95929..d8717d6ce touches exactly those and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_speed.py:621 test_projected_inputs_do_not_decode_retained_full_payloads fails with EXIT=1 when full-payload decoding is restored on the dispatch path, as negative-control.log records.",
+    "evidence": "base-gate.log and head-gate.log each end in EXIT with zero failures over the prescribed gate list, so the delta is measured rather than claimed at reckon/crew/dispatch.py:4676.",
+    "fit": "reckon/ledger.py:1000 picker_record and picker_runs follow the module idiom and introduce no forbidden name, and the two SQL interpolations carry a mechanism noqa at reckon/ledger.py:988.",
+    "goal_fidelity": "docs/evidence/fragments/one-typesafe-model-picker/dispatch-speed-followups.html:17 gives the 1.959 s to 0.709 s after-append median, and reckon/ledger.py:1000 picker_runs supplies the projection the goal names.",
+    "scope_discipline": "the diff a4e95929..d8717d6ce lists six paths, all inside the declared write paths of the reviewed manifest."
+  },
+  "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T151730890178-dispatch-speed-followups/negative-control.log",
+  "negative_control_note": "restoring full-payload decoding on the dispatch path reddens test_projected_inputs_do_not_decode_retained_full_payloads with EXIT=1; the unmutated head arm is green.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a fresh-process picker input build at or below 1.0 s with the dispatch-speed review follow-ons closed; the manifest and docs/evidence/fragments/one-typesafe-model-picker/dispatch-speed-followups.html:17 record an after-append median of 0.709 s against a 1.959 s base.\nVERDICT done_when: the done_when names the latency cut and three follow-ons; reckon/ledger.py:758 catches OSError in _file_identity and reckon/crew/picker/lane_context.py:252 index_stamp close (b) and (c), and tests/test_dispatch_speed.py:498 pins the (a) typed-root refusal as already guarded.\nVERDICT write_paths: the declared paths are reckon/ledger.py, reckon/crew/routing.py, reckon/crew/picker/lane_context.py, reckon/crew/dispatch.py, tests/test_dispatch_speed.py and the evidence fragment; the diff a4e95929..d8717d6ce touches exactly those and nothing else.\nVERDICT manifest: read; it states status complete, names base-gate.log (521 passed) and head-gate.log (536 passed, EXIT=0), and its baseline_suite/after_suite carry zero failure ids on both arms.\nVERDICT diff: read revision by revision against a4e95929; 88c10ba1d adds the projected picker columns and picker_runs, 1eb68c434 preserves caching for absent aggregates, d8717d6ce records the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:build_picker_inputs, reckon/crew/picker/lane_context.py:_cached_run_time_profile, reckon/crew/routing.py:shared_verdict_inputs\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/one-typesafe-model-picker/dispatch-speed-followups.html:17 gives the 1.959 s to 0.709 s after-append median, and reckon/ledger.py:1000 picker_runs supplies the projection the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-gate.log and head-gate.log each end in EXIT with zero failures over the prescribed gate list, so the delta is measured rather than claimed at reckon/crew/dispatch.py:4676.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff a4e95929..d8717d6ce lists six paths, all inside the declared write paths of the reviewed manifest.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_dispatch_speed.py:621 test_projected_inputs_do_not_decode_retained_full_payloads fails with EXIT=1 when full-payload decoding is restored on the dispatch path, as negative-control.log records.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/ledger.py:1000 picker_record and picker_runs follow the module idiom and introduce no forbidden name, and the two SQL interpolations carry a mechanism noqa at reckon/ledger.py:988.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/dispatch-speed-followups.html:36 follow-on: the at-or-below-1.0 s latency figure is measured at 88c10ba1d, one revision before the reviewed head d8717d6ce, so the headline measure is not itself taken at the revision under review.\nFINDING reckon/crew/routing.py:3235 follow-on: the done_when asked to stamp what resolve_resource reads; the run instead demonstrated the typed-root collision never reaches the stamp and added a regression test, leaving any other stamp/resolve divergence unexamined.\n",
+  "review_run_id": "r-20261003T160351939374-review-of-dispatch-speed-followups",
+  "reviewed_base_sha": "a4e95929a5401d0f49533fed89800ec2e10533c5",
+  "reviewed_head_sha": "d8717d6ce7dd805ac6c97715ade5bae00adfdd77",
+  "reviewed_run_id": "r-20261003T151730890178-dispatch-speed-followups",
+  "reviewer_run_id": "r-20261003T160351939374-review-of-dispatch-speed-followups",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T16:11:21.257136+00:00",
+  "total": 94
+}

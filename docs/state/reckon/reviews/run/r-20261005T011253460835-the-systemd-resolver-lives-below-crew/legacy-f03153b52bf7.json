@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "1f4205dd3184150070a7dfe9d96148c9f3e647ac",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/service.py:124",
+    "reckon/crew/fleet_supervisor.py:431",
+    "reckon/crew/paid_lanes.py:48"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-05T01:13:18Z",
+  "findings": [
+    {
+      "file": "tests/test_the_systemd_resolver_lives_below_crew.py",
+      "line": "74",
+      "severity": "follow-on",
+      "text": "follow-on: the declared negative control reddens all five cases as setup ERROR rows because the restored import closes a cycle (paid_lanes imports service at paid_lanes.py:48, so service importing paid_lanes again breaks the import chain the conftest's picker fixture walks), so the fresh-interpreter assertion this line holds never executes in negative-control.log; the guard is still sound because the mutation does break `import reckon.service` in a fresh interpreter, but the recorded log demonstrates the cycle rather than the assertion the declaration names."
+    }
+  ],
+  "head_log_revision": "e76c723315782fd7866741c709437cdc002e8dcc",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 1f4205dd3; 3383443f7 moves the resolver into service.py and rewires both consumers, e76c72331 relocates the test imports inside the cases so a broken import reddens a case, and 99d84d03e adds only the landing fragment.",
+    "done_when": "the done-when's four clauses all hold \u2014 one base resolver outside reckon.crew (service.py:96), both consumers building on it with no local copy left (fleet_supervisor.py:426, paid_lanes re-export at paid_lanes.py:48), a fresh-interpreter test (tests/test_the_systemd_resolver_lives_below_crew.py:74), and a population gate that adds no failure (345 at base, 350 at head).",
+    "goal": "the goal is to move the XDG config base resolver into a module that imports nothing from reckon.crew, with systemd_user_dir and fleet_supervisor.config_directory both building on it; reckon/service.py:96 xdg_config_home resolves the base with no crew import, systemd_user_dir appends systemd/user at service.py:119, and fleet_supervisor.py:426 appends fleet, matching the scope comment c-20261005-s62-scope.",
+    "manifest": "read; it carries the 20-to-21-file population, both gate arm commands in full with absolute paths, the base 1f4205dd3 and head e76c72331 shas, and the negative-control log path.",
+    "write_paths": "the diff touches only reckon/service.py, reckon/crew/paid_lanes.py, reckon/crew/fleet_supervisor.py, the new test file and the fragment, every one inside the granted scope; the declared figure directory produced nothing, which the done-when does not require."
+  },
+  "justifications": {
+    "durability": "tests/test_the_systemd_resolver_lives_below_crew.py:114 asserts paid_lanes.systemd_user_dir is service.systemd_user_dir and :134 asserts config_directory returns a monkeypatched sentinel's subdirectory, so a reintroduced local copy reddens; the negative control restores the crew import and the fresh-interpreter case fails.",
+    "evidence": "the gate at head ran the 21-file population to 350 passed EXIT=0 against 345 at base (gate-head.log, gate-base.log), and tests/test_the_systemd_resolver_lives_below_crew.py:74 is the fresh-interpreter clause of the done-when.",
+    "fit": "the moved function sits in reckon/service.py as the scope comment directs, no name the naming rules forbid is added, and the base resolution is not duplicated elsewhere (reckon/_store.py:132 _config_home resolves a different, RECKON_HOME-first home).",
+    "goal_fidelity": "reckon/service.py:96 xdg_config_home is the base resolver, importing nothing from reckon.crew, and both consumers build on it at service.py:119 and fleet_supervisor.py:426.",
+    "scope_discipline": "every changed path (service.py, paid_lanes.py, fleet_supervisor.py, the new test, the fragment) is inside the granted scope and the removed local XDG resolver in paid_lanes.py is the one the goal names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to move the XDG config base resolver into a module that imports nothing from reckon.crew, with systemd_user_dir and fleet_supervisor.config_directory both building on it; reckon/service.py:96 xdg_config_home resolves the base with no crew import, systemd_user_dir appends systemd/user at service.py:119, and fleet_supervisor.py:426 appends fleet, matching the scope comment c-20261005-s62-scope.\nVERDICT done_when: the done-when's four clauses all hold \u2014 one base resolver outside reckon.crew (service.py:96), both consumers building on it with no local copy left (fleet_supervisor.py:426, paid_lanes re-export at paid_lanes.py:48), a fresh-interpreter test (tests/test_the_systemd_resolver_lives_below_crew.py:74), and a population gate that adds no failure (345 at base, 350 at head).\nVERDICT write_paths: the diff touches only reckon/service.py, reckon/crew/paid_lanes.py, reckon/crew/fleet_supervisor.py, the new test file and the fragment, every one inside the granted scope; the declared figure directory produced nothing, which the done-when does not require.\nVERDICT manifest: read; it carries the 20-to-21-file population, both gate arm commands in full with absolute paths, the base 1f4205dd3 and head e76c72331 shas, and the negative-control log path.\nVERDICT diff: read commit by commit against 1f4205dd3; 3383443f7 moves the resolver into service.py and rewires both consumers, e76c72331 relocates the test imports inside the cases so a broken import reddens a case, and 99d84d03e adds only the landing fragment.\nCALL_SITES: reckon/service.py:124, reckon/crew/fleet_supervisor.py:431, reckon/crew/paid_lanes.py:48\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/service.py:96 xdg_config_home is the base resolver, importing nothing from reckon.crew, and both consumers build on it at service.py:119 and fleet_supervisor.py:426.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at head ran the 21-file population to 350 passed EXIT=0 against 345 at base (gate-head.log, gate-base.log), and tests/test_the_systemd_resolver_lives_below_crew.py:74 is the fresh-interpreter clause of the done-when.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path (service.py, paid_lanes.py, fleet_supervisor.py, the new test, the fragment) is inside the granted scope and the removed local XDG resolver in paid_lanes.py is the one the goal names.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_systemd_resolver_lives_below_crew.py:114 asserts paid_lanes.systemd_user_dir is service.systemd_user_dir and :134 asserts config_directory returns a monkeypatched sentinel's subdirectory, so a reintroduced local copy reddens; the negative control restores the crew import and the fresh-interpreter case fails.\nSCORE fit: 16\nJUSTIFICATION fit: the moved function sits in reckon/service.py as the scope comment directs, no name the naming rules forbid is added, and the base resolution is not duplicated elsewhere (reckon/_store.py:132 _config_home resolves a different, RECKON_HOME-first home).\nFINDING tests/test_the_systemd_resolver_lives_below_crew.py:74 follow-on: the declared negative control reddens all five cases as setup ERROR rows because the restored import closes a cycle (paid_lanes imports service at paid_lanes.py:48, so service importing paid_lanes again breaks the import chain the conftest's picker fixture walks), so the fresh-interpreter assertion this line holds never executes in negative-control.log; the guard is still sound because the mutation does break `import reckon.service` in a fresh interpreter, but the recorded log demonstrates the cycle rather than the assertion the declaration names.\n",
+  "review_run_id": "legacy-f03153b52bf7",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "1f4205dd3184150070a7dfe9d96148c9f3e647ac",
+  "reviewed_head_sha": "99d84d03e74cbd208e9fa22fffcbcbb9b86db926",
+  "reviewed_run_id": "r-20261005T011253460835-the-systemd-resolver-lives-below-crew",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:08.771922+00:00",
+  "total": 91
+}

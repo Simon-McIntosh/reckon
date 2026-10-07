@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived through the store's own reader (reckon/crew/review.py:1068) over the reviewed run's own gate arms for its changed file: base logs/compare/base.run1.log (revision a269be10c, 5 passed, EXIT=0) and head logs/head/test_follower_checks_its_owner.run1.log (revision 6861c2c55edcb27e4061c15fe8c6c66de11edb21, 5 passed, EXIT=0) -> (0, []). Positive control: the same reader over the reviewed run's own broader six-file arms (logs/base/combined.run1.log 239 passed; logs/head/combined.run1.log 13 failed 226 passed) returns (13, 13 ids), so the zero is a measurement rather than a blind parser. The 13 ids sit in three files the node did not change (tests/test_crew.py, tests/test_crew_dispatch_arming.py, tests/test_follower_freshness.py), the reviewed run was unarmed (its manifest carries no baseline_suite/after_suite fields), and its own gate target is the changed file; the broader arm's red is carried in this review's findings instead.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-01T06:00:22.903Z",
+  "dispatched_at": "2026-10-01T05:22:27Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/manifest.md",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest names no baseline_suite/after_suite field, so the store's read-time annotation (reckon/crew/review.py:1273-1278) finds no gate logs and reports the added-failure count unmeasured; a reader through read_review cannot reproduce the count this review stored, and the manifest's claim of a green 239 at this revision has no green six-file head arm on disk."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logical/negative-control.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the first line reads 'the follower detects its dead owner and then runs fifty more wait passes before it leaves, so the count assertion reddens', which does not repeat the declared negative-control string verbatim, so a gate matching the declared string would refuse the record; the admission facts are sound (a non-zero EXIT= and a failing id the head arms pass)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logs/head/combined.run1.log",
+      "line": "734",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's own six-file arm is red at head (13 failed, 226 passed, EXIT=1) with every failure in files it did not change (tests/test_crew.py, tests/test_crew_dispatch_arming.py, tests/test_follower_freshness.py), attributed in follow_ons to a concurrent peer's leaked producer; the arm's green counterpart at this revision is not on disk, so the attribution cannot be checked from the record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against a269be10c87fe28ee3d3e0f54d5d519d3daefac7: 2a4f7da05 raises EXIT_WITHIN_SECONDS to 8.0; e511d849 restores it to 2.0 at :91, adds OWNER_CHECK_SECONDS/OWNER_CHECK_PASSES at :103-104, the FOLLOWER_TEST_PASS_LOG sleeper launch, _pass_count (:537) and _passes_until_exited (:545), and replaces the changed case's elapsed assertion with the pass-count assertion at :772; 6861c2c5 makes OWNER_CHECK_PASSES derive from EXIT_WITHIN_SECONDS/OWNER_CHECK_SECONDS so the cadence and the tolerance move together -- no assertion deleted, no skip or xfail added, no plan, ticket or version label in the new names or comments.",
+    "done_when": "read clause by clause against the reviewed run's own logs -- the changed file passes three consecutive -n 8 arms at head (5 passed / EXIT=0 each, logs/head/test_follower_checks_its_owner.run1-3.log), the base arm is green (logs/base/combined.run1-2.log 239 passed), the declared negative control is executed (logical/negative-control.log 1 failed / EXIT=1), each arm log is headed revision/tree/command and ends EXIT= with its own /tmp basetemp, and each named id's bound and mechanism is recorded in the manifest (evidence_inputs); the residue is that the manifest carries no baseline_suite/after_suite pair and its own six-file head arm is red in files it did not change.",
+    "goal": "the node goal is to make the section load-sensitive ids pass under -n 8 contention by waiting on observed conditions; the landed file replaces the changed case's wall-clock bound with a bound on the follower's own owner-check passes (tests/test_follower_checks_its_owner.py:772), and that file passes 5/5 in three -n 8 head arms at 6861c2c55edcb27e4061c15fe8c6c66de11edb21.",
+    "manifest": "read; status complete, three commits, one changed path, a literal tests command with absolute paths and no placeholder, the negative-control log named by bare path, each named id's bound and mechanism at file and line, and the six-file arm's red run recorded under follow_ons.",
+    "write_paths": "the fence grants six test files, an evidence fragment and a figure directory; the three commits change exactly tests/test_follower_checks_its_owner.py (diff --stat: 1 file, 99 insertions, 8 deletions), the reviewed worktree is clean at 6861c2c55edcb27e4061c15fe8c6c66de11edb21, and no product, plan, fragment, figure or peer path was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_follower_checks_its_owner.py:772 asserts the follower's passes against OWNER_CHECK_PASSES (:104), and the executed control (logical/negative-control.log) reddens it with 'the holder ran 50 and the read-only follower 50' when a scratch reckon/cli.py makes the follower linger fifty passes after its owner dies.",
+    "evidence": "the changed file passes 5/5 in three head arms headed revision 6861c2c55edcb27e4061c15fe8c6c66de11edb21 (logs/head/test_follower_checks_its_owner.run1-3.log), but the reviewed manifest carries no baseline_suite/after_suite pair so the store's read-time derivation returns unmeasured.",
+    "fit": "tests/test_follower_checks_its_owner.py:104; the derived tolerance and the _pass_count/_passes_until_exited helpers follow the file's measured-narrative idiom and carry no forbidden label.",
+    "goal_fidelity": "tests/test_follower_checks_its_owner.py:772 bounds the exit by the follower's own owner-check passes (OWNER_CHECK_PASSES at :104) instead of a wall-clock elapsed, which is the observed-condition mechanism the section goal names.",
+    "scope_discipline": "the diff --stat against a269be10c87fe28ee3d3e0f54d5d519d3daefac7 changes only tests/test_follower_checks_its_owner.py, inside the declared six-file fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the section load-sensitive ids pass under -n 8 contention by waiting on observed conditions; the landed file replaces the changed case's wall-clock bound with a bound on the follower's own owner-check passes (tests/test_follower_checks_its_owner.py:772), and that file passes 5/5 in three -n 8 head arms at 6861c2c55edcb27e4061c15fe8c6c66de11edb21.\nVERDICT done_when: read clause by clause against the reviewed run's own logs -- the changed file passes three consecutive -n 8 arms at head (5 passed / EXIT=0 each, logs/head/test_follower_checks_its_owner.run1-3.log), the base arm is green (logs/base/combined.run1-2.log 239 passed), the declared negative control is executed (logical/negative-control.log 1 failed / EXIT=1), each arm log is headed revision/tree/command and ends EXIT= with its own /tmp basetemp, and each named id's bound and mechanism is recorded in the manifest (evidence_inputs); the residue is that the manifest carries no baseline_suite/after_suite pair and its own six-file head arm is red in files it did not change.\nVERDICT write_paths: the fence grants six test files, an evidence fragment and a figure directory; the three commits change exactly tests/test_follower_checks_its_owner.py (diff --stat: 1 file, 99 insertions, 8 deletions), the reviewed worktree is clean at 6861c2c55edcb27e4061c15fe8c6c66de11edb21, and no product, plan, fragment, figure or peer path was touched.\nVERDICT manifest: read; status complete, three commits, one changed path, a literal tests command with absolute paths and no placeholder, the negative-control log named by bare path, each named id's bound and mechanism at file and line, and the six-file arm's red run recorded under follow_ons.\nVERDICT diff: read commit by commit against a269be10c87fe28ee3d3e0f54d5d519d3daefac7: 2a4f7da05 raises EXIT_WITHIN_SECONDS to 8.0; e511d849 restores it to 2.0 at :91, adds OWNER_CHECK_SECONDS/OWNER_CHECK_PASSES at :103-104, the FOLLOWER_TEST_PASS_LOG sleeper launch, _pass_count (:537) and _passes_until_exited (:545), and replaces the changed case's elapsed assertion with the pass-count assertion at :772; 6861c2c5 makes OWNER_CHECK_PASSES derive from EXIT_WITHIN_SECONDS/OWNER_CHECK_SECONDS so the cadence and the tolerance move together -- no assertion deleted, no skip or xfail added, no plan, ticket or version label in the new names or comments.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_follower_checks_its_owner.py:772 bounds the exit by the follower's own owner-check passes (OWNER_CHECK_PASSES at :104) instead of a wall-clock elapsed, which is the observed-condition mechanism the section goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: the changed file passes 5/5 in three head arms headed revision 6861c2c55edcb27e4061c15fe8c6c66de11edb21 (logs/head/test_follower_checks_its_owner.run1-3.log), but the reviewed manifest carries no baseline_suite/after_suite pair so the store's read-time derivation returns unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff --stat against a269be10c87fe28ee3d3e0f54d5d519d3daefac7 changes only tests/test_follower_checks_its_owner.py, inside the declared six-file fence.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_follower_checks_its_owner.py:772 asserts the follower's passes against OWNER_CHECK_PASSES (:104), and the executed control (logical/negative-control.log) reddens it with 'the holder ran 50 and the read-only follower 50' when a scratch reckon/cli.py makes the follower linger fifty passes after its owner dies.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_follower_checks_its_owner.py:104; the derived tolerance and the _pass_count/_passes_until_exited helpers follow the file's measured-narrative idiom and carry no forbidden label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/manifest.md:19 follow-on: the reviewed manifest names no baseline_suite/after_suite field, so the store's read-time annotation (reckon/crew/review.py:1273-1278) finds no gate logs and reports the added-failure count unmeasured; a reader through read_review cannot reproduce the count this review stored, and the manifest's claim of a green 239 at this revision has no green six-file head arm on disk.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logical/negative-control.log:1 follow-on: the first line reads 'the follower detects its dead owner and then runs fifty more wait passes before it leaves, so the count assertion reddens', which does not repeat the declared negative-control string verbatim, so a gate matching the declared string would refuse the record; the admission facts are sound (a non-zero EXIT= and a failing id the head arms pass).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logs/head/combined.run1.log:734 follow-on: the reviewed run's own six-file arm is red at head (13 failed, 226 passed, EXIT=1) with every failure in files it did not change (tests/test_crew.py, tests/test_crew_dispatch_arming.py, tests/test_follower_freshness.py), attributed in follow_ons to a concurrent peer's leaked producer; the arm's green counterpart at this revision is not on disk, so the attribution cannot be checked from the record.",
+  "review_run_id": "r-20261001T052213776957-review-of-load-sensitive-ids-hold-under-load",
+  "reviewed_base_sha": "a269be10c87fe28ee3d3e0f54d5d519d3daefac7",
+  "reviewed_head_sha": "6861c2c55edcb27e4061c15fe8c6c66de11edb21",
+  "reviewed_run_id": "r-20260930T085417180232-load-sensitive-ids-hold-under-load",
+  "reviewer_run_id": "r-20261001T052213776957-review-of-load-sensitive-ids-hold-under-load",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T05:58:19.075993+00:00",
+  "total": 92
+}

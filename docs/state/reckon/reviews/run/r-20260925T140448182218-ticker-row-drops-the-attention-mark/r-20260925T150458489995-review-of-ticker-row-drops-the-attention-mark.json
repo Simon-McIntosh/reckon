@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:_ticker_grid",
+    "reckon/cli.py:_row_is_stale_inventory",
+    "reckon/crew/recovery.py:format_watch_transition",
+    "reckon/crew/recovery.py:FLEET_BLOCKED_STATES"
+  ],
+  "completed_at": "2026-09-25T15:51:10.688Z",
+  "dispatched_at": "2026-09-25T15:05:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "335",
+      "text": "the comment promises \"more than 60\" reason columns at width 180 and \"more than 80\" at 208, where the head measures 21 and 49 (review-measure.log); the preceding review reported this comment at dd090efd and this change moved the width again without the comment following."
+    },
+    {
+      "file": "tests/test_ticker_row_is_one_transition.py",
+      "line": "89",
+      "text": "the assertion compares columns[\"model\"] with ticker_module.CLOCK + ticker_module.GAP, the expression _columns already assigns to that key at :57, so it holds whatever the renderer does and guards nothing."
+    },
+    {
+      "file": "tests/test_ticker_row_is_one_transition.py",
+      "line": "145",
+      "text": "the observed sets are fed the same computed constants on every iteration, so the one-column-per-row assertion cannot fail; the preceding review named this at :154 and this node rewrote the surrounding test without fixing it."
+    },
+    {
+      "file": "docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html",
+      "line": "190",
+      "text": "the new landing section records 29,484 rendered cases where the committed test renders 29 x 28 x 3 x 7 x 2 = 34,104, repeating the figure the preceding review already found 4,620 low in the section above it."
+    },
+    {
+      "file": "docs/plans/the-fleet-counters-count-the-fleet.html",
+      "line": "166",
+      "text": "the preceding landing paragraph still reads \"The row now reads time, attention, model, ...\" beside the new paragraph that retires that column, so the live plan states two different row layouts."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against base 9da00a60 and re-ran the property test at the reviewed head from a scratch archive tree (reviewer-clean-arm.log, 5 passed); the change retires the attention constant, cell and width, renames ATTENTION_STATES to CLAUSE_STATES, and updates the tests that pinned the retired cells.",
+    "done_when": "read the done_when at prompt.txt:100 and the head gate log; the \u00a0gate log names its revision, tree and 267-passed result, the declared mutation's red log carries 24 failures, but the record's rendered-case figure does not reproduce and the gate command is a placeholder (findings below).",
+    "goal": "read the node goal at prompt.txt:25 against the row rendered at the reviewed head; my own mutated arm is the only build in which the mark returns (reviewer-mutation-arm.log) and the model cell sizes from the declared aliases (reckon/crew/ticker.py:898-912), so both halves of the goal hold.",
+    "manifest": "read the node's manifest.md; it records both commits, the gate log, the mutation log and its own honest follow-on, but its tests field and the gate log's command line keep the literal placeholder \"<12 fence test files>\" instead of the twelve paths that ran.",
+    "write_paths": "read the node's sixteen declared paths against the diff of 66c1daae and a0538e71; all thirteen changed files lie inside them and reckon/cli.py is not edited."
+  },
+  "justifications": {
+    "durability": "the no-mark guard genuinely fires, my own re-insertion of the cell reddening tests/test_ticker_row_is_one_transition.py:124, but the assertion at :89 is a tautology and the observed-set assertion at :145 still cannot fail.",
+    "evidence": "the gate log names its revision, tree and result, but it and the manifest's tests field keep a placeholder command, and the landing record's 29,484 rendered cases measure 34,104 at the head (review-measure.log).",
+    "fit": "the renamed set at reckon/crew/ticker.py:226 follows the module's idiom, but the width-budget comment at :335 still promises reason room the head geometry does not leave.",
+    "goal_fidelity": "the row composed at reckon/crew/ticker.py:1009-1013 carries no mark cell and the model cell is sized from the resolved aliases, so the goal's two halves are met.",
+    "scope_discipline": "every changed path in both commits lies inside the sixteen declared write paths and the cumulative evidence file gained 66 lines with none removed (git diff --numstat 9da00a60..a0538e71)."
+  },
+  "node": "review-of-ticker-row-drops-the-attention-mark",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal at prompt.txt:25 against the row rendered at the reviewed head; my own mutated arm is the only build in which the mark returns (reviewer-mutation-arm.log) and the model cell sizes from the declared aliases (reckon/crew/ticker.py:898-912), so both halves of the goal hold.\nVERDICT done_when: read the done_when at prompt.txt:100 and the head gate log; the \u00a0gate log names its revision, tree and 267-passed result, the declared mutation's red log carries 24 failures, but the record's rendered-case figure does not reproduce and the gate command is a placeholder (findings below).\nVERDICT write_paths: read the node's sixteen declared paths against the diff of 66c1daae and a0538e71; all thirteen changed files lie inside them and reckon/cli.py is not edited.\nVERDICT manifest: read the node's manifest.md; it records both commits, the gate log, the mutation log and its own honest follow-on, but its tests field and the gate log's command line keep the literal placeholder \"<12 fence test files>\" instead of the twelve paths that ran.\nVERDICT diff: read both commits against base 9da00a60 and re-ran the property test at the reviewed head from a scratch archive tree (reviewer-clean-arm.log, 5 passed); the change retires the attention constant, cell and width, renames ATTENTION_STATES to CLAUSE_STATES, and updates the tests that pinned the retired cells.\nCALL_SITES: reckon/cli.py:_ticker_grid, reckon/cli.py:_row_is_stale_inventory, reckon/crew/recovery.py:format_watch_transition, reckon/crew/recovery.py:FLEET_BLOCKED_STATES\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the row composed at reckon/crew/ticker.py:1009-1013 carries no mark cell and the model cell is sized from the resolved aliases, so the goal's two halves are met.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate log names its revision, tree and result, but it and the manifest's tests field keep a placeholder command, and the landing record's 29,484 rendered cases measure 34,104 at the head (review-measure.log).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path in both commits lies inside the sixteen declared write paths and the cumulative evidence file gained 66 lines with none removed (git diff --numstat 9da00a60..a0538e71).\nSCORE durability: 15\nJUSTIFICATION durability: the no-mark guard genuinely fires, my own re-insertion of the cell reddening tests/test_ticker_row_is_one_transition.py:124, but the assertion at :89 is a tautology and the observed-set assertion at :145 still cannot fail.\nSCORE fit: 16\nJUSTIFICATION fit: the renamed set at reckon/crew/ticker.py:226 follows the module's idiom, but the width-budget comment at :335 still promises reason room the head geometry does not leave.\nFINDING reckon/crew/ticker.py:335 the comment promises \"more than 60\" reason columns at width 180 and \"more than 80\" at 208, where the head measures 21 and 49 (review-measure.log); the preceding review reported this comment at dd090efd and this change moved the width again without the comment following.\nFINDING tests/test_ticker_row_is_one_transition.py:89 the assertion compares columns[\"model\"] with ticker_module.CLOCK + ticker_module.GAP, the expression _columns already assigns to that key at :57, so it holds whatever the renderer does and guards nothing.\nFINDING tests/test_ticker_row_is_one_transition.py:145 the observed sets are fed the same computed constants on every iteration, so the one-column-per-row assertion cannot fail; the preceding review named this at :154 and this node rewrote the surrounding test without fixing it.\nFINDING docs/evidence/archive/the-fleet-counters-count-the-fleet-landed.html:190 the new landing section records 29,484 rendered cases where the committed test renders 29 x 28 x 3 x 7 x 2 = 34,104, repeating the figure the preceding review already found 4,620 low in the section above it.\nFINDING docs/plans/the-fleet-counters-count-the-fleet.html:166 the preceding landing paragraph still reads \"The row now reads time, attention, model, ...\" beside the new paragraph that retires that column, so the live plan states two different row layouts.",
+  "review_run_id": "r-20260925T150458489995-review-of-ticker-row-drops-the-attention-mark",
+  "reviewed_base_sha": "9da00a60339709bd5777150c0da2657f8f4e93c9",
+  "reviewed_head_sha": "a0538e71e3c1e83decbc54ebd800db1fb4663928",
+  "reviewed_run_id": "r-20260925T140448182218-ticker-row-drops-the-attention-mark",
+  "role": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-25T15:46:51.689668+00:00",
+  "total": 83
+}

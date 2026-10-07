@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite = gate-base-arm.log (ca630c06, 1 failure: tests/test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet) and after_suite = gate-head-arm.log (8ac88e01, 0 failures); added ids = head_ids - base_ids = empty, count 0. The single base failure is environmental: the base arm ran from a git-archive extraction, so its tests/test_schema.py:978 'git -C <tree> rev-parse HEAD' raises CalledProcessError, where the head arm in the real worktree passes. Head green means no added failure is possible.",
+  "artifacts": "warm promotion at head: wall 20.52 s, resolve_resource 8 calls 10.95 s, read_state 54 calls 8.81 s (summary-unfenced-warm.{json,md} under $TMPDIR/res-reprofile); cold at head: wall 61.85 s (gate-profile-cold.log); wall figures also in gate-profile-warm.log / gate-profile-cold.log, each a one-object JSON carrying only wall_seconds.",
+  "backend": "deepseek-v4.1-flash",
+  "base_log_revision": "ca630c06e894d95111a8627b11d02a023aa270dd",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/resources.py:_scan_resources",
+    "reckon/resources.py:_migration_candidates",
+    "reckon/mcp.py:_audit"
+  ],
+  "completed_at": "2026-10-02T14:37:09.874Z",
+  "dispatched_at": "2026-10-02T14:05:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-ends-with-its-owner/resource-identity-reads-the-digest-index.html",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the per-site profile figures the landing fragment and the manifest quote (resolve_resource 8 calls 10.95 s; read_state 54 calls 8.81 s) are not in the log the manifest names for them, gate-profile-warm.log, which records only wall_seconds 20.52; the summary carrying the call counts survives in $TMPDIR/res-reprofile/summary-unfenced-warm.json on node-local disk, so a later reader holding only the run directory can reconcile the 20.52 s wall but must take the call counts from the stream rather than from the cited log."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T130407321130-resource-identity-reads-the-digest-index/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: both suite observations' log_path values name /tmp/reckon-crew-scratch/r-20261002T130407321130-resource-identity-reads-the-digest-index/base-arm/gate-*.log, a node-local path that no longer exists, while the durable copies sit in the run directory and are named only under test_logs; the review-annotation read (reckon/crew/review.py annotate_review_of_run) therefore derives an unmeasured added-failure count where 0 is correct, though promotion's suite-delta reads the failure_ids embedded in the manifest JSON and is unaffected."
+    }
+  ],
+  "head_log_revision": "8ac88e0113fafc9ed112058002b17b492ecb90ff",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against base ca630c06: metadata_index.py +43 (parse_meta_shared, _META_BY_DIGEST/_META_LOCK/_META_MAX_ENTRIES, clear extended), resources.py +15/-1 (_identify_meta wrapper and the call swap), a 170-line new test, and the 26-line fragment; the memo stores a deepcopy of the parse and leaves the location/type collision check (resources.py:299) unchanged.",
+    "done_when": "the manifest records tests/test_resource_identity_reads_the_digest_index.py 5 passed, base/head arms over the 14 test files that import reckon.resources or reckon.metadata_index at base (0 added failures), a named negative-control log, and a warm profile at head 20.52 s beside the 23.53 s baseline.",
+    "goal": "the node's goal is that identifying a docs resource reuses a parse of identical bytes rather than re-parsing each tree's copy; reckon/metadata_index.py:123 parse_meta_shared keys the parse on the file's sha256 content digest and reckon/resources.py:263 _identify_meta routes identify_resource's metadata read through it.",
+    "manifest": "read; status complete with commits 8ac88e01 (code+test) and 36dd12d0 (fragment), populated baseline_suite/after_suite, tests, test_logs, negative_control_log, artifacts and measurement_module/measurement_cwd.",
+    "write_paths": "the manifest declares reckon/resources.py, reckon/metadata_index.py, tests/test_resource_identity_reads_the_digest_index.py and the landing fragment; git diff --name-only ca630c06..36dd12d0 lists exactly those four paths."
+  },
+  "justifications": {
+    "durability": "reverting the memo to path-keying (digest -> str(path)) reddens three tests -- test_identical_content_parses_once_across_trees, test_parse_memo_is_keyed_on_content_not_path and test_identical_content_bounds_the_path_walk -- which I re-ran at 3 failed/2 passed, EXIT=1, matching the node's own negative-control log.",
+    "evidence": "tests/test_resource_identity_reads_the_digest_index.py:60 counts read_state parses through an independent counter rather than a value it supplied, and I reproduced the negative control in a scratch tree at 3 failed/2 passed, EXIT=1; the cited gate-profile-warm.log carries only wall_seconds, so the per-site call counts are checkable only under node-local $TMPDIR/res-reprofile.",
+    "fit": "parse_meta_shared follows the module's surrounding digest-keyed idiom (metadata_index.py:337 _content_digest) and adds no plan label, and _identify_meta mirrors the lazy-import wrapper beside it at resources.py:257.",
+    "goal_fidelity": "reckon/metadata_index.py:123 parse_meta_shared returns the parse cached under a second path whose bytes hash equal, and tests/test_resource_identity_reads_the_digest_index.py:100 observes 2 parsed reads across 3 trees holding 2 distinct contents; I re-ran the new test file at head for 5 passed.",
+    "scope_discipline": "git diff --name-only ca630c06..36dd12d0 lists exactly reckon/metadata_index.py, reckon/resources.py, tests/test_resource_identity_reads_the_digest_index.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/resource-identity-reads-the-digest-index.html, the four declared paths, with no other file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that identifying a docs resource reuses a parse of identical bytes rather than re-parsing each tree's copy; reckon/metadata_index.py:123 parse_meta_shared keys the parse on the file's sha256 content digest and reckon/resources.py:263 _identify_meta routes identify_resource's metadata read through it.\nVERDICT done_when: the manifest records tests/test_resource_identity_reads_the_digest_index.py 5 passed, base/head arms over the 14 test files that import reckon.resources or reckon.metadata_index at base (0 added failures), a named negative-control log, and a warm profile at head 20.52 s beside the 23.53 s baseline.\nVERDICT write_paths: the manifest declares reckon/resources.py, reckon/metadata_index.py, tests/test_resource_identity_reads_the_digest_index.py and the landing fragment; git diff --name-only ca630c06..36dd12d0 lists exactly those four paths.\nVERDICT manifest: read; status complete with commits 8ac88e01 (code+test) and 36dd12d0 (fragment), populated baseline_suite/after_suite, tests, test_logs, negative_control_log and artifacts.\nVERDICT diff: read both commits against base ca630c06: metadata_index.py +43, resources.py +15/-1, a 170-line new test and the 26-line fragment; the memo stores a deepcopy of the parse and leaves the location/type collision check (resources.py:299) unchanged.\nCALL_SITES: reckon/resources.py:_scan_resources, reckon/resources.py:_migration_candidates, reckon/mcp.py:_audit\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:123 parse_meta_shared returns the parse cached under a second path whose bytes hash equal, and tests/test_resource_identity_reads_the_digest_index.py:100 observes 2 parsed reads across 3 trees holding 2 distinct contents; I re-ran the new test file at head for 5 passed.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_resource_identity_reads_the_digest_index.py:60 counts read_state parses through an independent counter rather than a value it supplied, and I reproduced the negative control in a scratch tree at 3 failed/2 passed, EXIT=1; the cited gate-profile-warm.log carries only wall_seconds, so the per-site call counts are checkable only under node-local $TMPDIR/res-reprofile.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff lists exactly reckon/metadata_index.py, reckon/resources.py, tests/test_resource_identity_reads_the_digest_index.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/resource-identity-reads-the-digest-index.html, the four declared paths, with no other file touched.\nSCORE durability: 19\nJUSTIFICATION durability: reverting the memo to path-keying (digest -> str(path)) reddens three tests -- test_identical_content_parses_once_across_trees, test_parse_memo_is_keyed_on_content_not_path and test_identical_content_bounds_the_path_walk -- which I re-ran at 3 failed/2 passed, EXIT=1, matching the node's own negative-control log.\nSCORE fit: 18\nJUSTIFICATION fit: parse_meta_shared follows the module's surrounding digest-keyed idiom (metadata_index.py:337 _content_digest) and adds no plan label, and _identify_meta mirrors the lazy-import wrapper beside it at resources.py:257.\nFINDING docs/evidence/fragments/a-crew-process-ends-with-its-owner/resource-identity-reads-the-digest-index.html:20 follow-on: the per-site profile figures the landing fragment and the manifest quote (resolve_resource 8 calls 10.95 s; read_state 54 calls 8.81 s) are not in the log the manifest names for them, gate-profile-warm.log, which records only wall_seconds 20.52; the summary carrying the call counts survives in $TMPDIR/res-reprofile/summary-unfenced-warm.json on node-local disk, so a later reader holding only the run directory can reconcile the 20.52 s wall but must take the call counts from the stream rather than from the cited log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T130407321130-resource-identity-reads-the-digest-index/manifest.md:20 follow-on: both suite observations' log_path values name /tmp/reckon-crew-scratch/r-20261002T130407321130-resource-identity-reads-the-digest-index/base-arm/gate-*.log, a node-local path that no longer exists, while the durable copies sit in the run directory and are named only under test_logs; the review-annotation read (reckon/crew/review.py annotate_review_of_run) therefore derives an unmeasured added-failure count where 0 is correct, though promotion's suite-delta reads the failure_ids embedded in the manifest JSON and is unaffected.",
+  "review_run_id": "r-20261002T140501193797-review-of-resource-identity-reads-the-digest-index",
+  "reviewed_base_sha": "ca630c06e894d95111a8627b11d02a023aa270dd",
+  "reviewed_head_sha": "36dd12d06b8bc4b46cc032163d0385bd9d46b536",
+  "reviewed_run_id": "r-20261002T130407321130-resource-identity-reads-the-digest-index",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T14:25:00Z",
+  "total": 93
+}

@@ -1,0 +1,39 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T00:42:58.762Z",
+  "dispatched_at": "2026-10-05T00:40:58Z",
+  "findings": [
+    {
+      "anchor": "reckon/velocity.py:2504",
+      "id": "duplicate_owner-1",
+      "reason": "the deliverable as written is under-specified \u2014 it names the count reader but not the week owner, so the implementing node would fork the weekly derivation or import a private helper, and \u00a73 and \u00a713 disagree on whether the figures come from velocity or are re-read.",
+      "text": "\u00a713 routes the brief's \"current week's four counts\" through `interface_counts.count_revision_cached`, which returns counts at a revision and carries no week window; the entry that publishes a *week's* interface level \u2014 the first-parent head at the week's end, with `reckon/velocity.py:2678` already stating that its interface block exists because \"the plan-review rubric reads\" it \u2014 is `_interface_week_rows` (`reckon/velocity.py:2504`, `:2685`), reached through `_first_parent_head` (`:614`). \u00a73 says the velocity view publishes the weekly figures; \u00a713 then reads the low-level reader instead, so the composer must either re-derive the week boundary (a second composition of one display, the exact drift the recovery composer's own docstring warns against at `reckon/crew/recovery.py:515`), or reach into a private velocity helper across the module boundary \u2014 the private-name smell \u00a76 already recorded against `plan_review._REVIEW_SIDECAR_NAME`. Name `reckon/velocity.py` as the owner of the week window (or promote a shared current-week accessor beside `_interface_week_rows`) so the reviewer is handed the same figure the velocity view publishes.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9b9ec1b56ca20fe01ef57195b2f8b5b61908631ee7369da4209a9e1be648f684",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 49,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T00:44:20.888588+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T004043952024-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "b013eac86e2b6156f2b819d29188999c66e5b1a4",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design extends two existing deep modules rather than adding one: `reckon/crew/review.py`'s rubric item set and prompt, and the plan-subject branch of `reckon/crew/recovery.py:_review_dispatch_fields` that already composes the brief behind four returned facts; no new module and no spread of wrappers over one machinery.",
+    "duplicate_owner": "a finding \u2014 the composer is told to append \"the current week's four counts, read through `reckon/interface_counts.py`'s existing reader\", but the current week is a derivation `reckon/velocity.py` owns and `interface_counts` has no week concept; the plan is silent on the owner.",
+    "reuse_search": "pass \u2014 the live design section (\u00a713) cites the mechanism it extends, `reckon/interface_counts.py` and its reader, and the item set and prompt it grows (`reckon/crew/review.py:PLAN_DESIGN_REVIEW_ITEMS`, `reckon/crew/prompts/plan_design_review.md`); the one search it did not run is named below under duplicate_owner.",
+    "thin_wrapper": "pass \u2014 the item is not a parallel layer over an existing review; the design states its justification (the `interface_counts.py` docstring already names the plan-review rubric as its reader, so the review reads a figure the code intends it to read), and it grows the existing prompt and composer in place rather than wrapping them."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T00:43:31.110906+00:00"
+}

@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (5c7f69358, completed, 0 failures) and after_suite (fa76fa3b7, completed, 0 failures) gate logs; added ids = after_ids - base_ids = empty.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/clones.py:589 promotion_clone_matches calls clone_matches",
+    "reached from reckon/crew/promotion.py:7343 on every promotion"
+  ],
+  "completed_at": "2026-10-02T12:06:02.931Z",
+  "dispatched_at": "2026-10-02T11:45:15Z",
+  "findings": [
+    {
+      "file": "reckon/clones.py",
+      "line": "274",
+      "severity": "follow-on",
+      "text": "follow-on: the _seen_at docstring says entries written before the module counted scans age out on the first prune, but _seen_at returns 0 for them and _fresh_cached_paths counts a path while scan - seen < _STALE_PATH_SCANS, so at the first scan (ordinal 1) such an entry is still counted fresh and only ages out once the ordinal reaches the span; an independent probe confirms _fresh_cached_paths returns the legacy path at scan 1, so the sentence describes a faster expiry than the code performs and should say it ages out within the span."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 5c7f69358: fa76fa3b7 adds _STALE_PATH_SCANS=5 (reckon/clones.py:67), _seen_at/_current_scan/_fresh_cached_paths and rewrites the cap to use _fresh_cached_paths (reckon/clones.py:508); 48e75e699 is a ruff format pass; abcaefcbb adds only the evidence fragment.",
+    "done_when": "the done_when asks that a file removed from the corpus leaves no cache entry while the entry count equals the current corpus, plus a partial-scan guarantee; tests/test_a_removed_file_leaves_the_clone_cache.py:123 asserts REMOVED_PATH is not held and that the entry count equals the current corpus after _STALE_PATH_SCANS+1 scans, and :144 asserts a partial scan re-parses nothing, both re-run at head (2 passed, EXIT=0).",
+    "goal": "the node repairs the recorded follow-on that a removed or renamed corpus path kept its clone-cache entry because _cached_paths counted it unconditionally into the prune cap; reckon/clones.py:297 adds _fresh_cached_paths and reckon/clones.py:508 uses it so a path no scan has read for _STALE_PATH_SCANS stops counting and is evicted, and the removed path is gone from the cache in the node's test and my independent re-run.",
+    "manifest": "read; it records the new gate (2 passed, EXIT=0), a base arm and a head arm of the five neighbour suites (21 passed each, EXIT=0, zero added failures), a negative control with EXIT=1 reddening the removed-file case, and the fragment; the baseline_suite at 5c7f69358 and after_suite at fa76fa3b7 derive added_failure_count 0 with empty ids.",
+    "write_paths": "the declared scope is reckon/clones.py, tests/test_a_removed_file_leaves_the_clone_cache.py, the fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-removed-file-leaves-the-clone-cache.html and its figures directory; git diff --name-status 5c7f69358 abcaefcbb changes exactly the first three (M clones.py, A test, A fragment) and the figures directory stays absent."
+  },
+  "justifications": {
+    "durability": "the added assertion at tests/test_a_removed_file_leaves_the_clone_cache.py:123 fails with the removed path still in _held_paths when the pre-change cap is restored, so the guard reddens on the regression it exists to catch, and it compares against an independent corpus literal rather than the value passed in.",
+    "evidence": "the reviewed manifest's own baseline_suite (5c7f69358) and after_suite (fa76fa3b7) both completed with 0 failures, giving added_failure_count 0 and empty added_failure_ids, and I independently re-ran the new gate at head (2 passed), the five neighbour suites at base (21 passed) and head (21 passed), and the reinstated-defect mutant (1 failed, EXIT=1) into the run's reviewer-logs.",
+    "fit": "reckon/clones.py:67 keeps _STALE_PATH_SCANS as a module constant with a scannable span and the helpers sit beside _cached_functions in the module idiom, but _seen_at's docstring at reckon/clones.py:274 overstates the expiry of entries written before the ordinal existed.",
+    "goal_fidelity": "reckon/clones.py:508 sets known_paths from _fresh_cached_paths(cache, scan), so the removed path at tests/test_a_removed_file_leaves_the_clone_cache.py:123 is evicted at head while my reinstated-unconditional-count mutant leaves it held, the exact defect the node repairs.",
+    "scope_discipline": "git diff --name-status 5c7f69358 abcaefcbb lists only reckon/clones.py, tests/test_a_removed_file_leaves_the_clone_cache.py and the fragment, all three inside the declared fence, with the figures directory untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node repairs the recorded follow-on that a removed or renamed corpus path kept its clone-cache entry because _cached_paths counted it unconditionally into the prune cap; reckon/clones.py:297 adds _fresh_cached_paths and reckon/clones.py:508 uses it so a path no scan has read for _STALE_PATH_SCANS stops counting and is evicted, and the removed path is gone from the cache in the node's test and my independent re-run.\nVERDICT done_when: the done_when asks that a file removed from the corpus leaves no cache entry while the entry count equals the current corpus, plus a partial-scan guarantee; tests/test_a_removed_file_leaves_the_clone_cache.py:123 asserts REMOVED_PATH is not held and that the entry count equals the current corpus after _STALE_PATH_SCANS+1 scans, and :144 asserts a partial scan re-parses nothing, both re-run at head (2 passed, EXIT=0).\nVERDICT write_paths: the declared scope is reckon/clones.py, tests/test_a_removed_file_leaves_the_clone_cache.py, the fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-removed-file-leaves-the-clone-cache.html and its figures directory; git diff --name-status 5c7f69358 abcaefcbb changes exactly the first three (M clones.py, A test, A fragment) and the figures directory stays absent.\nVERDICT manifest: read; it records the new gate (2 passed, EXIT=0), a base arm and a head arm of the five neighbour suites (21 passed each, EXIT=0, zero added failures), a negative control with EXIT=1 reddening the removed-file case, and the fragment; the baseline_suite at 5c7f69358 and after_suite at fa76fa3b7 derive added_failure_count 0 with empty ids.\nVERDICT diff: read commit by commit against 5c7f69358: fa76fa3b7 adds _STALE_PATH_SCANS=5 (reckon/clones.py:67), _seen_at/_current_scan/_fresh_cached_paths and rewrites the cap to use _fresh_cached_paths (reckon/clones.py:508); 48e75e699 is a ruff format pass; abcaefcbb adds only the evidence fragment.\nCALL_SITES: reckon/clones.py:589 promotion_clone_matches calls clone_matches, reached from reckon/crew/promotion.py:7343 on every promotion\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/clones.py:508 sets known_paths from _fresh_cached_paths(cache, scan), so the removed path at tests/test_a_removed_file_leaves_the_clone_cache.py:123 is evicted at head while my reinstated-unconditional-count mutant leaves it held, the exact defect the node repairs.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed manifest's own baseline_suite (5c7f69358) and after_suite (fa76fa3b7) both completed with 0 failures, giving added_failure_count 0 and empty added_failure_ids, and I independently re-ran the new gate at head (2 passed), the five neighbour suites at base (21 passed) and head (21 passed), and the reinstated-defect mutant (1 failed, EXIT=1) into the run's reviewer-logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 5c7f69358 abcaefcbb lists only reckon/clones.py, tests/test_a_removed_file_leaves_the_clone_cache.py and the fragment, all three inside the declared fence, with the figures directory untouched.\nSCORE durability: 19\nJUSTIFICATION durability: the added assertion at tests/test_a_removed_file_leaves_the_clone_cache.py:123 fails with the removed path still in _held_paths when the pre-change cap is restored, so the guard reddens on the regression it exists to catch, and it compares against an independent corpus literal rather than the value passed in.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/clones.py:67 keeps _STALE_PATH_SCANS as a module constant with a scannable span and the helpers sit beside _cached_functions in the module idiom, but _seen_at's docstring at reckon/clones.py:274 overstates the expiry of entries written before the ordinal existed.\nFINDING reckon/clones.py:274 follow-on: the _seen_at docstring says entries written before the module counted scans age out on the first prune, but _seen_at returns 0 for them and _fresh_cached_paths counts a path while scan - seen < _STALE_PATH_SCANS, so at the first scan (ordinal 1) such an entry is still counted fresh and only ages out once the ordinal reaches the span; an independent probe confirms _fresh_cached_paths returns the legacy path at scan 1, so the sentence describes a faster expiry than the code performs and should say it ages out within the span.\n",
+  "review_run_id": "r-20261002T114448713404-review-of-a-removed-file-leaves-the-clone-cache",
+  "reviewed_base_sha": "5c7f693582753f2edb23b9ac96c50f074d7382cf",
+  "reviewed_head_sha": "abcaefcbbd6bdabe6189da8fb94e1c6a919cae92",
+  "reviewed_run_id": "r-20261002T112357206741-a-removed-file-leaves-the-clone-cache",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T114448713404-review-of-a-removed-file-leaves-the-clone-cache",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:05.806624+00:00",
+  "total": 96
+}

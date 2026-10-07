@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete",
+    "reckon/cli.py:crew_complete"
+  ],
+  "completed_at": "2026-10-01T07:19:16.634Z",
+  "dispatched_at": "2026-10-01T07:09:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "4333",
+      "severity": "follow-on",
+      "text": "follow-on: the default gate-log selection takes test_logs[0] without identifying the head arm, so a manifest that lists the base arm's log first would default the base log and its EXIT status as the promotion's gate_check evidence; the reviewed run's own manifest lists head-arm.log first so it is unaffected, but the default is positional where the field's meaning is not."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T062920607606-a-run-can-always-be-reconciled/logs/base-arm.log",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's command header reads \"pytest ... -q <40 importing files>\", an angle-bracket placeholder rather than the literal command the done-when requires, so the base arm's gate cannot be re-executed from its own log."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T062920607606-a-run-can-always-be-reconciled/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest carries the two suites as free text under tests/test_logs rather than the armed baseline_suite/after_suite JSON fields, so a reader cannot machine-derive the added-failure count from the manifest and must re-derive it from the raw arm logs as this review did."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read revision by revision against base d32d59c1c; ee3f37084 adds the reconcile, default and apostrophe paths with their tests, and b4233a9cb keeps the direct _complete_locked callers and the --no-commit reconcile intact.",
+    "done_when": "the done-when names tests/test_a_run_can_always_be_reconciled.py covering four cases; the manifest records the module green and I independently re-ran it at head b4233a9cb (5 passed, EXIT=0).",
+    "goal": "the goal is that crew complete reconciles a run from what survives; reckon/crew/promotion.py rebuilds a pointerless run from its run directory (4265), defaults gate evidence from the manifest (4299), collapses a no-referent boundary refusal to one acknowledgement (2583), and compares a stored landing comment by unescaped text (3048), so all four behaviours are present.",
+    "manifest": "read; it records head arm 427 passed at b4233a9cb against base arm 422 passed at d32d59c1c, the new module 5 passed, and both negative controls red in a scratch tree, and every cited log resolves to a file I opened.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py and tests/test_a_run_can_always_be_reconciled.py; git diff --stat between the base and head touches exactly those two, 617 insertions and 3 deletions."
+  },
+  "justifications": {
+    "durability": "both declared negative controls reproduce in scratch trees, removing the rebuild path refusing the pointerless case and restoring the escaped comparison refusing the apostrophe case, so the added tests fail on regression, docked one because case 2's re-promotion exercises the same complete() path as case 1.",
+    "evidence": "the head-arm log records 427 passed and the base-arm log 422 passed, added_failures_from_gate_logs over the two returns (0, []) which I re-derived, and the head module re-runs 5 passed, docked two because the base-arm log's command header carries the placeholder \"<40 importing files>\" rather than the literal command and the manifest omits the armed baseline_suite/after_suite fields, so the count is only recoverable by re-deriving from the raw logs.",
+    "fit": "the new helpers follow promotion.py's best-effort read idiom and the module's naming, but _default_gate_evidence_from_manifest at reckon/crew/promotion.py:4333 selects test_logs[0] without identifying the measurement arm.",
+    "goal_fidelity": "reckon/crew/promotion.py:4265 makes crew complete rebuild a pointerless run from its run directory and :3048 unescapes the stored comment so an apostrophe re-promotes, matching the goal, docked one because a rebuilt record leaves role and base_sha empty rather than recovered.",
+    "scope_discipline": "git diff between the base and head touches exactly the two declared paths reckon/crew/promotion.py and tests/test_a_run_can_always_be_reconciled.py with no out-of-scope edit."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that crew complete reconciles a run from what survives; reckon/crew/promotion.py rebuilds a pointerless run from its run directory (4265), defaults gate evidence from the manifest (4299), collapses a no-referent boundary refusal to one acknowledgement (2583), and compares a stored landing comment by unescaped text (3048), so all four behaviours are present.\nVERDICT done_when: the done-when names tests/test_a_run_can_always_be_reconciled.py covering four cases; the manifest records the module green and I independently re-ran it at head b4233a9cb (5 passed, EXIT=0).\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py and tests/test_a_run_can_always_be_reconciled.py; git diff --stat between the base and head touches exactly those two, 617 insertions and 3 deletions.\nVERDICT manifest: read; it records head arm 427 passed at b4233a9cb against base arm 422 passed at d32d59c1c, the new module 5 passed, and both negative controls red in a scratch tree, and every cited log resolves to a file I opened.\nVERDICT diff: read revision by revision against base d32d59c1c; ee3f37084 adds the reconcile, default and apostrophe paths with their tests, and b4233a9cb keeps the direct _complete_locked callers and the --no-commit reconcile intact.\nCALL_SITES: reckon/crew/promotion.py:complete, reckon/cli.py:crew_complete\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:4265 makes crew complete rebuild a pointerless run from its run directory and :3048 unescapes the stored comment so an apostrophe re-promotes, matching the goal, docked one because a rebuilt record leaves role and base_sha empty rather than recovered.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head-arm log records 427 passed and the base-arm log 422 passed, added_failures_from_gate_logs over the two returns (0, []) which I re-derived, and the head module re-runs 5 passed, docked two because the base-arm log's command header carries the placeholder \"<40 importing files>\" rather than the literal command and the manifest omits the armed baseline_suite/after_suite fields, so the count is only recoverable by re-deriving from the raw logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff between the base and head touches exactly the two declared paths reckon/crew/promotion.py and tests/test_a_run_can_always_be_reconciled.py with no out-of-scope edit.\nSCORE durability: 19\nJUSTIFICATION durability: both declared negative controls reproduce in scratch trees, removing the rebuild path refusing the pointerless case and restoring the escaped comparison refusing the apostrophe case, so the added tests fail on regression, docked one because case 2's re-promotion exercises the same complete() path as case 1.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers follow promotion.py's best-effort read idiom and the module's naming, but _default_gate_evidence_from_manifest at reckon/crew/promotion.py:4333 selects test_logs[0] without identifying the measurement arm.\nFINDING reckon/crew/promotion.py:4333 follow-on: the default gate-log selection takes test_logs[0] without identifying the head arm, so a manifest that lists the base arm's log first would default the base log and its EXIT status as the promotion's gate_check evidence; the reviewed run's own manifest lists head-arm.log first so it is unaffected, but the default is positional where the field's meaning is not.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T062920607606-a-run-can-always-be-reconciled/logs/base-arm.log:5 follow-on: the base arm's command header reads \"pytest ... -q <40 importing files>\", an angle-bracket placeholder rather than the literal command the done-when requires, so the base arm's gate cannot be re-executed from its own log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T062920607606-a-run-can-always-be-reconciled/manifest.md:1 follow-on: the manifest carries the two suites as free text under tests/test_logs rather than the armed baseline_suite/after_suite JSON fields, so a reader cannot machine-derive the added-failure count from the manifest and must re-derive it from the raw arm logs as this review did.\n",
+  "review_run_id": "r-20261001T070936900606-review-of-a-run-can-always-be-reconciled",
+  "reviewed_base_sha": "d32d59c1c6b631f702e3815dc860828490335e1a",
+  "reviewed_head_sha": "b4233a9cb5f7d04f0ebc0f8dd4dc8d3a01303ff4",
+  "reviewed_run_id": "r-20261001T062920607606-a-run-can-always-be-reconciled",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T07:18:09.999927+00:00",
+  "total": 94
+}

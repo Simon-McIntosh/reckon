@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon.crew.dispatch.dispatch",
+    "reckon.crew.dispatch._dispatch_session_absence",
+    "reckon.crew.promotion._capture_member_session"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T10:22:36.191015+00:00",
+  "findings": [
+    {
+      "file": "tests/test_crew_members.py",
+      "line": "1",
+      "text": "the change removes the roster-consulting session resolution this file's docstring asserts (\"A session id set through `member add --session` is reusable by a later dispatch\") and that its first test still checks, while the new tests assert the opposite; the file is red at base and head only from an unrelated spec-level guard, so the contradiction is latent, and the manifest's follow_on list omits it although the reuse map names this file in rows B1, B6 and E4."
+    },
+    {
+      "file": "tests/test_worker_session_is_session_scoped.py",
+      "line": "232",
+      "text": "the commit strips the trailing newline from the file's last line, adding a W292 finding and leaving the file failing `ruff format --check`; tests/test_session_resumes_only_its_own_task.py:346 ships without a trailing newline for the same reason, so the commit stages files the repo's format obligation requires clean."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against e3e51cd1; 4cfc76a4 is the code change and 798e549d the plan record, 8 files, every one inside scope.",
+    "done_when": "the done_when names five reuse cases asserted on the real dispatch argv; tests/test_session_resumes_only_its_own_task.py covers all five and the manifest records 24 passed, which I reproduced at head.",
+    "goal": "the node goal is to make the dispatch-time session decision compare task identity instead of member identity; reckon/crew/dispatch.py:4864 `_task_session_resolution` replaces the removed `_member_session_resolution` and keys selection on the task, not the roster member.",
+    "manifest": "read; it states 24 passed on the gate, the same two pre-existing adjacent failures at base and head, and names its five logs.",
+    "write_paths": "the manifest declares eight paths; `git diff --stat e3e51cd1 798e549d` lists exactly those eight and no file outside the fence."
+  },
+  "justifications": {
+    "durability": "case 1 is defect-pinned \u2014 restoring member-keyed selection reddens tests/test_session_resumes_only_its_own_task.py:191 and the same selection is red at base \u2014 while cases 2-5 assert session ids sourced from a prior run's own observation rather than from the value under test.",
+    "evidence": "gate.log records 24 passed and I reproduced that at head (/tmp/rev_gate_head.log, 24 passed); negative-control.log turns case 1 red at tests/test_session_resumes_only_its_own_task.py:191 with the declared string verbatim, and base-selection.log shows the same selection red at e3e51cd1.",
+    "fit": "the new helpers are named by mechanism (`_prior_same_task_run`, `_session_too_large_to_continue`) with module-style docstrings and no plan labels, but two staged files fail `ruff format --check`.",
+    "goal_fidelity": "reckon/crew/dispatch.py:5192 `_task_identity` keys on `(project, plan, node id)`, or the reviewed run id for a review node, which is the task-identity decision the goal states in place of the roster key.",
+    "scope_discipline": "`git diff --stat e3e51cd1 798e549d` lists exactly the eight declared paths and nothing outside the fence."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the dispatch-time session decision compare task identity instead of member identity; reckon/crew/dispatch.py:4864 `_task_session_resolution` replaces the removed `_member_session_resolution` and keys selection on the task, not the roster member.\nVERDICT done_when: the done_when names five reuse cases asserted on the real dispatch argv; tests/test_session_resumes_only_its_own_task.py covers all five and the manifest records 24 passed, which I reproduced at head.\nVERDICT write_paths: the manifest declares eight paths; `git diff --stat e3e51cd1 798e549d` lists exactly those eight and no file outside the fence.\nVERDICT manifest: read; it states 24 passed on the gate, the same two pre-existing adjacent failures at base and head, and names its five logs.\nVERDICT diff: read commit by commit against e3e51cd1; 4cfc76a4 is the code change and 798e549d the plan record, 8 files, every one inside scope.\nCALL_SITES: reckon.crew.dispatch.dispatch, reckon.crew.dispatch._dispatch_session_absence, reckon.crew.promotion._capture_member_session\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:5192 `_task_identity` keys on `(project, plan, node id)`, or the reviewed run id for a review node, which is the task-identity decision the goal states in place of the roster key.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate.log records 24 passed and I reproduced that at head (/tmp/rev_gate_head.log, 24 passed); negative-control.log turns case 1 red at tests/test_session_resumes_only_its_own_task.py:191 with the declared string verbatim, and base-selection.log shows the same selection red at e3e51cd1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat e3e51cd1 798e549d` lists exactly the eight declared paths and nothing outside the fence.\nSCORE durability: 18\nJUSTIFICATION durability: case 1 is defect-pinned \u2014 restoring member-keyed selection reddens tests/test_session_resumes_only_its_own_task.py:191 and the same selection is red at base \u2014 while cases 2-5 assert session ids sourced from a prior run's own observation rather than from the value under test.\nSCORE fit: 16\nJUSTIFICATION fit: the new helpers are named by mechanism (`_prior_same_task_run`, `_session_too_large_to_continue`) with module-style docstrings and no plan labels, but two staged files fail `ruff format --check`.\nFINDING tests/test_crew_members.py:1 the change removes the roster-consulting session resolution this file's docstring asserts (\"A session id set through `member add --session` is reusable by a later dispatch\") and that its first test still checks, while the new tests assert the opposite; the file is red at base and head only from an unrelated spec-level guard, so the contradiction is latent, and the manifest's follow_on list omits it although the reuse map names this file in rows B1, B6 and E4.\nFINDING tests/test_worker_session_is_session_scoped.py:232 the commit strips the trailing newline from the file's last line, adding a W292 finding and leaving the file failing `ruff format --check`; tests/test_session_resumes_only_its_own_task.py:346 ships without a trailing newline for the same reason, so the commit stages files the repo's format obligation requires clean.\n",
+  "review_run_id": "r-20260923T102236191015-review-of-session-resumes-only-its-own-task",
+  "reviewed_base": "e3e51cd1079858d764aaa78f9382a2b1765835c9",
+  "reviewed_base_sha": "e3e51cd1079858d764aaa78f9382a2b1765835c9",
+  "reviewed_commit": "798e549db378aac484efff347a3a3e0374cdc049",
+  "reviewed_head_sha": "798e549db378aac484efff347a3a3e0374cdc049",
+  "reviewed_run_id": "r-20260923T083243545039-session-resumes-only-its-own-task",
+  "reviewer_run_id": "r-20260923T102236191015-review-of-session-resumes-only-its-own-task",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T10:39:20.369159+00:00",
+  "total": 90
+}

@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs. baseline_suite: revision 62ff7422d471efa0b917ad8a4e1237f61778cd59, failure_count 0, failure_ids []; after_suite: revision 6676887c8595f06a636581d6af03f681c89927da, failure_count 0, failure_ids []. Zero added failure ids. Independently reproduced in scratch trees: base 10 passed EXIT=0, head 12 passed EXIT=0.",
+  "backend": "clive",
+  "base_log_revision": "62ff7422d471efa0b917ad8a4e1237f61778cd59",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-02T09:58:05.361Z",
+  "dispatched_at": "2026-10-02T09:27:49Z",
+  "findings": [
+    {
+      "file": "tests/test_stale_producer_warning_waits_for_its_reload.py",
+      "line": "360",
+      "severity": "follow-on",
+      "text": "follow-on: the fresh-arming case's teeth are structural, not demonstrated. The node's one executed negative control (reading reloaded_in_place after the checkpoint pop) reddens only the reload arm, because it makes reloaded_in_place False -- which is also the fresh arm's own input, so the fresh case cannot be sensitive to it. The fresh case would be caught by a deferral that explicitly assumed a reload (it asserts FOLLOWER_STALE_PRODUCER_EVENT present and FOLLOWER_PRODUCER_RELOADING_EVENT absent), but no executed mutation shows that. Not harmful -- the arm is real and the assertion is discriminating -- noted so a later reader does not take the single negative control as covering both cases."
+    }
+  ],
+  "head_log_revision": "6676887c8595f06a636581d6af03f681c89927da",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "No product source changes, so no call_sites. The tests exercise reckon/cli.py:_FollowerReloader.poll and crew_follow, whose read of _FOLLOWER_CHECKPOINT_ENV sits at reckon/cli.py:3768 before _take_follower_checkpoint (:2091) pops it.",
+    "diff": "209 insertions, 3 deletions across two files: the test module gains _reload_environment, _pin_follower_to_this_process, _follow_events and the two cases (+114); the evidence fragment is added and then reconciled (+92 then +6/-3 in the second commit). No product source changes.",
+    "done_when": "tests/test_stale_producer_warning_waits_for_its_reload.py gains both cases: the reload case drives _FollowerReloader.poll's composed exec environment into crew follow and asserts FOLLOWER_PRODUCER_RELOADING_EVENT present with FOLLOWER_STALE_PRODUCER_EVENT absent; the fresh case deletes the variable and asserts the reverse. Only the test file changes. The declared negative control is executed and logged (1 failed / 6 passed EXIT=1). Base 10 passed, head 12 passed, zero added failures.",
+    "goal": "The stale-producer deferral is tested through the reload's own wiring (the reloader's exec environment adopted into crew_follow's own computation) and on a fresh arming (no checkpoint variable, advice owed at once), closing both coverage gaps named in the node brief.",
+    "manifest": "status complete. baseline_suite and after_suite both complete and readable (revisions 62ff7422 and 6676887c, failure_count 0, failure_ids []). negative_control_log points at the real negative-control.log, whose last line is EXIT=1 with one failing id the head arm does not fail. changed_paths and commits are populated; the record is coherent.",
+    "write_paths": "Declared: tests/test_stale_producer_warning_waits_for_its_reload.py, docs/evidence/fragments/a-crew-process-ends-with-its-owner/stale-warning-wiring-is-tested-end-to-end.html, docs/figures/... The diff touches the first two; the fragment is emitted, no figure is. No product source."
+  },
+  "justifications": {
+    "durability": "Both new cases have teeth, and the reload arm's is demonstrated: the declared mutation flips it red. The fresh-arming case is falsified by a different defect -- a deferral that defaulted reloaded_in_place True would fail it -- but that falsification is structural and is not shown by an executed mutation; the node's one negative control exercises only the reload arm. Kept at 18. Both cases invoke the real command through its click entry point, so a change to crew_follow's read of the checkpoint variable, or to the reloader's setting of it in poll (reckon/cli.py:2274), reddens them without the test having to be edited.",
+    "evidence": "The reviewed run's own base-arm.log (revision 62ff7422, 10 passed EXIT=0) and head-arm.log (revision 6676887c, 12 passed EXIT=0) reconcile with its manifest's baseline_suite/after_suite (both completed, failure_count 0, failure_ids []) and with its negative-control.log (1 failed / 6 passed EXIT=1). I independently rebuilt both arms from a scratch tree git-archive'd at the reviewed revisions: base 10 passed EXIT=0, head 12 passed EXIT=0, and the declared mutation (moving 'reloaded_in_place = _FOLLOWER_CHECKPOINT_ENV in os.environ' to after the _take_follower_checkpoint pop in reckon/cli.py crew_follow) reddens exactly the reload case (1 failed / 6 passed EXIT=1), matching the run's own log. Deducted one because the reviewed run's after_suite revision names the test commit 6676887c, while the reviewed head tip is 29f90192b -- the tip is a fragment-only commit that cannot change the gate, so the result stands, but the record's head gate revision names an earlier tree than reviewed_head_sha.",
+    "fit": "The change sits in the existing module and reuses its idioms: the helpers _reload_environment, _pin_follower_to_this_process and _follow_events follow the file's existing _events/_kinds/_plant_seat pattern, and the two-case shape mirrors the file's other deferral cases. Names read as what the code does (reload environment, fresh arming, follow events); no version suffixes and no plan/sprint/ticket identifiers in symbols or comments. The docstrings state the mechanism (the deferral keys on the reload having happened, not on a checkpoint's contents) rather than a ticket id, and carry no AI attribution.",
+    "goal_fidelity": "The goal is that the stale-producer deferral is tested through the reload's own wiring and on a fresh arming, closing the two coverage gaps the review of r-20261002T062817109981 (94) recorded. Both cases are present and each drives the real path: test_a_reload_handed_through_crew_follow_defers_the_mismatch runs the real _FollowerReloader.poll with os.execve stubbed to capture the mapping it would pass (tests/test_stale_producer_warning_waits_for_its_reload.py:262-286), adopts that mapping's checkpoint variable into os.environ, then invokes the real 'crew follow' click command via CliRunner (_follow_events) whose crew_follow reads _FOLLOWER_CHECKPOINT_ENV before popping it (reckon/cli.py:3768); that run emits FOLLOWER_PRODUCER_RELOADING_EVENT and no FOLLOWER_STALE_PRODUCER_EVENT. The fresh-arming case removes the variable and asserts the opposite. The deferral is therefore decided by crew_follow's own computation from the reloader's own hand-off, not by a flag the test handed the wait loop -- the exact gap named in the node brief. Reproduced at head: 12 passed EXIT=0.",
+    "scope_discipline": "The node declares only the test file, an evidence fragment and a figures directory. git diff 62ff7422..29f90192b is confined to those: tests/test_stale_producer_warning_waits_for_its_reload.py (+114) and docs/evidence/fragments/a-crew-process-ends-with-its-owner/stale-warning-wiring-is-tested-end-to-end.html (+92/+6), 209 insertions and 3 deletions across exactly two files; no product source changes, no plan HTML, no ledger/index/sprint state. The reviewed worktree is clean at 29f90192b. The declared figures directory is neither used nor needed, which is an under-delivery, not a scope breach; the done-when names only the test artifact."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the stale-producer deferral is tested through the reload's own wiring and on a fresh arming; both cases drive crew_follow's own computation from the reloader's own exec environment and then invoke the real command.\nVERDICT done_when: both cases present, only the test file changes, negative control executed and logged, base 10 / head 12 with zero added failures.\nVERDICT write_paths: diff confined to the test file and the evidence fragment, both declared; no product source, no foreign path.\nVERDICT manifest: complete and readable; baseline/after suites both complete, negative control EXIT=1.\nVERDICT diff: 209 insertions / 3 deletions across two files.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: both cases drive the reloader's own hand-off into crew_follow's env-var read (reckon/cli.py:3768) via the real click command; reproduced 12 passed EXIT=0.\nSCORE evidence: 19\nJUSTIFICATION evidence: base/head arms and negative control reproduced in scratch trees and reconcile with the run's logs; docked one because after_suite names 6676887c while the reviewed tip is the fragment-only 29f90192b.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: diff touches only the declared test file and evidence fragment; worktree clean at head; no product source or shared state.\nSCORE durability: 18\nJUSTIFICATION durability: the reload arm is demonstrably falsified by the declared mutation; the fresh arm's teeth are structural and not shown by an executed mutation.\nSCORE fit: 20\nJUSTIFICATION fit: helpers and cases follow the module's idioms, names describe mechanism, no banned labels or attribution.\nFINDING tests/test_stale_producer_warning_waits_for_its_reload.py:360 follow-on: the fresh-arming case's teeth are structural, not demonstrated; the one negative control reddens only the reload arm.",
+  "review_run_id": "r-20261002T092727403582-review-of-stale-warning-wiring-is-tested-end-to-end",
+  "reviewed_base_sha": "62ff7422d471efa0b917ad8a4e1237f61778cd59",
+  "reviewed_head_sha": "29f90192b3417c1535132569873dbbc74f3d9f43",
+  "reviewed_run_id": "r-20261002T090303908712-stale-warning-wiring-is-tested-end-to-end",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T09:41:15.637053+00:00",
+  "total": 97
+}

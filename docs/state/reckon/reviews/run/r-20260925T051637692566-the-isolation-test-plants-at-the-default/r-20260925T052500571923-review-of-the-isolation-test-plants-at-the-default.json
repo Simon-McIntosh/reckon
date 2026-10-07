@@ -1,0 +1,50 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/paid_lanes.py:109",
+    "reckon/crew/paid_lanes.py:381",
+    "reckon/crew/paid_lanes.py:400",
+    "reckon/budget.py:1417",
+    "reckon/cli.py:974",
+    "reckon/mcp.py:3517"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-25T05:25:00.571923+00:00",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read the four commits against base 6d407358 one by one -- the one-resolver refactor in reckon/crew/paid_lanes.py:109 and reckon/budget.py:1417, its plan paragraph and 103-line evidence anchor with figure, the isolation case's changed plant assertion, and this node's 12-line plan paragraph and 69-line evidence anchor -- and the set does what the goal and the plan's \u00a75 landing text claim, with both evidence anchors appended at zero deletions rather than rewritten.",
+    "done_when": "the done_when names the head pass, the 8c192804 failure, the declared negative control, and both files green, each logged; /home/ITER/mcintos/.cache/reckon-the-isolation-test-plants-at-the-default/head-target.log, base-arm.log, neg-control.log and head-files.log each open with rev, tree, cmd, module.__file__ and cwd, and the results match the manifest claim (1 passed; 1 failed at :400 on the base content; 1 failed at :417 under the mutation; 21 passed); my own re-run of the named case at 0100f376 in the reviewed worktree is 1 passed.",
+    "goal": "the source node's goal is that the operator-home isolation case check its plant against paid_lanes' default location rather than the resolver the crew home governs; tests/test_preflight_reads_the_published_document.py:405 now asserts Path(paid_lanes.DEFAULT_DOCUMENT_PATH).expanduser() == planted under the stand-in HOME, the docstring at :384-390 states the new setup, and no other assertion moved, so the goal is met as written.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T051637692566-the-isolation-test-plants-at-the-default/manifest.md; it records status complete, the two commits, the four log paths, the base-arm reproduction at :400, and the control's mutation, and each of those matches the log content on disk.",
+    "write_paths": "read this node's declared fence and the base node's run prompt (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T044658411841-the-document-path-has-one-resolver/prompt.txt:47-52); every path in the diff of 6d407358..0100f376 is inside one of the two fences, and no path outside them was written."
+  },
+  "justifications": {
+    "durability": "tests/test_preflight_reads_the_published_document.py:417 is the live guard -- it reddens when the crew-home step is removed, which the node's own control log demonstrates -- while the changed line at :405 can fail only when DEFAULT_DOCUMENT_PATH no longer expands to the operator-home location, an honest fixture pin the docstring names as such rather than a behaviour guard.",
+    "evidence": "the manifest's four recorded results are each backed by a log under /home/ITER/mcintos/.cache/reckon-the-isolation-test-plants-at-the-default/ whose header names revision, tree, command, module.__file__ and cwd, and the reviewed node's control log's first line repeats the declared mutation verbatim.",
+    "fit": "reckon/crew/paid_lanes.py:67-73 declares DOCUMENT_NAME and RECKON_HOME_ENV with mechanism comments, the tests and plan paragraphs follow their files' existing idiom, and no plan label, ticket reference, attribution or version suffix appears in any of the four commits.",
+    "goal_fidelity": "tests/test_preflight_reads_the_published_document.py:405 is the plant check the goal names, and reckon/crew/paid_lanes.py:109 plus reckon/budget.py:1417 leave one resolver for publisher and reader as \u00a75's landing text states.",
+    "scope_discipline": "the diff of 6d407358..0100f376 touches three files for this node and three for the base node, each inside the fence its dispatch declared, and the one red test at the base node's head was reported as a follow-on rather than edited out of scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that the operator-home isolation case check its plant against paid_lanes' default location rather than the resolver the crew home governs; tests/test_preflight_reads_the_published_document.py:405 now asserts Path(paid_lanes.DEFAULT_DOCUMENT_PATH).expanduser() == planted under the stand-in HOME, the docstring at :384-390 states the new setup, and no other assertion moved, so the goal is met as written.\nVERDICT done_when: the done_when names the head pass, the 8c192804 failure, the declared negative control, and both files green, each logged; /home/ITER/mcintos/.cache/reckon-the-isolation-test-plants-at-the-default/head-target.log, base-arm.log, neg-control.log and head-files.log each open with rev, tree, cmd, module.__file__ and cwd, and the results match the manifest claim (1 passed; 1 failed at :400 on the base content; 1 failed at :417 under the mutation; 21 passed); my own re-run of the named case at 0100f376 in the reviewed worktree is 1 passed.\nVERDICT write_paths: read this node's declared fence and the base node's run prompt (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T044658411841-the-document-path-has-one-resolver/prompt.txt:47-52); every path in the diff of 6d407358..0100f376 is inside one of the two fences, and no path outside them was written.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T051637692566-the-isolation-test-plants-at-the-default/manifest.md; it records status complete, the two commits, the four log paths, the base-arm reproduction at :400, and the control's mutation, and each of those matches the log content on disk.\nVERDICT diff: read the four commits against base 6d407358 one by one -- the one-resolver refactor in reckon/crew/paid_lanes.py:109 and reckon/budget.py:1417, its plan paragraph and 103-line evidence anchor with figure, the isolation case's changed plant assertion, and this node's 12-line plan paragraph and 69-line evidence anchor -- and the set does what the goal and the plan's \u00a75 landing text claim, with both evidence anchors appended at zero deletions rather than rewritten.\nCALL_SITES: reckon/crew/paid_lanes.py:109, reckon/crew/paid_lanes.py:381, reckon/crew/paid_lanes.py:400, reckon/budget.py:1417, reckon/cli.py:974, reckon/mcp.py:3517\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_preflight_reads_the_published_document.py:405 is the plant check the goal names, and reckon/crew/paid_lanes.py:109 plus reckon/budget.py:1417 leave one resolver for publisher and reader as \u00a75's landing text states.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's four recorded results are each backed by a log under /home/ITER/mcintos/.cache/reckon-the-isolation-test-plants-at-the-default/ whose header names revision, tree, command, module.__file__ and cwd, and the reviewed node's control log's first line repeats the declared mutation verbatim.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff of 6d407358..0100f376 touches three files for this node and three for the base node, each inside the fence its dispatch declared, and the one red test at the base node's head was reported as a follow-on rather than edited out of scope.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_preflight_reads_the_published_document.py:417 is the live guard -- it reddens when the crew-home step is removed, which the node's own control log demonstrates -- while the changed line at :405 can fail only when DEFAULT_DOCUMENT_PATH no longer expands to the operator-home location, an honest fixture pin the docstring names as such rather than a behaviour guard.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/paid_lanes.py:67-73 declares DOCUMENT_NAME and RECKON_HOME_ENV with mechanism comments, the tests and plan paragraphs follow their files' existing idiom, and no plan label, ticket reference, attribution or version suffix appears in any of the four commits.\nNo FINDING line is emitted: I looked for one in the changed plant assertion (it is a pin, disclosed as one) and in the resolver's production reach (no hardcoded reader of ~/public/reckon/paid-lanes.json exists), and neither is a defect of this change set.",
+  "review_run_id": "r-20260925T052500571923-review-of-the-isolation-test-plants-at-the-default",
+  "reviewed_base_sha": "6d407358864ed21c589eebd0216d2fc72c118660",
+  "reviewed_head_sha": "0100f376823ebaed6bb9e4e9393e47e612040f17",
+  "reviewed_run_id": "r-20260925T051637692566-the-isolation-test-plants-at-the-default",
+  "reviewer": "review-of-the-isolation-test-plants-at-the-default",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-25T05:43:27.360613+00:00",
+  "total": 93
+}

@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4694"
+  ],
+  "completed_at": "2026-09-29T06:06:31.149Z",
+  "dispatched_at": "2026-09-29T05:37:54Z",
+  "findings": [
+    {
+      "file": "tests/test_brief_prompt.py",
+      "line": "278",
+      "text": "the regenerated plan-prompt snapshot in 10a55e57 is written outside the node's declared write paths, so the run's own record fails the audit its dispatch contract told it to run before closing: reckon crew check-manifest --run r-20260929T043829926587-small-node-prompt-rule exits 1 with ok false and the finding \"changed paths outside the write scope: tests/test_brief_prompt.py\"."
+    },
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": "459",
+      "text": "the brief carrier's landing: manifest key has no test behind it, so deleting it leaves tests/test_small_node_prompt.py and tests/test_brief_prompt.py green; the byte-identity snapshot at tests/test_brief_prompt.py:233 composes the plan carrier only, and test_a_brief_run_is_told_its_landing_line_stays_on_the_run_record asserts the BRIEF_LANDING_CONTRACT sentence rather than the manifest key, leaving the repair this review round made to the brief carrier unguarded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against 0f5ff9ed: 37d4df23 adds the rule constant and the 11-test module, d4d3f643 adds the 27-line evidence fragment, 566f2717 is a trailing-newline fix, and 10a55e57 carries the rule into BRIEF_LANDING_CONTRACT, writes the brief carrier's landing: manifest key, appends the per-node artifact clause and regenerates the plan-prompt snapshot.",
+    "done_when": "the node's measure is that the composed prompt states the three clauses, that the rule appears once beside the landing: sentence, and is not repeated elsewhere; composing both carriers at 10a55e57 through the head's own builder, I measure all four literals present, rule occurrences 1 in each, and the rule block absent from the pre-change prompt the reviewed run itself was dispatched with, so a marker this task introduced is present after and absent before.",
+    "goal": "the node's goal is that the composed worker prompt states the small-node rule, so a small node writes one landing line, withholds prose and figures unless its done-when names that artifact, and keeps large data files in the run directory; at head reckon/crew/prompts.py:69 defines SMALL_NODE_RULE, :141 and :177 interpolate it into PLAN_LANDING_CONTRACT and BRIEF_LANDING_CONTRACT, and :431 appends the clause stating which side of the artifact condition the node is on, so a plan node and a brief node each read all three clauses; my composition of both carriers at head carries each clause verbatim, and the rule reaches no node whose landing contract is empty at :427.",
+    "manifest": "read; baseline_suite and after_suite are armed JSON whose revisions 0f5ff9ed and 10a55e57 and six failure ids agree with the two gate logs' own FAILED lines, negative_control_log is the bare path whose first line repeats the declared mutation and whose tail shows two named tests red, and its checkpoint names 10a55e57 with the review round repaired.",
+    "write_paths": "the fence is reckon/crew/prompts.py, tests/test_small_node_prompt.py, docs/evidence/fragments/a-small-change-is-a-small-node/small-node-prompt-rule.html and the docs/figures/a-small-change-is-a-small-node/small-node-prompt-rule directory; git diff --numstat 0f5ff9ed..10a55e57 lists four changed paths, three inside the fence, with tests/test_brief_prompt.py outside it, and the reviewed run's own audit reports ok=false naming exactly that path."
+  },
+  "justifications": {
+    "durability": "tests/test_small_node_prompt.py:96-121 assert the three clauses by their own wording and the negative-control log shows deleting the 300,000-byte sentence reddens two of them, but the brief carrier's landing: manifest key written at reckon/crew/prompts.py:459 is asserted by no test.",
+    "evidence": "baseline-prompt-tests.log line 1 names 0f5ff9ed and after-prompt-repair-tests.log line 1 names 10a55e57 with the tree and command, my derivation over those two logs is 0 added failures with the instrument shown to report an injected id, and tests/test_small_node_prompt.py re-run at 10a55e57 passed 11 of 11.",
+    "fit": "SMALL_NODE_RULE at reckon/crew/prompts.py:69 follows the file's module-constant idiom with its rationale comment above it, and the four naming checks over the changed paths return no hit on the head content.",
+    "goal_fidelity": "reckon/crew/prompts.py:141 and :177 interpolate SMALL_NODE_RULE into both landing contracts and :431 appends the per-node artifact clause, so the goal's three clauses reach a plan node and a brief node alike, while a node whose landing_contract is empty at :427 still reads none of it.",
+    "scope_discipline": "git diff --numstat 0f5ff9ed..10a55e57 carries tests/test_brief_prompt.py outside the four declared write paths, which the reviewed run's own manifest audit reports as ok=false, though the ten-line edit is the snapshot regeneration that the byte-identity assertion at tests/test_brief_prompt.py:233 makes unavoidable."
+  },
+  "node": "review-of-small-node-prompt-rule",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T043829926587-small-node-prompt-rule\n(plan a-small-change-is-a-small-node; node small-node-prompt-rule; role implement; spec exact)\nreviewed_base_sha: 0f5ff9ed6d006d4e36f73b3b03aae73f840a4c4b\nreviewed_head_sha: 10a55e57fc4cb32ab50d22d54af84ee6bf104201\nVERDICT goal: the node's goal is that the composed worker prompt states the small-node rule, so a small node writes one landing line, withholds prose and figures unless its done-when names that artifact, and keeps large data files in the run directory; at head reckon/crew/prompts.py:69 defines SMALL_NODE_RULE, :141 and :177 interpolate it into PLAN_LANDING_CONTRACT and BRIEF_LANDING_CONTRACT, and :431 appends the clause stating which side of the artifact condition the node is on, so a plan node and a brief node each read all three clauses; my composition of both carriers at head carries each clause verbatim, and the rule reaches no node whose landing contract is empty at :427.\nVERDICT done_when: the node's measure is that the composed prompt states the three clauses, that the rule appears once beside the landing: sentence, and is not repeated elsewhere; composing both carriers at 10a55e57 through the head's own builder, I measure all four literals present, rule occurrences 1 in each, and the rule block absent from the pre-change prompt the reviewed run itself was dispatched with, so a marker this task introduced is present after and absent before.\nVERDICT write_paths: the fence is reckon/crew/prompts.py, tests/test_small_node_prompt.py, docs/evidence/fragments/a-small-change-is-a-small-node/small-node-prompt-rule.html and the docs/figures/a-small-change-is-a-small-node/small-node-prompt-rule directory; git diff --numstat 0f5ff9ed..10a55e57 lists four changed paths, three inside the fence, with tests/test_brief_prompt.py outside it, and the reviewed run's own audit reports ok=false naming exactly that path.\nVERDICT manifest: read; baseline_suite and after_suite are armed JSON whose revisions 0f5ff9ed and 10a55e57 and six failure ids agree with the two gate logs' own FAILED lines, negative_control_log is the bare path whose first line repeats the declared mutation and whose tail shows two named tests red, and its checkpoint names 10a55e57 with the review round repaired.\nVERDICT diff: read commit by commit against 0f5ff9ed: 37d4df23 adds the rule constant and the 11-test module, d4d3f643 adds the 27-line evidence fragment, 566f2717 is a trailing-newline fix, and 10a55e57 carries the rule into BRIEF_LANDING_CONTRACT, writes the brief carrier's landing: manifest key, appends the per-node artifact clause and regenerates the plan-prompt snapshot.\nCALL_SITES: reckon/crew/dispatch.py:4694\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:141 and :177 interpolate SMALL_NODE_RULE into both landing contracts and :431 appends the per-node artifact clause, so the goal's three clauses reach a plan node and a brief node alike, while a node whose landing_contract is empty at :427 still reads none of it.\nSCORE evidence: 19\nJUSTIFICATION evidence: baseline-prompt-tests.log line 1 names 0f5ff9ed and after-prompt-repair-tests.log line 1 names 10a55e57 with the tree and command, my derivation over those two logs is 0 added failures with the instrument shown to report an injected id, and tests/test_small_node_prompt.py re-run at 10a55e57 passed 11 of 11.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: git diff --numstat 0f5ff9ed..10a55e57 carries tests/test_brief_prompt.py outside the four declared write paths, which the reviewed run's own manifest audit reports as ok=false, though the ten-line edit is the snapshot regeneration that the byte-identity assertion at tests/test_brief_prompt.py:233 makes unavoidable.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_small_node_prompt.py:96-121 assert the three clauses by their own wording and the negative-control log shows deleting the 300,000-byte sentence reddens two of them, but the brief carrier's landing: manifest key written at reckon/crew/prompts.py:459 is asserted by no test.\nSCORE fit: 19\nJUSTIFICATION fit: SMALL_NODE_RULE at reckon/crew/prompts.py:69 follows the file's module-constant idiom with its rationale comment above it, and the four naming checks over the changed paths return no hit on the head content.\nFINDING tests/test_brief_prompt.py:278 the regenerated plan-prompt snapshot in 10a55e57 is written outside the node's declared write paths, so the run's own record fails the audit its dispatch contract told it to run before closing: reckon crew check-manifest --run r-20260929T043829926587-small-node-prompt-rule exits 1 with ok false and the finding \"changed paths outside the write scope: tests/test_brief_prompt.py\".\nFINDING reckon/crew/prompts.py:459 the brief carrier's landing: manifest key has no test behind it, so deleting it leaves tests/test_small_node_prompt.py and tests/test_brief_prompt.py green; the byte-identity snapshot at tests/test_brief_prompt.py:233 composes the plan carrier only, and test_a_brief_run_is_told_its_landing_line_stays_on_the_run_record asserts the BRIEF_LANDING_CONTRACT sentence rather than the manifest key, leaving the repair this review round made to the brief carrier unguarded.\n",
+  "review_run_id": "r-20260929T053738387505-review-of-small-node-prompt-rule",
+  "reviewed_base_sha": "0f5ff9ed6d006d4e36f73b3b03aae73f840a4c4b",
+  "reviewed_head_sha": "10a55e57fc4cb32ab50d22d54af84ee6bf104201",
+  "reviewed_run_id": "r-20260929T043829926587-small-node-prompt-rule",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "medium",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T053738387505-review-of-small-node-prompt-rule",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T05:59:52.354399+00:00",
+  "total": 91
+}

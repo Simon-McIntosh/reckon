@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "da7ff47cd98778237d0bf3616f59259aebffe5f2",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_store.py:read_plan",
+    "reckon/_store.py:_write_state_locked",
+    "reckon/roadmap.py:_build_roadmap",
+    "reckon/mcp_views.py:ready_set_view",
+    "reckon/crew/dispatch.py:plan_dispatch",
+    "reckon/crew/dispatch.py:_visible_plan_commit_with_working_edit"
+  ],
+  "completed_at": "2026-10-04T00:23:35.359Z",
+  "dispatched_at": "2026-10-04T00:12:28Z",
+  "findings": [
+    {
+      "file": "tests/test_section_record_round_trips.py",
+      "line": "279",
+      "severity": "follow-on",
+      "text": "follow-on: removing data-attempts emission from reckon/_plan_html.py and forcing attempts=0 on every write leaves six cases red at head (legacy-roundtrip-follow-on.log: 6 failed, 29 passed in 2.57s) because this file still asserts the stored attribute round-trips through read_state; the reviewed manifest declares it out of its write grant and defers a separate test update, so it is a real regression the delta introduces and does not repair."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "5252",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run is live at review time (live pointer phase=working on this host) while its manifest read complete and has since been rewritten to in-progress; HEAD advanced fd9cdbf9 -> 1a3c4ef9 mid-review and the worktree carries uncommitted edits, and 1a3c4ef9 reverts this delta's dirty-plan admission (test_dispatch_refuses_a_dirty_plan), so fd9cdbf9 is already superseded and no reader should treat it as the run's landed state."
+    }
+  ],
+  "head_log_revision": "fd9cdbf9a1310706eea1cd07d0c4dfb5bbc32e87",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit -- 275d61fc pins the derived-history tests, d2b52e54 derives attempts across mcp_views/roadmap/store, 4e710f2c covers verifier and superseded outcomes, d926d6e1 admits dispatch beside a dirty plan, fd9cdbf9 stops writing legacy data-attempts.",
+    "done_when": "the delta's own measure -- the seven-file gate passes 50/50 at fd9cdbf9 (reviewed run's after-suite, corroborated by my independent run: 50 passed in 196.33s, EXIT=0) and the same seven fail 5 at base da7ff47cd (resume-no-change, unpassed-run-superseded, review-exclusion, dirty-plan handling, write-drops-attribute).",
+    "goal": "the delta moves SS4 from a stored tool-written counter to a value derived from crew run history (reckon/mcp_views.py:1472 section_attempts_by_plan), read back onto the section (reckon/_store.py:1519 in read_plan) and into the roadmap ready set (reckon/roadmap.py:2213 in _build_roadmap), so dispatch no longer writes the plan at all; it matches SS4's visible count and outcome intent while reinterpreting \"records the outcome on the section\" as a derived view rather than a stored field.",
+    "manifest": "read at orientation -- status complete, commits ending fd9cdbf9, baseline_suite revision da7ff47cd (5 failed) and after_suite revision fd9cdbf9 (0 failed), negative_control log whose last line reads EXIT=1; but the reviewed run is live and its manifest has since been rewritten to status in-progress, so the complete record I read is no longer current.",
+    "write_paths": "git diff --name-only da7ff47cd..fd9cdbf9 returns exactly the seven files this node names -- reckon/_plan_html.py, reckon/_store.py, reckon/crew/dispatch.py, reckon/crew/promotion.py, reckon/mcp_views.py, reckon/roadmap.py, tests/test_section_attempts_are_tool_owned.py -- and no others; 324 insertions and 464 deletions."
+  },
+  "justifications": {
+    "durability": "tests/test_section_attempts_are_tool_owned.py:157-290 asserts resume-no-change, promoted/failed/superseded outcomes, review exclusion, live in-flight counting and that a plan write drops the non-authoritative data-attempts; but the reviewed revision is already superseded (1a3c4ef9 reverted the dirty-plan admission of d926d6e1/fd9cdbf9) and six round-trip tests are left red out of scope.",
+    "evidence": "the reviewed run's after-suite (fd9cdbf9, 50 passed EXIT=0) and baseline (da7ff47cd, 5 failed EXIT=1) match the manifest's baseline_suite/after_suite failure_ids, and my independent seven-file run also reported 50 passed EXIT=0; the run went live mid-review, so the working tree no longer equals the pinned revision.",
+    "fit": "five commits carry conventional subjects with bodies, no AI trailer, and the added symbols name the mechanism (section_attempts_by_plan, _visible_plan_commit_with_working_edit) with no plan or sprint identifier.",
+    "goal_fidelity": "dispatch no longer writes the plan (reckon/crew/dispatch.py:6197 removal of _record_dispatch_section_launch); attempts and outcomes derive from run history (reckon/mcp_views.py:1472) and surface in read_plan (reckon/_store.py:1519) and the roadmap ready set (reckon/roadmap.py:2213), satisfying SS4's visible count and outcome intent via derivation.",
+    "scope_discipline": "git diff --name-only da7ff47cd..fd9cdbf9 is exactly the seven node-declared files, with the deletions concentrated in the removed stored-counter helpers (_store record_section_* and dispatch _record_dispatch_section_launch) and no file outside scope touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta moves SS4 from a stored tool-written counter to a value derived from crew run history (reckon/mcp_views.py:1472 section_attempts_by_plan), read back onto the section (reckon/_store.py:1519 in read_plan) and into the roadmap ready set (reckon/roadmap.py:2213 in _build_roadmap), so dispatch no longer writes the plan at all; it matches SS4's visible count and outcome intent while reinterpreting \"records the outcome on the section\" as a derived view rather than a stored field.\nVERDICT done_when: the delta's own measure -- the seven-file gate passes 50/50 at fd9cdbf9 (reviewed run's after-suite, corroborated by my independent run: 50 passed in 196.33s, EXIT=0) and the same seven fail 5 at base da7ff47cd (resume-no-change, unpassed-run-superseded, review-exclusion, dirty-plan handling, write-drops-attribute).\nVERDICT write_paths: git diff --name-only da7ff47cd..fd9cdbf9 returns exactly the seven files this node names -- reckon/_plan_html.py, reckon/_store.py, reckon/crew/dispatch.py, reckon/crew/promotion.py, reckon/mcp_views.py, reckon/roadmap.py, tests/test_section_attempts_are_tool_owned.py -- and no others; 324 insertions and 464 deletions.\nVERDICT manifest: read at orientation -- status complete, commits ending fd9cdbf9, baseline_suite revision da7ff47cd (5 failed) and after_suite revision fd9cdbf9 (0 failed), negative_control log whose last line reads EXIT=1; but the reviewed run is live and its manifest has since been rewritten to status in-progress, so the complete record I read is no longer current.\nVERDICT diff: read commit by commit -- 275d61fc pins the derived-history tests, d2b52e54 derives attempts across mcp_views/roadmap/store, 4e710f2c covers verifier and superseded outcomes, d926d6e1 admits dispatch beside a dirty plan, fd9cdbf9 stops writing legacy data-attempts.\nCALL_SITES: reckon/_store.py:read_plan, reckon/_store.py:_write_state_locked, reckon/roadmap.py:_build_roadmap, reckon/mcp_views.py:ready_set_view, reckon/crew/dispatch.py:plan_dispatch, reckon/crew/dispatch.py:_visible_plan_commit_with_working_edit\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: dispatch no longer writes the plan (reckon/crew/dispatch.py:6197 removal of _record_dispatch_section_launch); attempts and outcomes derive from run history (reckon/mcp_views.py:1472) and surface in read_plan (reckon/_store.py:1519) and the roadmap ready set (reckon/roadmap.py:2213), satisfying SS4's visible count and outcome intent via derivation.\nSCORE evidence: 17\nJUSTIFICATION evidence: the reviewed run's after-suite (fd9cdbf9, 50 passed EXIT=0) and baseline (da7ff47cd, 5 failed EXIT=1) match the manifest's baseline_suite/after_suite failure_ids, and my independent seven-file run also reported 50 passed EXIT=0; the run went live mid-review, so the working tree no longer equals the pinned revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only da7ff47cd..fd9cdbf9 is exactly the seven node-declared files, with the deletions concentrated in the removed stored-counter helpers (_store record_section_* and dispatch _record_dispatch_section_launch) and no file outside scope touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_section_attempts_are_tool_owned.py:157-290 asserts resume-no-change, promoted/failed/superseded outcomes, review exclusion, live in-flight counting and that a plan write drops the non-authoritative data-attempts; but the reviewed revision is already superseded (1a3c4ef9 reverted the dirty-plan admission of d926d6e1/fd9cdbf9) and six round-trip tests are left red out of scope.\nSCORE fit: 20\nJUSTIFICATION fit: five commits carry conventional subjects with bodies, no AI trailer, and the added symbols name the mechanism (section_attempts_by_plan, _visible_plan_commit_with_working_edit) with no plan or sprint identifier.\nFINDING tests/test_section_record_round_trips.py:279 follow-on: follow-on: removing data-attempts emission from reckon/_plan_html.py and forcing attempts=0 on every write leaves six cases red at head (legacy-roundtrip-follow-on.log: 6 failed, 29 passed in 2.57s) because this file still asserts the stored attribute round-trips through read_state; the reviewed manifest declares it out of its write grant and defers a separate test update, so it is a real regression the delta introduces and does not repair.\nFINDING reckon/crew/dispatch.py:5252 follow-on: follow-on: the reviewed run is live at review time (live pointer phase=working on this host) while its manifest read complete and has since been rewritten to in-progress; HEAD advanced fd9cdbf9 -> 1a3c4ef9 mid-review and the worktree carries uncommitted edits, and 1a3c4ef9 reverts this delta's dirty-plan admission (test_dispatch_refuses_a_dirty_plan), so fd9cdbf9 is already superseded and no reader should treat it as the run's landed state.\nreviewed_base_sha: da7ff47cd98778237d0bf3616f59259aebffe5f2\nreviewed_head_sha: fd9cdbf9a1310706eea1cd07d0c4dfb5bbc32e87\n",
+  "review_run_id": "r-20261004T001213170922-review-of-attempts-is-a-tool-owned-counter",
+  "reviewed_base_sha": "da7ff47cd98778237d0bf3616f59259aebffe5f2",
+  "reviewed_head_sha": "fd9cdbf9a1310706eea1cd07d0c4dfb5bbc32e87",
+  "reviewed_run_id": "r-20261003T224029355295-attempts-is-a-tool-owned-counter",
+  "reviewer": {
+    "backend": "local",
+    "effort": "default",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261004T001213170922-review-of-attempts-is-a-tool-owned-counter",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T00:22:48.979831+00:00",
+  "total": 93
+}

@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names an after_suite arm but no baseline_suite arm, so the added-failure count was not taken; both measurable arms (head gate-clone-matches.log 3 passed, base regression-velocity.log 15 passed) carry zero failures, so the intended added count is 0.",
+  "added_failures_source": {
+    "base_arm_available": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195500572735-velocity-counts-clone-matches/regression-velocity.log",
+    "head_arm": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195500572735-velocity-counts-clone-matches/gate-clone-matches.log",
+    "note": "manifest names after_suite only; the base-revision regression log it names under test_logs is not tagged baseline_suite, so the field-keyed derivation reads unmeasured",
+    "reviewed_run_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195500572735-velocity-counts-clone-matches/manifest.md"
+  },
+  "base_log_revision": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/velocity.py:2664 report() emits summary[\"clones\"]",
+    "reached from the velocity CLI command and the served velocity view"
+  ],
+  "completed_at": "2026-09-30T20:41:26.249Z",
+  "dispatched_at": "2026-09-30T20:28:03Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195500572735-velocity-counts-clone-matches/manifest.md",
+      "line": "21",
+      "text": "the manifest records an after_suite arm (revision 2710cc2cef, gate-clone-matches.log, 0 failures) but no baseline_suite arm, so annotate_review_of_run (reckon/crew/review.py:1022) derives added_failure_count unmeasured (null) rather than 0 -- although both measurable arms carry zero failures at both revisions (the head gate-clone-matches.log 3 passed and the base regression-velocity.log 15 passed, each 0 FAILED/ERROR), so the intended added count is 0 and is left unrecorded as a measurement."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195500572735-velocity-counts-clone-matches/gate-clone-matches.log",
+      "line": "1",
+      "text": "the gate log's first line spells its revision rev=<sha> where the store's recorded_log_revision (reckon/crew/review.py:507, accepting 'revision: <sha>' or 'revision <sha>') matches nothing, so head_log_revision is recorded null even though the after_suite field names the revision; positive control: the same reader returns 510bcf7dac7240699319d9a8f8edfdd76de07724 from a log whose first line is 'revision: <sha>', so the null is the header's spelling and not a reader fault."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against 84b6364f16: c7f3c69e adds clone_matches to the captured field tuple (reckon/velocity.py:891), adds _clone_week_cells (reckon/velocity.py:2548), the report clones block (reckon/velocity.py:2664) and clones to OPTIONAL_BLOCKS (reckon/velocity.py:2719); 2710cc2c adds the report-is-None -> runs_unrecorded branch (reckon/velocity.py:2579), the definition text and a third test, the repair of the unrecorded-state fold.",
+    "done_when": "the measure asks for a per-week clones block keeping the run states apart, asserted by tests/test_velocity_clone_matches.py; tests/test_velocity_clone_matches.py:173 asserts the exact two-week dicts including runs_unrecorded, and the independent re-run of the gate records 3 passed, EXIT=0 (reviewer-gate.log).",
+    "goal": "the goal is to report in reckon.velocity the clone matches promotion recorded per ISO week, read from the ledger's clone field; reckon/velocity.py:2664 emits summary[\"clones\"] from _clone_week_cells (reckon/velocity.py:2548) reading each captured row's clone_matches (reckon/velocity.py:2578, the field added to the capture tuple at reckon/velocity.py:891), and the reviewed run's landing states the same deliverable.",
+    "manifest": "read; it records the gate (3 passed, EXIT=0) at after_suite revision 2710cc2cef, the neighbouring regression (15 passed, EXIT=0) at base 84b6364f16 under test_logs, its negative control with the verbatim mutation and EXIT=1, and the fragment; it names no baseline_suite field, so the added-failure derivation reads unmeasured.",
+    "write_paths": "the declared scope is reckon/velocity.py, tests/test_velocity_clone_matches.py, the fragment docs/evidence/fragments/a-worker-reuses-before-it-writes/velocity-counts-clone-matches.html and its figures directory; git diff --name-status 84b6364f16 2710cc2cef changes exactly the first three (A fragment, M velocity.py, A test) and the figures directory stays empty."
+  },
+  "justifications": {
+    "durability": "the guard genuinely fires: folding the None (unrecorded) row into runs_no_match in _clone_week_cells moves runs_no_match 1->2 and runs_unrecorded 1->0 in an independent direct probe (reviewer-classifier-probe.log), so the assertion at tests/test_velocity_clone_matches.py:201 fails, and the recorded negative-control.log shows the test reddening with assert 0 == 1, EXIT=1; the states are asserted as independent literals.",
+    "evidence": "the gate was re-run independently at head 2710cc2cef (3 passed, EXIT=0, reviewer-gate.log) and the neighbouring regression at base 84b6364f16 (15 passed, EXIT=0, reviewer-regression.log), the fixture figures are independent literals and the recorded negative control reddens the new test; it is not higher because the reviewed manifest names an after_suite arm but no baseline_suite, so annotate_review_of_run derives the added-failure count unmeasured, and the gate logs' rev=<sha> header is not parseable by the store's recorded_log_revision.",
+    "fit": "_clone_week_cells (reckon/velocity.py:2548) follows the module's weekly-cell idiom beside _interface_week_rows, buckets UTC Monday-start weeks as measure does, keeps its definition in the block and adds clones to OPTIONAL_BLOCKS (reckon/velocity.py:2719), with no name the naming rules forbid; it is not 20 because the unmeasured marker is recognised by type rather than by the ledger's own contract.",
+    "goal_fidelity": "the block reports the matches and the now-four run states per ISO week at reckon/velocity.py:2664 as the goal asks, reading the ledger's clone field; the previous fold of an unrecorded row into runs_no_match is repaired at reckon/velocity.py:2579, so the goal is met, but the classification still reads a dict as the unmeasured marker by isinstance (reckon/velocity.py:2581) rather than through the ledger's own marker contract, which conflates two shapes.",
+    "scope_discipline": "git diff --name-status 84b6364f16 2710cc2cef lists only reckon/velocity.py, tests/test_velocity_clone_matches.py and the fragment, all three inside the declared fence, and the figures directory is empty; no out-of-scope path is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to report in reckon.velocity the clone matches promotion recorded per ISO week, read from the ledger's clone field; reckon/velocity.py:2664 emits summary[\"clones\"] from _clone_week_cells (reckon/velocity.py:2548) reading each captured row's clone_matches (reckon/velocity.py:2578, the field added to the capture tuple at reckon/velocity.py:891), and the reviewed run's landing states the same deliverable.\nVERDICT done_when: the measure asks for a per-week clones block keeping the run states apart, asserted by tests/test_velocity_clone_matches.py; tests/test_velocity_clone_matches.py:173 asserts the exact two-week dicts including runs_unrecorded, and the independent re-run of the gate records 3 passed, EXIT=0 (reviewer-gate.log).\nVERDICT write_paths: the declared scope is reckon/velocity.py, tests/test_velocity_clone_matches.py, the fragment docs/evidence/fragments/a-worker-reuses-before-it-writes/velocity-counts-clone-matches.html and its figures directory; git diff --name-status 84b6364f16 2710cc2cef changes exactly the first three (A fragment, M velocity.py, A test) and the figures directory stays empty.\nVERDICT manifest: read; it records the gate (3 passed, EXIT=0) at after_suite revision 2710cc2cef, the neighbouring regression (15 passed, EXIT=0) at base 84b6364f16 under test_logs, its negative control with the verbatim mutation and EXIT=1, and the fragment; it names no baseline_suite field, so the added-failure derivation reads unmeasured.\nVERDICT diff: read commit by commit against 84b6364f16: c7f3c69e adds clone_matches to the captured field tuple (reckon/velocity.py:891), adds _clone_week_cells (reckon/velocity.py:2548), the report clones block (reckon/velocity.py:2664) and clones to OPTIONAL_BLOCKS (reckon/velocity.py:2719); 2710cc2c adds the report-is-None -> runs_unrecorded branch (reckon/velocity.py:2579), the definition text and a third test, the repair of the unrecorded-state fold.\nCALL_SITES: reckon/velocity.py:2664 report() emits summary[\"clones\"], reached from reckon/cli.py and reckon/serve.py's served velocity view\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the block reports the matches and the now-four run states per ISO week at reckon/velocity.py:2664 as the goal asks, reading the ledger's clone field; the previous fold of an unrecorded row into runs_no_match is repaired at reckon/velocity.py:2579, so the goal is met, but the classification still reads a dict as the unmeasured marker by isinstance (reckon/velocity.py:2581) rather than through the ledger's own marker contract, which conflates two shapes.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate was re-run independently at head 2710cc2cef (3 passed, EXIT=0, reviewer-gate.log) and the neighbouring regression at base 84b6364f16 (15 passed, EXIT=0, reviewer-regression.log), the fixture figures are independent literals and the recorded negative control reddens the new test; it is not higher because the reviewed manifest names an after_suite arm but no baseline_suite, so annotate_review_of_run derives the added-failure count unmeasured, and the gate logs' rev=<sha> header is not parseable by the store's recorded_log_revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 84b6364f16 2710cc2cef lists only reckon/velocity.py, tests/test_velocity_clone_matches.py and the fragment, all three inside the declared fence, and the figures directory is empty; no out-of-scope path is touched.\nSCORE durability: 19\nJUSTIFICATION durability: the guard genuinely fires: folding the None (unrecorded) row into runs_no_match in _clone_week_cells moves runs_no_match 1->2 and runs_unrecorded 1->0 in an independent direct probe (reviewer-classifier-probe.log), so the assertion at tests/test_velocity_clone_matches.py:201 fails, and the recorded negative-control.log shows the test reddening with assert 0 == 1, EXIT=1; the states are asserted as independent literals.\nSCORE fit: 19\nJUSTIFICATION fit: _clone_week_cells (reckon/velocity.py:2548) follows the module's weekly-cell idiom beside _interface_week_rows, buckets UTC Monday-start weeks as measure does, keeps its definition in the block and adds clones to OPTIONAL_BLOCKS (reckon/velocity.py:2719), with no name the naming rules forbid; it is not 20 because the unmeasured marker is recognised by type rather than by the ledger's own contract.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195500572735-velocity-counts-clone-matches/manifest.md:21 the manifest records an after_suite arm (revision 2710cc2cef, gate-clone-matches.log, 0 failures) but no baseline_suite arm, so annotate_review_of_run (reckon/crew/review.py:1022) derives added_failure_count unmeasured (null) rather than 0 -- although both measurable arms carry zero failures at both revisions (the head gate-clone-matches.log 3 passed and the base regression-velocity.log 15 passed, each 0 FAILED/ERROR), so the intended added count is 0 and is left unrecorded as a measurement.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195500572735-velocity-counts-clone-matches/gate-clone-matches.log:1 the gate log's first line spells its revision rev=<sha> where the store's recorded_log_revision (reckon/crew/review.py:507, accepting 'revision: <sha>' or 'revision <sha>') matches nothing, so head_log_revision is recorded null even though the after_suite field names the revision; positive control: the same reader returns 510bcf7dac7240699319d9a8f8edfdd76de07724 from a log whose first line is 'revision: <sha>', so the null is the header's spelling and not a reader fault.\n",
+  "review_run_id": "r-20260930T202748671313-review-of-velocity-counts-clone-matches",
+  "reviewed_base_sha": "84b6364f162c8a4a04b430f191db7fe34a610e76",
+  "reviewed_commits": [
+    "c7f3c69eda30094ccf02b2ed73f9a742c519538f",
+    "2710cc2cefbb2910e7cd6c6b9d384ed9a38b1d80"
+  ],
+  "reviewed_head_sha": "2710cc2cefbb2910e7cd6c6b9d384ed9a38b1d80",
+  "reviewed_run_id": "r-20260930T195500572735-velocity-counts-clone-matches",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-coord/velocity-counts-clone-matches",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260930T202748671313-review-of-velocity-counts-clone-matches",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "scores_source": "reviewer",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-30T20:39:23.223960+00:00",
+  "total": 95
+}

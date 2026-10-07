@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured by this reviewer from the reviewed run's own two suite logs \u2014 reports/reserve-base-arm.log (2 failed, 16 passed, EXIT=1, failing exactly the implement and investigate cases) and reports/reserve-gate.log (18 passed, EXIT=0) \u2014 giving a count of 0 and no added ids; the reviewed manifest names no baseline_suite or after_suite field because its node was dispatched unarmed, so the read-time annotation reports the count unmeasured while this stored file carries the measured pair",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:570 reserve_admit \u2014 the dispatch boundary whose refusal carries the composed text",
+    "reckon/crew/budget_group.py:287 reserve_pct \u2014 arithmetic only with no composed text"
+  ],
+  "completed_at": "2026-09-28T11:37:42.699Z",
+  "dispatched_at": "2026-09-28T10:52:19Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101446663322-reserve-refusal-reads-for-every-role/reports/reserve-arms.sh",
+      "line": "48",
+      "text": "the negative-control log's header names the base revision e6a86550 for a tree assembled at :44 from the working-tree module, and the mutation script's own receipt at :45 is written outside the redirect block, so reserve-negative-control.log cannot distinguish a landed mutation from an unmutated module; the control is sound \u2014 re-applied here with the receipt captured it reddens implement and investigate (2 failed, 16 passed, EXIT=1) at 46972086."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101446663322-reserve-refusal-reads-for-every-role/manifest.md",
+      "line": "12",
+      "text": "the note says a mutation at the other three sites \"would separately redden the spent-window arm of the same two cases\", which is false \u2014 restoring the fixed article at :184 and :197 together, and at :113 alone, leaves the suite green (18 passed, EXIT=0) because those sites compose only for the bookend roles review and verify, both consonant-initial, so the vowel guard at tests/test_reserve.py:208-209 can never fire on them; the note's conclusion that one site suffices still holds."
+    },
+    {
+      "file": "tests/test_reserve.py",
+      "line": "197",
+      "text": "the docstring says each of the two texts names its role, but the spent-window text names a class rather than the role \u2014 reserve.py composes \"an implementation dispatch\" there \u2014 so naming is exercised only through reserve.py:123, and a name assertion placed on the spent text would pass on the substring inside \"implementation\" rather than on the dispatched role."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against e6a86550; abb4f98b touches only reckon/crew/reserve.py and tests/test_reserve.py and 46972086 only the landing record and its figure, with no plan meta line changed.",
+    "done_when": "the done-when measure is the parametrised case at tests/test_reserve.py:190-209, which per role asserts the refusal names it and that no \"a <vowel-initial role>\" precedes it, and the manifest records that gate at the delivered revision with 18 passed EXIT=0; I re-ran the gate and both arms here and reproduced all three.",
+    "goal": "the goal is that a reserve refusal reads correctly for every role it names; reckon/crew/reserve.py:113 and :123 and :184 and :197 now compose the role through one \"the {role} role\" construction, and my own comparison of all ten (role, state) texts at e6a86550 and 46972086 shows the sole movement is that wording.",
+    "manifest": "read in full; its gate line, its log list and its evidence inputs are accurate about the code, with two exceptions in the negative-control record (FINDING 1) and one false claim about the other composing sites (FINDING 2).",
+    "write_paths": "read the manifest's five declared paths; the whole diff at 46972086 is inside them, and the insertion into the cumulative archive record is additive \u2014 108 insertions and 0 deletions at docs/evidence/archive/a-window-paces-the-lane-landed.html."
+  },
+  "justifications": {
+    "durability": "tests/test_reserve.py:209 reddens when the fixed article is put back \u2014 re-applied here through the run's own script at 46972086 it gives 2 failed, 16 passed, EXIT=1, failing exactly the implement and investigate cases.",
+    "evidence": "tests/test_reserve.py:190 asserts the done-when per role and its result is recorded and reproducible \u2014 18 passed EXIT=0 here \u2014 but the delivered negative-control log cannot show the mutation landed (FINDING 1) and the manifest's note misstates the other sites' effect (FINDING 2).",
+    "fit": "the change uses the module's own \"the {role} role\" construction already at reckon/crew/reserve.py:184 and leaves the class statements at :190 and :202 alone, and the repository naming checks are clean over the reviewing diff.",
+    "goal_fidelity": "reckon/crew/reserve.py:113 and :123 and :184 and :197 all name the role now, and my ten-pair comparison shows no verdict moved while exactly the seven texts that embedded an article changed.",
+    "scope_discipline": "the diff is confined to the five declared paths, ruff check and ruff format are clean at both revisions, and the archive record received insertions only with no plan meta line changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a reserve refusal reads correctly for every role it names; reckon/crew/reserve.py:113 and :123 and :184 and :197 now compose the role through one \"the {role} role\" construction, and my own comparison of all ten (role, state) texts at e6a86550 and 46972086 shows the sole movement is that wording.\nVERDICT done_when: the done-when measure is the parametrised case at tests/test_reserve.py:190-209, which per role asserts the refusal names it and that no \"a <vowel-initial role>\" precedes it, and the manifest records that gate at the delivered revision with 18 passed EXIT=0; I re-ran the gate and both arms here and reproduced all three.\nVERDICT write_paths: read the manifest's five declared paths; the whole diff at 46972086 is inside them, and the insertion into the cumulative archive record is additive \u2014 108 insertions and 0 deletions at docs/evidence/archive/a-window-paces-the-lane-landed.html.\nVERDICT manifest: read in full; its gate line, its log list and its evidence inputs are accurate about the code, with two exceptions in the negative-control record (FINDING 1) and one false claim about the other composing sites (FINDING 2).\nVERDICT diff: read commit by commit against e6a86550; abb4f98b touches only reckon/crew/reserve.py and tests/test_reserve.py and 46972086 only the landing record and its figure, with no plan meta line changed.\nCALL_SITES: reckon/crew/dispatch.py:570 reserve_admit \u2014 the dispatch boundary whose refusal carries the composed text, reckon/crew/budget_group.py:287 reserve_pct \u2014 arithmetic only with no composed text\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/reserve.py:113 and :123 and :184 and :197 all name the role now, and my ten-pair comparison shows no verdict moved while exactly the seven texts that embedded an article changed.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_reserve.py:190 asserts the done-when per role and its result is recorded and reproducible \u2014 18 passed EXIT=0 here \u2014 but the delivered negative-control log cannot show the mutation landed (FINDING 1) and the manifest's note misstates the other sites' effect (FINDING 2).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is confined to the five declared paths, ruff check and ruff format are clean at both revisions, and the archive record received insertions only with no plan meta line changed.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_reserve.py:209 reddens when the fixed article is put back \u2014 re-applied here through the run's own script at 46972086 it gives 2 failed, 16 passed, EXIT=1, failing exactly the implement and investigate cases.\nSCORE fit: 20\nJUSTIFICATION fit: the change uses the module's own \"the {role} role\" construction already at reckon/crew/reserve.py:184 and leaves the class statements at :190 and :202 alone, and the repository naming checks are clean over the reviewing diff.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101446663322-reserve-refusal-reads-for-every-role/reports/reserve-arms.sh:48 the negative-control log's header names the base revision e6a86550 for a tree assembled at :44 from the working-tree module, and the mutation script's own receipt at :45 is written outside the redirect block, so reserve-negative-control.log cannot distinguish a landed mutation from an unmutated module; the control is sound \u2014 re-applied here with the receipt captured it reddens implement and investigate (2 failed, 16 passed, EXIT=1) at 46972086.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101446663322-reserve-refusal-reads-for-every-role/manifest.md:12 the note says a mutation at the other three sites \"would separately redden the spent-window arm of the same two cases\", which is false \u2014 restoring the fixed article at :184 and :197 together, and at :113 alone, leaves the suite green (18 passed, EXIT=0) because those sites compose only for the bookend roles review and verify, both consonant-initial, so the vowel guard at tests/test_reserve.py:208-209 can never fire on them; the note's conclusion that one site suffices still holds.\nFINDING tests/test_reserve.py:197 the docstring says each of the two texts names its role, but the spent-window text names a class rather than the role \u2014 reserve.py composes \"an implementation dispatch\" there \u2014 so naming is exercised only through reserve.py:123, and a name assertion placed on the spent text would pass on the substring inside \"implementation\" rather than on the dispatched role.\nNOTE added-failure derivation: measured by this reviewer from the reviewed run's own two suite logs \u2014 reports/reserve-base-arm.log (2 failed, 16 passed, EXIT=1, failing exactly the implement and investigate cases) and reports/reserve-gate.log (18 passed, EXIT=0) \u2014 so added_failure_count is 0 and added_failure_ids is empty, a measured zero rather than an unmeasured None. The reviewed manifest carries no baseline_suite or after_suite field because its node was dispatched unarmed (suite_command None), so a read-time annotate_review_of_run reports the count unmeasured; this stored file is the artifact carrying the measured pair.\n",
+  "review_run_id": "r-20260928T105207754335-review-of-reserve-refusal-reads-for-every-role",
+  "reviewed_base_sha": "e6a865505e9c1dcbb560602087616c71ebd04b06",
+  "reviewed_head_sha": "469720867d79a22da056e3864fa6a8a40d250582",
+  "reviewed_run_id": "r-20260928T101446663322-reserve-refusal-reads-for-every-role",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T11:29:09.391143+00:00",
+  "total": 96
+}

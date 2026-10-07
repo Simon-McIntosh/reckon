@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own baseline_suite (logs/base-arm-xdist.log: 2 failed, EXIT=1) and after_suite (logs/head-arm-xdist.log: 3 passed, EXIT=0), and independently re-run by this reviewer (review-base-arm.log: 2 failed, 1 passed, EXIT=1; review-head-arm.log: 3 passed, EXIT=0): added_failure_count=0, the head arm adding no failing id. The base arm's case-1 failure is the guarded defect reproduced -- the second concurrent session deleted the first session's pid-named fixture (FileNotFoundError), the same failure the declared negative control shows.",
+  "backend": "clive",
+  "base_log_revision": "531027092cec6e94ef32f4ab83a4c84eb3f7b1c5",
+  "call_site_count": 2,
+  "call_sites": [
+    "tests/conftest.py:pytest_configure",
+    "tests/conftest.py:acquire_basetemp_lock"
+  ],
+  "completed_at": "2026-10-01T08:48:25.206Z",
+  "dispatched_at": "2026-10-01T08:43:51Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/a-shared-basetemp-is-refused.html",
+      "line": "44",
+      "severity": "follow-on",
+      "text": "follow-on: the 'Measured (base vs head)' paragraph labels the head arm with the base revision 531027092 where the head is 2225ab398; the logged head arm at 2225ab398 is 3 passed, so the measurement stands but the record names the wrong revision for it."
+    },
+    {
+      "file": "tests/conftest.py",
+      "line": "389",
+      "severity": "follow-on",
+      "text": "follow-on: _process_is_alive treats a reused pid as live, so a lock left by a session killed before release is never taken over once an unrelated process holds that pid, leaving the basetemp false-refused until the lock is removed by hand; no case covers a stale lock whose pid was reused."
+    }
+  ],
+  "head_log_revision": "2225ab398cc8ac2f9748542d3c13d0d64cf56c0c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 in-repo call site(s): the acquisition from pytest_configure and the sibling lock-path helper from acquire_basetemp_lock.",
+    "diff": "read at 2225ab398 (single commit after base 531027092, three files, 420 insertions): tests/conftest.py adds the lock helpers and the pytest_configure acquisition, plus the new three-case test file and the evidence fragment.",
+    "done_when": "the done-when (f-sgh-shared-basetemp-destroys-a-peer) names two sessions on one basetemp with the second refused naming the first's pid and the first's files intact, a sequential second session starting normally, and a negative control with the lock removed showing the first's fixture directory deleted; tests/test_a_shared_basetemp_is_refused.py drives all three with real child sessions, head 3 passed (re-confirmed here 3 passed at 2225ab398) and a logged negative control EXIT=1.",
+    "goal": "the node goal is to refuse a second pytest session on a held explicit --basetemp before pytest removes anything, naming the holder's pid, without breaking sequential reuse; the diff does exactly that in tests/conftest.py.",
+    "manifest": "read; states head 3 passed/EXIT=0 at -n 8, base 2 failed/1 passed/EXIT=1, negative control 1 failed/EXIT=1, commit 2225ab398, base revision 531027092, and names the head, base, consumer and negative-control logs.",
+    "write_paths": "every path in the diff (tests/conftest.py, tests/test_a_shared_basetemp_is_refused.py, docs/evidence/fragments/the-suite-is-green-at-head/a-shared-basetemp-is-refused.html) is inside the manifest's declared write paths."
+  },
+  "justifications": {
+    "durability": "the declared negative control reddens case 1 with EXIT=1 when the lock is removed, and each case asserts against independently-derived expectations (a pid-named fixture written by a real child session, so a rebuilt directory cannot be mistaken for the first's), but no case covers a stale lock whose pid an unrelated live process later reused.",
+    "evidence": "the gate and both arms are logged with their revisions and literal commands, and this reviewer independently re-ran both (head 3 passed/EXIT=0 at 2225ab398; base 2 failed/1 passed/EXIT=1, the case-1 failure being the guarded defect reproduced), but the evidence fragment at line 44 labels the head arm with the base revision 531027092 rather than the head 2225ab398.",
+    "fit": "the helpers follow conftest's module-level idiom, the docstrings state the mechanism (a lock beside the basetemp because the directory itself is what a session removes), and no plan label, ticket or version name is introduced.",
+    "goal_fidelity": "tests/conftest.py:406-451 takes a sibling lock with O_CREAT|O_EXCL in pytest_configure and raises pytest.UsageError naming the holder's pid and the basetemp, released at unconfigure -- exactly the done-when; tests/test_a_shared_basetemp_is_refused.py:160-248 drives refusal/intact-fixtures, sequential reuse and stale-pid takeover with real child sessions.",
+    "scope_discipline": "only tests/conftest.py, the new test file and the evidence fragment change, all inside the manifest's declared write paths, with no product source touched and no test skipped, xfailed or weakened."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse a second pytest session on a held explicit --basetemp before pytest removes anything, naming the holder's pid, without breaking sequential reuse; the diff does exactly that in tests/conftest.py.\nVERDICT done_when: the done-when (f-sgh-shared-basetemp-destroys-a-peer) names two sessions on one basetemp with the second refused naming the first's pid and the first's files intact, a sequential second session starting normally, and a negative control with the lock removed showing the first's fixture directory deleted; tests/test_a_shared_basetemp_is_refused.py drives all three with real child sessions, head 3 passed (re-confirmed here 3 passed at 2225ab398) and a logged negative control EXIT=1.\nVERDICT write_paths: every path in the diff (tests/conftest.py, tests/test_a_shared_basetemp_is_refused.py, docs/evidence/fragments/the-suite-is-green-at-head/a-shared-basetemp-is-refused.html) is inside the manifest's declared write paths.\nVERDICT manifest: read; states head 3 passed/EXIT=0 at -n 8, base 2 failed/1 passed/EXIT=1, negative control 1 failed/EXIT=1, commit 2225ab398, base revision 531027092, and names the head, base, consumer and negative-control logs.\nVERDICT diff: read at 2225ab398 (single commit after base 531027092, three files, 420 insertions): tests/conftest.py adds the lock helpers and the pytest_configure acquisition, plus the new three-case test file and the evidence fragment.\nCALL_SITES: tests/conftest.py:pytest_configure, tests/conftest.py:acquire_basetemp_lock\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/conftest.py:406-451 takes a sibling lock with O_CREAT|O_EXCL in pytest_configure and raises pytest.UsageError naming the holder's pid and the basetemp, released at unconfigure -- exactly the done-when; tests/test_a_shared_basetemp_is_refused.py:160-248 drives refusal/intact-fixtures, sequential reuse and stale-pid takeover with real child sessions.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate and both arms are logged with their revisions and literal commands, and this reviewer independently re-ran both (head 3 passed/EXIT=0 at 2225ab398; base 2 failed/1 passed/EXIT=1, the case-1 failure being the guarded defect reproduced), but the evidence fragment at line 44 labels the head arm with the base revision 531027092 rather than the head 2225ab398.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: only tests/conftest.py, the new test file and the evidence fragment change, all inside the manifest's declared write paths, with no product source touched and no test skipped, xfailed or weakened.\nSCORE durability: 17\nJUSTIFICATION durability: the declared negative control reddens case 1 with EXIT=1 when the lock is removed, and each case asserts against independently-derived expectations (a pid-named fixture written by a real child session, so a rebuilt directory cannot be mistaken for the first's), but no case covers a stale lock whose pid an unrelated live process later reused.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers follow conftest's module-level idiom, the docstrings state the mechanism (a lock beside the basetemp because the directory itself is what a session removes), and no plan label, ticket or version name is introduced.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/a-shared-basetemp-is-refused.html:44 follow-on: the 'Measured (base vs head)' paragraph labels the head arm with the base revision 531027092 where the head is 2225ab398; the logged head arm at 2225ab398 is 3 passed, so the measurement stands but the record names the wrong revision for it.\nFINDING tests/conftest.py:389 follow-on: _process_is_alive treats a reused pid as live, so a lock left by a session killed before release is never taken over once an unrelated process holds that pid, leaving the basetemp false-refused until the lock is removed by hand; no case covers a stale lock whose pid was reused.\n",
+  "review_run_id": "r-20261001T084307952264-review-of-a-shared-basetemp-is-refused",
+  "reviewed_base_sha": "531027092cec6e94ef32f4ab83a4c84eb3f7b1c5",
+  "reviewed_head_sha": "2225ab398cc8ac2f9748542d3c13d0d64cf56c0c",
+  "reviewed_run_id": "r-20261001T081400753558-a-shared-basetemp-is-refused",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:04.476697+00:00",
+  "total": 90
+}

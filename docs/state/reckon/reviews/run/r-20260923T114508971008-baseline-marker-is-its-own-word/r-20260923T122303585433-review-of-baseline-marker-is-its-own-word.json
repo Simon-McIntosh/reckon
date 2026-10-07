@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:2085 _ticker_grid (served to crew_follow at reckon/cli.py:2201 and crew_watch at reckon/cli.py:2372); reckon/crew/recovery.py:4372 format_watch_transition calling Ticker.render"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T12:23:03.585433+00:00",
+  "findings": [
+    {
+      "file": "tests/test_crew_ticker.py",
+      "line": "717",
+      "text": "the docstring states the separation \"costs no column\" while the change's own landing record and constants show the marker cell grew from 3 to 4 columns (STATE_REGION 14 to 15, MIN_WIDTH 126 to 127), so a reader of the test is told the row's width budget is untouched by a change that spends a column; the property the sentence's own clause explains \u2014 the state cell keeps its column between a baseline and a transition row \u2014 is the one that holds."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read both commits against b52bf914; bed0cdeb changes reckon/crew/ticker.py by 5 insertions and 3 deletions (MARKER 3 to 4 with its comment) and adds one test, and 0ff096bf appends the landing record (plan +12, evidence +64 with 0 deletions) with a figure script and png.",
+    "done_when": "read \u00a77's done-when and the added test at tests/test_crew_ticker.py:708, which renders a baseline and a transition at a pinned 180 columns and asserts `now working` present (line 733), `nowworking` absent (line 734), one space between them (line 735) and the two state cells on one column (line 741); I re-ran that test at 0ff096bf and it passed.",
+    "goal": "read the node's goal and the landed change at 0ff096bf; reckon/crew/ticker.py:890 renders the marker cell as f\"{BASELINE_MARKER if baseline else '':<{MARKER}}\" with MARKER = len(BASELINE_MARKER) + 1 at ticker.py:230, so a baseline row emits `now ` and the state follows as its own word.",
+    "manifest": "read in full at the run directory; it names commits bed0cdeb and 0ff096bf, the gate counts at both revisions, both gate logs and the negative-control log, and its changed_paths matches the diff.",
+    "write_paths": "read the node's declared six-path scope and `git diff --numstat b52bf914 0ff096bf`; the diff changes exactly those six files \u2014 reckon/crew/ticker.py, tests/test_crew_ticker.py, the evidence archive, the plan page, and the figure script and png \u2014 and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the declared control (returning MARKER to len(BASELINE_MARKER)) reddens the added test on `assert \"now working\" in baseline` (negative_control.log), and I re-ran tests/test_crew_ticker.py::test_the_baseline_marker_stands_as_its_own_word_before_the_state at 0ff096bf \u2014 1 passed.",
+    "evidence": "the gate counts are recorded in baseline_gate.log (1 failed, 90 passed) and after_gate.log (1 failed, 91 passed) with one pre-existing failure id at both, but after_suite's revision field names bed0cdeb while that log's first line records b52bf914 with \"(working tree with the fix)\", so the label postdates the run it describes.",
+    "fit": "the constant, its comment (reckon/crew/ticker.py:224-230) and the landing record follow the file's idiom and state the width delta honestly, but the added test's docstring says the separation \"costs no column\" (tests/test_crew_ticker.py:717) where the change spends one.",
+    "goal_fidelity": "at 0ff096bf the constants are MARKER 4 and STATE_REGION 15 (reckon/crew/ticker.py:230-231) and the marker cell at ticker.py:890 carries `now` plus one space before the state cell.",
+    "scope_discipline": "`git diff --numstat b52bf914 0ff096bf` lists only the six declared paths, and docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html gains 64 lines with 0 deletions, so the cumulative record was appended rather than replaced."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node's goal and the landed change at 0ff096bf; reckon/crew/ticker.py:890 renders the marker cell as f\"{BASELINE_MARKER if baseline else '':<{MARKER}}\" with MARKER = len(BASELINE_MARKER) + 1 at ticker.py:230, so a baseline row emits `now ` and the state follows as its own word.\nVERDICT done_when: read \u00a77's done-when and the added test at tests/test_crew_ticker.py:708, which renders a baseline and a transition at a pinned 180 columns and asserts `now working` present (line 733), `nowworking` absent (line 734), one space between them (line 735) and the two state cells on one column (line 741); I re-ran that test at 0ff096bf and it passed.\nVERDICT write_paths: read the node's declared six-path scope and `git diff --numstat b52bf914 0ff096bf`; the diff changes exactly those six files \u2014 reckon/crew/ticker.py, tests/test_crew_ticker.py, the evidence archive, the plan page, and the figure script and png \u2014 and nothing outside them.\nVERDICT manifest: read in full at the run directory; it names commits bed0cdeb and 0ff096bf, the gate counts at both revisions, both gate logs and the negative-control log, and its changed_paths matches the diff.\nVERDICT diff: read both commits against b52bf914; bed0cdeb changes reckon/crew/ticker.py by 5 insertions and 3 deletions (MARKER 3 to 4 with its comment) and adds one test, and 0ff096bf appends the landing record (plan +12, evidence +64 with 0 deletions) with a figure script and png.\nCALL_SITES: reckon/cli.py:2085 _ticker_grid (served to crew_follow at reckon/cli.py:2201 and crew_watch at reckon/cli.py:2372); reckon/crew/recovery.py:4372 format_watch_transition calling Ticker.render\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: at 0ff096bf the constants are MARKER 4 and STATE_REGION 15 (reckon/crew/ticker.py:230-231) and the marker cell at ticker.py:890 carries `now` plus one space before the state cell.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate counts are recorded in baseline_gate.log (1 failed, 90 passed) and after_gate.log (1 failed, 91 passed) with one pre-existing failure id at both, but after_suite's revision field names bed0cdeb while that log's first line records b52bf914 with \"(working tree with the fix)\", so the label postdates the run it describes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --numstat b52bf914 0ff096bf` lists only the six declared paths, and docs/evidence/archive/a-monitor-row-reads-at-a-glance-landed.html gains 64 lines with 0 deletions, so the cumulative record was appended rather than replaced.\nSCORE durability: 20\nJUSTIFICATION durability: the declared control (returning MARKER to len(BASELINE_MARKER)) reddens the added test on `assert \"now working\" in baseline` (negative_control.log), and I re-ran tests/test_crew_ticker.py::test_the_baseline_marker_stands_as_its_own_word_before_the_state at 0ff096bf \u2014 1 passed.\nSCORE fit: 19\nJUSTIFICATION fit: the constant, its comment (reckon/crew/ticker.py:224-230) and the landing record follow the file's idiom and state the width delta honestly, but the added test's docstring says the separation \"costs no column\" (tests/test_crew_ticker.py:717) where the change spends one.\nFINDING tests/test_crew_ticker.py:717 the docstring states the separation \"costs no column\" while the change's own landing record and constants show the marker cell grew from 3 to 4 columns (STATE_REGION 14 to 15, MIN_WIDTH 126 to 127), so a reader of the test is told the row's width budget is untouched by a change that spends a column; the property the sentence's own clause explains \u2014 the state cell keeps its column between a baseline and a transition row \u2014 is the one that holds.",
+  "review_run_id": "r-20260923T122303585433-review-of-baseline-marker-is-its-own-word",
+  "reviewed_base_sha": "b52bf914d74124467257d63f96797892cb8e0f7b",
+  "reviewed_head_sha": "0ff096bf1efb7614ea42202b88fd51d558129ca5",
+  "reviewed_run_id": "r-20260923T114508971008-baseline-marker-is-its-own-word",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T12:38:45.265523+00:00",
+  "total": 98
+}

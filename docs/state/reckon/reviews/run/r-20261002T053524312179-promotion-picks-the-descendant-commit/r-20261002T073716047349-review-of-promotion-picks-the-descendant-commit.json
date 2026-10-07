@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_foreign_pid_never_reads_dead.py::test_a_death_read_elsewhere_is_not_enough_for_the_retained_work_clause"
+  ],
+  "added_failures_note": "total capped at 5: the reviewed run added 1 failing test(s) not retired by name (tests/test_a_foreign_pid_never_reads_dead.py::test_a_death_read_elsewhere_is_not_enough_for_the_retained_work_clause)",
+  "base_log_revision": "233f442b0da394d459e5afaf6b8e59a9605a0cb4",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:4929",
+    "reckon/crew/promotion.py:7231"
+  ],
+  "completed_at": "2026-10-02T08:02:28.975Z",
+  "dispatched_at": "2026-10-02T07:37:39Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite field records failure_count 0 and failure_ids [] while its own gate-head.log carries ERROR tests/test_a_foreign_pid_never_reads_dead.py::test_a_death_read_elsewhere_is_not_enough_for_the_retained_work_clause, so the added-failure count read from this run's own two gate logs is 1, not the zero the field states and the narrative's no failing id implies."
+    },
+    {
+      "file": "docs/evidence/fragments/scoring-should-stop-a-promotion/promotion-picks-the-descendant-commit.html",
+      "line": "68",
+      "severity": "follow-on",
+      "text": "follow-on: the Limitation says the base arm was stopped near 40 percent, but gate-base.log's last progress line is 71 percent with no summary, so the Limitation disagrees with the log it cites."
+    },
+    {
+      "file": "manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite is completed false because the base arm reached no summary, so the base-versus-head delta the done_when asks for was never measured and the one head-arm ERROR cannot be told from a pre-existing condition except by the run's own account."
+    }
+  ],
+  "head_log_revision": "0f2700d03",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 233f442b0; _promoted_revision now delegates to _descendant_commit (promotion.py:2299), _run_promoted_revision passes the whole cited list (promotion.py:6125), and the new test file adds four cases whose assertions read the expected head from git rather than from the value handed to the code.",
+    "done_when": "section 9 asks for a test covering both orders, the divergent-set refusal and the obligation's printed remedy line run as printed; tests/test_promotion_picks_the_descendant_commit.py carries those four cases and they pass 4 of 4 at head 1b4718827 in an independent re-run here, but the base arm of the two-arm suite gate never completed so the base-side result the done_when asks for is not in any log.",
+    "goal": "the node's goal is that crew complete promotes the presented commit that descends from all the others whatever order they are given; reckon/crew/promotion.py:2288 resolves every presented spelling to its canonical id and returns the one every other resolvable candidate is an ancestor of, and promotion.py:2299 makes _promoted_revision delegate to it.",
+    "manifest": "read; status complete with commits 0f2700d03, b8a9eb644, 1b4718827, but the after_suite field records completed true yet failure_count 0 and failure_ids [] while its own gate-head.log carries one ERROR id, and baseline_suite is completed false.",
+    "write_paths": "the declared paths are reckon/crew/promotion.py, tests/test_promotion_picks_the_descendant_commit.py and the evidence fragment plus an unused figure directory; the three commits touch exactly those three files, with no product source changed beyond promotion.py."
+  },
+  "justifications": {
+    "durability": "the declared negative control (restoring return str(commit_list[-1]) in _promoted_revision) reddens three of four cases at tests/test_promotion_picks_the_descendant_commit.py, and each case compares the promoted revision against a head the test read from git rather than from the value handed to the code.",
+    "evidence": "the head arm of gate-head.log reached its summary (2737 passed, 1 error, EXIT=1) and gate-negative-control.log reproduces the incident with 3 failed, but gate-base.log stopped at 71 percent with no summary so no base-versus-head delta was measured, and the after_suite field sits one revision behind the reviewed head while the run's own logs derive one added ERROR id from it.",
+    "fit": "_descendant_commit reuses _commit_canonical_id (promotion.py:416) and _revision_is_ancestor (promotion.py:7835) and documents the mechanism, introducing no name the repository naming rules forbid.",
+    "goal_fidelity": "promotion.py:2288 returns the presented commit every other resolvable candidate is an ancestor of and promotion.py:2306 refuses a set with no single descendant naming each entry, which is what section 9 requires.",
+    "scope_discipline": "the diff of 0f2700d03, b8a9eb644 and 1b4718827 touches only reckon/crew/promotion.py, tests/test_promotion_picks_the_descendant_commit.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that crew complete promotes the presented commit that descends from all the others whatever order they are given; reckon/crew/promotion.py:2288 resolves every presented spelling to its canonical id and returns the one every other resolvable candidate is an ancestor of, and promotion.py:2299 makes _promoted_revision delegate to it.\nVERDICT done_when: section 9 asks for a test covering both orders, the divergent-set refusal and the obligation's printed remedy line run as printed; tests/test_promotion_picks_the_descendant_commit.py carries those four cases and they pass 4 of 4 at head 1b4718827 in an independent re-run here, but the base arm of the two-arm suite gate never completed so the base-side result the done_when asks for is not in any log.\nVERDICT write_paths: the declared paths are reckon/crew/promotion.py, tests/test_promotion_picks_the_descendant_commit.py and the evidence fragment plus an unused figure directory; the three commits touch exactly those three files, with no product source changed beyond promotion.py.\nVERDICT manifest: read; status complete with commits 0f2700d03, b8a9eb644, 1b4718827, but the after_suite field records completed true yet failure_count 0 and failure_ids [] while its own gate-head.log carries one ERROR id, and baseline_suite is completed false.\nVERDICT diff: read commit by commit against 233f442b0; _promoted_revision now delegates to _descendant_commit (promotion.py:2299), _run_promoted_revision passes the whole cited list (promotion.py:6125), and the new test file adds four cases whose assertions read the expected head from git rather than from the value handed to the code.\nCALL_SITES: reckon/crew/promotion.py:4929, reckon/crew/promotion.py:7231\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: promotion.py:2288 returns the presented commit every other resolvable candidate is an ancestor of and promotion.py:2306 refuses a set with no single descendant naming each entry, which is what section 9 requires.\nSCORE evidence: 14\nJUSTIFICATION evidence: the head arm of gate-head.log reached its summary (2737 passed, 1 error, EXIT=1) and gate-negative-control.log reproduces the incident with 3 failed, but gate-base.log stopped at 71 percent with no summary so no base-versus-head delta was measured, and the after_suite field sits one revision behind the reviewed head while the run's own logs derive one added ERROR id from it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of 0f2700d03, b8a9eb644 and 1b4718827 touches only reckon/crew/promotion.py, tests/test_promotion_picks_the_descendant_commit.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the declared negative control (restoring return str(commit_list[-1]) in _promoted_revision) reddens three of four cases at tests/test_promotion_picks_the_descendant_commit.py, and each case compares the promoted revision against a head the test read from git rather than from the value handed to the code.\nSCORE fit: 19\nJUSTIFICATION fit: _descendant_commit reuses _commit_canonical_id (promotion.py:416) and _revision_is_ancestor (promotion.py:7835) and documents the mechanism, introducing no name the repository naming rules forbid.\nFINDING manifest.md:17 follow-on: the after_suite field records failure_count 0 and failure_ids [] while its own gate-head.log carries ERROR tests/test_a_foreign_pid_never_reads_dead.py::test_a_death_read_elsewhere_is_not_enough_for_the_retained_work_clause, so the added-failure count read from this run's own two gate logs is 1, not the zero the field states and the narrative's no failing id implies.\nFINDING docs/evidence/fragments/scoring-should-stop-a-promotion/promotion-picks-the-descendant-commit.html:68 follow-on: the Limitation says the base arm was stopped near 40 percent, but gate-base.log's last progress line is 71 percent with no summary, so the Limitation disagrees with the log it cites.\nFINDING manifest.md:16 follow-on: baseline_suite is completed false because the base arm reached no summary, so the base-versus-head delta the done_when asks for was never measured and the one head-arm ERROR cannot be told from a pre-existing condition except by the run's own account.",
+  "review_run_id": "r-20261002T073716047349-review-of-promotion-picks-the-descendant-commit",
+  "reviewed_base_sha": "233f442b0da394d459e5afaf6b8e59a9605a0cb4",
+  "reviewed_head_sha": "1b4718827b9518287f7320c08281628ead485fc2",
+  "reviewed_run_id": "r-20261002T053524312179-promotion-picks-the-descendant-commit",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:05.478078+00:00",
+  "total": 91
+}

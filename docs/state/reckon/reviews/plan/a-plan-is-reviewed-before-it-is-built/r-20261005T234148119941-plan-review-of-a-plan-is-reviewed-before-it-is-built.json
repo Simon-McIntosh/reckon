@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T23:47:44.882Z",
+  "dispatched_at": "2026-10-05T23:42:10Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html#s16",
+      "id": "reuse_search-1",
+      "reason": "a node reading \u00a716 literally re-runs a hoist \u00a717 already landed and renames/relocates live code, so the section must be restated against the post-\u00a717 tree.",
+      "text": "\u00a716 states \"section_record_id and section_id_candidates live today in reckon/crew/routing.py \u2026 \u00a717 hoists them into reckon/_plan_html.py\" and \"section_record_id gains an optional enclosing-attributes parameter and moves\", but \u00a717 has landed: the identity trio is already at reckon/_plan_html.py:71/87/92, routing only imports them (reckon/crew/routing.py:29), and section_record_id already accepts `enclosing=`; the same section's interface accounting then reads \"\u00a717 has landed its two additions\", so the section contradicts itself on \u00a717's state",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:107",
+      "id": "duplicate_owner-1",
+      "reason": "without naming `roadmap.implementable_sections` as the single owner it consumes, the node may mint a fourth outstanding-sections reader, and the public-definition accounting that credits \u00a718 with a \"reader\" addition is wrong.",
+      "text": "\u00a716 needs the set of sections still admitting work and names it inconsistently: twice as \"\u00a718's reader\" / \"the hoisted outstanding-sections reader \u2026 \u00a718's addition and counted there\", once as `roadmap.implementable_sections`; \u00a718 added no reader, only the `is_implementable_section` predicate, and three readers of that question already exist (`roadmap.implementable_sections` at reckon/roadmap.py:107, `doccheck._implementable_section_ids` at reckon/doccheck.py:1018, `_schema.plan_executable_remainder` at reckon/_schema.py:800)",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e764955b6b552408c980bd59c8ed1c3cf1390d7a4eeb231d70df119eff803d72",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 146,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261005T234148119941-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "07e143b757cd63170f4058e0cc51b0c7a668cd5b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 one private `_section_digests(plan)` mapping and the recomposed `plan_fingerprint` hide the section-identity, per-section-prose and document-unit digests behind a single public digest, which is smaller than what it hides.",
+    "duplicate_owner": "a finding \u2014 the outstanding-sections owner is `roadmap.implementable_sections` (`reckon/roadmap.py:107`), which \u00a716 consumes but attributes to \"\u00a718's reader\"; \u00a718 added only the `is_implementable_section` predicate (`reckon/_schema.py:788`), and two list readers already exist beside roadmap's.",
+    "interface_budget": "pass \u2014 against this week's public_definitions 1480 / cli_options 317 / mcp_views 33 / refusal_families 23: \u00a716 adds exactly one public definition (`strip_tags`), saying why nothing is retired (the identity digest and prose walk keep their names) and reusing the existing plan-review-missing refusal family; \u00a719 adds no public definition and retires nothing.",
+    "reuse_search": "a finding \u2014 \u00a716 both consumes machinery \u00a717 already landed (`section_record_id`, `section_id_candidates`, `section_anchor`, the number core in `reckon/_plan_html.py`) and, in the same text, describes that hoist as this section's own pending work, so the plan's account of prior art is stale.",
+    "thin_wrapper": "pass \u2014 the one added public name, `strip_tags`, is justified as an outward-facing reuse of the module's existing `_TAG_RE` (chosen over a second expression), and \u00a716 argues at length why the coverage predicate is not a wrapper over `read_plan_review` (one record\u2194one digest versus a set join)."
+  },
+  "section_digests": {},
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-06T03:50:49.746160+00:00"
+}

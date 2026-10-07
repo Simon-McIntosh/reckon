@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": "25c699fcadeb5af1ddf8e87ced1b517279749db8",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/evidence.py:_overall_verdict",
+    "reckon/mcp_views.py:_group_section_attempts",
+    "reckon/mcp_views.py:_section_attempt_count_uncached",
+    "reckon/crew/promotion.py:_require_brief_owner",
+    "reckon/crew/promotion.py:_require_impl_moved"
+  ],
+  "completed_at": "2026-10-04T20:18:05.633Z",
+  "dispatched_at": "2026-10-04T20:13:34Z",
+  "findings": [],
+  "head_log_revision": "affd139916c597e16726f6233070d88b9701190a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 701c50686; 25c699fca adds the agreement test and affd13991 moves the role set into EXECUTABLE_SECTION_ROLES and imports it in the two attempt readers and the two promotion checks.",
+    "done_when": "the done-when names a test over one fixture holding implement, test, review and investigate runs plus a negative control; tests/test_the_executable_role_set_is_one_constant.py passes at head (1 passed) and negative_control.log records the declared base mutation reddening it at EXIT=1.",
+    "goal": "the node goal is that the set of run roles counting toward a section lives in one named constant imported by the attempt count, the closure verdict and promotion; reckon/evidence.py:275 defines EXECUTABLE_SECTION_ROLES and it is imported at reckon/mcp_views.py:27 and reckon/crew/promotion.py:93.",
+    "manifest": "read; it records the two commits, the base and head importer-cohort arms each 1018 passed, the negative control at EXIT=1, and zero added failures.",
+    "write_paths": "read the manifest's declared write paths; the diff's four changed paths \u2014 reckon/evidence.py, reckon/mcp_views.py, reckon/crew/promotion.py and the test \u2014 are every one inside them."
+  },
+  "justifications": {
+    "durability": "adding investigate to evidence's local set reddens tests/test_the_executable_role_set_is_one_constant.py:38 with 5 != 4, and the literal-promotion assertion at line 52 fails if promotion widens, so each reader is individually guarded.",
+    "evidence": "tests/test_the_executable_role_set_is_one_constant.py passes at head and negative_control.log shows the declared base mutation reddens it at EXIT=1, both recorded; the 1018-passed base and head cohorts back the wider gate.",
+    "fit": "reckon/evidence.py already owned the verdict population and the change deletes the duplicate promotion._IMPL_MOVE_ENFORCED_ROLES at reckon/crew/promotion.py rather than leaving two owners.",
+    "goal_fidelity": "reckon/evidence.py:275 now holds the one set and every reader \u2014 reckon/evidence.py:307, reckon/mcp_views.py:1608,1647,1739 and reckon/crew/promotion.py:7360,7415 \u2014 imports it.",
+    "scope_discipline": "every path in the diff is inside the manifest's declared write paths, and the indexed SQL site the plan did not name was bound from the same constant rather than left split."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the set of run roles counting toward a section lives in one named constant imported by the attempt count, the closure verdict and promotion; reckon/evidence.py:275 defines EXECUTABLE_SECTION_ROLES and it is imported at reckon/mcp_views.py:27 and reckon/crew/promotion.py:93.\nVERDICT done_when: the done-when names a test over one fixture holding implement, test, review and investigate runs plus a negative control; tests/test_the_executable_role_set_is_one_constant.py passes at head (1 passed) and negative_control.log records the declared base mutation reddening it at EXIT=1.\nVERDICT write_paths: read the manifest's declared write paths; the diff's four changed paths \u2014 reckon/evidence.py, reckon/mcp_views.py, reckon/crew/promotion.py and the test \u2014 are every one inside them.\nVERDICT manifest: read; it records the two commits, the base and head importer-cohort arms each 1018 passed, the negative control at EXIT=1, and zero added failures.\nVERDICT diff: read commit by commit against 701c50686; 25c699fca adds the agreement test and affd13991 moves the role set into EXECUTABLE_SECTION_ROLES and imports it in the two attempt readers and the two promotion checks.\nCALL_SITES: reckon/evidence.py:_overall_verdict, reckon/mcp_views.py:_group_section_attempts, reckon/mcp_views.py:_section_attempt_count_uncached, reckon/crew/promotion.py:_require_brief_owner, reckon/crew/promotion.py:_require_impl_moved\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/evidence.py:275 now holds the one set and every reader \u2014 reckon/evidence.py:307, reckon/mcp_views.py:1608,1647,1739 and reckon/crew/promotion.py:7360,7415 \u2014 imports it.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_the_executable_role_set_is_one_constant.py passes at head and negative_control.log shows the declared base mutation reddens it at EXIT=1, both recorded; the 1018-passed base and head cohorts back the wider gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths, and the indexed SQL site the plan did not name was bound from the same constant rather than left split.\nSCORE durability: 19\nJUSTIFICATION durability: adding investigate to evidence's local set reddens tests/test_the_executable_role_set_is_one_constant.py:38 with 5 != 4, and the literal-promotion assertion at line 52 fails if promotion widens, so each reader is individually guarded.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/evidence.py already owned the verdict population and the change deletes the duplicate promotion._IMPL_MOVE_ENFORCED_ROLES at reckon/crew/promotion.py rather than leaving two owners.\n",
+  "review_run_id": "r-20261004T201310296797-review-of-the-executable-role-set-is-one-constant",
+  "reviewed_base_sha": "701c50686e1ff0763c2a1681e0de53dfdca91809",
+  "reviewed_commits": [
+    "25c699fcadeb5af1ddf8e87ced1b517279749db8",
+    "affd139916c597e16726f6233070d88b9701190a"
+  ],
+  "reviewed_head_sha": "affd139916c597e16726f6233070d88b9701190a",
+  "reviewed_run_id": "r-20261004T193528320375-the-executable-role-set-is-one-constant",
+  "reviewer_run_id": "r-20261004T201310296797-review-of-the-executable-role-set-is-one-constant",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T20:17:15.375307+00:00",
+  "total": 98
+}

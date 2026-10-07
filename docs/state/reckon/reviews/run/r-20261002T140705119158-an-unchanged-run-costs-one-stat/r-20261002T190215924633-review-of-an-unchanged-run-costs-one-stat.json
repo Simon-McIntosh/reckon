@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's own baseline_suite (base_arm.log, 446 passed, EXIT=0) and after_suite (head_arm.log, 453 passed, EXIT=0) arms list no failing node ids, so the head arm adds zero failure ids; derived with reckon.crew.review.added_failures_from_gate_logs after a positive control confirmed the parser finds the one FAILED id in negative_control.log.",
+  "base_log_revision": "d2df6df9d4a68a75d1a8102bfc3468621788d86c",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli.py:2508",
+    "reckon/crew/runs.py:1336",
+    "reckon/crew/recovery.py:8763",
+    "reckon/crew/recovery.py:8978"
+  ],
+  "completed_at": "2026-10-02T19:28:55.700Z",
+  "dispatched_at": "2026-10-02T19:02:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "8038",
+      "severity": "follow-on",
+      "text": "the reuse cache is not keyed on the stall window, and a reused snapshot's window is frozen on the entry, not taken from the caller. _snapshot_reuse_key (recovery.py:7945) hashes the classification inputs, the newest stream and the promotion row but not stall_seconds; _refresh_snapshot (recovery.py:8038) re-derives state from snapshot['stall_window_seconds'], and cache=None callers share the module-level _SNAPSHOT_CACHE (recovery.py:7985), which watch_ticker alone evades by passing its own. Reproduced at head 3f907c0fa in a scratch tree with a run quiet 100s: a first call with stall_seconds=60 stores state 'stalled' window 60, and a second call, same files and same moment, asking for stall_seconds=3600 is served window 3600's own answer would be 'working' but returns state 'stalled' window 60. Three production call sites pass no cache \u2014 reckon/cli.py:2508 (default window), reckon/crew/runs.py:1336 (a configurable stall_window), recovery.py:8763 (default) \u2014 so any process that classifies one run under two windows reports the first window's verdict; the section's own parity case uses one window and cannot see it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T140705119158-an-unchanged-run-costs-one-stat/manifest.md",
+      "line": "14",
+      "severity": "follow-on",
+      "text": "the recorded suite commands are not the commands that ran: after_suite.command reads 'PYTHONPATH=$PWD /home/ITER/mcintos/crew 2>/dev/null; true' (a mangled fragment naming no interpreter and no test), and baseline_suite.command reads 'PYTHONPATH=base-tree <41 base test files>' with an unresolved placeholder rather than literal paths. The real commands survive only in the arm log headers (head_arm.log:5 '... -m pytest -p no:cacheprovider -n 8 -q <gate_files.txt>'; base_arm.log:5 with an absolute scratch tree), so the manifest's own fields cannot be reconciled to the logs they name and are unreadable under the manifest contract's literal-command rule; the arms themselves are green and reproduce."
+    }
+  ],
+  "head_log_revision": "f3e660f6adaa9a90b00d2c78729144c6a4ed8cd1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the reuse path reaches production through reckon/cli.py:2508 and recovery.py:8763 (default window, no cache), reckon/crew/runs.py:1336 (a configurable stall_window, no cache) and the watch_ticker loop at recovery.py:8978 (which passes its own per-watcher cache).",
+    "diff": "read all seven commits against d2df6df9d; the product change is the reuse cache and its liveness gate across e1e700399, c9f6c1fd0, 65d7504dc and f3e660f6a, the rest are evidence; the diff stays inside the declared paths.",
+    "done_when": "section 11's four assertions are covered by tests/test_an_unchanged_run_costs_one_stat.py (unchanged poll opens none at :177, manifest rewrite at :195, stream append at :208, exit record at :220, stored review at :263, moved head at :287, whole-snapshot parity at :309), with the declared mutation turning :177 red; the unchanged poll was independently rerun green at 3f907c0fa.",
+    "goal": "plan section 11 item 2 is the stat-gated snapshot: a run whose inputs and liveness hold reuses its snapshot and recomputes only the silence from the poll's own moment.",
+    "manifest": "read; it claims base 446 and head 453 passed with zero added failures and a declared mutation, but its after_suite and baseline_suite command fields are placeholders rather than the commands that ran, and the head arm revision f3e660f6a predates the reviewed head 3f907c0fa by two docs-only commits.",
+    "write_paths": "the diff d2df6df9d..3f907c0fa touches exactly the three declared paths and no file outside them."
+  },
+  "justifications": {
+    "durability": "each recompute trigger and the unchanged-pause have cases and the declared mutation reddens the unchanged case, but no case changes the stall window across a reuse, so the frozen-window defect at recovery.py:8038 is unguarded.",
+    "evidence": "base 446 passed and head 453 passed, both EXIT=0 and completed, zero added failure ids with a positive control; withheld because the manifest's suite-command fields are corrupt and the arm predates the reviewed head.",
+    "fit": "helpers named by mechanism, in the module's private-helper idiom, no plan or ticket identifier; the module-level cache-as-default is the one cross-caller state choice.",
+    "goal_fidelity": "the stat-gated reuse is implemented and the unchanged poll opens none of the four files, but a reused verdict can carry a window the caller did not ask for.",
+    "scope_discipline": "every path in the diff is a declared write path, with no shared plan, index or sprint mutation."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan section 11 item 2 makes an unchanged run cost one stat by reusing its previous snapshot; at head 3f907c0fa _watch_snapshot (reckon/crew/recovery.py:8196) serves the stored snapshot when _snapshot_reuse_key (recovery.py:7945) is unchanged and _fresh_liveness matches, recomputing only the stream-silence reading through _refresh_snapshot (recovery.py:8038), and the focused gate's unchanged-poll case opens none of the four named files and stats each (7 passed, EXIT=0, independent rerun at 3f907c0fa).\nVERDICT done_when: read against section 11's four assertions; the reuse key covers the classification inputs, newest stream and promotion row, each recompute trigger has a case (manifest rewrite, stream append, exit record, stored review, moved head), a parity case compares the whole snapshot excluding the moment-derived quiet_seconds, and the declared mutation (recompute every poll) turns the unchanged case red. One assertion \u2014 that a reused snapshot can never disagree with a fresh one \u2014 holds for a fixed window but not across windows (finding 1).\nVERDICT write_paths: git diff --name-only d2df6df9d 3f907c0fa lists exactly the three declared paths (reckon/crew/recovery.py, tests/test_an_unchanged_run_costs_one_stat.py, docs/evidence/fragments/a-crew-process-ends-with-its-owner/an-unchanged-run-costs-one-stat.html) and nothing else.\nVERDICT manifest: read; it records base 446 passed and head 453 passed with zero added failure ids, a declared mutation that reddens the unchanged case, and the four silent-silence inputs; its after_suite.command and baseline_suite.command fields are not the commands that ran (finding 2), and the head arm ran at f3e660f6a while the reviewed head is 3f907c0fa, two docs-only commits later.\nVERDICT diff: read all seven commits against base d2df6df9d; e1e700399 adds the reuse cache, c9f6c1fd0 gates reuse on a fresh liveness reading, 65d7504dc keys the reuse on the classification inputs, f3e660f6a moves the cache to per-watcher, and 34b85d753 / 73378b7f4 / 3f907c0fa land and correct the evidence fragment; the silence reading is isolated behind a pure helper _stall_reading shared by both paths.\nCALL_SITES: reckon/cli.py:2508, reckon/crew/runs.py:1336, reckon/crew/recovery.py:8763, reckon/crew/recovery.py:8978\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: at head 3f907c0fa the stat-gated reuse, the fresh-liveness gate and the incremental silence recomputation are all present and the unchanged poll opens none of the four files (reproduced), but a reused snapshot's state is keyed on a frozen window rather than the caller's, so the verdict a caller gets can be one its own configuration would not produce (finding 16-ready).\nSCORE evidence: 13\nJUSTIFICATION evidence: base d2df6df9d 446 passed and head f3e660f6a 453 passed, both EXIT=0 and both read to their summary lines, zero added failure ids derived with reckon.crew.review.added_failures_from_gate_logs and a positive control confirming the parser finds the negative-control log's one FAILED id; the focused gate reran green at 3f907c0fa (7 passed EXIT=0); points withheld because the manifest's suite-command fields are corrupt placeholders and the arm predates the reviewed head by two docs-only commits.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches exactly the three declared write paths and mutates no shared plan, index or sprint state.\nSCORE durability: 15\nJUSTIFICATION durability: each recompute trigger and the unchanged-pause have cases, and the mutation reproduces the red, but no test exercises a window change across reuse, so the frozen-window defect is unguarded.\nSCORE fit: 17\nJUSTIFICATION fit: helpers are named by mechanism, sit in the module's private-helper idiom with mechanism docstrings, and add no plan or ticket identifier; the module-level cache-as-default is the one design choice that carries cross-caller state.\nreviewed_base_sha: d2df6df9d4a68a75d1a8102bfc3468621788d86c\nreviewed_head_sha: 3f907c0fa0834f693817b3341d877d476d651e9e\nFINDING reckon/crew/recovery.py:8038 the reuse cache is not keyed on the stall window, and a reused snapshot's window is frozen on the entry, not taken from the caller. _snapshot_reuse_key (recovery.py:7945) hashes the classification inputs, the newest stream and the promotion row but not stall_seconds; _refresh_snapshot (recovery.py:8038) re-derives state from snapshot['stall_window_seconds'], and cache=None callers share the module-level _SNAPSHOT_CACHE (recovery.py:7985), which watch_ticker alone evades by passing its own. Reproduced at head 3f907c0fa in a scratch tree with a run quiet 100s: a first call with stall_seconds=60 stores state 'stalled' window 60, and a second call, same files and same moment, asking for stall_seconds=3600 is served window 3600's own answer would be 'working' but returns state 'stalled' window 60. Three production call sites pass no cache \u2014 reckon/cli.py:2508 (default window), reckon/crew/runs.py:1336 (a configurable stall_window), recovery.py:8763 (default) \u2014 so any process that classifies one run under two windows reports the first window's verdict; the section's own parity case uses one window and cannot see it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T140705119158-an-unchanged-run-costs-one-stat/manifest.md:14 the recorded suite commands are not the commands that ran: after_suite.command reads 'PYTHONPATH=$PWD /home/ITER/mcintos/crew 2>/dev/null; true' (a mangled fragment naming no interpreter and no test), and baseline_suite.command reads 'PYTHONPATH=base-tree <41 base test files>' with an unresolved placeholder rather than literal paths. The real commands survive only in the arm log headers (head_arm.log:5 '... -m pytest -p no:cacheprovider -n 8 -q <gate_files.txt>'; base_arm.log:5 with an absolute scratch tree), so the manifest's own fields cannot be reconciled to the logs they name and are unreadable under the manifest contract's literal-command rule; the arms themselves are green and reproduce.\n",
+  "review_run_id": "r-20261002T190215924633-review-of-an-unchanged-run-costs-one-stat",
+  "reviewed_base_sha": "d2df6df9d4a68a75d1a8102bfc3468621788d86c",
+  "reviewed_head_sha": "3f907c0fa0834f693817b3341d877d476d651e9e",
+  "reviewed_run_id": "r-20261002T140705119158-an-unchanged-run-costs-one-stat",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261002T190215924633-review-of-an-unchanged-run-costs-one-stat",
+  "role": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T19:26:50.426662+00:00",
+  "total": 81
+}

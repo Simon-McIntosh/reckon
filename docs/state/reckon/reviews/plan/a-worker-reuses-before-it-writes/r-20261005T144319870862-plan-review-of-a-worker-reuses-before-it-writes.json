@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-05T14:48:25.804Z",
+  "dispatched_at": "2026-10-05T14:43:37Z",
+  "findings": [
+    {
+      "anchor": "reckon/clones.py:644",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should add a node routing clones.py's git runner, revision reader and cache root through velocity.py (or record a retained-exception reason), exactly as \u00a710 did for interface_counts.py.",
+      "text": "clones.py carries its own `_git` (line 644), its own revision-source reader `revised_python` (line 652, reading every `.py` at a revision through `git archive` + tarfile) and its own cache-root resolver `_cache_root` (line 389), each duplicating a mechanism the plan's own \u00a710 promoted to a public owner in reckon/velocity.py (`git` line 147, `read_blobs`/`read_trees` line 360, `velocity_cache_root` line 542) and merged interface_counts.py onto \u2014 so \u00a74's module is left as a parallel copy of the readers \u00a710 established, and the two revision-source readers (ls-tree + batched `cat-file` in interface_counts vs `git archive` in clones) can drift apart silently",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "dd86489db1d44bd4f0a9bac749ed5dbbe4cb3258d4dbb841db68dd9cddff63d2",
+  "plan_slug": "a-worker-reuses-before-it-writes",
+  "plan_version": 120,
+  "project": "reckon",
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "too-coord-1005",
+      "reason": "",
+      "when": "2026-10-05T14:50:02.480718+00:00"
+    }
+  },
+  "review_run_id": "r-20261005T144319870862-plan-review-of-a-worker-reuses-before-it-writes",
+  "reviewed_blob_sha": "0d22356347fb018e9abc861fe1ce0471dbb1cc8e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 reckon/_timestamps.py hides the whole parsing policy (Z suffix, offset, naive-as-UTC, epoch seconds/milliseconds split at 1e11, malformed-returns-None) behind `parse_utc` and `parse_iso`, and reckon/_store.py's `write_atomically` hides the sibling-temporary/fsync/chmod/rename sequence behind one callback-taking function; neither spreads its behaviour across many small wrappers.",
+    "duplicate_owner": "a finding \u2014 reckon/clones.py keeps a private git runner, a `git archive` revision reader and a cache-root resolver beside the velocity.py owners that \u00a710 named for exactly those three roles.",
+    "interface_budget": "pass \u2014 public_definitions 1476, cli_options 317, mcp_views 33, refusal_families 23; the one open section (\u00a711) adds no definition and states so in its own text, no section adds a CLI option, MCP view or refusal code, and the sections that add public functions (\u00a72, \u00a73, \u00a74, \u00a75) each name the helpers/callers they merge or carry interface accounting.",
+    "reuse_search": "pass \u2014 the plan is built on a structural census (\u00a71 names 44 direct `fromisoformat` callers, 14 divergent atomic writers, three stream enumerators, four identical decoders) and \u00a710 explicitly merged interface_counts.py's private reader, cache root and git wrapper onto velocity's public `read_blobs`/`velocity_cache_root`/`git`, so it cites the machinery it searched rather than asserting it.",
+    "thin_wrapper": "pass \u2014 `write_json_atomically` (reckon/_store.py:477) layers JSON serialisation, parent creation and per-caller defaults (indent, sort_keys, ensure_ascii, mode, create_parents) over `write_atomically`, documenting each keyword; it specialises the owner rather than wrapping existing machinery without cause."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-05T14:50:01.328370+00:00"
+}

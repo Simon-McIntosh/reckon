@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:4280 the first-attempt branch records the comment with landing=_declared_manifest_landing(record) at :4291",
+    "reckon/crew/promotion.py:4697 the repeat-promotion branch passes it at :4708",
+    "reckon/crew/promotion.py:3058 complete reaches both through _complete_locked"
+  ],
+  "completed_at": "2026-09-28T11:23:47.486Z",
+  "dispatched_at": "2026-09-28T10:33:55Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101026532536-promotion-writes-the-landing-line/manifest.md",
+      "line": "19",
+      "text": "the done_when requires the manifest to cite the reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-record-and-promotion/reuse-map.md for promotion.py _record_landing_comment and _worker_authored_landing_record, and the manifest names both symbols but never the map, so the citation the measure names cannot be checked from the manifest alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from bd231eff \u2014 65c03d26 adds `_declared_manifest_landing` (:1988), the `landing` parameter with the `body_text = landing or narrative` substitution (:2067) and the deferral guard's new `not landing` conjunct (:2074), plus the new test file; 18719f5d appends one evidence bullet, the figure and one plan comment; no stray edit.",
+    "done_when": "the measure (prompt.txt:77) names three cases in tests/test_promotion_writes_the_landing_line.py plus tests/test_landing_comment_authorship.py at exit 0, the applied negative control with its absolute log path in the manifest, and a reuse-map citation in the manifest; I re-ran the two named files over a copy of the tree at 18719f5d (8 passed, check-head.log) and reproduced the declared mutation independently (1 failed, KeyError 's3', check-mutation.log), but the manifest carries no reuse-map citation.",
+    "goal": "the goal is that a promoted run whose manifest declares a `landing:` line has that line written as its node section's plan comment through the versioned read/write rather than a single git merge; read `_declared_manifest_landing` (reckon/crew/promotion.py:1988) and `_record_landing_comment` (reckon/crew/promotion.py:2037) at 18719f5d, where the landing body replaces the narrative at :2067 through `_store.read_plan`/`_store.write_plan` with the existing VersionConflict retry, and both `_complete_locked` branches pass it (reckon/crew/promotion.py:4291, :4708).",
+    "manifest": "read at the run directory's manifest.md; it states `status: complete` with commits 65c03d26 and 18719f5d, records 23 passed at 18719f5d (manifest.md:12) naming gate.log (:13) and a negative-control log (:15-16) whose named mutation I reproduced, and its plan-state claim holds (plan section s3 comments 11 -> 12 at plan version 12, with plan-version and plan-modified unchanged).",
+    "write_paths": "read the declared scope (manifest.md:5) against `git diff --numstat bd231eff..18719f5d`; all five changed files are inside the six declared paths, with zero deletions under docs/ and promotion.py's three deletions being lines the change replaces."
+  },
+  "justifications": {
+    "durability": "reinstating the regression in a scratch copy (`body_text = landing or narrative` -> `body_text = narrative`, reckon/crew/promotion.py:2067) reddens the landing-line case (check-mutation.log, 1 failed with KeyError 's3'), but no case passes a worker tree beside a landing line, so the `not landing` conjunct at reckon/crew/promotion.py:2074 would regress uncaught.",
+    "evidence": "the three named cases pass in my own run over a copy at 18719f5d (check-head.log, 8 passed with tests/test_landing_comment_authorship.py) and the recorded negative control reproduces (check-mutation.log), but the reuse-map citation the done_when names is absent (manifest.md:19).",
+    "fit": "`_declared_manifest_landing` (reckon/crew/promotion.py:1988) mirrors `_declared_manifest_commits` directly above it, the docstrings state the mechanism, and no name the naming rules forbid appears in the diff.",
+    "goal_fidelity": "at head a run whose manifest declares a `landing:` line lands that text as its section comment through the versioned write (reckon/crew/promotion.py:2067), so the record no longer depends on a merge of the plan HTML.",
+    "scope_discipline": "`git diff --numstat bd231eff..18719f5d` names exactly the five declared files, with zero deletions under docs/ and nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a promoted run whose manifest declares a `landing:` line has that line written as its node section's plan comment through the versioned read/write rather than a single git merge; read `_declared_manifest_landing` (reckon/crew/promotion.py:1988) and `_record_landing_comment` (reckon/crew/promotion.py:2037) at 18719f5d, where the landing body replaces the narrative at :2067 through `_store.read_plan`/`_store.write_plan` with the existing VersionConflict retry, and both `_complete_locked` branches pass it (reckon/crew/promotion.py:4291, :4708).\nVERDICT done_when: the measure (prompt.txt:77) names three cases in tests/test_promotion_writes_the_landing_line.py plus tests/test_landing_comment_authorship.py at exit 0, the applied negative control with its absolute log path in the manifest, and a reuse-map citation in the manifest; I re-ran the two named files over a copy of the tree at 18719f5d (8 passed, check-head.log) and reproduced the declared mutation independently (1 failed, KeyError 's3', check-mutation.log), but the manifest carries no reuse-map citation.\nVERDICT write_paths: read the declared scope (manifest.md:5) against `git diff --numstat bd231eff..18719f5d`; all five changed files are inside the six declared paths, with zero deletions under docs/ and promotion.py's three deletions being lines the change replaces.\nVERDICT manifest: read at the run directory's manifest.md; it states `status: complete` with commits 65c03d26 and 18719f5d, records 23 passed at 18719f5d (manifest.md:12) naming gate.log (:13) and a negative-control log (:15-16) whose named mutation I reproduced, and its plan-state claim holds (plan section s3 comments 11 -> 12 at plan version 12, with plan-version and plan-modified unchanged).\nVERDICT diff: read commit by commit from bd231eff \u2014 65c03d26 adds `_declared_manifest_landing` (:1988), the `landing` parameter with the `body_text = landing or narrative` substitution (:2067) and the deferral guard's new `not landing` conjunct (:2074), plus the new test file; 18719f5d appends one evidence bullet, the figure and one plan comment; no stray edit.\nCALL_SITES: reckon/crew/promotion.py:4280 the first-attempt branch records the comment with landing=_declared_manifest_landing(record) at :4291, reckon/crew/promotion.py:4697 the repeat-promotion branch passes it at :4708, reckon/crew/promotion.py:3058 complete reaches both through _complete_locked\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: at head a run whose manifest declares a `landing:` line lands that text as its section comment through the versioned write (reckon/crew/promotion.py:2067), so the record no longer depends on a merge of the plan HTML.\nSCORE evidence: 17\nJUSTIFICATION evidence: the three named cases pass in my own run over a copy at 18719f5d (check-head.log, 8 passed with tests/test_landing_comment_authorship.py) and the recorded negative control reproduces (check-mutation.log), but the reuse-map citation the done_when names is absent (manifest.md:19).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --numstat bd231eff..18719f5d` names exactly the five declared files, with zero deletions under docs/ and nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the regression in a scratch copy (`body_text = landing or narrative` -> `body_text = narrative`, reckon/crew/promotion.py:2067) reddens the landing-line case (check-mutation.log, 1 failed with KeyError 's3'), but no case passes a worker tree beside a landing line, so the `not landing` conjunct at reckon/crew/promotion.py:2074 would regress uncaught.\nSCORE fit: 19\nJUSTIFICATION fit: `_declared_manifest_landing` (reckon/crew/promotion.py:1988) mirrors `_declared_manifest_commits` directly above it, the docstrings state the mechanism, and no name the naming rules forbid appears in the diff.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T101026532536-promotion-writes-the-landing-line/manifest.md:19 the done_when requires the manifest to cite the reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s25-coord/s25-reuse-map-record-and-promotion/reuse-map.md for promotion.py _record_landing_comment and _worker_authored_landing_record, and the manifest names both symbols but never the map, so the citation the measure names cannot be checked from the manifest alone.\n",
+  "review_run_id": "r-20260928T103341579982-review-of-promotion-writes-the-landing-line",
+  "reviewed_base_sha": "bd231eff5e9a20879e5a8ea54094cfd46ffe79c0",
+  "reviewed_head_sha": "18719f5dcb105bd82c69536c85f330818fee7618",
+  "reviewed_run_id": "r-20260928T101026532536-promotion-writes-the-landing-line",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T11:15:11.696788+00:00",
+  "total": 92
+}

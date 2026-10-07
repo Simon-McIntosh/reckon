@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c6acda8e0531dc9bc764475570c364e72fe4c368",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py:1678",
+    "reckon/crew/dispatch.py:5858"
+  ],
+  "completed_at": "2026-10-03T03:54:49.206Z",
+  "dispatched_at": "2026-10-03T03:46:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "5858",
+      "severity": "follow-on",
+      "text": "follow-on: dispatch() calls dispatch_picker_selection unconditionally for every dispatch, so a deterministic-route run's pointer and ledger row record a non-null shadow picker_selection rather than null as requirement 1 states; suppressing it needs reckon/crew/dispatch.py, outside this node's write scope."
+    },
+    {
+      "file": "reckon/cli.py",
+      "line": "1678",
+      "severity": "follow-on",
+      "text": "follow-on: rule 4 asks every other entry point accepting an explicit lane be checked, but the manifest only asserts change_lane already passes route=deterministic (verified: 88ffb8d84 is an ancestor of the base) without enumerating preflight/shadow/resume; a grep finds resolve_dispatch_route called only at reckon/cli.py:1681 so the refusal is unreachable elsewhere, but the enumeration is not written down."
+    }
+  ],
+  "head_log_revision": "279dfc014a333c00d4222699ac629243f72eccb4",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 279dfc014 against its parent c6acda8e0; cli.py hoists _flight_default_backend_override, adds named_lane, sets route=deterministic when route is None, and guards the dry-run picker call on effective_route == \"picker\".",
+    "done_when": "the done_when names tests/test_routing_explicit_lane_implies_deterministic.py plus the three picker routing suites at base and head; the manifest records base 4 failed/36 passed and head 40 passed, and an independent re-run of the new file at HEAD gives 7 passed.",
+    "goal": "the node's goal is that a dispatch naming its lane goes there without a picker refusal; reckon/cli.py:1678 adds named_lane so --backend/--local/--set default_backend imply deterministic routing when --route is omitted.",
+    "manifest": "read; status complete, base-gate.log (4 failed) and head-gate.log (40 passed) named, and negative-control.log named with EXIT=1.",
+    "write_paths": "read the manifest's declared paths; the diff touches only reckon/cli.py and tests/test_routing_explicit_lane_implies_deterministic.py, both inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_routing_explicit_lane_implies_deterministic.py:87 asserts exit_code==0 and calls==[] against literals independent of the code, and the negative control reinstates the refusal at negative-control.log with EXIT=1, but the real-dispatch arm does not assert picker_selection is null so the unmet half is unguarded.",
+    "evidence": "the manifest names base-gate.log (4 failed, EXIT=1) and head-gate.log (40 passed, EXIT=0) under the run directory and the delta is derived from them, and an independent HEAD re-run of the new file passes 7; rule 4's other-entry-point check is asserted rather than enumerated.",
+    "fit": "the added lines follow the surrounding crew_dispatch idiom and comment voice in reckon/cli.py:1668-1683, and named_lane/flight_backend_override introduce no forbidden name.",
+    "goal_fidelity": "the refusal is gone and the named lane stands (reckon/cli.py:1679), dry runs report the deterministic route with picker_selection null, but requirement 1's \"run and its ledger row record picker_selection as null\" is unmet on the real path because reckon/crew/dispatch.py:5858 still asks the picker.",
+    "scope_discipline": "every changed path (reckon/cli.py, tests/test_routing_explicit_lane_implies_deterministic.py) is inside the declared write paths, and the node correctly wrote no fragment or figure since its done-when names no artifact."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a dispatch naming its lane goes there without a picker refusal; reckon/cli.py:1678 adds named_lane so --backend/--local/--set default_backend imply deterministic routing when --route is omitted.\nVERDICT done_when: the done_when names tests/test_routing_explicit_lane_implies_deterministic.py plus the three picker routing suites at base and head; the manifest records base 4 failed/36 passed and head 40 passed, and an independent re-run of the new file at HEAD gives 7 passed.\nVERDICT write_paths: read the manifest's declared paths; the diff touches only reckon/cli.py and tests/test_routing_explicit_lane_implies_deterministic.py, both inside them.\nVERDICT manifest: read; status complete, base-gate.log (4 failed) and head-gate.log (40 passed) named, and negative-control.log named with EXIT=1.\nVERDICT diff: read 279dfc014 against its parent c6acda8e0; cli.py hoists _flight_default_backend_override, adds named_lane, sets route=deterministic when route is None, and guards the dry-run picker call on effective_route == \"picker\".\nCALL_SITES: reckon/cli.py:1678, reckon/crew/dispatch.py:5858\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the refusal is gone and the named lane stands (reckon/cli.py:1679), dry runs report the deterministic route with picker_selection null, but requirement 1's \"run and its ledger row record picker_selection as null\" is unmet on the real path because reckon/crew/dispatch.py:5858 still asks the picker.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest names base-gate.log (4 failed, EXIT=1) and head-gate.log (40 passed, EXIT=0) under the run directory and the delta is derived from them, and an independent HEAD re-run of the new file passes 7; rule 4's other-entry-point check is asserted rather than enumerated.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path (reckon/cli.py, tests/test_routing_explicit_lane_implies_deterministic.py) is inside the declared write paths, and the node correctly wrote no fragment or figure since its done-when names no artifact.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_routing_explicit_lane_implies_deterministic.py:87 asserts exit_code==0 and calls==[] against literals independent of the code, and the negative control reinstates the refusal at negative-control.log with EXIT=1, but the real-dispatch arm does not assert picker_selection is null so the unmet half is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: the added lines follow the surrounding crew_dispatch idiom and comment voice in reckon/cli.py:1668-1683, and named_lane/flight_backend_override introduce no forbidden name.\nFINDING reckon/crew/dispatch.py:5858 follow-on: dispatch() calls dispatch_picker_selection unconditionally for every dispatch, so a deterministic-route run's pointer and ledger row record a non-null shadow picker_selection rather than null as requirement 1 states; suppressing it needs reckon/crew/dispatch.py, outside this node's write scope.\nFINDING reckon/cli.py:1678 follow-on: rule 4 asks every other entry point accepting an explicit lane be checked, but the manifest only asserts change_lane already passes route=deterministic (verified: 88ffb8d84 is an ancestor of the base) without enumerating preflight/shadow/resume; a grep finds resolve_dispatch_route called only at reckon/cli.py:1681 so the refusal is unreachable elsewhere, but the enumeration is not written down.\nreviewed_base_sha: c6acda8e0531dc9bc764475570c364e72fe4c368\nreviewed_head_sha: 279dfc014a333c00d4222699ac629243f72eccb4\n",
+  "review_run_id": "r-20261003T034524407753-review-of-explicit-lane-implies-deterministic",
+  "reviewed_base_sha": "c6acda8e0531dc9bc764475570c364e72fe4c368",
+  "reviewed_head_sha": "279dfc014a333c00d4222699ac629243f72eccb4",
+  "reviewed_run_id": "r-20261003T031850518245-explicit-lane-implies-deterministic",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T03:52:31+00:00",
+  "total": 89
+}

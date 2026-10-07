@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/resumption.py:_run_condition_probe",
+    "reckon/crew/recovery.py:_wait_file_probe"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T18:07:34.291802+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T172748855785-the-sweep-lifts-the-wait-the-reader-accepted/gate-wait-shapes.log",
+      "line": "1",
+      "text": "the three gate logs this run cites carry no revision, no tree and no command on any line -- gate-wait-shapes.log is the pytest progress line and its summary alone -- so a later reader can tie them to a tree only through the manifest, which is the shape the plan's own gate-log section removes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against base 27184f74 -- the fix commit removes the duplicated path scan in reckon/crew/recovery.py and rewrites four docstrings-and-docstrings to say which reader runs the derived vector, the docs commit adds the evidence anchor, the figure and the plan record, and the two docstring pairs describe the code I read.",
+    "done_when": "the done_when names a lift case entering at the sweep, a negative half withholding one path, a third case naming the terminal field, the duplicated assignment removed, the pre-existing cases passing unchanged and a declared mutation; I read all six in the diff and in the recorded logs, and the negative-control log's first line repeats the mutation the plan section declares.",
+    "goal": "the goal asks that a wait declaring a file condition whose paths all exist is lifted by the sweep that lifts parked runs; the added case enters at resumption.sweep and asserts the run's id appears in report[\"resumed\"] with skipped empty, which is the lift the goal names, and I read it in tests/test_wait_shapes.py as landed by f901f4b1.",
+    "manifest": "read; it states the module result as 20 passed with the 17 pre-existing cases unchanged, names three green logs and the red log, records the choice to keep the two readers separate with the reason, and surfaces the measured-at-base finding under evidence_inputs rather than hiding it.",
+    "write_paths": "the manifest declares six paths and git show --stat over f901f4b1 and c7f4d10a names exactly those six with no seventh: reckon/crew/recovery.py, reckon/crew/resumption.py, tests/test_wait_shapes.py, the cumulative evidence record, the figure SVG and the plan HTML."
+  },
+  "justifications": {
+    "durability": "the negative-control log shows the lift case and the terminal-field case red under a sweep that derives terminal=false for a silent exit-0 vector, 2 failed and 18 passed, so the lift case fails if the sweep stops honouring exit:0.",
+    "evidence": "the gate logs record 20, 136 and 46 passed and the red log records 2 failed and 18 passed on exactly the two named cases, but no gate log carries a first line naming the revision, tree or command it ran.",
+    "fit": "the rewritten docstrings in reckon/crew/recovery.py and reckon/crew/resumption.py state which reader runs the vector and which answers by stat in the module's own prose idiom, and the added case names describe the mechanism with no plan or ticket identifier.",
+    "goal_fidelity": "tests/test_wait_shapes.py pins the lift at resumption.sweep by asserting the run is offered to the resume loop, which is the goal's own claim made where the lift happens.",
+    "scope_discipline": "git show --stat over the two commits names exactly the six declared write paths, and the only deletion outside the rewritten docstrings is the duplicated path scan in reckon/crew/recovery.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks that a wait declaring a file condition whose paths all exist is lifted by the sweep that lifts parked runs; the added case enters at resumption.sweep and asserts the run's id appears in report[\"resumed\"] with skipped empty, which is the lift the goal names, and I read it in tests/test_wait_shapes.py as landed by f901f4b1.\nVERDICT done_when: the done_when names a lift case entering at the sweep, a negative half withholding one path, a third case naming the terminal field, the duplicated assignment removed, the pre-existing cases passing unchanged and a declared mutation; I read all six in the diff and in the recorded logs, and the negative-control log's first line repeats the mutation the plan section declares.\nVERDICT write_paths: the manifest declares six paths and git show --stat over f901f4b1 and c7f4d10a names exactly those six with no seventh: reckon/crew/recovery.py, reckon/crew/resumption.py, tests/test_wait_shapes.py, the cumulative evidence record, the figure SVG and the plan HTML.\nVERDICT manifest: read; it states the module result as 20 passed with the 17 pre-existing cases unchanged, names three green logs and the red log, records the choice to keep the two readers separate with the reason, and surfaces the measured-at-base finding under evidence_inputs rather than hiding it.\nVERDICT diff: read both commits against base 27184f74 -- the fix commit removes the duplicated path scan in reckon/crew/recovery.py and rewrites four docstrings-and-docstrings to say which reader runs the derived vector, the docs commit adds the evidence anchor, the figure and the plan record, and the two docstring pairs describe the code I read.\nCALL_SITES: reckon/crew/resumption.py:_run_condition_probe, reckon/crew/recovery.py:_wait_file_probe\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_wait_shapes.py pins the lift at resumption.sweep by asserting the run is offered to the resume loop, which is the goal's own claim made where the lift happens.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate logs record 20, 136 and 46 passed and the red log records 2 failed and 18 passed on exactly the two named cases, but no gate log carries a first line naming the revision, tree or command it ran.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat over the two commits names exactly the six declared write paths, and the only deletion outside the rewritten docstrings is the duplicated path scan in reckon/crew/recovery.py.\nSCORE durability: 18\nJUSTIFICATION durability: the negative-control log shows the lift case and the terminal-field case red under a sweep that derives terminal=false for a silent exit-0 vector, 2 failed and 18 passed, so the lift case fails if the sweep stops honouring exit:0.\nSCORE fit: 19\nJUSTIFICATION fit: the rewritten docstrings in reckon/crew/recovery.py and reckon/crew/resumption.py state which reader runs the vector and which answers by stat in the module's own prose idiom, and the added case names describe the mechanism with no plan or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260921T172748855785-the-sweep-lifts-the-wait-the-reader-accepted/gate-wait-shapes.log:1 the three gate logs this run cites carry no revision, no tree and no command on any line -- gate-wait-shapes.log is the pytest progress line and its summary alone -- so a later reader can tie them to a tree only through the manifest, which is the shape the plan's own gate-log section removes.\n",
+  "review_run_id": "r-20260921T180734291802-review-of-the-sweep-lifts-the-wait-the-reader-accepted",
+  "reviewed_base": "27184f749b2ecd5951b79fb6e7be5815b9e2ccb7",
+  "reviewed_commit": "f901f4b1a9690584e6fde4813c6db27ce244d7f8",
+  "reviewed_run_id": "r-20260921T172748855785-the-sweep-lifts-the-wait-the-reader-accepted",
+  "reviewer": "r-20260921T180734291802-review-of-the-sweep-lifts-the-wait-the-reader-accepted",
+  "reviewer_run_id": "r-20260921T180734291802-review-of-the-sweep-lifts-the-wait-the-reader-accepted",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-22T10:32:34.362014+00:00",
+  "total": 91
+}

@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "825bf5bc8d9fb4b1f269ec8712392eda0085a8ef",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:6954 (_refuse_unrelated_plan_edit on the promotion path reaches the guard)"
+  ],
+  "completed_at": "2026-10-02T04:59:54.172Z",
+  "dispatched_at": "2026-10-02T04:53:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "3372",
+      "severity": "follow-on",
+      "text": "follow-on: the refusal message still enumerates only \"an appended landing comment, a version stamp or its own re-encoding\" as the store's writes, so a reader debugging a refusal is not told that plan-state moves (impl, status, a followup resolution) are now admitted."
+    }
+  ],
+  "head_log_revision": "cdd685314918943e18d81ac37b84e00d67eb08fa",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against 825bf5bc; c0618c13 rewrites _plan_differs_only_by_the_stores_own_writes to strip plan-* metas, section[data-reckon] sections and record attributes from both sides before comparing authored prose, and cdd68531 adds the landing fragment.",
+    "done_when": "the done_when requires zero added failures across the six named files at base and head; gate-base.log (14 failed, 77 passed) and gate-head.log (92 passed, exit 0) satisfy it, recorded in the manifest's baseline_suite and after_suite.",
+    "goal": "the node goal is \"the fourteen ids red since the landing guard re-landed pass at head\"; the gate logs record base 825bf5bc 14 failed/77 passed and head cdd68531 92 passed with the fourteen ids gone.",
+    "manifest": "read; it records status complete, the base and head arms with their logs, and the decision that a store-written plan-state change (impl, status, a followup resolution) is the run's own bookkeeping the guard must admit.",
+    "write_paths": "the declared write paths are reckon/crew/promotion.py, four test files and the landing fragment; the diff changes promotion.py, tests/test_landing_commit_carries_only_its_own_comment.py and the fragment, all inside scope, and correctly leaves the two named fixture files unchanged."
+  },
+  "justifications": {
+    "durability": "tests/test_landing_commit_carries_only_its_own_comment.py:226 moves the impl through the store and asserts it lands in the commit; reverting promotion.py to base refuses that diff, so the test reddens on the regression, though that file did not run in the negative-control arm.",
+    "evidence": "gate-base.log and gate-head.log carry their revisions and commands and the manifest records baseline_suite and after_suite completed; the negative control ran only three of the six files, so the new admission test's regress-failure is read rather than shown red.",
+    "fit": "_strip_store_owned_content and _RECORD_ATTRIBUTES in reckon/crew/promotion.py:3321 name the mechanism, but the refusal message at promotion.py:3372 still lists only the pre-change store writes.",
+    "goal_fidelity": "gate-base.log shows the fourteen ids failing at 825bf5bc and gate-head.log shows 92 passed at cdd68531, so the guard now admits what it refused.",
+    "scope_discipline": "the diffstat 825bf5bc..cdd68531 touches promotion.py, tests/test_landing_commit_carries_only_its_own_comment.py and the fragment only, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"the fourteen ids red since the landing guard re-landed pass at head\"; the gate logs record base 825bf5bc 14 failed/77 passed and head cdd68531 92 passed with the fourteen ids gone.\nVERDICT done_when: the done_when requires zero added failures across the six named files at base and head; gate-base.log (14 failed, 77 passed) and gate-head.log (92 passed, exit 0) satisfy it, recorded in the manifest's baseline_suite and after_suite.\nVERDICT write_paths: the declared write paths are reckon/crew/promotion.py, four test files and the landing fragment; the diff changes promotion.py, tests/test_landing_commit_carries_only_its_own_comment.py and the fragment, all inside scope, and correctly leaves the two named fixture files unchanged.\nVERDICT manifest: read; it records status complete, the base and head arms with their logs, and the decision that a store-written plan-state change (impl, status, a followup resolution) is the run's own bookkeeping the guard must admit.\nVERDICT diff: read commit by commit against 825bf5bc; c0618c13 rewrites _plan_differs_only_by_the_stores_own_writes to strip plan-* metas, section[data-reckon] sections and record attributes from both sides before comparing authored prose, and cdd68531 adds the landing fragment.\nCALL_SITES: reckon/crew/promotion.py:6954 (_refuse_unrelated_plan_edit on the promotion path reaches the guard)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: gate-base.log shows the fourteen ids failing at 825bf5bc and gate-head.log shows 92 passed at cdd68531, so the guard now admits what it refused.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-base.log and gate-head.log carry their revisions and commands and the manifest records baseline_suite and after_suite completed; the negative control ran only three of the six files, so the new admission test's regress-failure is read rather than shown red.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diffstat 825bf5bc..cdd68531 touches promotion.py, tests/test_landing_commit_carries_only_its_own_comment.py and the fragment only, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_landing_commit_carries_only_its_own_comment.py:226 moves the impl through the store and asserts it lands in the commit; reverting promotion.py to base refuses that diff, so the test reddens on the regression, though that file did not run in the negative-control arm.\nSCORE fit: 19\nJUSTIFICATION fit: _strip_store_owned_content and _RECORD_ATTRIBUTES in reckon/crew/promotion.py:3321 name the mechanism, but the refusal message at promotion.py:3372 still lists only the pre-change store writes.\nFINDING reckon/crew/promotion.py:3372 follow-on: the refusal message still enumerates only \"an appended landing comment, a version stamp or its own re-encoding\" as the store's writes, so a reader debugging a refusal is not told that plan-state moves (impl, status, a followup resolution) are now admitted.\n",
+  "review_run_id": "r-20261002T045315788611-review-of-landing-guard-admits-the-runs-own-plan-state",
+  "reviewed_base_sha": "825bf5bc8d9fb4b1f269ec8712392eda0085a8ef",
+  "reviewed_head_sha": "cdd685314918943e18d81ac37b84e00d67eb08fa",
+  "reviewed_run_id": "r-20261002T040724429942-landing-guard-admits-the-runs-own-plan-state",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T04:58:47.446386+00:00",
+  "total": 96
+}

@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/ledger.py:882",
+    "reckon/ledger.py:2155",
+    "reckon/_store.py:1157"
+  ],
+  "completed_at": "2026-09-28T23:04:52.771Z",
+  "dispatched_at": "2026-09-28T22:14:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-worker-reuses-before-it-writes/one-atomic-writer-and-one-number-decoder.html",
+      "line": "42",
+      "text": "the inventory claims to be re-grounded per def at main HEAD a928b6be and to number fourteen, but the census's own primitive_concepts flags fifteen functions at that revision: reckon/_backends.py:2071:_write_private_json (json.dumps to an O_EXCL sibling temporary, then os.replace) is missing, having landed in 3a1c0f5c after the census snapshot 056c08e0, so a migration wave dispatched from this list leaves one duplicate behind and the one-implementation-per-concept target is unreachable from it."
+    },
+    {
+      "file": "tests/test_one_atomic_writer_and_number_decoder.py",
+      "line": "57",
+      "text": "the read-back compares observed against the payload this thread wrote, so the other writer's whole payload landing between its write and its read is recorded as \"interleaved payload\" - the same string a genuine blend would produce - so the guard cannot separate the benign race from the defect it exists to catch, and it reddened 1 of 12 runs at head 4d3b229a (stability-concurrency.log, run 3); the membership check at :71 is the form that separates them."
+    },
+    {
+      "file": "docs/evidence/fragments/a-worker-reuses-before-it-writes/one-atomic-writer-and-one-number-decoder.html",
+      "line": "36",
+      "text": "the fragment names c24a4e3c as the revision the head arm ran at, but the log it cites records revision=4d3b229a (head-arm.log:1), so the citation a reader would check does not match; the code is identical across the two commits, so the 43-passed result itself stands."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against a928b6be; c24a4e3c adds the shared helper, write_json_atomically, optional_number and the test file, and 4d3b229a adds the fragment and the figure, all inside the declared scope.",
+    "done_when": "the base and head arms, the red negative control and the four behaviours are measured and logged, but the done_when also asserts \"the fourteen atomic-JSON writers ... at main HEAD\", which no gate measured and which is false at a928b6be, where the census's own detector flags fifteen.",
+    "goal": "the goal is to add the one atomic JSON writer and the one numeric decoder that their duplicated copies will migrate to; reckon/_store.py:399 lands write_json_atomically and reckon/_observations.py:21 lands optional_number, and the envelope writer routes through the same helper at reckon/_store.py:362 rather than copying it.",
+    "manifest": "read; it names the arms in armed JSON form (baseline_suite at exit 2 with its FAILED id, after_suite at exit 0 with none), the negative-control log with its EXIT= line and FAILED test id, and the writer and decoder inventories, and its after_suite revision matches the head-arm log header.",
+    "write_paths": "the two reviewed commits touch exactly the five declared paths and nothing else - reckon/_store.py, reckon/_observations.py, tests/test_one_atomic_writer_and_number_decoder.py, docs/evidence/fragments/a-worker-reuses-before-it-writes/one-atomic-writer-and-one-number-decoder.html and docs/figures/a-worker-reuses-before-it-writes/one-atomic-writer-and-one-number-decoder/writer-attributes.svg."
+  },
+  "justifications": {
+    "durability": "tests/test_one_atomic_writer_and_number_decoder.py:37 is proven red by the declared mutation and the fsync and decoder guards at :74 and :99 are independent, but the concurrency guard at :57 faulted on a benign race in 1 of 12 runs at head 4d3b229a.",
+    "evidence": "the base and head arms and the red negative control are logged with revisions and FAILED ids, but nothing measured the fourteen-writer clause the done_when asserts and the census's own detector contradicts it at a928b6be.",
+    "fit": "write_json_atomically sits beside _write_json_envelope in the same idiom and optional_number matches the private-module style, the change adds no ruff finding, and no changed path or symbol carries a forbidden name.",
+    "goal_fidelity": "reckon/_store.py:399 and reckon/_observations.py:21 land both primitives as the goal states, but the migration population the goal's duplicated copies must migrate from omits reckon/_backends.py:2071, so the delivered target set is not the set that exists at the named revision.",
+    "scope_discipline": "both commits touch only the declared write paths, with no caller migration, no out-of-scope edit and no unrelated rewrite in the files the node passed through."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to add the one atomic JSON writer and the one numeric decoder that their duplicated copies will migrate to; reckon/_store.py:399 lands write_json_atomically and reckon/_observations.py:21 lands optional_number, and the envelope writer routes through the same helper at reckon/_store.py:362 rather than copying it.\nVERDICT done_when: the base and head arms, the red negative control and the four behaviours are measured and logged, but the done_when also asserts \"the fourteen atomic-JSON writers ... at main HEAD\", which no gate measured and which is false at a928b6be, where the census's own detector flags fifteen.\nVERDICT write_paths: the two reviewed commits touch exactly the five declared paths and nothing else - reckon/_store.py, reckon/_observations.py, tests/test_one_atomic_writer_and_number_decoder.py, docs/evidence/fragments/a-worker-reuses-before-it-writes/one-atomic-writer-and-one-number-decoder.html and docs/figures/a-worker-reuses-before-it-writes/one-atomic-writer-and-one-number-decoder/writer-attributes.svg.\nVERDICT manifest: read; it names the arms in armed JSON form (baseline_suite at exit 2 with its FAILED id, after_suite at exit 0 with none), the negative-control log with its EXIT= line and FAILED test id, and the writer and decoder inventories, and its after_suite revision matches the head-arm log header.\nVERDICT diff: read commit by commit against a928b6be; c24a4e3c adds the shared helper, write_json_atomically, optional_number and the test file, and 4d3b229a adds the fragment and the figure, all inside the declared scope.\nCALL_SITES: reckon/ledger.py:882, reckon/ledger.py:2155, reckon/_store.py:1157\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/_store.py:399 and reckon/_observations.py:21 land both primitives as the goal states, but the migration population the goal's duplicated copies must migrate from omits reckon/_backends.py:2071, so the delivered target set is not the set that exists at the named revision.\nSCORE evidence: 15\nJUSTIFICATION evidence: the base and head arms and the red negative control are logged with revisions and FAILED ids, but nothing measured the fourteen-writer clause the done_when asserts and the census's own detector contradicts it at a928b6be.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both commits touch only the declared write paths, with no caller migration, no out-of-scope edit and no unrelated rewrite in the files the node passed through.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_one_atomic_writer_and_number_decoder.py:37 is proven red by the declared mutation and the fsync and decoder guards at :74 and :99 are independent, but the concurrency guard at :57 faulted on a benign race in 1 of 12 runs at head 4d3b229a.\nSCORE fit: 19\nJUSTIFICATION fit: write_json_atomically sits beside _write_json_envelope in the same idiom and optional_number matches the private-module style, the change adds no ruff finding, and no changed path or symbol carries a forbidden name.\nFINDING docs/evidence/fragments/a-worker-reuses-before-it-writes/one-atomic-writer-and-one-number-decoder.html:42 the inventory claims to be re-grounded per def at main HEAD a928b6be and to number fourteen, but the census's own primitive_concepts flags fifteen functions at that revision: reckon/_backends.py:2071:_write_private_json (json.dumps to an O_EXCL sibling temporary, then os.replace) is missing, having landed in 3a1c0f5c after the census snapshot 056c08e0, so a migration wave dispatched from this list leaves one duplicate behind and the one-implementation-per-concept target is unreachable from it.\nFINDING tests/test_one_atomic_writer_and_number_decoder.py:57 the read-back compares observed against the payload this thread wrote, so the other writer's whole payload landing between its write and its read is recorded as \"interleaved payload\" - the same string a genuine blend would produce - so the guard cannot separate the benign race from the defect it exists to catch, and it reddened 1 of 12 runs at head 4d3b229a (stability-concurrency.log, run 3); the membership check at :71 is the form that separates them.\nFINDING docs/evidence/fragments/a-worker-reuses-before-it-writes/one-atomic-writer-and-one-number-decoder.html:36 the fragment names c24a4e3c as the revision the head arm ran at, but the log it cites records revision=4d3b229a (head-arm.log:1), so the citation a reader would check does not match; the code is identical across the two commits, so the 43-passed result itself stands.\n",
+  "review_run_id": "r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder",
+  "reviewed_base_sha": "a928b6bea518166c335cec08b7ebec88b143d732",
+  "reviewed_head_sha": "4d3b229a75f741dbf94b71be6d4ae555b9b2e865",
+  "reviewed_run_id": "r-20260928T215645482298-one-atomic-writer-and-one-number-decoder",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "xhigh",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T22:53:54.080996+00:00",
+  "total": 86
+}

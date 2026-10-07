@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-04T21:47:32.553Z",
+  "dispatched_at": "2026-10-04T21:40:22Z",
+  "findings": [
+    {
+      "anchor": "reckon/followup_pointers.py:1",
+      "id": "reuse_search-1",
+      "reason": "the prior-art inventory is the stated basis for \"one implementation\"; a third classifier of the same object has to cite the two that exist or the reuse claim is unverifiable.",
+      "text": "\u00a71's claim that reckon reads followups \"in exactly two places\" (continuation_present, _dispatchability) is false as stated, and \u00a72's \"no surface re-derives it\" rests on it: doccheck.py already reads open followups twice \u2014 _foreign_followup_findings (doccheck.py:401) parses the same prompt/recommends_skill fields, via _external_followup_refs (doccheck.py:377), to decide whether a followup's target is a foreign plan, and _followup_section_findings (doccheck.py:1068) already emits a warn finding for a followup whose body describes section-sized work. The plan neither names nor reconciles either.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/doccheck.py:1068",
+      "id": "duplicate_owner-1",
+      "reason": "the honest design is to extend doccheck.py's followup audit (or fold the predicate into it) and give one surface, not to ship a parallel finding that drifts from the one already there.",
+      "text": "the plan's new warn finding followup-hides-work is a second owner of the defect class doccheck's followup-describes-section-work already owns: both flag an open followup that is carrying work the plan's section unit should hold, one keyed on the body's enumerated deliverables and one on the invocation line, with no stated precedence, so the same followup can be reported by one surface and not the other and a reader cannot tell which verdict governs.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1688de7883da84ee9fe724e09af04997c6c67d6ad750f2c5242bbfe9b7c5b4ca",
+  "plan_slug": "work-is-a-section-not-a-followup",
+  "plan_version": 18,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261004T214007121471-plan-review-of-work-is-a-section-not-a-followup",
+  "reviewed_blob_sha": "86d1bb5145cff2c3e106ad5ca19c65af2057e689",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 reckon/followup_pointers.classify_followup hides the invocation regex, plan-ref resolution, sprint matching and section-declaration lookup behind one call returning a fixed reason set.",
+    "duplicate_owner": "a finding \u2014 a followup that hides section-sized work gains a second owner beside doccheck's existing followup-describes-section-work finding.",
+    "reuse_search": "a finding \u2014 \u00a71 asserts reckon reads followups in exactly two places and \u00a72 that \"no surface re-derives it\", but doccheck.py already reads and classifies open followup invocations twice, uncited.",
+    "thin_wrapper": "pass \u2014 the append refusal reuses that one classifier and is shared by the edit_plan, append-tools and landing-patch call sites rather than paralleling it, and it extends parse_plan_ref, COMPLETED_STATUSES and the roadmap's _plan_declarations rather than forking them."
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-04T22:25:48.891119+00:00"
+}

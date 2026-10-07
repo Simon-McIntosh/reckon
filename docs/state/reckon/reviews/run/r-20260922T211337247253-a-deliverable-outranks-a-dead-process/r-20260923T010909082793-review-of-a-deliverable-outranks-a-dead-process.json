@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 1,
+  "backend": "clive",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:2391 crew_module.classify_pointer",
+    "reckon/mcp.py:3295 crew_module.classify_pointer",
+    "reckon/crew/directory.py:70 classify_pointer(observed)",
+    "reckon/crew/recovery.py:445 row = classify_pointer(record)",
+    "reckon/crew/runs.py:908 row = classify_pointer(current)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T01:09:09.082793+00:00",
+  "findings": [
+    {
+      "file": "docs/figures/a-review-dies-where-nobody-is-looking/gate.txt",
+      "line": "1",
+      "text": "the gate log's first line reads base=fa98d32a5ea59e1bec2793823b7e16104bff56e9, naming the diff base rather than the head 9f39346e the passing run measured, so the one field the convention uses to pin a gate to a revision points at a tree in which the lock does not exist and a later reader comparing gates across repairs attributes this pass to the wrong revision."
+    },
+    {
+      "file": "docs/plans/a-review-dies-where-nobody-is-looking.html",
+      "line": "137",
+      "text": "the r-outcome article's data-id is o-s3-deliverable-outranks-process, which carries the section label s3 into an identifier a reader has no glossary for; the sibling outcome articles elsewhere in the plan are the same shape, so this is a convention already in force rather than a new defect, and it is named here only because the plan-relative label belongs in prose rather than in the id."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against fa98d32a, c8cc423a adds the lock and the shared test docstring and 9f39346e lands the plan outcome and the evidence anchor, and the only change to reckon/crew/recovery.py is a seven-line comment at recovery.py:2918 that alters no byte of behaviour.",
+    "done_when": "the done_when names both falsifiers, and the gate at docs/figures/a-review-dies-where-nobody-is-looking/gate.txt:3 records 34 passed against tests/test_live_process_outranks_classification.py plus its two declared peers, and I re-ran the same command at the reviewed head 9f39346e and reproduced 34 passed in 12.88s.",
+    "goal": "the node's goal is plan \u00a73's measure, that classification read a run's deliverable before its process, and the landed change locks that precedence in tests/test_live_process_outranks_classification.py:263 so a killed run behind a complete manifest and a parsed review is promotable, not abandoned.",
+    "manifest": "the manifest is complete and self-locating, naming base fa98d32a, head commits c8cc423a and 9f39346e, the gate command and its result, the mutation string on the negative-control line, and the one follow-on at a path outside its fence.",
+    "write_paths": "the declared paths are reckon/crew/recovery.py, tests/test_live_process_outranks_classification.py, docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html, docs/figures/a-review-dies-where-nobody-is-looking and docs/plans/a-review-dies-where-nobody-is-looking.html, and git diff --stat fa98d32a..9f39346e shows exactly those seven files with 405 insertions and one deletion."
+  },
+  "justifications": {
+    "durability": "the negative control at docs/figures/a-review-dies-where-nobody-is-looking/negative-control.txt:3 reinstates an early dead-process arm and tests/test_live_process_outranks_classification.py:263 reddens on all three phases with assert 'abandoned' == 'promotable', so the lock is independent of the value under test and a reversion of the ordering cannot pass it.",
+    "evidence": "the gate at docs/figures/a-review-dies-where-nobody-is-looking/gate.txt:3 records 34 passed and the mutation at docs/figures/a-review-dies-where-nobody-is-looking/negative-control.txt:3 records the reordering with its cost at line 102, but the gate log's first line names the base revision fa98d32a rather than the head 9f39346e it ran at, so a reader comparing gate logs across repairs cannot tell which revision the passing run measured.",
+    "fit": "the lock reuses the file's own helpers _pointer at tests/test_live_process_outranks_classification.py:125 and _manifest_body at line 90, isolates the review store through RECKON_HOME in the review_home fixture at line 231 rather than reaching the operator's crew state, and every added name is mechanism-named with no plan, stage or version label.",
+    "goal_fidelity": "the classification order the section names is asserted in tests/test_live_process_outranks_classification.py:263 for the delivered case and at line 344 for the dead control, and I confirmed independently that base classify_pointer reads manifest_status == \"complete\" at recovery.py:2481 before the abandoned arm at recovery.py:2917, so the deliverable-before-process ordering is real and not merely claimed.",
+    "scope_discipline": "git diff --stat fa98d32a..9f39346e shows exactly the five declared write paths and two files inside the declared figure directory, all inside the fence, and the plan diff adds an r-outcome article at docs/plans/a-review-dies-where-nobody-is-looking.html:137 without touching the plan-version or plan-modified meta lines."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is plan \u00a73's measure, that classification read a run's deliverable before its process, and the landed change locks that precedence in tests/test_live_process_outranks_classification.py:263 so a killed run behind a complete manifest and a parsed review is promotable, not abandoned.\nVERDICT done_when: the done_when names both falsifiers, and the gate at docs/figures/a-review-dies-where-nobody-is-looking/gate.txt:3 records 34 passed against tests/test_live_process_outranks_classification.py plus its two declared peers, and I re-ran the same command at the reviewed head 9f39346e and reproduced 34 passed in 12.88s.\nVERDICT write_paths: the declared paths are reckon/crew/recovery.py, tests/test_live_process_outranks_classification.py, docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html, docs/figures/a-review-dies-where-nobody-is-looking and docs/plans/a-review-dies-where-nobody-is-looking.html, and git diff --stat fa98d32a..9f39346e shows exactly those seven files with 405 insertions and one deletion.\nVERDICT manifest: the manifest is complete and self-locating, naming base fa98d32a, head commits c8cc423a and 9f39346e, the gate command and its result, the mutation string on the negative-control line, and the one follow-on at a path outside its fence.\nVERDICT diff: read commit by commit against fa98d32a, c8cc423a adds the lock and the shared test docstring and 9f39346e lands the plan outcome and the evidence anchor, and the only change to reckon/crew/recovery.py is a seven-line comment at recovery.py:2918 that alters no byte of behaviour.\nCALL_SITES: reckon/cli.py:2391 crew_module.classify_pointer, reckon/mcp.py:3295 crew_module.classify_pointer, reckon/crew/directory.py:70 classify_pointer(observed), reckon/crew/recovery.py:445 row = classify_pointer(record), reckon/crew/runs.py:908 row = classify_pointer(current)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the classification order the section names is asserted in tests/test_live_process_outranks_classification.py:263 for the delivered case and at line 344 for the dead control, and I confirmed independently that base classify_pointer reads manifest_status == \"complete\" at recovery.py:2481 before the abandoned arm at recovery.py:2917, so the deliverable-before-process ordering is real and not merely claimed.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate at docs/figures/a-review-dies-where-nobody-is-looking/gate.txt:3 records 34 passed and the mutation at docs/figures/a-review-dies-where-nobody-is-looking/negative-control.txt:3 records the reordering with its cost at line 102, but the gate log's first line names the base revision fa98d32a rather than the head 9f39346e it ran at, so a reader comparing gate logs across repairs cannot tell which revision the passing run measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat fa98d32a..9f39346e shows exactly the five declared write paths and two files inside the declared figure directory, all inside the fence, and the plan diff adds an r-outcome article at docs/plans/a-review-dies-where-nobody-is-looking.html:137 without touching the plan-version or plan-modified meta lines.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control at docs/figures/a-review-dies-where-nobody-is-looking/negative-control.txt:3 reinstates an early dead-process arm and tests/test_live_process_outranks_classification.py:263 reddens on all three phases with assert 'abandoned' == 'promotable', so the lock is independent of the value under test and a reversion of the ordering cannot pass it.\nSCORE fit: 16\nJUSTIFICATION fit: the lock reuses the file's own helpers _pointer at tests/test_live_process_outranks_classification.py:125 and _manifest_body at line 90, isolates the review store through RECKON_HOME in the review_home fixture at line 231 rather than reaching the operator's crew state, and every added name is mechanism-named with no plan, stage or version label.\nFINDING docs/figures/a-review-dies-where-nobody-is-looking/gate.txt:1 the gate log's first line reads base=fa98d32a5ea59e1bec2793823b7e16104bff56e9, naming the diff base rather than the head 9f39346e the passing run measured, so the one field the convention uses to pin a gate to a revision points at a tree in which the lock does not exist and a later reader comparing gates across repairs attributes this pass to the wrong revision.\nFINDING docs/plans/a-review-dies-where-nobody-is-looking.html:137 the r-outcome article's data-id is o-s3-deliverable-outranks-process, which carries the section label s3 into an identifier a reader has no glossary for; the sibling outcome articles elsewhere in the plan are the same shape, so this is a convention already in force rather than a new defect, and it is named here only because the plan-relative label belongs in prose rather than in the id.\nREVISION: 9f39346e813b1872a735a532fb7c3a7563852449",
+  "review_run_id": "r-20260923T010909082793-review-of-a-deliverable-outranks-a-dead-process",
+  "reviewed_base_sha": "fa98d32a5ea59e1bec2793823b7e16104bff56e9",
+  "reviewed_head_sha": "9f39346e813b1872a735a532fb7c3a7563852449",
+  "reviewed_revision": "9f39346e813b1872a735a532fb7c3a7563852449",
+  "reviewed_run_id": "r-20260922T211337247253-a-deliverable-outranks-a-dead-process",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T01:22:12.304264+00:00",
+  "total": 91
+}

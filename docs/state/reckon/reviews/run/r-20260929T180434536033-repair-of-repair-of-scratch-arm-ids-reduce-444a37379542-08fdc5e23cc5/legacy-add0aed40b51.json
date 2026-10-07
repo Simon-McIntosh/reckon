@@ -1,0 +1,133 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "added_failures_source": {
+    "fields_named_instead": [],
+    "note": "the reviewed run was unarmed (its live pointer carries suite_command: null), so no baseline_suite arm was required of it and the absent base log is legitimate rather than a node defect; the after_suite alone cannot support a delta, so the count is unmeasured rather than zero",
+    "suite_fields_named": [
+      "after_suite"
+    ]
+  },
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/review.py:1384",
+    "reckon/crew/recovery.py:308",
+    "reckon/crew/repair.py:320"
+  ],
+  "completed_at": "2026-09-29T18:30:52.514Z",
+  "dispatched_at": "2026-09-29T18:04:50Z",
+  "findings": [
+    {
+      "file": "tests/test_scratch_arm_ids_reduce.py",
+      "line": "265",
+      "text": "the only case that supplies a revision header puts it on line 1 with nothing revision-shaped in the bodies, so a whole-text search passes all six collected cases (measured: replacing lines[0] with log_text in a scratch copy of 1fb77e19 leaves 6 passed, EXIT=0) and would read a spurious revision out of a body \u2014 the property reckon/crew/review.py:784's docstring states is unguarded."
+    }
+  ],
+  "head_log_revision": "1fb77e19ed3b2d9555d0cd6078d835041ded2218",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 1fb77e19 against base ff906f8d9, four files: 42 lines added to reckon/crew/review.py (recorded_log_revision and the two keys annotate_review_of_run records), 50 to tests/test_scratch_arm_ids_reduce.py, and the two new fragments (87 and 96 lines); 270 insertions and 5 deletions in total.",
+    "done_when": "the done_when asks that the manifest name every finding by id as `acted <id>: <commit>`, and manifest.md:22-23 carry \"acted ff04e98cfa4: 1fb77e19\" and \"acted fd2973ff2c8: 1fb77e19\" with none declined and none unanswered, the two answers being the re-run gate log and the two fragments the manifest lists at lines 18-19.",
+    "goal": "the goal is to repair the 2 findings the reviewed run's own record names \u2014 ff04e98cfa4 (gate-fix.log's revision line named the base cbbbb56f while the change landed at 08fdc5e23) and fd2973ff2c8 (the granted landing fragment was absent from the commit) \u2014 and both are answered by 1fb77e19: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173036038126-repair-of-scratch-arm-ids-reduce-444a37379542/logs/gate-fix.log:1 now reads \"revision 08fdc5e23cc5cc515ebd605542c688f047f29dd6 tree /tmp/rcq8-fix-tree (re-run against an export of the change's own commit; the earlier header named the base cbbbb56f, which the change does not contain)\" with 5 passed, and docs/evidence/fragments/scoring-should-stop-a-promotion/repair-of-scratch-arm-ids-reduce-444a37379542.html is a new 96-line file in the same commit.",
+    "manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T180434536033-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5/manifest.md is 3333 bytes, status complete, naming commit 1fb77e19, tests/test_scratch_arm_ids_reduce.py, an after_suite at 1fb77e19 with exit_status 0, and its own negative-control log; it names no baseline_suite, which this run's unarmed suite_command makes legitimate rather than a defect.",
+    "write_paths": "read the node's nine declared paths; everything in 1fb77e19 \u2014 reckon/crew/review.py, tests/test_scratch_arm_ids_reduce.py, and the two docs/evidence/fragments/scoring-should-stop-a-promotion files \u2014 is inside them, and the parent run's gate-fix.log it re-ran is the path declared under that run's logs."
+  },
+  "justifications": {
+    "durability": "tests/test_scratch_arm_ids_reduce.py:265 reddens under the node's own control and holds the two keys independently of each other, but the header-only property its reader documents at reckon/crew/review.py:784 is guarded by no case (see the finding).",
+    "evidence": "I re-ran the gate the manifest names at its own commit in a blob-verified export of 1fb77e19 (6 passed, EXIT=0), but the after_suite at manifest.md:17 names neither command nor failure_count and no baseline exists, so the run's own record certifies no suite delta.",
+    "fit": "reckon/crew/review.py:778 follows the module's own reader idiom beside _read_gate_log, states the mechanism, and introduces no plan or ticket name.",
+    "goal_fidelity": "both findings are answered by artefacts in 1fb77e19 \u2014 gate-fix.log:1 names 08fdc5e23 and the fragment is committed \u2014 so only the unrequested review.py addition keeps this below 20.",
+    "scope_discipline": "every path in the diff is inside the declared write paths, and the 92 added lines answering neither finding sit in the two code paths the fence names, so they are permitted work rather than an escape."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to repair the 2 findings the reviewed run's own record names \u2014 ff04e98cfa4 (gate-fix.log's revision line named the base cbbbb56f while the change landed at 08fdc5e23) and fd2973ff2c8 (the granted landing fragment was absent from the commit) \u2014 and both are answered by 1fb77e19: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173036038126-repair-of-scratch-arm-ids-reduce-444a37379542/logs/gate-fix.log:1 now reads \"revision 08fdc5e23cc5cc515ebd605542c688f047f29dd6 tree /tmp/rcq8-fix-tree (re-run against an export of the change's own commit; the earlier header named the base cbbbb56f, which the change does not contain)\" with 5 passed, and docs/evidence/fragments/scoring-should-stop-a-promotion/repair-of-scratch-arm-ids-reduce-444a37379542.html is a new 96-line file in the same commit.\nVERDICT done_when: the done_when asks that the manifest name every finding by id as `acted <id>: <commit>`, and manifest.md:22-23 carry \"acted ff04e98cfa4: 1fb77e19\" and \"acted fd2973ff2c8: 1fb77e19\" with none declined and none unanswered, the two answers being the re-run gate log and the two fragments the manifest lists at lines 18-19.\nVERDICT write_paths: read the node's nine declared paths; everything in 1fb77e19 \u2014 reckon/crew/review.py, tests/test_scratch_arm_ids_reduce.py, and the two docs/evidence/fragments/scoring-should-stop-a-promotion files \u2014 is inside them, and the parent run's gate-fix.log it re-ran is the path declared under that run's logs.\nVERDICT manifest: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T180434536033-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5/manifest.md is 3333 bytes, status complete, naming commit 1fb77e19, tests/test_scratch_arm_ids_reduce.py, an after_suite at 1fb77e19 with exit_status 0, and its own negative-control log; it names no baseline_suite, which this run's unarmed suite_command makes legitimate rather than a defect.\nVERDICT diff: read 1fb77e19 against base ff906f8d9, four files: 42 lines added to reckon/crew/review.py (recorded_log_revision and the two keys annotate_review_of_run records), 50 to tests/test_scratch_arm_ids_reduce.py, and the two new fragments (87 and 96 lines); 270 insertions and 5 deletions in total.\nCALL_SITES: reckon/crew/review.py:1384, reckon/crew/recovery.py:308, reckon/crew/repair.py:320\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: both findings are answered by artefacts in 1fb77e19 \u2014 gate-fix.log:1 names 08fdc5e23 and the fragment is committed \u2014 so only the unrequested review.py addition keeps this below 20.\nSCORE evidence: 17\nJUSTIFICATION evidence: I re-ran the gate the manifest names at its own commit in a blob-verified export of 1fb77e19 (6 passed, EXIT=0), but the after_suite at manifest.md:17 names neither command nor failure_count and no baseline exists, so the run's own record certifies no suite delta.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, and the 92 added lines answering neither finding sit in the two code paths the fence names, so they are permitted work rather than an escape.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_scratch_arm_ids_reduce.py:265 reddens under the node's own control and holds the two keys independently of each other, but the header-only property its reader documents at reckon/crew/review.py:784 is guarded by no case (see the finding).\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review.py:778 follows the module's own reader idiom beside _read_gate_log, states the mechanism, and introduces no plan or ticket name.\nFINDING tests/test_scratch_arm_ids_reduce.py:265 the only case that supplies a revision header puts it on line 1 with nothing revision-shaped in the bodies, so a whole-text search passes all six collected cases (measured: replacing lines[0] with log_text in a scratch copy of 1fb77e19 leaves 6 passed, EXIT=0) and would read a spurious revision out of a body \u2014 the property reckon/crew/review.py:784's docstring states is unguarded.\n",
+  "review_evidence": {
+    "export_file_hashes": {
+      "reckon/crew/review.py": {
+        "blob_sha256": "8dce2ca82f41c882585f7b252a28b8ea109e5ea6b1eeb9eb2e1837d2605118a1",
+        "export_sha256": "8dce2ca82f41c882585f7b252a28b8ea109e5ea6b1eeb9eb2e1837d2605118a1",
+        "matches": true
+      },
+      "tests/test_scratch_arm_ids_reduce.py": {
+        "blob_sha256": "38ec4e6fd6fce7e5bfcf06d2257cc7b9d37b7788f66cb3ddc3ebf53ae8f754f2",
+        "export_sha256": "38ec4e6fd6fce7e5bfcf06d2257cc7b9d37b7788f66cb3ddc3ebf53ae8f754f2",
+        "matches": true
+      }
+    },
+    "export_tree": "/tmp/rcq8-review-tree",
+    "independent_gate_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T183129605024-review-of-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5/logs/review-gate.log",
+    "mutation_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T183129605024-review-of-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5/logs/review-mutation.log",
+    "reviewed_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T180434536033-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5/logs/negative-control.log",
+    "reviewed_gate_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T180434536033-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5/logs/gate.log"
+  },
+  "review_run_id": "legacy-add0aed40b51",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "ff906f8d972d61f8b227cd2280e584a9b1259a7a",
+  "reviewed_changed_paths": [
+    "reckon/crew/review.py",
+    "tests/test_scratch_arm_ids_reduce.py",
+    "docs/evidence/fragments/scoring-should-stop-a-promotion/repair-of-scratch-arm-ids-reduce-444a37379542.html",
+    "docs/evidence/fragments/scoring-should-stop-a-promotion/repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5.html"
+  ],
+  "reviewed_commits": [
+    "1fb77e19ed3b2d9555d0cd6078d835041ded2218"
+  ],
+  "reviewed_diffstat": "4 files changed, 270 insertions(+), 5 deletions(-)",
+  "reviewed_done_when": "the repair for r-20260929T173036038126-repair-of-scratch-arm-ids-reduce-444a37379542@08fdc5e23cc5cc515ebd605542c688f047f29dd6 commits a change answering each of the 2 finding(s) (ff04e98cfa4, fd2973ff2c8) and its manifest names every finding by id \u2014 `acted <id>: <commit>` for a finding it answered and `declined <id>: <reason>` for one it declines \u2014 with no finding left unanswered",
+  "reviewed_goal": "repair 2 finding(s) (ff04e98cfa4, fd2973ff2c8) on run r-20260929T173036038126-repair-of-scratch-arm-ids-reduce-444a37379542",
+  "reviewed_head_sha": "1fb77e19ed3b2d9555d0cd6078d835041ded2218",
+  "reviewed_manifest": {
+    "bytes": 3333,
+    "last_modified": "2026-09-29T20:29:38.112203+02:00",
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T180434536033-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5/manifest.md",
+    "sha256": "cceef3338c5f95bf7cbba2c38df66ea8655897e09a69e78b3d74f429dfabce83"
+  },
+  "reviewed_node": "repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5",
+  "reviewed_plan": "scoring-should-stop-a-promotion",
+  "reviewed_run_id": "r-20260929T180434536033-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5",
+  "reviewed_suite_fields": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T180434536033-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5/logs/gate.log",
+      "revision": "1fb77e19ed3b2d9555d0cd6078d835041ded2218"
+    },
+    "baseline_suite": null
+  },
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5",
+  "reviewed_write_paths": [
+    "reckon/crew/review.py",
+    "tests/test_scratch_arm_ids_reduce.py",
+    "docs/evidence/fragments/scoring-should-stop-a-promotion/scratch-arm-ids-reduce.html",
+    "docs/figures/scoring-should-stop-a-promotion/scratch-arm-ids-reduce",
+    "docs/evidence/fragments/scoring-should-stop-a-promotion/repair-of-scratch-arm-ids-reduce-444a37379542.html",
+    "docs/figures/scoring-should-stop-a-promotion/repair-of-scratch-arm-ids-reduce-444a37379542",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173036038126-repair-of-scratch-arm-ids-reduce-444a37379542/logs/gate-fix.log",
+    "docs/evidence/fragments/scoring-should-stop-a-promotion/repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5.html",
+    "docs/figures/scoring-should-stop-a-promotion/repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5"
+  ],
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "model_actual": "deepseek-v4.1-flash",
+    "node": "review-of-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5",
+    "run_id": "r-20260929T183129605024-review-of-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T19:01:40.819373+00:00",
+  "total": 87
+}

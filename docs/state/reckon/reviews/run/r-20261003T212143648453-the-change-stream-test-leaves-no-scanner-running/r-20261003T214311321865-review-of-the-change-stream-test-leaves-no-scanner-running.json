@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms, since its manifest records baseline_suite and after_suite as null. Head (after) arm: gate-file.log at 8596262f7, whole file, 8 passed / 0 failed / EXIT=0, and gate-loaded.log at 8596262f7, the two tests in file order 20x, passes=20 fails=0 / EXIT=0 -- failure_count 0, failure_ids []. Base arm: negative-control.log at d6d1f4ef3, the base-revision test file, the later test fails in every run (failure_id tests/test_page_paints_from_the_index.py::test_a_report_keeps_a_discovery_newer_than_the_report), passes=0 fails=20 / EXIT=20. The after-only set is empty -- the head arm adds no failing id over the base arm -- so added_failure_count is 0 and added_failure_ids is []. The base arm's red is the pre-existing leak the node repairs, not an added failure.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-03T21:56:01.657Z",
+  "dispatched_at": "2026-10-03T21:43:26Z",
+  "findings": [
+    {
+      "file": "tests/test_page_paints_from_the_index.py",
+      "line": "489",
+      "severity": "follow-on",
+      "text": "The declared negative control does not reproduce on this host. The run's negative-control.log shows the base-revision test file reddening the later test in 20 of 20 runs under load, but 37 independent attempts here -- 10 with no load, 10 under 8 CPU-bound python loops, 7 under 40-way oversubscription, and 12 via the run's own load.py 8 -- all returned 2 passed, EXIT=0. The leak is a thread-timing race whose firing needs the earlier test's handler thread to be scheduled into the later test's patched _discover_plans_uncached; that schedule was not reachable under the load regimes I could create. The repair is sound by construction, but the guard's firing is not independently demonstrated, so the test should not be relied on to catch a reintroduction of the leak on an arbitrary host."
+    }
+  ],
+  "item_aggregate": null,
+  "item_verdicts": {
+    "arms": "gate-file.log (head 8596262f7, whole file, 8 passed/EXIT=0); gate-loaded.log (head, two tests 20x under 8 load processes, passes=20 fails=0/EXIT=0); negative-control.log (base d6d1f4ef3 test file, passes=0 fails=20/EXIT=20). review-head-arm.log is my independent re-run at head.",
+    "diff": "Read commit by commit against base d6d1f4ef3: 8596262f7 adds self._response.close() to _ChangeStream.close() plus two explanatory comments, and sets server.daemon_threads = False in the two tests that start a ThreadingHTTPServer, each with a comment; 65617b3f2 adds only the evidence fragment.",
+    "done_when": "The plan's node is that a test waits for its HTTP handler threads; it is gated by 20 passes of the two-test pair under CPU load. The run's gate-loaded.log records exactly that at head 8596262f7: passes=20 fails=0, EXIT=0; I independently re-ran the whole file at head 65617b3f2 (8 passed, EXIT=0). The declared negative control is recorded at 20/20 red but did not reproduce for me (see finding).",
+    "goal": "SS2's node stops a change-stream handler outliving its test. The repair does exactly that at the source of the leak: tests/test_page_paints_from_the_index.py _ChangeStream.close() now closes the HTTPResponse whose makefile held the socket file descriptor open (so the server's handler sees EOF and leaves its select wait at reckon/serve.py:194, reached from the change-stream loop at reckon/serve.py:2692), and both threaded servers in the file run with daemon_threads=False so ThreadingMixIn.server_close() joins every handler thread before the test returns. The later test's assertion assert len(scans) == 1 is unchanged and no assertion is weakened or removed.",
+    "manifest": "Read. It records the repair, the three gate logs, the parent-commit negative control, and the claim that no product change is required; baseline_suite and after_suite are null, so added_failure_count/ids are derived from the run's own gate logs.",
+    "write_paths": "The two commits touch exactly the declared write paths: tests/test_page_paints_from_the_index.py (+15, 0 deletions) and docs/evidence/fragments/the-suite-is-green-at-head/the-change-stream-test-leaves-no-scanner-running.html (+18). 33 insertions, 0 deletions. reckon/serve.py has an empty diff d6d1f4ef3..65617b3f2."
+  },
+  "justifications": {
+    "durability": "The mechanism is sound and confirmed against the installed Python 3.14 socketserver: socket.makefile() holds a file-descriptor reference, so HTTPConnection.close() alone leaves the fd open, and ThreadingMixIn.process_request sets t.daemon = self.daemon_threads and tracks only non-daemon threads, so server_close() joins handler threads only when daemon_threads is False. The later test's assertion is unchanged. Held below full because the guard is not shown to fire independently here (see finding): the run's negative control reddens 20/20 while my 37 attempts stay green. A residual effect of daemon_threads=False is that a future test which leaves a stream open would hang server_close() rather than pass, which needs the repo's per-test bound to turn a hang into a failure.",
+    "evidence": "The run's three arms exist and are internally coherent: gate-file.log (whole file, 8 passed, EXIT=0), gate-loaded.log (two tests 20x under load, passes=20 fails=0, EXIT=0) and negative-control.log (base-revision test file, passes=0 fails=20, EXIT=20, the traceback's scans list naming both the current and the earlier test's docs dir, which matches the described leak). I independently re-ran the whole file at head 65617b3f2: 8 passed in 6.00s, EXIT=0 (review-head-arm.log). Held below full because I could not reproduce the red arm in 37 independent attempts on this host; every attempt returned 2 passed, EXIT=0. The head claim reproduces; the negative control's firing does not, under my conditions.",
+    "fit": "Both commits carry conventional subjects with bodies stating what changed and why, no AI attribution trailer, and no plan, sprint or ticket identifier. The new comments explain the socket/makefile and daemon-thread mechanisms rather than naming the node, and the edits are test-local with reckon/serve.py untouched.",
+    "goal_fidelity": "SS2's node stops a change-stream handler outliving its test. The repair does exactly that at the source of the leak: _ChangeStream.close() now closes the HTTPResponse whose makefile held the socket fd open (so the server's handler sees EOF and leaves its select wait), and both threaded servers in the file run with daemon_threads=False so server_close() joins every handler thread. The later test's assertion is unchanged and no assertion is weakened or removed. Held just below full because the plan names the earlier test (test_two_change_streams_recompute_discovery_once) as the node's subject while the leak is identified through the later test it corrupts, which the fragment explains.",
+    "scope_discipline": "git diff d6d1f4ef3..65617b3f2 shows exactly the two declared write paths, 33 insertions and 0 deletions, with reckon/serve.py unchanged (empty diff), matching the run's claim that no product change was required. No shared index, sprint or plan-state mutation."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: SS2's node stops a change-stream handler outliving its test; _ChangeStream.close() in tests/test_page_paints_from_the_index.py now closes the HTTPResponse whose makefile held the socket fd open, and both threaded servers in the file run with daemon_threads=False so ThreadingMixIn.server_close() joins every handler thread before the test returns; the later test's assert len(scans) == 1 is unchanged and no assertion is weakened or removed.\nVERDICT done_when: the node is gated by 20 passes of the two-test pair under CPU load; gate-loaded.log records passes=20 fails=0 EXIT=0 at head 8596262f7 and I independently re-ran the whole file at head 65617b3f2 (8 passed, EXIT=0).\nVERDICT write_paths: git diff d6d1f4ef3..65617b3f2 touches exactly tests/test_page_paints_from_the_index.py (+15, 0 deletions) and docs/evidence/fragments/the-suite-is-green-at-head/the-change-stream-test-leaves-no-scanner-running.html (+18); reckon/serve.py has an empty diff.\nVERDICT manifest: read; baseline_suite and after_suite are null, so added_failure_count and added_failure_ids are derived from the run's own gate logs.\nVERDICT diff: 8596262f7 adds self._response.close() to _ChangeStream.close() with a comment and sets server.daemon_threads = False in the two ThreadingHTTPServer tests with comments; 65617b3f2 adds only the evidence fragment.\nVERDICT arms: gate-file.log (head 8596262f7, whole file, 8 passed/EXIT=0); gate-loaded.log (head, two tests 20x under 8 load processes, passes=20 fails=0/EXIT=0); negative-control.log (base d6d1f4ef3 test file, passes=0 fails=20/EXIT=20); review-head-arm.log is my independent re-run at head.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the repair stops the handler outliving its test at the source of the leak; held just below full because the plan names the earlier test while the leak is identified through the later test it corrupts, which the fragment explains.\nSCORE evidence: 17\nJUSTIFICATION evidence: the three arms are coherent and the head claim reproduces (8 passed, EXIT=0, review-head-arm.log), but I could not reproduce the red arm in 37 independent attempts on this host.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff is exactly the two declared paths, 33 insertions and 0 deletions, with reckon/serve.py unchanged.\nSCORE durability: 18\nJUSTIFICATION durability: the socket/makefile and daemon-thread mechanisms are confirmed against the installed Python 3.14 socketserver, but the guard is not shown to fire independently here (see finding).\nSCORE fit: 20\nJUSTIFICATION fit: conventional subjects with bodies, no AI trailer, no plan or ticket identifier, and the comments name the mechanism.\nFINDING tests/test_page_paints_from_the_index.py:489 follow-on: the declared negative control does not reproduce on this host; the run's negative-control.log reddens 20/20 under load, but 37 independent attempts here (no load, 8 CPU-bound loops, 40-way oversubscription, and the run's own load.py 8) all returned 2 passed, EXIT=0, so the guard's firing is not independently demonstrated and the test should not be relied on to catch a reintroduction of the leak on an arbitrary host.",
+  "review_run_id": "r-20261003T214311321865-review-of-the-change-stream-test-leaves-no-scanner-running",
+  "reviewed_base_sha": "d6d1f4ef366aa6b2688ca194793e2890bdf5a214",
+  "reviewed_head_sha": "65617b3f283a1c58c86ab3b8d07c5d5a825283c3",
+  "reviewed_run_id": "r-20261003T212143648453-the-change-stream-test-leaves-no-scanner-running",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261003T214311321865-review-of-the-change-stream-test-leaves-no-scanner-running",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T21:54:38.168041+00:00",
+  "total": 94
+}

@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 1,
+  "backend": "clive",
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/recovery.py:3652 _fleet_counts (declaration)",
+    "reckon/crew/recovery.py:4025 _scoped_watch_event (the only _fleet_counts caller passing a session)",
+    "reckon/crew/recovery.py:3800",
+    "reckon/crew/recovery.py:4122",
+    "reckon/crew/runs.py:1092",
+    "reckon/crew/runs.py:1139",
+    "reckon/crew/recovery.py:4039 format_watch_transition (declaration)",
+    "reckon/cli.py:2133 crew follow",
+    "reckon/cli.py:2256 crew watch follow",
+    "reckon/crew/runs.py:2433 _watch_attach_line (declaration)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-22T21:24:16.282387+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T194951979333-monitor-scope-path-map/manifest.md",
+      "line": "50",
+      "text": "the test_logs field states \"checker output captured inline in the manifest tests entry\" instead of a path, while the checker it names lives at /tmp/ms/check.py, so neither the gate's receipt nor the tool that produced it is durable \u2014 the run directory and /tmp are both cleaner targets, and the plan's own note cites that checker as the evidence for the whole file."
+    },
+    {
+      "file": "docs/plans/the-monitor-under-measurement.html",
+      "line": "163",
+      "text": "the landed note says \"all 37 quoted lines were re-read against the tree at base 9d8ccbd5 with zero mismatches\", but the data file carries 38 quoted source lines: the nested docstring quote at reckon/crew/runs.py:2441 is a quote the count does not cover, so the note describes 37 of 38 and the reader cannot tell which one was left out; that line does match its source (verified here), so the substance holds and the repair is the count plus the word \"nested\"."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 10 production call site(s)",
+    "diff": "read commit by commit against 9d8ccbd5: 91b0d3ed emits docs/research/data/monitor-scope-path-map.json, 5082fe7f adds docs/figures/the-monitor-under-measurement/scope-and-attach-path-map.svg, a22867da adds the cumulative docs/evidence/archive/the-monitor-under-measurement-landed.html anchor, and ea078bd7 appends the \u00a74 landed note to docs/plans/the-monitor-under-measurement.html; all four subjects are conventional and carry bodies.",
+    "done_when": "\u00a74's done-when names the data file, all four answers with file, line and quote, question three's yes/no backed by the named run's own record, and question four's resolution statement; the file carries each, and the two that are checkable off the file were re-derived here rather than read on report \u2014 the named run's stream.jsonl init record at line 3 carries cwd under the nova worktree s18-fable-20260922 and session_id d00bdddf-64ed-4391-9bd0-bf2d956accde, and the PATH probe reproduces exactly (positive control /home/ITER/mcintos/Code/reckon/.venv/bin/reckon, negative exit 127 with 'reckon: command not found').",
+    "goal": "the node's goal is a data file answering \u00a74's four source questions with file, line and quoted source, and docs/research/data/monitor-scope-path-map.json answers all four under a questions[] array carrying 38 quoted source lines, including question three's explicit \"yes\" and question four's \"no\" with its probe.",
+    "manifest": "complete and self-locating \u2014 the base sha 9d8ccbd5677dfdd1ec7a172c4f57597a010059ee resolves, the four commits are conventional with bodies stated in the file, the gate command and its result are named, and the \"reviews other sessions\" boundary is stated; its test_logs field carries a sentence rather than a path, so the gate's receipt is not a file on disk (finding 1).",
+    "write_paths": "the manifest declares four paths \u2014 the data file, the figure, the evidence anchor and the plan HTML \u2014 and git diff --numstat 9d8ccbd5..ea078bd7 shows exactly those four at 406 insertions and zero deletions, with no plan-version, plan-modified, plan-impl or plan-status meta line in the plan diff."
+  },
+  "justifications": {
+    "durability": "nothing in the repository re-runs the quote check \u2014 it lives at /tmp/ms/check.py and no tracked test reads docs/research/data/ \u2014 so a later edit that corrupted a line number or a quote would fail no check, and the repair needs a tests/ path outside this node's fence.",
+    "evidence": "the gate the manifest names compares each quoted line to the tree at the stated line number, which is what the done-when asserts, and I reproduced it independently at base 9d8ccbd5 \u2014 38 quote triples, 0 mismatches, with a control run proving the checker reports a shifted line \u2014 and the call-site counts were re-taken by full-tree grep at base rather than read from the file, so five _fleet_counts callers with exactly one session-passing is confirmed; the shortfall is that the receipt is a manifest sentence rather than a log file.",
+    "fit": "the artefact sits at the docs/research/data/ path the plan names, the figure is embedded project-absolute at docs/evidence/archive/the-monitor-under-measurement-landed.html:36, and no filename, key or comment carries a plan, stage or version label.",
+    "goal_fidelity": "docs/research/data/monitor-scope-path-map.json answers all four \u00a74 questions with file, line and verbatim quote, and its two decisive claims (question three's yes, question four's no) are the ones the plan's done-when singles out.",
+    "scope_discipline": "git diff --numstat 9d8ccbd5..ea078bd7 lists exactly the four declared write paths, insert-only at 406 additions and zero deletions, and adds no source change to a measurement node."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a data file answering \u00a74's four source questions with file, line and quoted source, and docs/research/data/monitor-scope-path-map.json answers all four under a questions[] array carrying 38 quoted source lines, including question three's explicit \"yes\" and question four's \"no\" with its probe.\nVERDICT done_when: \u00a74's done-when names the data file, all four answers with file, line and quote, question three's yes/no backed by the named run's own record, and question four's resolution statement; the file carries each, and the two that are checkable off the file were re-derived here rather than read on report \u2014 the named run's stream.jsonl init record at line 3 carries cwd under the nova worktree s18-fable-20260922 and session_id d00bdddf-64ed-4391-9bd0-bf2d956accde, and the PATH probe reproduces exactly (positive control /home/ITER/mcintos/Code/reckon/.venv/bin/reckon, negative exit 127 with 'reckon: command not found').\nVERDICT write_paths: the manifest declares four paths \u2014 the data file, the figure, the evidence anchor and the plan HTML \u2014 and git diff --numstat 9d8ccbd5..ea078bd7 shows exactly those four at 406 insertions and zero deletions, with no plan-version, plan-modified, plan-impl or plan-status meta line in the plan diff.\nVERDICT manifest: complete and self-locating \u2014 the base sha 9d8ccbd5677dfdd1ec7a172c4f57597a010059ee resolves, the four commits are conventional with bodies stated in the file, the gate command and its result are named, and the \"reviews other sessions\" boundary is stated; its test_logs field carries a sentence rather than a path, so the gate's receipt is not a file on disk (finding 1).\nVERDICT diff: read commit by commit against 9d8ccbd5: 91b0d3ed emits docs/research/data/monitor-scope-path-map.json, 5082fe7f adds docs/figures/the-monitor-under-measurement/scope-and-attach-path-map.svg, a22867da adds the cumulative docs/evidence/archive/the-monitor-under-measurement-landed.html anchor, and ea078bd7 appends the \u00a74 landed note to docs/plans/the-monitor-under-measurement.html; all four subjects are conventional and carry bodies.\nCALL_SITES: reckon/crew/recovery.py:3652 _fleet_counts (declaration), reckon/crew/recovery.py:4025 _scoped_watch_event (the only _fleet_counts caller passing a session), reckon/crew/recovery.py:3800, reckon/crew/recovery.py:4122, reckon/crew/runs.py:1092, reckon/crew/runs.py:1139, reckon/crew/recovery.py:4039 format_watch_transition (declaration), reckon/cli.py:2133 crew follow, reckon/cli.py:2256 crew watch follow, reckon/crew/runs.py:2433 _watch_attach_line (declaration)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/research/data/monitor-scope-path-map.json answers all four \u00a74 questions with file, line and verbatim quote, and its two decisive claims (question three's yes, question four's no) are the ones the plan's done-when singles out.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate the manifest names compares each quoted line to the tree at the stated line number, which is what the done-when asserts, and I reproduced it independently at base 9d8ccbd5 \u2014 38 quote triples, 0 mismatches, with a control run proving the checker reports a shifted line \u2014 and the call-site counts were re-taken by full-tree grep at base rather than read from the file, so five _fleet_counts callers with exactly one session-passing is confirmed; the shortfall is that the receipt is a manifest sentence rather than a log file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 9d8ccbd5..ea078bd7 lists exactly the four declared write paths, insert-only at 406 additions and zero deletions, and adds no source change to a measurement node.\nSCORE durability: 12\nJUSTIFICATION durability: nothing in the repository re-runs the quote check \u2014 it lives at /tmp/ms/check.py and no tracked test reads docs/research/data/ \u2014 so a later edit that corrupted a line number or a quote would fail no check, and the repair needs a tests/ path outside this node's fence.\nSCORE fit: 19\nJUSTIFICATION fit: the artefact sits at the docs/research/data/ path the plan names, the figure is embedded project-absolute at docs/evidence/archive/the-monitor-under-measurement-landed.html:36, and no filename, key or comment carries a plan, stage or version label.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260922T194951979333-monitor-scope-path-map/manifest.md:50 the test_logs field states \"checker output captured inline in the manifest tests entry\" instead of a path, while the checker it names lives at /tmp/ms/check.py, so neither the gate's receipt nor the tool that produced it is durable \u2014 the run directory and /tmp are both cleaner targets, and the plan's own note cites that checker as the evidence for the whole file.\nFINDING docs/plans/the-monitor-under-measurement.html:163 the landed note says \"all 37 quoted lines were re-read against the tree at base 9d8ccbd5 with zero mismatches\", but the data file carries 38 quoted source lines: the nested docstring quote at reckon/crew/runs.py:2441 is a quote the count does not cover, so the note describes 37 of 38 and the reader cannot tell which one was left out; that line does match its source (verified here), so the substance holds and the repair is the count plus the word \"nested\".",
+  "review_run_id": "r-20260922T212416282387-review-of-monitor-scope-path-map",
+  "reviewed_base_sha": "9d8ccbd5677dfdd1ec7a172c4f57597a010059ee",
+  "reviewed_head_sha": "ea078bd728a535436e8c49fade16ccb14869e459",
+  "reviewed_revision": "ea078bd728a535436e8c49fade16ccb14869e459",
+  "reviewed_run_id": "r-20260922T194951979333-monitor-scope-path-map",
+  "scores": {
+    "durability": 12,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T00:47:11.054309+00:00",
+  "total": 88
+}

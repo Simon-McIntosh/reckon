@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest names no baseline_suite/after_suite pair, so this review ran both arms at the reviewed revisions over the run's own gate target and derived the count through the store's own reader (reckon.crew.review.added_failures_from_gate_logs): base arm at 39fff043 4 passed EXIT=0, head arm at a12ed340 6 passed EXIT=0, no FAILED/ERROR id either side; a positive control confirms the reader sees an injected FAILED id.",
+  "backend": "clive",
+  "base_log_revision": "39fff0435",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/recovery.py:2484"
+  ],
+  "completed_at": "2026-10-01T01:21:21.511Z",
+  "dispatched_at": "2026-10-01T01:08:38Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T005545699455-an-all-follow-on-round-says-so/logs/gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the reviewed run's own gate log opens by naming revision 39fff043 (its base) while the delivered commit is a12ed340; the store's own reader records a gate log's header revision to tie the added-failure count to a commit, so this header would attribute the head arm to the base rather than the revision that landed, and a later reader cannot tie the 6-passed result to a12ed340 without re-running the gate."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "2122",
+      "severity": "follow-on",
+      "text": "the all-follow-on report returns run_id, dispatched and reason but omits the node_id and round_id that the sibling decline-only return at reckon/crew/recovery.py:2145 carries, so a caller reading the report cannot see the round it declined; the recorded pointer does carry round_id, so only the report shape is affected."
+    }
+  ],
+  "head_log_revision": "a12ed3408",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/recovery.py:2484",
+    "diff": "read commit a12ed340 in full: reckon/crew/recovery.py adds the all-follow-on branch (reckon/crew/recovery.py:2111-2125); tests/test_repair_answers_only_blocking_findings.py adds a temp-project fixture and two dispatch-level cases; the evidence fragment records the change.",
+    "done_when": "the measure names a dispatch-level case through the stubbed dispatch; tests/test_repair_answers_only_blocking_findings.py:266 drives it and asserts the reason, the '1 follow-on' count and the decline-only pointer recorded on the reviewed run, with a control arm at tests/test_repair_answers_only_blocking_findings.py:294 that still dispatches for one blocking finding; the manifest records 6 passed EXIT=0, I re-ran the file at head a12ed340 getting 6 passed EXIT=0, and the declared mutation (single reason string restored) reddens the new case (1 failed, 5 passed, EXIT=1).",
+    "goal": "the goal is to make dispatch_repair_for_run record why a review round whose findings are all follow-ons composes no repair; at head a12ed340 the reflex returns and records the reason 'the review round carried no blocking finding (N follow-on finding(s))' from reckon/crew/recovery.py:2111-2125 when compose_repair_for_run returns None and repair_module.blocking_findings(review) is empty, leaving 'no repair composes for this review round' for the re-read-differs case it describes (reckon/crew/recovery.py:2127).",
+    "manifest": "read; status complete, commit a12ed340 over base 39fff043, gate.log records 6 passed EXIT=0 and negative-control.log 1 failed / 5 passed EXIT=1, and the artifact list names the /tmp deletions; the add is sound, but the gate.log header names the base revision 39fff043 rather than the delivered head a12ed340.",
+    "write_paths": "the manifest declares reckon/crew/recovery.py, tests/test_repair_answers_only_blocking_findings.py and docs/evidence/fragments/a-review-is-sized-to-its-risk/an-all-follow-on-round-says-so.html; `git diff --stat 39fff043..a12ed340` names exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_repair_answers_only_blocking_findings.py:266 fails if the branch is reverted (the declared mutation reddens it, 1 failed EXIT=1) and its control arm at tests/test_repair_answers_only_blocking_findings.py:294 stops the reason passing on a fixture that never composed a repair; the deduction is that the count is asserted only for the one-finding case and by substring.",
+    "evidence": "the gate's own result is recorded (6 passed EXIT=0) and the mutation reddens the new case, and I reproduced 6 passed EXIT=0 at head and derived 0 added failures through the store's own reader over both arms; the deduction is that the reviewed gate.log header names the base revision 39fff043 rather than the delivered head a12ed340, so the head arm's result is not tied to the revision that landed without re-running.",
+    "fit": "the branch comment states the mechanism, not a ticket; the symbols are named by what they measure; the deduction is the return shape at reckon/crew/recovery.py:2122 omits the node_id and round_id that the sibling decline-only return at reckon/crew/recovery.py:2145 carries.",
+    "goal_fidelity": "reckon/crew/recovery.py:2111-2125 records and returns the all-follow-on reason, told apart from the re-read-differs string at reckon/crew/recovery.py:2127, which is exactly the goal.",
+    "scope_discipline": "`git diff --stat 39fff043..a12ed340` names only the three declared paths, no plan or index state is edited, and nothing the goal does not imply is carried."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make dispatch_repair_for_run record why a review round whose findings are all follow-ons composes no repair; at head a12ed340 the reflex returns and records the reason 'the review round carried no blocking finding (N follow-on finding(s))' from reckon/crew/recovery.py:2111-2125 when compose_repair_for_run returns None and repair_module.blocking_findings(review) is empty, leaving 'no repair composes for this review round' for the re-read-differs case it describes (reckon/crew/recovery.py:2127).\nVERDICT done_when: the measure names a dispatch-level case through the stubbed dispatch; tests/test_repair_answers_only_blocking_findings.py:266 drives it and asserts the reason, the '1 follow-on' count and the decline-only pointer recorded on the reviewed run, with a control arm at tests/test_repair_answers_only_blocking_findings.py:294 that still dispatches for one blocking finding; the manifest records 6 passed EXIT=0, I re-ran the file at head a12ed340 getting 6 passed EXIT=0, and the declared mutation (single reason string restored) reddens the new case (1 failed, 5 passed, EXIT=1).\nVERDICT write_paths: the manifest declares reckon/crew/recovery.py, tests/test_repair_answers_only_blocking_findings.py and docs/evidence/fragments/a-review-is-sized-to-its-risk/an-all-follow-on-round-says-so.html; `git diff --stat 39fff043..a12ed340` names exactly those three files and nothing else.\nVERDICT manifest: read; status complete, commit a12ed340 over base 39fff043, gate.log records 6 passed EXIT=0 and negative-control.log 1 failed / 5 passed EXIT=1, and the artifact list names the /tmp deletions; the add is sound, but the gate.log header names the base revision 39fff043 rather than the delivered head a12ed340.\nVERDICT diff: read commit a12ed340 in full: reckon/crew/recovery.py adds the all-follow-on branch (reckon/crew/recovery.py:2111-2125); tests/test_repair_answers_only_blocking_findings.py adds a temp-project fixture and two dispatch-level cases; the evidence fragment records the change.\nCALL_SITES: reckon/crew/recovery.py:2484\nSCORE goal_fidelity: 20\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 18\nSCORE fit: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:2111-2125 records and returns the all-follow-on reason, told apart from the re-read-differs string at reckon/crew/recovery.py:2127, which is exactly the goal.\nJUSTIFICATION evidence: the gate's own result is recorded (6 passed EXIT=0) and the mutation reddens the new case, and I reproduced 6 passed EXIT=0 at head and derived 0 added failures through the store's own reader over both arms; the deduction is that the reviewed gate.log header names the base revision 39fff043 rather than the delivered head a12ed340, so the head arm's result is not tied to the revision that landed without re-running.\nJUSTIFICATION scope_discipline: `git diff --stat 39fff043..a12ed340` names only the three declared paths, no plan or index state is edited, and nothing the goal does not imply is carried.\nJUSTIFICATION durability: tests/test_repair_answers_only_blocking_findings.py:266 fails if the branch is reverted (the declared mutation reddens it, 1 failed EXIT=1) and its control arm at tests/test_repair_answers_only_blocking_findings.py:294 stops the reason passing on a fixture that never composed a repair; the deduction is that the count is asserted only for the one-finding case and by substring.\nJUSTIFICATION fit: the branch comment states the mechanism, not a ticket; the symbols are named by what they measure; the deduction is the return shape at reckon/crew/recovery.py:2122 omits the node_id and round_id that the sibling decline-only return at reckon/crew/recovery.py:2145 carries.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T005545699455-an-all-follow-on-round-says-so/logs/gate.log:1 follow-on: the reviewed run's own gate log opens by naming revision 39fff043 (its base) while the delivered commit is a12ed340; the store's own reader records a gate log's header revision to tie the added-failure count to a commit, so this header would attribute the head arm to the base rather than the revision that landed, and a later reader cannot tie the 6-passed result to a12ed340 without re-running the gate.\nFINDING reckon/crew/recovery.py:2122 follow-on: the all-follow-on report returns run_id, dispatched and reason but omits the node_id and round_id that the sibling decline-only return at reckon/crew/recovery.py:2145 carries, so a caller reading the report cannot see the round it declined; the recorded pointer does carry round_id, so only the report shape is affected.\nREVISION: a12ed34084c2dd9e95366d3c3a3d8790158f2f60\nreviewed_base_sha: 39fff0435239ded5d285a4d87e38a1ad007e8451",
+  "review_run_id": "r-20261001T010817987548-review-of-an-all-follow-on-round-says-so",
+  "reviewed_base_sha": "39fff0435239ded5d285a4d87e38a1ad007e8451",
+  "reviewed_commit": "a12ed34084c2dd9e95366d3c3a3d8790158f2f60",
+  "reviewed_head_sha": "a12ed34084c2dd9e95366d3c3a3d8790158f2f60",
+  "reviewed_run_id": "r-20261001T005545699455-an-all-follow-on-round-says-so",
+  "reviewer_run_id": "r-20261001T010817987548-review-of-an-all-follow-on-round-says-so",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T01:19:27.152028+00:00",
+  "total": 94
+}

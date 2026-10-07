@@ -45,7 +45,7 @@ SCORING_RUN_ID = "run-hook-scoring"
 SCORING_NODE_ID = "hook-scoring-node"
 # The lane a run arrived on, and the lane this fixture's host declares as the
 # local default. A composed review dispatch names the first; the injected
-# command must follow the second.
+# command must name neither, leaving the picker to choose.
 FOREIGN_BACKEND = "codex"
 LOCAL_BACKEND = "clive"
 HELD_ITEMS = 25
@@ -1031,19 +1031,21 @@ def test_an_emptied_list_seen_first_by_the_stop_mode_still_frees_the_injection(
     assert RUN_ID in checklist
 
 
-def test_a_review_command_in_the_checklist_follows_the_local_lane(
+def test_a_review_command_in_the_checklist_names_no_lane(
     repository: Path,
     tmp_path: Path,
     config_home: Path,
     local_lane_config: Path,
 ) -> None:
-    """A dispatch printed for a coordinator names the local lane, not the run's.
+    """A new-work dispatch printed for a coordinator names no lane.
 
     The composed command the obligations reader derives names the backend the
-    run was carried on; that composition is asserted first, so a rewrite cannot
-    pass by having nothing to rewrite. What the hook injects is a command a
-    coordinator may type, so it follows the host's declared local lane and the
-    rest of the command is left byte for byte as composed.
+    run was carried on; that composition is asserted first, so a strip cannot
+    pass by having nothing to strip. What the hook injects is a command a
+    coordinator types to dispatch new work, so it names no lane and the picker
+    chooses one or holds; the rest of the command is byte for byte as composed,
+    even though the host declares a local lane (the fixture would let the old
+    rewrite fire).
     """
     _scoring_run(
         repository,
@@ -1072,4 +1074,5 @@ def test_a_review_command_in_the_checklist_follows_the_local_lane(
     assert len(review) == 1, checklist
     injected = review[0].split("): ", 1)[1]
     assert FOREIGN_BACKEND not in injected
-    assert injected == composed.replace(f" --backend {FOREIGN_BACKEND}", " --local")
+    assert "--local" not in injected
+    assert injected == composed.replace(f" --backend {FOREIGN_BACKEND}", "")

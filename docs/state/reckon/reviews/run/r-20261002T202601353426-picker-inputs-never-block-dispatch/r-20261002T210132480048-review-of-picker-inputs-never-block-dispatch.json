@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:4199 _picker_fallback",
+    "reckon/crew/dispatch.py:4226 _picker_input",
+    "reckon/crew/dispatch.py:4237 dispatch_picker_selection",
+    "reckon/crew/dispatch.py:5616 picker_records + picker_inputs + picker_budget at the dispatch entry"
+  ],
+  "completed_at": "2026-10-02T21:12:38.002Z",
+  "dispatched_at": "2026-10-02T21:02:02Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "read the single commit a80dc97c against base 3e32e09ae; it guards the three dispatch-scope picker inputs, adds the input_errors short-circuit and the shared _picker_fallback helper, and adds the five-test file. No product behaviour outside the picker-input path changes.",
+    "done_when": "the landing is proven twice over: at base 3e32e09ae the pre-existing tests/test_dispatch_declares_the_run_it_repairs.py::test_an_unreadable_ledger_refuses_with_the_ledger_reason fails with CorruptEnvelopeError escaping dispatch (reviewer-base-check.log, EXIT=1), and at head a80dc97c the new file's five tests plus that same test pass (reviewer-head-check.log, 6 passed, EXIT=0); the run's own arms agree (gate-base.log 1 failed/25 passed, gate-head.log 31 passed).",
+    "goal": "the node goal is that a picker input which cannot be built is recorded and the dispatch still reaches its own verdict; reckon/crew/dispatch.py:5616 now builds records, verdict_inputs and budget_snapshot each through _picker_input, which catches the failure, records it under the input's own name and returns None, and dispatch_picker_selection returns a named fallback instead of calling pick.",
+    "manifest": "read; records all three inputs guarded (dispatch.py:5616-5643), the fallback shape at dispatch.py:4199, both arms complete with named log paths, and the evidence fragment; commits a80dc97ca4159c42d85afb4fa3082247ef9e4938.",
+    "write_paths": "the node declared three paths (reckon/crew/dispatch.py, tests/test_picker_inputs_never_block_dispatch.py, the evidence fragment); git diff --numstat 3e32e09ae..a80dc97c lists exactly those three (+108/-23, +245, +22) and the worktree is clean at head."
+  },
+  "justifications": {
+    "durability": "the guard is exercised by name: each parametrized case monkeypatches one builder to raise while the picker is a healthy stub and asserts the fallback names only that input, and test_a_healthy_dispatch_records_the_picker_answer is the control proving the failure assertions are not vacuous; the negative control confirms both corrupt-ledger tests redden when the guard is removed, so a regression fails the suite.",
+    "evidence": "both arms in the reviewed logs ran to their summary lines: base 1 failed/25 passed (gate-base.log), head 31 passed (gate-head.log), plus a negative control that moves the ledger read back outside the guard and reddens both corrupt-ledger tests (negative-control.log, 2 failed, EXIT=1). I independently reproduced the base failure (CorruptEnvelopeError escapes, EXIT=1) and the head pass (6 passed, EXIT=0) in scratch trees at the two named revisions.",
+    "fit": "the new tests reuse the repository's plan-HTML git-fixture and dispatch idioms, _picker_fallback is extracted so all three fallback cases share one shape keyed on fallback_reason, and ruff reports no finding in either changed file beyond line-1 pre-existing dispatch.py findings, none in the new ranges.",
+    "goal_fidelity": "dispatch.py:5616 wraps each of the three inputs in _picker_input (catch-and-record), and dispatch_picker_selection at dispatch.py:4237 returns _picker_fallback naming every failed input rather than calling pick, so no picker input can abort the run's bookkeeping; the corrupt-ledger refusal the repair path owns (dispatch.py:_require_repairs_target) is now reachable, verified by the base-fails/head-passes pair run in a scratch tree.",
+    "scope_discipline": "git diff --numstat 3e32e09ae..a80dc97c lists only reckon/crew/dispatch.py, tests/test_picker_inputs_never_block_dispatch.py and docs/evidence/fragments/one-typesafe-model-picker/picker-inputs-never-block-dispatch.html, all three declared; no shared plan, sprint or index state is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a picker input which cannot be built is recorded and the dispatch still reaches its own verdict; reckon/crew/dispatch.py:5616 now builds records, verdict_inputs and budget_snapshot each through _picker_input, which catches the failure, records it under the input's own name and returns None, and dispatch_picker_selection returns a named fallback instead of calling pick.\nVERDICT done_when: the landing is proven twice over: at base 3e32e09ae the pre-existing test_an_unreadable_ledger_refuses_with_the_ledger_reason fails with CorruptEnvelopeError escaping dispatch (reviewer-base-check.log, EXIT=1), and at head a80dc97c the new file's five tests plus that same test pass (reviewer-head-check.log, 6 passed, EXIT=0); the run's own arms agree (gate-base.log 1 failed/25 passed, gate-head.log 31 passed).\nVERDICT write_paths: the node declared three paths; git diff --numstat 3e32e09ae..a80dc97c lists exactly those three (+108/-23, +245, +22) and the worktree is clean.\nVERDICT manifest: read; records all three inputs guarded, the fallback shape, both arms complete with named log paths, and the evidence fragment; commit a80dc97c.\nVERDICT diff: read the single commit a80dc97c against base 3e32e09ae; it guards the three dispatch-scope picker inputs, adds the input_errors short-circuit and the shared _picker_fallback helper, and adds the five-test file.\nCALL_SITES: reckon/crew/dispatch.py:4199 _picker_fallback, reckon/crew/dispatch.py:4226 _picker_input, reckon/crew/dispatch.py:4237 dispatch_picker_selection, reckon/crew/dispatch.py:5616 picker_records + picker_inputs + picker_budget\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: dispatch.py:5616 wraps each of the three inputs in _picker_input and dispatch_picker_selection at dispatch.py:4237 returns a named fallback rather than calling pick, so no picker input can abort the run's bookkeeping; the corrupt-ledger refusal the repair path owns is now reachable, verified by the base-fails/head-passes pair run in a scratch tree.\nSCORE evidence: 20\nJUSTIFICATION evidence: both arms ran to their summary lines (gate-base.log 1 failed/25 passed; gate-head.log 31 passed) plus a negative control that reddens both corrupt-ledger tests (negative-control.log, EXIT=1); I independently reproduced the base failure and the head pass in scratch trees at the two named revisions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 3e32e09ae..a80dc97c lists only the three declared paths; no shared plan, sprint or index state is touched.\nSCORE durability: 19\nJUSTIFICATION durability: each parametrized case monkeypatches one builder while the picker is a healthy stub and asserts the fallback names only that input, with test_a_healthy_dispatch_records_the_picker_answer as the control; the negative control confirms both corrupt-ledger tests redden when the guard is removed.\nSCORE fit: 19\nJUSTIFICATION fit: the tests reuse the repository's plan-HTML git-fixture and dispatch idioms, _picker_fallback extracts one shared fallback shape keyed on fallback_reason, and ruff reports no new finding in either changed file.",
+  "review_run_id": "r-20261002T210132480048-review-of-picker-inputs-never-block-dispatch",
+  "reviewed_base_sha": "3e32e09aeb428d65a7dc06c7cba69f78f76deb5b",
+  "reviewed_head_sha": "a80dc97ca4159c42d85afb4fa3082247ef9e4938",
+  "reviewed_run_id": "r-20261002T202601353426-picker-inputs-never-block-dispatch",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T04:37:06.406165+00:00",
+  "total": 98
+}

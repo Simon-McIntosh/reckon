@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own baseline_suite and after_suite gate logs: both arms report the same 7 pytest node ids, so 0 were added",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:_skills_source",
+    "reckon/cli.py:install_skills",
+    "reckon/cli.py:doctor"
+  ],
+  "completed_at": "2026-09-29T05:14:22.798Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "exempted",
+      "reason": "both durability findings concern the evidence fragment the node's own brief excluded, as a small node writes one landing line and no evidence prose; the coordinator withholds that fragment from the merge and lands only the SKILL.md table, which matches the brief row for row",
+      "recorded_at": "2026-09-29T05:09:25.572518+00:00"
+    }
+  },
+  "dispatched_at": "2026-09-29T04:53:04Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-small-change-is-a-small-node/coordinator-commit-table.html",
+      "line": "6",
+      "text": "the fragment declares docs-project and reckon-type but omits <meta name=\"plan-slug\">, which reckon/doccheck.py:67 requires of an evidence document since only plan-status is carved out at reckon/doccheck.py:1014."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T044411294539-coordinator-commit-table/manifest.md",
+      "line": "24",
+      "text": "the evidence_inputs line reports the fragment passing reckon audit-doc at EXIT=0, but the command it names runs no check at all."
+    }
+  ],
+  "gate_logs_read": {
+    "base": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T044411294539-coordinator-commit-table/logs/base-skill-contract.log",
+    "head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T044411294539-coordinator-commit-table/logs/after-skill-contract.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit ce3ad682 commit by commit; it adds 15 lines to skills/reckon-build/SKILL.md and a 36-line fragment, nothing else, and the five table rows match the fence's five rows with the sentence reproduced verbatim.",
+    "done_when": "the done_when requires the table inside the delegation section with the skill-contract tests adding no failures; the table sits at skills/reckon-build/SKILL.md:1211 under \"## Delegation, runtime routing, integration, and cleanup\" at line 1185, and both gate logs report 7 failed / 64 passed with identical ids.",
+    "goal": "the node goal is to state in the build skill the closed list of edits a coordinator commits itself plus the never-inlined line; skills/reckon-build/SKILL.md:1211-1224 states a 5-row table and that sentence, once.",
+    "manifest": "read the manifest at the reviewed run directory; its baseline_suite and after_suite are armed JSON whose logs re-read to the same 7 ids, but its evidence_inputs claim at line 24 that the fragment passes reckon audit-doc does not hold.",
+    "write_paths": "read the three declared paths; git show --name-only ce3ad682 lists only skills/reckon-build/SKILL.md and docs/evidence/fragments/a-small-change-is-a-small-node/coordinator-commit-table.html, both declared, and the declared figures directory was correctly left unused."
+  },
+  "justifications": {
+    "durability": "no test in tests/ asserts the table, so removing skills/reckon-build/SKILL.md:1211-1224 reddens nothing, and the fence excluded test files from this node's write scope.",
+    "evidence": "the declared gate is sound and independently reproduced from logs/base-skill-contract.log and logs/after-skill-contract.log, but the manifest's evidence_inputs line 24 reports a verification whose command cannot run.",
+    "fit": "skills/reckon-build/SKILL.md:1216 follows the file's existing markdown table idiom, and ce3ad682 carries a conventional docs(reckon-build) subject, a body, no identifier labels and no attribution trailer.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:1211 states the closed list once and grep finds the heading and each row marker exactly once across the whole skills/reckon-build tree.",
+    "scope_discipline": "git show --name-only ce3ad682 returns exactly the two declared write paths, and the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to state in the build skill the closed list of edits a coordinator commits itself plus the never-inlined line; skills/reckon-build/SKILL.md:1211-1224 states a 5-row table and that sentence, once.\nVERDICT done_when: the done_when requires the table inside the delegation section with the skill-contract tests adding no failures; the table sits at skills/reckon-build/SKILL.md:1211 under \"## Delegation, runtime routing, integration, and cleanup\" at line 1185, and both gate logs report 7 failed / 64 passed with identical ids.\nVERDICT write_paths: read the three declared paths; git show --name-only ce3ad682 lists only skills/reckon-build/SKILL.md and docs/evidence/fragments/a-small-change-is-a-small-node/coordinator-commit-table.html, both declared, and the declared figures directory was correctly left unused.\nVERDICT manifest: read the manifest at the reviewed run directory; its baseline_suite and after_suite are armed JSON whose logs re-read to the same 7 ids, but its evidence_inputs claim at line 24 that the fragment passes reckon audit-doc does not hold.\nVERDICT diff: read commit ce3ad682 commit by commit; it adds 15 lines to skills/reckon-build/SKILL.md and a 36-line fragment, nothing else, and the five table rows match the fence's five rows with the sentence reproduced verbatim.\nCALL_SITES: reckon/cli.py:_skills_source, reckon/cli.py:install_skills, reckon/cli.py:doctor\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:1211 states the closed list once and grep finds the heading and each row marker exactly once across the whole skills/reckon-build tree.\nSCORE evidence: 14\nJUSTIFICATION evidence: the declared gate is sound and independently reproduced from logs/base-skill-contract.log and logs/after-skill-contract.log, but the manifest's evidence_inputs line 24 reports a verification whose command cannot run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --name-only ce3ad682 returns exactly the two declared write paths, and the change carries nothing the goal does not imply.\nSCORE durability: 8\nJUSTIFICATION durability: no test in tests/ asserts the table, so removing skills/reckon-build/SKILL.md:1211-1224 reddens nothing, and the fence excluded test files from this node's write scope.\nSCORE fit: 19\nJUSTIFICATION fit: skills/reckon-build/SKILL.md:1216 follows the file's existing markdown table idiom, and ce3ad682 carries a conventional docs(reckon-build) subject, a body, no identifier labels and no attribution trailer.\nFINDING docs/evidence/fragments/a-small-change-is-a-small-node/coordinator-commit-table.html:6 the fragment declares docs-project and reckon-type but omits <meta name=\"plan-slug\">, which reckon/doccheck.py:67 requires of an evidence document since only plan-status is carved out at reckon/doccheck.py:1014.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T044411294539-coordinator-commit-table/manifest.md:24 the evidence_inputs line reports the fragment passing reckon audit-doc at EXIT=0, but the command it names runs no check at all.",
+  "review_run_id": "r-20260929T045252949019-review-of-coordinator-commit-table",
+  "reviewed_base_sha": "259e33099985d4349ad0781b1d49191bc9089610",
+  "reviewed_head_sha": "ce3ad682cd12394cddb25b613d55126146c20933",
+  "reviewed_node": "coordinator-commit-table",
+  "reviewed_run_id": "r-20260929T044411294539-coordinator-commit-table",
+  "scores": {
+    "durability": 8,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T05:08:37.443942+00:00",
+  "total": 79
+}

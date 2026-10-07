@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130855244899-test-terminal-record-settle-at-the-merge/logs/87bcae7d-isolated/run*.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130855244899-test-terminal-record-settle-at-the-merge/logs/87bcae7d-file/run*.log"
+    ],
+    "baseline": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130855244899-test-terminal-record-settle-at-the-merge/logs/dc520696-isolated/run*.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130855244899-test-terminal-record-settle-at-the-merge/logs/dc520696-file/run*.log"
+    ],
+    "note": "derived from the per-run logs of the arms the manifest's baseline_suite/after_suite name; the named summaries carry no pytest FAILED lines, and the manifest's log_path joins two paths in one field so the store's own reader resolves neither. Positive control: parser sees the same single failing id on both sides (base=['tests/test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row'], after=['tests/test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row'])."
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete",
+    "reckon/crew/promotion.py:_wait_out_stream_tail"
+  ],
+  "completed_at": "2026-09-29T14:55:47.325Z",
+  "dispatched_at": "2026-09-29T14:16:04Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130855244899-test-terminal-record-settle-at-the-merge/manifest.md",
+      "line": "14",
+      "text": "the baseline_suite and after_suite log_path values are two summary logs joined by \" + \" in one field, so reckon/crew/review.py:_gate_log_path hands reckon/crew/review.py:_read_gate_log a path that does not exist and every reader of this record sees added_failure_count as unmeasured; a single resolvable log path or a digest is what the store can derive from."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md",
+      "line": "59",
+      "text": "the mechanism is asserted at syscall level and its frequency is not reconciled with the test outcome \u2014 at the reviewed node the probe read 42/60 stale while the test failed 11/20, and my replication on the same tree and a gpfs basetemp read 14/20 stale but failed only 2/13 (0/4 on xfs), so the \"utime not visible to the following stat\" chain explains the failing runs' count-1 reads but does not yet explain the failure rate and must not be read as having done so."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "the node is commitless by role (commits: none) and `git -C <reviewed worktree> status --porcelain` is empty at db6726ee; the reviewed artefacts are the report, the four arm summaries and the 85 per-run logs, all of which I read or recounted.",
+    "done_when": "the report states 20 isolated runs and 20 whole-file runs under pytest -n 6 for each of 87bcae7d and dc520696, each run with its own basetemp outside any repository, one log per arm headed by revision, tree, command and module.__file__; I recounted the 85 per-run logs and the arm figures hold exactly (87bcae7d 11/20 and 7/20, dc520696 11/20 and 7/20, control 0/5), and the brief's naming conditional did not trigger because both revisions fail identically.",
+    "goal": "the goal is to measure whether tests/test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row fails because of merge 87bcae7d or under load; the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md:26 answers neither and attributes the failure to the basetemp filesystem instead.",
+    "manifest": "read; it carries the measured arms and their ids, but its baseline_suite and after_suite log_path values join two summary logs with \" + \" in one field, so the store's own reader resolves neither and the added-failure derivation reads as unmeasured (manifest.md:14).",
+    "write_paths": "the manifest declares the single path /home/ITER/mcintos/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md, and the reviewed worktree is clean at db6726ee with no commit, so nothing was written inside the repository."
+  },
+  "justifications": {
+    "durability": "no assertion was added (test role), and the attribution's causal chain is demonstrated at syscall level only \u2014 my independent replication at 87bcae7d measured 14/20 stale reads on gpfs yet 2/13 test failures, so the stated chain does not yet predict the failure frequency.",
+    "evidence": "the arm figures at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md:16-17 check out against logs/<rev>-<mode>/run<NN>.log line by line, but the manifest's log_path shape leaves the store's own added-failure derivation unmeasured, and the mechanism's frequency is not reconciled with the observed rate (two findings below).",
+    "fit": "the report and every log header follow the fleet's shape (revision, tree, command, module.__file__, measurement cwd \u2014 I checked the headers on logs/87bcae7d-isolated/run01.log and logs/control-xfs/run01.log), and the naming stays clear of plan labels.",
+    "goal_fidelity": "the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md:26-31 rules out the merge (identical failure counts at both revisions, and the five deciding functions md5-identical \u2014 I re-derived that equality myself) and rules out load, though \"neither hypothesis holds\" sits outside the brief's three-word verdict vocabulary and the report says so explicitly rather than stretching a word to fit.",
+    "scope_discipline": "the reviewed worktree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/test-terminal-record-settle-at-the-merge is clean at db6726ee and the report changed no repository file, so every write stayed inside the declared scope and the run-directory log area."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to measure whether tests/test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row fails because of merge 87bcae7d or under load; the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md:26 answers neither and attributes the failure to the basetemp filesystem instead.\nVERDICT done_when: the report states 20 isolated runs and 20 whole-file runs under pytest -n 6 for each of 87bcae7d and dc520696, each run with its own basetemp outside any repository, one log per arm headed by revision, tree, command and module.__file__; I recounted the 85 per-run logs and the arm figures hold exactly (87bcae7d 11/20 and 7/20, dc520696 11/20 and 7/20, control 0/5), and the brief's naming conditional did not trigger because both revisions fail identically.\nVERDICT write_paths: the manifest declares the single path /home/ITER/mcintos/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md, and the reviewed worktree is clean at db6726ee with no commit, so nothing was written inside the repository.\nVERDICT manifest: read; it carries the measured arms and their ids, but its baseline_suite and after_suite log_path values join two summary logs with \" + \" in one field, so the store's own reader resolves neither and the added-failure derivation reads as unmeasured (manifest.md:14).\nVERDICT diff: the node is commitless by role (commits: none) and `git -C <reviewed worktree> status --porcelain` is empty at db6726ee; the reviewed artefacts are the report, the four arm summaries and the 85 per-run logs, all of which I read or recounted.\nCALL_SITES: reckon/crew/promotion.py:complete, reckon/crew/promotion.py:_wait_out_stream_tail\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md:26-31 rules out the merge (identical failure counts at both revisions, and the five deciding functions md5-identical \u2014 I re-derived that equality myself) and rules out load, though \"neither hypothesis holds\" sits outside the brief's three-word verdict vocabulary and the report says so explicitly rather than stretching a word to fit.\nSCORE evidence: 16\nJUSTIFICATION evidence: the arm figures at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md:16-17 check out against logs/<rev>-<mode>/run<NN>.log line by line, but the manifest's log_path shape leaves the store's own added-failure derivation unmeasured, and the mechanism's frequency is not reconciled with the observed rate (two findings below).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed worktree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s23-coord/test-terminal-record-settle-at-the-merge is clean at db6726ee and the report changed no repository file, so every write stayed inside the declared scope and the run-directory log area.\nSCORE durability: 15\nJUSTIFICATION durability: no assertion was added (test role), and the attribution's causal chain is demonstrated at syscall level only \u2014 my independent replication at 87bcae7d measured 14/20 stale reads on gpfs yet 2/13 test failures, so the stated chain does not yet predict the failure frequency.\nSCORE fit: 18\nJUSTIFICATION fit: the report and every log header follow the fleet's shape (revision, tree, command, module.__file__, measurement cwd \u2014 I checked the headers on logs/87bcae7d-isolated/run01.log and logs/control-xfs/run01.log), and the naming stays clear of plan labels.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T130855244899-test-terminal-record-settle-at-the-merge/manifest.md:14 the baseline_suite and after_suite log_path values are two summary logs joined by \" + \" in one field, so reckon/crew/review.py:_gate_log_path hands reckon/crew/review.py:_read_gate_log a path that does not exist and every reader of this record sees added_failure_count as unmeasured; a single resolvable log path or a digest is what the store can derive from.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/test-terminal-record-settle-at-the-merge.md:59 the mechanism is asserted at syscall level and its frequency is not reconciled with the test outcome \u2014 at the reviewed node the probe read 42/60 stale while the test failed 11/20, and my replication on the same tree and a gpfs basetemp read 14/20 stale but failed only 2/13 (0/4 on xfs), so the \"utime not visible to the following stat\" chain explains the failing runs' count-1 reads but does not yet explain the failure rate and must not be read as having done so.",
+  "review_run_id": "r-20260929T141545083893-review-of-test-terminal-record-settle-at-the-merge",
+  "reviewed_base_sha": "db6726ee01c07c329554f96b4c263623909c2f5c",
+  "reviewed_head_sha": "db6726ee01c07c329554f96b4c263623909c2f5c",
+  "reviewed_run_id": "r-20260929T130855244899-test-terminal-record-settle-at-the-merge",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T141545083893-review-of-test-terminal-record-settle-at-the-merge",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T14:47:37.065696+00:00",
+  "total": 88
+}

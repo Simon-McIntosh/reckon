@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-09-28T23:11:16.624Z",
+  "dispatched_at": "2026-09-28T22:24:44Z",
+  "emission_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T222425016867-review-of-classify-rules-in-sprint-orchestration/review-emission.log",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html",
+      "line": "49",
+      "text": "the remedies row titled 'manifest schema refuses unknown status' pairs the rule with tests/test_manifest_measurement_keys_declared.py::test_a_mapping_body_under_either_key_is_refused_with_the_shape_message, a test whose manifest body carries status: complete so it drives the mapping-body shape refusal and stays green if the unknown-status refusal at reckon/crew/reports.py:711 is removed; the tests that make that refusal fire are tests/test_manifest_parse_format.py:352 and :418, so the row does not satisfy the done-when's requirement that an enforced row name a test that makes the refusal or check fire. The pairing was directed by the repair brief (resume-1-advice.txt item 1), both classification rows repeating it (L295, L427) are disposition keep, and no rule is deleted on its strength."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html",
+      "line": "27",
+      "text": "the header asserts every cited enforcement test was run in the foreground at 7c25dee7, while three of the 17 gate logs carry rev=b90891fd in their own first line (liveness_refusal.log, plan_write_refusal.log, test_manifest_measurement_keys_declared.log); the delta 7c25dee7..b90891fd is the node's own docs commit so the code under test is identical and the enforcement conclusions stand, but the claim as written cannot be reconciled with the logs it cites."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read both commits against base 7c25dee7: the first lands the fragment (322 lines) and the figure (64 lines) for 386 insertions, the second changes 16 insertions and 15 deletions across the same two files (figure counts, four remedies rows and their log paths, header prose) and touches no code path.",
+    "done_when": "Each row carries the five fields the measure names and the enforced rows cite a driving test with an absolute log path under the run directory; all 17 logs exist with the results the manifest states (16 green, tests/test_role_write_scope.py 2 failed of 21 reported as a follow-on), but two residuals remain: line 27's claim that every cited test was run at 7c25dee7 is false for the three logs whose own header reads rev=b90891fd, and the line-49 remedies row does not name a test that makes its guarded rule fire.",
+    "goal": "The goal is to classify every binding sentence of skills/reckon-build/references/sprint-orchestration.md at main HEAD 7c25dee7, and the tree at 74a17bc4 carries docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html with 257 rows (18 delete as enforced, 186 keep, 52 merge into a named surviving row, 1 delete as obsolete), 42 of them naming an enforcement, whose disposition counts match the figure pane and the manifest's summary figures.",
+    "manifest": "Read line by line; its landing, evidence_inputs and artifacts lines report 257/42/18/186/52/1 matching the table and the figure, and the 17 logs it names all exist with the stated results, but its line 14 dates the whole test set to base 7c25dee7 where three logs were actually run at b90891fd.",
+    "write_paths": "The reviewed manifest fences the fragment and the figure directory under docs/figures/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration, and the full diff 7c25dee7..74a17bc4 touches exactly those two paths with no code file under reckon/ or tests/."
+  },
+  "justifications": {
+    "durability": "the figure is regenerable from the table's own counts and every enforced row cites a named test and absolute log, but the fragment's 606-sentence base is not re-derivable from the delimiter method it states and the line-49 citation cannot be re-run to demonstrate its claim.",
+    "evidence": "every gate-log path cited in the fragment resolves under the run directory and reports what the manifest states, with the line-27 revision claim and the line-49 pairing as the two residuals against the done-when's enforced-row bar.",
+    "fit": "the fragment follows the plan's evidence-fragment idiom with a project-absolute figure src at docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html and the SVG under docs/figures is ElementTree-valid.",
+    "goal_fidelity": "docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html carries one five-field row per binding sentence and its disposition counts sum to its own 257 rows, though the enforcement claim at line 49 is not backed by the test it names.",
+    "scope_discipline": "git diff --stat 7c25dee7 74a17bc4 lists only the fragment and disposition-and-section.svg, both inside the manifest's declared write paths."
+  },
+  "kind": "code",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is to classify every binding sentence of skills/reckon-build/references/sprint-orchestration.md at main HEAD 7c25dee7, and the tree at 74a17bc4 carries docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html with 257 rows (18 delete as enforced, 186 keep, 52 merge into a named surviving row, 1 delete as obsolete), 42 of them naming an enforcement, whose disposition counts match the figure pane and the manifest's summary figures.\nVERDICT done_when: Each row carries the five fields the measure names and the enforced rows cite a driving test with an absolute log path under the run directory; all 17 logs exist with the results the manifest states (16 green, tests/test_role_write_scope.py 2 failed of 21 reported as a follow-on), but two residuals remain: line 27's claim that every cited test was run at 7c25dee7 is false for the three logs whose own header reads rev=b90891fd, and the line-49 remedies row does not name a test that makes its guarded rule fire.\nVERDICT write_paths: The reviewed manifest fences the fragment and the figure directory under docs/figures/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration, and the full diff 7c25dee7..74a17bc4 touches exactly those two paths with no code file under reckon/ or tests/.\nVERDICT manifest: Read line by line; its landing, evidence_inputs and artifacts lines report 257/42/18/186/52/1 matching the table and the figure, and the 17 logs it names all exist with the stated results, but its line 14 dates the whole test set to base 7c25dee7 where three logs were actually run at b90891fd.\nVERDICT diff: Read both commits against base 7c25dee7: the first lands the fragment (322 lines) and the figure (64 lines) for 386 insertions, the second changes 16 insertions and 15 deletions across the same two files (figure counts, four remedies rows and their log paths, header prose) and touches no code path.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html carries one five-field row per binding sentence and its disposition counts sum to its own 257 rows, though the enforcement claim at line 49 is not backed by the test it names.\nSCORE evidence: 16\nJUSTIFICATION evidence: every gate-log path cited in the fragment resolves under the run directory and reports what the manifest states, with the line-27 revision claim and the line-49 pairing as the two residuals against the done-when's enforced-row bar.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 7c25dee7 74a17bc4 lists only the fragment and disposition-and-section.svg, both inside the manifest's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the figure is regenerable from the table's own counts and every enforced row cites a named test and absolute log, but the fragment's 606-sentence base is not re-derivable from the delimiter method it states and the line-49 citation cannot be re-run to demonstrate its claim.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the plan's evidence-fragment idiom with a project-absolute figure src at docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html and the SVG under docs/figures is ElementTree-valid.\nFINDING docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html:49 the remedies row titled 'manifest schema refuses unknown status' pairs the rule with tests/test_manifest_measurement_keys_declared.py::test_a_mapping_body_under_either_key_is_refused_with_the_shape_message, a test whose manifest body carries status: complete so it drives the mapping-body shape refusal and stays green if the unknown-status refusal at reckon/crew/reports.py:711 is removed; the tests that make that refusal fire are tests/test_manifest_parse_format.py:352 and :418, so the row does not satisfy the done-when's requirement that an enforced row name a test that makes the refusal or check fire. The pairing was directed by the repair brief (resume-1-advice.txt item 1), both classification rows repeating it (L295, L427) are disposition keep, and no rule is deleted on its strength.\nFINDING docs/evidence/fragments/the-crew-contract-fits-one-read/classify-rules-in-sprint-orchestration.html:27 the header asserts every cited enforcement test was run in the foreground at 7c25dee7, while three of the 17 gate logs carry rev=b90891fd in their own first line (liveness_refusal.log, plan_write_refusal.log, test_manifest_measurement_keys_declared.log); the delta 7c25dee7..b90891fd is the node's own docs commit so the code under test is identical and the enforcement conclusions stand, but the claim as written cannot be reconciled with the logs it cites.",
+  "review_run_id": "r-20260928T222425016867-review-of-classify-rules-in-sprint-orchestration",
+  "reviewed_base_sha": "7c25dee788bd668dfbfd36624f8ec590e9dba129",
+  "reviewed_head_sha": "74a17bc4f3e3c673641c4af381d9e82cba592233",
+  "reviewed_run_id": "r-20260928T205701106926-classify-rules-in-sprint-orchestration",
+  "reviewer_run_id": "r-20260928T222425016867-review-of-classify-rules-in-sprint-orchestration",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-28T23:00:55.275204+00:00",
+  "total": 85
+}

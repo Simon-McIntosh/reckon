@@ -1,0 +1,48 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T14:27:05.335950+00:00",
+  "findings": [
+    {
+      "file": "crew/reports/display-truth-reuse-promotion-row.md",
+      "line": "65",
+      "text": "the entry point cited for the request probe, _request_lane_availability at resumption.py:277, is not there - the definition is at :207 and its only call site at :301; it is the only citation in the map that failed resolution."
+    },
+    {
+      "file": "crew/reports/display-truth-reuse-promotion-row.md",
+      "line": "77",
+      "text": "the enumerated non-landing departures (blocked 146, abandoned 124, dispatched 61, stopped 31, failed 21, working 10) sum to 393, not the stated 401; a seventh state, stalled (~8 rows at the stamp), is omitted from the parenthetical, so the breakdown and its headline disagree."
+    },
+    {
+      "file": "crew/reports/display-truth-reuse-promotion-row.md",
+      "line": "1",
+      "text": "the map's content is unguarded - no test reads it and the crew/reports directory is not a git repository, so a later edit to a verdict or a citation can silently contradict the tree it describes; the same weakness was recorded in the review of the sibling map r-20260914T125035036163."
+    }
+  ],
+  "justifications": {
+    "durability": "nothing reads the record - no test asserts over the crew/reports directory (a tests/ grep finds only a fixture string naming an unrelated module and a browser probe of a different file) and the directory carries no git history, so an edited verdict or a dead citation fails nothing.",
+    "evidence": "the headline measurements reproduce independently against the live corpus and the committed ledger - 0 of 1809 promoted transitions carry a spend figure (up from the reported 0 of 1803), 0 of 1130 imas-codex ledger rows carry a disposition, 403 of 1809 non-landing departures against the reported 401 of 1803, and model seconds / generation rate remain the least-populated spend cells at 3.3% vs the reported 2.3% - with one citation miss, the entry to _request_lane_availability being resumption.py:301 not :277.",
+    "fit": "the map follows the reuse-map idiom of its precedent crew/reports/display-reuse-map.md with a settled satisfied/partial/absent vocabulary and per-section write-path tables naming asserting test files beside each source, and introduces no forbidden label in its filename; it is docked for the internal \u00a719 M1 breakdown that does not foot to its own headline.",
+    "goal_fidelity": "the map carries one row per measure row of \u00a718/\u00a719/\u00a720 at the base revision, verified at docs/plans/crew-observability-truth.html:888-890, :921-923 and :958-960, each with a satisfied/partial/absent verdict and a file:line citation on every satisfied and partial verdict plus a per-section write-path set with the asserting test files named, meeting the done-when; docked because its \u00a719 M1 row sums its enumerated non-landing states to 393 against a stated 401.",
+    "scope_discipline": "the node wrote exactly its declared path crew/reports/display-truth-reuse-promotion-row.md, made no commit because the reports directory is not a git repository, and said so in the manifest rather than claiming one."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the map carries one row per measure row of \u00a718/\u00a719/\u00a720 at the base revision, verified at docs/plans/crew-observability-truth.html:888-890, :921-923 and :958-960, each with a satisfied/partial/absent verdict and a file:line citation on every satisfied and partial verdict plus a per-section write-path set with the asserting test files named, meeting the done-when; docked because its \u00a719 M1 row sums its enumerated non-landing states to 393 against a stated 401.\nSCORE evidence: 18\nJUSTIFICATION evidence: the headline measurements reproduce independently against the live corpus and the committed ledger - 0 of 1809 promoted transitions carry a spend figure (up from the reported 0 of 1803), 0 of 1130 imas-codex ledger rows carry a disposition, 403 of 1809 non-landing departures against the reported 401 of 1803, and model seconds / generation rate remain the least-populated spend cells at 3.3% vs the reported 2.3% - with one citation miss, the entry to _request_lane_availability being resumption.py:301 not :277.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the node wrote exactly its declared path crew/reports/display-truth-reuse-promotion-row.md, made no commit because the reports directory is not a git repository, and said so in the manifest rather than claiming one.\nSCORE durability: 5\nJUSTIFICATION durability: nothing reads the record - no test asserts over the crew/reports directory (a tests/ grep finds only a fixture string naming an unrelated module and a browser probe of a different file) and the directory carries no git history, so an edited verdict or a dead citation fails nothing.\nSCORE fit: 17\nJUSTIFICATION fit: the map follows the reuse-map idiom of its precedent crew/reports/display-reuse-map.md with a settled satisfied/partial/absent vocabulary and per-section write-path tables naming asserting test files beside each source, and introduces no forbidden label in its filename; it is docked for the internal \u00a719 M1 breakdown that does not foot to its own headline.\nFINDING crew/reports/display-truth-reuse-promotion-row.md:65 the entry point cited for the request probe, _request_lane_availability at resumption.py:277, is not there - the definition is at :207 and its only call site at :301; it is the only citation in the map that failed resolution.\nFINDING crew/reports/display-truth-reuse-promotion-row.md:77 the enumerated non-landing departures (blocked 146, abandoned 124, dispatched 61, stopped 31, failed 21, working 10) sum to 393, not the stated 401; a seventh state, stalled (~8 rows at the stamp), is omitted from the parenthetical, so the breakdown and its headline disagree.\nFINDING crew/reports/display-truth-reuse-promotion-row.md:1 the map's content is unguarded - no test reads it and the crew/reports directory is not a git repository, so a later edit to a verdict or a citation can silently contradict the tree it describes; the same weakness was recorded in the review of the sibling map r-20260914T125035036163.\n",
+  "review_run_id": "r-20260914T142705335950-review-of-display-truth-reuse-map-promotion-and-row",
+  "reviewed_base": "4e48e772e55aef8907d83f0b79e076c3f920a42f",
+  "reviewed_commit": null,
+  "reviewed_run_id": "r-20260914T124917554255-display-truth-reuse-map-promotion-and-row",
+  "scores": {
+    "durability": 5,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T14:44:23.694983+00:00",
+  "total": 78
+}

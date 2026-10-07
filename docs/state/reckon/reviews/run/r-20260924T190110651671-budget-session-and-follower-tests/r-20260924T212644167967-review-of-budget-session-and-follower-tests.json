@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-24T21:26:44.167967+00:00",
+  "findings": [
+    {
+      "file": "tests/test_a_served_turn_refutes_the_refusal.py",
+      "line": "179",
+      "text": "the repaired guard asserts a prefix and a suffix where the base asserted equality, so the middle of the reason is unconstrained and any text inserted between the detail clause and the remedy clause passes; the comment above it claims the two clauses pin the whole string, which the loosened assertion no longer establishes."
+    },
+    {
+      "file": "docs/plans/the-suite-is-green-at-head.html",
+      "line": "78",
+      "text": "the section states sixteen listed red ids and then counts thirteen green plus two product defects plus two load-only, which is seventeen, and its own evidence record's class table at docs/evidence/archive/the-suite-is-green-at-head-landed.html:51-54 sums to the same seventeen; the double-counted id is the follower-freshness one, filed in manifest.md:14 under both GREEN 13 and LOAD-ONLY 2 while its head log isolated2/test_follower_freshness.log shows 9 passed."
+    },
+    {
+      "file": "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+      "line": "69",
+      "text": "the Added failures row reads none, but its own paired logs move an id in an owned file from pass to fail: base-logs/test_follower_checks_its_owner.log is 5 passed, exit 0, and isolated2/test_follower_checks_its_owner.log is 1 failed, 4 passed, test_a_reloaded_follower_still_leaves_when_the_original_owner_dies; the row's stated scope covers ids red at base, so its unqualified label overstates what was measured."
+    },
+    {
+      "file": "docs/evidence/archive/the-suite-is-green-at-head-landed.html",
+      "line": "90",
+      "text": "the claim that in a quiet serial run each passes is unmeasured for the checks_its_owner id - the run the manifest names as its head is isolated2, one pytest process per file, and there that file is 1 failed, 4 passed; no quiet-serial log showing it green is recorded."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190110651671-budget-session-and-follower-tests/manifest.md",
+      "line": "15",
+      "text": "the receipts it names as head are labelled REVISION head-77c20349 - the base sha - and were written before the commit, so a reader resolving their own revision line gets the base tree and no log names the committed head eeaf3bbb."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read eeaf3bbb against base 77c20349 commit by commit, 10 files +357/-48: seven test files repaired, one plan section and a 100-line cumulative evidence record appended, one figure added.",
+    "done_when": "The done-when's own vocabulary - an id passes, or is named in follow_ons as a product defect with its node id, file and line and the evidence that the behaviour rather than the assertion is wrong - is met for both red ids, but the record's own count of what passes disagrees with the logs beside it (docs/plans/the-suite-is-green-at-head.html:78).",
+    "goal": "The node's goal is that the red test files it owns pass at head; of the sixteen ids listed for this node in the research record's section 4, fourteen pass at head and the other two are named in follow_ons as product defects with their file, line and signature.",
+    "manifest": "Read the manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190110651671-budget-session-and-follower-tests/manifest.md; it names per-file base and head logs with a first error per id, and its counts disagree with those logs (manifest.md:14 files the follower-freshness id under both GREEN 13 and LOAD-ONLY 2, and its head receipts name the base revision).",
+    "write_paths": "Read all twelve declared paths; all ten paths in eeaf3bbb lie inside them, and no test is skipped, xfailed, deleted or weakened in the diff."
+  },
+  "justifications": {
+    "durability": "The repairs pin real current behaviour (tests/test_mcp_recovery.py asserts session_resumed on the pointer, tests/test_crew_recovery.py builds a real git repository), but tests/test_a_served_turn_refutes_the_refusal.py:179 replaced an exact equality with a prefix test plus a suffix test, so arbitrary text inserted between the two clauses passes unguarded.",
+    "evidence": "The per-file receipts exist under isolated2/ and base-logs/, but every head receipt's first line reads REVISION head-77c20349 - the base sha - and they were written before eeaf3bbb existed, so no log names the head that landed, and the recorded summary figures do not reconcile with the logs they cite.",
+    "fit": "The test edits follow the surrounding fixture idiom and the appended evidence section uses the existing class-table grammar, though its counts drift from the logs beside it.",
+    "goal_fidelity": "Fourteen of the sixteen ids listed at docs/research/suite-failures-at-head.html pass at head, and the two that do not are named with their anchors in follow_ons (reckon/crew/routing.py:1307, reckon/crew/dispatch.py:4470), but the plan section at docs/plans/the-suite-is-green-at-head.html:78 reports thirteen green and then lists classes summing to seventeen against its own sixteen.",
+    "scope_discipline": "Every path in the eeaf3bbb diff lies inside the declared write paths (tests/, docs/plans/the-suite-is-green-at-head.html, docs/evidence/archive/, docs/figures/)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that the red test files it owns pass at head; of the sixteen ids listed for this node in the research record's section 4, fourteen pass at head and the other two are named in follow_ons as product defects with their file, line and signature.\nVERDICT done_when: The done-when's own vocabulary - an id passes, or is named in follow_ons as a product defect with its node id, file and line and the evidence that the behaviour rather than the assertion is wrong - is met for both red ids, but the record's own count of what passes disagrees with the logs beside it (docs/plans/the-suite-is-green-at-head.html:78).\nVERDICT write_paths: Read all twelve declared paths; all ten paths in eeaf3bbb lie inside them, and no test is skipped, xfailed, deleted or weakened in the diff.\nVERDICT manifest: Read the manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190110651671-budget-session-and-follower-tests/manifest.md; it names per-file base and head logs with a first error per id, and its counts disagree with those logs (manifest.md:14 files the follower-freshness id under both GREEN 13 and LOAD-ONLY 2, and its head receipts name the base revision).\nVERDICT diff: Read eeaf3bbb against base 77c20349 commit by commit, 10 files +357/-48: seven test files repaired, one plan section and a 100-line cumulative evidence record appended, one figure added.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: Fourteen of the sixteen ids listed at docs/research/suite-failures-at-head.html pass at head, and the two that do not are named with their anchors in follow_ons (reckon/crew/routing.py:1307, reckon/crew/dispatch.py:4470), but the plan section at docs/plans/the-suite-is-green-at-head.html:78 reports thirteen green and then lists classes summing to seventeen against its own sixteen.\nSCORE evidence: 12\nJUSTIFICATION evidence: The per-file receipts exist under isolated2/ and base-logs/, but every head receipt's first line reads REVISION head-77c20349 - the base sha - and they were written before eeaf3bbb existed, so no log names the head that landed, and the recorded summary figures do not reconcile with the logs they cite.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Every path in the eeaf3bbb diff lies inside the declared write paths (tests/, docs/plans/the-suite-is-green-at-head.html, docs/evidence/archive/, docs/figures/).\nSCORE durability: 13\nJUSTIFICATION durability: The repairs pin real current behaviour (tests/test_mcp_recovery.py asserts session_resumed on the pointer, tests/test_crew_recovery.py builds a real git repository), but tests/test_a_served_turn_refutes_the_refusal.py:179 replaced an exact equality with a prefix test plus a suffix test, so arbitrary text inserted between the two clauses passes unguarded.\nSCORE fit: 17\nJUSTIFICATION fit: The test edits follow the surrounding fixture idiom and the appended evidence section uses the existing class-table grammar, though its counts drift from the logs beside it.\nFINDING tests/test_a_served_turn_refutes_the_refusal.py:179 the repaired guard asserts a prefix and a suffix where the base asserted equality, so the middle of the reason is unconstrained and any text inserted between the detail clause and the remedy clause passes; the comment above it claims the two clauses pin the whole string, which the loosened assertion no longer establishes.\nFINDING docs/plans/the-suite-is-green-at-head.html:78 the section states sixteen listed red ids and then counts thirteen green plus two product defects plus two load-only, which is seventeen, and its own evidence record's class table at docs/evidence/archive/the-suite-is-green-at-head-landed.html:51-54 sums to the same seventeen; the double-counted id is the follower-freshness one, filed in manifest.md:14 under both GREEN 13 and LOAD-ONLY 2 while its head log isolated2/test_follower_freshness.log shows 9 passed.\nFINDING docs/evidence/archive/the-suite-is-green-at-head-landed.html:69 the Added failures row reads none, but its own paired logs move an id in an owned file from pass to fail: base-logs/test_follower_checks_its_owner.log is 5 passed, exit 0, and isolated2/test_follower_checks_its_owner.log is 1 failed, 4 passed, test_a_reloaded_follower_still_leaves_when_the_original_owner_dies; the row's stated scope covers ids red at base, so its unqualified label overstates what was measured.\nFINDING docs/evidence/archive/the-suite-is-green-at-head-landed.html:90 the claim that in a quiet serial run each passes is unmeasured for the checks_its_owner id - the run the manifest names as its head is isolated2, one pytest process per file, and there that file is 1 failed, 4 passed; no quiet-serial log showing it green is recorded.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260924T190110651671-budget-session-and-follower-tests/manifest.md:15 the receipts it names as head are labelled REVISION head-77c20349 - the base sha - and were written before the commit, so a reader resolving their own revision line gets the base tree and no log names the committed head eeaf3bbb.\n",
+  "review_run_id": "r-20260924T212644167967-review-of-budget-session-and-follower-tests",
+  "reviewed_base_sha": "77c20349aa33b7ddda106d6b3a35fa62f9549fa5",
+  "reviewed_head_sha": "eeaf3bbb2550c3270d0cf8da51252639c4318f71",
+  "reviewed_run_id": "r-20260924T190110651671-budget-session-and-follower-tests",
+  "scores": {
+    "durability": 13,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-24T22:49:14.410812+00:00",
+  "total": 76
+}

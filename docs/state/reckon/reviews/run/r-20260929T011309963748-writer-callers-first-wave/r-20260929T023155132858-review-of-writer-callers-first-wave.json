@@ -1,0 +1,93 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 15,
+  "call_sites": [
+    "reckon/_backends.py:2086",
+    "reckon/capabilities.py:1103",
+    "reckon/crew/fleet_supervisor.py:235",
+    "reckon/crew/placement.py:128",
+    "reckon/crew/plan_review.py:380",
+    "reckon/resources.py:1001",
+    "reckon/serve.py:913",
+    "reckon/serve.py:1118",
+    "reckon/_backends.py:1626",
+    "reckon/_backends.py:1639",
+    "reckon/_backends.py:1647",
+    "reckon/_backends.py:1749",
+    "reckon/_backends.py:1756",
+    "reckon/crew/carryover_census.py:190",
+    "reckon/crew/carryover_census.py:522"
+  ],
+  "completed_at": "2026-09-29T02:55:05.738Z",
+  "dispatched_at": "2026-09-29T02:32:14Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "403",
+      "text": "the chmod failure path closes the descriptor and re-raises, but the caller at :445 only unlinks a temporary it was handed, so a chmod that raises leaves the empty sibling created at :396 on disk: the module promises at :424 that a failure leaves \"neither a partial destination nor a stray sibling\", and the pre-repair function had no failure path between creation and return, so the repair introduced this one."
+    },
+    {
+      "file": "docs/evidence/fragments/a-worker-reuses-before-it-writes/writer-callers-first-wave.html",
+      "line": "111",
+      "text": "the head row names d6a72a6e as the revision the arm ran at, while head-arm.log:1 records REVISION=e1855232 and the manifest's after_suite.revision is e1855232, so a reader resolving the cited revision lands on a tree that is not the measured one \u2014 the same paragraph at :20-22 lists two commits where the run has four."
+    },
+    {
+      "file": "docs/evidence/fragments/a-worker-reuses-before-it-writes/writer-callers-first-wave.html",
+      "line": "26",
+      "text": "the figure's alt text and figcaption at :27 both say nine callers collapse onto the shared writer, while the table under them lists eight caller rows and the manifest's changed-path set carries the same eight."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011309963748-writer-callers-first-wave/manifest.md",
+      "line": "22",
+      "text": "three of the four tests entries carry no result and the fourth is a phrase rather than a path (\"existing test file of every touched module\"), so the key does not state what ran or what it returned even though test_logs at :24 and both arms hold that information."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011309963748-writer-callers-first-wave/manifest.md",
+      "line": "24",
+      "text": "the listed head-new-file.log records 30 passed in 1.09s, dated before the repair commit, while tests at :22 claims 31 passed at head for the same file; nothing marks the log as superseded, so a reader reconciling the two cannot tell a stale log from a false claim."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 15 production call site(s)",
+    "diff": "read all four commits against a15e11cb; fbc29bca is the migration, d6a72a6e the umask repair confined to reckon/_store.py:372-452 and the new test file, and c359e7b7 and e1855232 the evidence fragment and its figure. Every hunk is inside the declared scope, and no hunk touches a locking, retry or concurrency line.",
+    "done_when": "every clause holds at the repaired head except exit 0 \u2014 the four parameters exist and are exercised, no second writer is added (reckon/cli.py:150 owns a differently shaped private helper that pre-dates this change and is untouched by it), the eight writers and two decoders call the shared helpers, the recorded base readings are the new file's expectations, and the mid-write and directory-fsync tests are present; the existing test files of touched modules still exit 1 with 11 failures, but every one of them fails identically at the base arm and the manifest now attributes each by id.",
+    "goal": "the goal asks for the shared writer's parameters and the first wave of writers and two decoders moved onto the shared helpers with every caller's output kept; at this head all eight writer call sites and both private decoders are migrated, the shared writer carries indent, sort_keys, mode, fsync_directory and create_parents, and the owner-only mode a caller asks for now lands exactly (0o600 asked, 0o600 landed under umask 0o277), which is what d6a72a6e repaired in reckon/_store.py.",
+    "manifest": "read as it now stands; it carries the four commits, the 12 changed paths, both arms with command and failure ids, an attribution naming a mechanism for each of the 11 residual failures, evidence_inputs and eight artifacts; what it still does not carry is a result for two of the four entries in tests, one of which is a phrase rather than a path, and the per-file log it lists records 30 passed where the same key claims 31 at head.",
+    "write_paths": "the 12 paths changed between the declared base a15e11cb and the reviewed head are exactly the declared set \u2014 nine reckon modules, the new test file, the evidence fragment and its figure \u2014 nothing outside it, and the worktree reads clean with no untracked file."
+  },
+  "justifications": {
+    "durability": "the two umask guards are real \u2014 against a scratch copy of the pre-repair tree they fail with assert 256 == 384 and assert 384 == 416 \u2014 but the repair added a failure path between the temporary's creation and its return at reckon/_store.py:401-405 that leaves the empty sibling behind, which the same function promises at reckon/_store.py:424 it never does.",
+    "evidence": "both arm logs now open with REVISION, TREE and COMMAND headers (base-arm.log:1, head-arm.log:1) and their delta re-derives to 0 added against 23 base and 11 head failures, but manifest.md:22 leaves two of four test entries without a result and manifest.md:24 lists a per-file log whose 30 passed contradicts the 31 the same manifest claims at head.",
+    "fit": "the callers follow the surrounding module idiom, the private helpers are deleted rather than left dead, and no identifier or comment added by the change carries a plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/_store.py:403 sets the mode the caller asked for exactly after the umask-filtered create, so every migrated caller \u2014 reckon/_backends.py:2086 among them \u2014 keeps the output mode it owned before the migration, which is the goal of the wave.",
+    "scope_discipline": "the 12 paths changed between a15e11cb and e1855232 are exactly the declared set, nothing outside it, and the worktree reads clean."
+  },
+  "node": "review-of-writer-callers-first-wave",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T011309963748-writer-callers-first-wave\n(plan a-worker-reuses-before-it-writes, section 3; node writer-callers-first-wave; role review; spec exact)\nreviewed_base_sha: a15e11cbf453c71af872bc9e402ac9c1224bd929\nreviewed_head_sha: e185523257105714ac394275bec134ad57ad06c6\nRead at the repaired head: the reviewed run's manifest.md as it now stands (four commits, 12 changed paths, both armed arms carrying their command and their failure ids, an attribution for each of the 11 residual failures, four logs, eight artifacts), its prompt.txt, the plan section, all four commits against the base, the new test file, base-arm.log, head-arm.log, head-new-file.log, negative-control.log, the two arm JSONL files, the two failed-id lists, the two file-set files and the evidence fragment.\nRe-derived independently in this node's own turn: the arm delta by set difference over the two logs as they stand (23 base ids, 11 head ids, head-minus-base empty, 12 resolved, so 0 added); each log's own REVISION, TREE and COMMAND header; the umask exactness the repair commit claims, by importing the head tree's reckon._backends under umask 0o277 and asking for 0o600 (lands 0o600 where the pre-repair tree at c359e7b7 landed 0o400 and the base lands 0o600); and the two umask guards as guards rather than tautologies, by running the new file against a scratch copy of the pre-repair tree (2 failed: assert 256 == 384 and assert 384 == 416).\nThis node is the second review of this run. The first review is stored at the legacy path carrying head c359e7b7; this record supersedes it as the current review because the run has moved to e1855232 through the repair commits d6a72a6e (the umask-exact mode) and e1855232 (the fragment), and the repaired head is what a reader now gets.\nVERDICT goal: the goal asks for the shared writer's parameters and the first wave of writers and two decoders moved onto the shared helpers with every caller's output kept; at this head all eight writer call sites and both private decoders are migrated, the shared writer carries indent, sort_keys, mode, fsync_directory and create_parents, and the owner-only mode a caller asks for now lands exactly (0o600 asked, 0o600 landed under umask 0o277), which is what d6a72a6e repaired in reckon/_store.py.\nVERDICT done_when: every clause holds at the repaired head except exit 0 \u2014 the four parameters exist and are exercised, no second writer is added (reckon/cli.py:150 owns a differently shaped private helper that pre-dates this change and is untouched by it), the eight writers and two decoders call the shared helpers, the recorded base readings are the new file's expectations, and the mid-write and directory-fsync tests are present; the existing test files of touched modules still exit 1 with 11 failures, but every one of them fails identically at the base arm and the manifest now attributes each by id.\nVERDICT write_paths: the 12 paths changed between the declared base a15e11cb and the reviewed head are exactly the declared set \u2014 nine reckon modules, the new test file, the evidence fragment and its figure \u2014 nothing outside it, and the worktree reads clean with no untracked file.\nVERDICT manifest: read as it now stands; it carries the four commits, the 12 changed paths, both arms with command and failure ids, an attribution naming a mechanism for each of the 11 residual failures, evidence_inputs and eight artifacts; what it still does not carry is a result for two of the four entries in tests, one of which is a phrase rather than a path, and the per-file log it lists records 30 passed where the same key claims 31 at head.\nVERDICT diff: read all four commits against a15e11cb; fbc29bca is the migration, d6a72a6e the umask repair confined to reckon/_store.py:372-452 and the new test file, and c359e7b7 and e1855232 the evidence fragment and its figure. Every hunk is inside the declared scope, and no hunk touches a locking, retry or concurrency line.\nCALL_SITES: reckon/_backends.py:2086, reckon/capabilities.py:1103, reckon/crew/fleet_supervisor.py:235, reckon/crew/placement.py:128, reckon/crew/plan_review.py:380, reckon/resources.py:1001, reckon/serve.py:913, reckon/serve.py:1118, reckon/_backends.py:1626, reckon/_backends.py:1639, reckon/_backends.py:1647, reckon/_backends.py:1749, reckon/_backends.py:1756, reckon/crew/carryover_census.py:190, reckon/crew/carryover_census.py:522\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_store.py:403 sets the mode the caller asked for exactly after the umask-filtered create, so every migrated caller \u2014 reckon/_backends.py:2086 among them \u2014 keeps the output mode it owned before the migration, which is the goal of the wave.\nSCORE evidence: 17\nJUSTIFICATION evidence: both arm logs now open with REVISION, TREE and COMMAND headers (base-arm.log:1, head-arm.log:1) and their delta re-derives to 0 added against 23 base and 11 head failures, but manifest.md:22 leaves two of four test entries without a result and manifest.md:24 lists a per-file log whose 30 passed contradicts the 31 the same manifest claims at head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the 12 paths changed between a15e11cb and e1855232 are exactly the declared set, nothing outside it, and the worktree reads clean.\nSCORE durability: 18\nJUSTIFICATION durability: the two umask guards are real \u2014 against a scratch copy of the pre-repair tree they fail with assert 256 == 384 and assert 384 == 416 \u2014 but the repair added a failure path between the temporary's creation and its return at reckon/_store.py:401-405 that leaves the empty sibling behind, which the same function promises at reckon/_store.py:424 it never does.\nSCORE fit: 19\nJUSTIFICATION fit: the callers follow the surrounding module idiom, the private helpers are deleted rather than left dead, and no identifier or comment added by the change carries a plan, sprint or ticket label.\nFINDING reckon/_store.py:403 the chmod failure path closes the descriptor and re-raises, but the caller at :445 only unlinks a temporary it was handed, so a chmod that raises leaves the empty sibling created at :396 on disk: the module promises at :424 that a failure leaves \"neither a partial destination nor a stray sibling\", and the pre-repair function had no failure path between creation and return, so the repair introduced this one.\nFINDING docs/evidence/fragments/a-worker-reuses-before-it-writes/writer-callers-first-wave.html:111 the head row names d6a72a6e as the revision the arm ran at, while head-arm.log:1 records REVISION=e1855232 and the manifest's after_suite.revision is e1855232, so a reader resolving the cited revision lands on a tree that is not the measured one \u2014 the same paragraph at :20-22 lists two commits where the run has four.\nFINDING docs/evidence/fragments/a-worker-reuses-before-it-writes/writer-callers-first-wave.html:26 the figure's alt text and figcaption at :27 both say nine callers collapse onto the shared writer, while the table under them lists eight caller rows and the manifest's changed-path set carries the same eight.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011309963748-writer-callers-first-wave/manifest.md:22 three of the four tests entries carry no result and the fourth is a phrase rather than a path (\"existing test file of every touched module\"), so the key does not state what ran or what it returned even though test_logs at :24 and both arms hold that information.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T011309963748-writer-callers-first-wave/manifest.md:24 the listed head-new-file.log records 30 passed in 1.09s, dated before the repair commit, while tests at :22 claims 31 passed at head for the same file; nothing marks the log as superseded, so a reader reconciling the two cannot tell a stale log from a false claim.",
+  "review_run_id": "r-20260929T023155132858-review-of-writer-callers-first-wave",
+  "reviewed_base_sha": "a15e11cbf453c71af872bc9e402ac9c1224bd929",
+  "reviewed_head_sha": "e185523257105714ac394275bec134ad57ad06c6",
+  "reviewed_run_id": "r-20260929T011309963748-writer-callers-first-wave",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "unstated in dispatch",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T023155132858-review-of-writer-callers-first-wave",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T02:52:08.200931+00:00",
+  "total": 94
+}

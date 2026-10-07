@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:_watch_snapshot",
+    "reckon/crew/runs.py:1447"
+  ],
+  "completed_at": "2026-10-02T20:37:46.923Z",
+  "dispatched_at": "2026-10-02T20:20:08Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read the single commit 3328a4f0ad758c7c30d83e5a9c4e43eef4b624f5 against base a08a2baae993a98d6b7172b403a103110bb1e012: 60 insertions, one file, inside the declared scope.",
+    "done_when": "The done_when requires the gate to assert the reused snapshot equals a full recompute for a live-child run; the manifest records head 3 passed and base 2 passed.",
+    "goal": "The node's goal is to prove a reused watch snapshot keeps the budget-widened stall window a live child earns; the landed test asserts exactly that.",
+    "manifest": "Read; it states tests/test_a_reused_snapshot_takes_the_callers_stall_window.py 3 passed EXIT=0 and names head-arm.log, pre-change-base.log and negative-control.log.",
+    "write_paths": "Read the manifest's three declared paths; the diff touches exactly tests/test_a_reused_snapshot_takes_the_callers_stall_window.py, so it stays inside them."
+  },
+  "justifications": {
+    "durability": "Dropping the budget_seconds carry at reckon/crew/recovery.py:8454 reddens tests/test_a_reused_snapshot_takes_the_callers_stall_window.py:178 with 'stalled' != 'working' (negative-control.log, EXIT=1), and the reused path at line 184 is compared against the independent full recompute rather than against a value the test itself passed in.",
+    "evidence": "The done_when's gate is recorded, not claimed: head-arm.log reads '3 passed' at revision 3328a4f0a, pre-change-base.log reads '2 passed' at base a08a2baa, and an independent re-run of tests/test_a_reused_snapshot_takes_the_callers_stall_window.py at head 3328a4f0a read '3 passed'.",
+    "fit": "The new case reuses the file's existing _reused/_full_state/_seed helpers (tests/test_a_reused_snapshot_takes_the_callers_stall_window.py:96) and a conventional commit subject, but the commit body ends mid-sentence after 'the short window's', leaving the rationale incomplete.",
+    "goal_fidelity": "tests/test_a_reused_snapshot_takes_the_callers_stall_window.py:164 reproduces the live-child shape and asserts the reused snapshot holds the budget-widened window, which is exactly the reuse path at reckon/crew/recovery.py:8352 _refresh_snapshot recomputes.",
+    "scope_discipline": "git show 3328a4f0ad758c7c30d83e5a9c4e43eef4b624f5 --stat touches exactly tests/test_a_reused_snapshot_takes_the_callers_stall_window.py with 60 insertions and 0 deletions, inside the declared write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to prove a reused watch snapshot keeps the budget-widened stall window a live child earns; the landed test tests/test_a_reused_snapshot_takes_the_callers_stall_window.py:164 asserts exactly that.\nVERDICT done_when: the done_when requires the gate to assert the reused snapshot equals a full recompute for a live-child run; the manifest records head 3 passed and base 2 passed.\nVERDICT write_paths: read the manifest's three declared paths; the diff touches exactly tests/test_a_reused_snapshot_takes_the_callers_stall_window.py, so it stays inside them.\nVERDICT manifest: read; it states tests/test_a_reused_snapshot_takes_the_callers_stall_window.py 3 passed EXIT=0 and names head-arm.log, pre-change-base.log and negative-control.log.\nVERDICT diff: read the single commit 3328a4f0ad758c7c30d83e5a9c4e43eef4b624f5 against base a08a2baae993a98d6b7172b403a103110bb1e012: 60 insertions, one file, inside the declared scope.\nCALL_SITES: reckon/crew/recovery.py:_watch_snapshot, reckon/crew/runs.py:1447\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_reused_snapshot_takes_the_callers_stall_window.py:164 reproduces the live-child shape and asserts the reused snapshot holds the budget-widened window, which is exactly the reuse path at reckon/crew/recovery.py:8352 _refresh_snapshot recomputes.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done_when's gate is recorded, not claimed: head-arm.log reads '3 passed' at revision 3328a4f0a, pre-change-base.log reads '2 passed' at base a08a2baa, and an independent re-run of tests/test_a_reused_snapshot_takes_the_callers_stall_window.py at head 3328a4f0a read '3 passed'.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show 3328a4f0ad758c7c30d83e5a9c4e43eef4b624f5 --stat touches exactly tests/test_a_reused_snapshot_takes_the_callers_stall_window.py, 60 insertions and 0 deletions, inside the declared write path.\nSCORE durability: 19\nJUSTIFICATION durability: dropping the budget_seconds carry at reckon/crew/recovery.py:8454 reddens tests/test_a_reused_snapshot_takes_the_callers_stall_window.py:178 with 'stalled' != 'working' (negative-control.log, EXIT=1), and the reused path at line 184 is compared against the independent full recompute rather than against a value the test itself passed in.\nSCORE fit: 18\nJUSTIFICATION fit: the new case reuses the file's existing _reused/_full_state/_seed helpers (tests/test_a_reused_snapshot_takes_the_callers_stall_window.py:96) and a conventional commit subject, but the commit body ends mid-sentence after 'the short window's', leaving the rationale incomplete.\n",
+  "review_run_id": "legacy-35e386d7e3b4",
+  "review_run_id_source": "derived",
+  "reviewed_base_sha": "a08a2baae993a98d6b7172b403a103110bb1e012",
+  "reviewed_head_sha": "3328a4f0ad758c7c30d83e5a9c4e43eef4b624f5",
+  "reviewed_run_id": "r-20261002T201939196205-a-live-child-keeps-its-budget-window-on-reuse",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T20:52:00+00:00",
+  "total": 96
+}

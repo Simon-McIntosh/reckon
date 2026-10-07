@@ -1,0 +1,38 @@
+{
+  "absent": [],
+  "backend": "clive",
+  "completed_at": "",
+  "dispatched_at": "2026-09-14T21:57:09.326121+00:00",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "text": "the test_logs field in the reviewed run's manifest points at <run_dir>/test_logs_after.tsv and (at :16) <run_dir>/test_logs_baseline.log, neither of which exists in the run directory; the actual 76/73/64-pass results survive only as /tmp/sev_*.log files the manifest does not name, so a reader following the recorded receipts finds nothing."
+    }
+  ],
+  "justifications": {
+    "durability": "running the new raised-severity case against the parent 467016b budget.py in a hermetic copy fails with assert False is True at tests/test_severity_floor.py:280 (the exact defect), while the unraised-with-no-figure companion passes at the same pre-fix code, so both the new hold and the retained clear are pinned against regression.",
+    "evidence": "independently re-ran the full gate at the reviewed head b316011 and got 76 passed, 0 failed (tests/test_severity_floor.py + tests/test_budget.py, log /tmp/rev_sf_floor_gate.log), matching the worker's stated 76; docked two because the manifest's baseline_suite/after_suite are prose rather than the armed revision/exit/log JSON shape and its test_logs entries (manifest.md:15-16) reference paths that do not exist in the run directory while the real logs survive only in /tmp unnamed.",
+    "fit": "the floor rides the established RAISED_SEVERITIES vocabulary and D02 format_refusal mechanism at reckon/budget.py:1243 and reuses the _position and _evidence_note helpers, adds no new public name, and names the local input by what it describes with no naming-rule hits beyond the pre-existing D02 output code.",
+    "goal_fidelity": "reckon/budget.py:1243 now consults the severity floor before the None-utilisation guard, so decide() on a reading with known headroom, severity='critical' and utilisation_pct=None returns held=True instead of the early clear, and each of the done-when's three facts is pinned by the new cases at tests/test_severity_floor.py:263 and :291.",
+    "scope_discipline": "commit b316011 touches exactly the two declared write paths (git show --name-only lists only reckon/budget.py and tests/test_severity_floor.py), the reviewed worktree is clean at its head, ruff adds no finding (4=4 on budget.py, test file clean), and the message has a body with no plan identifiers and no AI attribution."
+  },
+  "model": "deepseek-v4-flash",
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/budget.py:1243 now consults the severity floor before the None-utilisation guard, so decide() on a reading with known headroom, severity='critical' and utilisation_pct=None returns held=True instead of the early clear, and each of the done-when's three facts is pinned by the new cases at tests/test_severity_floor.py:263 and :291.\nSCORE evidence: 18\nJUSTIFICATION evidence: independently re-ran the full gate at the reviewed head b316011 and got 76 passed, 0 failed (tests/test_severity_floor.py + tests/test_budget.py, log /tmp/rev_sf_floor_gate.log), matching the worker's stated 76; docked two because the manifest's baseline_suite/after_suite are prose rather than the armed revision/exit/log JSON shape and its test_logs entries (manifest.md:15-16) reference paths that do not exist in the run directory while the real logs survive only in /tmp unnamed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit b316011 touches exactly the two declared write paths (git show --name-only lists only reckon/budget.py and tests/test_severity_floor.py), the reviewed worktree is clean at its head, ruff adds no finding (4=4 on budget.py, test file clean), and the message has a body with no plan identifiers and no AI attribution.\nSCORE durability: 20\nJUSTIFICATION durability: running the new raised-severity case against the parent 467016b budget.py in a hermetic copy fails with assert False is True at tests/test_severity_floor.py:280 (the exact defect), while the unraised-with-no-figure companion passes at the same pre-fix code, so both the new hold and the retained clear are pinned against regression.\nSCORE fit: 20\nJUSTIFICATION fit: the floor rides the established RAISED_SEVERITIES vocabulary and D02 format_refusal mechanism at reckon/budget.py:1243 and reuses the _position and _evidence_note helpers, adds no new public name, and names the local input by what it describes with no naming-rule hits beyond the pre-existing D02 output code.\nFINDING manifest.md:15 the test_logs field in the reviewed run's manifest points at <run_dir>/test_logs_after.tsv and (at :16) <run_dir>/test_logs_baseline.log, neither of which exists in the run directory; the actual 76/73/64-pass results survive only as /tmp/sev_*.log files the manifest does not name, so a reader following the recorded receipts finds nothing.\n",
+  "review_run_id": "r-20260914T215709326121-rev-severity-floor-no-utilisation",
+  "reviewed_base": "a76cb9352e7c1c08f8c653ce8dd1f2c967c04fbc",
+  "reviewed_commit": "b3160114cf8cc0a513bb0fda4c2857f8669c2882",
+  "reviewed_run_id": "r-20260914T202038117446-severity-floor-holds-without-a-utilisation",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-14T22:28:23.624252+00:00",
+  "total": 98
+}

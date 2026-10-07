@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c6acda8e0531dc9bc764475570c364e72fe4c368",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/flight.py:1194",
+    "reckon/mcp.py:4449",
+    "reckon/cli.py:747"
+  ],
+  "completed_at": "2026-10-03T11:19:40.912Z",
+  "dispatched_at": "2026-10-03T11:10:22Z",
+  "findings": [
+    {
+      "file": "docs/state/reckon/model-catalogue.yaml",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the commit writes this file outside the node's declared write paths, which list reckon/schema/model-catalogue.yaml; the move is plan-consistent and disclosed in changed_paths, but the node wrote outside its fence rather than requesting a scope change."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/model-catalogue-in-reckon.html",
+      "line": "93",
+      "severity": "follow-on",
+      "text": "follow-on: the head arm is cited as the revision named on the log's first line, but logs/head-flight-gate.log records only that revision, with tree, command, module file and cwd absent, and the manifest's after_suite.command carries an unsubstituted worktree placeholder, so the head arm's tree is unrecorded."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/model-catalogue-in-reckon.html",
+      "line": "24",
+      "severity": "follow-on",
+      "text": "follow-on: the clause that the host layer keeps only facts about the machine is not yet true, since the host still declares all 32 catalogue keys, so the catalogue is a proven-safe default rather than the value a dispatch reads until a later dotfiles commit empties those keys."
+    }
+  ],
+  "head_log_revision": "b2085e04ea15d7aca386ba09bf9acd73c057014e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against c8badc496; 6ea91db1 relocates the catalogue and rewrites model_catalogue_path(), 424b2491 and b2085e04 update the fragment; four files, consistent with the plan's move.",
+    "done_when": "the section's gate names tests/test_flight_catalogue_layer.py; the manifest records the head arm at 119 passed, 2 skipped, EXIT=0 on revision b2085e04, and an independent re-run of that file at head gives 7 passed.",
+    "goal": "the node goal is that reckon ships the model catalogue and the host layer keeps only machine facts; the gained commits move it to docs/state/reckon/model-catalogue.yaml applied by every project's resolution (fragment:68), but the host layer still declares all 32 catalogue keys, so the second clause is unmet.",
+    "manifest": "read; status complete, baseline_suite c6acda8e0 and after_suite b2085e04 named with logs, negative_control.log recorded at EXIT=1, before/after/emptied JSONs named, but after_suite.command carries an unsubstituted worktree placeholder.",
+    "write_paths": "read the manifest's declared paths (reckon/flight.py, reckon/schema/model-catalogue.yaml, tests/test_flight_catalogue_layer.py, the fragment); the diff also writes docs/state/reckon/model-catalogue.yaml, outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_flight_catalogue_layer.py:234 asserts a synthetic second project resolves the catalogue model against the independently loaded CATALOGUE file and :279 that a missing catalogue leaves host values with their provenance, each reddening if the locator regressed.",
+    "evidence": "the manifest names baseline_suite c6acda8e0 (111 passed, 2 skipped, EXIT=0) and after_suite b2085e04 (119 passed, 2 skipped, EXIT=0), but logs/head-flight-gate.log line 1 names only the revision with no tree or command and after_suite.command carries an unsubstituted placeholder.",
+    "fit": "reckon/flight.py:185 follows the module's documented-constant and docstring idiom with no plan or ticket identifier, and the relocation is justified by the routing-data scan at tests/test_skill_contracts.py:218.",
+    "goal_fidelity": "reckon/flight.py:1194 applies the catalogue in resolve() and reckon/flight.py:185 locates it from the section's checkout root, landing the plan's move, but the host layer still declares all 32 catalogue keys so the goal's host-keeps-only-machine-facts clause is unmet.",
+    "scope_discipline": "the diff writes docs/state/reckon/model-catalogue.yaml, a path outside the declared write paths that list reckon/schema/model-catalogue.yaml, moving an in-scope file out of scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that reckon ships the model catalogue and the host layer keeps only machine facts; the gained commits move it to docs/state/reckon/model-catalogue.yaml applied by every project's resolution (fragment:68), but the host layer still declares all 32 catalogue keys, so the second clause is unmet.\nVERDICT done_when: the section's gate names tests/test_flight_catalogue_layer.py; the manifest records the head arm at 119 passed, 2 skipped, EXIT=0 on revision b2085e04, and an independent re-run of that file at head gives 7 passed.\nVERDICT write_paths: read the manifest's declared paths (reckon/flight.py, reckon/schema/model-catalogue.yaml, tests/test_flight_catalogue_layer.py, the fragment); the diff also writes docs/state/reckon/model-catalogue.yaml, outside them.\nVERDICT manifest: read; status complete, baseline_suite c6acda8e0 and after_suite b2085e04 named with logs, negative_control.log recorded at EXIT=1, before/after/emptied JSONs named, but after_suite.command carries an unsubstituted worktree placeholder.\nVERDICT diff: read commit by commit against c8badc496; 6ea91db1 relocates the catalogue and rewrites model_catalogue_path(), 424b2491 and b2085e04 update the fragment; four files, consistent with the plan's move.\nCALL_SITES: reckon/flight.py:1194, reckon/mcp.py:4449, reckon/cli.py:747\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/flight.py:1194 applies the catalogue in resolve() and reckon/flight.py:185 locates it from the section's checkout root, landing the plan's move, but the host layer still declares all 32 catalogue keys so the goal's host-keeps-only-machine-facts clause is unmet.\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest names baseline_suite c6acda8e0 (111 passed, 2 skipped, EXIT=0) and after_suite b2085e04 (119 passed, 2 skipped, EXIT=0), but logs/head-flight-gate.log line 1 names only the revision with no tree or command and after_suite.command carries an unsubstituted placeholder.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: the diff writes docs/state/reckon/model-catalogue.yaml, a path outside the declared write paths that list reckon/schema/model-catalogue.yaml, moving an in-scope file out of scope.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_flight_catalogue_layer.py:234 asserts a synthetic second project resolves the catalogue model against the independently loaded CATALOGUE file and :279 that a missing catalogue leaves host values with their provenance, each reddening if the locator regressed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/flight.py:185 follows the module's documented-constant and docstring idiom with no plan or ticket identifier, and the relocation is justified by the routing-data scan at tests/test_skill_contracts.py:218.\nFINDING docs/state/reckon/model-catalogue.yaml:1 follow-on: the commit writes this file outside the node's declared write paths, which list reckon/schema/model-catalogue.yaml; the move is plan-consistent and disclosed in changed_paths, but the node wrote outside its fence rather than requesting a scope change.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/model-catalogue-in-reckon.html:93 follow-on: the head arm is cited as the revision named on the log's first line, but logs/head-flight-gate.log records only that revision, with tree, command, module file and cwd absent, and the manifest's after_suite.command carries an unsubstituted worktree placeholder, so the head arm's tree is unrecorded.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/model-catalogue-in-reckon.html:24 follow-on: the clause that the host layer keeps only facts about the machine is not yet true, since the host still declares all 32 catalogue keys, so the catalogue is a proven-safe default rather than the value a dispatch reads until a later dotfiles commit empties those keys.\nreviewed_base_sha: c8badc4968ab6d75adf69439094b7c3877653478\nreviewed_head_sha: b2085e04ea15d7aca386ba09bf9acd73c057014e",
+  "review_run_id": "r-20261003T110951890390-review-of-model-catalogue-in-reckon",
+  "reviewed_base_sha": "c8badc4968ab6d75adf69439094b7c3877653478",
+  "reviewed_head_sha": "b2085e04ea15d7aca386ba09bf9acd73c057014e",
+  "reviewed_run_id": "r-20261003T032115043790-model-catalogue-in-reckon",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-03T11:17:00.974140+00:00",
+  "total": 79
+}

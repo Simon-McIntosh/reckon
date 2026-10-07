@@ -1,0 +1,46 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/service.py:217"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-21T14:34:11.861297+00:00",
+  "findings": [],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit 0f12a6c1 against base fc09f75d: the case is renamed to describe a restart that always happens and asserts Restart=always with a bound parsed from the rendered unit, MAX_RESTART_DELAY_SECONDS = 30 at tests/test_service.py:13 mirrors tests/test_watcher_unit_restart.py:31, and the plan and evidence appends sit inside section 9 with no meta line touched.",
+    "done_when": "the done_when names a two-file run reporting 0 failed and exit 0 plus a red log whose first line repeats the declared mutation; I reproduced the run at the reviewed head (17 passed, exit 0) and logs/negative-control-restore-on-failure.log:1 leads with the pointer's negative_control verbatim, its failure being the restored assertion at tests/test_service.py:34.",
+    "goal": "the goal is that the service unit case asserts the restart policy the generator carries instead of the one it was changed away from; tests/test_service.py:30-37 at head 0f12a6c1 asserts Restart=always and a RestartSec parsed from the rendered unit, and the string on-failure appears nowhere in the file.",
+    "manifest": "read the reviewed manifest at runs/r-20260921T133249963192-service-case-asserts-the-restart-policy-in-force/manifest.md; its single commit 0f12a6c1 is the worktree's head, its changed_paths equal the diff's three paths, and its tests entry names the command, the 17-passed result and both logs on disk.",
+    "write_paths": "read the three declared paths against git diff --name-only fc09f75d..0f12a6c1 in the reviewed worktree; exactly tests/test_service.py, docs/plans/crew-runtime-positive-controls.html and docs/evidence/archive/crew-runtime-positive-controls-landed.html changed and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_service.py:34-37 fails if the rendered unit stops carrying Restart=always or a RestartSec within the bound, and tests/test_watcher_unit_restart.py:79 asserts the negative half for every generated unit.",
+    "evidence": "the two-file gate reproduced independently at the reviewed head (17 passed, exit 0) and logs/negative-control-restore-on-failure.log:1 repeats the declaration verbatim while reddening exactly the named case.",
+    "fit": "the case name describes the dependency the unit has to the rendered unit and the constant at tests/test_service.py:13 shares its name and value with tests/test_watcher_unit_restart.py:31, with no plan or stage identifier in any added name or comment.",
+    "goal_fidelity": "tests/test_service.py:30-37 asserts Restart=always against the text reckon/service.py:37-38 renders, which is the policy the generator now carries.",
+    "scope_discipline": "git diff --name-only fc09f75d..0f12a6c1 returns exactly the three declared paths and no meta or lifecycle line is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the service unit case asserts the restart policy the generator carries instead of the one it was changed away from; tests/test_service.py:30-37 at head 0f12a6c1 asserts Restart=always and a RestartSec parsed from the rendered unit, and the string on-failure appears nowhere in the file.\nVERDICT done_when: the done_when names a two-file run reporting 0 failed and exit 0 plus a red log whose first line repeats the declared mutation; I reproduced the run at the reviewed head (17 passed, exit 0) and logs/negative-control-restore-on-failure.log:1 leads with the pointer's negative_control verbatim, its failure being the restored assertion at tests/test_service.py:34.\nVERDICT write_paths: read the three declared paths against git diff --name-only fc09f75d..0f12a6c1 in the reviewed worktree; exactly tests/test_service.py, docs/plans/crew-runtime-positive-controls.html and docs/evidence/archive/crew-runtime-positive-controls-landed.html changed and nothing else.\nVERDICT manifest: read the reviewed manifest at runs/r-20260921T133249963192-service-case-asserts-the-restart-policy-in-force/manifest.md; its single commit 0f12a6c1 is the worktree's head, its changed_paths equal the diff's three paths, and its tests entry names the command, the 17-passed result and both logs on disk.\nVERDICT diff: read commit 0f12a6c1 against base fc09f75d: the case is renamed to describe a restart that always happens and asserts Restart=always with a bound parsed from the rendered unit, MAX_RESTART_DELAY_SECONDS = 30 at tests/test_service.py:13 mirrors tests/test_watcher_unit_restart.py:31, and the plan and evidence appends sit inside section 9 with no meta line touched.\nCALL_SITES: reckon/service.py:217\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_service.py:30-37 asserts Restart=always against the text reckon/service.py:37-38 renders, which is the policy the generator now carries.\nSCORE evidence: 20\nJUSTIFICATION evidence: the two-file gate reproduced independently at the reviewed head (17 passed, exit 0) and logs/negative-control-restore-on-failure.log:1 repeats the declaration verbatim while reddening exactly the named case.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only fc09f75d..0f12a6c1 returns exactly the three declared paths and no meta or lifecycle line is touched.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_service.py:34-37 fails if the rendered unit stops carrying Restart=always or a RestartSec within the bound, and tests/test_watcher_unit_restart.py:79 asserts the negative half for every generated unit.\nSCORE fit: 20\nJUSTIFICATION fit: the case name describes the dependency the unit has to the rendered unit and the constant at tests/test_service.py:13 shares its name and value with tests/test_watcher_unit_restart.py:31, with no plan or stage identifier in any added name or comment.\n",
+  "review_run_id": "r-20260921T143411861297-review-of-service-case-asserts-the-restart-policy-in-force",
+  "reviewed_base_sha": "fc09f75d37386d3b5bf5c14c1f7ac013aba95415",
+  "reviewed_head_sha": "0f12a6c1400f09970164b04c1b01d4c1cf25c5ef",
+  "reviewed_run_id": "r-20260921T133249963192-service-case-asserts-the-restart-policy-in-force",
+  "reviewer_head_sha": "951544dd55dc7a5ec2b036a8fd986fc14db4ec6b",
+  "reviewer_run_id": "r-20260921T143411861297-review-of-service-case-asserts-the-restart-policy-in-force",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-21T15:15:40.551994+00:00",
+  "total": 100
+}

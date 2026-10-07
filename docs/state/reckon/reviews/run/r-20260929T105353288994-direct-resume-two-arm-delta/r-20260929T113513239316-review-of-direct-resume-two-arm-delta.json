@@ -1,0 +1,100 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 22,
+  "added_failure_ids": [
+    "tests/test_backend_reconstruction_settings.py::test_a_resumed_plan_carries_the_recorded_model_and_effort",
+    "tests/test_backend_reconstruction_settings.py::test_a_resumption_states_it_was_not_context_checked",
+    "tests/test_budget.py::test_a_stuck_worker_check_does_not_claim_a_scheduled_resumption",
+    "tests/test_crew.py::test_read_only_resume_reuses_the_manifest_delivery_directory",
+    "tests/test_crew.py::test_resume_answers_in_the_same_session",
+    "tests/test_crew.py::test_resume_resolves_a_stream_session_without_observation_writeback",
+    "tests/test_crew.py::test_resumed_attempt_owns_its_stream_phase_and_manifest",
+    "tests/test_crew_launch_resolution.py::test_a_resume_refuses_an_unresolvable_backend_and_leaves_the_pointer_alone",
+    "tests/test_fenced_resume_reaches_its_harness.py::test_a_fenced_clive_resume_reaches_the_clive_harness",
+    "tests/test_fenced_resume_reaches_its_harness.py::test_a_fenced_codex_resume_finds_the_runs_own_rollout",
+    "tests/test_fenced_resume_reaches_its_harness.py::test_a_placed_records_command_field_is_still_the_harness",
+    "tests/test_fenced_resume_reaches_its_harness.py::test_the_negative_control_reads_the_command_field_as_today",
+    "tests/test_resume_anchors_the_run_harness_home.py::test_a_pointer_that_records_no_manifest_path_falls_back_to_the_run_directory[clive]",
+    "tests/test_resume_anchors_the_run_harness_home.py::test_a_pointer_that_records_no_manifest_path_falls_back_to_the_run_directory[codex]",
+    "tests/test_resume_anchors_the_run_harness_home.py::test_a_resume_reaches_the_home_the_dispatch_composed[clive]",
+    "tests/test_resume_anchors_the_run_harness_home.py::test_a_resume_reaches_the_home_the_dispatch_composed[codex]",
+    "tests/test_resume_anchors_the_run_harness_home.py::test_a_resume_writes_nothing_outside_the_temporary_home[clive]",
+    "tests/test_resume_anchors_the_run_harness_home.py::test_a_resume_writes_nothing_outside_the_temporary_home[codex]",
+    "tests/test_session_lives_on_its_run.py::test_redispatch_resume_uses_the_new_harness_session",
+    "tests/test_session_lives_on_its_run.py::test_resume_starts_fresh_when_the_current_harness_has_no_session",
+    "tests/test_session_resumes_only_its_own_task.py::test_a_resume_of_a_run_continues_that_runs_own_session",
+    "tests/test_worker_env_export.py::test_clive_dispatch_and_resume_carry_identity_and_additive_headers"
+  ],
+  "added_failures_note": "derived here from the reviewed run's own baseline_suite and after_suite gate logs, resolved from its manifest's log_path fields (/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T105353288994-direct-resume-two-arm-delta/logs/base-2d792b29.log and /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T105353288994-direct-resume-two-arm-delta/logs/head-c671a521.log; 22 added ids, independently reproduced by my own reader over the same two logs); read-time annotate_review_of_run returns: added failures retired by name in the reviewed node's done-when or manifest; total not capped",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:7733 (resume_plan \u2014 its :7800 call of reckon.crew.resumption._observed_end_refusal is the measured change)",
+    "reckon/cli.py:4544 (the crew resume command reaching resume_plan)",
+    "reckon/mcp.py:4379 (the MCP action=resume route reaching resume_plan)",
+    "reckon/crew/resumption.py:769 (the programmatic path reaching resume_plan)"
+  ],
+  "completed_at": "2026-09-29T12:43:26.074Z",
+  "dispatched_at": "2026-09-29T11:35:28Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/direct-resume-two-arm-delta/report.md",
+      "line": "34",
+      "text": "the recorded population of 16 files omits tests/test_crew_lane_change.py, which invokes crew resume through CliRunner with the argv tokens on separate lines at :254-255 and :350-351 and which the run's own exploratory grep for a bare quoted resume token and its inspection window test_crew_lane_change.py:248:262 both put in view, so the deliverable population is not the brief's every file under tests/ at the head that calls resume_plan or invokes crew resume; the omission cannot move the reported delta, because the file passes 5 passed with EXIT=0 at both revisions (my logs /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T113513239316-review-of-direct-resume-two-arm-delta/logs/omitted-file-head.log and /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T113513239316-review-of-direct-resume-two-arm-delta/logs/omitted-file-base.log), but a reader re-deriving scope from the report concludes the resume surface is one file smaller than it is."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/direct-resume-two-arm-delta/report.md",
+      "line": "13",
+      "text": "the instrument is described as printing module.__file__ asserted to lie inside that tree before pytest was invoked, but the runner that produced both arms (logs/arm-runner.sh, byte-identical to /tmp/drd2/run_arm.sh) prints MODULE_FILE and never compares it with the tree, and manifest.md:13 repeats the claim; the fact itself is true, because I byte-compared each tree's reckon/crew/dispatch.py against git show revision:reckon/crew/dispatch.py, but no arm would have failed had PYTHONPATH resolved to the main checkout, so the report attributes to the instrument a check it does not perform."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/direct-resume-two-arm-delta/report.md",
+      "line": "28",
+      "text": "pattern 3 is written with a comma where the script uses an equals sign: the report reads action\\s*,\\s*\"resume\" while logs/population-derivation.py compiles action\\s*=\\s*[\"']resume[\"']; read literally the report's spelling matches no file under tests/ at the head and the script's reproduces the declared 16 exactly, so the population is not reproducible from the deliverable's own text."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T105353288994-direct-resume-two-arm-delta/stream.jsonl",
+      "line": "3429",
+      "text": "the run issued a pattern kill with its output discarded (pkill -f on a python process under .reckon-worktrees, stderr and stdout to /dev/null) aimed at its own task that had just been marked failed, where the workstation rule is to resolve to pids, print them and signal that list, and the discarded output leaves nothing in the record to bound what it matched, so any peer process whose argv carries a script path under .reckon-worktrees was in range; no harm is observed and no scored dimension covers process conduct, so it is recorded here for the coordinator."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "the run landed no commit: its worktree HEAD 1d5c6da160d913f106e62e994be3fc3a532c808b equals its recorded base, its manifest reads commits: none and changed_paths: [], and its deliverable is the out-of-repository report with its logs, which I read in place of a diff.",
+    "done_when": "the done_when names two header-bearing logs ending in EXIT=, the report's population, counts, failing ids, set difference and per-id table, the manifest's baseline_suite and after_suite objects, and an empty porcelain, and I verified each: base-2d792b29.log:1-16 and head-c671a521.log:1-16 carry revision, tree, resolved module file, command and file list with EXIT=1 at each end, my own reader over those two logs re-derives exactly the manifest's 22 ids and nothing else, the report's 22-row table quotes each added id's first assertion line, tests/test_crew_lane_change.py is missing from the recorded population yet passes 5 passed with EXIT=0 in both arms (mine, not the run's: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T113513239316-review-of-direct-resume-two-arm-delta/logs/omitted-file-head.log and omitted-file-base.log), and git status --porcelain in the run's worktree at 1d5c6da160d913f106e62e994be3fc3a532c808b prints nothing.",
+    "goal": "the goal is the two-arm delta of c671a521 over 2d792b29 across the resume population, and report.md:1-7 names both revisions, the 16-line change at reckon/crew/dispatch.py:7798-7801 (commit 716c1325) and the instrument; the arm logs carry base 22 failed/391 passed and head 44 failed/373 passed with EXIT=1 at each end, delta 22 added ids and 0 removed, every added id attributed to 716c1325, and the 16 unknown-liveness / 6 alive split matches the pointers' readings.",
+    "manifest": "read in full; status complete, baseline_suite and after_suite carry revision, command, exit_status, one log_path, completed true, failure_count 22 and 44 with their failure_ids lists, and all 22 added ids appear in failure_attribution against 716c1325; its measurement_module line at manifest.md:13 repeats the report's claim that the module file was asserted to lie inside its own tree where the runner only prints it.",
+    "write_paths": "the fence is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/direct-resume-two-arm-delta/report.md plus the run's own logs directory, report.md is present at 15.9 kB, the run's worktree is clean at 1d5c6da1 with no commit and no changed path recorded, and the instrument's own files (/tmp/drd2/head, /tmp/drd2/base, the per-arm basetemps, its derivation scripts) all lie outside any repository."
+  },
+  "justifications": {
+    "durability": "the run's own aux arm is the reinstatement that makes the measurement falsifiable, reddening test_a_run_of_unknown_liveness_is_refused_naming_the_reading with DID NOT RAISE against base code (aux-base-with-head-test.log:32), and its logs and derivation scripts are on disk for a re-derivation, though the recorded population omits a file the brief's definition includes.",
+    "evidence": "the two arm logs (base-2d792b29.log:1-16, head-c671a521.log:1-16, EXIT=1 each) make the headline figures re-derivable and my own extraction reproduces all 22 added ids, but report.md:13 and manifest.md:13 claim an assertion that logs/arm-runner.sh does not contain, and report.md:28's pattern 3 does not reproduce the list the run derived.",
+    "fit": "the artifacts keep the repository's idiom (logs named by revision, scripts population-derivation.py and attribution-extraction.py, a structured report.md) with no plan label, ticket, version suffix or AI attribution in any of them.",
+    "goal_fidelity": "report.md:1-7 and :24-36 measure exactly the move the goal names, but the population it derives is not the brief's, because it counts 16 files at head while tests/test_crew_lane_change.py:254-255 invokes crew resume across a line break its single-line argv pattern cannot match.",
+    "scope_discipline": "every artifact sits inside the fence, report.md at the declared path plus the arm logs, population lists and derivation scripts under the run directory the dispatch names, with the run's worktree at 1d5c6da1 clean."
+  },
+  "node": "review-of-direct-resume-two-arm-delta",
+  "project": "reckon",
+  "raw_text": "Independent review of run r-20260929T105353288994-direct-resume-two-arm-delta\n(plan a-stalled-row-says-whether-the-worker-lives section 4; node direct-resume-two-arm-delta; role test)\nreviewed_base_sha: 1d5c6da160d913f106e62e994be3fc3a532c808b\nreviewed_head_sha: 1d5c6da160d913f106e62e994be3fc3a532c808b\nVERDICT goal: the goal is the two-arm delta of c671a521 over 2d792b29 across the resume population, and report.md:1-7 names both revisions, the 16-line change at reckon/crew/dispatch.py:7798-7801 (commit 716c1325) and the instrument; the arm logs carry base 22 failed/391 passed and head 44 failed/373 passed with EXIT=1 at each end, delta 22 added ids and 0 removed, every added id attributed to 716c1325, and the 16 unknown-liveness / 6 alive split matches the pointers' readings.\nVERDICT done_when: the done_when names two header-bearing logs ending in EXIT=, the report's population, counts, failing ids, set difference and per-id table, the manifest's baseline_suite and after_suite objects, and an empty porcelain, and I verified each: base-2d792b29.log:1-16 and head-c671a521.log:1-16 carry revision, tree, resolved module file, command and file list with EXIT=1 at each end, my own reader over those two logs re-derives exactly the manifest's 22 ids and nothing else, the report's 22-row table quotes each added id's first assertion line, tests/test_crew_lane_change.py is missing from the recorded population yet passes 5 passed with EXIT=0 in both arms (mine, not the run's: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T113513239316-review-of-direct-resume-two-arm-delta/logs/omitted-file-head.log and omitted-file-base.log), and git status --porcelain in the run's worktree at 1d5c6da160d913f106e62e994be3fc3a532c808b prints nothing.\nVERDICT write_paths: the fence is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/direct-resume-two-arm-delta/report.md plus the run's own logs directory, report.md is present at 15.9 kB, the run's worktree is clean at 1d5c6da1 with no commit and no changed path recorded, and the instrument's own files (/tmp/drd2/head, /tmp/drd2/base, the per-arm basetemps, its derivation scripts) all lie outside any repository.\nVERDICT manifest: read in full; status complete, baseline_suite and after_suite carry revision, command, exit_status, one log_path, completed true, failure_count 22 and 44 with their failure_ids lists, and all 22 added ids appear in failure_attribution against 716c1325; its measurement_module line at manifest.md:13 repeats the report's claim that the module file was asserted to lie inside its own tree where the runner only prints it.\nVERDICT diff: the run landed no commit: its worktree HEAD 1d5c6da160d913f106e62e994be3fc3a532c808b equals its recorded base, its manifest reads commits: none and changed_paths: [], and its deliverable is the out-of-repository report with its logs, which I read in place of a diff.\nCALL_SITES: reckon/crew/dispatch.py:7733 (resume_plan \u2014 its :7800 call of reckon.crew.resumption._observed_end_refusal is the measured change), reckon/cli.py:4544 (the crew resume command reaching resume_plan), reckon/mcp.py:4379 (the MCP action=resume route reaching resume_plan), reckon/crew/resumption.py:769 (the programmatic path reaching resume_plan)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: report.md:1-7 and :24-36 measure exactly the move the goal names, but the population it derives is not the brief's, because it counts 16 files at head while tests/test_crew_lane_change.py:254-255 invokes crew resume across a line break its single-line argv pattern cannot match.\nSCORE evidence: 15\nJUSTIFICATION evidence: the two arm logs (base-2d792b29.log:1-16, head-c671a521.log:1-16, EXIT=1 each) make the headline figures re-derivable and my own extraction reproduces all 22 added ids, but report.md:13 and manifest.md:13 claim an assertion that logs/arm-runner.sh does not contain, and report.md:28's pattern 3 does not reproduce the list the run derived.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every artifact sits inside the fence, report.md at the declared path plus the arm logs, population lists and derivation scripts under the run directory the dispatch names, with the run's worktree at 1d5c6da1 clean.\nSCORE durability: 16\nJUSTIFICATION durability: the run's own aux arm is the reinstatement that makes the measurement falsifiable, reddening test_a_run_of_unknown_liveness_is_refused_naming_the_reading with DID NOT RAISE against base code (aux-base-with-head-test.log:32), and its logs and derivation scripts are on disk for a re-derivation, though the recorded population omits a file the brief's definition includes.\nSCORE fit: 17\nJUSTIFICATION fit: the artifacts keep the repository's idiom (logs named by revision, scripts population-derivation.py and attribution-extraction.py, a structured report.md) with no plan label, ticket, version suffix or AI attribution in any of them.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/direct-resume-two-arm-delta/report.md:34 the recorded population of 16 files omits tests/test_crew_lane_change.py, which invokes crew resume through CliRunner with the argv tokens on separate lines at :254-255 and :350-351 and which the run's own exploratory grep for a bare quoted resume token and its inspection window test_crew_lane_change.py:248:262 both put in view, so the deliverable population is not the brief's every file under tests/ at the head that calls resume_plan or invokes crew resume; the omission cannot move the reported delta, because the file passes 5 passed with EXIT=0 at both revisions (my logs /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T113513239316-review-of-direct-resume-two-arm-delta/logs/omitted-file-head.log and /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T113513239316-review-of-direct-resume-two-arm-delta/logs/omitted-file-base.log), but a reader re-deriving scope from the report concludes the resume surface is one file smaller than it is.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/direct-resume-two-arm-delta/report.md:13 the instrument is described as printing module.__file__ asserted to lie inside that tree before pytest was invoked, but the runner that produced both arms (logs/arm-runner.sh, byte-identical to /tmp/drd2/run_arm.sh) prints MODULE_FILE and never compares it with the tree, and manifest.md:13 repeats the claim; the fact itself is true, because I byte-compared each tree's reckon/crew/dispatch.py against git show revision:reckon/crew/dispatch.py, but no arm would have failed had PYTHONPATH resolved to the main checkout, so the report attributes to the instrument a check it does not perform.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/direct-resume-two-arm-delta/report.md:28 pattern 3 is written with a comma where the script uses an equals sign: the report reads action\\s*,\\s*\"resume\" while logs/population-derivation.py compiles action\\s*=\\s*[\"']resume[\"']; read literally the report's spelling matches no file under tests/ at the head and the script's reproduces the declared 16 exactly, so the population is not reproducible from the deliverable's own text.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T105353288994-direct-resume-two-arm-delta/stream.jsonl:3429 the run issued a pattern kill with its output discarded (pkill -f on a python process under .reckon-worktrees, stderr and stdout to /dev/null) aimed at its own task that had just been marked failed, where the workstation rule is to resolve to pids, print them and signal that list, and the discarded output leaves nothing in the record to bound what it matched, so any peer process whose argv carries a script path under .reckon-worktrees was in range; no harm is observed and no scored dimension covers process conduct, so it is recorded here for the coordinator.\n",
+  "review_run_id": "r-20260929T113513239316-review-of-direct-resume-two-arm-delta",
+  "reviewed_base_sha": "1d5c6da160d913f106e62e994be3fc3a532c808b",
+  "reviewed_head_sha": "1d5c6da160d913f106e62e994be3fc3a532c808b",
+  "reviewed_run_id": "r-20260929T105353288994-direct-resume-two-arm-delta",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260929T113513239316-review-of-direct-resume-two-arm-delta",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-29T12:35:38.625065+00:00",
+  "total": 83
+}

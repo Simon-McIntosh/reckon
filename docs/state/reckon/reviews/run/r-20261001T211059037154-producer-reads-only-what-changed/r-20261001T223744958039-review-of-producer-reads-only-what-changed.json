@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery.py:watch_ticker",
+    "reckon/crew/recovery.py:_observed_stream",
+    "reckon/crew/recovery.py:_commits_beyond_base",
+    "reckon/_backends.py:observe_log"
+  ],
+  "completed_at": "2026-10-01T22:50:34.512Z",
+  "dispatched_at": "2026-10-01T22:38:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "3153",
+      "severity": "follow-on",
+      "text": "follow-on: the new inode equality is the change's mechanism for a stream replaced under a cursor, but no case exercises it, because tests/test_producer_reads_only_what_changed.py:241-242 replaces a 149-byte stream with a 145-byte record, so observe_log's pre-existing offset<=size guard already reads it whole and the assertion passes with the inode comparison removed, leaving the gate green if the new check regresses."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "3153",
+      "severity": "follow-on",
+      "text": "follow-on: a stream rewritten in place at the same inode to a size at least the recorded offset still resumes from the stale offset, because observe_log in reckon/_backends.py:3486 resumes whenever offset <= size and the inode is unchanged, so the done_when's \"truncated or replaced stream is re-read from zero\" does not hold for that shape."
+    },
+    {
+      "file": "reckon/crew/recovery.py",
+      "line": "7063",
+      "severity": "follow-on",
+      "text": "follow-on: _COMMITS_BEYOND_BASE_CACHE is a module-level dict with no eviction, so a long-lived producer accumulates one entry per (worktree, base) pair it has ever classified."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit; c7b105a3d adds the path+inode resume gate, the parsed-byte counter and the commits-beyond-base cache; bcc9ddb9a lifts the counter into a one-element cell and tidies the test; 2ff86eef7 and 2af1c934f are the evidence fragment.",
+    "done_when": "the done_when names tests/test_producer_reads_only_what_changed.py and asserts four behaviours; the reviewed manifest records that file 3 passed (gate-head.log, rev bcc9ddb9a) and the base/head arms 25/25 with zero added failures; the four assertions are present, though the one naming a replaced stream does not discriminate the new inode check because the replacement is shorter than the cursor (see FINDING).",
+    "goal": "the node goal is that a live producer's poll parses only the stream bytes appended since its last poll and spawns nothing for an unchanged run; the landed change resumes each classification from the memo's recorded offset (reckon/crew/recovery.py:3149-3160), counts only the bytes a resumed read consumes (reckon/_backends.py:3429), caches the commits-beyond-base count against the worktree head (reckon/crew/recovery.py:7063) so an unchanged tree spawns no git, and records bytes_parsed_last_poll per tick (reckon/crew/recovery.py:8444).",
+    "manifest": "read; it records commits c7b105a3d, 2ff86eef7, bcc9ddb9a and 2af1c934f, gate 3 passed, baseline_suite and after_suite both completed true with failure_count 0 and empty failure_ids, and a negative control logged red at EXIT=1.",
+    "write_paths": "the diff 60b808f5f3b12faf446c1c356c3da8c5fb830e92..2af1c934fd4a41e9db0e263a325e70b5a923bdf9 touches only reckon/_backends.py, reckon/crew/recovery.py, tests/test_producer_reads_only_what_changed.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/producer-reads-only-what-changed.html, all inside the four write paths the node declared."
+  },
+  "justifications": {
+    "durability": "the bytes-parsed assertion reddens under the logged negative control, but the assertion meant to guard the new inode check (tests/test_producer_reads_only_what_changed.py:239-247) passes with that check removed, so the change's own mechanism is not regression-guarded.",
+    "evidence": "the gate the manifest names is the test file that asserts the done_when, and its result is recorded in gate-head.log; but the replaced-stream assertion is not discriminating, so one done_when behaviour is claimed rather than demonstrated.",
+    "fit": "the change extends the existing classification memo rather than adding a second cache, places _file_inode beside _file_identity (reckon/crew/recovery.py:5571) and states mechanism in its comments, but introduces two unbound process-global structures (_PARSED_STREAM_BYTES, _COMMITS_BEYOND_BASE_CACHE).",
+    "goal_fidelity": "reckon/crew/recovery.py:3153 gates the resume on the memo's path and inode, reckon/_backends.py:3429 counts only the bytes a resumed read consumes, and reckon/crew/recovery.py:7089 answers an unchanged worktree from _COMMITS_BEYOND_BASE_CACHE rather than spawning git.",
+    "scope_discipline": "the unified diff 60b808f5..2af1c934f stays inside the four declared paths with 418 insertions and 3 deletions and names no plan, sprint or ticket label."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a live producer's poll parses only the stream bytes appended since its last poll and spawns nothing for an unchanged run; the landed change resumes each classification from the memo's recorded offset (reckon/crew/recovery.py:3149-3160), counts only the bytes a resumed read consumes (reckon/_backends.py:3429), caches the commits-beyond-base count against the worktree head (reckon/crew/recovery.py:7063) so an unchanged tree spawns no git, and records bytes_parsed_last_poll per tick (reckon/crew/recovery.py:8444).\nVERDICT done_when: the done_when names tests/test_producer_reads_only_what_changed.py and asserts four behaviours; the reviewed manifest records that file 3 passed (gate-head.log, rev bcc9ddb9a) and the base/head arms 25/25 with zero added failures; the four assertions are present, though the one naming a replaced stream does not discriminate the new inode check because the replacement is shorter than the cursor (see FINDING).\nVERDICT write_paths: the diff 60b808f5f3b12faf446c1c356c3da8c5fb830e92..2af1c934fd4a41e9db0e263a325e70b5a923bdf9 touches only reckon/_backends.py, reckon/crew/recovery.py, tests/test_producer_reads_only_what_changed.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/producer-reads-only-what-changed.html, all inside the four write paths the node declared.\nVERDICT manifest: read; it records commits c7b105a3d, 2ff86eef7, bcc9ddb9a and 2af1c934f, gate 3 passed, baseline_suite and after_suite both completed true with failure_count 0 and empty failure_ids, and a negative control logged red at EXIT=1.\nVERDICT diff: read commit by commit; c7b105a3d adds the path+inode resume gate, the parsed-byte counter and the commits-beyond-base cache; bcc9ddb9a lifts the counter into a one-element cell and tidies the test; 2ff86eef7 and 2af1c934f are the evidence fragment.\nCALL_SITES: reckon/crew/recovery.py:watch_ticker, reckon/crew/recovery.py:_observed_stream, reckon/crew/recovery.py:_commits_beyond_base, reckon/_backends.py:observe_log\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:3153 gates the resume on the memo's path and inode, reckon/_backends.py:3429 counts only the bytes a resumed read consumes, and reckon/crew/recovery.py:7089 answers an unchanged worktree from _COMMITS_BEYOND_BASE_CACHE rather than spawning git.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate the manifest names is the test file that asserts the done_when, and its result is recorded in gate-head.log; but the replaced-stream assertion is not discriminating, so one done_when behaviour is claimed rather than demonstrated.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the unified diff 60b808f5..2af1c934f stays inside the four declared paths with 418 insertions and 3 deletions and names no plan, sprint or ticket label.\nSCORE durability: 13\nJUSTIFICATION durability: the bytes-parsed assertion reddens under the logged negative control, but the assertion meant to guard the new inode check (tests/test_producer_reads_only_what_changed.py:239-247) passes with that check removed, so the change's own mechanism is not regression-guarded.\nSCORE fit: 17\nJUSTIFICATION fit: the change extends the existing classification memo rather than adding a second cache, places _file_inode beside _file_identity (reckon/crew/recovery.py:5571) and states mechanism in its comments, but introduces two unbound process-global structures (_PARSED_STREAM_BYTES, _COMMITS_BEYOND_BASE_CACHE).\nFINDING reckon/crew/recovery.py:3153 follow-on: the new inode equality is the change's mechanism for a stream replaced under a cursor, but no case exercises it, because tests/test_producer_reads_only_what_changed.py:241-242 replaces a 149-byte stream with a 145-byte record, so observe_log's pre-existing offset<=size guard already reads it whole and the assertion passes with the inode comparison removed, leaving the gate green if the new check regresses.\nFINDING reckon/crew/recovery.py:3153 follow-on: a stream rewritten in place at the same inode to a size at least the recorded offset still resumes from the stale offset, because observe_log in reckon/_backends.py:3486 resumes whenever offset <= size and the inode is unchanged, so the done_when's \"truncated or replaced stream is re-read from zero\" does not hold for that shape.\nFINDING reckon/crew/recovery.py:7063 follow-on: _COMMITS_BEYOND_BASE_CACHE is a module-level dict with no eviction, so a long-lived producer accumulates one entry per (worktree, base) pair it has ever classified.\n",
+  "review_run_id": "r-20261001T223744958039-review-of-producer-reads-only-what-changed",
+  "reviewed_base_sha": "60b808f5f3b12faf446c1c356c3da8c5fb830e92",
+  "reviewed_head_sha": "2af1c934fd4a41e9db0e263a325e70b5a923bdf9",
+  "reviewed_run_id": "r-20261001T211059037154-producer-reads-only-what-changed",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T223744958039-review-of-producer-reads-only-what-changed",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T22:49:12.785138+00:00",
+  "total": 83
+}

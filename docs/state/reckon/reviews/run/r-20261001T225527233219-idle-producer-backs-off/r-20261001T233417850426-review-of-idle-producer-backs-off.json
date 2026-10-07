@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "df6a40b5c8e077c9f74517ff52f1858bac2c6011",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery.py:8611",
+    "reckon/cli.py:3942"
+  ],
+  "completed_at": "2026-10-01T23:52:13.305Z",
+  "dispatched_at": "2026-10-01T23:34:38Z",
+  "findings": [
+    {
+      "file": "tests/test_idle_producer_backs_off.py",
+      "line": "98",
+      "severity": "follow-on",
+      "text": "follow-on: the negative-control log logs/negative-control.log echoes a test source that raises _Stop, while this committed revision raises _ProducerStopError, so the executed control was run against an earlier revision of this file; the failing ids still match and the doubling-removed conclusion holds, but the log does not correspond to the committed artifact."
+    }
+  ],
+  "head_log_revision": "06873739f803f7860cedbbcbf7ea509269545fe8",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit 06873739f against base df6a40b5c commit by commit; three files, 297 insertions and 2 deletions, all inside the declared scope.",
+    "done_when": "the node done-when is tests/test_idle_producer_backs_off.py in a temporary RECKON_HOME with no live run pointer; the manifest records it at 2 passed and the file is in the diff.",
+    "goal": "the landed change makes an idle crew watch producer double its recorded poll_interval_seconds from the armed base to a 30 s cap on each wake that sees no live run, reset to the base on the first wake that sees one, and keep every sleep bounded by the lease remainder, matching the back-off clause of plan a-crew-process-ends-with-its-owner section 3.",
+    "manifest": "read; it records the gate 2 passed, base and head arms each 1 failed 28 passed with the same pre-existing id, a red negative control, and head commit 06873739f.",
+    "write_paths": "the manifest declares reckon/crew/recovery.py, tests/test_idle_producer_backs_off.py and the node evidence fragment; the diff touches exactly those three."
+  },
+  "justifications": {
+    "durability": "tests/test_idle_producer_backs_off.py:113 pins the recorded interval to the literal 1, 2, 4, 8, 16, 30 and reddens when the doubling at recovery.py:8549 is removed, and the lease case asserts exit within one second of the lapse.",
+    "evidence": "the gate tests/test_idle_producer_backs_off.py reads the recorded poll_interval_seconds from the registration and its 2 passed result is recorded in the manifest, but the negative-control log predates the committed test revision.",
+    "fit": "the module-level IDLE_POLL_INTERVAL_CAP_SECONDS constant at recovery.py:8434 is documented like DEFAULT_WATCH_STALL_WINDOW and the comments explain the mechanism without plan or version labels.",
+    "goal_fidelity": "reckon/crew/recovery.py:8528 resets poll_interval_current to the base when current is non-empty and recovery.py:8548 doubles it capped by IDLE_POLL_INTERVAL_CAP_SECONDS, which is the plan's back-off and its return.",
+    "scope_discipline": "the diff touches only reckon/crew/recovery.py, tests/test_idle_producer_backs_off.py and the node fragment, all inside the declared write paths, with no plan fields edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the landed change makes an idle crew watch producer double its recorded poll_interval_seconds from the armed base to a 30 s cap on each wake that sees no live run, reset to the base on the first wake that sees one, and keep every sleep bounded by the lease remainder, matching the back-off clause of plan a-crew-process-ends-with-its-owner section 3.\nVERDICT done_when: the node done-when is tests/test_idle_producer_backs_off.py in a temporary RECKON_HOME with no live run pointer; the manifest records it at 2 passed and the file is in the diff.\nVERDICT write_paths: the manifest declares reckon/crew/recovery.py, tests/test_idle_producer_backs_off.py and the node evidence fragment; the diff touches exactly those three.\nVERDICT manifest: read; it records the gate 2 passed, base and head arms each 1 failed 28 passed with the same pre-existing id, a red negative control, and head commit 06873739f.\nVERDICT diff: read commit 06873739f against base df6a40b5c commit by commit; three files, 297 insertions and 2 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery.py:8611, reckon/cli.py:3942\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery.py:8528 resets poll_interval_current to the base when current is non-empty and recovery.py:8548 doubles it capped by IDLE_POLL_INTERVAL_CAP_SECONDS, which is the plan's back-off and its return.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate tests/test_idle_producer_backs_off.py reads the recorded poll_interval_seconds from the registration and its 2 passed result is recorded in the manifest, but the negative-control log predates the committed test revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/recovery.py, tests/test_idle_producer_backs_off.py and the node fragment, all inside the declared write paths, with no plan fields edited.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_idle_producer_backs_off.py:113 pins the recorded interval to the literal 1, 2, 4, 8, 16, 30 and reddens when the doubling at recovery.py:8549 is removed, and the lease case asserts exit within one second of the lapse.\nSCORE fit: 19\nJUSTIFICATION fit: the module-level IDLE_POLL_INTERVAL_CAP_SECONDS constant at recovery.py:8434 is documented like DEFAULT_WATCH_STALL_WINDOW and the comments explain the mechanism without plan or version labels.\nFINDING tests/test_idle_producer_backs_off.py:98 follow-on: the negative-control log logs/negative-control.log echoes a test source that raises _Stop, while this committed revision raises _ProducerStopError, so the executed control was run against an earlier revision of this file; the failing ids still match and the doubling-removed conclusion holds, but the log does not correspond to the committed artifact.",
+  "review_run_id": "r-20261001T233417850426-review-of-idle-producer-backs-off",
+  "reviewed_base_sha": "df6a40b5c8e077c9f74517ff52f1858bac2c6011",
+  "reviewed_head_sha": "06873739f803f7860cedbbcbf7ea509269545fe8",
+  "reviewed_run_id": "r-20261001T225527233219-idle-producer-backs-off",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261001T233417850426-review-of-idle-producer-backs-off",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-01T23:50:18.428064+00:00",
+  "total": 93
+}

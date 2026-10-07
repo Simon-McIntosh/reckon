@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": "derived from the reviewed run's own two arm gate logs named in its manifest (base-arm.log 64 passed EXIT=0 at a08a2baa; head-arm.log 70 passed EXIT=0 at 7da2f7989): zero failures in either arm, so the set difference is 0. The manifest declares no after_suite field, so the standard read-time annotation reports this as unmeasured (null) rather than 0; see the follow-on finding.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:_unreconciled_live_runs",
+    "reckon/crew/promotion.py:_fleet_state_reading",
+    "reckon/crew/runs.py:drain"
+  ],
+  "completed_at": "2026-10-02T21:10:34.020Z",
+  "dispatched_at": "2026-10-02T20:51:31Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T201851790456-the-unreconciled-count-has-one-composition/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's manifest declares baseline_suite but no after_suite, so the promotion suite-delta read (reckon/crew/promotion.py:5364) sees a missing head arm and the review read-time annotation yields added_failure_count unmeasured (null) rather than 0; the run's own head arm (head-arm.log, 70 passed EXIT=0 at revision 7da2f7989) is only named under test_logs, so the standard readers cannot reconcile."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the two commits 7da2f7989 (refactor) and 43247c08aa (evidence) against base a08a2baa: promotion.py swaps its inline per-pointer composition for runs._drain_row, plus a new node test and an evidence fragment.",
+    "done_when": "the done-when is the node test holding the fleet reading to runs.drain's unreconciled_runs over each pointer shape plus the source pin; the manifest records node test 6 passed, head arm 70 passed EXIT=0 and base arm 64 passed EXIT=0, and I re-ran the node test at the reviewed head to 6 passed.",
+    "goal": "the goal is to count unreconciled live pointers through the closure drain's own per-pointer step so a change to the host-gated liveness or the disposition predicate reaches both; promotion._unreconciled_live_runs now returns sum(1 for pointer in pointers if _drain_row(pointer)['unreconciled']) and _drain_row is the function runs.drain builds each of its rows from.",
+    "manifest": "read; it states node test 6 passed, head arm 70 passed EXIT=0, base arm 64 passed EXIT=0 and negative control 1 failed EXIT=1, but it declares no after_suite field, so the head-arm observation is not in the contract slot the promotion suite-delta read and the review annotation consume.",
+    "write_paths": "read the five declared paths; the head diff touches exactly reckon/crew/promotion.py (+9/-25), tests/test_the_unreconciled_count_has_one_composition.py (new +151) and docs/evidence/fragments/a-crew-process-ends-with-its-owner/the-unreconciled-count-has-one-composition.html (new +28), all inside them, and reckon/crew/runs.py is byte-unchanged."
+  },
+  "justifications": {
+    "durability": "the change deletes the duplicate composition, so a future edit to the host-gated liveness or the disposition predicate in runs._drain_row reaches both the drain and the promotion counter, and the test pins promotion._drain_row is runs._drain_row plus the _drain_row reference inside each call site's source; the absent after_suite weakens the run's own reproducibility rather than the code.",
+    "evidence": "the equivalence is recorded and independently reproduced - the node test 6 passed at the reviewed head, head arm 70 passed EXIT=0 (377.59s) against base arm 64 passed EXIT=0 (406.09s), and my own mutation (the promotion counter given its own copy that reads the stored process_alive instead of the host-gated liveness) reddens exactly the still-working-over-terminal-manifest case EXIT=1; the head arm measured revision 7da2f7989, and the manifest's missing after_suite field is the reproducibility gap.",
+    "fit": "the change reuses the private runs helpers as the module already imports _live_worktree_claims and _manifest_freshness from runs, the test follows the node-test idiom of the sibling suite, both commits carry conventional subjects with bodies, and the evidence fragment follows the fragment format (it lacks a trailing newline).",
+    "goal_fidelity": "promotion._unreconciled_live_runs now returns sum(1 for pointer in pointers if _drain_row(pointer)['unreconciled']) and _drain_row is the exact function runs.drain builds each row from (reckon/crew/runs.py:1230), so the two readings share one composition by construction rather than by a maintained copy, which is the node's stated goal.",
+    "scope_discipline": "the head diff touches exactly three of the five declared write paths - reckon/crew/promotion.py (+9/-25), tests/test_the_unreconciled_count_has_one_composition.py (new +151) and the evidence fragment (new +28) - and reckon/crew/runs.py is unchanged because _drain_row already existed at base a08a2baa, so no out-of-scope file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to count unreconciled live pointers through the closure drain's own per-pointer step so a change to the host-gated liveness or the disposition predicate reaches both; promotion._unreconciled_live_runs now returns sum(1 for pointer in pointers if _drain_row(pointer)['unreconciled']) and _drain_row is the function runs.drain builds each of its rows from.\nVERDICT done_when: the done-when is the node test holding the fleet reading to runs.drain's unreconciled_runs over each pointer shape plus the source pin; the manifest records node test 6 passed, head arm 70 passed EXIT=0 and base arm 64 passed EXIT=0, and I re-ran the node test at the reviewed head to 6 passed.\nVERDICT write_paths: read the five declared paths; the head diff touches exactly reckon/crew/promotion.py (+9/-25), tests/test_the_unreconciled_count_has_one_composition.py (new +151) and docs/evidence/fragments/a-crew-process-ends-with-its-owner/the-unreconciled-count-has-one-composition.html (new +28), all inside them, and reckon/crew/runs.py is byte-unchanged.\nVERDICT manifest: read; it states node test 6 passed, head arm 70 passed EXIT=0, base arm 64 passed EXIT=0 and negative control 1 failed EXIT=1, but it declares no after_suite field, so the head-arm observation is not in the contract slot the promotion suite-delta read and the review annotation consume.\nVERDICT diff: read the two commits 7da2f7989 (refactor) and 43247c08aa (evidence) against base a08a2baa: promotion.py swaps its inline per-pointer composition for runs._drain_row, plus a new node test and an evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:_unreconciled_live_runs, reckon/crew/promotion.py:_fleet_state_reading, reckon/crew/runs.py:drain\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: promotion._unreconciled_live_runs now returns sum(1 for pointer in pointers if _drain_row(pointer)['unreconciled']) and _drain_row is the exact function runs.drain builds each row from (reckon/crew/runs.py:1230), so the two readings share one composition by construction rather than by a maintained copy, which is the node's stated goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: the equivalence is recorded and independently reproduced - the node test 6 passed at the reviewed head, head arm 70 passed EXIT=0 (377.59s) against base arm 64 passed EXIT=0 (406.09s), and my own mutation (the promotion counter given its own copy that reads the stored process_alive instead of the host-gated liveness) reddens exactly the still-working-over-terminal-manifest case EXIT=1; the head arm measured revision 7da2f7989, and the manifest's missing after_suite field is the reproducibility gap.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the head diff touches exactly three of the five declared write paths - reckon/crew/promotion.py (+9/-25), tests/test_the_unreconciled_count_has_one_composition.py (new +151) and the evidence fragment (new +28) - and reckon/crew/runs.py is unchanged because _drain_row already existed at base a08a2baa, so no out-of-scope file is touched.\nSCORE durability: 18\nJUSTIFICATION durability: the change deletes the duplicate composition, so a future edit to the host-gated liveness or the disposition predicate in runs._drain_row reaches both the drain and the promotion counter, and the test pins promotion._drain_row is runs._drain_row plus the _drain_row reference inside each call site's source; the absent after_suite weakens the run's own reproducibility rather than the code.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses the private runs helpers as the module already imports _live_worktree_claims and _manifest_freshness from runs, the test follows the node-test idiom of the sibling suite, both commits carry conventional subjects with bodies, and the evidence fragment follows the fragment format (it lacks a trailing newline).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T201851790456-the-unreconciled-count-has-one-composition/manifest.md:15 follow-on: the reviewed run's manifest declares baseline_suite but no after_suite, so the promotion suite-delta read (reckon/crew/promotion.py:5364) sees a missing head arm and the review read-time annotation yields added_failure_count unmeasured (null) rather than 0; the run's own head arm (head-arm.log, 70 passed EXIT=0 at revision 7da2f7989) is only named under test_logs, so the standard readers cannot reconcile.",
+  "review_run_id": "r-20261002T205101023910-review-of-the-unreconciled-count-has-one-composition",
+  "reviewed_base_sha": "a08a2baae993a98d6b7172b403a103110bb1e012",
+  "reviewed_head_sha": "43247c08aa556a8f748e841245b19cbf907b460d",
+  "reviewed_run_id": "r-20261002T201851790456-the-unreconciled-count-has-one-composition",
+  "reviewer": {
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-02T21:05:47.429573+00:00",
+  "total": 92
+}

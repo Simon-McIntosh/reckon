@@ -1,0 +1,53 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "attempt": 1,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:complete",
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/recovery.py:_stored_review"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T06:25:35.582142+00:00",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034147872298-promotion-reads-the-review-of-the-head-it-promotes/gate-after.log",
+      "line": "1",
+      "text": "the first line pins a 29-pass run to revision 22c69ee1 while tests/test_promotion_reads_the_matching_review.py does not exist at that revision, so the single field the gate convention uses to pin a pass attributes the result to a tree in which three of the run's four assertions are absent; the tree field names the run worktree but that worktree no longer exists to be re-measured, and the same log's revision field is the only revision-bearing line for a change whose own commit is d7ea6177."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 22c69ee1; d7ea6177 replaces _review_row_block with _review_for_promotion so promotion.py:3207 names the head, adds _run_promoted_revision, _reviewed_head and _unreviewed_refusal, and gives partial review records an identity-keyed path at review.py:480; 2bfc54a2 appends the plan landing comment, the evidence section and the figure with zero deletions.",
+    "done_when": "the done_when asks for four behaviours in tests/test_promotion_reads_the_matching_review.py plus a declared negative control and no added neighbour failures; the focused file carries test_promotion_reads_the_review_of_the_revision_it_promotes at :151, test_only_a_review_of_an_earlier_head_refuses_the_promotion at :183, test_a_waiver_still_lands_a_run_whose_review_is_of_an_earlier_head at :208 and the partial-record test at :223, the manifest records the control's 3-failed log, and the three neighbour suites report 25 passed at both base and change.",
+    "goal": "the node goal is that a promotion read the stored review whose reviewed_head_sha matches the revision it promotes and refuse as unreviewed when only a review of an earlier head exists; at the reviewed head reckon/crew/promotion.py:3207 calls read_review with reviewed_head_sha=promoted_revision, and reckon/crew/promotion.py:3226 _run_promoted_revision resolves that revision from the run's own cited tip so the gate and the promoted row compare one revision rather than two.",
+    "manifest": "read at the run directory; it is status complete with an empty blockers line, names base 22c69ee1, commits d7ea6177 and 2bfc54a2, the six carried paths, the gate and base logs, the bare negative-control path, and its follow_ons name recovery.py:_stored_review's unnamed read that the gate compensates for.",
+    "write_paths": "the manifest declares six paths and git diff --numstat 22c69ee1..2bfc54a2 is exactly them with 622 insertions and 30 deletions \u2014 reckon/crew/promotion.py 124/20, reckon/crew/review.py 60/10, tests/test_promotion_reads_the_matching_review.py 259/0, docs/evidence/archive/scoring-should-stop-a-promotion-landed.html 87/0, docs/figures/scoring-should-stop-a-promotion/review-head-selection.svg 43/0, docs/plans/scoring-should-stop-a-promotion.html 49/0 \u2014 and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_reads_the_matching_review.py:171 asserts the promoted row's review total is 100 while the only other stored record scores 5 per dimension, so reinstating the unnamed read reddens it with 25 == 100 exactly as negative-control.log records, and the expected digits come from the two records the store holds rather than from a value handed to the code under test.",
+    "evidence": "the four focused behaviours and the 3-failed negative control are recorded, but gate-after.log:1 pins its 29-pass run to revision 22c69ee1 where tests/test_promotion_reads_the_matching_review.py does not exist, so the one field the gate convention uses to pin a pass names a tree carrying neither the new file nor the run's own assertions.",
+    "fit": "the new helpers at promotion.py:3179-3242 and review.py:454-522 are named by the mechanism each performs, the focused file reuses the repository's RECKON_HOME-isolation and real-promotion-path idiom, and no plan, sprint or ticket label appears in any changed name or comment.",
+    "goal_fidelity": "reckon/crew/promotion.py:3207 passes reviewed_head_sha=promoted_revision into read_review and promotion.py:3238 raises the refusal when only an earlier head is stored, which is exactly the node goal.",
+    "scope_discipline": "git diff --numstat 22c69ee1..2bfc54a2 is the six declared paths and nothing else, the plan and evidence files are append-only at 49/0 and 87/0, plan-version and plan-modified are untouched, and no test is disabled, skipped or relaxed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a promotion read the stored review whose reviewed_head_sha matches the revision it promotes and refuse as unreviewed when only a review of an earlier head exists; at the reviewed head reckon/crew/promotion.py:3207 calls read_review with reviewed_head_sha=promoted_revision, and reckon/crew/promotion.py:3226 _run_promoted_revision resolves that revision from the run's own cited tip so the gate and the promoted row compare one revision rather than two.\nVERDICT done_when: the done_when asks for four behaviours in tests/test_promotion_reads_the_matching_review.py plus a declared negative control and no added neighbour failures; the focused file carries test_promotion_reads_the_review_of_the_revision_it_promotes at :151, test_only_a_review_of_an_earlier_head_refuses_the_promotion at :183, test_a_waiver_still_lands_a_run_whose_review_is_of_an_earlier_head at :208 and the partial-record test at :223, the manifest records the control's 3-failed log, and the three neighbour suites report 25 passed at both base and change.\nVERDICT write_paths: the manifest declares six paths and git diff --numstat 22c69ee1..2bfc54a2 is exactly them with 622 insertions and 30 deletions \u2014 reckon/crew/promotion.py 124/20, reckon/crew/review.py 60/10, tests/test_promotion_reads_the_matching_review.py 259/0, docs/evidence/archive/scoring-should-stop-a-promotion-landed.html 87/0, docs/figures/scoring-should-stop-a-promotion/review-head-selection.svg 43/0, docs/plans/scoring-should-stop-a-promotion.html 49/0 \u2014 and nothing outside them.\nVERDICT manifest: read at the run directory; it is status complete with an empty blockers line, names base 22c69ee1, commits d7ea6177 and 2bfc54a2, the six carried paths, the gate and base logs, the bare negative-control path, and its follow_ons name recovery.py:_stored_review's unnamed read that the gate compensates for.\nVERDICT diff: read commit by commit against 22c69ee1; d7ea6177 replaces _review_row_block with _review_for_promotion so promotion.py:3207 names the head, adds _run_promoted_revision, _reviewed_head and _unreviewed_refusal, and gives partial review records an identity-keyed path at review.py:480; 2bfc54a2 appends the plan landing comment, the evidence section and the figure with zero deletions.\nCALL_SITES: reckon/crew/promotion.py:complete, reckon/crew/promotion.py:_complete_locked, reckon/crew/recovery.py:_stored_review\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:3207 passes reviewed_head_sha=promoted_revision into read_review and promotion.py:3238 raises the refusal when only an earlier head is stored, which is exactly the node goal.\nSCORE evidence: 15\nJUSTIFICATION evidence: the four focused behaviours and the 3-failed negative control are recorded, but gate-after.log:1 pins its 29-pass run to revision 22c69ee1 where tests/test_promotion_reads_the_matching_review.py does not exist, so the one field the gate convention uses to pin a pass names a tree carrying neither the new file nor the run's own assertions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat 22c69ee1..2bfc54a2 is the six declared paths and nothing else, the plan and evidence files are append-only at 49/0 and 87/0, plan-version and plan-modified are untouched, and no test is disabled, skipped or relaxed.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_promotion_reads_the_matching_review.py:171 asserts the promoted row's review total is 100 while the only other stored record scores 5 per dimension, so reinstating the unnamed read reddens it with 25 == 100 exactly as negative-control.log records, and the expected digits come from the two records the store holds rather than from a value handed to the code under test.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers at promotion.py:3179-3242 and review.py:454-522 are named by the mechanism each performs, the focused file reuses the repository's RECKON_HOME-isolation and real-promotion-path idiom, and no plan, sprint or ticket label appears in any changed name or comment.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T034147872298-promotion-reads-the-review-of-the-head-it-promotes/gate-after.log:1 the first line pins a 29-pass run to revision 22c69ee1 while tests/test_promotion_reads_the_matching_review.py does not exist at that revision, so the single field the gate convention uses to pin a pass attributes the result to a tree in which three of the run's four assertions are absent; the tree field names the run worktree but that worktree no longer exists to be re-measured, and the same log's revision field is the only revision-bearing line for a change whose own commit is d7ea6177.\nreviewed_base_sha: 22c69ee13cbd5549aa73b6085cfa88766e6c0fe9\nreviewed_head_sha: 2bfc54a217fb5190b069cb497cd051596ddf52c3",
+  "review_run_id": "r-20260923T062535582142-review-of-promotion-reads-the-review-of-the-head-it-promotes",
+  "reviewed_base_sha": "22c69ee13cbd5549aa73b6085cfa88766e6c0fe9",
+  "reviewed_head_sha": "2bfc54a217fb5190b069cb497cd051596ddf52c3",
+  "reviewed_run_id": "r-20260923T034147872298-promotion-reads-the-review-of-the-head-it-promotes",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T07:04:45.887811+00:00",
+  "total": 92
+}

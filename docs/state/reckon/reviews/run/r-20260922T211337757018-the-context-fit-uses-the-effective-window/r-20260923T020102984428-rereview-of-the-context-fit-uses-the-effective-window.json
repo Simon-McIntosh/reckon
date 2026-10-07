@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "completed_at": "",
+  "dispatched_at": "2026-09-23T02:01:02.984428+00:00",
+  "findings": [
+    {
+      "file": "reckon/crew/context_budget.py",
+      "line": "214",
+      "text": "FIXED. First finding (was context_budget.py:205, census not lane-scoped) is repaired: refusal_census now takes a keyword-only model and counts only runs that model served (context_budget.py:214), reports the runs the narrowing excluded rather than dropping them (context_budget.py:215), and the published file states both figures (docs/research/data/clive-effective-window.json:10 boundary_basis lowest-estimate-among-refused-runs, :11 pooled_boundary_tokens_across_every_model 73728). Independently confirmed on the repaired head: refusal_census(runs, model='deepseek-v4.1-flash') returns 200000 over the five lane refusals while the pooled call returns 73728, and test_the_boundary_is_taken_over_the_lanes_own_model (tests/test_routing_surface.py:707) asserts exactly that pair, so the narrowing is shown to change the figure rather than merely to be offered."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1596",
+      "text": "NOT FIXED by this run, correctly. Second finding (was routing.py:1588, the gating branch is unreachable in production) stands at the repaired head: routing.py:1596 still reads effective_input_window from resolution.backend_settings and still nothing in the tree can supply it, so \u00a77's end-to-end outcome does not occur. It is not a concealed gap: the repaired manifest and the plan paragraph name the flight-schema slot (reckon/schema/flight.yaml enumerating the backend slots and reckon/_flight_schema.py generated from it with extra=\"forbid\") as a LATER node's write scope, outside this run's declared write paths. The tests continue to drive the branch by constructing the key on a DispatchPlan, so the capability is verified one layer below where it must finally be judged."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1596",
+      "text": "FIXED. Third finding (was routing.py:1595, absent declared window re-raised as a non-integer error) is repaired: window_tokens is None when no window is declared (routing.py:1596), a non-positive boundary is refused on its own name (routing.py:1618), gating_tokens falls to the recorded boundary when the window is absent (routing.py:1624), and the refusal reason for that lane names the absent window (routing.py:1655). test_a_lane_with_no_declared_window_uses_its_recorded_boundary (tests/test_routing_surface.py:770) exercises it and the repaired gate passes 5 tests, so the semantics the schema states (absence means unbounded) now hold in the verdict."
+    },
+    {
+      "file": "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+      "line": "62",
+      "text": "FIXED. Fourth finding (was the figure caption at :56 calling 200000 the largest input rejected while the data file called it the lowest refused estimate) is repaired: the figcaption now reads 'the lowest estimate among this lane's recorded refusals' (evidence anchor :62) and the data file's boundary_basis reads lowest-estimate-among-refused-runs (data :10), so the two superlatives now agree and both match the min(estimates) the shipped function computes."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1629",
+      "new": false,
+      "text": "residual, not a new defect introduced by the repair: the gating branch reached through routing.py:1629 (narrows) is exercised only by tests that fabricate effective_input_window, so its durability remains a property of the unit path until the flight-schema node lands."
+    }
+  ],
+  "justifications": {
+    "durability": "the census \u2014 the derivation the first review found untested \u2014 now has a narrowing test and a file-agreement test, and the absent-window verdict path has its own test, so the derivation and the semantics are guarded. The gating branch is still reachable only from a fabricated DispatchPlan, so its guard protects a path no production caller walks until the schema node lands; that is a consequence of the fenced remainder rather than a defect in the guard.",
+    "evidence": "three new tests guard the repairs, including test_the_recorded_lane_boundary_agrees_with_the_row_it_is_taken_over (tests/test_routing_surface.py:730) which recomputes the published boundary from the file's own listed refusals and requires agreement \u2014 the cross-check the first review asked for. The gate delta is independently confirmed at the repaired head (whole file 2 failed, 6 errors, 6 passed against gate-base 2 failed, 6 errors, 1 passed, identical failure ids, zero added failures) and the negative control was re-run under the declared mutation. Remaining weakness: the gate logs' first line carries only pytest progress rather than the revision, tree and command, and the negative_control_note's claim that the two substitutions are asserted to apply at exactly one site each is not visible in the log itself.",
+    "fit": "the repair follows the module's voice: refusal_census grows a keyword-only model and reports excluded_runs beside refused_runs, routing.py keeps a single CrewError style and an inline comment stating why an absent window is unbounded rather than zero, and the data file states the pooled figure beside the lane's own so the difference is not latent. The new tests use tmp_path fixtures and derive their expectation from the file they check.",
+    "goal_fidelity": "the measurement half of \u00a77 is now correct and lane-scoped \u2014 the census narrows to the lane's own model and returns 200000 where the pooled figure was 73728, the published data states both, and the verdict handles a lane that declares no window. The end-to-end outcome the measure names (a node the endpoint would refuse is refused by reckon before launch) still does not occur, because no production caller can supply effective_input_window; that half is fenced out of this run's write paths and named in the manifest and the plan as a later node's, so the shortfall is declared rather than concealed.",
+    "scope_discipline": "the repair commits ed2bc107, 640398ea and b2edc192 touch exactly the run's declared write paths (reckon/crew/routing.py, reckon/crew/context_budget.py, tests/test_routing_surface.py, docs/research/data/clive-effective-window.json, the evidence anchor and the plan HTML); the worktree is clean and no path outside the fence is modified. The flight-schema slot is left to another node rather than reached for."
+  },
+  "prior_findings": [
+    {
+      "file": "reckon/crew/context_budget.py",
+      "line": "205",
+      "text": "refusal_census takes the minimum estimate over every refused run in the directory with no filter on the lane's model, so against the same runs dir it returns 73728 (a glm-5.3 refusal's announced window) while the shipped docs/research/data/clive-effective-window.json declares 200000 for the flash lane."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1588",
+      "text": "the gating branch reads effective_input_window from resolution.backend_settings, but nothing in the tree can put it there: _backend_settings (reckon/crew/dispatch.py:5101) forwards only usable_input_window, model and effort, and the generated backend model in reckon/_flight_schema.py:44 is extra=\"forbid\", so the gating path is unreachable by any production caller."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1595",
+      "text": "when declared_window is absent but effective_boundary is set, int(None) is caught and re-raised as `backend ... declares a non-integer usable input window None`, contradicting the schema's absence-means-unbounded semantics."
+    },
+    {
+      "file": "docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html",
+      "line": "56",
+      "text": "the figure caption called 200000 the largest input the recordings show it rejecting while the data file's boundary_basis called it the lowest estimated input among recorded refusals; opposite superlatives for one number."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "SCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the measurement half of \u00a77 is now correct and lane-scoped \u2014 the census narrows to the lane's own model and returns 200000 where the pooled figure was 73728, the published data states both, and the verdict handles a lane that declares no window. The end-to-end outcome the measure names still does not occur, because no production caller can supply effective_input_window; that half is fenced out of this run's write paths and named in the manifest and the plan as a later node's, so the shortfall is declared rather than concealed.\nSCORE evidence: 18\nJUSTIFICATION evidence: three new tests guard the repairs, including test_the_recorded_lane_boundary_agrees_with_the_row_it_is_taken_over (tests/test_routing_surface.py:730) which recomputes the published boundary from the file's own listed refusals and requires agreement. The gate delta is independently confirmed at the repaired head (whole file 2 failed, 6 errors, 6 passed against gate-base 2 failed, 6 errors, 1 passed, identical failure ids, zero added failures) and the negative control was re-run under the declared mutation. Remaining weakness: the gate logs' first line carries only pytest progress rather than revision, tree and command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the repair commits ed2bc107, 640398ea and b2edc192 touch exactly the run's declared write paths; the worktree is clean and no path outside the fence is modified. The flight-schema slot is left to another node rather than reached for.\nSCORE durability: 17\nJUSTIFICATION durability: the census \u2014 the derivation the first review found untested \u2014 now has a narrowing test and a file-agreement test, and the absent-window verdict path has its own test. The gating branch is still reachable only from a fabricated DispatchPlan, so its guard protects a path no production caller walks until the schema node lands.\nSCORE fit: 18\nJUSTIFICATION fit: the repair follows the module's voice: refusal_census grows a keyword-only model and reports excluded_runs beside refused_runs, routing.py keeps a single CrewError style and an inline comment stating why an absent window is unbounded rather than zero, and the data file states the pooled figure beside the lane's own. The new tests use tmp_path fixtures and derive their expectation from the file they check.\nFINDING reckon/crew/context_budget.py:214 FIXED \u2014 first finding: the census now narrows to the lane's own model (context_budget.py:214), reports excluded runs (context_budget.py:215), and the data file states both figures (data:10-11); confirmed live that model='deepseek-v4.1-flash' returns 200000 and the pooled call returns 73728, and tests/test_routing_surface.py:707 asserts the pair.\nFINDING reckon/crew/routing.py:1596 NOT FIXED (correctly deferred) \u2014 second finding: effective_input_window still has no supplier in the tree, so the gating branch remains unreachable in production; the manifest and plan name the flight-schema slot as a later node's write scope, outside this run's fence.\nFINDING reckon/crew/routing.py:1596 FIXED \u2014 third finding: an absent declared window is now unbounded (routing.py:1596), a non-positive boundary is refused on its own name (routing.py:1618), and the boundary alone gates the lane (routing.py:1624, reason at :1655); tests/test_routing_surface.py:770 exercises it.\nFINDING docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html:62 FIXED \u2014 fourth finding: the figcaption now reads the lowest estimate among the lane's recorded refusals (:62) and the data file's boundary_basis agrees (data:10).\n",
+  "review_run_id": "r-20260923T020102984428-rereview-of-the-context-fit-uses-the-effective-window",
+  "reviewed_base": "fa98d32a5ea59e1bec2793823b7e16104bff56e9",
+  "reviewed_head": "b2edc192",
+  "reviewed_run_id": "r-20260922T211337757018-the-context-fit-uses-the-effective-window",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20260923T020102984428-rereview-of-the-context-fit-uses-the-effective-window",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-id",
+  "timestamp": "2026-09-23T02:20:00+00:00",
+  "total": 89
+}

@@ -1,0 +1,47 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:4232 (crew complete passes --waive-live-run)",
+    "reckon/crew/promotion.py:2789 (guard called inside complete)",
+    "reckon/crew/promotion.py:4465 (waiver recorded on the promoted row)"
+  ],
+  "completed_at": "2026-09-26T15:03:52.573Z",
+  "dispatched_at": "2026-09-26T14:28:29Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; dc47da0a adds the guard, the CLI option and six tests, d8d8c6b1 adds the landing record, the figure and the plan entry, and 1021d582 deletes the two pytest scratch files and nothing else, with no .py path differing between dc47da0a and the head.",
+    "done_when": "the done_when names tests/test_complete_refuses_a_live_run.py with a refusal naming pid and status, a waiver case, an exited-worker case, a synthetic config home and repository, a logged negative control and no added failures over tests/test_crew_promotion.py and tests/test_crew_promotion_scope.py at base 9fafad1f; the manifest records the base arm at 76 passed and the head arm at 82 passed and names the executed control.",
+    "goal": "the goal is to refuse promoting a run whose recorded process is alive and whose manifest is not terminal unless a waiver names the reason; reckon/crew/promotion.py:2571 is that guard, reached under the pointer lock at promotion.py:2789, and the waiver reason rides the promoted row at promotion.py:4465.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103214701580-complete-refuses-a-live-run/manifest.md; it states status complete, three commits, the head gate command with 82 passed, and base, after and negative-control logs that are all present on disk.",
+    "write_paths": "read the six declared paths in the live pointer of r-20260926T103214701580; git diff 9fafad1f..1021d582 touches exactly those six files and nothing else."
+  },
+  "justifications": {
+    "durability": "stubbing promotion._require_worker_stopped_before_promotion in memory at the reviewed head reddened tests/test_complete_refuses_a_live_run.py:139 with DID NOT RAISE CrewError, and the module's six cases carry the conjunction's four boundaries, so the echo-shaped assertions at :143 and :166 are not what protects it.",
+    "evidence": "the base and head arms are recorded with the module pinned to the gate tree (base-promotion.log opens with a rev header, after-promotion-1021d582.log records 82 passed), and an independent re-run of the named module at the reviewed head measured 6 passed, though the head log opens without a rev header so its revision rides the manifest.",
+    "fit": "the guard sits beside _require_recognised_manifest_status in promotion.py:2571, reuses the shared TERMINAL_MANIFEST_STATUSES and record_process_alive, the flag joins the --waive-* family at reckon/cli.py:4159, and the row key live_run_waiver mirrors review_waiver at promotion.py:4464.",
+    "goal_fidelity": "promotion.py:2571 refuses on exactly the conjunction the goal names, its one message carries both the pid and the status, and promotion.py:2789 reaches it under the pointer lock before any store is written.",
+    "scope_discipline": "all six paths in the diff are inside the pointer's declared write paths, and the 112 lines of pytest scratch the branch once carried are removed by 1021d582 whose diff is deletions only; the walk-up hazard behind that scratch is the pre-existing tests/test_crew_promotion.py:1623, outside this node's fence and reproduced in a throwaway repository."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to refuse promoting a run whose recorded process is alive and whose manifest is not terminal unless a waiver names the reason; reckon/crew/promotion.py:2571 is that guard, reached under the pointer lock at promotion.py:2789, and the waiver reason rides the promoted row at promotion.py:4465.\nVERDICT done_when: the done_when names tests/test_complete_refuses_a_live_run.py with a refusal naming pid and status, a waiver case, an exited-worker case, a synthetic config home and repository, a logged negative control and no added failures over tests/test_crew_promotion.py and tests/test_crew_promotion_scope.py at base 9fafad1f; the manifest records the base arm at 76 passed and the head arm at 82 passed and names the executed control.\nVERDICT write_paths: read the six declared paths in the live pointer of r-20260926T103214701580; git diff 9fafad1f..1021d582 touches exactly those six files and nothing else.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103214701580-complete-refuses-a-live-run/manifest.md; it states status complete, three commits, the head gate command with 82 passed, and base, after and negative-control logs that are all present on disk.\nVERDICT diff: read commit by commit; dc47da0a adds the guard, the CLI option and six tests, d8d8c6b1 adds the landing record, the figure and the plan entry, and 1021d582 deletes the two pytest scratch files and nothing else, with no .py path differing between dc47da0a and the head.\nCALL_SITES: reckon/cli.py:4232 (crew complete passes --waive-live-run), reckon/crew/promotion.py:2789 (guard called inside complete), reckon/crew/promotion.py:4465 (waiver recorded on the promoted row)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: promotion.py:2571 refuses on exactly the conjunction the goal names, its one message carries both the pid and the status, and promotion.py:2789 reaches it under the pointer lock before any store is written.\nSCORE evidence: 18\nJUSTIFICATION evidence: the base and head arms are recorded with the module pinned to the gate tree (base-promotion.log opens with a rev header, after-promotion-1021d582.log records 82 passed), and an independent re-run of the named module at the reviewed head measured 6 passed, though the head log opens without a rev header so its revision rides the manifest.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all six paths in the diff are inside the pointer's declared write paths, and the 112 lines of pytest scratch the branch once carried are removed by 1021d582 whose diff is deletions only; the walk-up hazard behind that scratch is the pre-existing tests/test_crew_promotion.py:1623, outside this node's fence and reproduced in a throwaway repository.\nSCORE durability: 19\nJUSTIFICATION durability: stubbing promotion._require_worker_stopped_before_promotion in memory at the reviewed head reddened tests/test_complete_refuses_a_live_run.py:139 with DID NOT RAISE CrewError, and the module's six cases carry the conjunction's four boundaries, so the echo-shaped assertions at :143 and :166 are not what protects it.\nSCORE fit: 19\nJUSTIFICATION fit: the guard sits beside _require_recognised_manifest_status in promotion.py:2571, reuses the shared TERMINAL_MANIFEST_STATUSES and record_process_alive, the flag joins the --waive-* family at reckon/cli.py:4159, and the row key live_run_waiver mirrors review_waiver at promotion.py:4464.\n",
+  "review_run_id": "r-20260926T142811418533-re-review-of-complete-refuses-a-live-run",
+  "reviewed_base_sha": "9fafad1fde793b9a0d5bc7ac60114f445359d202",
+  "reviewed_head_sha": "1021d5820351f3cb01e098e6f9ca376ce0e3ff1f",
+  "reviewed_run_id": "r-20260926T103214701580-complete-refuses-a-live-run",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-09-26T14:57:38.820229+00:00",
+  "total": 95
+}
