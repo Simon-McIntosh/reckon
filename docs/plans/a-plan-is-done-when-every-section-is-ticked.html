@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -82,13 +82,18 @@
     <p><strong>Deliverable.</strong> A plan's typed read (<code>read_plan</code>, <code>view</code> summary and
       detail) carries a <code>todos</code> list derived in Python. It has one entry per authored section, in document
       order, each with the section id, its heading text, the in-page link <code>#&lt;id&gt;</code>, and its
-      declaration. A ticked entry also carries the newest comment on that section, which is the landing beat's closing
-      record. Nothing new is stored: the list is derived from the headings, the declarations and the comments.</p>
-    <p><strong>Done when</strong> a test reads a fixture plan with three sections (one done with a closing comment,
-      one implementable, one deferred) and finds three entries in document order with those states, the done entry
-      carrying its comment. A second test ticks a section through <code>set section_declarations.&lt;id&gt;</code>
-      and finds the plan's review fingerprint unchanged. Both fail on the current code, which has no
-      <code>todos</code> field; that is their negative control.</p>
+      declaration. A ticked entry also carries its closing record: the section comment whose id is
+      <code>c-close-&lt;id&gt;</code>, which the landing beat writes in the same call as the tick (§7). The record is
+      selected by that id, never by recency. Promotion appends its own section comments under the same author, so
+      the newest comment is often a review or <code>landing:</code> line written after the close. Nothing new is
+      stored: the list is derived from the headings, the declarations and that one comment.</p>
+    <p><strong>Done when</strong> a test reads a fixture plan with three sections (one done with a
+      <code>c-close-</code> comment followed by a later promotion comment, one implementable, one deferred) and finds
+      three entries in document order with those states, the done entry carrying the <code>c-close-</code> comment
+      rather than the later one. It fails on the current code, which has no <code>todos</code> field. A second test
+      ticks a section through <code>set section_declarations.&lt;id&gt;</code> and finds the plan's review
+      fingerprint unchanged. That already holds today, so its negative control is a declared mutation: digest with
+      <code>keep_declarations=True</code>, so the declarations enter the fingerprint, and the test must fail.</p>
 
     <h2 id="s4" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="">§4 — The SPA shows the todo list at the top of the plan</h2>
     <p><strong>Deliverable.</strong> The plan view renders the <code>todos</code> field from §3 above the first
@@ -121,12 +126,14 @@
     <h2 id="s7" data-reckon="section" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links="">§7 — The landing beat ticks instead of collapsing</h2>
     <p><strong>Deliverable.</strong> The landing beat in <code>skills/reckon-build/SKILL.md</code>, its coordinator
       reference and <code>skills/reckon-edit/SKILL.md</code> becomes three ops: <code>append_evidence</code>, a
-      <code>set</code> of the section's declaration to <code>done</code>, and a closing comment on the section carrying
-      the result and a link to the evidence. <code>collapse_section</code> stays available but no skill uses it, and
-      the section body stays as authored.</p>
+      <code>set</code> of the section's declaration to <code>done</code>, and a closing comment with the id
+      <code>c-close-&lt;section&gt;</code> carrying the result and a link to the evidence, all in one call.
+      <code>collapse_section</code> stays available but no skill uses it, and the section body stays as authored. The
+      two docstrings in <code>reckon/crew/review_lifecycle.py</code> that describe a landed plan as collapsed are
+      reworded to the declaration, which is what that code already reads.</p>
     <p><strong>Done when</strong> the skill-contract test applies each skill's documented landing examples to a
-      fixture plan and finds the section's body unchanged, its declaration <code>done</code>, its closing comment
-      present, and the plan's review fingerprint unchanged. With a collapse put back in the examples, the test
+      fixture plan and finds the section's body unchanged, its declaration <code>done</code>, its
+      <code>c-close-</code> comment present, and the plan's review fingerprint unchanged. With a collapse put back in the examples, the test
       fails; that is its negative control.</p>
 
     <h2 id="s8" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links="">§8 — Retire the pre-collapse fingerprint form</h2>
@@ -141,7 +148,7 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="deferred-counts-as-ticked">
+<div class="r-dec" data-key="deferred-counts-as-ticked" data-choice="" data-by="" data-when="">
     <p class="r-dec-q">Does a deferred section count as ticked when a plan is set to done?</p>
     <p class="r-dec-ctx">A deferred section is one the author chose not to build in this plan. If it blocks done,
           authors are pushed to delete sections they mean to come back to.</p>
@@ -149,18 +156,19 @@
       <button class="r-opt" data-value="deferred-satisfies">Yes: done needs every section done or deferred</button>
       <button class="r-opt" data-value="deferred-blocks">No: done needs every section done</button>
       </p>
+    <p class="r-dec-rat"></p>
     </div>
-    </section>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tick-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build a-plan-is-done-when-every-section-is-ticked §3">
+<article class="r-fu" data-id="f-tick-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build a-plan-is-done-when-every-section-is-ticked §3" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Derive the todo list, then show and enforce it</h4>
     <div class="r-fu-body"><p>§3 derives the list in the plan read. §4 renders it and §7 changes the landing beat;
       both read §3's field. §5 and §6 are independent controls, each measured by a census before it is closed.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-plan-is-done-when-every-section-is-ticked §3</pre>
     </article>
-    </section>
+</section>
   </main>
 </body>
 </html>
