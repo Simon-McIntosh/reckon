@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "clive",
+  "base_log_revision": null,
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1350",
+    "reckon/crew/dispatch.py:10129",
+    "reckon/crew/dispatch.py:6173",
+    "reckon/crew/dispatch.py:7553"
+  ],
+  "completed_at": "2026-10-07T16:33:27.465Z",
+  "dispatched_at": "2026-10-07T16:14:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1344",
+      "severity": "follow-on",
+      "text": "follow-on: _session_host_waiting reads reader-presence as host liveness, so a host that still holds its FIFO descriptor open while not serving is predicted host, whereas the real dispatch _ask_session_host_for_follower (dispatch.py:1415) writes a request and waits WATCHER_LOAD_BOUND_SECONDS for the session to attach before falling back to monitor; the dry run can therefore overstate delivery for a wedged host. The increment now records this limitation in the function docstring rather than closing it, which is correct -- telling a wedged host from a live one would need the one write a dry run must not make."
+    }
+  ],
+  "head_log_revision": "97f58edfa6b706e28ddf5a7fd69399fe002c03c0",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the changed capability's call sites in the reviewed head: _open_request_fifo at dispatch.py:1350 (the liveness read) and dispatch.py:10129 (the request write), _session_host_runs_follower at dispatch.py:6173 (dry run) and dispatch.py:7553 (real dispatch).",
+    "diff": "read the increment commit by commit against the previously reviewed head 413c5a025: one commit 97f58edfa corrects _session_host_waiting's docstring and routes it through the newly extracted _open_request_fifo (dispatch.py:10100), adds the host-census mirror branch at dispatch.py:6173 with the two parity tests, and updates the fragment lead.",
+    "done_when": "plan a-follower-lives-as-long-as-its-session s10 asks that a dry run for an unattached session with a waiting host FIFO finds no watcher-required refusal, a predicted delivery of host, and no byte written to the FIFO (tests/test_dispatch_session_host.py:377). The increment adds the sibling parity cases: tests/test_dispatch_session_host.py:448 (host-started follower -> host) and tests/test_dispatch_session_host.py:479 (hand-armed follower -> monitor); I ran the file at the reviewed head and it is 8 passed EXIT=0.",
+    "goal": "the increment extends the dry-run prediction so it mirrors BOTH arms of the real host admission, not only the waiting-host arm: reckon/crew/dispatch.py:6170 predicts host for a waiting host (as at 413c5a025) and dispatch.py:6173 adds the host-census arm, so a session a follower already runs reads host when the host's own census names that follower and monitor otherwise -- which is the delivery the real admission at dispatch.py:7543/7553 reaches for the same state.",
+    "manifest": "read the reviewed run's manifest: status complete, commits 413c5a025 and 97f58edfa, after_suite 61 passed EXIT=0 at 97f58edfa (gate-head.log), baseline_suite the declared negative control 1 failed EXIT=1 (gate-negative.log), negative_control_log named, and an empty follow_ons/blockers.",
+    "write_paths": "the increment 413c5a025..97f58edfa touches exactly the three declared paths -- reckon/crew/dispatch.py, tests/test_dispatch_session_host.py and the evidence fragment -- 86/62/2 changed lines, 117 insertions and 33 deletions; nothing outside them was written."
+  },
+  "justifications": {
+    "durability": "the new cases assert from the code's output (resolution.watch delivery and session_attached) at dispatch.py:6173 and redden when that branch is removed; the waiting-host case independently asserts zero bytes read back off the FIFO.",
+    "evidence": "independently ran tests/test_dispatch_session_host.py at 97f58edfa -> 8 passed EXIT=0 (review-gate-head.log), and independently reproduced the declared negative control by deleting the mirrored branch in a scratch extraction -> the host-started test fails monitor vs host EXIT=1 (review-negative-control.log), so the new guard is shown to fire.",
+    "fit": "dispatch.py:10100 follows the module's docstring-and-type-hint idiom, the helper is private, and no name or comment carries a plan label, ticket number or version tag; the docstring records the mechanism (the shared reconnect-or-fall-back open) rather than a changelog.",
+    "goal_fidelity": "the dry run now reports host for both states the real admission does -- a waiting host (dispatch.py:6170) and a follower the host's census names (dispatch.py:6173) -- and monitor otherwise, matching the real branches at dispatch.py:7543 and dispatch.py:7553; the two new tests assert the same fixture reaches host/monitor in the dry run as the pre-existing real-dispatch tests do.",
+    "reuse": "the increment removes the duplication the previous review flagged: the non-blocking O_WRONLY|O_NONBLOCK reconnect-or-fall-back open that _write_fleet_request owned is now the single _open_request_fifo (dispatch.py:10100) shared by the request write and the dry run's liveness read, so the two spellings can no longer drift.",
+    "scope_discipline": "the increment diff 413c5a025..97f58edfa is confined to the three declared paths, 117 insertions and 33 deletions, with no drive-by edits and no change to the real dispatch path except the shared _open_request_fifo extraction."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment extends the dry-run prediction so it mirrors BOTH arms of the real host admission, not only the waiting-host arm: reckon/crew/dispatch.py:6170 predicts host for a waiting host (as at 413c5a025) and dispatch.py:6173 adds the host-census arm, so a session a follower already runs reads host when the host's own census names that follower and monitor otherwise -- which is the delivery the real admission at dispatch.py:7543/7553 reaches for the same state.\nVERDICT done_when: plan a-follower-lives-as-long-as-its-session s10 asks that a dry run for an unattached session with a waiting host FIFO finds no watcher-required refusal, a predicted delivery of host, and no byte written to the FIFO (tests/test_dispatch_session_host.py:377). The increment adds the sibling parity cases: tests/test_dispatch_session_host.py:448 (host-started follower -> host) and tests/test_dispatch_session_host.py:479 (hand-armed follower -> monitor); I ran the file at the reviewed head and it is 8 passed EXIT=0.\nVERDICT write_paths: the increment 413c5a025..97f58edfa touches exactly the three declared paths -- reckon/crew/dispatch.py, tests/test_dispatch_session_host.py and the evidence fragment -- 86/62/2 changed lines, 117 insertions and 33 deletions; nothing outside them was written.\nVERDICT manifest: read the reviewed run's manifest: status complete, commits 413c5a025 and 97f58edfa, after_suite 61 passed EXIT=0 at 97f58edfa (gate-head.log), baseline_suite the declared negative control 1 failed EXIT=1 (gate-negative.log), negative_control_log named, and an empty follow_ons/blockers.\nVERDICT diff: read the increment commit by commit against the previously reviewed head 413c5a025: one commit 97f58edfa corrects _session_host_waiting's docstring and routes it through the newly extracted _open_request_fifo (dispatch.py:10100), adds the host-census mirror branch at dispatch.py:6173 with the two parity tests, and updates the fragment lead.\nCALL_SITES: reckon/crew/dispatch.py:1350, reckon/crew/dispatch.py:10129, reckon/crew/dispatch.py:6173, reckon/crew/dispatch.py:7553\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the dry run now reports host for both states the real admission does -- a waiting host (dispatch.py:6170) and a follower the host's census names (dispatch.py:6173) -- and monitor otherwise, matching the real branches at dispatch.py:7543 and dispatch.py:7553; the two new tests assert the same fixture reaches host/monitor in the dry run as the pre-existing real-dispatch tests do.\nSCORE evidence: 18\nJUSTIFICATION evidence: independently ran tests/test_dispatch_session_host.py at 97f58edfa -> 8 passed EXIT=0 (review-gate-head.log), and independently reproduced the declared negative control by deleting the mirrored branch in a scratch extraction -> the host-started test fails monitor vs host EXIT=1 (review-negative-control.log), so the new guard is shown to fire.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the increment diff 413c5a025..97f58edfa is confined to the three declared paths, 117 insertions and 33 deletions, with no drive-by edits and no change to the real dispatch path except the shared _open_request_fifo extraction.\nSCORE durability: 18\nJUSTIFICATION durability: the new cases assert from the code's output (resolution.watch delivery and session_attached) at dispatch.py:6173 and redden when that branch is removed; the waiting-host case independently asserts zero bytes read back off the FIFO.\nSCORE fit: 19\nJUSTIFICATION fit: dispatch.py:10100 follows the module's docstring-and-type-hint idiom, the helper is private, and no name or comment carries a plan label, ticket number or version tag; the docstring records the mechanism (the shared reconnect-or-fall-back open) rather than a changelog.\nSCORE reuse: 19\nJUSTIFICATION reuse: the increment removes the duplication the previous review flagged: the non-blocking O_WRONLY|O_NONBLOCK reconnect-or-fall-back open that _write_fleet_request owned is now the single _open_request_fifo (dispatch.py:10100) shared by the request write and the dry run's liveness read, so the two spellings can no longer drift.\nFINDING reckon/crew/dispatch.py:1344 follow-on: _session_host_waiting reads reader-presence as host liveness, so a host that still holds its FIFO descriptor open while not serving is predicted host, whereas the real dispatch _ask_session_host_for_follower (dispatch.py:1415) writes a request and waits WATCHER_LOAD_BOUND_SECONDS for the session to attach before falling back to monitor; the dry run can therefore overstate delivery for a wedged host. The increment now records this limitation in the function docstring rather than closing it, which is correct -- telling a wedged host from a live one would need the one write a dry run must not make.",
+  "review_run_id": "r-20261007T161404007100-review-of-a-dry-run-predicts-host-delivery",
+  "reviewed_base_sha": "413c5a02589e0f2dd76581801483bc2ff0076a79",
+  "reviewed_head_sha": "97f58edfa6b706e28ddf5a7fd69399fe002c03c0",
+  "reviewed_run_id": "r-20261007T151956577480-a-dry-run-predicts-host-delivery",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261007T161404007100-review-of-a-dry-run-predicts-host-delivery",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T16:28:07Z",
+  "total": 113
+}

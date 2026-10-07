@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.89">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="49">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -317,6 +317,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261007T154246101688-review-of-a-dry-run-predicts-host-delivery" data-who="reckon-build" data-when="2026-10-07T15:54:47.371Z">
     <div class="r-comment-body"><p>Independent review of run r-20261007T151956577480-a-dry-run-predicts-host-delivery stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T151956577480-a-dry-run-predicts-host-delivery.at-413c5a02589e0f2dd76581801483bc2ff0076a79.json: all six dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 16; total 110) over the a78d1cf..413c5a025 diff, with added_failure_count 0 and no added failure ids derived from the reviewed run's own gate-head.log and gate-negative.log; two follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261007T161404007100-review-of-a-dry-run-predicts-host-delivery" data-who="reckon-build" data-when="2026-10-07T16:33:27.465Z">
+    <div class="r-comment-body"><p>Independent incremental review of r-20261007T151956577480-a-dry-run-predicts-host-delivery over the commits it gained since it was reviewed (413c5a02589e0f2dd76581801483bc2ff0076a79..97f58edfa6b706e28ddf5a7fd69399fe002c03c0): the repair mirrors both real host-admission arms in the dry run and extracts the shared _open_request_fifo, scoring goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 19 (total 113); one carried-forward follow-on (a wedged host reads as live).</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-07T16:25:00Z">
     <div class="r-comment-body"><p>Landed at merge <code>750f677a</code>. <code>SessionHost.stop</code> takes a reason and writes <code>stopped_at</code> and <code>stop_reason</code> (<code>owner ended</code> or <code>signalled</code>) into the host's final record, stamped when the host notices. Gate: 17 passed, and both new tests fail on the base code. Population of 8 importing test files: 129 passed at base, 131 at the merged head, 0 added. Review 111/120. Its one finding was a text-less placeholder that names no defect; the repair round it started was stopped, and the plan-review session owns the guard. Section closed by tick, not collapse. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/the-session-host-records-when-it-stopped.html">evidence</a></p></div>
