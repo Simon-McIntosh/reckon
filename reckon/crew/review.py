@@ -2139,9 +2139,12 @@ def store_committed_review(
 
     ``committed_root`` names the tree directly (a caller that already resolved
     it, or a test); omitted, it resolves through :func:`committed_review_root`
-    against ``root``. A plan review (one naming ``plan_slug``) is written under
-    ``plan/<slug>/`` and needs no reviewed run; a run review is written under
-    ``run/<reviewed-run-id>/`` and must name the reviewed run. A disposition or
+    against ``root``. A run review — one naming ``reviewed_run_id`` — is written
+    under ``run/<reviewed-run-id>/``, whatever ``plan_slug`` its body also
+    carries, because a run review records the plan its reviewed run was carried
+    under and that plan is not the review's subject. A plan review is written
+    under ``plan/<slug>/`` and is routed there only when the body names no
+    reviewed run and carries an integer ``plan_version``. A disposition or
     answer recorded on any copy of this record — a staging sibling or the
     committed file already at the target path — is merged into the committed
     body, so a re-store of a round carries the answers rather than overwriting
@@ -2186,20 +2189,20 @@ def store_committed_review(
         stored["timestamp"] = datetime.now(UTC).isoformat()
 
     plan_slug = str(record.get("plan_slug") or "").strip()
-    if plan_slug:
+    if reviewed_run_id:
+        path = review_path(
+            project,
+            reviewed_run_id,
+            committed_root=committed_root,
+            review_run_id=review_run_id,
+        )
+    else:
         from reckon.crew.plan_review import plan_review_path
 
         path = plan_review_path(
             project,
             plan_slug,
             int(record.get("plan_version") or 0),
-            committed_root=committed_root,
-            review_run_id=review_run_id,
-        )
-    else:
-        path = review_path(
-            project,
-            reviewed_run_id,
             committed_root=committed_root,
             review_run_id=review_run_id,
         )

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>A run review naming its run's plan is committed under its run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="committed-store-files-run-reviews-under-their-run-landing">
+      <p>store_committed_review now tests the reviewed run before the plan, so a run review that carries its run's plan_slug and no plan_version is filed under run/&lt;reviewed-run-id&gt;/&lt;review-run-id&gt;.json rather than in the plan tree at version 0; a plan review still routes to plan/&lt;slug&gt;/ only when it carries an integer plan_version and no reviewed run. The change was merged with the committed store's answer merge so both hold: the routing decides the path, and the answer merge reads the staging siblings and the committed file already at that path. Gate tests/test_committed_store_files_run_reviews_under_their_run.py with tests/test_review_records_have_a_committed_root.py, tests/test_every_review_round_is_committed.py, and tests/test_dispositions_and_answers_survive_promotion.py: 21 passed, EXIT=0; negative control restores the plan-first order and fails test_a_run_review_with_its_runs_plan_slug_lands_in_the_run_tree, 1 failed, EXIT=1.</p>
+    </section>
+  </main>
+</body>
+</html>
