@@ -186,6 +186,30 @@ def test_a_declared_service_starts_as_its_own_session_holding_its_lock(home):
     assert not lease_path.exists()
 
 
+def test_stop_recovers_a_running_service_from_its_recorded_pid(home):
+    """A lost in-memory state still leaves a stop path through the local lock."""
+    _write_services(home, {"demo": home.argv("run")})
+    manager = fleet_supervisor.DeclaredServices(home.runtime, home.env)
+    manager.reload()
+    pid = _wait_for(
+        lambda: _instances(home.instances) or None,
+        message="the synthetic service never started",
+    )[0]
+    lease_path = HostLease(home.state, "demo", "reader", 0, "").path
+    assert manager._states.pop("demo").pid == pid
+    assert fleet_supervisor.recorded_service_pid(home.runtime, "demo") == pid
+    assert fleet_supervisor.lock_held("demo", home.runtime)
+    assert lease_path.exists()
+
+    manager.stop("demo")
+    _wait_for(
+        lambda: not _alive(pid),
+        message="the recorded service survived stop after in-memory state was lost",
+        timeout=1.0,
+    )
+    assert not lease_path.exists()
+
+
 def test_a_second_start_or_reload_starts_no_second_copy(home):
     """The lock, not bookkeeping, refuses a second copy of a running service.
 

@@ -762,10 +762,6 @@ class DeclaredServices:
         state = self._states.pop(name, None)
         lease = self._leases.pop(name, None)
         pid_path = service_pid_path(self._runtime, name)
-        if state is None or state.pid is None:
-            if lease is not None:
-                lease.release()
-            return
         pid = state.pid if state is not None else None
         if pid is None:
             pid = recorded_service_pid(self._runtime, name)
@@ -786,8 +782,7 @@ class DeclaredServices:
                 signal_worker(pid, signal.SIGKILL, reason="fleet-service-stop")
                 break
             time.sleep(SERVICE_POLL_SECONDS)
-        if state is not None and state.owned:
-            self._collect_locked(pid)
+        self._collect_locked(pid)
         pid_path.unlink(missing_ok=True)
         if lease is not None:
             lease.release()
