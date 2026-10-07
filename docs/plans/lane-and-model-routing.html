@@ -23,7 +23,7 @@
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -79,12 +79,13 @@
       <li>confidence is confidence in the joint pick;</li>
       <li>unknown facts are null, not zero.</li>
     </ul>
+    <p><code>build_state</code> in <code>reckon/crew/picker/prompts.py</code> assembles the rendered state from a fixed key set and lifts <code>return_times</code> and <code>local_lane</code> by name. This section therefore also lifts the new <code>lanes</code> block there; without that step the block never reaches <code>state.jinja</code>.</p>
     <p>This builds on <code>jev-prompt-carries-what-it-weighs</code> in <code>one-typesafe-model-picker</code> §6, which renders the state from one structured mapping with lane and model as separate fields. The gate below holds this section until that lands.</p>
     <p><strong>Write paths:</strong> <code>reckon/crew/picker/lane_context.py</code>, <code>reckon/crew/picker/snapshot.py</code>, <code>reckon/crew/picker/types.py</code>, <code>reckon/crew/picker/prompts.py</code>, <code>reckon/crew/picker/templates/questions.jinja</code>, <code>tests/test_picker_lanes.py</code>.</p>
     <p><strong>Done when:</strong></p>
     <ul>
       <li>a replay of at least 50 recorded dispatches through the new questions sends 0 picks to a refused or logged-out model;</li>
-      <li>agreement with the recorded lane is measured and reported;</li>
+      <li>agreement with the recorded lane is measured and reported for reading only. The recorded lane was chosen by deterministic routing, so disagreement in either direction is not a defect, and this figure closes nothing;</li>
       <li>the rendered state shows each lane's pressure exactly once and parses as JSON for normal and hostile inputs;</li>
       <li>a negative control that repeats pressure per model makes the once-per-lane test fail.</li>
     </ul>
