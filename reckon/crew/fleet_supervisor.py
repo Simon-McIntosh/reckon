@@ -1312,6 +1312,22 @@ def handle_line(
     if request.verb == "session":
         layout = request.fields[1] if len(request.fields) > 1 else ""
         _run_session_copy(request.fields[0] if request.fields else "", layout, environ)
+    elif request.verb == "ready" and len(request.fields) == 1:
+        token = request.fields[0]
+        if re.fullmatch(r"[0-9a-f]{32}", token):
+            source = os.environ if environ is None else environ
+            _write_json(
+                state_directory(source) / "migration" / f"ready-{token}.json",
+                {
+                    "job_id": source.get("SLURM_JOB_ID", ""),
+                    "node": _short_hostname(),
+                    "runtime_dir": str(runtime),
+                    "standby": standby,
+                    "ready_at": _utc_now(),
+                },
+            )
+        else:
+            log("invalid ready request token")
     elif request.verb == "reload":
         if services is not None and not standby:
             services.reload()
