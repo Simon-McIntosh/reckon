@@ -21,11 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -92,97 +93,23 @@
       nothing of its own: a reader sees the follower's ticker and nothing else, exactly as the follower prints it
       today.</p>
 
-    <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§3 — The session host starts with every session and stays silent until asked</h2>
-    <p><strong>Deliverable.</strong> A plugin at <code>plugins/crew-host/</code> in this repository, holding
-      <code>.claude-plugin/plugin.json</code>, <code>monitors/monitors.json</code> and one shell entry point,
-      <code>bin/crew-host</code>. The manifest declares one monitor with <code>when: "always"</code>, whose command
-      runs that entry point. The entry point:</p>
-    <ul>
-      <li>identifies its owner as the Claude process named by <code>CLAUDE_PID</code> together with that process's
-        start time from <code>/proc</code>. The pair stays the same across <code>/clear</code>, whereas the session id
-        does not;</li>
-      <li>creates a FIFO named after that pair in the runtime directory (<code>$XDG_RUNTIME_DIR</code>, then
-        <code>/run/user/&lt;uid&gt;</code>, then <code>$TMPDIR</code>), all of which are node-local, so waiting on it
-        costs nothing on GPFS;</li>
-      <li>blocks reading the FIFO with a 60-second timeout, so a request is handled as soon as it arrives and
-        the owner's liveness is re-checked on each timeout; it prints nothing;</li>
-      <li>on the first request, replaces itself with <code>reckon crew host</code> (same pid and same stdout). It
-        never parses a request: it opens the FIFO once, read-write, reads exactly one line (bash reads a pipe a
-        byte at a time, so it takes no more), and passes that line and the open descriptor to
-        <code>reckon crew host</code>, which is the protocol's only reader. The descriptor stays open across the
-        exec, so a request written in between waits in the pipe rather than being lost. It finds the checkout by resolving the entry-point script's own path with
-        <code>readlink -f</code> and taking the directory that contains <code>plugins/crew-host/bin/crew-host</code>,
-        then runs that checkout's <code>.venv/bin/reckon</code>, never a bare <code>reckon</code> from
-        <code>PATH</code>;</li>
-      <li>exits silently when its owner is gone.</li>
-    </ul>
-    <figure>
-      <img src="/reckon/figures/a-follower-lives-as-long-as-its-session/host-topology.svg"
-           alt="The Claude session starts the plugin monitor, which becomes reckon crew host on the first request a dispatch writes to its node-local FIFO; the host runs one crew follow per project and session, and their ticker lines return to the session on the shared stdout.">
-      <figcaption>The session host is the session's one monitor. Dispatch writes a request to its FIFO, the session host runs
-        one follower per project and session, and the followers' ticker lines reach the session on the stdout they
-        share with the host.</figcaption>
-    </figure>
-    <p><strong>Done when</strong> a fresh interactive session with the plugin linked shows one idle shell process
-      for that session and no output in its pane, and that process exits within a minute of the session ending.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="">§3 — The session host starts with every session and stays silent until asked</h2></header>
+  <p class="landed-summary">Landed <code>plugins/crew-host</code> as the <code>reckon-crew-host</code> plugin: one <code>always</code> monitor labelled <code>reckon crew</code> whose entry point waits silently on its owner's node-local FIFO, execs <code>reckon crew host --fd 3 --first-request</code> on the first request, and removes the FIFO when its owner ends. 5 tests; review 110/120 at <code>9435a8b9</code>. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/session-host-plugin-waits-silently.html">full record</a></p>
+</section>
 
-    <h2 id="s4" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§4 — <code>reckon crew host</code> supervises the session's followers</h2>
-    <p><strong>Deliverable.</strong> A <code>crew host</code> command, hidden from help because only the entry
-      point runs it, that reads one JSON request per line from the FIFO descriptor it inherits. Each request names
-      a project and a session. For each request it runs <code>reckon crew follow --project P --session S</code>
-      with no <code>--lifetime</code>, under the rules below.</p>
-    <p><strong>Prior art.</strong> <code>reckon/crew/fleet_supervisor.py</code> already serves a request FIFO
-      and supervises children. It is not the owner here, for three reasons. It runs once per SLURM allocation,
-      not once per Claude Code session, and does not exist on a login node. It starts each service as its own
-      session leader with its output logged, whereas a follower must end with its session and write to that
-      session's stdout. And a follower's lines reach the pane only when the follower descends from the plugin
-      monitor that holds that stdout. The session host reuses its parts instead:
-      <code>fleet_supervisor.next_backoff</code> for restarts, and <code>dispatch._write_fleet_request</code> for
-      the client write in §5.</p>
-    <ul>
-      <li><strong>Output.</strong> Children inherit the host's stdout, so their lines reach the pane exactly as the
-        follower prints them and their registrations read as delivering. Child stderr goes to
-        <code>~/.cache/reckon/session-host/&lt;claude-pid&gt;-&lt;start&gt;.log</code> on the shared home, where a
-        later session can read it, and never to the pane. The session host itself writes nothing to stdout, at
-        start, on a request, or on a restart.</li>
-      <li><strong>One child per project and session.</strong> A request for a project and session already followed
-        changes nothing and writes nothing. A request carries no observed sessions: observing another session's
-        runs stays on today's Monitor path.</li>
-      <li><strong>Restarts.</strong> A child that exits while its owner lives is restarted on the schedule
-        <code>fleet_supervisor.next_backoff</code> already applies to declared services. The session host does not start or restart its own child for a project and session while a
-        live follower it did not start holds that registration, so it never contends with a coordinator who armed
-        one by hand. It never stops a child it already runs because another follower appeared.</li>
-      <li><strong>The session host never exits on its own,</strong> because Claude Code would not restart it. It ends
-        only when its owner is gone or it receives a signal.</li>
-      <li><strong>Children end with the host.</strong> Every child is started with a parent-death signal. The session
-        host checks every five seconds that its owner is alive, and on its owner's end or on SIGTERM or SIGHUP it stops
-        every child and then exits.</li>
-      <li><strong>Record.</strong> The session host records its pid, owner and children in one file under
-        <code>~/.config/reckon/crew/session-hosts/</code>, written on change only, so a census can attribute every <code>crew follow</code> it started.</li>
-    </ul>
-    <p><strong>Done when</strong> unit tests drive the host with a fake follower command and show: one child per
-      project and session; a killed child restarted; a hand-armed live follower left alone; no stdout from the host
-      itself; and no child surviving the host's SIGTERM or its owner's exit.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s4" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="">§4 — <code>reckon crew host</code> supervises the session's followers</h2></header>
+  <p class="landed-summary">Landed the hidden <code>reckon crew host</code> verb (<code>reckon/crew/session_host.py</code>): one <code>crew follow</code> per project and session, silent on stdout, restarts on <code>fleet_supervisor.next_backoff</code>, defers to a hand-armed follower and takes the pair over once it ends, and stops every child when its owner ends or it is signalled. 10 tests; review 112/120 at <code>60e7f26b</code>; the restart path's silence is untested. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/session-host-supervises-followers.html">full record</a></p>
+</section>
 
-    <h2 id="s5" data-reckon="section" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§5 — Dispatch asks the session host before it refuses</h2>
-    <p><strong>Deliverable.</strong> In <code>reckon/crew/dispatch.py</code>, between
-      <code>_ensure_watch_producer</code> and <code>_watcher_delivery_admission</code>: when the launch kind is
-      <code>cli</code>, a session is named, that session is not attached, and the calling Claude process (resolved
-      the way <code>_coordinator_runtime</code> already resolves it) has a live session host, dispatch writes a request to
-      its FIFO through <code>_write_fleet_request</code> with no wait, so a FIFO without a reader means no session
-      host and falls back at once; that function's error text names the FIFO rather than the fleet. It then waits,
-      for at most <code>WATCHER_LOAD_BOUND_SECONDS</code> (the bound <code>_ensure_watch_producer</code> already
-      uses), until the session reads as attached. Then it
-      reads the watch state again and admits as it does today. Without a session host, or when it does not attach the
-      session within the bound, dispatch behaves exactly as it does now, with the attach line and the refusal. The
-      dispatch payload gains a <code>delivery</code> field: <code>"host"</code> when the session host attached the
-      session, <code>"monitor"</code> otherwise. When it reads <code>"host"</code>, the payload carries no arming
-      instruction. This plan adds two surfaces, the hidden <code>crew host</code> verb and the payload's
-      <code>delivery</code> field, and retires none: the Monitor path stays the fallback for Codex sessions,
-      <code>-p</code> sessions and sessions without the plugin.</p>
-    <p><strong>Done when</strong> a test with a stub host shows a dispatch from an unattached session admitted with
-      <code>delivery: "host"</code> and no refusal, and the same dispatch with no host still refused with the same
-      refusal text as before this change.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s5" data-reckon="section" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="">§5 — Dispatch asks the session host before it refuses</h2></header>
+  <p class="landed-summary">Landed in <code>reckon/crew/dispatch.py</code>: an unattached session's dispatch writes <code>{project, session}</code> to the calling Claude process's host FIFO through <code>_write_fleet_request</code> with no wait, waits up to <code>WATCHER_LOAD_BOUND_SECONDS</code> for attachment, and records <code>delivery</code> as <code>host</code> or <code>monitor</code>; the refusal is unchanged without a host. Review 109/120 at <code>8775e225</code>. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/dispatch-asks-the-session-host.html">full record</a></p>
+</section>
 
     <h2 id="s6" data-reckon="section" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links="">§6 — <code>reckon-sync</code> links the plugin; <code>reckon doctor</code> checks it</h2>
     <p><strong>Deliverable.</strong> <code>reckon-sync</code> links <code>plugins/crew-host</code> from the main
