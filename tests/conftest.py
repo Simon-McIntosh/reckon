@@ -29,6 +29,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon.cli import CLAUDE_SKILLS_DIR_ENV
 from reckon.crew.dispatch import (
     WATCH_ARMING_ENV,
     WORKER_SCRATCH_ROOT_ENV,
@@ -1054,39 +1055,33 @@ def isolated_reckon_home(request, tmp_path_factory, monkeypatch):
     return home
 
 
-# The personal skills directory ``reckon sync`` links into and ``reckon doctor``
-# reads. Without an override both resolve the operator's real
-# ``~/.claude/skills``: a test that exercises either moves, repoints or reports
-# on the operator's own skill links, and a test's outcome then depends on
-# ambient state. The fixture points the override at a per-test temporary
-# directory, so a run under test never leaves its own tree.
-CLAUDE_SKILLS_DIR_ENV = "RECKON_CLAUDE_SKILLS_DIR"
-
-# Modules that resolve the personal skills directory for themselves by patching
-# ``Path.home``: their doctor runs already read a fixture home, so pointing the
-# override at a shared per-test directory would send the skills-presence check
-# somewhere other than the tree the module built. They keep the resolver's
-# ``Path.home`` fallback, which for them is the fixture home — still away from
-# the operator's real directory.
-_SKILLS_DIR_SELF_ISOLATED_MODULES = frozenset({"test_doctor"})
-
-
-@pytest.fixture(autouse=True)
-def isolated_claude_skills_dir(request, tmp_path_factory, monkeypatch):
+@pytest.fixture(scope="session", autouse=True)
+def isolated_claude_skills_dir(tmp_path_factory):
     """No test's sync or doctor reads or writes the real ~/.claude/skills.
 
-    The directory is made under the session's base temp tree rather than the
+    ``reckon sync`` links the session-host plugin into the personal skills
+    directory and ``reckon doctor`` reads it back. Without an override both
+    resolve the operator's real ``~/.claude/skills``, so a test that exercises
+    either moves, repoints or reports on the operator's own skill links and its
+    outcome then depends on ambient state. The override is set for the whole
+    session rather than for one test: a fixture scoped wider than a test — a
+    module- or session-scoped fixture that runs sync — would not see a
+    function-scoped override and would reach the real directory.
+
+    The directory is made under the session's base temp tree rather than a
     test's own ``tmp_path``: a fixture that added an entry to ``tmp_path`` would
-    change what a test listing or comparing that directory sees. A module in
-    ``_SKILLS_DIR_SELF_ISOLATED_MODULES`` supplies its own isolation and keeps
-    the fallback.
+    change what a test listing or comparing that directory sees.
     """
-    module = getattr(getattr(request.node, "module", None), "__name__", "")
-    if module.rsplit(".", 1)[-1] in _SKILLS_DIR_SELF_ISOLATED_MODULES:
-        return None
     skills = tmp_path_factory.mktemp("claude-skills")
-    monkeypatch.setenv(CLAUDE_SKILLS_DIR_ENV, str(skills))
-    return skills
+    previous = os.environ.get(CLAUDE_SKILLS_DIR_ENV)
+    os.environ[CLAUDE_SKILLS_DIR_ENV] = str(skills)
+    try:
+        yield skills
+    finally:
+        if previous is None:
+            os.environ.pop(CLAUDE_SKILLS_DIR_ENV, None)
+        else:
+            os.environ[CLAUDE_SKILLS_DIR_ENV] = previous
 
 
 @pytest.fixture(scope="session", autouse=True)
