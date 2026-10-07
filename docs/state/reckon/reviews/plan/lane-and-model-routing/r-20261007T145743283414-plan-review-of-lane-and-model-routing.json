@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T15:04:19.897Z",
+  "dispatched_at": "2026-10-07T14:58:03Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/lane-and-model-routing.html:87",
+      "id": "done_when-1",
+      "reason": "this is \u00a75's only measure of the new questions' routing quality, so a worker can ship an incorrect lane-and-model questions template and still pass the section's headline check; the done-when needs an assertion that can fail (for example a negative control that widens `offered` to include a refused pair and shows the questions/refusal path reject it), otherwise the section closes on a property the harness enforces regardless of the change.",
+      "text": "\u00a75's first done-when, \"a replay of at least 50 recorded dispatches through the new questions sends 0 picks to a refused or logged-out model\", cannot fail: `snapshot.candidates` appends a reason for availability in {refused, unavailable, logged-out} (reckon/crew/picker/snapshot.py:565) so those candidates are removed from `offered` before Jev sees them (picker/__init__.py:84), and `pick()` resolves the choice only by `next(c for c in offered if c.backend == choice)` (picker/__init__.py:128), so a non-offered backend raises and falls back rather than being picked; `replay._summary.picked_refused` therefore always reads 0 (reckon/crew/picker/replay.py:109-145).",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "504eb9528f86d9b8e90078d58dd7cadc4af0fcb398ba0a509ea759486d3d6c22",
+  "plan_slug": "lane-and-model-routing",
+  "plan_version": 7,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "Lead ruling 2026-10-07: picker measurement needs no deeper design. The replay bullet stays as a regression guard on the offered-set exclusion; the once-per-lane, JSON-parse and negative-control bullets close the node.",
+      "when": "2026-10-07T15:05:11.785395+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "Lead ruling 2026-10-07: picker measurement needs no deeper design. The replay bullet stays as a regression guard on the offered-set exclusion; the once-per-lane, JSON-parse and negative-control bullets close the node.",
+      "when": "2026-10-07T15:05:11.785395+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-lane-and-model-routing.v7.json",
+  "review_run_id": "r-20261007T145743283414-plan-review-of-lane-and-model-routing",
+  "reviewed_blob_sha": "2051eed46fb8c4d7fd8cb2f14726d37b166b39c6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `one-typesafe-model-picker#s6` resolves to `<h2 id=\"s6\">` (one-typesafe-model-picker.html:75), the extensions-less link resolves as `<path>.html` per the house convention, and every file \u00a75 names (lane_context.py, prompts.py, snapshot.py, types.py, state.jinja, questions.jinja, budget_group.py) exists.",
+    "done_when": "a finding \u2014 \u00a75's replay measure asserts 0 picks to a refused or logged-out model, but that outcome is guaranteed by the offered-set exclusion, not by anything \u00a75 changes.",
+    "evidence_paths": "pass \u2014 \u00a75's write paths are repository sources and the project's evidence convention (docs/evidence/archive/<slug>-landed.html) gives the replay result a durable home; no node-local or scratch path is used.",
+    "naming": "pass \u2014 \u00a75's new symbols are mechanism names (`lanes`, `build_state`, `lane_context.py`, `budget_group.py`); no plan label, stage name, ticket number or version tag is carried into code.",
+    "reasoning": "pass \u2014 the root cause (per-model pressure where pressure is per-account) matches the candidate state that carries availability/utilisation/burn/pace/reset/worker_slots/congestion per backend, the mechanism (build_state lifting the `lanes` block) produces the once-per-lane done-when, and the real path is named and callable: `render(\"state.jinja\")` calls `lane_context.build()` then `build_state` (prompts.py:208-228), reached from `pick()` (picker/__init__.py:86).",
+    "single_goal": "pass \u2014 \u00a75 names one deliverable, Jev offering lane-and-model pairs with pressure stated once per lane.",
+    "wiring": "pass \u2014 \u00a75 carries the one cross-plan link `one-typesafe-model-picker#s6` (plan.html:74) matching gate `g-lmr-1` gated-section s5 (plan.html:156-158), and its target section exists; intra-plan ordering is carried in prose/followup as the house convention does, so no depends-on edge is missing."
+  },
+  "section_digests": {
+    "_document": "2f7102b84d909b9e0ee4af25c6712fc06b99ad931b82d3687d176dbfccd36790",
+    "s0": "b5d63387ffd64f95a18edf11d7ea37dfa445cd4813908d577f25210d053a6e3d",
+    "s1": "534b3c0f7bdbedabfabda2fa637d4c7ac968379079027773990e46f55211cf9b",
+    "s2": "11886c052315abac46df56285908fe2c17d0c7a0884bcb3a615ab76913b2b0b0",
+    "s3": "6eb728f13fd29a431b03dafb2f7dccb78c67e63db072d7ebf39607ade17bf8df",
+    "s4": "a9149501a3d5192976bf2036a74780936250f3edc562efa9c5ae06f1927e955c",
+    "s5": "735788e097ac60b1d52ce681caa12b5eb96359be13e390391315108b9b9b45a9",
+    "s6": "7a36f0fd1ecc81ff2694c8de4ed32db5c93a0aaf2a2e85920e68d06fb01dc5ac",
+    "s7": "96001795da5782242afc40deda206a6fd51d8a9132dca0c4358f3106d27c9e58"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T15:04:57.951679+00:00"
+}

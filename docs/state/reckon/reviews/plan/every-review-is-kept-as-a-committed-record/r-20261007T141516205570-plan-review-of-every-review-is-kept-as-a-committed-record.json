@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T14:21:08.299Z",
+  "dispatched_at": "2026-10-07T14:15:39Z",
+  "findings": [
+    {
+      "anchor": "plan.html:115",
+      "id": "done_when-1",
+      "reason": "as written the node's own gate is unsatisfiable, so the worker must change the deliverable's scope or report a deviation to close it.",
+      "text": "node (e)'s done-when asks the node's search to find \"one function in `plan_review.py` that reads a finding's stored response action\", but the deliverable routes only the two folds through the new accessor, and `review_scope` at plan_review.py:1250 also reads `response.get('action')`; the search therefore returns two readers (the accessor and `review_scope`) however the accessor is written, so the node cannot reach its own done-when without either widening the deliverable to fold `review_scope` in or narrowing the search to the fold's action comparison",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ae24ce5a3ea91916bb3558355b557bda6e4f4e637307f3a20bd39736599bad96",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 97,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-07T14:25:25.845985+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T14:25:25.845985+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v97.json",
+  "review_run_id": "r-20261007T141516205570-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "ead6ac48b548442377ab56baf63ea3cec912ca32",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_acted_finding_types` (plan_review.py:1563) and `declined_recurrence` (plan_review.py:1399) resolve; the cited `measure_review_cycles.py` lines 609\u2013614 are the `prev_acted_types` block; and the 41.9% (113 of 270) and 83.3% figures appear in `docs/research/plan-review-cycles.html`, whose extensionless href resolves as `plan-review-cycles.html`.",
+    "done_when": "a finding \u2014 node (e)'s done-when asks the node's search to find \"one function in `plan_review.py` that reads a finding's stored response action\", a search that cannot return one.",
+    "evidence_paths": "pass \u2014 \u00a79 names no session scratchpad or node-local temporary path; its results follow the committed-record/ledger convention the section builds on.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches a symbol; \"node (d)\"/\"node (e)\" are plan-internal labels in the plan document, not identifiers carried into code.",
+    "reasoning": "pass \u2014 node (e)'s stated root cause reproduces (the per-finding response lookup is held twice: `declined_recurrence` compares the action at plan_review.py:1428 and `_acted_finding_types` at plan_review.py:1585), and the mechanism runs on the real path through `review_day_summary` (called at reckon/mcp.py:4403).",
+    "single_goal": "pass \u2014 each of \u00a79's five nodes names one deliverable, and node (e) is a single accessor shared by the two folds.",
+    "wiring": "pass \u2014 \u00a79's nodes declare no depends-on, and the earlier wiring concern (nodes co-writing `plan_review.py`) was declined on the grounds that the dispatch scope check refuses concurrent claims on that path; node (e) writes the same file and is bound by the same check."
+  },
+  "section_digests": {
+    "_document": "c1cdfd9684ee8cfb9c03709ad6cef1a0d430e75a3e01718be798d39230586b3e",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "b5aa75123d5613b32db4166d82dc04b7cad7af9e9ac64ab8dbc949dfd5ccca86",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "14e26b897a7bc08cb814f3d40d84dd381bb8fc8be72f072e1b0fde9c96ff8f99"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T14:25:17.011694+00:00"
+}

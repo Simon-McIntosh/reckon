@@ -1,0 +1,110 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-07T14:33:21.134Z",
+  "dispatched_at": "2026-10-07T14:28:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:199",
+      "id": "wiring-1",
+      "reason": "a coordinator dispatching \u00a79 from this followup plans four nodes and would schedule (e) without the ordering that keeps it off `plan_review.py` beside (a) and (d), producing a refused concurrent claim.",
+      "text": "followup `f-erkc-007` (and the same count in `f-erkc-009`'s body at line 211) declares \"\u00a79's four follow-on nodes\" and states that only nodes (a) and (d) share `plan_review.py`, but \u00a79 has since gained node (e), which also writes `plan_review.py`, so the dispatch instruction undercounts the node set and omits one of the three colliding write scopes",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:115",
+      "id": "done_when-1",
+      "reason": "a node that adds nothing leaves the three tests passing, so the measure cannot fail and the node could close on unbuilt work.",
+      "text": "\u00a79 node (e)'s done-when is a search plus \"the existing tests of all three pass unchanged\", naming no mutation under which the check must go red",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:137",
+      "id": "done_when-2",
+      "reason": "a census that scans nothing reports the same clean result, so the node's whole measure could pass without the import committing anything.",
+      "text": "\u00a713 node (2)'s done-when is two censuses (\"finds no plan review \u2026 without a committed record\" then a second census after one more promotion) and names no control showing the census can report an uncommitted review",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "50ece9588af7ac6372e039626d3bb098037ec235337a6bb85af26f637dceca21",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 100,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-07T14:35:28.656029+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-07T14:35:38.468907+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-2",
+      "reason": "",
+      "when": "2026-10-07T14:35:48.096441+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T14:35:38.468907+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T14:35:48.096441+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-07T14:35:28.656029+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-review-is-kept-as-a-committed-record.v100.json",
+  "review_run_id": "r-20261007T142824196983-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "824442d015a4949552e1f0272841f9e048892453",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon.velocity.read_blobs` (velocity.py:395), `plan_review._read_reviewed_blob_texts` (plan_review.py:1488), `_acted_finding_types` (plan_review.py:1563), `review_scope` (plan_review.py:1194), `review._run_record_times_found` (review.py:1800), `require_plan_reviewed` (routing.py:2724), `promotion._staging_review_record_by_run` (promotion.py:7990), `review.record_for_review_run` (review.py:2703), `store_delivered_reviews` (plan_review.py:2036), `routing.py:2788`, `cli.py:2918` and `scripts/import_host_reviews.py` all resolve; the extensionless href `/reckon/research/plan-review-cycles` resolves as `plan-review-cycles.html`, and the cited `measure_review_cycles.py` lines 609\u2013614 carry the `prev_acted_types` fold \u00a79(d) names.",
+    "done_when": "a finding \u2014 \u00a79 node (e)'s done-when names no declared negative control, and \u00a713 node (2)'s census names no red control either.",
+    "evidence_paths": "pass \u2014 \u00a79 and \u00a713 rest on tests and commits and a census against each project's `origin/main` (a git comparison), none of them placed in a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a79 and \u00a713 name mechanisms (`read_blobs`, `_acted_finding_types`, `_staging_review_record_by_run`), not plan labels or ticket numbers, and the node letters (a)\u2013(e) stay in the plan prose rather than reaching a symbol.",
+    "reasoning": "pass \u2014 \u00a79(d)'s two shares now match the cited evidence (research `plan-review-cycles.html` line 157: `duplicate_owner` 270, 113 (41.9 %) after an acted same-type finding, 225 (83.3 %) after any instance, with 249 of 502 the separate unit-change metric it disclaims), and \u00a713's stated root cause \u2014 promotion resolving the record by the promoting run's id while the record carries the composed id, plus `store_delivered_reviews` running only on a later build or answer \u2014 matches `_staging_review_record_by_run`'s `record_for_review_run(project, run_id)` call and the two cited store sites.",
+    "single_goal": "pass \u2014 \u00a79 is five named nodes each carrying one change, and \u00a713 declares two nodes, one per deliverable (its promotion fix and its import/census).",
+    "wiring": "a finding \u2014 the two followups that dispatch \u00a79 (`f-erkc-007`, and `f-erkc-009`'s body) still read \"four follow-on nodes\" and name only (a) and (d) as sharing `plan_review.py`, but \u00a79 now carries five nodes (a)\u2013(e) and node (e) also writes `plan_review.py`; every `depends-on`/`gates` edge that is declared resolves, and \u00a713's two nodes carry no conflicting edge."
+  },
+  "section_digests": {
+    "_document": "174c47ab12adac8473fca0b101d9c17504f2f2366c9d630878f1bb67501944d8",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "b5aa75123d5613b32db4166d82dc04b7cad7af9e9ac64ab8dbc949dfd5ccca86",
+    "s13": "ae7bd4a4851359278ad58c72d3c05c1032c87d34a4715f98a96078d095abbce0",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "bf15a1fd4066986470450440304908c29abd4ea403fe8711c9c70bcd03874e19"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T14:35:20.023784+00:00"
+}
