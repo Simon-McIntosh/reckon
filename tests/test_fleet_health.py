@@ -272,12 +272,17 @@ def test_existing_triggers_still_fire(tmp_path: Path, kwargs: dict, marker: str)
 
 
 def test_two_crossing_passes_within_the_bound_write_one_snapshot(tmp_path: Path) -> None:
-    # Two passes each cross the D-state threshold two seconds apart, inside a
-    # three-second bound, so only the first writes a snapshot.
+    # The bound is kept far from the spacing so the case measures the rate
+    # limit and not the clock. The loop reads the second-resolution ``date +%s``
+    # and pays its own per-pass overhead, so an interval only just longer than
+    # the spacing lets a second pass cross the bound on rounding alone and
+    # write a table it should not. Both passes cross the D-state threshold, but
+    # they sit about a second apart inside a sixty-second bound, so only the
+    # first writes a snapshot however the seconds fall.
     box = sandbox(
         tmp_path,
         dstate_procs=60,
-        extra_env={**BASE, "FLEET_SNAPSHOT_INTERVAL": "3", "FLEET_SLEEP_SECONDS": "2"},
+        extra_env={**BASE, "FLEET_SNAPSHOT_INTERVAL": "60", "FLEET_SLEEP_SECONDS": "1"},
     )
     result = run_passes(box.env, 2)
     assert result.returncode == 0, result.stderr
@@ -287,14 +292,16 @@ def test_two_crossing_passes_within_the_bound_write_one_snapshot(tmp_path: Path)
 
 
 def test_a_pass_after_the_bound_writes_a_second_snapshot(tmp_path: Path) -> None:
-    # Three passes two seconds apart against a three-second bound: the second
-    # is inside it and writes nothing, the third is past it and writes again.
+    # The mirror margin: a one-second bound against three seconds of spacing,
+    # so the second pass is past the bound even if the clock and the loop
+    # overhead run against the case. Each snapshot is named to the second, so
+    # the seconds that separate the passes also keep their names distinct.
     box = sandbox(
         tmp_path,
         dstate_procs=60,
-        extra_env={**BASE, "FLEET_SNAPSHOT_INTERVAL": "3", "FLEET_SLEEP_SECONDS": "2"},
+        extra_env={**BASE, "FLEET_SNAPSHOT_INTERVAL": "1", "FLEET_SLEEP_SECONDS": "3"},
     )
-    result = run_passes(box.env, 3)
+    result = run_passes(box.env, 2)
     assert result.returncode == 0, result.stderr
     assert len(box.snapshots()) == 2
     assert len(box.alerts().splitlines()) == 2
