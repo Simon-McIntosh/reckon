@@ -3184,7 +3184,15 @@ def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
 
 
 def watch_observer_alive(registration: Mapping[str, Any]) -> bool | None:
-    """Check the registered supervisor without walking runs or follower pipes."""
+    """Check the registered supervisor without walking runs or follower pipes.
+
+    A registration naming another host answers nothing about a process this host
+    cannot see: the parent pid was issued by a kernel elsewhere, so its absence
+    from the local table is not evidence of death. Returning None — unknown, not
+    dead — keeps an arming on one host from stopping a live producer on another.
+    """
+    if _seat_names_a_foreign_host(registration):
+        return None
     if "parent_pid" not in registration:
         return None
     try:

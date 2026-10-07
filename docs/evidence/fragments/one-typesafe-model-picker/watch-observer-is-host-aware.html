@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="Arming is host-aware for the watch producer">
+  <meta name="plan-summary" content="watch_observer_alive reads a foreign-host registration as unknown instead of dead, so an arming on one node no longer stops a live producer on another.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-07">
+  <meta name="plan-verdict" content="recorded">
+  <meta name="plan-tags" content="crew,watch,producer,host-aware">
+  <title>Arming is host-aware for the watch producer — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="watch-observer-is-host-aware-landing" data-node="watch-observer-is-host-aware" data-reckon="landed" data-when="2026-10-07">
+  <h2>Arming on one host leaves a live producer on another alone</h2>
+  <p><code>watch_observer_alive</code> compared the registered <code>parent_pid</code> against the local process table without comparing hosts, so from any other node it read a live producer dead and <code>_ensure_watch_producer</code> tried to unwatch one it cannot signal. It now returns <code>None</code> — unknown — for a registration naming a foreign host, matching the rule already held by <code>_record_producer_dead</code> and <code>_seat_names_a_foreign_host</code>. A registration naming this host, or no host, keeps today's behaviour.</p>
+  <p>Gate: <code>tests/test_watch_observer_is_host_aware.py</code> plus every <code>tests/</code> file importing <code>watch_observer_alive</code>, <code>watch_state</code> or <code>_ensure_watch_producer</code> (38 files). Head 442 passed, base 438 (0 added failures, +4 new tests), both EXIT=0. Negative control removes the foreign-host branch: 2 failed, EXIT=1.</p>
+</article>
+</body>
+</html>
