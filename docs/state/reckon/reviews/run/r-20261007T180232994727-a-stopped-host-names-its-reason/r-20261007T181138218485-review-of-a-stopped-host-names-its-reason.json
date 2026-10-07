@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-07T18:17:22.633Z",
+  "dispatched_at": "2026-10-07T18:12:09Z",
+  "findings": [
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": "465",
+      "severity": "follow-on",
+      "text": "follow-on: the required reason is a type annotation, not a runtime guard, so host.stop(None) would still write stop_reason: null -- the negative control itself reaches that state. Every current call site and stop path is covered by the new tests, so this is a residual rather than a defect; raising on a non-str, or asserting reason in stop(), would close it without a second default."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s) of SessionHost.stop (session_host.py:581, session_host.py:622), both passing a reason; no other caller exists.",
+    "diff": "read revision by revision (5eaaf28fa fix + tests, 242220970 evidence fragment) against base d7d80fbd6.",
+    "done_when": "read \u00a713's done-when; tests/test_session_host.py drives a bare request_stop() (test_a_bare_stop_request_records_a_reason) and an end-of-file on a plain pipe (test_an_end_of_file_records_a_reason), both assert a non-null stop_reason, and the manifest's gate logs 24 passed EXIT=0.",
+    "goal": "read the plan section a-follower-lives-as-long-as-its-session \u00a713 and the node brief; the landed diff makes stop's reason required, records the end-of-file reason, keeps the signalled fallback, and names the entry finally.",
+    "manifest": "read; it states baseline 22 / after 24 both EXIT=0, the negative control 2 failed EXIT=1, and the two landed revisions.",
+    "write_paths": "read the declared scope; every diff path is inside it (the declared figures path is unused, as the brief named no artifact)."
+  },
+  "justifications": {
+    "durability": "Each new test fails with stop_reason: None when the reason its path records is removed, so the guard fires rather than passing vacuously; the required-argument signature stops a call site that omits the reason from being written.",
+    "evidence": "I reproduced the reviewed run's own negative control on a scratch copy of head 242220970: removing the end-of-file reason and the signalled fallback turns both new tests red with stop_reason: None (2 failed, 14 deselected, EXIT=1); the two new tests pass at head (2 passed, EXIT=0). baseline.log 22 passed EXIT=0 and gate.log 24 passed EXIT=0 match the manifest's arms.",
+    "fit": "the two new constants (_REQUEST_ENDED_REASON, _EXITED_REASON) sit beside the existing _OWNER_ENDED_REASON/_SIGNALLED_REASON and the comments describe the mechanism, not a plan or ticket.",
+    "goal_fidelity": "reckon/crew/session_host.py:465 makes stop(reason: str) required; the end-of-file branch at session_host.py:566 sets reason = _REQUEST_ENDED_REASON, the supervise finally at session_host.py:581 falls back to _SIGNALLED_REASON, and run()'s finally at session_host.py:622 passes _EXITED_REASON, so every stop path names a reason.",
+    "reuse": "the change reuses the existing stop()/_write_record stop_reason machinery and the constant convention; no second stop path or new abstraction is introduced.",
+    "scope_discipline": "git diff --stat d7d80fbd6..242220970 changes only the three declared write paths (reckon/crew/session_host.py, tests/test_session_host.py, the evidence fragment); no path outside the brief's scope is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read \u00a713 and the brief; the landed diff makes stop's reason required and names the end-of-file, signalled-fallback and entry-finally stop paths.\nVERDICT done_when: read \u00a713's done-when; the two new in-process tests assert a non-null stop_reason and the manifest's gate logs 24 passed EXIT=0.\nVERDICT write_paths: read the declared scope; the diff touches only the declared code, test and evidence paths.\nVERDICT manifest: read; baseline 22 / after 24 EXIT=0, negative control 2 failed EXIT=1, revisions 5eaaf28fa and 242220970.\nVERDICT diff: read 5eaaf28fa (fix + tests) and 242220970 (evidence) against base d7d80fbd6.\nCALL_SITES: reckon/crew/session_host.py:581, reckon/crew/session_host.py:622\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/session_host.py:465 makes stop(reason: str) required; the end-of-file branch at session_host.py:566 sets reason = _REQUEST_ENDED_REASON, the supervise finally at session_host.py:581 falls back to _SIGNALLED_REASON, and run()'s finally at session_host.py:622 passes _EXITED_REASON, so every stop path names a reason.\nSCORE evidence: 19\nJUSTIFICATION evidence: I reproduced the reviewed run's own negative control on a scratch copy of head 242220970: removing the end-of-file reason and the signalled fallback turns both new tests red with stop_reason: None (2 failed, 14 deselected, EXIT=1); the two new tests pass at head (2 passed, EXIT=0). baseline.log 22 passed EXIT=0 and gate.log 24 passed EXIT=0 match the manifest's arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d7d80fbd6..242220970 changes only the three declared write paths (reckon/crew/session_host.py, tests/test_session_host.py, the evidence fragment); no path outside the brief's scope is touched.\nSCORE durability: 19\nJUSTIFICATION durability: Each new test fails with stop_reason: None when the reason its path records is removed, so the guard fires rather than passing vacuously; the required-argument signature stops a call site that omits the reason from being written.\nSCORE fit: 19\nJUSTIFICATION fit: the two new constants (_REQUEST_ENDED_REASON, _EXITED_REASON) sit beside the existing _OWNER_ENDED_REASON/_SIGNALLED_REASON and the comments describe the mechanism, not a plan or ticket.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change reuses the existing stop()/_write_record stop_reason machinery and the constant convention; no second stop path or new abstraction is introduced.",
+  "review_run_id": "r-20261007T181138218485-review-of-a-stopped-host-names-its-reason",
+  "reviewed_base_sha": "d7d80fbd6ebc3e55efe0830a47120c0a6f05a12a",
+  "reviewed_head_sha": "242220970ddda915bbc96d4dd5f370b77fa0fb34",
+  "reviewed_run_id": "r-20261007T180232994727-a-stopped-host-names-its-reason",
+  "rubric": "code_review",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T18:16:32+00:00",
+  "total": 117
+}
