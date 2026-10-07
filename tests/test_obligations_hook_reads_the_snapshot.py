@@ -44,6 +44,7 @@ BLOCKED_RUN_ID = "run-snapshot-blocked"
 BLOCKED_NODE_ID = "snapshot-fixture-node"
 SCORING_RUN_ID = "run-snapshot-scoring"
 SCORING_NODE_ID = "snapshot-scoring-node"
+CONTINUATION_RUN_ID = "run-snapshot-continuation"
 FOREIGN_BACKEND = "codex"
 REMEDY = f"reckon crew watch --ensure --project {PROJECT}"
 
@@ -187,6 +188,30 @@ def _publish_derived(**producer_overrides: object) -> Path:
     return _publish(obligations_view(PROJECT, SESSION), **producer_overrides)
 
 
+def _publish_with_continuation(command: str, **producer_overrides: object) -> Path:
+    """Publish the derived payload plus one lane-bearing continuation duty.
+
+    A remedy that continues an existing run keeps the lane that run was carried
+    on, so a lane-bearing redispatch is the duty that exercises the hook's lane
+    edit: a new-work remedy names no lane, so it cannot.
+    """
+    payload = obligations_view(PROJECT, SESSION)
+    obligations = [
+        *(payload.get("obligations") or ()),
+        {
+            "kind": "review",
+            "run_id": CONTINUATION_RUN_ID,
+            "node": CONTINUATION_RUN_ID,
+            "plan": "fixture-plan",
+            "age_seconds": 0,
+            "next_command": command,
+        },
+    ]
+    payload["obligations"] = obligations
+    payload["summary"] = {**(payload.get("summary") or {}), "count": len(obligations)}
+    return _publish(payload, **producer_overrides)
+
+
 def _prompt_payload(repository: Path) -> dict[str, object]:
     return {
         "session_id": SESSION,
@@ -240,11 +265,12 @@ def test_the_prompt_path_loads_no_derivation_module(
 ) -> None:
     """A fresh prompt process reaches no plan, backend or ledger derivation.
 
-    The scoring run's duty carries a ``--backend`` dispatch, so the path also
-    exercises the lane rewrite, which imports the flight configuration; that
-    import must not pull a derivation module with it. The drive's stdout is the
-    injected checklist, so the absence of the three modules cannot be an
-    absence of work: the snapshot was read, formatted and injected.
+    The scoring run contributes a composed new-work remedy and the fixture adds
+    a lane-bearing continuation remedy, so the path exercises the hook's lane
+    edit on both branches: the lane a continuation keeps and the lane a new-work
+    remedy leaves unnamed. The drive's stdout is the injected checklist, so the
+    absence of the three modules cannot be an absence of work: the snapshot was
+    read, formatted and injected.
     """
     _live_run(
         repository,
@@ -253,7 +279,11 @@ def test_the_prompt_path_loads_no_derivation_module(
         node_id=SCORING_NODE_ID,
         backend=FOREIGN_BACKEND,
     )
-    _publish_derived()
+    continuation = (
+        f"reckon crew redispatch --run {CONTINUATION_RUN_ID} "
+        f"--backend {FOREIGN_BACKEND} --reason continue"
+    )
+    _publish_with_continuation(continuation)
     modules_path = tmp_path / "sys-modules.json"
 
     completed = _drive(
@@ -265,8 +295,8 @@ def test_the_prompt_path_loads_no_derivation_module(
     assert checklist.startswith(f"reckon obligations for session {SESSION}"), checklist
     assert SCORING_RUN_ID in checklist
     assert f"--backend {FOREIGN_BACKEND}" in checklist, (
-        "the duty must carry its composed dispatch for the rewrite path to be "
-        "exercised"
+        "the lane-bearing continuation must keep its run's lane for the lane "
+        "edit to be exercised"
     )
     loaded = set(json.loads(modules_path.read_text(encoding="utf-8")))
     assert loaded & set(DERIVATION_MODULES) == set(), sorted(
