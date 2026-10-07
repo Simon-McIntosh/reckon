@@ -1082,6 +1082,9 @@ def newest_design_review(
 # reviewer to see what was already raised about the units it is asked to read,
 # bounded so a plan with a long review history does not crowd the brief.
 SCOPE_ANSWERED_FINDINGS = 20
+# The characters of each answered finding's text the scope quotes: enough to
+# recognise the finding, while a reviewer's long evidence stays in its record.
+SCOPE_FINDING_CHARS = 280
 
 
 def review_scope(
@@ -1135,10 +1138,12 @@ def review_scope(
             if not isinstance(response, Mapping):
                 continue
             reason = str(response.get("reason") or "").strip()
+            text = " ".join(str(finding.get("text") or "").split())
+            if len(text) > SCOPE_FINDING_CHARS:
+                text = text[: SCOPE_FINDING_CHARS - 1].rstrip() + "…"
             answered.append(
                 f"- {finding.get('id')} [{finding.get('anchor') or 'plan'}] "
-                f"{str(finding.get('text') or '').strip()} -> "
-                f"{response.get('action')}{': ' + reason if reason else ''}"
+                f"{text} -> {response.get('action')}{': ' + reason if reason else ''}"
             )
     lines = [
         (

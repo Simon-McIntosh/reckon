@@ -76,3 +76,19 @@ def test_a_review_asked_for_when_nothing_is_uncovered_reads_everything(sectioned
     _answered_review(path)
 
     assert "Scope:" not in _brief(path)
+
+
+def test_a_long_answered_finding_is_quoted_in_part(sectioned):
+    _, _, path = sectioned
+    long_text = "beta repeats an owner the codebase already has " * 20
+    _review(path, findings=[{**ANSWERED, "text": long_text}])
+    record = plan_review.read_plan_review("sample", "fixture", plan=path)
+    plan_review.record_response(record, "wiring-1", action="acted")
+    path.write_text(path.read_text().replace(PLAIN_B, "entirely new beta text"))
+
+    line = next(
+        row for row in _brief(path).splitlines() if row.startswith("- wiring-1")
+    )
+
+    assert "…" in line
+    assert len(line) < plan_review.SCOPE_FINDING_CHARS + 80
