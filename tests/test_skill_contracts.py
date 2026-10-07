@@ -269,35 +269,33 @@ def test_ship_skill_carries_the_uniform_dispatch_instruction() -> None:
 def test_ship_skill_routes_local_requests_through_the_declared_flag() -> None:
     ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
 
-    assert ship.count("`--local`") == 3
+    assert ship.count("`--local`") == 2
     assert "local_backend" in ship
     assert "refuses when it is unset" in normalized(ship)
 
 
-def test_ship_skill_presents_the_local_lane_as_a_routing_choice() -> None:
-    """The local lane is a choice a coordinator may make unprompted, not only a flag.
+def test_ship_skill_leaves_the_lane_to_the_picker_by_default() -> None:
+    """A dispatch names no lane by default; the picker chooses or holds.
 
-    The flag contract above pins how a *request* to use local workers is
-    honoured. This test pins the routing-choice side — when a coordinator may
-    select the local lane on its own authority — so the skill cannot regress
-    to presenting local as only an obeyable flag. The request-phrase contract
-    is asserted again here so it survives a rewrite that only touches one side.
+    The lane is no longer something the coordinator adds to every dispatch: an
+    unnamed dispatch is routed by the picker, and a lane named with `--local`
+    (or requested unprompted) is the exception rather than the rule. Reviews
+    stay off metered lanes through the exclusion list, so an unnamed review runs
+    locally or holds. The request-phrase contract is asserted again here so it
+    survives a rewrite that touches only one side.
     """
     ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
     norm = normalized(ship)
 
-    # Presented as a routing choice, not only a flag.
-    assert "routing choice, not only a flag" in norm
-    assert "select it unprompted" in norm
+    # The picker chooses the lane or holds; naming one is the exception.
+    assert "the picker's to choose" in norm
+    assert "a dispatch that names no lane is routed by the picker" in norm
+    assert "a lane a coordinator names is never overridden" in norm
+    assert "Naming a lane is the exception, not the default" in norm
 
-    # The conditions a coordinator may act on unprompted: an exact declared
-    # level, constrained metered lanes, and a node needing no decision.
-    assert "the node's declared level is `exact`" in norm
-    assert "metered lanes are constrained" in norm
-    assert "the node needs no decision" in norm
-
-    # It costs no metered quota.
-    assert "costs no metered quota" in norm
+    # Reviews stay off metered lanes; an unnamed review runs locally or holds.
+    assert "review_excluded_backends" in ship
+    assert "an unnamed review runs locally or holds" in norm
 
     # Context-fit refusal rejects a node exceeding the lane's window before a
     # worktree exists rather than the node dying mid-run.
@@ -307,7 +305,7 @@ def test_ship_skill_presents_the_local_lane_as_a_routing_choice() -> None:
     assert "rather than the node dying mid-run" in norm
 
     # The request-phrase contract survives unchanged, asserted by this same test.
-    assert "the coordinator adds `--local` to every" in ship
+    assert "name the lane with `--local` on every dispatch" in norm
     assert "refuses when it is unset" in norm
 
 

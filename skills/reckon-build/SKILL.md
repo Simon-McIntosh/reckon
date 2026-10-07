@@ -10,8 +10,9 @@ description: >-
   isolated worktrees by default, audit and integrate worker commits, record
   outcomes continuously, and clean up worktrees. Trigger verbs: "implement /
   execute / ship / land / deliver the sprint / run the sprint / /reckon-build".
-  Requests to use local workers, local agents, or local dispatch add `--local`
-  to every dispatch, selecting the backend named by `local_backend`.
+  Requests to use local workers, local agents, or local dispatch name the
+  lane with `--local` on every dispatch, selecting the backend named by
+  `local_backend`.
   For editing plan text use reckon-edit; for defining or rebalancing sprint
   state use reckon-sprint.
 allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon__read_plan mcp__reckon__edit_plan mcp__reckon__roadmap mcp__reckon__audit mcp__reckon__crew
@@ -86,7 +87,7 @@ never zero. Audit plan currency against the code before cutting nodes. Read
 ## Review the design
 
 Before the first build node, review the design with the `crew review-plan`
-verb — `crew review-plan --project P --plan <slug> --session S --local` — and
+verb — `crew review-plan --project P --plan <slug> --session S` — and
 read it back with `crew(project, view="plan-review", plan=<slug>)`. Answer every
 finding. The reuse map is its output, and every node's brief cites it.
 
@@ -135,7 +136,7 @@ orchestrators; background work there costs orchestrator capacity, and
 saturating it stops every session rather than one node. Use the
 [lane-routing reference](references/lane-routing.md) before selecting a lane.
 
-The local lane is a routing choice, not only a flag: the coordinator adds `--local` to every dispatch, which selects the backend named by `local_backend` and refuses when it is unset. The `--local` flag selects that backend by name. A coordinator may select it unprompted when the node's declared level is `exact`, when metered lanes are constrained, or when the node needs no decision; it costs no metered quota. The context-fit refusal rejects a node exceeding the lane's window before
+The lane is the picker's to choose: a dispatch that names no lane is routed by the picker, which picks the family and model or holds the node, and a lane a coordinator names is never overridden. Naming a lane is the exception, not the default — a request to use local workers, an exact declared level, a constrained metered lane, or a node that needs no decision may name `--local`, which selects the backend named by `local_backend` and refuses when it is unset; it costs no metered quota. Reviews stay off metered lanes through `review_excluded_backends`, so an unnamed review runs locally or holds. The context-fit refusal rejects a node exceeding the lane's window before
 a worktree exists, rather than the node dying mid-run. The node still gets a
 worktree, a manifest, a gate and a ledger record.
 
@@ -175,7 +176,7 @@ reckon crew placement --ensure --session <session> --project <project>
 reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --reason <text>
 reckon crew repair-status --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
 reckon crew resume --run <id> --advice <text>    reckon crew resume-ready --project <project>
-reckon crew review-plan --project <project> --plan <slug> --session <session> --local
+reckon crew review-plan --project <project> --plan <slug> --session <session>
 reckon crew shadow    reckon crew stop    reckon crew unwatch --project <project>
 reckon crew verify-gate --project <project> --run <id> --checkout-path <path>
 reckon crew watch --project <project> --stall-window <duration>

@@ -633,7 +633,7 @@ See `~/Code/reckon/PLAN-FORMAT.md` for the full reference. Quick shapes:
 
 A new plan is written by you and executed by others, and nothing between those
 two moments checks that what you wrote says what you meant. Release it only
-after a read-only rubber-duck review has read it back, on the local lane:
+after a read-only rubber-duck review has read it back:
 
 ```bash
 reckon crew dispatch --project P --plan <slug> --section §N \
@@ -641,7 +641,7 @@ reckon crew dispatch --project P --plan <slug> --section §N \
   --goal "restate <slug> in your own words before it is released" \
   --done-when "the report restates the plan's intent, every decision and every done-when, and lists every sentence with 2 or more readings" \
   --write-path <config-home>/crew/reports/<project>/<session>/review-of-<slug> \
-  --time-budget 20m --session <session> --local
+  --time-budget 20m --session <session>
 ```
 
 The `review` role resolves to a **read-only sandbox** with no worktree and no
@@ -666,7 +666,7 @@ burst of edits, not one per edit — means compose it now and answer its finding
 before any build is dispatched:
 
 ```bash
-reckon crew review-plan --project <project> --plan <slug> --local
+reckon crew review-plan --project <project> --plan <slug>
 ```
 
 The tool composes no review itself; the author decides when the session's

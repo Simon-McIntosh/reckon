@@ -124,7 +124,7 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    sentence that reads differently to the executor than to its author, and the
    author cannot see it by re-reading, which is why the reader must be someone
    else. Before the revised plan goes back to work, dispatch a read-only
-   rubber-duck review to the local lane:
+   rubber-duck review:
 
    ```bash
    reckon crew dispatch --project P --plan L --section §N \
@@ -132,7 +132,7 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
      --goal "restate <slug> in your own words before it is released" \
      --done-when "the report restates the plan's intent, every decision and every done-when, and lists every sentence with 2 or more readings" \
      --write-path <config-home>/crew/reports/<project>/<session>/review-of-<slug> \
-     --time-budget 20m --session <session> --local
+     --time-budget 20m --session <session>
    ```
 
    The `review` role resolves to a **read-only sandbox** with no worktree and no
@@ -168,7 +168,7 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    Run the invocation once,
 
    ```bash
-   reckon crew review-plan --project <project> --plan <slug> --local
+   reckon crew review-plan --project <project> --plan <slug>
    ```
 
    and answer every finding it raises before a build is dispatched. The tool
