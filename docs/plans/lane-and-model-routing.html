@@ -19,11 +19,11 @@
   <meta name="plan-sprint" content="S25">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>Lane And Model Routing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-10-07">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -52,16 +52,11 @@
   <p class="landed-summary">The catalogue declares claude, codex and clive lanes with default models, and an alias table maps the seven legacy names to lane-and-model pairs. The resolved flight is unchanged. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s2">full record</a></p>
 </section>
 
-    <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§3 — The host flight collapses the claude blocks, retiring claude-opus</h2>
-    <p>One <code>lanes.claude</code> block in the host flight (<code>~/Code/dotfiles/reckon/flight.yaml</code>) replaces <code>backends.claude</code>, <code>backends.claude-opus</code> and <code>backends.claude-haiku</code>. The one real difference, the 40-minute time budget, becomes a per-model override on opus. This is the section that retires the <code>claude-opus</code> backend block. The file lives in the dotfiles repository, so this section's commit lands there; reckon's schema and catalogue changes (§1, §2) must be on main first.</p>
-    <p><strong>Write paths:</strong> <code>~/Code/dotfiles/reckon/flight.yaml</code>.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>the resolved flight is identical for every project in <code>mounts.json</code>;</li>
-      <li><code>reckon flight</code> reports three entries under lane <code>claude</code>, two of them derived;</li>
-      <li>a dry run of <code>--backend claude --model opus</code> (after §4) or of the derived <code>claude-opus</code> name resolves to the same model, effort, time budget and launch argv the retired block produced;</li>
-      <li>a negative control that drops opus's <code>time_budget</code> override makes the opus dry run resolve the lane's 25-minute budget and fail the equivalence check.</li>
-    </ul>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
+    <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links="">§3 — The host flight collapses the claude blocks, retiring claude-opus</h2></header>
+  <p class="landed-summary">The host flight declares one <code>lanes.claude</code> block with sonnet, opus and haiku inside it; opus keeps its 40-minute budget as a per-model override, and the claude-opus backend block is retired. Every scope resolves as before, plus the lane annotations. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s3">full record</a></p>
+</section>
 
     <h2 id="s4" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§4 — Dispatch names a model within a lane</h2>
     <p>Add <code>--model KEY</code> to <code>crew dispatch</code> and its sibling surfaces that already take <code>--backend</code>. <code>KEY</code> matches a model key first, then a model id, then an alias. <code>--backend claude</code> alone takes the lane's default model. A model named alone implies its lane when exactly one lane declares it; when two lanes declare it, dispatch refuses and names both. <code>--local --model KEY</code> narrows to a model of the local lane. A named lane or model stays authoritative: it implies the deterministic route, and only a shadow selection is recorded. Run and ledger rows gain <code>lane</code> and <code>model_key</code> beside <code>backend</code>. Refusals name the pair.</p>
