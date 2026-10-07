@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="lane-and-model-routing">
+  <meta name="plan-title" content="Lane And Model Routing">
+  <meta name="plan-summary" content="A lane is a subscription or host with models chosen inside it, and Jev picks the lane and the model as one pair; claude-opus retires as a separate lane.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="17.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <title>Lane And Model Routing | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-10-07">
+<meta name="plan-north-star" content="unattended-execution">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s0">Why this plan exists</h2>
+    <p>The lead directed on 2026-10-07 that a caller should be able to name a lane and a model within it, that Jev should choose both where applicable, and that <code>claude-opus</code> should not exist as its own lane because it duplicates <code>claude</code>. Today every model is its own backend name. The host flight declares eight backend blocks: <code>codex</code>, <code>codex-luna</code>, <code>codex-astra</code>, <code>clive</code>, <code>claude</code>, <code>claude-opus</code>, <code>claude-haiku</code> and <code>native</code>. The three codex models are joined only by <code>budget_group: codex-sub</code> in the model catalogue.</p>
+    <p>The design run <code>lane-and-model-design</code> (r-20261007T043246695894, plan <code>one-typesafe-model-picker</code> §6) measured the change at revision <code>65d0bf6e7</code>. Its report and call-site census are at <code>~/.config/reckon/crew/reports/reckon/lane-and-model-design/report.md</code>. Three findings set the scope:</p>
+    <ul>
+      <li><strong>The lane already exists in code.</strong> The dialect name (<code>claude</code>, <code>codex</code>, <code>clive</code>, in <code>reckon/_backends.py</code> <code>_DIALECTS</code>) is the lane, and the picker already derives it as <code>Candidate.family</code>. This plan promotes that derived label to a declared one rather than adding a new axis.</li>
+      <li><strong>The model is already a launch parameter, not an identity.</strong> Codex receives <code>-m &lt;model&gt;</code> and claude receives <code>--model &lt;model&gt;</code>. The <code>claude</code> and <code>claude-haiku</code> blocks are byte-identical after comments, and <code>claude-opus</code> differs from <code>claude</code> in one line, a 40-minute time budget against 25.</li>
+      <li><strong>The package never names the duplicate backends.</strong> <code>claude-opus</code>, <code>claude-haiku</code>, <code>codex-astra</code> and <code>codex-luna</code> have 0 references in <code>reckon/</code> and <code>skills/</code>. The names live in configuration (three files), tests (fixtures) and history: 3,123 ledger rows, 2,471 run records and 4,404 review files. That history is never rewritten; readers resolve old names through an alias table.</li>
+    </ul>
+    <p>The seven sections below are independently landable in the report's migration order. Each leaves the tree working, and the measure for each configuration step is that the resolved flight for all 14 mounted projects is unchanged.</p>
+
+    <h2 id="s1" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§1 — Flight schema declares lanes with models inside them</h2>
+    <p>Add a top-level <code>lanes:</code> key to the platform schema. Each lane carries today's backend-block keys (placement, launch, command, sandbox, session_reuse, time_budget, budget_check, budget_group, the local lane's documents, windows and concurrency), plus <code>default_model</code> and <code>models.&lt;key&gt;</code>. Each model carries <code>model</code>, <code>effort</code>, <code>alias</code>, optional rates with <code>as_of</code>, and an optional <code>budget_group</code> that defaults to the lane's. Resolution expands each lane into today's <code>backends:</code> entries, so the 47 call sites that read <code>config["backends"]</code> are untouched. Each expanded entry gains <code>lane</code> and <code>model_key</code>. A lane expands to an entry named after the lane (its default model), and to <code>&lt;lane&gt;-&lt;key&gt;</code> for every model whose key matches a legacy backend name. Derived entries are marked with <code>derived_from</code>, so <code>reckon flight</code> can count how many remain. Override layers, including <code>--set lanes.claude.models.opus.effort=xhigh</code>, merge before expansion.</p>
+    <p><strong>Write paths:</strong> <code>reckon/_flight_schema.py</code>, <code>reckon/flight.py</code>, <code>tests/test_flight_lanes.py</code>.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>the new tests pass, covering a lane expanding to its default-named entry and its derived legacy entries with <code>lane</code>, <code>model_key</code> and <code>derived_from</code>, and a <code>--set</code> on a lane model reaching the expanded entry;</li>
+      <li>a no-value-moves proof shows the resolved flight of all 14 mounted projects byte-identical to the pre-change resolution, because nothing declares <code>lanes:</code> yet;</li>
+      <li>a negative control applying the override layer after expansion fails the <code>--set</code> test.</li>
+    </ul>
+
+    <h2 id="s2" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links="">§2 — The model catalogue declares lanes</h2>
+    <p>Regroup the catalogue's eight backend entries under <code>lanes.&lt;lane&gt;.models</code> with a <code>default_model</code> per lane: <code>claude</code> holds sonnet, opus and haiku; <code>codex</code> holds sol, astra and luna; <code>clive</code> holds its local model. Keep the existing <code>backends:</code> blocks, so the resolution can be compared with the old one directly. Add the alias table §7 reads: <code>claude-opus</code>, <code>claude-haiku</code>, <code>codex-astra</code>, <code>codex-luna</code>, <code>codex-terra</code>, <code>codex-spark</code> and <code>clive-glm</code>, each mapped to a lane and a model key.</p>
+    <p><strong>Write paths:</strong> <code>docs/state/reckon/model-catalogue.yaml</code>, <code>tests/test_catalogue_declares_lanes.py</code>.</p>
+    <p><strong>Done when:</strong> <code>reckon flight --project reckon</code> output is identical to base, the catalogue provenance shows the same leaves it showed before, and a test asserts every alias resolves to a declared lane and model. Negative control: deleting one model entry makes the identity check fail.</p>
+
+    <h2 id="s3" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§3 — The host flight collapses the claude blocks, retiring claude-opus</h2>
+    <p>One <code>lanes.claude</code> block in the host flight (<code>~/Code/dotfiles/reckon/flight.yaml</code>) replaces <code>backends.claude</code>, <code>backends.claude-opus</code> and <code>backends.claude-haiku</code>. The one real difference, the 40-minute time budget, becomes a per-model override on opus. This is the section that retires the <code>claude-opus</code> backend block. The file lives in the dotfiles repository, so this section's commit lands there; reckon's schema and catalogue changes (§1, §2) must be on main first.</p>
+    <p><strong>Write paths:</strong> <code>~/Code/dotfiles/reckon/flight.yaml</code>.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>the resolved flight is identical for all 14 projects;</li>
+      <li><code>reckon flight</code> reports three entries under lane <code>claude</code>, two of them derived;</li>
+      <li>a dry run of <code>--backend claude --model opus</code> (after §4) or of the derived <code>claude-opus</code> name resolves to the same model, effort, time budget and launch argv the retired block produced.</li>
+    </ul>
+
+    <h2 id="s4" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§4 — Dispatch names a model within a lane</h2>
+    <p>Add <code>--model KEY</code> to <code>crew dispatch</code> and its sibling surfaces that already take <code>--backend</code>. <code>KEY</code> matches a model key first, then a model id, then an alias. <code>--backend claude</code> alone takes the lane's default model. A model named alone implies its lane when exactly one lane declares it; when two lanes declare it, dispatch refuses and names both. <code>--local --model KEY</code> narrows to a model of the local lane. A named lane or model stays authoritative: it implies the deterministic route, and only a shadow selection is recorded. Run and ledger rows gain <code>lane</code> and <code>model_key</code> beside <code>backend</code>. Refusals name the pair.</p>
+    <p><strong>Write paths:</strong> <code>reckon/cli.py</code>, <code>reckon/crew/dispatch.py</code>, <code>reckon/ledger.py</code>, <code>tests/test_dispatch_names_a_model.py</code>.</p>
+    <p><strong>Done when:</strong> dry runs of <code>--backend claude --model opus</code> and of the legacy <code>--backend claude-opus</code> resolve to the same backend, effort and launch argv; an ambiguous bare <code>--model</code> is refused naming both lanes; a promoted row carries <code>lane</code> and <code>model_key</code>. Negative control: dropping the model narrowing makes the claude-opus equivalence test fail.</p>
+
+    <h2 id="s5" data-reckon="section" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links="one-typesafe-model-picker#s6">§5 — Jev offers lane-and-model pairs</h2>
+    <p>Jev's candidates become lane-and-model pairs, keyed <code>&lt;lane&gt;:&lt;key&gt;</code> (for example <code>claude:opus</code> or <code>codex:astra</code>) plus <code>hold</code>. Lane pressure is stated once per lane in a <code>lanes</code> block: availability, utilisation, burn multiple, pace allowance, resets, days to reset, worker slots, congestion and the banked-reset flag. Three codex models therefore read as one account, not three. Model fit stays on each pair: serving observation, context window against the node's estimate, effort, rates and recent outcomes. The questions say:</p>
+    <ul>
+      <li>the pick has two linked parts, the lane for spending policy and the model for fit;</li>
+      <li>models in one lane share one window;</li>
+      <li>confidence is confidence in the joint pick;</li>
+      <li>unknown facts are null, not zero.</li>
+    </ul>
+    <p>This builds on <code>jev-prompt-carries-what-it-weighs</code> in <code>one-typesafe-model-picker</code> §6, which renders the state from one structured mapping with lane and model as separate fields. The gate below holds this section until that lands.</p>
+    <p><strong>Write paths:</strong> <code>reckon/crew/picker/snapshot.py</code>, <code>reckon/crew/picker/types.py</code>, <code>reckon/crew/picker/templates/state.jinja</code>, <code>reckon/crew/picker/templates/questions.jinja</code>, <code>tests/test_picker_lanes.py</code>.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>a replay of at least 50 recorded dispatches through the new questions sends 0 picks to a refused or logged-out model;</li>
+      <li>agreement with the recorded lane is measured and reported;</li>
+      <li>the rendered state shows each lane's pressure exactly once and parses as JSON for normal and hostile inputs;</li>
+      <li>a negative control that repeats pressure per model makes the once-per-lane test fail.</li>
+    </ul>
+
+    <h2 id="s6" data-reckon="section" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links="">§6 — The codex models fold into one lane</h2>
+    <p>Move <code>codex-astra</code> and <code>codex-luna</code> into <code>lanes.codex.models</code> in the host flight and the catalogue, retiring their backend blocks exactly as §3 does for claude. <code>codex-terra</code> stays retired; its alias resolves only for history.</p>
+    <p><strong>Write paths:</strong> <code>~/Code/dotfiles/reckon/flight.yaml</code>, <code>docs/state/reckon/model-catalogue.yaml</code>.</p>
+    <p><strong>Done when:</strong> the resolved flight is identical for all 14 projects, and <code>--backend codex --model astra</code> resolves to the same model, effort and argv as the retired <code>codex-astra</code>.</p>
+
+    <h2 id="s7" data-reckon="section" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="">§7 — One read-side resolver for old names</h2>
+    <p>One resolver, <code>resolve_name(name) -&gt; (lane, model_key)</code>, reads the catalogue's alias table and is used by the ledger, run records, reviews, <code>review_excluded_backends</code> and the crew views. It accepts backend names, model ids and aliases, because stored reviews already mix those vocabularies. No committed row is rewritten. <code>review_excluded_backends</code> keeps working verbatim and may later be written as lanes.</p>
+    <p><strong>Write paths:</strong> <code>reckon/crew/recovery.py</code>, <code>reckon/ledger.py</code>, <code>reckon/mcp_views.py</code>, <code>reckon/crew/reports.py</code>, <code>tests/test_old_names_resolve.py</code>.</p>
+    <p><strong>Done when:</strong></p>
+    <ul>
+      <li>fixture rows written as <code>claude-opus</code>, and as <code>claude</code> with <code>opus</code>, normalise identically;</li>
+      <li>all seven legacy names are exercised;</li>
+      <li><code>reckon crew ledger</code> and <code>runs</code> report the pair for old rows;</li>
+      <li>the existing check that no routing identifier leaks into <code>reckon/</code> or <code>skills/</code> still passes.</li>
+    </ul>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="jev-picks-pairs" data-choice="pairs" data-by="lead" data-when="2026-10-07">
+    <p class="r-dec-q">Does Jev pick a lane and then a model, or a lane-and-model pair in one decision?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="pairs">One pair per decision</button>
+      <button class="r-opt" data-value="lane-then-model">Lane first, then model</button>
+      </p>
+    <p class="r-dec-rat">The lead directed that Jev choose both lane and model where applicable. The design measured that refusal, context fit, rates and outcomes attach to a model, while burn, pace and windows attach to the shared account. Asking twice would make the model choice depend on a lane answer given without model-level fit, so pairs keep one typed decision with every fact in it.</p>
+    </div>
+<div class="r-dec" data-key="lane-identity" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Are lanes named by their dialect (claude, codex, clive), or can a lane be named independently, for example two subscriptions both running claude?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="dialect-names">Dialect names (recommended by the design)</button>
+      <button class="r-opt" data-value="independent-names">Independent lane names</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="bare-model" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Does a bare --model imply its lane when exactly one lane declares it, or must the lane always be named?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="imply-when-unique">Imply the lane when unique (recommended by the design)</button>
+      <button class="r-opt" data-value="always-name-lane">Always name the lane</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="derived-names-retire" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">When do derived entries such as claude-opus leave the resolved config?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="when-undeclared">When nothing declares them; the alias resolves forever (recommended by the design)</button>
+      <button class="r-opt" data-value="early">Retire early: land §7 before §3</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-lmr-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-07" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build lane-and-model routing §1, after its design review and the three open decisions</h4>
+    <div class="r-fu-body">The plan was created from the lane-and-model-design report. Its design review must be stored and answered before the first build node, and the lead's choices on lane-identity, bare-model and derived-names-retire settle §1 and §4. Run the sections in order: §1 before §2 and §3, §4 before any derived name retires, and §5 after its gate clears. §3 and §6 edit the host flight in the dotfiles repository.</div>
+    <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §1</pre>
+    </article>
+</section>
+  <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-lmr-1" data-section="s5" data-gated-sections="s5" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">Jev&#x27;s state renders from one structured mapping with lane and model as separate fields, and the jev-prompt-carries-what-it-weighs run is merged on main</h4>
+    <p class="r-gate-required-evidence">one-typesafe-model-picker#s6</p>
+    </div>
+</section>
+</main>
+</body>
+</html>
