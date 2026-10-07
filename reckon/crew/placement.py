@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import contextlib
 import fcntl
+import getpass
 import json
 import os
 import subprocess
@@ -70,6 +71,18 @@ RESERVATION_ROSTER_BASIS = (
 # asked with are declared here beside the wrapper they ask.
 RESERVATION_STATE_QUERY = ("squeue", "-h", "-j", "{job}", "-o", "%T")
 RESERVATION_REASON_QUERY = ("squeue", "-h", "-j", "{job}", "-o", "%R")
+
+# The scheduler question a replacement asks about the job it is pointed at: one
+# row carrying the state, the owner and the shape of the job named, or no row
+# when the scheduler knows no such job. All of it is read in the same query
+# because a replacement must see the job is running under this user before it
+# overwrites the record that names it.
+REPLACEMENT_JOB_QUERY = ("squeue", "-h", "-j", "{job}", "-o", "%T|%u|%P|%c|%m")
+
+# The one state a replacement may be pointed at: a job that is there to run
+# steps under. A pending job has not started, and every other state names a job
+# that has left the queue or never began, so neither is a place to run.
+REPLACEMENT_RUNNING_STATE = "running"
 
 _ALLOCATION_TIMEOUT_SECONDS = 60.0
 
@@ -412,6 +425,198 @@ def _adopted_result(record: Mapping[str, Any]) -> dict[str, Any]:
         "reason": "adopted",
         "roster_reach": record.get("roster_reach"),
     }
+
+
+def _target_job_argv(job_id: str) -> list[str]:
+    """The argument vector that asks about one named job's state and shape."""
+    return [part.replace("{job}", job_id) for part in REPLACEMENT_JOB_QUERY]
+
+
+def _replacement_owner() -> str:
+    """This user, as the scheduler would name the owner of a job of theirs."""
+    return os.environ.get("USER") or getpass.getuser()
+
+
+def _read_target_job(
+    job_id: str,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+) -> dict[str, Any]:
+    """The state, owner and shape the scheduler reports for a named job.
+
+    Raises the refusal to raise when the job cannot be read. A question that
+    could not be asked is kept apart from a job the scheduler answered for and
+    did not name: the first says nothing about the job and must not be read as
+    its absence, while the second is the scheduler's own statement that no such
+    job is in the queue.
+
+    ``state`` and ``owner`` are returned as the scheduler printed them; the
+    caller compares them against its own vocabulary rather than trusting the
+    spelling here.
+    """
+    run = runner or subprocess.run
+    try:
+        completed = run(
+            _target_job_argv(job_id),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise CrewError(
+            "cannot replace the placement reservation: the scheduler could not "
+            f"be asked about job {job_id} — {exc}; the record is unchanged"
+        ) from exc
+    if completed.returncode != 0:
+        reason = (completed.stderr or "").strip()
+        raise CrewError(
+            "cannot replace the placement reservation: the scheduler could not "
+            f"be asked about job {job_id}"
+            + (f" — {reason}" if reason else "")
+            + "; the record is unchanged"
+        )
+    lines = (completed.stdout or "").strip().splitlines()
+    if not lines:
+        raise CrewError(
+            "cannot replace the placement reservation: the scheduler does not "
+            f"know job {job_id}; the record is unchanged"
+        )
+    parts = lines[0].split("|")
+    state = parts[0].strip()
+    owner = parts[1].strip() if len(parts) > 1 else ""
+    if not state or not owner:
+        raise CrewError(
+            "cannot replace the placement reservation: the scheduler named no "
+            f"state and owner for job {job_id}; the record is unchanged"
+        )
+    return {
+        "state": state,
+        "owner": owner,
+        "partition": parts[2].strip() if len(parts) > 2 else "",
+        "cores": parts[3].strip() if len(parts) > 3 else "",
+        "memory": parts[4].strip() if len(parts) > 4 else "",
+    }
+
+
+def _target_shape(target: Mapping[str, Any]) -> tuple[str, int, int]:
+    """The partition, cores and memory a replacement's target was submitted with.
+
+    Read from the scheduler row rather than from this module's declared
+    defaults, so the published record describes the allocation the job actually
+    carries. A field the scheduler did not report falls back to the declared
+    default, because a record naming the target's real job id is still what a
+    dispatch resolves, and a missing size is not a reason to refuse a job the
+    boundary checks have already admitted.
+    """
+    from reckon.crew import fleet_node
+
+    partition = str(target.get("partition") or RESERVATION_PARTITION)
+    cores_text = str(target.get("cores") or "")
+    cores = int(cores_text) if cores_text.isdigit() else RESERVATION_CORES
+    memory_gb = fleet_node.parse_memory_gb(str(target.get("memory") or ""))
+    if memory_gb is None:
+        memory_gb = RESERVATION_MEMORY_GB
+    return partition, cores, memory_gb
+
+
+def _replacement_refusal(job_id: str, target: Mapping[str, Any]) -> str | None:
+    """Why a target job may not be pointed at, or None when it may.
+
+    Each refusal names the state it found, because the remedy differs: a pending
+    job will run but has not started, another user's job is not ours to place
+    workers into, and a job that is not running has left the queue or never
+    began.
+    """
+    state = str(target.get("state") or "")
+    if state.casefold() == "pending":
+        return (
+            f"job {job_id} is pending, not running; point the reservation at a "
+            "job that has started, or wait for it to run"
+        )
+    if state.casefold() != REPLACEMENT_RUNNING_STATE:
+        return f"job {job_id} is {state}, not running; the record is unchanged"
+    me = _replacement_owner()
+    owner = str(target.get("owner") or "")
+    if owner != me:
+        return (
+            f"job {job_id} belongs to {owner}, not this user ({me}); the record "
+            "is unchanged"
+        )
+    return None
+
+
+def replace_reservation(
+    *,
+    job_id: str,
+    project: str | None = None,
+    session: str | None = None,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
+    now: float | None = None,
+) -> dict[str, Any]:
+    """Point the reservation record at an explicit, already-running job.
+
+    The automatic ensure replaces a record only once its own job has left the
+    queue, so a fleet that must move to a new allocation before the old one
+    drains has no way to say so. This is that way: it names the job the record
+    is to hold, refuses a target the scheduler cannot show is running under this
+    user, and records the job it replaced beside the new one.
+
+    Refusals are distinct because the remedy differs. Steps already running in
+    the replaced job are untouched — only the record later dispatches and
+    resumes read changes, so every worker placed after this call lands in the
+    new job while those already running finish where they are.
+    """
+    if not job_id or not str(job_id).strip():
+        raise CrewError("cannot replace the placement reservation: no job id was named")
+    job_id = str(job_id).strip()
+    with _reservation_hold_lock():
+        target = _read_target_job(job_id, runner)
+        refusal = _replacement_refusal(job_id, target)
+        if refusal is not None:
+            raise CrewError(f"cannot replace the placement reservation: {refusal}")
+        previous = read_reservation(project)
+        previous_job = previous.get("job_id") if previous else None
+        partition, cores, memory_gb = _target_shape(target)
+        reach = _roster_reach()
+        record = {
+            "job_id": job_id,
+            "scheduler": RESERVATION_SCHEDULER,
+            "step_scheduler": RESERVATION_STEP_SCHEDULER,
+            "options": reservation_options(
+                partition=partition, cores=cores, memory_gb=memory_gb
+            ),
+            "size": {"cores": int(cores), "memory_gb": int(memory_gb)},
+            "partition": partition,
+            "roster_limit": RESERVATION_ROSTER_LIMIT,
+            "roster_basis": RESERVATION_ROSTER_BASIS,
+            "roster_reach": reach,
+            "held_for_project": project,
+            "held_by_session": session,
+            "held_at": time.time() if now is None else now,
+            "replaced": previous_job,
+        }
+        publish_reservation(record, project)
+        if previous_job:
+            detail = (
+                f"replaced reservation {previous_job} with {job_id} on "
+                f"{partition} with {cores} cores and {memory_gb} GB; "
+                f"{reach['statement']}"
+            )
+        else:
+            detail = (
+                f"pointed the reservation at running job {job_id} on {partition} "
+                f"with {cores} cores and {memory_gb} GB; there was no record to "
+                f"replace; {reach['statement']}"
+            )
+        return {
+            "job_id": job_id,
+            "replaced": previous_job,
+            "held": True,
+            "started": False,
+            "record": record,
+            "detail": detail,
+            "reason": "replaced",
+            "roster_reach": reach,
+        }
 
 
 def ensure_reservation(
