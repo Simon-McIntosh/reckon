@@ -358,7 +358,7 @@ def test_burn_multiple_is_utilisation_divided_by_elapsed_window(home, repo) -> N
 
 def test_high_burn_is_reported_without_holding_the_wave(home, repo) -> None:
     moment = datetime(2030, 1, 1, tzinfo=UTC)
-    block = _window_budget(13.0, now=moment, elapsed_fraction=0.017)
+    block = _window_budget(38.0, now=moment, elapsed_fraction=0.05)
     _record(
         "proj",
         repo,
@@ -372,7 +372,7 @@ def test_high_burn_is_reported_without_holding_the_wave(home, repo) -> None:
     verdict = report["backends"][0]
 
     assert round(verdict["state"]["burn_multiple"], 1) == 7.6
-    assert "utilisation 13% with burn multiple 7.6x" in verdict["reason"]
+    assert "utilisation 38% with burn multiple 7.6x" in verdict["reason"]
     assert "burn multiple 7.6x" in report["summary"]
     assert verdict["held"] is False
     assert report["held"] is False
@@ -402,7 +402,7 @@ def test_crew_budget_view_exposes_the_burn_multiple(
 
     monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(tmp_path / "absent.yaml"))
     now = datetime.now(tz=UTC)
-    block = _window_budget(13.0, now=now, elapsed_fraction=0.017)
+    block = _window_budget(38.0, now=now, elapsed_fraction=0.05)
     _record(
         "proj",
         repo,

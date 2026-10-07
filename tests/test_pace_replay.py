@@ -682,7 +682,7 @@ def test_a_primary_only_window_replays_its_own_allowance(
         {
             "primary": {
                 "window_minutes": 43_200,
-                "used_percent": 2.0,
+                "used_percent": 6.0,
                 "resets_at": int(reset.timestamp()),
             },
             "secondary": None,
@@ -710,7 +710,7 @@ def test_a_primary_only_window_replays_its_own_allowance(
 
     # The row carries the operative length and derives from that window's
     # elapsed fraction, not from a fixed week: two days into a thirty-day window
-    # at 2% used, the leaning multiple gives the month's own share.
+    # at 6% used, the leaning multiple gives the month's own share.
     assert row["clocks"]["five_hour"]["period"] == "primary", row["clocks"]
     assert row["allowance"]["window_minutes"] == 43_200
     assert row["allowance"]["elapsed_fraction"] == pytest.approx(2 / 30)

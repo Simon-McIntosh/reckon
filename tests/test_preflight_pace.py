@@ -817,7 +817,7 @@ def test_a_groups_clock_is_read_from_the_stream_a_run_reported(
 def test_a_receipt_carrying_only_the_week_reports_one_clock_observed(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The weekly clock divides while the five-hour clock stays unknown.
+    """The weekly clock divides while the five-hour clock is unpublished.
 
     Neither clock is inferred from the other: a receipt that recorded only the
     week leaves the fill unread, so the allowance derives and the bar stays
@@ -847,7 +847,7 @@ def test_a_receipt_carrying_only_the_week_reports_one_clock_observed(
     assert sol["clocks"]["seven_day"]["state"] == budget.OBSERVED
     assert sol["clocks"]["seven_day"]["utilisation"] == pytest.approx(0.21)
     assert sol["clocks"]["seven_day"]["age_seconds"] is not None
-    assert sol["clocks"]["five_hour"]["state"] == budget.UNKNOWN
+    assert sol["clocks"]["five_hour"]["state"] == budget.NOT_PUBLISHED
     assert sol["clocks"]["five_hour"]["utilisation"] is None
     assert sol["allowance"]["derived"] is not None
     assert sol["allowance"]["utilisation"] == pytest.approx(0.21)

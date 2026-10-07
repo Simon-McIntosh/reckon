@@ -75,7 +75,7 @@ def _candidates(monkeypatch, tmp_path, config, records, view):
     }
 
 
-def _receipt_record(observed, reset):
+def _receipt_record(observed, reset, *, used_percent=2.0):
     return {
         "run_id": "sample-run",
         "backend": "codex",
@@ -86,7 +86,7 @@ def _receipt_record(observed, reset):
             "quota_windows": [
                 {
                     "window_minutes": 10_080,
-                    "used_percent": 2.0,
+                    "used_percent": used_percent,
                     "resets_at": int(reset.timestamp()),
                     "observed_at": observed.isoformat(),
                 }
@@ -129,8 +129,8 @@ def test_dispatch_candidates_match_direct_pick_from_recorded_window(
     monkeypatch, tmp_path
 ):
     now = datetime.now(UTC)
-    reset = now + timedelta(days=7) - timedelta(hours=2)
-    records = [_receipt_record(now, reset)]
+    reset = now + timedelta(days=7) - timedelta(hours=12)
+    records = [_receipt_record(now, reset, used_percent=6.0)]
     monkeypatch.setattr(snapshot.budget.crew, "list_live", list)
     monkeypatch.setattr(snapshot.budget._backends, "probe_budget", lambda **_k: {})
     config = _config()
@@ -159,8 +159,8 @@ def test_dispatch_candidates_match_direct_pick_from_recorded_window(
                 assert actual[field] == pytest.approx(expected[field], rel=0.01)
             else:
                 assert actual[field] == expected[field]
-        assert actual["burn_multiple"] == pytest.approx(1.68, rel=0.02)
-        assert actual["utilisation_pct"] == pytest.approx(2.0)
+        assert actual["burn_multiple"] == pytest.approx(0.84, rel=0.02)
+        assert actual["utilisation_pct"] == pytest.approx(6.0)
         assert dispatched["backends"][0]["state"]["source"] == "ledger"
 
 
@@ -197,7 +197,11 @@ def test_missing_recorded_window_names_absence_without_inventing_figures(
 def test_old_recorded_window_is_marked_stale(monkeypatch, tmp_path):
     now = datetime.now(UTC)
     observed = now - timedelta(days=1)
-    records = [_receipt_record(observed, now + timedelta(days=6))]
+    records = [
+        _receipt_record(
+            observed, now + timedelta(days=6) - timedelta(hours=12), used_percent=6.0
+        )
+    ]
     monkeypatch.setattr(snapshot.budget.crew, "list_live", list)
     config = _config()
     view = dispatch._picker_budget_snapshot("demo", config, tmp_path, records)
@@ -225,12 +229,12 @@ def test_old_recorded_window_is_marked_stale(monkeypatch, tmp_path):
 
 def test_dispatch_uses_published_window_as_direct_pick_does(monkeypatch, tmp_path):
     now = datetime.now(UTC)
-    reset = now + timedelta(days=7) - timedelta(hours=2)
+    reset = now + timedelta(days=7) - timedelta(hours=12)
     reading = window_reading.WindowReading(
         figures=(
             window_reading.WindowFigure(
                 period="seven_day",
-                utilisation=0.02,
+                utilisation=0.06,
                 observed_at=now,
                 age_seconds=0.0,
                 resets_at=reset.isoformat(),
@@ -243,7 +247,7 @@ def test_dispatch_uses_published_window_as_direct_pick_does(monkeypatch, tmp_pat
     monkeypatch.setattr(snapshot.budget.crew, "list_live", list)
     monkeypatch.setattr(snapshot.budget._backends, "probe_budget", lambda **_k: {})
     direct = snapshot.budget_view(
-        "demo", config, tmp_path, [_receipt_record(now, reset)]
+        "demo", config, tmp_path, [_receipt_record(now, reset, used_percent=6.0)]
     )
     expected = _candidates(monkeypatch, tmp_path, config, [], direct)
     document = paid_lanes.compose_document(

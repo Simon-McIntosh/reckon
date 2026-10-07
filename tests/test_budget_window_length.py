@@ -33,13 +33,15 @@ CONFIG = {
 }
 
 
-def _primary_window(window_minutes: int, *, elapsed: timedelta):
+def _primary_window(
+    window_minutes: int, *, elapsed: timedelta, used_percent: float = 2.0
+):
     reset = NOW + timedelta(minutes=window_minutes) - elapsed
     return budget._rate_limits_reading(
         {
             "primary": {
                 "window_minutes": window_minutes,
-                "used_percent": 2.0,
+                "used_percent": used_percent,
                 "resets_at": int(reset.timestamp()),
             },
             "secondary": None,
@@ -59,13 +61,13 @@ def _entry(report, name):
 
 
 def test_a_month_window_allows_the_elapsed_fraction_with_the_pacing_lean() -> None:
-    reading = _primary_window(43_200, elapsed=timedelta(days=2))
+    reading = _primary_window(43_200, elapsed=timedelta(days=2), used_percent=6.0)
 
     allowance = _group(reading)["allowance"]
 
     assert allowance["window_minutes"] == 43_200
     assert allowance["elapsed_fraction"] == pytest.approx(2 / 30)
-    assert allowance["burn_multiple"] == pytest.approx(0.3)
+    assert allowance["burn_multiple"] == pytest.approx(0.9)
     assert allowance["derived"] == pytest.approx(0.0733, abs=0.001)
 
 
@@ -83,6 +85,7 @@ def test_a_week_window_keeps_the_allowance_at_the_same_elapsed_fraction() -> Non
     reading = _primary_window(
         window_minutes,
         elapsed=timedelta(minutes=window_minutes * elapsed_fraction),
+        used_percent=6.0,
     )
 
     allowance = _group(reading)["allowance"]
@@ -255,14 +258,14 @@ def _account_answer(window_minutes: int, used_percent: float, elapsed_fraction: 
 
 
 def test_an_implement_dispatch_is_held_by_the_pace_and_a_review_is_admitted() -> None:
-    """The pair: one reading at 3.57x burn holds implementation and admits review.
+    """The pair: one mature reading at 6x burn holds implementation, admits review.
 
     A hold that fired for both, or neither, would not separate the roles. The
     reason must name the utilisation, the allowance it exceeds and the reset
     that ends the hold, so a coordinator sees what it is waiting for.
     """
     config = _preflight_config()
-    answer = _account_answer(10_080, 3.0, 0.0084)
+    answer = _account_answer(10_080, 30.0, 0.05)
 
     held = budget.preflight(
         "reckon",
@@ -278,8 +281,8 @@ def test_an_implement_dispatch_is_held_by_the_pace_and_a_review_is_admitted() ->
 
     assert held["held"] is True
     assert verdict["held"] is True
-    assert verdict["utilisation"] == pytest.approx(0.03)
-    assert verdict["allowance"] == pytest.approx(0.0084 * PACE_MULTIPLE, abs=1e-4)
+    assert verdict["utilisation"] == pytest.approx(0.30)
+    assert verdict["allowance"] == pytest.approx(0.05 * PACE_MULTIPLE, abs=1e-4)
     assert verdict["resets_at"] is not None
     assert "utilisation" in verdict["reason"]
     assert "allowance" in verdict["reason"]
@@ -295,7 +298,9 @@ def test_an_implement_dispatch_is_held_by_the_pace_and_a_review_is_admitted() ->
         roles=["review"],
     )
     assert admitted["held"] is False
-    assert not _group_from(admitted, "codex-sub").get("pace_hold", {}).get("held", False)
+    assert (
+        not _group_from(admitted, "codex-sub").get("pace_hold", {}).get("held", False)
+    )
 
 
 def _stale_week_receipt_row() -> dict:
