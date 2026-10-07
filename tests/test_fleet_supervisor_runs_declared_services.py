@@ -24,6 +24,7 @@ from types import SimpleNamespace
 import pytest
 
 from reckon.crew import fleet_supervisor
+from reckon.crew.host_lease import LEASE_STALE_SECONDS, HostLease
 
 REPO_ROOT = str(Path(fleet_supervisor.__file__).resolve().parents[2])
 MODULE_ARGV = [sys.executable, "-m", "reckon.crew.fleet_supervisor"]
@@ -176,10 +177,37 @@ def test_a_declared_service_starts_as_its_own_session_holding_its_lock(home):
     assert fleet_supervisor.lock_held("demo", home.runtime) is True
     assert fleet_supervisor.recorded_service_pid(home.runtime, "demo") == pid
     assert _alive(pid)
+    lease_path = HostLease(home.state, "demo", "reader", 0, "").path
+    assert lease_path.exists()
 
     manager.stop("demo")
     _wait_for(lambda: not _alive(pid), message="the service survived its stop")
     assert fleet_supervisor.lock_held("demo", home.runtime) is False
+    assert not lease_path.exists()
+
+
+def test_stop_recovers_a_running_service_from_its_recorded_pid(home):
+    """A lost in-memory state still leaves a stop path through the local lock."""
+    _write_services(home, {"demo": home.argv("run")})
+    manager = fleet_supervisor.DeclaredServices(home.runtime, home.env)
+    manager.reload()
+    pid = _wait_for(
+        lambda: _instances(home.instances) or None,
+        message="the synthetic service never started",
+    )[0]
+    lease_path = HostLease(home.state, "demo", "reader", 0, "").path
+    assert manager._states.pop("demo").pid == pid
+    assert fleet_supervisor.recorded_service_pid(home.runtime, "demo") == pid
+    assert fleet_supervisor.lock_held("demo", home.runtime)
+    assert lease_path.exists()
+
+    manager.stop("demo")
+    _wait_for(
+        lambda: not _alive(pid),
+        message="the recorded service survived stop after in-memory state was lost",
+        timeout=1.0,
+    )
+    assert not lease_path.exists()
 
 
 def test_a_second_start_or_reload_starts_no_second_copy(home):
@@ -231,6 +259,73 @@ def test_a_second_start_or_reload_starts_no_second_copy(home):
     assert text.count("stdout tick") == 1, (
         "a second copy wrote its own start marker into the service log"
     )
+
+
+def test_two_hosts_share_one_declared_service(home, capsys, monkeypatch):
+    """Separate runtime locks still yield one copy through shared state."""
+    other_runtime = home.tmp_path / "other-runtime"
+    other_runtime.mkdir()
+    _write_services(home, {"demo": home.argv("run")})
+    monkeypatch.setattr(fleet_supervisor, "_short_hostname", lambda: "host-one")
+    first = fleet_supervisor.DeclaredServices(home.runtime, home.env)
+    monkeypatch.setattr(fleet_supervisor, "_short_hostname", lambda: "host-two")
+    other_env = {**home.env, "FLEET_RUNTIME_DIR": str(other_runtime)}
+    second = fleet_supervisor.DeclaredServices(other_runtime, other_env)
+    try:
+        first.reload()
+        first_pid = _wait_for(
+            lambda: _instances(home.instances) or None,
+            message="the first host did not start the synthetic service",
+        )[0]
+        second.reload()
+        second.supervise_once()
+        assert fleet_supervisor.recorded_service_pid(other_runtime, "demo") is None
+        assert _instances(home.instances) == [first_pid]
+        assert "host-one" in capsys.readouterr().out
+    finally:
+        second.stop_all()
+        first.stop_all()
+
+
+def test_stale_service_lease_moves_to_second_host(home, monkeypatch):
+    """A dead holder can be replaced without losing the successor's lease."""
+    other_runtime = home.tmp_path / "other-runtime"
+    other_runtime.mkdir()
+    _write_services(home, {"demo": home.argv("run")})
+    monkeypatch.setattr(fleet_supervisor, "_short_hostname", lambda: "host-one")
+    first = fleet_supervisor.DeclaredServices(home.runtime, home.env)
+    monkeypatch.setattr(fleet_supervisor, "_short_hostname", lambda: "host-two")
+    other_env = {**home.env, "FLEET_RUNTIME_DIR": str(other_runtime)}
+    second = fleet_supervisor.DeclaredServices(other_runtime, other_env)
+    try:
+        first.reload()
+        first_pid = _wait_for(
+            lambda: _instances(home.instances) or None,
+            message="the first host did not start the synthetic service",
+        )[0]
+        path = HostLease(home.state, "demo", "reader", 0, "").path
+        stale = time.time() - LEASE_STALE_SECONDS - 1
+        os.utime(path, (stale, stale))
+        second.reload()
+        second_pid = fleet_supervisor.recorded_service_pid(other_runtime, "demo")
+        assert second_pid is not None and second_pid != first_pid
+        _wait_for(
+            lambda: second_pid in _instances(home.instances),
+            message="the second host did not take over the stale lease",
+        )
+        first.supervise_once(
+            now=time.monotonic() + fleet_supervisor.LEASE_RENEW_SECONDS
+        )
+        _wait_for(
+            lambda: not _alive(first_pid), message="the displaced service stayed up"
+        )
+        assert json.loads(path.read_text(encoding="utf-8"))["host"] == "host-two"
+        assert _alive(second_pid)
+        second.stop_all()
+        assert not path.exists()
+    finally:
+        second.stop_all()
+        first.stop_all()
 
 
 def test_a_service_that_exits_restarts_after_the_backoff_and_not_before(home):
