@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-sprint" content="S21">
-  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;}">
   <title>The Fleet Moves To A New Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="68">
+<meta name="plan-version" content="69">
 <meta name="plan-modified" content="2026-10-08">
 </head>
 <body>
@@ -216,21 +216,12 @@
   <p class="landed-summary">Landed through <code>41b3dc00a</code> and <code>16b06ec1c</code>: <code>reckon fleet-node migrate</code> carries census, layout, stand-up, promote, per-session cutover and a confirmed retire from one ledger, each step resumable and dry-runnable, with every scheduler call injected in its tests. <a href="s8">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-07</span>
     <h2 id="s9">&sect;9 &mdash; A rehearsal on a probe session</h2>
-    <section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p>
-      Before any real session moves, the tooling moves a throwaway one. On the current
-      node, a probe zellij session with two tabs, one holding a short Claude
-      conversation and one a shell, is taken through the census, layout and cutover
-      steps back onto the same node. The
-      same rehearsal on the new allocation belongs to &sect;10, which holds that
-      allocation.
-    </p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>The probe returns with the same tab names in the same order, its Claude pane resumed under the same conversation id, and its transcript growing after a prompt.</li>
-      <li>The rehearsal's ledger is kept and linked from the landed evidence.</li>
-    </ul>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Rehearsed on 98dci4-clu-2018 on 8 October through <code>reckon fleet-node migrate --rehearse</code>: the probe came back with the same tabs in order and its Claude pane under the same conversation id, and its transcript grew after a prompt; the ledger is kept under <code>~/.local/state/fleet/migration/rehearsals/probe-rehearsal/</code>. <a href="s9">full record</a></p>
+</section>
 
     <h2 id="s10">&sect;10 &mdash; Stand the new node up in standby</h2>
     <section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -560,6 +551,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261007T220318112148-the-migrate-command-rehearses-on-its-own-node" data-who="reckon-build" data-when="2026-10-07T22:37:34Z">
     <div class="r-comment-body"><p>[local rehearsal receipt](docs/evidence/fragments/the-fleet-moves-to-a-new-node/the-migrate-command-rehearses-on-its-own-node.html#the-migrate-command-rehearses-on-its-own-node-landing) — local probe rehearsal now records reordered-tab refusal with matching Claude panes; named gate 59 passed, EXIT=0; tab-check mutation 1 failed, EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-20261008-quiesce-started" data-who="reckon-build" data-when="2026-10-08T01:05:00Z">
+    <div class="r-comment-body"><p>Quiesce began on 8 October with the lead's authority to migrate once the checks and the rehearsal passed. The fleet gate is paused with the move as its reason. The halt notice went to the 11 interactive sessions on the old node through the probe session's peer messages, because those sockets are node-local. By the probe's count, ten replied halted. nova-f5 had not replied, possibly held at an approval prompt. imas-codex-ff still has run <code>r-20261007T162739703753-five-scope-rejudge</code> in flight on the old node. Two promotion commits for <code>r-20261007T224700384464</code> were unpushed in the reckon checkout. The move then stopped for the lead's decision, because the driver's safety classifier refused further reads of a peer session's transcript as interference with other workloads. No session has been ended, no allocation held, and no record moved.</p></div>
 </div>
 </section>
 </main>
