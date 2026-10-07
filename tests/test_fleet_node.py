@@ -21,6 +21,7 @@ from reckon.crew.fleet_node import (
     ACCOUNT_ENV,
     CPUS_ENV,
     DEFAULT_ACCOUNT,
+    DEFAULT_THREAD_CAP,
     FLEET_COMMENT,
     MEMORY_ENV,
     PARTITION_ENV,
@@ -32,6 +33,17 @@ from reckon.crew.fleet_node import (
     parse_node_state,
     placement_argv,
     remaining_seconds,
+)
+
+# The compute libraries the allocation caps, named literally rather than read
+# from the module, so a variable dropped from the declared set fails here
+# instead of silently shrinking the set the assertions walk.
+EXPECTED_THREAD_CAPS = (
+    "OMP_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",
 )
 
 # The scheduler writes a finite wall clock as digits, colons and an optional
@@ -115,6 +127,48 @@ def test_the_hold_script_requests_no_zero_memory() -> None:
     # A zero memory request reserves the whole node, so the job's own OOM
     # killer could never act before the node itself runs out.
     assert _directive_value(directives, "mem") != "0"
+
+
+def _thread_cap_exports(script: str) -> list[str]:
+    """The thread-cap export lines of a generated script, in order."""
+    return [
+        line
+        for line in script.splitlines()
+        if line.startswith("export ") and line.split("=", 1)[0].endswith("_THREADS")
+    ]
+
+
+def test_the_hold_script_caps_every_compute_library_thread_pool() -> None:
+    script = generate_hold_script(fleet_size(), log_path=LOG)
+    exports = _thread_cap_exports(script)
+
+    assert exports == [
+        f'export {name}="${{{name}:-{DEFAULT_THREAD_CAP}}}"'
+        for name in EXPECTED_THREAD_CAPS
+    ]
+
+
+def test_a_thread_cap_already_set_survives_the_hold_scripts_export() -> None:
+    """A value the submitting environment sets is kept; the rest default."""
+    script = generate_hold_script(fleet_size(), log_path=LOG)
+    probe = "\n".join(
+        [
+            *_thread_cap_exports(script),
+            *(f'echo "{name}=${name}"' for name in EXPECTED_THREAD_CAPS),
+        ]
+    )
+    done = subprocess.run(
+        ["bash", "-c", probe],
+        capture_output=True,
+        text=True,
+        check=True,
+        env={"PATH": "/usr/bin:/bin", "OMP_NUM_THREADS": "3"},
+    )
+    got = dict(line.split("=", 1) for line in done.stdout.strip().splitlines() if line)
+    assert got["OMP_NUM_THREADS"] == "3"
+    for name in EXPECTED_THREAD_CAPS:
+        if name != "OMP_NUM_THREADS":
+            assert got[name] == str(DEFAULT_THREAD_CAP)
 
 
 def test_each_size_field_is_overridable(monkeypatch) -> None:
