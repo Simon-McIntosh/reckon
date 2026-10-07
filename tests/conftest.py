@@ -105,6 +105,22 @@ def without_dispatch_identity(monkeypatch):
         monkeypatch.delenv(name, raising=False)
 
 
+# A suite run from a live Claude Code session inherits that session's
+# CLAUDE_PID, and dispatch names the session's host FIFO from it. A real
+# dispatch in a test then writes a request the live host acts on, starting a
+# real follower for the fixture's project. A dry run reads the live host as
+# waiting, which turns a test that expects watcher-required into one that
+# passes only where no host runs. Measured 2026-10-07: one population run
+# from a coordinator session left five followers for project "sample" under
+# that session's host, and three dry-run tests failed there while passing in
+# a worker. Removed for every test; a test whose subject is the host sets the
+# pid it means.
+@pytest.fixture(autouse=True)
+def without_the_live_claude_session(monkeypatch):
+    """No test reaches the session host of the Claude session that ran it."""
+    monkeypatch.delenv("CLAUDE_PID", raising=False)
+
+
 # The picker answers over OpenRouter and authenticates with a live credential.
 # Since routing.picker became ``route`` by default, any dispatch that names no
 # lane asks the live service; the whole suite then depends on an external
