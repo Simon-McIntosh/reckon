@@ -133,7 +133,6 @@ from reckon.crew.runs import (
     placement_job_alive,
     pointer_path,
     process_alive,
-    project_watch_visibility,
     read_pointer,
     record_process_alive,
     reports_dir,
@@ -143,6 +142,7 @@ from reckon.crew.runs import (
     scheduler_kill_class,
     watch_lock_path,
     watch_log_path,
+    watch_observer_alive,
     watch_state,
     watch_stream_path,
 )
@@ -1198,6 +1198,43 @@ def _start_watch_producer(project: str) -> Any:
     )
 
 
+def _stop_watch_producer_within(project: str, timeout: float) -> None:
+    """Bound seat release even when the producer does not honour SIGTERM.
+
+    Unwatch waits for the seat lock after signalling. A separate process lets
+    arming cancel that wait without leaving a thread holding the arm lock.
+    The child inherits neither the arm descriptor nor any other held lock.
+    """
+    try:
+        subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import sys; sys.path.insert(0, sys.argv[1]); "
+                    "from reckon.crew.recovery import unwatch; unwatch(sys.argv[2])"
+                ),
+                str(Path(__file__).resolve().parents[2]),
+                project,
+            ],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            close_fds=True,
+            timeout=timeout,
+            check=True,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise CrewError(
+            f"watch producer for {project} did not release its seat within "
+            f"{WATCHER_LOAD_BOUND_SECONDS:g}s; arming stopped"
+        ) from exc
+    except subprocess.CalledProcessError as exc:
+        raise CrewError(
+            f"cannot release watch producer for {project}: {exc.stderr}"
+        ) from exc
+
+
 def _ensure_watch_producer(
     project: str, *, session: str | None = None
 ) -> dict[str, Any]:
@@ -1210,39 +1247,34 @@ def _ensure_watch_producer(
     """
     arming_lock = watch_stream_path(project).with_suffix(".arm.lock")
     arming_lock.parent.mkdir(parents=True, exist_ok=True)
+    deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
     with arming_lock.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        state = watch_state(project, session=session)
-        if state["watcher_live"]:
-            # A producer whose supervisor died keeps appending real transitions,
-            # so it stays readable — but nothing will ever replace it, and it
-            # holds the seat lock, so every later arming returns here and the
-            # stale seat outlives every session that cared. Measured: one held
-            # for four days, and another had to be cleared by hand. Replace it
-            # rather than refusing a dispatch over it: refusing would block work
-            # on account of a producer that is streaming perfectly, while
-            # accepting it silently keeps the seat unreplaceable. Admission is
-            # still decided by `session_attached` below.
-            from reckon.crew.recovery import unwatch
-
-            if project_watch_visibility(project)["observer_alive"] is False:
-                unwatch(project)
-            else:
-                return state
-
-        supervisor = _start_watch_producer(project)
-        deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
-        while time.monotonic() < deadline:
-            # Poll producer liveness only. Resolving this session's delivery
-            # costs a descriptor trace, and a trace on a loop that runs twenty
-            # times a second spent the whole arming budget on measurement — the
-            # session's attachment is read once, after the producer is up.
-            if watch_state(project)["watcher_live"]:
-                return watch_state(project, session=session)
-            if supervisor.poll() is not None:
+        while True:
+            try:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
-            time.sleep(0.05)
-        return watch_state(project, session=session)
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise CrewError(
+                        f"watch arming lock {arming_lock} remained held for "
+                        f"{WATCHER_LOAD_BOUND_SECONDS:g}s; arming stopped"
+                    ) from None
+                time.sleep(0.05)
+        # Only producer identity belongs inside the launch mutex. Following
+        # pipes or enumerating the fleet can wait on unrelated long-lived work.
+        state = watch_state(project)
+        if state["watcher_live"] and watch_observer_alive(state["watcher"]) is False:
+            _stop_watch_producer_within(project, max(0.0, deadline - time.monotonic()))
+            state = watch_state(project)
+        if not state["watcher_live"]:
+            supervisor = _start_watch_producer(project)
+            while time.monotonic() < deadline:
+                if watch_state(project)["watcher_live"]:
+                    break
+                if supervisor.poll() is not None:
+                    break
+                time.sleep(0.05)
+    return watch_state(project, session=session)
 
 
 # The session host a Claude Code session runs declares its request FIFO in a
