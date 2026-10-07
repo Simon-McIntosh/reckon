@@ -29,6 +29,7 @@ class Probe:
         self.root = root
         self.active = True
         self.ready = True
+        self.tabs = ["conversation", "shell"]
         self.calls: list[tuple[str, ...]] = []
         transcript = root / "transcripts" / "-work" / "conversation-id.jsonl"
         transcript.parent.mkdir(parents=True)
@@ -68,9 +69,7 @@ class Probe:
         return {
             "session": name,
             "node": "trial-node",
-            "tabs": ["conversation", "shell"]
-            if self.ready
-            else ["shell", "conversation"],
+            "tabs": self.tabs,
             "panes": [
                 {
                     "tab": "conversation",
@@ -182,6 +181,37 @@ def test_rehearsal_retries_verification_without_ending_again(probe: Probe) -> No
     assert "next step: done" in probe.migrate()
     assert sum(call[:2] == ("zellij", "kill-session") for call in probe.calls) == 1
     assert sum(call[0] == "supervisor" for call in probe.calls) == 1
+
+
+def test_rehearsal_records_reordered_tabs_with_matching_claude_pane(
+    probe: Probe,
+) -> None:
+    for _ in range(4):
+        probe.migrate()
+    probe.tabs = ["shell", "conversation"]
+    observed = probe.inspect({"jobid": "local"}, "probe-trial")
+    assert observed["panes"][0]["conversation"] == "conversation-id"
+    assert observed["panes"][0]["pid"] == 42
+    assert observed["tabs"] == ["shell", "conversation"]
+
+    with pytest.raises(fleet_migrate.MigrationError, match="tab order mismatch"):
+        probe.migrate()
+    path = probe.root / "state/migration/rehearsals/probe-trial/ledger.json"
+    ledger = json.loads(path.read_text())
+    assert ledger["next_step"] == "verify"
+    assert ledger["completed"] == ["census", "layout", "end", "start"]
+    assert "tab order mismatch" in ledger["verification_failure"]["reason"]
+    assert ledger["verification_failure"]["observed_tabs"] == [
+        "shell",
+        "conversation",
+    ]
+    assert ledger["verification_failure"]["expected_tabs"] == [
+        "conversation",
+        "shell",
+    ]
+    probe.tabs = ["conversation", "shell"]
+    assert "next step: done" in probe.migrate()
+    assert "verification_failure" not in json.loads(path.read_text())
 
 
 def test_rehearsal_cli_requires_probe_name() -> None:

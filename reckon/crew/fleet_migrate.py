@@ -29,6 +29,14 @@ class MigrationError(RuntimeError):
     """A migration checkpoint cannot safely advance."""
 
 
+class SessionVerificationError(MigrationError):
+    """A resumed session did not match its recorded layout and process census."""
+
+    def __init__(self, message: str, observed: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.observed = observed
+
+
 _TAB = re.compile(r'^\s*tab name="([^"]+)"')
 _CWD = re.compile(r'\bcwd(?:=| )"([^"]+)"')
 _PANE = re.compile(r"^\s*pane(?:\s|\{|$)")
@@ -644,9 +652,16 @@ def _verified_session(
         ):
             return actual
         pause(2)
-    raise MigrationError(
+    if check_tabs and actual.get("tabs") != expected_tabs:
+        raise SessionVerificationError(
+            f"{name} tab order mismatch: expected {expected_tabs}, "
+            f"observed {actual.get('tabs')}",
+            actual,
+        )
+    raise SessionVerificationError(
         f"{name} did not show {len(expected)} recorded Claude panes and tab order "
-        f"on {node}: {json.dumps(actual, sort_keys=True)}"
+        f"on {node}: {json.dumps(actual, sort_keys=True)}",
+        actual,
     )
 
 
@@ -732,14 +747,25 @@ def _rehearse(
         next_step = "verify"
     else:
         recorded = ledger["census"]["sessions"][0]
-        actual = _verified_session(
-            name,
-            recorded,
-            ledger["node"],
-            lambda: inspect_session({"jobid": "local"}, name),
-            pause,
-            check_tabs=True,
-        )
+        try:
+            actual = _verified_session(
+                name,
+                recorded,
+                ledger["node"],
+                lambda: inspect_session({"jobid": "local"}, name),
+                pause,
+                check_tabs=True,
+            )
+        except SessionVerificationError as exc:
+            ledger["verification_failure"] = {
+                "reason": str(exc),
+                "expected_tabs": [tab["name"] for tab in recorded["tabs"]],
+                "observed_tabs": exc.observed.get("tabs"),
+                "at": datetime.now(UTC).isoformat(),
+            }
+            path.write_text(json.dumps(ledger, indent=2) + "\n")
+            raise
+        ledger.pop("verification_failure", None)
         ledger["verification"] = actual
         next_step = "done"
     ledger["completed"].append(step)
