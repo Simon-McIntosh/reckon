@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon import budget
 from reckon.crew.picker import snapshot
 from tests.test_picker_dispatch_pace import _candidates, _config
 
@@ -58,6 +59,11 @@ def test_a_new_week_carries_position_without_a_burn_or_pace_projection(
     assert candidate["utilisation_pct"] == pytest.approx(1.0)
     assert candidate["days_to_reset"] == pytest.approx(7, abs=0.01)
     assert candidate["resets_at"] is not None
+    pace_hold = budget.pace_hold(view["groups"][0], "implement")
+    assert pace_hold["held"] is False
+    assert pace_hold["utilisation"] == pytest.approx(0.01)
+    assert pace_hold["resets_at"] == candidate["resets_at"]
+    assert "window too young to project" in pace_hold["reason"]
 
 
 def test_a_mature_week_projects_at_the_existing_rate(

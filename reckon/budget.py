@@ -2713,14 +2713,21 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
         for value in (utilisation, derived, burn, multiple)
     )
     if not measured:
+        measured_utilisation = (
+            float(utilisation)
+            if isinstance(utilisation, (int, float))
+            and not isinstance(utilisation, bool)
+            else None
+        )
         return {
             "role": str(role),
             "bookend": bookend,
             "held": False,
-            "utilisation": None,
+            "utilisation": measured_utilisation,
             "allowance": None,
-            "resets_at": None,
-            "reason": (
+            "resets_at": resets_at,
+            "reason": str(allowance.get("reason") or "")
+            or (
                 f"the {entry.get('group')!r} group's allowance was not read, so "
                 "no overspend can be measured and nothing is held"
             ),
