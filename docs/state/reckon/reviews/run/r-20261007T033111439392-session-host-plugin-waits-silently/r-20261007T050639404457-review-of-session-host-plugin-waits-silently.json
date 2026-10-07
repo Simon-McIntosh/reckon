@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken",
+  "backend": "clive",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/cli.py:4928"
+  ],
+  "completed_at": "2026-10-07T05:28:17.898Z",
+  "dispatched_at": "2026-10-07T05:07:15Z",
+  "findings": [
+    {
+      "file": "tests/test_session_host_plugin.py",
+      "line": "100",
+      "severity": "follow-on",
+      "text": "follow-on: the entry point resolves its checkout with `readlink -f \"$0\"` (plugins/crew-host/bin/crew-host:56) precisely because a personal-scope plugin loads as a symlink under ~/.claude/skills/, but _checkout copies the plugin and _launch runs the real path under the temp root, so the symlinked-invocation path is never exercised; I confirmed the behaviour is correct today (invoking through a symlinked plugin still execs the checkout with the right argv) yet mutating script_path=\"$0\" exits 127 with no record while all 5 tests stay green, so a regression dropping readlink -f would leave the gate green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against base 875c0f08f; three commits, five files, +332/-0, the plugin, one test module and one evidence fragment, with 9435a8b92 renaming the plugin for its skills-dir link, labelling the monitor and adding the FIFO teardown.",
+    "done_when": "\u00a73's done-when names one idle shell process per session, no output in its pane, and exit within a minute of the session ending; tests/test_session_host_plugin.py asserts the FIFO appears at :124, silence at :131, first-request exec at :147, exit within one interval at :187 and FIFO removal at :201, and my own re-run of the gate at 9435a8b92 reads 5 passed EXIT=0.",
+    "goal": "the node's goal is the \u00a73 deliverable, a personal-scope plugin at plugins/crew-host that waits silently on a node-local FIFO until asked and then becomes `reckon crew host`; plugins/crew-host/bin/crew-host:1 creates plugins/crew-host/.claude-plugin/plugin.json, plugins/crew-host/monitors/monitors.json (one monitor, when \"always\") and the entry point.",
+    "manifest": "read; status complete, commits 567eca204, 0e19aa5b0 and 9435a8b92, changed_paths populated, negative_control_log names gate-negative-control.log whose last line is EXIT=1 with the two failing ids the head arm does not fail; baseline_suite/after_suite are empty, so the added-failure count is unmeasured rather than zero.",
+    "write_paths": "read the manifest's declared write paths and the diff; all three commits touch only plugins/crew-host/{.claude-plugin/plugin.json,bin/crew-host,monitors/monitors.json}, tests/test_session_host_plugin.py and docs/evidence/fragments/a-follower-lives-as-long-as-its-session/session-host-plugin-waits-silently.html, every one inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the declared negative control (an echo before the wait loop) reddens tests/test_session_host_plugin.py:131 test_waits_silently_on_a_fifo_named_for_its_owner and :187 test_exits_within_one_interval_after_its_owner_exits at 2 failed EXIT=1, so the silence guard is falsified, and :201 test_removes_its_fifo_when_its_owner_exits fails if the teardown regresses.",
+    "evidence": "gate-head.log records \"5 passed in 4.21s\" EXIT=0 at 9435a8b92, which I reproduced (5 passed EXIT=0), and gate-negative-control.log records 2 failed EXIT=1 whose ids are absent from the head arm; no base arm log exists so added_failure_count is unmeasured.",
+    "fit": "plugins/crew-host/bin/crew-host:1 is a `set -u` shell entry point with mechanism comments, monitors/monitors.json matches the plugin monitor schema (`claude plugin validate plugins/crew-host --strict passed`, reproduced), and no added line carries a plan, version or ticket label.",
+    "goal_fidelity": "plugins/crew-host/bin/crew-host:16 derives the owner pid/start pair, :30 selects the runtime dir, :44 opens the node-local FIFO and :55 execs the checkout's `.venv/bin/reckon crew host` with `--owner-pid/--owner-start/--fd 3/--first-request`, which are exactly the options reckon/cli.py:4928 crew_host accepts.",
+    "reuse": "the entry point delegates the request protocol to the existing `reckon crew host` (integrated reckon/cli.py:4928, backed by reckon/crew/session_host.py:507) rather than re-reading the FIFO in shell, and duplicates only the /proc start-time parse, which a shell script cannot share with reckon/crew/obligation_snapshot.py:271 across the language seam.",
+    "scope_discipline": "`git diff --stat 875c0f08f..9435a8b92` is five files, +332/-0, all inside the manifest's changed_paths and none outside the node's declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is the \u00a73 deliverable, a personal-scope plugin at plugins/crew-host that waits silently on a node-local FIFO until asked and then becomes `reckon crew host`; plugins/crew-host/bin/crew-host:1 creates plugins/crew-host/.claude-plugin/plugin.json, plugins/crew-host/monitors/monitors.json (one monitor, when \"always\") and the entry point.\nVERDICT done_when: \u00a73's done-when names one idle shell process per session, no output in its pane, and exit within a minute of the session ending; tests/test_session_host_plugin.py asserts the FIFO appears at :124, silence at :131, first-request exec at :147, exit within one interval at :187 and FIFO removal at :201, and my own re-run of the gate at 9435a8b92 reads 5 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared write paths and the diff; all three commits touch only plugins/crew-host/{.claude-plugin/plugin.json,bin/crew-host,monitors/monitors.json}, tests/test_session_host_plugin.py and docs/evidence/fragments/a-follower-lives-as-long-as-its-session/session-host-plugin-waits-silently.html, every one inside the declared scope.\nVERDICT manifest: read; status complete, commits 567eca204, 0e19aa5b0 and 9435a8b92, changed_paths populated, negative_control_log names gate-negative-control.log whose last line is EXIT=1 with the two failing ids the head arm does not fail; baseline_suite/after_suite are empty, so the added-failure count is unmeasured rather than zero.\nVERDICT diff: read commit by commit against base 875c0f08f; three commits, five files, +332/-0, the plugin, one test module and one evidence fragment, with 9435a8b92 renaming the plugin for its skills-dir link, labelling the monitor and adding the FIFO teardown.\nCALL_SITES: reckon/cli.py:4928\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: plugins/crew-host/bin/crew-host:16 derives the owner pid/start pair, :30 selects the runtime dir, :44 opens the node-local FIFO and :55 execs the checkout's `.venv/bin/reckon crew host` with `--owner-pid/--owner-start/--fd 3/--first-request`, which are exactly the options reckon/cli.py:4928 crew_host accepts.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log records \"5 passed in 4.21s\" EXIT=0 at 9435a8b92, which I reproduced (5 passed EXIT=0), and gate-negative-control.log records 2 failed EXIT=1 whose ids are absent from the head arm; no base arm log exists so added_failure_count is unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --stat 875c0f08f..9435a8b92` is five files, +332/-0, all inside the manifest's changed_paths and none outside the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the declared negative control (an echo before the wait loop) reddens tests/test_session_host_plugin.py:131 test_waits_silently_on_a_fifo_named_for_its_owner and :187 test_exits_within_one_interval_after_its_owner_exits at 2 failed EXIT=1, so the silence guard is falsified, and :201 test_removes_its_fifo_when_its_owner_exits fails if the teardown regresses.\nSCORE fit: 19\nJUSTIFICATION fit: plugins/crew-host/bin/crew-host:1 is a `set -u` shell entry point with mechanism comments, monitors/monitors.json matches the plugin monitor schema (`claude plugin validate plugins/crew-host --strict passed`, reproduced), and no added line carries a plan, version or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the entry point delegates the request protocol to the existing `reckon crew host` (integrated reckon/cli.py:4928, backed by reckon/crew/session_host.py:507) rather than re-reading the FIFO in shell, and duplicates only the /proc start-time parse, which a shell script cannot share with reckon/crew/obligation_snapshot.py:271 across the language seam.\nFINDING tests/test_session_host_plugin.py:100 follow-on: the entry point resolves its checkout with `readlink -f \"$0\"` (plugins/crew-host/bin/crew-host:56) precisely because a personal-scope plugin loads as a symlink under ~/.claude/skills/, but _checkout copies the plugin and _launch runs the real path under the temp root, so the symlinked-invocation path is never exercised; I confirmed the behaviour is correct today (invoking through a symlinked plugin still execs the checkout with the right argv) yet mutating script_path=\"$0\" exits 127 with no record while all 5 tests stay green, so a regression dropping readlink -f would leave the gate green.\n",
+  "review_run_id": "r-20261007T050639404457-review-of-session-host-plugin-waits-silently",
+  "reviewed_base_sha": "875c0f08fb813f37b58e805597f04e0d3aa92633",
+  "reviewed_head_sha": "9435a8b929ee847f5d7c628b8213afd5bd8e1d32",
+  "reviewed_run_id": "r-20261007T033111439392-session-host-plugin-waits-silently",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T05:35:14.991295+00:00",
+  "total": 110
+}
