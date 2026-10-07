@@ -1266,6 +1266,51 @@ def cached_pick_input(
     return value
 
 
+def cached_pick_input_rekeyed(
+    name: str,
+    key_of: Callable[[], Any],
+    compatible: Callable[[Any, Any], bool],
+    build: Callable[[], Any],
+    *,
+    root: str | Path | None = None,
+    filename: str | None = None,
+) -> Any:
+    """Cache an input whose staleness key has to be re-read after it is built.
+
+    Some inputs read a ledger, and reading that ledger refreshes a derived index
+    whose stamp the key folds in. Taking the key only before the build would
+    store the value under a stamp the build itself has already moved past, so it
+    would never be a hit. ``key_of`` is therefore called once before the build
+    for the read key and once after it, and the entry is stored under the stamp
+    the build finished at. ``compatible`` decides whether a stamp that moved
+    during the build may still be cached: a stamp the build is known to refresh
+    only in a benign part returns ``True`` and is cached under the new stamp;
+    one that moved in the source returns ``False`` and the value is returned
+    without being stored, so no reading is bound to a stamp its source has left
+    behind. A key of ``None`` means the input is not cacheable.
+    """
+
+    key = key_of()
+    if key is None:
+        return build()
+    path = pick_input_cache_path(name, root=root, filename=filename)
+    entry = _read_pick_entry(path)
+    if entry is not None and entry.get("key") == pick_input_stamp_key(key):
+        return entry.get("value")
+    value = build()
+    refreshed = key_of()
+    if refreshed is not None and compatible(key, refreshed):
+        _write_pick_entry(
+            path,
+            {
+                "version": PICK_INPUT_CACHE_VERSION,
+                "key": pick_input_stamp_key(refreshed),
+                "value": value,
+            },
+        )
+    return value
+
+
 def cached_pick_input_stamped(
     name: str,
     request_key: Any,

@@ -215,22 +215,39 @@ def _ledger_stamp(project: str) -> list[Any] | None:
     """The ledger change stamp the profile cache is keyed on, or ``None``.
 
     This is the stamp handed to
-    :func:`reckon.capabilities.cached_pick_input`, not a cache of its own: the
-    persisted reader, writer, schema marker and key all belong to that function.
-    A ledger whose index cannot be read yields no stamp, and the profile is then
-    read without being cached.
-
-    The derived run index's own identity is dropped from the stamp. Building a
-    profile reads the ledger, and that read refreshes the index, so its identity
-    moves as a consequence of the very computation the stamp keys; keeping it
-    would make every profile a guaranteed miss. The aggregate's and the runs
-    directory's identities remain, and a source change moves those.
+    :func:`reckon.capabilities.cached_pick_input_rekeyed`, not a cache of its
+    own: the persisted reader, writer, schema marker and key all belong to that
+    function. A ledger whose index cannot be read yields no stamp, and the
+    profile is then read without being cached.
     """
 
     try:
-        return ledger.index_stamp(project)[:-1]
+        return ledger.index_stamp(project)
     except (ledger.LedgerError, OSError, ValueError):
         return None
+
+
+def _profile_stamp(project: str, now: datetime) -> list[Any] | None:
+    """The profile cache key: the ledger stamp beside the window's end date."""
+
+    stamp = _ledger_stamp(project)
+    if stamp is None:
+        return None
+    return [stamp, now.date().isoformat()]
+
+
+def _profile_stamp_may_cache(before: Any, after: Any) -> bool:
+    """Whether a moved profile stamp may still key a cached profile.
+
+    Building a profile reads the ledger, and that read refreshes the derived run
+    index, whose identity is the stamp's last element and moves as a consequence
+    of the very computation being keyed. So the index identity is allowed to
+    move, but the aggregate and runs-directory identities ahead of it, and the
+    window's end date, must not: a move there is a source change during the
+    read, and a profile built mid-change must not be cached.
+    """
+
+    return before[0][:-1] == after[0][:-1] and before[1] == after[1]
 
 
 def _cached_run_time_profile(project: str, *, now: datetime) -> Mapping[str, Any]:
@@ -243,29 +260,33 @@ def _cached_run_time_profile(project: str, *, now: datetime) -> Mapping[str, Any
     projects -- the figure that pushes a pick past its five-second dispatch
     bound. A real dispatch is a fresh process, so the reading is persisted beside
     its freshness stamp through
-    :func:`reckon.capabilities.cached_pick_input`, which owns the schema marker,
-    the atomic write and the corrupt-entry handling: the in-process memo is
-    checked first, then that shared cache, and only a miss reads the ledger. The
-    stamp folds in the window's end date beside the ledger stamp, so a profile
-    is recomputed at least once a day even for a project whose ledger stays
-    still.
+    :func:`reckon.capabilities.cached_pick_input_rekeyed`, which owns the schema
+    marker, the atomic write and the corrupt-entry handling: the in-process memo
+    is checked first, then that shared cache, and only a miss reads the ledger.
+    The stamp folds in the window's end date beside the ledger stamp, so a
+    profile is recomputed at least once a day even for a project whose ledger
+    stays still.
     """
 
-    stamp = _ledger_stamp(project)
-    if stamp is None:
+    key = _profile_stamp(project, now)
+    if key is None:
         return run_time_profile(project, now=now)
-    key = [stamp, now.date().isoformat()]
     cached = _PROFILE_CACHE.get(project)
     if cached is not None and cached[0] == key:
         return cached[1]
-    profile = capabilities.cached_pick_input(
+    profile = capabilities.cached_pick_input_rekeyed(
         project,
-        key,
+        lambda: _profile_stamp(project, now),
+        _profile_stamp_may_cache,
         lambda: run_time_profile(project, now=now),
         root=_profile_cache_root(),
         filename=f"{project}.json",
     )
-    _PROFILE_CACHE[project] = (key, profile)
+    # A profile built while the source was still settling is not cached at all,
+    # so it is memoized only when the key did not move across the build.
+    settled = _profile_stamp(project, now)
+    if settled is not None and settled == key:
+        _PROFILE_CACHE[project] = (settled, profile)
     return profile
 
 
