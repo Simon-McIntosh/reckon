@@ -2740,6 +2740,15 @@ def require_plan_reviewed(
     advisory and the answer is the record; an unanswered finding is an unread
     one, and the gate refuses a plan whose review nobody read.
 
+    Only a hot review's findings refuse: the gate reads each review's derived
+    lifecycle (:mod:`reckon.crew.review_lifecycle`) and counts a finding only
+    when the review is open or answered. A landed review — its reviewed sections
+    all declared done, or the plan shipped — or one superseded by a later review
+    of the same rubric is the archive, so its unanswered finding no longer
+    blocks a build of content a different review now covers. The design review's
+    presence at any version and in any lifecycle state still satisfies its
+    requirement, and the coverage check is unchanged.
+
     ``allow_unreviewed`` is the operational waiver: a broken local review lane
     must not stop every build, so the caller may waive the gate and the waiver
     is recorded on the run that carries it. ``enforce`` selects the mode: when
@@ -2751,7 +2760,7 @@ def require_plan_reviewed(
     if allow_unreviewed or _plan_review_exempt(node):
         return None
 
-    from reckon.crew import plan_review
+    from reckon.crew import plan_review, review_lifecycle
     from reckon.resources import ResourceCollision, resolve_resource
 
     plan_data = authority["plan"]
@@ -2809,8 +2818,20 @@ def require_plan_reviewed(
             "a plan is reviewed before it is built; compose one with "
             f"`{plan_review.review_invocation(project, node.plan)}`",
         )
-    unanswered = plan_review.unanswered_findings(record)
-    if design.get("review_path") != record.get("review_path"):
+    plan_state = _plan_html.read_state_file(resource.path)
+    plan_records = plan_review.list_plan_reviews(project)
+    unanswered = (
+        plan_review.unanswered_findings(record)
+        if review_lifecycle.is_hot(
+            record, plan_state=plan_state, later_records=plan_records
+        )
+        else []
+    )
+    if design.get("review_path") != record.get("review_path") and (
+        review_lifecycle.is_hot(
+            design, plan_state=plan_state, later_records=plan_records
+        )
+    ):
         unanswered += [
             finding
             for finding in plan_review.unanswered_findings(design)

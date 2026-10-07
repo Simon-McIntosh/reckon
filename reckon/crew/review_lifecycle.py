@@ -274,6 +274,34 @@ def lifecycle(
     return ANSWERED
 
 
+def is_hot(
+    record: Mapping[str, Any],
+    *,
+    plan_state: Mapping[str, Any] | None = None,
+    run_closed: bool | None = None,
+    later_records: Any = (),
+) -> bool:
+    """Whether a stored review is one a live reader still acts on.
+
+    A reader that acts on a review's findings — the dispatch gate and the
+    obligations view — acts only while the review is hot: a landed review
+    describes work in the past and a superseded one has been re-read, so a
+    finding on either is archive rather than a live obligation. The predicate
+    wraps :func:`lifecycle` so the two states a live reader consults are named
+    once, beside the derivation, rather than restated by each reader. Its
+    arguments are :func:`lifecycle`'s, with the same reading.
+    """
+    return (
+        lifecycle(
+            record,
+            plan_state=plan_state,
+            run_closed=run_closed,
+            later_records=later_records,
+        )
+        in HOT_STATES
+    )
+
+
 # ── The loader ──────────────────────────────────────────────────────────────
 # A thin reader: it gathers the records from the store's own readers and pairs
 # each with the state :func:`lifecycle` derives for it. It walks no store of its
@@ -303,20 +331,12 @@ def _run_review_records(
     review run, so a closed run's review is found where a promotion put it.
     """
     found: dict[str, dict[str, Any]] = {}
-    directory = _review_store.review_store_root(base_dir) / project
-    if directory.is_dir():
-        for run_id in _review_store._store_index(directory):
-            if not run_id:
-                # A plan review names no reviewed run, so the store index keys
-                # it under the empty run id. Reading it back through the run
-                # reader would return it as if it reviewed a run; the plan
-                # store's listing is where a plan review is reached.
-                continue
-            for path, record in _review_store.stored_records_for_run(
-                project, run_id, base_dir=base_dir
-            ):
-                if _is_run_review(record):
-                    found[str(path)] = record
+    for run_id in _review_store.reviewed_run_ids(project, base_dir=base_dir):
+        for path, record in _review_store.stored_records_for_run(
+            project, run_id, base_dir=base_dir
+        ):
+            if _is_run_review(record):
+                found[str(path)] = record
     committed = _review_store.committed_review_root(project, root=root)
     if committed is not None:
         run_root = committed / _review_store.COMMITTED_RUN_DIRNAME

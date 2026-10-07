@@ -2509,6 +2509,22 @@ def _review_run_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
     return _store_indexes(directory)[1]
 
 
+def reviewed_run_ids(project: str, *, base_dir: str | Path | None = None) -> list[str]:
+    """Return the reviewed run ids the project's staging store holds records for.
+
+    The store's own index answers, so the enumeration is one pass per project
+    directory per process rather than a walk per caller, and the ids come back
+    sorted for a stable order. A plan review names no reviewed run, so the index
+    keys it under the empty run id; an empty key is not a run and is not
+    returned. A project directory that does not exist, or one holding no record,
+    yields an empty list.
+    """
+    directory = review_store_root(base_dir) / project
+    if not directory.is_dir():
+        return []
+    return sorted(run_id for run_id in _store_index(directory) if run_id)
+
+
 def record_for_review_run(
     project: str, review_run_id: str, *, base_dir: str | Path | None = None
 ) -> tuple[Path, dict[str, Any]] | None:
