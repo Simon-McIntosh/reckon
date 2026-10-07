@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-follower-outlives-its-monitor">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
   <title>A Follower Lives As Long As Its Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.91">
-<meta name="plan-version" content="54">
+<meta name="plan-impl" content="0.83">
+<meta name="plan-version" content="56">
 <meta name="plan-modified" content="2026-10-07">
 </head>
 <body>
@@ -163,6 +163,11 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 <section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> One Python function names a session host's request FIFO from its owner pair, and both readers call it. Today <code>reckon/crew/session_host.py</code> (<code>_fifo_path</code>, added under §9) and <code>reckon/crew/dispatch.py</code> (<code>_session_host_fifo</code>) each compose <code>&lt;runtime&gt;/reckon-session-host/&lt;pid&gt;-&lt;start&gt;.fifo</code>. The two agree only until one changes, and a disagreement would leave the host removing a different file from the one dispatch writes to. The §9 review raised it as a follow-on. The bash entry point keeps its own spelling, because it cannot import Python.</p>
 <p><strong>Done when</strong> a test resolves the FIFO path for one owner pair through the host and through dispatch and finds them equal. The filename format <code>{pid}-{start}.fifo</code> appears once in <code>reckon/</code>. <code>tests/test_session_host.py</code> and <code>tests/test_dispatch_session_host.py</code> pass. The equality test fails when one side's format is changed alone, and that is its negative control.</p>
+
+    <h2 id="s13">§13 — A stopped host never records a stop reason of None</h2>
+<section data-reckon="section" data-id="s13" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> Every path that stops <code>reckon crew host</code> names its reason, so the final record never carries <code>stop_reason: null</code>. <code>SessionHost.stop</code> takes the reason as required rather than optional. The entry's <code>finally</code> call passes one, and the request-descriptor end-of-file path, where the request pipe closes, records its own. The §11 review found the fallback and the end-of-file path untested and the <code>finally</code> call passing no reason.</p>
+<p><strong>Done when</strong> tests in <code>tests/test_session_host.py</code> drive a bare <code>request_stop()</code> with no wake-pipe write, and an end-of-file on the request descriptor, and find a non-null <code>stop_reason</code> in the final record each time. <code>tests/test_session_host.py</code> and <code>tests/test_dispatch_session_host.py</code> pass. Each new test fails when the reason its path records is removed, and that is the negative control.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -347,6 +352,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261007T160403892846-review-of-the-session-host-records-when-it-stopped" data-who="reckon-build" data-when="2026-10-07T16:18:53.093Z">
     <div class="r-comment-body"><p>§11 review of r-20261007T154818066959: goal_fidelity 19, evidence 18, scope_discipline 19, durability 17, fit 19, reuse 19 (total 111); the stop-time/reason change meets §11 and both done_when readings, with two follow-on coverage/contract notes and no defect found.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-20261007T1800-s11-correction" data-who="reckon-build" data-when="2026-10-07T18:00:00Z">
+    <div class="r-comment-body"><p>Correction to <code>c-close-s11</code>, which said the review's one finding was a text-less placeholder. That was true of the record when it was read at about 16:15Z. The reviewer rewrote the record at 16:17:39Z, before the run was promoted, with two follow-on findings and the same 111/120. First, the fallback that records the reason as signalled when <code>stop</code> received none, and the request-descriptor end-of-file path, are untested, so <code>stop_reason</code> None has no test. Second, the entry's <code>finally</code> calls <code>host.stop()</code> with no reason; it is a no-op today, but nothing enforces the contract. Both fold into §13.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-10-07T17:40:00Z">
     <div class="r-comment-body"><p>Landed at merge <code>be78fede</code>. <code>dispatch._session_host_fifo_path</code> composes the FIFO path from an owner pair. <code>_session_host_fifo</code> and <code>session_host._fifo_path</code> both call it, so <code>{pid}-{start}.fifo</code> is spelled once under <code>reckon/</code>; the bash entry point keeps its own spelling. Gate: 22 passed, and the equality test fails when one side's format is changed alone. Population of 9 session-host test modules: 137 passed at base, 138 at the merged head, 0 added. Review 120/120. Its one follow-on is that the head gate log names the base revision, because the gate ran before the commit; the reviewer reproduced the result at <code>173caf43</code>. Section closed by tick. <a href="/reckon/evidence/fragments/a-follower-lives-as-long-as-its-session/one-spelling-of-the-host-fifo-path.html">evidence</a></p></div>
