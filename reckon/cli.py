@@ -7141,6 +7141,71 @@ def crew_velocity(project, since, until, fields, limit, cursor, pretty):
     _emit_crew_result(payload, pretty)
 
 
+@crew.command(name="budget-reset")
+@click.option(
+    "--group",
+    required=True,
+    help="Budget group whose banked reset is flagged, cleared or read.",
+)
+@click.option(
+    "--available",
+    "mark_available",
+    is_flag=True,
+    help=(
+        "Flag one banked reset as available. Idempotent: flagging a group that "
+        "already carries one changes nothing and says so."
+    ),
+)
+@click.option(
+    "--used",
+    "mark_used",
+    is_flag=True,
+    help="Clear the flag, recording that the banked reset was spent.",
+)
+@click.option(
+    "--by",
+    default=None,
+    help="Who is setting or clearing the flag (default: $USER).",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_budget_reset(group, mark_available, mark_used, by, pretty):
+    """Set, clear or read a budget group's banked-reset flag.
+
+    A metered subscription can carry one banked reset, which grants one extra
+    full window of allowance while it is available. With no action flag the
+    current state is printed; ``--available`` flags one (never stacking) and
+    ``--used`` clears it. Budget preflight and the picker read the flag from the
+    same durable record, so flagging it here changes the pace they report.
+    """
+    from reckon.crew import budget_reset as budget_reset_module
+
+    if mark_available and mark_used:
+        raise click.ClickException("--available and --used are mutually exclusive")
+    if mark_available:
+        result = budget_reset_module.mark_available(group, by=by)
+    elif mark_used:
+        result = budget_reset_module.mark_used(group, by=by)
+    else:
+        found = budget_reset_module.record(group)
+        found = found or {}
+        result = {
+            "ok": True,
+            "group": group,
+            "available": bool(found.get("available")),
+            "changed": False,
+            "set_at": found.get("set_at"),
+            "set_by": found.get("set_by"),
+            "cleared_at": found.get("cleared_at"),
+            "cleared_reason": found.get("cleared_reason"),
+            "detail": (
+                "a banked reset is available for this group"
+                if found.get("available")
+                else "no banked reset is available for this group"
+            ),
+        }
+    _emit_crew_result(result, pretty)
+
+
 @crew.command(name="split-runs")
 @click.option(
     "--dry-run",
