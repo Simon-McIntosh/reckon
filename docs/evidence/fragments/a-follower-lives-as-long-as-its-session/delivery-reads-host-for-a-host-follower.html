@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-lives-as-long-as-its-session">
+  <meta name="plan-evidence-for" content="a-follower-lives-as-long-as-its-session">
+  <title>Delivery reads host for a host-run follower | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>Delivery reads host for a host-run follower</h1>
+      <p class="lead">A dispatch read delivery as <code>monitor</code> for a session the calling host had already attached. It now reads the host's own census of running children and reports <code>host</code> with an empty arming line when a child for the project and session carries the live registration's pid.</p>
+    </header>
+
+    <section id="delivery-reads-host-for-a-host-follower-the-gap">
+      <h2>The gap</h2>
+      <p><code>session_delivery</code> was set to <code>"host"</code> only on the branch that asked the session host to attach a follower at that moment (<code>_ask_session_host_for_follower</code>). A session attached earlier -- by a prior dispatch, or by the plugin monitor at session start -- short-circuited that branch, so its payload carried <code>delivery: "monitor"</code> and an arming line, offering a second Monitor watch for a follower the host already consumes.</p>
+    </section>
+
+    <section id="delivery-reads-host-for-a-host-follower-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/dispatch.py</code>: <code>_session_host_record_path</code> resolves the calling Claude session's census record under the config home's <code>crew/session-hosts</code> directory, named for the Claude pid and its kernel start tick, with the filename suffix read from the host module that writes it. <code>_session_host_runs_follower</code> reports whether the host names the pair with the pid the live registration holds.</li>
+        <li>The dispatch admission block reports <code>session_delivery = "host"</code> when the session is already attached and that check is true, beside the existing ask-then-upgrade path. A session attached by a foreign follower still reads <code>monitor</code>, because the pid does not match the host's child.</li>
+      </ul>
+    </section>
+
+    <section id="delivery-reads-host-for-a-host-follower-the-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_dispatch_session_host.py</code> adds two cases beside the existing two.</p>
+      <ul>
+        <li><code>test_dispatch_reads_host_for_an_already_attached_host_follower</code> &mdash; the host census names the pair with the live registration's pid; the payload's <code>delivery</code> is <code>host</code> and its <code>arming_line</code> is empty.</li>
+        <li><code>test_dispatch_reads_monitor_for_a_follower_the_host_did_not_start</code> &mdash; the census names the pair but with a different process's pid, so <code>delivery</code> is <code>monitor</code> and the arming line is kept.</li>
+      </ul>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Head, both files</td><td>14 passed, <code>EXIT=0</code></td><td><code>r-20261007T074338009469-delivery-reads-host-for-a-host-follower/gate-host-delivery.log</code></td></tr>
+          <tr><td>Declared negative control</td><td>1 failed, <code>EXIT=1</code>; the new already-attached-by-host case fails, the base head does not</td><td><code>r-20261007T074338009469-delivery-reads-host-for-a-host-follower/negative-control-host-delivery.log</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="delivery-reads-host-for-a-host-follower-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>report delivery monitor for an already-attached session regardless of the host record; the new already-attached-by-host case must then fail</em>. Applied by returning <code>False</code> unconditionally from <code>_session_host_runs_follower</code>; <code>test_dispatch_reads_host_for_an_already_attached_host_follower</code> fails at its <code>assert record["watch"]["delivery"] == "host"</code> (<code>assert 'monitor' == 'host'</code>), <code>EXIT=1</code>. The mutation was reverted and the head arm re-run green.</p>
+    </section>
+  </main>
+</body>
+</html>
