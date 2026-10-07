@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured zero: derived from the reviewed run's own baseline_suite (111a3fb70, 0 failures, r-20261007T052613021938-publisher-refreshes-stale-windows/base-gate.log) and after_suite (a9899a9b5, 0 failures, r-20261007T052613021938-publisher-refreshes-stale-windows/head-gate-final.log); the gained commit b8c3d4134..31c904d7a is docs-only and adds no failing test.",
+  "base_log_revision": "111a3fb70c470f0571600e3a7e6fb23d1af0a51c",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/paid_lanes.py:main"
+  ],
+  "completed_at": "2026-10-07T07:45:32.201Z",
+  "dispatched_at": "2026-10-07T07:22:58Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "follow-on: the live-refresh is shown over a deliberately aged run-local input (an earlier run-local Codex reading aged past DEFAULT_STALE_SECONDS=3600 s rather than an organically stale account) and the production default public document path remains unexercised under the worker fence, so the 'Publisher execution paths' table still records the default document as refused; the fragment states this honestly and the run's own follow_ons asks the coordinator to run the publisher in the writable service context and confirm the default document updates."
+    }
+  ],
+  "head_log_revision": "a9899a9b5197b516dfa9b92adb925b85d477bd6c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against b8c3d4134; the single gained commit adds a 'Live account probe with a stale recorded input' h2, a seven-column live-probe table, a budget-merge table, and demotes the prior table to 'Ambient publisher reading'; no source file changes.",
+    "done_when": "the delta's own check ran to its summary line in both arms: r-20261007T052613021938-publisher-refreshes-stale-windows/review-positive-evidence-head.log EXIT=0 and r-20261007T052613021938-publisher-refreshes-stale-windows/review-positive-evidence-without-answer.log EXIT=1 (fragment has no live-probe table at HEAD^).",
+    "goal": "the reviewed delta is the fragment update that answers the prior review's fragment finding; docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html:22 now heads the reading with a live account probe over a stale recorded input, closing the gap where the fragment's only probes were a fresh rollout source and the failed claude-opus attempt.",
+    "manifest": "read; the reviewed manifest names the delta commit 31c904d7a as answering finding f590547e11d and lists its run-local receipts real-stale-probe.json and preflight-fresh-read.log.",
+    "write_paths": "the diff b8c3d4134..31c904d7a over the declared scope touches exactly docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html and no other path."
+  },
+  "justifications": {
+    "durability": "the added check reddens when the answering commit is omitted (r-20261007T052613021938-publisher-refreshes-stale-windows/review-positive-evidence-without-answer.log: CHECK_FAIL=fragment has no live-probe table at HEAD^), so the fragment cannot silently lose its live-refresh evidence; it asserts the delta's own content, not a value the delta supplied to code under test.",
+    "evidence": "the delta's own positive/negative pair is recorded (r-20261007T052613021938-publisher-refreshes-stale-windows/review-positive-evidence-head.log EXIT=0, r-20261007T052613021938-publisher-refreshes-stale-windows/review-positive-evidence-without-answer.log EXIT=1) and the run's receipts real-stale-probe.log and preflight-fresh-read.log back the fragment's numbers; the code suite log still names a9899a9b5 rather than the reviewed head, carried only because both intervening commits are docs-only.",
+    "fit": "the delta follows the fragment's existing table idiom at docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html:24-44, uses content-descriptive ids (publisher-refreshes-stale-windows-live-probe) and no version, plan or attribution label.",
+    "goal_fidelity": "docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html:22-29 now shows a real Codex account probe lifting an aged reading (1% rollout, 4362.716 s -> 2% probe, 0 s), which is the end-to-end behaviour the prior review found absent, though the aged input is a controlled run-local document rather than an organically stale live account.",
+    "reuse": "the delta adds no function, class or module and no new reader, so it forks no capability the repository already owns; the standing paid_lanes.py duplication of reckon/budget.py's clock translation is in code this delta did not touch and was recorded by the prior review.",
+    "scope_discipline": "git diff --name-status b8c3d4134..31c904d7a lists only docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html, inside the run's declared write paths, and no source or test file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed delta is the fragment update that answers the prior review's fragment finding; docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html:22 now heads the reading with a live account probe over a stale recorded input, closing the gap where the fragment's only probes were a fresh rollout source and the failed claude-opus attempt.\nVERDICT done_when: the delta's own check ran to its summary line in both arms: r-20261007T052613021938-publisher-refreshes-stale-windows/review-positive-evidence-head.log EXIT=0 and r-20261007T052613021938-publisher-refreshes-stale-windows/review-positive-evidence-without-answer.log EXIT=1 (fragment has no live-probe table at HEAD^).\nVERDICT write_paths: the diff b8c3d4134..31c904d7a over the declared scope touches exactly docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html and no other path.\nVERDICT manifest: read; the reviewed manifest names the delta commit 31c904d7a as answering finding f590547e11d and lists its run-local receipts real-stale-probe.json and preflight-fresh-read.log.\nVERDICT diff: read commit by commit against b8c3d4134; the single gained commit adds a 'Live account probe with a stale recorded input' h2, a seven-column live-probe table, a budget-merge table, and demotes the prior table to 'Ambient publisher reading'; no source file changes.\nCALL_SITES: reckon/crew/paid_lanes.py:main\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html:22-29 now shows a real Codex account probe lifting an aged reading (1% rollout, 4362.716 s -> 2% probe, 0 s), which is the end-to-end behaviour the prior review found absent, though the aged input is a controlled run-local document rather than an organically stale live account.\nSCORE evidence: 18\nJUSTIFICATION evidence: the delta's own positive/negative pair is recorded (r-20261007T052613021938-publisher-refreshes-stale-windows/review-positive-evidence-head.log EXIT=0, r-20261007T052613021938-publisher-refreshes-stale-windows/review-positive-evidence-without-answer.log EXIT=1) and the run's receipts real-stale-probe.log and preflight-fresh-read.log back the fragment's numbers; the code suite log still names a9899a9b5 rather than the reviewed head, carried only because both intervening commits are docs-only.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status b8c3d4134..31c904d7a lists only docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html, inside the run's declared write paths, and no source or test file changed.\nSCORE durability: 18\nJUSTIFICATION durability: the added check reddens when the answering commit is omitted (r-20261007T052613021938-publisher-refreshes-stale-windows/review-positive-evidence-without-answer.log: CHECK_FAIL=fragment has no live-probe table at HEAD^), so the fragment cannot silently lose its live-refresh evidence; it asserts the delta's own content, not a value the delta supplied to code under test.\nSCORE fit: 19\nJUSTIFICATION fit: the delta follows the fragment's existing table idiom at docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html:24-44, uses content-descriptive ids (publisher-refreshes-stale-windows-live-probe) and no version, plan or attribution label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no function, class or module and no new reader, so it forks no capability the repository already owns; the standing paid_lanes.py duplication of reckon/budget.py's clock translation is in code this delta did not touch and was recorded by the prior review.\nFINDING docs/evidence/fragments/one-typesafe-model-picker/publisher-refreshes-stale-windows.html:26 follow-on: the live-refresh is shown over a deliberately aged run-local input (an earlier run-local Codex reading aged past DEFAULT_STALE_SECONDS=3600 s rather than an organically stale account) and the production default public document path remains unexercised under the worker fence, so the 'Publisher execution paths' table still records the default document as refused; the fragment states this honestly and the run's own follow_ons asks the coordinator to run the publisher in the writable service context and confirm the default document updates.",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T052613021938-publisher-refreshes-stale-windows.json",
+  "review_run_id": "r-20261007T072222643649-review-of-publisher-refreshes-stale-windows",
+  "reviewed_base_sha": "b8c3d413400caf02453ac0ded43fd6c7b19a694b",
+  "reviewed_head_sha": "31c904d7aba64be2c4677c7dc6cd06e967f7e5de",
+  "reviewed_run_id": "r-20261007T052613021938-publisher-refreshes-stale-windows",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T07:35:00+00:00",
+  "total": 114
+}
