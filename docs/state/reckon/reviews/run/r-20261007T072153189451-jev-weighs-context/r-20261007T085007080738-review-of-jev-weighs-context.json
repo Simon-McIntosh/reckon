@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own manifest arms: baseline_suite is revision 0aad66278 (gate-base.log, 199 passed, EXIT=0, failure_ids []) and after_suite is revision 23b4def2 (gate-head.log, 204 passed, EXIT=0, failure_ids []). ledger.added_failure_ids(after - baseline) is the empty set, so added_failure_count is 0 and added_failure_ids []. I independently re-ran the delta's module at head: 5 passed in tests/test_jev_weighs_context.py (EXIT=0 on my gate-head-review.log); no test fails at head that passes at base.",
+  "base_log_revision": "0aad66278c349f47ec668be82382bf10e988cf8f",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:5144 dispatch_picker_selection -> picker_snapshot.estimated_context_tokens(node, repo, backend_settings=...) [no authority]",
+    "reckon/crew/dispatch.py:5161 dispatch_picker_selection -> picker.pick(request, config, repo=..., cached_only=True, **inputs) [no authority]",
+    "reckon/crew/picker/snapshot.py:444 candidates -> estimated_context_tokens(request.node, repo, authority=authority)",
+    "reckon/crew/picker/snapshot.py:528 candidates -> _fit(..., authority=authority) -> DispatchPlan(authority=...)"
+  ],
+  "completed_at": "2026-10-07T09:18:57.486Z",
+  "dispatched_at": "2026-10-07T08:50:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "5144",
+      "severity": "blocking",
+      "text": "the fix is inert on every production path. The commit threads an `authority` through pick(); candidates(); estimated_context_tokens() and _fit(), but the only production callers never supply one: dispatch_picker_selection computes the request estimate at dispatch.py:5144 as estimated_context_tokens(node, repo, backend_settings=...) with no authority, and calls pick() at dispatch.py:5161 without one; replay.py:72 also calls pick() without one; and dispatch_picker_selection has no authority parameter to forward. Measured on the reviewed head for a node with a dispatcher-granted 4 kB landing fragment: the request-level figure dispatch computes is 53821 (the fragment charged) and the same node's context-fit verdict built with no authority is also 53821 (charged) - they agree, but by both charging, not by both exempting. The 51535 headline figure is reached only when an authority is supplied to the verdict, which nothing does. At base the two figures were likewise 53821 == 53821, so the commit changes no production behaviour and the defect it states is not reproduced between the two figures Jev weighs."
+    },
+    {
+      "file": "docs/evidence/fragments/one-typesafe-model-picker/jev-weighs-context.html",
+      "line": "43",
+      "severity": "follow-on",
+      "text": "the fragment overstates the delivered behaviour. It states 'The request-level estimate and every candidate's block are one estimate: the dispatch authority is threaded into both' and renders 'One real node's rendered context block' at estimated_tokens 51535. Production runs the same node at 53821 (the granted fragment charged), because the dispatch authority is not threaded into the picker at all; 51535 is what the new unit test produces by constructing a resolution that carries the authority directly. The fragment should distinguish the pinned unit invariant (equal when both are given the authority) from production, where the granted fragment is still charged in both figures."
+    },
+    {
+      "file": "tests/test_jev_weighs_context.py",
+      "line": "216",
+      "severity": "follow-on",
+      "text": "durability gap: the added test test_node_and_candidate_estimates_agree_with_granted_paths pins the picker-internal equality under a directly-supplied authority and is genuinely falsifiable (reverting the snapshot.py census line to `None` turns it red at line 280, EXIT=1), but nothing asserts that the dispatcher supplies an authority on the production path, so the wire that would make the fix real is untested and absent. The `authority` parameter added to pick(), candidates() and estimated_context_tokens() has no production caller, i.e. dead API surface until a caller is added."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "444",
+      "severity": "follow-on",
+      "text": "residual, pre-existing and not introduced by this commit: the request-level estimate dispatch computes (dispatch.py:5144) passes backend_settings for the local backend, while candidates()' node_context_tokens is measured with backend_settings=None; for a candidate on a lane that declares no window the block falls back to node_context_tokens, so the request figure and the block can still differ by their standing chain rather than by any authority. The authority threading does not address this second source of a request-vs-block split."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "four sites read: the two production callers of the picker (dispatch_picker_selection at dispatch.py:5144 and :5161) both call without an authority, and the two picker-internal sites (snapshot.py:444, :528) thread the parameter through. No production path supplies a non-None authority to any of them.",
+    "diff": "read against base 10fca437: single commit 23b4def2 touches exactly the four files the delta names (snapshot.py, __init__.py, tests/test_jev_weighs_context.py, the new evidence fragment); git diff --name-status lists those four and nothing else; head is a clean descendant of base.",
+    "done_when": "The delta's own evidence: a regression test asserted to split when the authority is dropped, and the missing evidence fragment (item 4 of the earlier review) is now written. The test is genuinely falsifiable (I reproduced red by reverting the threading), but it injects the authority directly and so proves the plumbing works only when used, not that production uses it.",
+    "goal": "The commit's stated goal is that the request-level estimate and each candidate's context-fit verdict become one figure, so a dispatcher-granted landing fragment is exempt in both. On every production call path this is not achieved: no caller supplies an authority, so both figures are measured with authority=None and both charge the granted fragment. The output is one figure only because both are charged, which was already true at base.",
+    "manifest": "read; the reviewed run's manifest now populates baseline_suite (rev 0aad66278) and after_suite (rev 23b4def2), both exit 0 with zero failure ids; negative_control_log is declared and reproduced independently; commit body present and conventional, no AI attribution.",
+    "write_paths": "all four delta files are inside the node's declared fence (snapshot.py, __init__.py, tests/test_jev_weighs_context.py, docs/evidence/fragments/one-typesafe-model-picker/jev-weighs-context.html); no out-of-scope path is touched by this delta (the four out-of-scope test files belonged to the earlier commit 10fca437, not this one)."
+  },
+  "justifications": {
+    "durability": "the added regression test pins the equality as a class and I confirmed it discriminates: with the authority threading reverted in a scratch copy of head, the test fails at line 280 (assert node_tokens == verdict['estimated_tokens']), EXIT=1; on head it passes. The gap is that it exercises only the authority-supplied path, so it cannot catch the real regression - a dispatcher that never supplies an authority - and a future wiring change would leave the suite green.",
+    "evidence": "the reviewed run's own arms are green and now record their revisions: gate-base.log names rev=0aad66278 (199 passed, EXIT=0) and gate-head.log names rev=23b4def2 (204 passed, EXIT=0), both with zero failure ids, so added_failure_count is 0. The fragment (item 4 of the earlier review) is now written. Against that, the fragment's headline claim and its 51535 example are not what production computes (53821), and no test guards the production wiring. My independent head run of tests/test_jev_weighs_context.py is 5 passed EXIT=0.",
+    "fit": "the change follows the module's idiom: the parameter is an optional Mapping threaded the same way the verdict already threads the authority, comments state the mechanism (a granted fragment is exempt only when the census can see the grant) with no plan, ticket, gate or version identifier and no attribution, and the only nit is an optional parameter that no caller yet supplies. The added `from collections.abc import Mapping` and the reformat of the headroom round() are incidental and correct.",
+    "goal_fidelity": "The delta's stated goal is a production behaviour change: the request-level estimate and each candidate's context-fit verdict become one figure with a granted fragment exempt in each. I reproduced the production call shape on a scratch copy of the head tree (module.__file__ confirming the tree) and found the request figure and the no-authority verdict both 53821 - equal because both charge the granted fragment - while the with-authority verdict is 51535. The same probe on a scratch copy of base gives 53821 == 53821. So the two figures already agreed at base and remain equal at head, and the exemption the commit describes is not reached by any production caller (dispatch.py:5144/:5161 and replay.py:72 all supply no authority). The commit message's premise that the base verdict 'threaded it through' is not what the base picker does: base _fit builds its DispatchPlan with authority defaulting to None. The commit does deliver the previously missing evidence fragment and a falsifiable regression test, which are the credit in this score.",
+    "reuse": "the commit reuses the existing estimated_context_tokens and _fit rather than adding a parallel measurement, hands the authority to the census and the verdict through existing parameters, and adds no dependency and no duplicate helper. The one cost is unused API surface: an `authority` parameter on pick() and candidates() that no production caller supplies, which a reviewer cannot see exercised outside the new test.",
+    "scope_discipline": "git diff --name-status 10fca437..23b4def2 lists exactly four files - reckon/crew/picker/snapshot.py, reckon/crew/picker/__init__.py, tests/test_jev_weighs_context.py and docs/evidence/fragments/one-typesafe-model-picker/jev-weighs-context.html - all inside the node's declared fence. Head is a clean descendant of base with no unrelated commits. The four out-of-scope test files the earlier review flagged belong to commit 10fca437, not to the delta under review here."
+  },
+  "project": "reckon",
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261007T072153189451-jev-weighs-context.at-23b4def2e579c0a0450c1288032fd439149b09a4.json",
+  "review_run_id": "r-20261007T085007080738-review-of-jev-weighs-context",
+  "reviewed_base_sha": "10fca437044a2c106bc7df715723db2a1bfc6963",
+  "reviewed_head_sha": "23b4def2e579c0a0450c1288032fd439149b09a4",
+  "reviewed_run_id": "r-20261007T072153189451-jev-weighs-context",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 12,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 9,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-07T09:12:41.375182+00:00",
+  "total": 86
+}
