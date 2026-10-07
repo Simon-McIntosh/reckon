@@ -6,6 +6,7 @@ import json
 import os
 import re
 import secrets
+import socket
 import subprocess
 import sys
 import time
@@ -20,6 +21,7 @@ from reckon.crew.fleet_supervisor import (
     runtime_directory,
     state_directory,
 )
+from reckon.crew.recovery import _resume_remedy
 from reckon.crew.resumption import resolve_session
 
 
@@ -83,6 +85,81 @@ def parse_layout(source: str) -> list[dict[str, Any]]:
     return tabs
 
 
+def _listed_sessions(
+    *,
+    invoke: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+    check: bool = False,
+    timeout: float | None = None,
+) -> list[tuple[str, bool]]:
+    """Read zellij's session list with each server's exited state."""
+    options: dict[str, Any] = {"capture_output": True, "text": True, "check": check}
+    if timeout is not None:
+        options["timeout"] = timeout
+    result = invoke(["zellij", "list-sessions", "--no-formatting"], **options)
+    if result.returncode:
+        raise MigrationError(f"zellij session list failed: {result.stderr.strip()}")
+    sessions = []
+    for line in result.stdout.splitlines():
+        fields = line.split()
+        if fields:
+            sessions.append((fields[0], "EXITED" in line))
+    return sessions
+
+
+def _live_claude_records(
+    claude_sessions: Path,
+    process_root: Path,
+    *,
+    skip_invalid: bool = False,
+    coerce_pid: bool = False,
+) -> dict[str, dict[str, Any]]:
+    """Join session records to live processes by pid and process start."""
+    records = {}
+    for path in claude_sessions.glob("*.json"):
+        try:
+            record = json.loads(path.read_text())
+        except (OSError, ValueError):
+            if skip_invalid:
+                continue
+            raise
+        try:
+            conversation = record.get("sessionId")
+            raw_pid = record.get("pid")
+        except AttributeError:
+            if skip_invalid:
+                continue
+            raise
+        if coerce_pid:
+            try:
+                pid = int(raw_pid)
+            except (TypeError, ValueError):
+                continue
+        elif isinstance(raw_pid, int):
+            pid = raw_pid
+        else:
+            continue
+        if not conversation:
+            continue
+        try:
+            start = (
+                (process_root / str(pid) / "stat")
+                .read_text()
+                .rsplit(") ", 1)[1]
+                .split()[19]
+            )
+        except (IndexError, OSError):
+            continue
+        if start != str(record.get("procStart")):
+            continue
+        records[conversation] = {
+            "conversation": conversation,
+            "cwd": record.get("cwd"),
+            "pid": pid,
+            "status": record.get("status"),
+        }
+    return records
+
+
 def _local_observation(
     *,
     state: Path,
@@ -92,16 +169,10 @@ def _local_observation(
     invoke: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
 ) -> dict[str, Any]:
     """Read the old node's zellij and Claude records without changing them."""
-    listed = invoke(
-        ["zellij", "list-sessions", "--no-formatting"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
     names = [
-        line.split()[0]
-        for line in listed.stdout.splitlines()
-        if line.strip() and line.split()[0].endswith("-fleet")
+        name
+        for name, _exited in _listed_sessions(invoke=invoke, check=True)
+        if name.endswith("-fleet")
     ]
     if not names:
         raise MigrationError(
@@ -118,25 +189,7 @@ def _local_observation(
         if not parse_layout(result.stdout):
             raise MigrationError(f"layout dump for {name} has no tabs")
         layouts[name] = result.stdout
-    records = {}
-    for path in claude_sessions.glob("*.json"):
-        record = json.loads(path.read_text())
-        conversation = record.get("sessionId")
-        pid = record.get("pid")
-        stat = process_root / str(pid) / "stat" if isinstance(pid, int) else None
-        if conversation and stat is not None and stat.is_file():
-            try:
-                start = stat.read_text().rsplit(") ", 1)[1].split()[19]
-            except (IndexError, OSError):
-                continue
-            if start != str(record.get("procStart")):
-                continue
-            records[conversation] = {
-                "conversation": conversation,
-                "cwd": record.get("cwd"),
-                "pid": record.get("pid"),
-                "status": record.get("status"),
-            }
+    records = _live_claude_records(claude_sessions, process_root)
     log = state / "sessions.tsv"
     starts = log.read_text().splitlines() if log.is_file() else []
     return {
@@ -332,14 +385,13 @@ def _read_runs() -> list[dict[str, Any]]:
             project=str(pointer.get("project") or ""),
             root=pointer.get("repo"),
         )
+        remedy = _resume_remedy(resolution, run_id)
         rows.append(
             {
                 "run_id": run_id,
                 "project": pointer.get("project"),
                 "phase": pointer.get("phase"),
-                "resume": f"reckon crew resume --run {run_id} --advice continue"
-                if resolution.get("resolved")
-                else None,
+                "resume": (remedy or {}).get("command"),
                 "session_id": resolution.get("session_id"),
             }
         )
@@ -358,6 +410,125 @@ def _fleet_record(state: Path) -> dict[str, Any]:
 
 def _run_step(argv: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(argv, capture_output=True, text=True, check=False, timeout=30)
+
+
+def _active_sessions(
+    invoke: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+) -> list[str]:
+    return [
+        name
+        for name, exited in _listed_sessions(invoke=invoke, timeout=30)
+        if not exited
+    ]
+
+
+def _end_local_session(name: str) -> dict[str, Any]:
+    """End a named old-node server and confirm it left the active list."""
+    before = _active_sessions()
+    if name in before:
+        result = _run_step(["zellij", "kill-session", name])
+        if result.returncode:
+            raise MigrationError(
+                f"zellij refused to end {name}: {result.stderr.strip()}"
+            )
+    if name in _active_sessions():
+        raise MigrationError(f"zellij session {name} remains on the old node")
+    return {"session": name, "ended": True, "was_running": name in before}
+
+
+def _local_session_processes(
+    name: str,
+    *,
+    claude_sessions: Path | None = None,
+    process_root: Path = Path("/proc"),
+    active_sessions: Callable[[], list[str]] = _active_sessions,
+    run_step: Callable[[list[str]], subprocess.CompletedProcess[str]] = _run_step,
+    hostname: Callable[[], str] = socket.gethostname,
+) -> dict[str, Any]:
+    """Read the resumed panes and their live Claude process records."""
+    node = hostname().split(".")[0]
+    if name not in active_sessions():
+        return {"session": name, "node": node, "panes": []}
+    result = run_step(["zellij", "--session", name, "action", "dump-layout"])
+    if result.returncode:
+        raise MigrationError(f"layout read for {name} failed: {result.stderr.strip()}")
+    tabs = parse_layout(result.stdout)
+    records = _live_claude_records(
+        claude_sessions or Path.home() / ".claude" / "sessions",
+        process_root,
+        skip_invalid=True,
+        coerce_pid=True,
+    )
+    for conversation, record in list(records.items()):
+        try:
+            command = (
+                (process_root / str(record["pid"]) / "cmdline")
+                .read_bytes()
+                .replace(b"\0", b" ")
+                .decode(errors="replace")
+            )
+        except OSError:
+            del records[conversation]
+            continue
+        if "claude" not in command.lower():
+            del records[conversation]
+            continue
+        record["command"] = command
+    panes = []
+    for tab in tabs:
+        for pane in tab["panes"]:
+            if pane["command"] != "fleet-claude":
+                continue
+            args = pane.get("args", [])
+            conversation = (
+                args[1]
+                if len(args) >= 2 and args[0] in {"--resume", "--session-id"}
+                else None
+            )
+            process = records.get(conversation, {})
+            panes.append(
+                {
+                    "tab": tab["name"],
+                    "conversation": conversation,
+                    "cwd": process.get("cwd"),
+                    "pid": process.get("pid"),
+                    "command": process.get("command"),
+                }
+            )
+    return {"session": name, "node": node, "panes": panes}
+
+
+def _inspect_remote_session(job: Mapping[str, str], name: str) -> dict[str, Any]:
+    argv = fleet_node.placement_argv(
+        job,
+        [sys.executable, "-m", "reckon.crew.fleet_migrate", "inspect-session", name],
+    )
+    result = _run_step(argv)
+    if result.returncode:
+        raise MigrationError(
+            f"session inspection failed in job {job['jobid']}: {result.stderr.strip()}"
+        )
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise MigrationError("new-node session inspection returned no JSON") from exc
+
+
+def _worker_steps(job_id: str) -> list[str]:
+    result = _run_step(["squeue", "--steps", "-h", "-j", job_id, "-o", "%i"])
+    if result.returncode:
+        raise MigrationError(
+            f"cannot read steps in job {job_id}: {result.stderr.strip()}"
+        )
+    return [
+        line.strip()
+        for line in result.stdout.splitlines()
+        if line.strip() and not line.strip().endswith((".batch", ".extern"))
+    ]
+
+
+def _cancel_job(job_id: str) -> subprocess.CompletedProcess[str]:
+    return _run_step(["scancel", job_id])
 
 
 def _send_supervisor(job: Mapping[str, str], line: str) -> None:
@@ -444,10 +615,14 @@ def migrate(
     replace_reservation: Callable[..., dict[str, Any]] = placement.replace_reservation,
     read_reservation: Callable[[], dict[str, Any] | None] = placement.read_reservation,
     read_fleet_record: Callable[[Path], dict[str, Any]] = _fleet_record,
+    inspect_session: Callable[
+        [Mapping[str, str], str], dict[str, Any]
+    ] = _inspect_remote_session,
+    list_worker_steps: Callable[[str], list[str]] = _worker_steps,
+    cancel_job: Callable[[str], subprocess.CompletedProcess[str]] = _cancel_job,
     pause: Callable[[float], None] = time.sleep,
 ) -> str:
     """Perform exactly one migration checkpoint, resuming from its ledger."""
-    del confirm  # The guarded retire step is implemented by the cutover owner.
     state = state or state_directory()
     layouts_dir = (
         layouts_dir
@@ -479,9 +654,38 @@ def migrate(
             f"{ledger['stand_up']['job_id']}, request supervisor promotion, "
             "and print the fleet and reservation records before and after"
         )
+    elif step == "cutover":
+        moved = ledger.get("cutovers", {})
+        remaining = [
+            item["name"]
+            for item in ledger["census"]["sessions"]
+            if moved.get(item["name"], {}).get("status") != "complete"
+        ]
+        known = {item["name"] for item in ledger["census"]["sessions"]}
+        if session and session not in known:
+            raise MigrationError(f"{session} is absent from the recorded census")
+        description = (
+            f"cutover: end {session} on the old job, start it on the new job "
+            f"from migrate-{session}.kdl, and verify each Claude pane"
+            if session
+            else "cutover: sessions still to move: " + (", ".join(remaining) or "none")
+        )
+    elif step == "retire":
+        description = (
+            f"retire: check job {ledger['stand_up']['old_record']['job_id']} for "
+            "worker steps and zellij sessions; "
+            f"scancel {ledger['stand_up']['old_record']['job_id']}"
+            + (" after --confirm" if confirm else " (requires --confirm)")
+        )
+    elif step == "done":
+        description = "migration complete"
     else:
         description = f"{step}: awaits the next migration implementation"
     if dry_run:
+        return description
+    if step == "cutover" and session is None:
+        return description
+    if step == "done":
         return description
     if step == "census":
         census = build_census(observation())
@@ -631,6 +835,156 @@ def migrate(
             f"reservation before: {json.dumps(before_reservation, sort_keys=True)}\n"
             f"reservation after: {json.dumps(after_reservation, sort_keys=True)}"
         )
+    if step == "cutover":
+        assert path is not None and ledger is not None and session is not None
+        cutovers = ledger.setdefault("cutovers", {})
+        outcome = cutovers.setdefault(session, {})
+        if outcome.get("status") == "complete":
+            return f"{session} already cut over to {outcome['node']}; skipped"
+        layout = layouts_dir / f"migrate-{session}.kdl"
+        if not layout.is_file():
+            raise MigrationError(f"migration layout is missing: {layout}")
+        old_job_id = str(ledger["stand_up"]["old_record"]["job_id"])
+        new_job_id = str(ledger["stand_up"]["job_id"])
+        old_job = {"jobid": old_job_id}
+        new_job = {"jobid": new_job_id}
+        if outcome.get("phase") != "old-ended":
+            argv = fleet_node.placement_argv(
+                old_job,
+                [
+                    sys.executable,
+                    "-m",
+                    "reckon.crew.fleet_migrate",
+                    "end-session",
+                    session,
+                ],
+            )
+            result = run_step(argv)
+            try:
+                ended = json.loads(result.stdout)
+            except json.JSONDecodeError as exc:
+                raise MigrationError(
+                    f"old-node end returned no receipt for {session}"
+                ) from exc
+            if (
+                result.returncode
+                or ended.get("session") != session
+                or ended.get("ended") is not True
+            ):
+                raise MigrationError(
+                    f"old-node end did not confirm {session}: {result.stderr.strip()}"
+                )
+            outcome["phase"] = "old-ended"
+            outcome["old_end"] = ended
+            path.write_text(json.dumps(ledger, indent=2) + "\n")
+        send_supervisor(new_job, f"session {session} migrate-{session}")
+        expected = [
+            (tab["name"], pane["conversation"], pane["cwd"])
+            for item in ledger["census"]["sessions"]
+            if item["name"] == session
+            for tab in item["tabs"]
+            for pane in tab["panes"]
+            if pane.get("conversation")
+        ]
+        for _ in range(30):
+            actual = inspect_session(new_job, session)
+            observed = [
+                (pane.get("tab"), pane.get("conversation"), pane.get("cwd"))
+                for pane in actual.get("panes", [])
+                if pane.get("pid") and pane.get("command")
+            ]
+            if (
+                actual.get("session") == session
+                and actual.get("node") == ledger["stand_up"]["node"]
+                and observed == expected
+                and len(actual.get("panes", [])) == len(expected)
+            ):
+                break
+            pause(2)
+        else:
+            raise MigrationError(
+                f"{session} did not show {len(expected)} recorded Claude panes "
+                f"on {ledger['stand_up']['node']}: {json.dumps(actual, sort_keys=True)}"
+            )
+        outcome.update(
+            {
+                "status": "complete",
+                "node": actual["node"],
+                "panes": actual["panes"],
+                "completed_at": datetime.now(UTC).isoformat(),
+            }
+        )
+        outcome.pop("phase", None)
+        if all(
+            cutovers.get(item["name"], {}).get("status") == "complete"
+            for item in ledger["census"]["sessions"]
+        ):
+            ledger["completed"].append("cutover")
+            ledger["next_step"] = "retire"
+        path.write_text(json.dumps(ledger, indent=2) + "\n")
+        return (
+            f"Cut over {session}: {len(expected)} Claude panes with recorded "
+            f"conversation ids on {actual['node']}; next step: {ledger['next_step']}"
+        )
+    if step == "retire":
+        assert path is not None and ledger is not None
+        old_job_id = str(ledger["stand_up"]["old_record"]["job_id"])
+        if not old_job_id.isdecimal():
+            raise MigrationError(f"old job id is not numeric: {old_job_id!r}")
+        census_sessions = ledger["census"]["sessions"]
+        if not census_sessions or any(
+            ledger.get("cutovers", {}).get(item["name"], {}).get("status") != "complete"
+            for item in census_sessions
+        ):
+            raise MigrationError(
+                "retire requires every recorded session to be cut over"
+            )
+        steps = list_worker_steps(old_job_id)
+        if steps:
+            raise MigrationError(
+                f"old job {old_job_id} still holds worker steps: {', '.join(steps)}"
+            )
+        argv = fleet_node.placement_argv(
+            {"jobid": old_job_id},
+            [sys.executable, "-m", "reckon.crew.fleet_migrate", "list-sessions"],
+        )
+        result = run_step(argv)
+        try:
+            sessions = json.loads(result.stdout)
+        except json.JSONDecodeError as exc:
+            raise MigrationError("old-node session list returned no JSON") from exc
+        if result.returncode or not isinstance(sessions, list):
+            raise MigrationError(
+                f"old-node session list failed: {result.stderr.strip()}"
+            )
+        if sessions:
+            raise MigrationError(
+                f"old job {old_job_id} still holds zellij sessions: {', '.join(sessions)}"
+            )
+        command = f"scancel {old_job_id}"
+        if not confirm:
+            return f"Old job {old_job_id} has no worker steps or zellij sessions; {command}; --confirm required"
+        steps = list_worker_steps(old_job_id)
+        if steps:
+            raise MigrationError(
+                f"old job {old_job_id} acquired worker steps: {', '.join(steps)}"
+            )
+        answer = cancel_job(old_job_id)
+        if answer.returncode:
+            raise MigrationError(
+                f"{command} failed ({answer.returncode}): {answer.stdout.strip()} {answer.stderr.strip()}"
+            )
+        ledger["retirement"] = {
+            "job_id": old_job_id,
+            "command": command,
+            "exit_status": answer.returncode,
+            "stdout": answer.stdout,
+            "stderr": answer.stderr,
+        }
+        ledger["completed"].append("retire")
+        ledger["next_step"] = "done"
+        path.write_text(json.dumps(ledger, indent=2) + "\n")
+        return f"{command} answered (exit {answer.returncode}): stdout={answer.stdout.strip()!r}, stderr={answer.stderr.strip()!r}"
     raise MigrationError(f"{step} is not implemented by the census and layout step")
 
 
@@ -639,5 +993,11 @@ if __name__ == "__main__":
         print(json.dumps(collect_local()))
     elif len(sys.argv) in {3, 4} and sys.argv[1] == "request":
         _local_request(" ".join(sys.argv[2:]))
+    elif len(sys.argv) == 3 and sys.argv[1] == "end-session":
+        print(json.dumps(_end_local_session(sys.argv[2])))
+    elif len(sys.argv) == 3 and sys.argv[1] == "inspect-session":
+        print(json.dumps(_local_session_processes(sys.argv[2])))
+    elif sys.argv[1:] == ["list-sessions"]:
+        print(json.dumps(_active_sessions()))
     else:
-        raise SystemExit("expected collect-local or request VERB [TOKEN]")
+        raise SystemExit("expected a local migration observation or request")
