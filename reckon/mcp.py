@@ -4395,6 +4395,26 @@ def _crew(
     if view == "plan-review":
         from reckon.crew import plan_review
 
+        if since is not None:
+            # With a window, the view folds the committed records into the
+            # per-plan day summary; ``plan`` narrows that fold, so it is no
+            # longer required and the flat read below keeps it so.
+            try:
+                summary = plan_review.review_day_summary(
+                    project,
+                    since=since,
+                    until=until if until is not None else datetime.now(UTC).isoformat(),
+                    plan=plan,
+                )
+            except (OSError, ValueError) as exc:
+                return {
+                    "ok": False,
+                    "error": "crew_error",
+                    "view": view,
+                    "detail": str(exc),
+                }
+            return {"day_summary": summary}
+
         if not plan:
             return {
                 "ok": False,
