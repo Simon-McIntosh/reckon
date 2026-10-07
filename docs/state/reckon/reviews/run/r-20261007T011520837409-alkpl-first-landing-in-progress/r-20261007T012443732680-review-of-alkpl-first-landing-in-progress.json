@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run declares baseline_suite and after_suite null (an unarmed node); its own gate log (test_logs gate-head.log) runs to its summary line at 9 passed EXIT=0 with zero failing node ids, and the failure-id extractor is shown to see failures by the node's own negative-control.log (2 FAILED ids), so the added-failure set is empty.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:8184",
+    "reckon/crew/promotion.py:8666"
+  ],
+  "commits_read": [
+    "f5ac35887fda132895116870cf054aa0f3ba3d13",
+    "e241c435b1dea4ad1c4178d08a346bfa65b0a374"
+  ],
+  "completed_at": "2026-10-07T01:37:32.052Z",
+  "dispatched_at": "2026-10-07T01:25:07Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read against base f5ac35887; the single commit e241c435 changes three files (+166/-1) - promotion.py adds the flip, the new test file adds four cases, the evidence fragment records the run - and nothing else is touched.",
+    "done_when": "the measure names a draft plan promoted to in-progress with the landing comment at one plan version, an active plan and a shipped plan read back unchanged, and the existing _record_landing_comment tests passing; the run's gate log (gate-head.log) ends 9 passed EXIT=0 and at head e241c435 I reran the same two files and got 9 passed EXIT=0, while the declared negative control (negative-control.log) ends EXIT=1 with the two flip cases failing.",
+    "goal": "the node goal is \"Mark a draft or pending plan in progress at its first landing\"; at head reckon/crew/promotion.py:3610-3615 reads the plan's status and reckon/crew/promotion.py:3670-3672 writes payload[\"status\"] = \"in-progress\" onto the same payload that carries the appended landing comment, so a plan that read draft or pending becomes in-progress in the same versioned write the brief names.",
+    "manifest": "read; it reports status complete, commit e241c435, gate 9 passed EXIT=0, the four pre-existing _record_landing_comment cases passing unchanged, a declared negative control that reddens the draft and pending cases, and it declares baseline_suite and after_suite null, i.e. the node carried no armed suite arm.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, tests/test_first_landing_marks_plan_in_progress.py and the section evidence fragment (plus an unused figures directory); `git show --stat e241c435` changes exactly those three paths and no fourth, so the diff stays inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the declared negative control deletes the flip and reddens test_draft_plan_becomes_in_progress_with_the_landing_comment and test_pending_plan_becomes_in_progress_with_the_landing_comment (negative-control.log, EXIT=1), and the version assertion at tests/test_first_landing_marks_plan_in_progress.py:110 fails if the flip costs a second write; the unchanged-status parametrized assert compares the read-back against its own fixed literal, which holds only while the flip is correctly limited to draft and pending.",
+    "evidence": "the gate reproduces at head e241c435 at 9 passed EXIT=0 (reviewer-gate.log) and the negative control ends EXIT=1, but the reviewed run declares no baseline_suite or after_suite arm, so the evidence is a focused gate rather than a suite-wide delta.",
+    "fit": "the added names in_progress_states, started and payload are mechanism-named, the comment at reckon/crew/promotion.py:3604-3609 states why, and no plan, sprint or ticket identifier appears in the diff.",
+    "goal_fidelity": "reckon/crew/promotion.py:3672 sets in-progress only when started (draft or pending) holds, matching the section goal, while the already-recorded early return at reckon/crew/promotion.py:3640 leaves a plan untouched so a re-promotion of a run whose comment already exists does not flip, a gap the first-landing path for a new run does not have.",
+    "reuse": "the flip extends _record_landing_comment, the one owner of the landing-comment versioned write at reckon/crew/promotion.py:3551, rather than adding a second status-setting writer, and a search over reckon/crew for an existing draft-to-in-progress transition found none.",
+    "scope_discipline": "`git show --stat e241c435` lists exactly reckon/crew/promotion.py, tests/test_first_landing_marks_plan_in_progress.py and the evidence fragment, all inside the manifest's declared paths, with the declared figures directory left unwritten."
+  },
+  "node": "review-of-alkpl-first-landing-in-progress",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Mark a draft or pending plan in progress at its first landing\"; at head reckon/crew/promotion.py:3610-3615 reads the plan's status and reckon/crew/promotion.py:3670-3672 writes payload[\"status\"] = \"in-progress\" onto the same payload that carries the appended landing comment, so a plan that read draft or pending becomes in-progress in the same versioned write the brief names.\nVERDICT done_when: the measure names a draft plan promoted to in-progress with the landing comment at one plan version, an active plan and a shipped plan read back unchanged, and the existing _record_landing_comment tests passing; the run's gate log (gate-head.log) ends 9 passed EXIT=0 and at head e241c435 I reran the same two files and got 9 passed EXIT=0, while the declared negative control (negative-control.log) ends EXIT=1 with the two flip cases failing.\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, tests/test_first_landing_marks_plan_in_progress.py and the section evidence fragment (plus an unused figures directory); `git show --stat e241c435` changes exactly those three paths and no fourth, so the diff stays inside the declared scope.\nVERDICT manifest: read; it reports status complete, commit e241c435, gate 9 passed EXIT=0, the four pre-existing _record_landing_comment cases passing unchanged, a declared negative control that reddens the draft and pending cases, and it declares baseline_suite and after_suite null, i.e. the node carried no armed suite arm.\nVERDICT diff: read against base f5ac35887; the single commit e241c435 changes three files (+166/-1) - promotion.py adds the flip, the new test file adds four cases, the evidence fragment records the run - and nothing else is touched.\nCALL_SITES: reckon/crew/promotion.py:8184, reckon/crew/promotion.py:8666\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:3672 sets in-progress only when started (draft or pending) holds, matching the section goal, while the already-recorded early return at reckon/crew/promotion.py:3640 leaves a plan untouched so a re-promotion of a run whose comment already exists does not flip, a gap the first-landing path for a new run does not have.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate reproduces at head e241c435 at 9 passed EXIT=0 (reviewer-gate.log) and the negative control ends EXIT=1, but the reviewed run declares no baseline_suite or after_suite arm, so the evidence is a focused gate rather than a suite-wide delta.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git show --stat e241c435` lists exactly reckon/crew/promotion.py, tests/test_first_landing_marks_plan_in_progress.py and the evidence fragment, all inside the manifest's declared paths, with the declared figures directory left unwritten.\nSCORE durability: 18\nJUSTIFICATION durability: the declared negative control deletes the flip and reddens test_draft_plan_becomes_in_progress_with_the_landing_comment and test_pending_plan_becomes_in_progress_with_the_landing_comment (negative-control.log, EXIT=1), and the version assertion at tests/test_first_landing_marks_plan_in_progress.py:110 fails if the flip costs a second write; the unchanged-status parametrized assert compares the read-back against its own fixed literal, which holds only while the flip is correctly limited to draft and pending.\nSCORE fit: 19\nJUSTIFICATION fit: the added names in_progress_states, started and payload are mechanism-named, the comment at reckon/crew/promotion.py:3604-3609 states why, and no plan, sprint or ticket identifier appears in the diff.\nSCORE reuse: 20\nJUSTIFICATION reuse: the flip extends _record_landing_comment, the one owner of the landing-comment versioned write at reckon/crew/promotion.py:3551, rather than adding a second status-setting writer, and a search over reckon/crew for an existing draft-to-in-progress transition found none.",
+  "review_run_id": "r-20261007T012443732680-review-of-alkpl-first-landing-in-progress",
+  "reviewed_base": "f5ac35887fda132895116870cf054aa0f3ba3d13",
+  "reviewed_base_sha": "f5ac35887fda132895116870cf054aa0f3ba3d13",
+  "reviewed_commit": "e241c435b1dea4ad1c4178d08a346bfa65b0a374",
+  "reviewed_head_sha": "e241c435b1dea4ad1c4178d08a346bfa65b0a374",
+  "reviewed_run_id": "r-20261007T011520837409-alkpl-first-landing-in-progress",
+  "reviewer_run_id": "r-20261007T012443732680-review-of-alkpl-first-landing-in-progress",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "timestamp": "2026-10-07T01:36:11.192749+00:00",
+  "total": 114
+}
