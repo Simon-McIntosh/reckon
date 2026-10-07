@@ -111,9 +111,9 @@ Full detail below.
 - `/reckon-build graph:<handle>` — the unambiguous long form for that closure
 - Reading a §05 followup whose `recommends_skill` is `/reckon-build`
 - "use local workers / use local agents / dispatch locally" — these are routing
-  instructions that add `--local` to every `reckon crew dispatch`. The flag
-  selects the backend named by `local_backend` and refuses when it is unset.
-  The task itself
+  instructions that name the lane with `--local` on every `reckon crew dispatch`.
+  The flag selects the backend named by `local_backend` and refuses when it is
+  unset. The task itself
   may be any implementable plan, investigation, test, or documentation node —
   "use local workers" selects the *backend*, not the task scope.
 
@@ -440,21 +440,25 @@ The engine supplies the full contract, manifest shape, and escape hatch. Read
 `references/worker-protocol.md` only when hand-composing a delegation Reckon did
 not prepare.
 
-### 3c. Locally served worker routing
+### 3c. Lane routing — the picker chooses unless a lane is named
+
+A dispatch that names no lane is routed by the picker, which picks the family
+and model or holds the node; the coordinator does not add a lane to every
+dispatch. A lane the coordinator names is never overridden, so name one only
+when the run must go there, and give the reason in the dispatch's comment.
 
 When the invoking phrase includes "use local workers", "use local agents", or
-"dispatch locally", the coordinator adds `--local` to every
-`reckon crew dispatch` call. The flag resolves `local_backend` as that
-dispatch's default and refuses when it is unset; role overlays still apply.
+"dispatch locally", name the lane with `--local` on every `reckon crew dispatch`
+call. The flag resolves `local_backend` as that dispatch's backend and refuses
+when it is unset; role overlays still apply.
 
 **The local lane is a routing choice, not only a flag.** A coordinator may
 select it unprompted when the node's declared level is `exact`, when the
 metered lanes are constrained, or when the node needs no decision. It costs
 no metered quota. Context-fit refusal now rejects a node exceeding the lane's
 window before a worktree exists, naming the estimate, the window and the
-shortfall, rather than the node dying mid-run. The flag contract above is
-unchanged: a request to use local workers still selects that same configured
-backend.
+shortfall, rather than the node dying mid-run. Reviews stay off metered lanes
+through `review_excluded_backends`, so an unnamed review runs locally or holds.
 
 The wrapper supplies the base URL, model tiers, and credential for the locally
 served endpoint. Its backend alias reuses the existing pass-through dialect
