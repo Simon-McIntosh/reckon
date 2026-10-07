@@ -10,7 +10,9 @@ never enters a commit. These cases hold a promotion to carrying the disposition
 and answer fields out of every staging copy of the record it commits, hold the
 plan-review answer verb to writing the committed copy when one exists, and hold
 a disposition written after promotion to landing in a commit rather than in the
-working tree.
+working tree. A re-store of a promoted round — the plan's rounds committed
+again from an answerless body — must keep the answer the committed file already
+holds rather than overwriting it.
 
 Every crew directory is environment-resolved under ``tmp_path``; nothing touches
 the operator's own store.
@@ -320,3 +322,45 @@ def test_a_disposition_after_promotion_lands_in_a_commit(repository: Path) -> No
         json.loads(shown)[review_module.DIMENSION_DISPOSITIONS_KEY]["evidence"]["kind"]
         == "exempted"
     )
+
+
+# ── (4) Re-storing a promoted round keeps the answer it already carries ──────
+
+
+def test_re_storing_a_promoted_plan_review_keeps_its_answer(
+    repository: Path,
+) -> None:
+    """A re-store of a promoted round does not overwrite the answer on it.
+
+    Every promotion of a later plan-review run of the same plan commits the
+    subject's rounds again, and the round is delivered with a body that carries
+    no answer: the answer a coordinator recorded lives only in the committed
+    file. The promotion seam ``store_committed_review`` is called for that round
+    here, exactly as a re-commit of the plan's rounds calls it, and the answer
+    must come back through the committed-first reader. Leaving the committed
+    file out of the merge sources makes this fail — the re-store writes the
+    answerless body over the file that held the answer.
+    """
+    _write_run_record(repository, PLAN_REVIEW_RUN)
+    document = (repository / "docs" / "plans" / f"{PLAN_SLUG}.html").read_text(
+        encoding="utf-8"
+    )
+    committed = review_module.store_committed_review(
+        _covering_plan_record(document), root=repository
+    )
+    stored = plan_review.read_plan_review(PROJECT, PLAN_SLUG, plan=document)
+    assert stored is not None and _FINDING in plan_review.finding_ids(stored)
+    plan_review.record_response(stored, _FINDING, action="acted", by="coordinator")
+    assert _read(committed)["responses"][_FINDING]["action"] == "acted"
+
+    # The plan's rounds are committed again from the delivered body, which
+    # carries no answer — the same call promotion makes for the round.
+    review_module.store_committed_review(
+        _covering_plan_record(document), root=repository
+    )
+
+    answered = plan_review.read_plan_review(PROJECT, PLAN_SLUG, plan=document)
+    assert answered is not None
+    assert plan_review.unanswered_findings(answered) == []
+    assert answered["responses"][_FINDING]["action"] == "acted"
+    assert _read(committed)["responses"][_FINDING]["action"] == "acted"

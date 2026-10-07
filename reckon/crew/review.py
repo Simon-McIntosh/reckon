@@ -2039,6 +2039,23 @@ def _staging_copies_of_record(
     return copies
 
 
+def _committed_record_at(path: str | Path) -> Mapping[str, Any] | None:
+    """The committed record already stored at ``path``, or None when none parses.
+
+    A round is stored once, then re-stored whenever a promotion commits the
+    subject's rounds again. The re-store writes the round's body, which carries
+    no answer; the answer a write recorded on the committed copy lives only in
+    the file being overwritten, so it is read here and merged back rather than
+    dropped. A path that does not exist yet, or whose bytes do not parse, has no
+    record to preserve.
+    """
+    try:
+        stored = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return stored if isinstance(stored, Mapping) else None
+
+
 def _merge_record_answers(sources: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     """Union the answer fields of several copies of one review record.
 
@@ -2124,8 +2141,11 @@ def store_committed_review(
     it, or a test); omitted, it resolves through :func:`committed_review_root`
     against ``root``. A plan review (one naming ``plan_slug``) is written under
     ``plan/<slug>/`` and needs no reviewed run; a run review is written under
-    ``run/<reviewed-run-id>/`` and must name the reviewed run. The write is
-    atomic and every other body field is preserved.
+    ``run/<reviewed-run-id>/`` and must name the reviewed run. A disposition or
+    answer recorded on any copy of this record — a staging sibling or the
+    committed file already at the target path — is merged into the committed
+    body, so a re-store of a round carries the answers rather than overwriting
+    them. The write is atomic and every other body field is preserved.
     """
     project = str(record.get("project") or "").strip() or str(project or "").strip()
     if not project:
@@ -2165,15 +2185,6 @@ def store_committed_review(
     if not stored.get("timestamp"):
         stored["timestamp"] = datetime.now(UTC).isoformat()
 
-    # A disposition or an answer may have been recorded on a sibling of the file
-    # this call commits, because its writer wrote back to whichever copy the
-    # reader selected. Every copy of the record is read for those fields and
-    # merged in, so a promotion carries them into the committed record rather
-    # than leaving them where only the host store could see them.
-    stored.update(
-        _merge_record_answers([stored, *_staging_copies_of_record(project, stored)])
-    )
-
     plan_slug = str(record.get("plan_slug") or "").strip()
     if plan_slug:
         from reckon.crew.plan_review import plan_review_path
@@ -2192,6 +2203,27 @@ def store_committed_review(
             committed_root=committed_root,
             review_run_id=review_run_id,
         )
+
+    # A disposition or an answer may have been recorded on a sibling of the file
+    # this call commits, because its writer wrote back to whichever copy the
+    # reader selected. Every copy of the record is read for those fields and
+    # merged in, so a promotion carries them into the committed record rather
+    # than leaving them where only the host store could see them. The committed
+    # copy already at the target path is a source too: once an answer is written
+    # there, a later round of the same record is re-stored with a body that
+    # carries no answer, so reading the committed copy is what keeps the answer
+    # from being overwritten. It is merged last, so an answer the committed
+    # record already holds wins a tie against a staging sibling's copy of it.
+    existing = _committed_record_at(path)
+    stored.update(
+        _merge_record_answers(
+            [
+                stored,
+                *_staging_copies_of_record(project, stored),
+                *([existing] if existing is not None else []),
+            ]
+        )
+    )
     path.parent.mkdir(parents=True, exist_ok=True)
     _write_record(path, stored)
     return path
